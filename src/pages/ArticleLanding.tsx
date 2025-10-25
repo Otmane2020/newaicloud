@@ -27,12 +27,33 @@ export default function ArticleLanding() {
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [activeSection, setActiveSection] = useState("");
 
   useEffect(() => {
     if (id) {
       loadArticle();
     }
   }, [id]);
+
+  useEffect(() => {
+    // Détection de la section active pendant le scroll
+    const handleScroll = () => {
+      const sections = document.querySelectorAll(".article-section");
+      let currentSection = "";
+
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect();
+        if (rect.top <= 150 && rect.bottom >= 150) {
+          currentSection = section.id;
+        }
+      });
+
+      setActiveSection(currentSection);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const loadArticle = async () => {
     try {
@@ -113,159 +134,288 @@ export default function ArticleLanding() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+      {/* Header fixe */}
+      <div className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur-sm shadow-sm">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/blog">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Retour
             </Button>
           </Link>
+          <Button variant="outline" size="sm" onClick={handleCopyLink}>
+            {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+            {copied ? "Copié !" : "Partager"}
+          </Button>
         </div>
       </div>
 
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-2 mb-6">
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                {article.status === "published" ? "Publié" : "Brouillon"}
-              </Badge>
-              <Separator orientation="vertical" className="h-4" />
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Menu latéral fixe - Table des matières */}
+          <aside className="lg:col-span-3 lg:sticky lg:top-20 h-fit hidden lg:block">
+            <Card className="p-5">
+              <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                Table des matières
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: "section-1", label: "1. Introduction" },
+                  { id: "section-2", label: "2. Critères essentiels" },
+                  { id: "section-3", label: "3. Notre sélection" },
+                  { id: "section-4", label: "4. Comparatif" },
+                  { id: "section-5", label: "5. Comment choisir" },
+                  { id: "section-6", label: "6. Conclusion" },
+                ].map((item) => (
+                  <a
+                    key={item.id}
+                    href={`#${item.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const element = document.getElementById(item.id);
+                      if (element) {
+                        element.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }
+                    }}
+                    className={`block text-sm py-2.5 px-3 rounded-lg transition-all ${
+                      activeSection === item.id
+                        ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
+              
+              {/* Infos article */}
+              <Separator className="my-4" />
+              <div className="space-y-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5" />
                   {new Date(article.created_at).toLocaleDateString("fr-FR", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
                   })}
-                </span>
-              </div>
-              <Separator orientation="vertical" className="h-4" />
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                <span>{readingTime} de lecture</span>
-              </div>
-            </div>
-
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-              {article.title}
-            </h1>
-
-            {article.meta_description && (
-              <p className="text-xl text-muted-foreground mb-8">
-                {article.meta_description}
-              </p>
-            )}
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleShare("facebook")}
-              >
-                <Facebook className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleShare("twitter")}
-              >
-                <Twitter className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleShare("linkedin")}
-              >
-                <Linkedin className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleCopyLink}>
-                {copied ? (
-                  <Check className="w-4 h-4" />
-                ) : (
-                  <Copy className="w-4 h-4" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5" />
+                  {getReadingTime(article.content)} de lecture
+                </div>
+                {article.keywords && article.keywords.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-3.5 h-3.5" />
+                    {article.keywords.length} mots-clés
+                  </div>
                 )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+              </div>
+            </Card>
+          </aside>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          <Card className="mb-8">
-            <CardContent className="p-8 md:p-12">
-              <div
-                className="prose prose-lg max-w-none"
-                dangerouslySetInnerHTML={{ __html: article.content }}
-              />
-            </CardContent>
-          </Card>
+          {/* Contenu principal */}
+          <main className="lg:col-span-9">
+            {/* En-tête article */}
+            <Card className="mb-8 overflow-hidden">
+              <CardContent className="p-8">
+                <div className="mb-4">
+                  <Badge variant="outline" className="mb-4">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    {article.status === "published" ? "Publié" : "Brouillon"}
+                  </Badge>
+                  <h1 className="text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+                    {article.title}
+                  </h1>
+                  {article.meta_description && (
+                    <p className="text-lg text-muted-foreground mb-6">
+                      {article.meta_description}
+                    </p>
+                  )}
+                  
+                  {/* Badges et infos mobile */}
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground lg:hidden mb-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      {getReadingTime(article.content)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(article.created_at).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </div>
+                  </div>
 
-          {/* Keywords */}
-          {article.keywords && article.keywords.length > 0 && (
-            <Card className="mb-8">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-primary" />
-                  Mots-clés
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {article.keywords.map((keyword: string, index: number) => (
-                    <Badge key={index} variant="secondary">
-                      {keyword}
-                    </Badge>
-                  ))}
+                  {/* Partage */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground mr-2">Partager :</span>
+                    <Button variant="outline" size="sm" onClick={() => handleShare("facebook")}>
+                      <Facebook className="w-4 h-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleShare("twitter")}>
+                      <Twitter className="w-4 h-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleShare("linkedin")}>
+                      <Linkedin className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* Share Section */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
-                    <Share2 className="w-5 h-5 text-primary" />
-                    Partager cet article
+            {/* Contenu avec styles avancés */}
+            <Card className="overflow-hidden mb-8">
+              <CardContent className="p-8 lg:p-12">
+                <style>{`
+                  .blog-article {
+                    line-height: 1.8;
+                  }
+                  .blog-article h2 {
+                    font-size: 1.875rem;
+                    font-weight: 700;
+                    margin-top: 3rem;
+                    margin-bottom: 1.5rem;
+                    scroll-margin-top: 120px;
+                    color: hsl(var(--foreground));
+                  }
+                  .blog-article h3 {
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                    margin-top: 2rem;
+                    margin-bottom: 1rem;
+                    color: hsl(var(--foreground));
+                  }
+                  .blog-article p {
+                    margin-bottom: 1.5rem;
+                    color: hsl(var(--muted-foreground));
+                    font-size: 1.0625rem;
+                  }
+                  .blog-article ul, .blog-article ol {
+                    margin-bottom: 1.5rem;
+                    padding-left: 2rem;
+                    color: hsl(var(--muted-foreground));
+                  }
+                  .blog-article li {
+                    margin-bottom: 0.75rem;
+                  }
+                  .blog-article .hero-image {
+                    width: 100%;
+                    height: auto;
+                    max-height: 500px;
+                    object-fit: cover;
+                    border-radius: 0.75rem;
+                    margin-bottom: 2rem;
+                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+                  }
+                  .blog-article .comparison-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 2rem 0;
+                    overflow: hidden;
+                    border-radius: 0.5rem;
+                  }
+                  .blog-article .comparison-table th,
+                  .blog-article .comparison-table td {
+                    border: 1px solid hsl(var(--border));
+                    padding: 1rem;
+                    text-align: left;
+                  }
+                  .blog-article .comparison-table th {
+                    background-color: hsl(var(--primary) / 0.1);
+                    font-weight: 600;
+                    color: hsl(var(--primary));
+                  }
+                  .blog-article .comparison-table tbody tr:nth-child(even) {
+                    background-color: hsl(var(--muted) / 0.3);
+                  }
+                  .blog-article .article-section {
+                    scroll-margin-top: 120px;
+                  }
+                  .blog-article .article-toc {
+                    background: linear-gradient(135deg, hsl(var(--primary) / 0.05), hsl(var(--primary) / 0.1));
+                    border-left: 4px solid hsl(var(--primary));
+                    padding: 1.5rem;
+                    margin: 2rem 0;
+                    border-radius: 0.5rem;
+                  }
+                  .blog-article .article-toc h2 {
+                    margin-top: 0;
+                    font-size: 1.25rem;
+                  }
+                  .blog-article .article-toc ol {
+                    margin-bottom: 0;
+                  }
+                  .blog-article .article-toc a {
+                    color: hsl(var(--primary));
+                    text-decoration: none;
+                    font-weight: 500;
+                    transition: all 0.2s;
+                  }
+                  .blog-article .article-toc a:hover {
+                    text-decoration: underline;
+                    color: hsl(var(--primary) / 0.8);
+                  }
+                  .blog-article strong {
+                    font-weight: 600;
+                    color: hsl(var(--foreground));
+                  }
+                `}</style>
+                <div
+                  className="blog-article prose prose-lg max-w-none"
+                  dangerouslySetInnerHTML={{ __html: article.content }}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Mots-clés */}
+            {article.keywords && article.keywords.length > 0 && (
+              <Card className="mb-8">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-primary" />
+                    Mots-clés SEO
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Aidez-nous à faire connaître ce contenu
-                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {article.keywords.map((keyword: string, index: number) => (
+                      <Badge key={index} variant="secondary" className="text-sm">
+                        {keyword}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* CTA final */}
+            <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-primary/20">
+              <CardContent className="p-8 text-center">
+                <h3 className="text-2xl font-bold mb-3">
+                  Prêt à découvrir nos produits ?
+                </h3>
+                <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                  Explorez notre collection complète et trouvez le produit parfait pour vos besoins
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link to="/products">
+                    <Button size="lg">
+                      <Eye className="w-5 h-5 mr-2" />
+                      Voir notre catalogue
+                    </Button>
+                  </Link>
+                  <Button size="lg" variant="outline" onClick={handleCopyLink}>
+                    <Share2 className="w-5 h-5 mr-2" />
+                    Partager l'article
+                  </Button>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => handleShare("facebook")}
-                  >
-                    <Facebook className="w-4 h-4 mr-2" />
-                    Facebook
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleShare("twitter")}
-                  >
-                    <Twitter className="w-4 h-4 mr-2" />
-                    Twitter
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleShare("linkedin")}
-                  >
-                    <Linkedin className="w-4 h-4 mr-2" />
-                    LinkedIn
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </main>
         </div>
       </div>
     </div>

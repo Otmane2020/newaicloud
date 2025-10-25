@@ -68,7 +68,6 @@ Deno.serve(async (req) => {
 
 async function generateSingleArticle(requestData: any, supabaseClient: any, apiKey: string) {
   try {
-    // Extract user_id from request or throw error if missing
     const { user_id, category = "Guide", keywords = [], title } = requestData;
     
     if (!user_id) {
@@ -78,22 +77,147 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
     const targetKeywords = keywords.length ? keywords : [category, "guide"];
 
-    console.log(`🎯 Génération d'article : ${articleTitle} pour user ${user_id}`);
+    console.log(`🎯 Génération article : ${articleTitle} pour user ${user_id}`);
 
-    const { data: products } = await supabaseClient
+    // Filtrer produits par catégorie si spécifiée
+    let productsQuery = supabaseClient
       .from("shopify_products")
-      .select("id, title, handle, price, category")
-      .eq("seller_id", user_id)
-      .limit(10);
-
-    const productNames = products?.map((p: any) => p.title).join(", ") || "";
+      .select("id, title, handle, price, category, description, product_type, vendor")
+      .eq("seller_id", user_id);
     
-    const prompt = `Rédige un article SEO complet en français intitulé "${articleTitle}".
-Intègre naturellement ces produits : ${productNames}.
-Longueur : 1500-2000 mots.
-Mots-clés : ${targetKeywords.join(", ")}.
-Structure HTML avec <h2>, <h3>, paragraphes.
-Inclus un appel à l'action.`;
+    if (category && category !== "Guide" && category !== "Tous produits") {
+      productsQuery = productsQuery.or(`category.ilike.%${category}%,product_type.ilike.%${category}%,vendor.ilike.%${category}%`);
+    }
+    
+    const { data: products } = await productsQuery.limit(8);
+
+    if (!products || products.length === 0) {
+      throw new Error("Aucun produit trouvé pour cette catégorie");
+    }
+
+    const productDetails = products.map((p: any) => 
+      `- ${p.title} (${p.price}€) : ${p.description?.substring(0, 100) || 'Pas de description'}`
+    ).join("\n");
+    
+    console.log(`📦 ${products.length} produits sélectionnés`);
+
+    // Générer l'image de couverture avec OpenAI
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    let imageUrl = "";
+    
+    if (openaiKey) {
+      try {
+        console.log("🎨 Génération image avec OpenAI...");
+        const imagePrompt = `A professional e-commerce hero image for an article about ${category}, modern and clean design, high quality product photography style`;
+        
+        const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openaiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "gpt-image-1",
+            prompt: imagePrompt,
+            n: 1,
+            size: "1024x1024",
+            quality: "high"
+          })
+        });
+
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          imageUrl = imageData.data[0].url;
+          console.log("✅ Image générée");
+        }
+      } catch (imgErr) {
+        console.error("⚠️ Erreur génération image:", imgErr);
+      }
+    }
+    
+    const prompt = `Tu es un rédacteur expert en e-commerce. Rédige un article professionnel en français intitulé "${articleTitle}".
+
+📦 PRODUITS À INTÉGRER :
+${productDetails}
+
+📝 STRUCTURE REQUISE (HTML strict) :
+
+<article class="blog-article">
+  <div class="article-hero">
+    ${imageUrl ? `<img src="${imageUrl}" alt="${articleTitle}" class="hero-image" />` : ''}
+    <h1 class="article-title">${articleTitle}</h1>
+  </div>
+
+  <nav class="article-toc">
+    <h2>Table des matières</h2>
+    <ol>
+      <li><a href="#section-1">Introduction</a></li>
+      <li><a href="#section-2">Les critères essentiels</a></li>
+      <li><a href="#section-3">Notre sélection</a></li>
+      <li><a href="#section-4">Comparatif détaillé</a></li>
+      <li><a href="#section-5">Comment choisir ?</a></li>
+      <li><a href="#section-6">Conclusion</a></li>
+    </ol>
+  </nav>
+
+  <section id="section-1" class="article-section">
+    <h2>1. Introduction</h2>
+    <p>[Paragraphe d'introduction accrocheur avec mots-clés : ${targetKeywords.join(", ")}]</p>
+  </section>
+
+  <section id="section-2" class="article-section">
+    <h2>2. Les critères essentiels</h2>
+    <h3>2.1. Qualité et matériaux</h3>
+    <p>[Contenu détaillé]</p>
+    <h3>2.2. Budget et rapport qualité-prix</h3>
+    <p>[Contenu détaillé]</p>
+    <h3>2.3. Design et style</h3>
+    <p>[Contenu détaillé]</p>
+  </section>
+
+  <section id="section-3" class="article-section">
+    <h2>3. Notre sélection de produits</h2>
+    [Présente CHAQUE produit avec un <h3> et paragraphe dédié]
+  </section>
+
+  <section id="section-4" class="article-section">
+    <h2>4. Comparatif détaillé</h2>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Produit</th>
+          <th>Prix</th>
+          <th>Points forts</th>
+          <th>Pour qui ?</th>
+        </tr>
+      </thead>
+      <tbody>
+        [Une ligne par produit]
+      </tbody>
+    </table>
+  </section>
+
+  <section id="section-5" class="article-section">
+    <h2>5. Comment faire votre choix ?</h2>
+    <h3>5.1. Selon votre budget</h3>
+    <p>[Conseils]</p>
+    <h3>5.2. Selon vos besoins</h3>
+    <p>[Conseils]</p>
+  </section>
+
+  <section id="section-6" class="article-section">
+    <h2>6. Conclusion</h2>
+    <p>[Résumé + CTA : "Découvrez notre collection complète"]</p>
+  </section>
+</article>
+
+⚠️ IMPORTANT :
+- Utilise UNIQUEMENT les ${products.length} produits fournis
+- Structure HTML STRICTE avec IDs pour ancres
+- Table des matières cliquable
+- Mots-clés : ${targetKeywords.join(", ")}
+- Longueur : 1800-2500 mots
+- Ton professionnel mais accessible`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -104,7 +228,10 @@ Inclus un appel à l'action.`;
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "Tu es un expert en rédaction SEO." },
+          { 
+            role: "system", 
+            content: "Tu es un rédacteur expert en e-commerce qui génère du contenu HTML structuré et professionnel." 
+          },
           { role: "user", content: prompt }
         ]
       })
@@ -116,7 +243,10 @@ Inclus un appel à l'action.`;
     }
 
     const result = await aiResponse.json();
-    const content = result.choices[0].message.content.trim();
+    let content = result.choices[0].message.content.trim();
+    
+    // Nettoyer les balises markdown si présentes
+    content = content.replace(/```html/g, '').replace(/```/g, '').trim();
 
     const { data: savedArticle, error: saveError } = await supabaseClient
       .from("blog_articles")
@@ -124,7 +254,7 @@ Inclus un appel à l'action.`;
         user_id,
         title: articleTitle,
         content,
-        meta_description: `Découvrez ${articleTitle}`,
+        meta_description: `Découvrez notre guide complet : ${articleTitle}. Comparatif, conseils d'experts et sélection des meilleurs produits.`,
         keywords: targetKeywords,
         status: "draft"
       }])
@@ -138,7 +268,6 @@ Inclus un appel à l'action.`;
 
     console.log(`✅ Article sauvegardé : ${savedArticle.id}`);
     
-    // Track usage
     await supabaseClient.rpc('increment_usage', {
       p_seller_id: user_id,
       p_field: 'articles_count',
