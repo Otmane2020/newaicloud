@@ -261,12 +261,14 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-8">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
-              <MessageSquare className="w-8 md:w-10 h-8 md:h-10 text-primary" />
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <MessageSquare className="w-8 md:w-10 h-8 md:h-10 text-primary" />
+              </div>
               Chat Smart
             </h1>
             <p className="text-muted-foreground text-base md:text-lg">
@@ -277,13 +279,14 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
                 <Sparkles className="w-3 h-3" />
                 {products.length} produits disponibles
               </Badge>
-              <Badge variant="outline">Propulsé par IA</Badge>
+              <Badge variant="outline" className="bg-card">Propulsé par IA</Badge>
             </div>
           </div>
           <Button
             onClick={() => setShowEmbed(!showEmbed)}
             variant="outline"
             size="lg"
+            className="bg-card hover:bg-card/80"
           >
             <Code className="w-4 h-4 mr-2" />
             {showEmbed ? 'Masquer' : 'Code Embed'}
@@ -367,9 +370,22 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
           </Card>
         )}
 
-        <Card className="h-[calc(100vh-380px)] flex flex-col bg-card">
+        <Card className="h-[calc(100vh-380px)] flex flex-col bg-card shadow-xl border-2">
+          {/* Header du chat */}
+          <div className="px-6 py-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Bot className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Assistant IA</h3>
+                <p className="text-xs text-muted-foreground">En ligne • Répond en quelques secondes</p>
+              </div>
+            </div>
+          </div>
+
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-background">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-white dark:bg-background">
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -454,20 +470,21 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
           </div>
 
           {/* Input */}
-          <div className="border-t p-4">
+          <div className="border-t p-4 bg-gradient-to-r from-muted/30 to-muted/10">
             <div className="flex gap-2">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Posez une question sur vos produits..."
+                className="flex-1 bg-card border-2 focus:border-primary transition-colors"
                 disabled={loading}
-                className="flex-1"
               />
-              <Button
-                onClick={handleSend}
+              <Button 
+                onClick={handleSend} 
                 disabled={loading || !input.trim()}
                 size="icon"
+                className="bg-primary hover:bg-primary/90 shadow-lg"
               >
                 <Send className="w-4 h-4" />
               </Button>
