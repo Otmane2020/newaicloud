@@ -78,8 +78,8 @@ export default function SEO() {
         </p>
       </div>
 
-      {/* Mobile-friendly Tab Navigation */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      {/* Mobile-friendly Tab Navigation - Responsive grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -93,7 +93,7 @@ export default function SEO() {
               className={cn(
                 "p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-lg border-primary"
+                  ? "bg-primary text-primary-foreground shadow-lg border-primary ring-2 ring-primary"
                   : "hover:bg-muted border-2 border-transparent hover:border-primary/20"
               )}
             >
