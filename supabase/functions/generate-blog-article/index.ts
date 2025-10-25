@@ -1,4 +1,3 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -62,7 +61,7 @@ Deno.serve(async (req) => {
     console.error("❌ Error:", error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error"
     }), { status: 500, headers: corsHeaders });
   }
 });
@@ -134,6 +133,6 @@ Inclus un appel à l'action.`;
 
   } catch (err) {
     console.error("Erreur génération:", err);
-    return { success: false, error: err.message };
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
