@@ -168,13 +168,13 @@ export default function ProductLanding() {
               {/* Variations Selector */}
               {variants.length > 0 && (
                 <div className="space-y-4 mb-6">
-                  <h3 className="font-semibold">Options disponibles</h3>
+                  <h3 className="font-semibold text-lg">Sélectionnez vos options</h3>
                   
-                  {/* Option 1 */}
+                  {/* Couleur / Option 1 */}
                   {variants.some(v => v.option1) && (
                     <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">
-                        {variants[0].option1 ? "Option 1" : ""}
+                      <label className="text-sm font-medium mb-2 block">
+                        Couleur / Taille
                       </label>
                       <Select 
                         value={selectedVariant?.option1 || ""} 
@@ -183,12 +183,14 @@ export default function ProductLanding() {
                           if (variant) setSelectedVariant(variant);
                         }}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez une option" />
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Choisir une option" />
                         </SelectTrigger>
                         <SelectContent>
                           {[...new Set(variants.map(v => v.option1).filter(Boolean))].map((opt) => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            <SelectItem key={opt} value={opt} className="cursor-pointer">
+                              {opt}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -198,8 +200,8 @@ export default function ProductLanding() {
                   {/* Option 2 */}
                   {variants.some(v => v.option2) && (
                     <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">
-                        {variants[0].option2 ? "Option 2" : ""}
+                      <label className="text-sm font-medium mb-2 block">
+                        Option 2
                       </label>
                       <Select 
                         value={selectedVariant?.option2 || ""} 
@@ -208,12 +210,14 @@ export default function ProductLanding() {
                           if (variant) setSelectedVariant(variant);
                         }}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez une option" />
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Choisir une option" />
                         </SelectTrigger>
                         <SelectContent>
                           {[...new Set(variants.map(v => v.option2).filter(Boolean))].map((opt) => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            <SelectItem key={opt} value={opt} className="cursor-pointer">
+                              {opt}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -223,8 +227,8 @@ export default function ProductLanding() {
                   {/* Option 3 */}
                   {variants.some(v => v.option3) && (
                     <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">
-                        {variants[0].option3 ? "Option 3" : ""}
+                      <label className="text-sm font-medium mb-2 block">
+                        Option 3
                       </label>
                       <Select 
                         value={selectedVariant?.option3 || ""} 
@@ -233,12 +237,14 @@ export default function ProductLanding() {
                           if (variant) setSelectedVariant(variant);
                         }}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez une option" />
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Choisir une option" />
                         </SelectTrigger>
                         <SelectContent>
                           {[...new Set(variants.map(v => v.option3).filter(Boolean))].map((opt) => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            <SelectItem key={opt} value={opt} className="cursor-pointer">
+                              {opt}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -269,9 +275,16 @@ export default function ProductLanding() {
               </div>
 
               <div className="flex gap-3 mb-6">
-                <Button size="lg" className="flex-1">
+                <Button 
+                  size="lg" 
+                  className="flex-1"
+                  onClick={() => {
+                    const shopifyUrl = `https://${product.shop_name}/products/${product.handle}`;
+                    window.open(shopifyUrl, '_blank');
+                  }}
+                >
                   <ShoppingCart className="w-5 h-5 mr-2" />
-                  Ajouter au panier
+                  Voir sur le site
                 </Button>
                 <Button size="lg" variant="outline">
                   <Heart className="w-5 h-5" />
@@ -387,9 +400,10 @@ export default function ProductLanding() {
           <Card className="mb-8">
             <CardContent className="p-8">
               <h2 className="text-2xl font-bold mb-4">Description</h2>
-              <div className="prose max-w-none">
-                <p>{product.description}</p>
-              </div>
+              <div 
+                className="prose max-w-none text-muted-foreground leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
             </CardContent>
           </Card>
         )}

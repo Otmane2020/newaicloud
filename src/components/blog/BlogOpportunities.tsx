@@ -30,40 +30,39 @@ export function BlogOpportunities() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Récupérer les produits pour analyser les opportunités
+      // Récupérer les produits avec description pour analyser
       const { data: products } = await supabase
         .from("shopify_products")
-        .select("category, tags, product_type")
+        .select("title, description, category, tags, product_type, vendor")
         .eq("seller_id", user.id);
 
-      if (!products) return;
+      if (!products || products.length === 0) return;
 
-      // Analyser les opportunités
+      const opps: Opportunity[] = [];
       const categoryMap = new Map<string, number>();
-      const tagMap = new Map<string, string[]>();
+      const productTypeMap = new Map<string, number>();
+      const vendorMap = new Map<string, number>();
 
+      // Analyser catégories, types et vendeurs
       products.forEach((p) => {
         if (p.category) {
           categoryMap.set(p.category, (categoryMap.get(p.category) || 0) + 1);
         }
-        if (p.tags) {
-          const tags = p.tags.split(",").map((t: string) => t.trim());
-          tags.forEach((tag: string) => {
-            if (!tagMap.has(tag)) tagMap.set(tag, []);
-            tagMap.get(tag)?.push(p.category || "");
-          });
+        if (p.product_type) {
+          productTypeMap.set(p.product_type, (productTypeMap.get(p.product_type) || 0) + 1);
+        }
+        if (p.vendor) {
+          vendorMap.set(p.vendor, (vendorMap.get(p.vendor) || 0) + 1);
         }
       });
 
-      const opps: Opportunity[] = [];
-
-      // Guides par catégorie
+      // 1. Guides par catégorie (minimum 2 produits)
       categoryMap.forEach((count, category) => {
-        if (count >= 3) {
+        if (count >= 2) {
           opps.push({
-            id: `guide-${category}`,
-            title: `Guide d'achat : ${category}`,
-            description: `Créez un guide complet pour aider vos clients à choisir parmi vos ${count} produits ${category}`,
+            id: `guide-category-${category}`,
+            title: `Guide d'achat ${category}`,
+            description: `Guide complet pour choisir parmi ${count} produits ${category}`,
             category,
             productsCount: count,
             type: "guide",
@@ -71,34 +70,62 @@ export function BlogOpportunities() {
         }
       });
 
-      // Articles de comparaison
-      if (categoryMap.size >= 2) {
-        const categories = Array.from(categoryMap.keys()).slice(0, 2);
-        opps.push({
-          id: `comparison-${categories.join("-")}`,
-          title: `Comparatif : ${categories[0]} vs ${categories[1]}`,
-          description: `Comparez les avantages de vos produits dans différentes catégories`,
-          category: categories.join(" & "),
-          productsCount: (categoryMap.get(categories[0]) || 0) + (categoryMap.get(categories[1]) || 0),
-          type: "comparison",
-        });
+      // 2. Guides par type de produit
+      productTypeMap.forEach((count, type) => {
+        if (count >= 2) {
+          opps.push({
+            id: `guide-type-${type}`,
+            title: `Guide : Comment choisir ${type}`,
+            description: `Conseils d'expert pour ${count} ${type}`,
+            category: type,
+            productsCount: count,
+            type: "guide",
+          });
+        }
+      });
+
+      // 3. Comparatifs entre catégories
+      const categories = Array.from(categoryMap.keys());
+      if (categories.length >= 2) {
+        for (let i = 0; i < Math.min(2, categories.length - 1); i++) {
+          opps.push({
+            id: `comparison-${categories[i]}-${categories[i + 1]}`,
+            title: `${categories[i]} vs ${categories[i + 1]}`,
+            description: `Comparaison détaillée pour vous aider à choisir`,
+            category: `${categories[i]} & ${categories[i + 1]}`,
+            productsCount: (categoryMap.get(categories[i]) || 0) + (categoryMap.get(categories[i + 1]) || 0),
+            type: "comparison",
+          });
+        }
       }
 
-      // Articles de tendances
-      tagMap.forEach((categories, tag) => {
-        if (categories.length >= 2) {
+      // 4. Articles par marque/vendeur
+      vendorMap.forEach((count, vendor) => {
+        if (count >= 3) {
           opps.push({
-            id: `trend-${tag}`,
-            title: `Tendance : ${tag}`,
-            description: `Explorez la tendance "${tag}" à travers votre catalogue`,
-            category: [...new Set(categories)].join(", "),
-            productsCount: categories.length,
+            id: `trend-vendor-${vendor}`,
+            title: `Collection ${vendor}`,
+            description: `Découvrez la gamme ${vendor} - ${count} produits disponibles`,
+            category: vendor,
+            productsCount: count,
             type: "trend",
           });
         }
       });
 
-      setOpportunities(opps.slice(0, 6));
+      // 5. Article général si on a assez de produits
+      if (products.length >= 5) {
+        opps.push({
+          id: "guide-general",
+          title: "Guide complet de nos produits",
+          description: `Découvrez tous nos ${products.length} produits et trouvez celui qui vous convient`,
+          category: "Tous produits",
+          productsCount: products.length,
+          type: "guide",
+        });
+      }
+
+      setOpportunities(opps.slice(0, 8));
     } catch (error) {
       console.error("Error loading opportunities:", error);
     } finally {
