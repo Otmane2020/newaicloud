@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import {
   Search,
@@ -14,6 +15,10 @@ import {
   Upload,
   Loader2,
   Package,
+  TrendingUp,
+  Target,
+  Zap,
+  ArrowRight,
 } from 'lucide-react';
 
 interface Product {
@@ -68,13 +73,11 @@ export function SeoOptimization() {
   }, []);
 
   const filteredProducts = products.filter((product) => {
-    // Tab filters
     if (activeTab === 'not-enriched' && product.enrichment_status === 'enriched') return false;
     if (activeTab === 'enriched' && product.enrichment_status !== 'enriched') return false;
     if (activeTab === 'pending-sync' && (product.enrichment_status !== 'enriched' || product.seo_synced_to_shopify)) return false;
     if (activeTab === 'synced' && !product.seo_synced_to_shopify) return false;
 
-    // Search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       return product.title.toLowerCase().includes(term);
@@ -213,6 +216,7 @@ export function SeoOptimization() {
   const enrichedCount = products.filter(p => p.enrichment_status === 'enriched').length;
   const pendingSyncCount = products.filter(p => p.enrichment_status === 'enriched' && !p.seo_synced_to_shopify).length;
   const syncedCount = products.filter(p => p.seo_synced_to_shopify).length;
+  const optimizationRate = products.length > 0 ? Math.round((enrichedCount / products.length) * 100) : 0;
 
   const tabs = [
     { id: 'all' as QuickFilterTab, label: 'Tous', count: products.length },
@@ -224,6 +228,117 @@ export function SeoOptimization() {
 
   return (
     <div className="space-y-6">
+      {/* Hero Banner with CTA */}
+      <Card className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950 dark:via-purple-950 dark:to-pink-950 border-2 border-primary/20 p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-primary" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                Optimisation SEO Intelligente
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Boostez votre visibilité avec des meta tags optimisés par IA. Augmentez votre trafic organique jusqu'à 50% en quelques clics.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span className="font-medium">+50% de trafic organique</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Target className="w-4 h-4 text-blue-600" />
+                <span className="font-medium">SEO optimisé</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Zap className="w-4 h-4 text-yellow-600" />
+                <span className="font-medium">Automation complète</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button
+              size="lg"
+              onClick={handleGenerateAll}
+              disabled={generating || notEnrichedCount === 0}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2 shadow-lg"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Optimisation en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Optimiser Tout ({notEnrichedCount})
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              {notEnrichedCount} produits à optimiser
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Dashboard Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                <Package className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              </div>
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Total Produits</h3>
+            </div>
+          </div>
+          <p className="text-4xl font-bold mb-1">{products.length}</p>
+          <p className="text-sm text-muted-foreground">Dans votre catalogue</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="font-semibold text-green-900 dark:text-green-100">Optimisés</h3>
+            </div>
+            <Badge className="bg-green-600 text-white">{optimizationRate}%</Badge>
+          </div>
+          <p className="text-4xl font-bold text-green-900 dark:text-green-100 mb-1">{enrichedCount}</p>
+          <p className="text-sm text-green-700 dark:text-green-300">Sur {products.length} produits</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-xl">
+                <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100">À synchroniser</h3>
+            </div>
+          </div>
+          <p className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-1">{pendingSyncCount}</p>
+          <p className="text-sm text-blue-700 dark:text-blue-300">Prêts pour Shopify</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-xl">
+                <Upload className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="font-semibold text-purple-900 dark:text-purple-100">Synchronisés</h3>
+            </div>
+          </div>
+          <p className="text-4xl font-bold text-purple-900 dark:text-purple-100 mb-1">{syncedCount}</p>
+          <p className="text-sm text-purple-700 dark:text-purple-300">Actifs sur Shopify</p>
+        </Card>
+      </div>
+
       {/* Tabs */}
       <div className="bg-background border rounded-lg p-1 flex flex-wrap gap-1">
         {tabs.map((tab) => (
@@ -245,33 +360,6 @@ export function SeoOptimization() {
             </Badge>
           </button>
         ))}
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card border rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Package className="w-6 h-6 text-muted-foreground" />
-            <h3 className="font-semibold">Total Produits</h3>
-          </div>
-          <p className="text-4xl font-bold">{products.length}</p>
-        </div>
-
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-            <h3 className="font-semibold text-green-900">Optimisés</h3>
-          </div>
-          <p className="text-4xl font-bold text-green-900">{enrichedCount}/{products.length}</p>
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Clock className="w-6 h-6 text-blue-600" />
-            <h3 className="font-semibold text-blue-900">À synchroniser</h3>
-          </div>
-          <p className="text-4xl font-bold text-blue-900">{pendingSyncCount}</p>
-        </div>
       </div>
 
       {/* Actions */}
@@ -328,15 +416,6 @@ export function SeoOptimization() {
               </Button>
             </>
           )}
-          <Button
-            onClick={handleGenerateAll}
-            disabled={generating}
-            className="gap-2"
-            variant="outline"
-          >
-            <Sparkles className="w-4 h-4" />
-            Tout générer
-          </Button>
           <Button variant="outline" size="icon" onClick={fetchProducts}>
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -345,7 +424,7 @@ export function SeoOptimization() {
 
       {/* Progress */}
       {(generating || syncing) && (
-        <div className="bg-card border rounded-lg p-4">
+        <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium">
               {generating ? 'Génération SEO...' : 'Synchronisation...'}
@@ -355,11 +434,11 @@ export function SeoOptimization() {
             </span>
           </div>
           <Progress value={(progress.current / progress.total) * 100} className="h-2" />
-        </div>
+        </Card>
       )}
 
       {/* Products Table */}
-      <div className="bg-card border rounded-lg overflow-hidden">
+      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/50 border-b">
@@ -467,7 +546,7 @@ export function SeoOptimization() {
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

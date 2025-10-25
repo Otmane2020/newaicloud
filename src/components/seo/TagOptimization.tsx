@@ -3,8 +3,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Search, RefreshCw, Tags, Plus, X, Loader2 } from 'lucide-react';
+import { 
+  Search, 
+  RefreshCw, 
+  Tags, 
+  Plus, 
+  X, 
+  Loader2, 
+  Target, 
+  TrendingUp,
+  Sparkles,
+  ArrowRight,
+  Hash,
+  CheckCircle
+} from 'lucide-react';
 
 interface Product {
   id: string;
@@ -95,22 +109,99 @@ export function TagOptimization() {
     );
   }
 
+  const productsWithTags = products.filter(p => p.tags).length;
+  const productsWithoutTags = products.length - productsWithTags;
+  const tagCompletionRate = products.length > 0 ? Math.round((productsWithTags / products.length) * 100) : 0;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-card border rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Tags className="w-8 h-8 text-primary" />
-          <div>
-            <h2 className="text-2xl font-bold">Optimisation des Tags</h2>
-            <p className="text-muted-foreground">
-              Gérez les tags de vos produits pour améliorer leur organisation
+      {/* Hero Banner with CTA */}
+      <Card className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950 dark:via-amber-950 dark:to-yellow-950 border-2 border-orange-200 p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2">
+              <Tags className="w-6 h-6 text-orange-600" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                Optimisation des Tags
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Organisez vos produits avec des tags pertinents. Améliorez la découvrabilité et augmentez vos conversions de 30%.
             </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Target className="w-4 h-4 text-orange-600" />
+                <span className="font-medium">Organisation optimale</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span className="font-medium">+30% découvrabilité</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Hash className="w-4 h-4 text-blue-600" />
+                <span className="font-medium">Tags intelligents</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 items-center">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-orange-600">{tagCompletionRate}%</div>
+              <div className="text-sm text-muted-foreground">Produits tagués</div>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => toast.info('Taggez vos produits ci-dessous')}
+              className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
+            >
+              <Sparkles className="w-5 h-5" />
+              Commencer l'optimisation
+              <ArrowRight className="w-5 h-5" />
+            </Button>
           </div>
         </div>
-        <div className="text-sm text-muted-foreground">
-          Total de produits : <span className="font-semibold">{products.length}</span>
-        </div>
+      </Card>
+
+      {/* Dashboard Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                <Tags className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              </div>
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Total Produits</h3>
+            </div>
+          </div>
+          <p className="text-4xl font-bold mb-1">{products.length}</p>
+          <p className="text-sm text-muted-foreground">Dans votre catalogue</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="font-semibold text-green-900 dark:text-green-100">Avec Tags</h3>
+            </div>
+            <Badge className="bg-green-600 text-white">{tagCompletionRate}%</Badge>
+          </div>
+          <p className="text-4xl font-bold text-green-900 dark:text-green-100 mb-1">{productsWithTags}</p>
+          <p className="text-sm text-green-700 dark:text-green-300">Produits organisés</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
+                <Plus className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <h3 className="font-semibold text-orange-900 dark:text-orange-100">Sans Tags</h3>
+            </div>
+          </div>
+          <p className="text-4xl font-bold text-orange-900 dark:text-orange-100 mb-1">{productsWithoutTags}</p>
+          <p className="text-sm text-orange-700 dark:text-orange-300">À optimiser</p>
+        </Card>
       </div>
 
       {/* Search */}
@@ -133,13 +224,13 @@ export function TagOptimization() {
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredProducts.map((product) => (
-          <div key={product.id} className="bg-card border rounded-lg overflow-hidden hover:shadow-md transition">
+          <Card key={product.id} className="overflow-hidden hover:shadow-md transition group">
             <div className="aspect-square bg-muted relative">
               {product.image_url ? (
                 <img
                   src={product.image_url}
                   alt={product.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -212,7 +303,7 @@ export function TagOptimization() {
                     size="sm"
                     variant="outline"
                     onClick={() => handleEditTags(product.id, product.tags)}
-                    className="w-full gap-2"
+                    className="w-full gap-2 hover:bg-primary hover:text-primary-foreground"
                   >
                     <Plus className="w-3 h-3" />
                     {product.tags ? 'Modifier les tags' : 'Ajouter des tags'}
@@ -220,7 +311,7 @@ export function TagOptimization() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 

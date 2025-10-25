@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import {
   Search,
@@ -16,6 +17,10 @@ import {
   Clock,
   Grid3x3,
   List,
+  TrendingUp,
+  Eye,
+  Zap,
+  ArrowRight,
 } from 'lucide-react';
 
 interface ProductImage {
@@ -99,17 +104,16 @@ export function SeoAltImage() {
   }, []);
 
   const filteredImages = images.filter((img) => {
-    // Tab filters
     if (activeTab === 'needs-alt' && img.alt_text) return false;
     if (activeTab === 'has-alt' && !img.alt_text) return false;
     if (activeTab === 'to-sync' && !img.alt_text) return false;
 
-    // Search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       return (
         img.product.title.toLowerCase().includes(term) ||
-        img.alt_text?.toLowerCase().includes(term)
+        img.alt_text?.toLowerCase().includes(term) ||
+        img.product.category?.toLowerCase().includes(term)
       );
     }
 
@@ -210,6 +214,7 @@ export function SeoAltImage() {
 
   const imagesNeedingAlt = images.filter(img => !img.alt_text).length;
   const imagesWithAlt = images.filter(img => img.alt_text).length;
+  const altCompletionRate = images.length > 0 ? Math.round((imagesWithAlt / images.length) * 100) : 0;
 
   const tabs = [
     { id: 'all' as AltImageTab, label: 'Toutes', count: images.length },
@@ -220,6 +225,95 @@ export function SeoAltImage() {
 
   return (
     <div className="space-y-6">
+      {/* Hero Banner with CTA */}
+      <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-6 h-6 text-purple-600" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Textes ALT Image Intelligents
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Améliorez l'accessibilité et le SEO avec des descriptions d'images optimisées par IA. Augmentez votre référencement images de 40%.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Eye className="w-4 h-4 text-purple-600" />
+                <span className="font-medium">Accessibilité optimale</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span className="font-medium">+40% référencement images</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Zap className="w-4 h-4 text-yellow-600" />
+                <span className="font-medium">IA performante</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 items-center">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-purple-600">{altCompletionRate}%</div>
+              <div className="text-sm text-muted-foreground">Images optimisées</div>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => toast.info('Sélectionnez des images ci-dessous')}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
+            >
+              <Sparkles className="w-5 h-5" />
+              Optimiser les images
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Dashboard Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                <ImageIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              </div>
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Total Images</h3>
+            </div>
+          </div>
+          <p className="text-4xl font-bold mb-1">{images.length}</p>
+          <p className="text-sm text-muted-foreground">Dans votre catalogue</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 border-orange-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
+                <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <h3 className="font-semibold text-orange-900 dark:text-orange-100">Sans ALT text</h3>
+            </div>
+          </div>
+          <p className="text-4xl font-bold text-orange-900 dark:text-orange-100 mb-1">{imagesNeedingAlt}</p>
+          <p className="text-sm text-orange-700 dark:text-orange-300">À optimiser</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="font-semibold text-green-900 dark:text-green-100">Avec ALT text</h3>
+            </div>
+            <Badge className="bg-green-600 text-white">{altCompletionRate}%</Badge>
+          </div>
+          <p className="text-4xl font-bold text-green-900 dark:text-green-100 mb-1">{imagesWithAlt}</p>
+          <p className="text-sm text-green-700 dark:text-green-300">Images accessibles</p>
+        </Card>
+      </div>
+
       {/* Tabs */}
       <div className="bg-background border rounded-lg p-1 flex flex-wrap gap-1">
         {tabs.map((tab) => (
@@ -241,33 +335,6 @@ export function SeoAltImage() {
             </Badge>
           </button>
         ))}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card border rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <ImageIcon className="w-6 h-6 text-muted-foreground" />
-            <h3 className="font-semibold">Total Images</h3>
-          </div>
-          <p className="text-4xl font-bold">{images.length}</p>
-        </div>
-
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Clock className="w-6 h-6 text-orange-600" />
-            <h3 className="font-semibold text-orange-900">Sans ALT text</h3>
-          </div>
-          <p className="text-4xl font-bold text-orange-900">{imagesNeedingAlt}</p>
-        </div>
-
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-            <h3 className="font-semibold text-green-900">Avec ALT text</h3>
-          </div>
-          <p className="text-4xl font-bold text-green-900">{imagesWithAlt}/{images.length}</p>
-        </div>
       </div>
 
       {/* Actions */}
@@ -305,7 +372,7 @@ export function SeoAltImage() {
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Générer ALT
+                Générer ALT ({selectedImages.size})
               </>
             )}
           </Button>
@@ -322,7 +389,7 @@ export function SeoAltImage() {
             ) : (
               <>
                 <Upload className="w-4 h-4" />
-                Synchroniser
+                Synchroniser ({selectedImages.size})
               </>
             )}
           </Button>
@@ -334,7 +401,7 @@ export function SeoAltImage() {
 
       {/* Progress */}
       {(generating || syncing) && (
-        <div className="bg-card border rounded-lg p-4">
+        <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium">
               {generating ? 'Génération des textes ALT...' : 'Synchronisation...'}
@@ -344,22 +411,26 @@ export function SeoAltImage() {
             </span>
           </div>
           <Progress value={(progress.current / progress.total) * 100} className="h-2" />
-        </div>
+        </Card>
       )}
 
       {/* Images Grid/List */}
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {paginatedImages.map((img) => (
-            <div key={img.id} className="bg-card border rounded-lg overflow-hidden hover:shadow-md transition">
+            <Card key={img.id} className="overflow-hidden hover:shadow-md transition group">
               <div className="aspect-square bg-muted relative">
-                <img src={img.src} alt={img.alt_text || ''} className="w-full h-full object-cover" />
+                <img 
+                  src={img.src} 
+                  alt={img.alt_text || ''} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                />
                 <div className="absolute top-2 left-2">
                   <input
                     type="checkbox"
                     checked={selectedImages.has(img.id)}
                     onChange={() => handleSelectImage(img.id)}
-                    className="w-5 h-5 rounded"
+                    className="w-5 h-5 rounded shadow-lg"
                   />
                 </div>
               </div>
@@ -380,11 +451,11 @@ export function SeoAltImage() {
                   </Badge>
                 )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       ) : (
-        <div className="bg-card border rounded-lg overflow-hidden">
+        <Card className="overflow-hidden">
           <table className="w-full">
             <thead className="bg-muted/50 border-b">
               <tr>
@@ -440,7 +511,7 @@ export function SeoAltImage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
 
       {/* Pagination */}

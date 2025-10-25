@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { Navigation } from "./components/Navigation";
+import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
@@ -28,6 +29,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route
               path="/onboarding"
@@ -38,7 +40,7 @@ const App = () => (
               }
             />
             <Route
-              path="/"
+              path="/dashboard"
               element={
                 <ProtectedLayout>
                   <Navigation />
@@ -83,7 +85,7 @@ const App = () => (
               }
             />
             <Route
-              path="/dashboard"
+              path="/account"
               element={
                 <ProtectedLayout>
                   <Navigation />
