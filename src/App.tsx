@@ -21,6 +21,7 @@ import Subscription from "./pages/Subscription";
 import Merchant from "./pages/Merchant";
 import Shopping from "./pages/Shopping";
 import SearchProducts from "./pages/SearchProducts";
+import ProductDetail from "./pages/ProductDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -130,6 +131,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <SearchProducts />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/product/:handle"
+              element={
+                <ProtectedLayout>
+                  <ProductDetail />
                 </ProtectedLayout>
               }
             />
