@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -49,6 +50,7 @@ interface Product {
 }
 
 export function BlogWizard({ onClose, categories }: BlogWizardProps) {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -120,10 +122,15 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     try {
       setGenerating(true);
 
+      if (!user?.id) {
+        throw new Error('Utilisateur non connecté');
+      }
+
       const finalKeywords = keywords.length > 0 ? keywords : formData.keywords.split(',').map(k => k.trim()).filter(Boolean);
 
       const response = await supabase.functions.invoke('generate-blog-article', {
         body: {
+          user_id: user.id,
           category: formData.category,
           keywords: finalKeywords,
           productIds: selectedProducts.map(p => p.id),

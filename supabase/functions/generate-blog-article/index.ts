@@ -66,16 +66,21 @@ Deno.serve(async (req) => {
   }
 });
 
-async function generateSingleArticle(requestData: any, supabase: any, apiKey: string) {
+async function generateSingleArticle(requestData: any, supabaseClient: any, apiKey: string) {
   try {
+    // Extract user_id from request or throw error if missing
     const { user_id, category = "Guide", keywords = [], title } = requestData;
+    
+    if (!user_id) {
+      throw new Error("user_id is required");
+    }
     
     const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
     const targetKeywords = keywords.length ? keywords : [category, "guide"];
 
-    console.log(`🎯 Génération d'article : ${articleTitle}`);
+    console.log(`🎯 Génération d'article : ${articleTitle} pour user ${user_id}`);
 
-    const { data: products } = await supabase
+    const { data: products } = await supabaseClient
       .from("shopify_products")
       .select("id, title, handle, price, category")
       .eq("seller_id", user_id)
@@ -113,7 +118,7 @@ Inclus un appel à l'action.`;
     const result = await aiResponse.json();
     const content = result.choices[0].message.content.trim();
 
-    const { data: savedArticle, error: saveError } = await supabase
+    const { data: savedArticle, error: saveError } = await supabaseClient
       .from("blog_articles")
       .insert([{
         user_id,
@@ -126,13 +131,16 @@ Inclus un appel à l'action.`;
       .select()
       .single();
 
-    if (saveError) throw saveError;
+    if (saveError) {
+      console.error("❌ Erreur sauvegarde:", saveError);
+      throw saveError;
+    }
 
     console.log(`✅ Article sauvegardé : ${savedArticle.id}`);
     return { success: true, article_id: savedArticle.id, article: savedArticle };
 
   } catch (err) {
-    console.error("Erreur génération:", err);
+    console.error("❌ Erreur génération:", err);
     return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
