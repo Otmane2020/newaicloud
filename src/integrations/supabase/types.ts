@@ -230,28 +230,51 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_plan_id: string | null
           email: string
           full_name: string | null
           id: string
+          onboarding_completed: boolean | null
+          stripe_customer_id: string | null
+          subscription_status: string | null
+          trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_plan_id?: string | null
           email: string
           full_name?: string | null
           id: string
+          onboarding_completed?: boolean | null
+          stripe_customer_id?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_plan_id?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          onboarding_completed?: boolean | null
+          stripe_customer_id?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_plan_id_fkey"
+            columns: ["current_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shopify_connections: {
         Row: {
@@ -282,6 +305,140 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          best_value: boolean | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          max_articles_monthly: number
+          max_campaigns: number
+          max_chat_responses_monthly: number
+          max_optimizations_monthly: number
+          max_products: number
+          name: string
+          popular: boolean | null
+          price_monthly: number
+          price_yearly: number
+          recommended: boolean | null
+          stripe_price_id: string | null
+          stripe_price_id_monthly: string | null
+          stripe_price_id_yearly: string | null
+          trial_days: number | null
+          updated_at: string
+        }
+        Insert: {
+          best_value?: boolean | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id: string
+          is_active?: boolean | null
+          max_articles_monthly?: number
+          max_campaigns?: number
+          max_chat_responses_monthly?: number
+          max_optimizations_monthly?: number
+          max_products?: number
+          name: string
+          popular?: boolean | null
+          price_monthly: number
+          price_yearly: number
+          recommended?: boolean | null
+          stripe_price_id?: string | null
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Update: {
+          best_value?: boolean | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_articles_monthly?: number
+          max_campaigns?: number
+          max_chat_responses_monthly?: number
+          max_optimizations_monthly?: number
+          max_products?: number
+          name?: string
+          popular?: boolean | null
+          price_monthly?: number
+          price_yearly?: number
+          recommended?: boolean | null
+          stripe_price_id?: string | null
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          billing_period: string
+          cancel_at_period_end: boolean | null
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan_id: string
+          seller_id: string
+          status: string
+          stripe_subscription_id: string | null
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_period?: string
+          cancel_at_period_end?: boolean | null
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id: string
+          seller_id: string
+          status?: string
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_period?: string
+          cancel_at_period_end?: boolean | null
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id?: string
+          seller_id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
