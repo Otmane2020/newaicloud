@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateImportProducts } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,17 +105,25 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { shopName, apiToken, storeId }: RequestBody = await req.json();
+    const requestBody = await req.json();
 
-    if (!shopName || !apiToken) {
+    // Validate input
+    const validation = validateImportProducts(requestBody);
+    if (!validation.success) {
+      console.error('Validation errors:', validation.errors);
       return new Response(
-        JSON.stringify({ error: "Shop name and API token are required" }),
+        JSON.stringify({ 
+          error: 'Validation failed', 
+          details: validation.errors 
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
+
+    const { shopName, apiToken, storeId } = validation.data;
 
     // Verify store ownership if storeId is provided
     if (storeId) {

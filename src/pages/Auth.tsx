@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+import { loginSchema, signupSchema } from '@/lib/validationSchemas';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -15,6 +17,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
 
@@ -26,6 +29,25 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
+    // Validate inputs
+    try {
+      if (mode === 'signup') {
+        signupSchema.parse({ email, password, fullName });
+      } else {
+        loginSchema.parse({ email, password });
+      }
+    } catch (error: any) {
+      const validationErrors: { [key: string]: string } = {};
+      error.errors?.forEach((err: any) => {
+        validationErrors[err.path[0]] = err.message;
+      });
+      setErrors(validationErrors);
+      toast.error('Veuillez corriger les erreurs dans le formulaire');
+      return;
+    }
+
     setLoading(true);
 
     if (mode === 'signup') {
@@ -70,10 +92,17 @@ export default function Auth() {
                   id="fullName"
                   type="text"
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  onChange={(e) => {
+                    setFullName(e.target.value);
+                    if (errors.fullName) setErrors({ ...errors, fullName: '' });
+                  }}
                   required
                   placeholder="Jean Dupont"
+                  className={errors.fullName ? 'border-destructive' : ''}
                 />
+                {errors.fullName && (
+                  <p className="text-sm text-destructive">{errors.fullName}</p>
+                )}
               </div>
             )}
 
@@ -83,10 +112,17 @@ export default function Auth() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors({ ...errors, email: '' });
+                }}
                 required
                 placeholder="vous@exemple.com"
+                className={errors.email ? 'border-destructive' : ''}
               />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -95,11 +131,18 @@ export default function Auth() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors({ ...errors, password: '' });
+                }}
                 required
                 placeholder="••••••••"
                 minLength={6}
+                className={errors.password ? 'border-destructive' : ''}
               />
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password}</p>
+              )}
             </div>
 
             <Button

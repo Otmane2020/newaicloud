@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, ShoppingBag, Link as LinkIcon, Download } from 'lucide-react';
+import { shopifyConnectionSchema } from '@/lib/validationSchemas';
 
 export function ShopifyConnection() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export function ShopifyConnection() {
   const [store, setStore] = useState<any>(null);
   const [storeName, setStoreName] = useState('');
   const [apiToken, setApiToken] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     loadStore();
@@ -43,11 +45,24 @@ export function ShopifyConnection() {
 
   const handleSaveConnection = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
     setSaving(true);
 
     try {
-      if (!storeName || !apiToken) {
-        toast.error('Veuillez remplir tous les champs');
+      // Validate inputs
+      const validationResult = shopifyConnectionSchema.safeParse({
+        storeName,
+        apiToken
+      });
+
+      if (!validationResult.success) {
+        const validationErrors: { [key: string]: string } = {};
+        validationResult.error.errors.forEach((err) => {
+          validationErrors[err.path[0]] = err.message;
+        });
+        setErrors(validationErrors);
+        toast.error('Veuillez corriger les erreurs dans le formulaire');
+        setSaving(false);
         return;
       }
 
@@ -143,16 +158,24 @@ export function ShopifyConnection() {
               <ShoppingBag className="w-4 h-4" />
               Nom de la boutique
             </Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="storeName"
-                type="text"
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                placeholder="mon-magasin"
-                className="flex-1"
-              />
-              <span className="text-muted-foreground">.myshopify.com</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  id="storeName"
+                  type="text"
+                  value={storeName}
+                  onChange={(e) => {
+                    setStoreName(e.target.value);
+                    if (errors.storeName) setErrors({ ...errors, storeName: '' });
+                  }}
+                  placeholder="mon-magasin"
+                  className={`flex-1 ${errors.storeName ? 'border-destructive' : ''}`}
+                />
+                <span className="text-muted-foreground">.myshopify.com</span>
+              </div>
+              {errors.storeName && (
+                <p className="text-sm text-destructive">{errors.storeName}</p>
+              )}
             </div>
           </div>
 
@@ -165,9 +188,16 @@ export function ShopifyConnection() {
               id="apiToken"
               type="password"
               value={apiToken}
-              onChange={(e) => setApiToken(e.target.value)}
+              onChange={(e) => {
+                setApiToken(e.target.value);
+                if (errors.apiToken) setErrors({ ...errors, apiToken: '' });
+              }}
               placeholder="Entrez votre token API"
+              className={errors.apiToken ? 'border-destructive' : ''}
             />
+            {errors.apiToken && (
+              <p className="text-sm text-destructive">{errors.apiToken}</p>
+            )}
             <p className="text-sm text-muted-foreground">
               Vous pouvez obtenir votre token dans les paramètres de votre boutique Shopify
             </p>

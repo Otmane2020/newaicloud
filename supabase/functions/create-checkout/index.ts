@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import Stripe from 'https://esm.sh/stripe@18.5.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
+import { validateCreateCheckout } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,21 +25,22 @@ serve(async (req) => {
   try {
     console.log('🚀 Starting checkout session creation...');
 
-    const { plan_id, billing_period, success_url, cancel_url } = await req.json();
+    const requestBody = await req.json();
 
-    if (!plan_id || !billing_period) {
+    // Validate input
+    const validation = validateCreateCheckout(requestBody);
+    if (!validation.success) {
+      console.error('Validation errors:', validation.errors);
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters: plan_id and billing_period' }),
+        JSON.stringify({ 
+          error: 'Validation failed', 
+          details: validation.errors 
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!['monthly', 'yearly'].includes(billing_period)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid billing_period. Must be "monthly" or "yearly"' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const { plan_id, billing_period, success_url, cancel_url } = validation.data;
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
