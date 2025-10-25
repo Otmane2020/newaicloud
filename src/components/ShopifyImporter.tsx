@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Store, Download, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ShopifyImporterProps {
   onImportComplete: () => void;
@@ -19,40 +20,28 @@ export function ShopifyImporter({ onImportComplete }: ShopifyImporterProps) {
     setSuccess('');
 
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const apiUrl = `${supabaseUrl}/functions/v1/import-products`;
-
       console.log('Starting import from:', shopName);
-      console.log('API URL:', apiUrl);
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
+      // Get the user's session token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const { data, error: functionError } = await supabase.functions.invoke('import-products', {
+        body: {
           shopName: shopName.trim().replace('.myshopify.com', ''),
           apiToken: apiToken.trim(),
-        }),
+        },
       });
 
-      console.log('Response status:', response.status);
-
-      let data;
-      try {
-        data = await response.json();
-        console.log('Response data:', data);
-      } catch (parseErr) {
-        console.error('Failed to parse response:', parseErr);
-        throw new Error(`Server returned invalid response (status ${response.status})`);
+      if (functionError) {
+        console.error('Import failed:', functionError);
+        throw new Error(functionError.message || 'Import failed');
       }
 
-      if (!response.ok) {
-        const errorMessage = data.error || `Request failed with status ${response.status}`;
-        console.error('Import failed:', errorMessage);
-        throw new Error(errorMessage);
-      }
+      console.log('Response data:', data);
 
       const productCount = data.count || 0;
       console.log('Successfully imported', productCount, 'products');

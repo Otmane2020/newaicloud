@@ -9,8 +9,8 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pt-24 pb-12">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <div className="min-h-screen bg-gradient-subtle p-8">
+      <div className="container mx-auto max-w-6xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
             Tableau de bord

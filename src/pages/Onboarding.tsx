@@ -164,8 +164,8 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pt-24 pb-12">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-gradient-subtle p-8">
+      <div className="container mx-auto max-w-7xl">
         {/* Header */}
         <div className="text-center mb-12">
           <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">

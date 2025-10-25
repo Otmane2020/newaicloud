@@ -4,8 +4,8 @@ import { Plus, Sparkles } from 'lucide-react';
 
 export default function Blog() {
   return (
-    <div className="min-h-screen bg-gradient-subtle pt-24 pb-12">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gradient-subtle p-8">
+      <div className="container mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold mb-2">Blog SEO AI</h1>
