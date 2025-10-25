@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/onboarding`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -58,8 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Inscription réussie ! Redirection...');
-      setTimeout(() => navigate('/dashboard'), 1000);
+      toast.success('Inscription réussie ! Redirection vers onboarding...');
+      setTimeout(() => navigate('/onboarding'), 1000);
     }
 
     return { error };

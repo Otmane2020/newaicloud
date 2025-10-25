@@ -1,0 +1,329 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Check, 
+  Sparkles, 
+  Zap, 
+  Crown, 
+  Rocket,
+  ShoppingBag,
+  BarChart3,
+  FileText,
+  MessageSquare,
+  Shield,
+  Star
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+interface Plan {
+  id: string;
+  name: string;
+  description: string;
+  price_monthly: number;
+  price_yearly: number;
+  max_products: number;
+  max_optimizations_monthly: number;
+  max_articles_monthly: number;
+  max_campaigns: number;
+  max_chat_responses_monthly: number;
+  features: Record<string, any>;
+  trial_days: number;
+  popular: boolean;
+  best_value: boolean;
+  recommended: boolean;
+}
+
+export default function Onboarding() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState('professional');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [loading, setLoading] = useState(false);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    loadPlans();
+  }, [user, navigate]);
+
+  const loadPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+
+      if (error) throw error;
+      setPlans(data || []);
+    } catch (error) {
+      console.error('Error loading plans:', error);
+      toast.error('Erreur lors du chargement des forfaits');
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  const handleSelectPlan = async () => {
+    if (!user) {
+      toast.error('Vous devez être connecté');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          plan_id: selectedPlanId,
+          billing_period: billingCycle,
+          success_url: `${window.location.origin}/dashboard?checkout=success`,
+          cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+      toast.error('Erreur lors de la création du paiement');
+      setLoading(false);
+    }
+  };
+
+  const getPlanIcon = (planId: string) => {
+    switch (planId) {
+      case 'starter': return ShoppingBag;
+      case 'professional': return Rocket;
+      case 'enterprise': return Crown;
+      default: return Sparkles;
+    }
+  };
+
+  const getPlanColor = (planId: string) => {
+    switch (planId) {
+      case 'starter': return 'from-blue-500 to-cyan-500';
+      case 'professional': return 'from-purple-500 to-pink-500';
+      case 'enterprise': return 'from-orange-500 to-red-500';
+      default: return 'from-primary-light to-primary-dark';
+    }
+  };
+
+  const formatLimit = (value: number) => {
+    if (value === -1) return 'Illimité';
+    if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+    return value.toString();
+  };
+
+  const getPrice = (plan: Plan) => {
+    return billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+  };
+
+  const getSavingsPercent = (plan: Plan) => {
+    const monthlyTotal = plan.price_monthly * 12;
+    const yearlyTotal = plan.price_yearly;
+    return Math.round(((monthlyTotal - yearlyTotal) / monthlyTotal) * 100);
+  };
+
+  if (loadingPlans) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-subtle pt-24 pb-12">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
+            <Sparkles className="w-4 h-4 mr-2" />
+            Essai gratuit de 14 jours
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4">
+            Choisissez votre{' '}
+            <span className="bg-gradient-primary bg-clip-text text-transparent">
+              forfait NewAI
+            </span>
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Commencez gratuitement pendant 14 jours. Aucune carte bancaire requise.
+          </p>
+        </div>
+
+        {/* Billing Toggle */}
+        <div className="flex justify-center mb-12">
+          <div className="bg-card rounded-full p-1 border-2 border-border">
+            <Button
+              variant={billingCycle === 'monthly' ? 'default' : 'ghost'}
+              onClick={() => setBillingCycle('monthly')}
+              className="rounded-full"
+            >
+              Mensuel
+            </Button>
+            <Button
+              variant={billingCycle === 'yearly' ? 'default' : 'ghost'}
+              onClick={() => setBillingCycle('yearly')}
+              className="rounded-full"
+            >
+              Annuel
+              <Badge className="ml-2 bg-green-500">
+                Économisez jusqu'à 20%
+              </Badge>
+            </Button>
+          </div>
+        </div>
+
+        {/* Plans */}
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          {plans.map((plan) => {
+            const Icon = getPlanIcon(plan.id);
+            const isSelected = selectedPlanId === plan.id;
+
+            return (
+              <Card
+                key={plan.id}
+                className={`p-8 cursor-pointer transition-all duration-300 hover:-translate-y-2 ${
+                  isSelected 
+                    ? 'border-2 border-primary shadow-primary' 
+                    : 'border-2 border-transparent hover:border-primary/20'
+                } ${plan.popular ? 'ring-2 ring-primary' : ''}`}
+                onClick={() => setSelectedPlanId(plan.id)}
+              >
+                {plan.popular && (
+                  <Badge className="mb-4 bg-primary">
+                    <Star className="w-3 h-3 mr-1" />
+                    Plus populaire
+                  </Badge>
+                )}
+                {plan.best_value && (
+                  <Badge className="mb-4 bg-green-500">
+                    <Zap className="w-3 h-3 mr-1" />
+                    Meilleur rapport
+                  </Badge>
+                )}
+
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${getPlanColor(plan.id)} flex items-center justify-center mb-4 shadow-glow`}>
+                  <Icon className="w-7 h-7 text-white" />
+                </div>
+
+                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                <p className="text-muted-foreground mb-6">{plan.description}</p>
+
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                      {getPrice(plan).toFixed(0)}€
+                    </span>
+                    <span className="text-muted-foreground">
+                      /{billingCycle === 'yearly' ? 'an' : 'mois'}
+                    </span>
+                  </div>
+                  {billingCycle === 'yearly' && (
+                    <p className="text-sm text-green-600 mt-1">
+                      Économisez {getSavingsPercent(plan)}% par an
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-primary" />
+                    <span className="text-sm">
+                      {formatLimit(plan.max_products)} produits
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    <span className="text-sm">
+                      {formatLimit(plan.max_optimizations_monthly)} optimisations/mois
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    <span className="text-sm">
+                      {formatLimit(plan.max_articles_monthly)} articles/mois
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                    <span className="text-sm">
+                      {formatLimit(plan.max_campaigns)} campagnes
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                    <span className="text-sm">
+                      {formatLimit(plan.max_chat_responses_monthly)} réponses chat/mois
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-6 pt-4 border-t border-border">
+                  {Object.entries(plan.features).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-success" />
+                      <span className="text-sm">
+                        {typeof value === 'boolean' 
+                          ? key.replace('_', ' ')
+                          : `${key.replace('_', ' ')}: ${value}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {isSelected && (
+                  <div className="flex items-center gap-2 text-primary font-semibold">
+                    <Check className="w-5 h-5" />
+                    Plan sélectionné
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* CTA */}
+        <div className="text-center">
+          <Button
+            size="lg"
+            onClick={handleSelectPlan}
+            disabled={loading}
+            className="px-12"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                Redirection...
+              </>
+            ) : (
+              <>
+                <Shield className="w-5 h-5 mr-2" />
+                Commencer l'essai gratuit
+              </>
+            )}
+          </Button>
+          <p className="text-sm text-muted-foreground mt-4">
+            Aucune carte bancaire requise • Annulez à tout moment • Support 24/7
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
