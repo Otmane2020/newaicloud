@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { Navigation } from "./components/Navigation";
-import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
@@ -14,6 +13,9 @@ import Products from "./pages/Products";
 import Blog from "./pages/Blog";
 import SEO from "./pages/SEO";
 import Integration from "./pages/Integration";
+import Chat from "./pages/Chat";
+import Account from "./pages/Account";
+import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,7 +28,6 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<><Navigation /><Index /></>} />
             <Route path="/auth" element={<Auth />} />
             <Route
               path="/onboarding"
@@ -37,7 +38,7 @@ const App = () => (
               }
             />
             <Route
-              path="/dashboard"
+              path="/"
               element={
                 <ProtectedLayout>
                   <Navigation />
@@ -69,6 +70,33 @@ const App = () => (
                 <ProtectedLayout>
                   <Navigation />
                   <SEO />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedLayout>
+                  <Navigation />
+                  <Chat />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedLayout>
+                  <Navigation />
+                  <Account />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/subscription"
+              element={
+                <ProtectedLayout>
+                  <Navigation />
+                  <Subscription />
                 </ProtectedLayout>
               }
             />

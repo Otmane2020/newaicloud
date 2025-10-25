@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Home, 
   LayoutDashboard, 
   ShoppingBag, 
   FileText,
@@ -14,14 +13,18 @@ import {
   CreditCard,
   ChevronDown,
   Tag,
-  Image as ImageIcon
+  Image as ImageIcon,
+  MessageSquare,
+  PenSquare,
+  CalendarClock,
+  BarChart3
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const menuItems = [
-  { path: '/', label: 'Accueil', icon: Home },
-  { path: '/products', label: 'Produits', icon: ShoppingBag },
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/products', label: 'Catalogue', icon: ShoppingBag },
   { 
     path: '/seo', 
     label: 'SEO', 
@@ -32,12 +35,21 @@ const menuItems = [
       { path: '/seo?tab=alt', label: 'ALT Image', icon: ImageIcon },
     ]
   },
-  { path: '/blog', label: 'Blog', icon: FileText },
+  { 
+    path: '/blog', 
+    label: 'Blog SEO', 
+    icon: FileText,
+    subItems: [
+      { path: '/blog?tab=articles', label: 'Articles', icon: PenSquare },
+      { path: '/blog?tab=campaigns', label: 'Campagnes', icon: CalendarClock },
+    ]
+  },
+  { path: '/chat', label: 'Chat Smart', icon: MessageSquare },
 ];
 
 const bottomMenuItems = [
   { path: '/dashboard', label: 'Compte', icon: User },
-  { path: '/dashboard', label: 'Abonnement', icon: CreditCard },
+  { path: '/subscription', label: 'Abonnement', icon: CreditCard },
   { path: '/integration', label: 'Shopify', icon: Settings },
 ];
 
@@ -46,7 +58,7 @@ export function Navigation() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog']);
 
   const handleLogout = async () => {
     await signOut();
