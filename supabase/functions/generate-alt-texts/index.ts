@@ -99,7 +99,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product } = await supabaseClient
       .from("shopify_products")
-      .select("title, description, category, ai_color, ai_material")
+      .select("title, description, category, ai_color, ai_material, seller_id")
       .eq("id", image.product_id)
       .maybeSingle();
 
@@ -174,6 +174,15 @@ Example:
     }
 
     console.log(`ALT text generated with DeepSeek for image ${imageId}: ${altText}`);
+
+    // Track usage - 1 optimization
+    if (product?.seller_id) {
+      await supabaseClient.rpc('increment_usage', {
+        p_seller_id: product.seller_id,
+        p_field: 'optimizations_count',
+        p_increment: 1
+      });
+    }
 
     return new Response(
       JSON.stringify({

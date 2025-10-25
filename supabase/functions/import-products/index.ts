@@ -482,6 +482,13 @@ Deno.serve(async (req: Request) => {
       })
       .eq('id', importJob.id);
 
+    // Track usage
+    await supabaseServiceClient.rpc('increment_usage', {
+      p_seller_id: user.id,
+      p_field: 'products_count',
+      p_increment: products.length
+    });
+
     return new Response(
       JSON.stringify({
         success: true,

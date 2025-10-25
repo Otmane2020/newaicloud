@@ -1,4 +1,6 @@
 import { SubscriptionManagement } from '@/components/dashboard/SubscriptionManagement';
+import { UsageLimits } from '@/components/dashboard/UsageLimits';
+import { BillingPortal } from '@/components/dashboard/BillingPortal';
 
 export default function Subscription() {
   return (
@@ -13,7 +15,14 @@ export default function Subscription() {
           </p>
         </div>
 
-        <SubscriptionManagement />
+        <div className="space-y-6">
+          <SubscriptionManagement />
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <UsageLimits />
+            <BillingPortal />
+          </div>
+        </div>
       </div>
     </div>
   );

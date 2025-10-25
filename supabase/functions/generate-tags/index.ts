@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags")
+      .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags, seller_id")
       .eq("id", productId)
       .maybeSingle();
 
@@ -165,6 +165,13 @@ Example for a wooden coffee table:
     }
 
     console.log(`Tags generated with DeepSeek for product ${productId}: ${tags}`);
+
+    // Track usage - 1 optimization
+    await supabaseClient.rpc('increment_usage', {
+      p_seller_id: product.seller_id,
+      p_field: 'optimizations_count',
+      p_increment: 1
+    });
 
     return new Response(
       JSON.stringify({

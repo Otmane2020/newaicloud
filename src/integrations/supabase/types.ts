@@ -998,6 +998,42 @@ export type Database = {
           },
         ]
       }
+      usage_tracking: {
+        Row: {
+          articles_count: number | null
+          chat_responses_count: number | null
+          created_at: string | null
+          id: string
+          month: string
+          optimizations_count: number | null
+          products_count: number | null
+          seller_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          articles_count?: number | null
+          chat_responses_count?: number | null
+          created_at?: string | null
+          id?: string
+          month: string
+          optimizations_count?: number | null
+          products_count?: number | null
+          seller_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          articles_count?: number | null
+          chat_responses_count?: number | null
+          created_at?: string | null
+          id?: string
+          month?: string
+          optimizations_count?: number | null
+          products_count?: number | null
+          seller_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1027,6 +1063,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_usage: {
+        Args: { p_field: string; p_increment?: number; p_seller_id: string }
+        Returns: undefined
       }
     }
     Enums: {

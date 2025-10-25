@@ -178,6 +178,13 @@ Example for a gray fabric sofa:
 
     console.log(`SEO generated for product ${productId}`);
 
+    // Track usage - 2 optimizations (title + description)
+    await supabaseClient.rpc('increment_usage', {
+      p_seller_id: product.seller_id,
+      p_field: 'optimizations_count',
+      p_increment: 2
+    });
+
     return new Response(
       JSON.stringify({
         success: true,

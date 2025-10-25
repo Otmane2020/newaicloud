@@ -137,6 +137,14 @@ Inclus un appel à l'action.`;
     }
 
     console.log(`✅ Article sauvegardé : ${savedArticle.id}`);
+    
+    // Track usage
+    await supabaseClient.rpc('increment_usage', {
+      p_seller_id: user_id,
+      p_field: 'articles_count',
+      p_increment: 1
+    });
+    
     return { success: true, article_id: savedArticle.id, article: savedArticle };
 
   } catch (err) {

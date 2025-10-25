@@ -11,6 +11,12 @@ serve(async (req) => {
   }
 
   try {
+    // Get authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Unauthorized");
+    }
+
     const { message, products } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -50,6 +56,23 @@ Si tu recommandes des produits, mentionne leur nom et prix.`
 
     const data = await response.json();
     const aiResponse = data.choices?.[0]?.message?.content || "Désolé, je n'ai pas pu générer de réponse.";
+
+    // Track usage - get user ID from token
+    const token = authHeader.replace("Bearer ", "");
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+    
+    const { data: { user } } = await supabase.auth.getUser(token);
+    if (user) {
+      await supabase.rpc('increment_usage', {
+        p_seller_id: user.id,
+        p_field: 'chat_responses_count',
+        p_increment: 1
+      });
+    }
 
     return new Response(
       JSON.stringify({ response: aiResponse }),
