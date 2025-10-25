@@ -11,6 +11,7 @@ interface SyncRequest {
   imageId?: string;
   syncTags?: boolean;
   syncAltText?: boolean;
+  syncGoogleShopping?: boolean;
 }
 
 Deno.serve(async (req: Request) => {
@@ -27,10 +28,9 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { productId, imageId, syncTags, syncAltText }: SyncRequest = await req.json();
+    const { productId, imageId, syncTags, syncAltText, syncGoogleShopping }: SyncRequest = await req.json();
 
     const shopifyAccessToken = Deno.env.get("SHOPIFY_ACCESS_TOKEN");
-    const shopifyStorefrontToken = Deno.env.get("SHOPIFY_STOREFRONT_ACCESS_TOKEN");
 
     if (!shopifyAccessToken) {
       throw new Error("Shopify access token not configured");
@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
     if (productId) {
       const { data: product, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("shopify_id, seo_title, seo_description, tags")
+        .select("shopify_id, seo_title, seo_description, tags, category, sub_category, vendor")
         .eq("id", productId)
         .maybeSingle();
 
@@ -49,13 +49,68 @@ Deno.serve(async (req: Request) => {
       }
 
       const shopUrl = Deno.env.get("SHOPIFY_STORE_URL") || "";
+      
+      // Build product update data
       const updateData: any = {
-        metafields_global_title_tag: product.seo_title,
-        metafields_global_description_tag: product.seo_description,
+        product: {
+          id: product.shopify_id,
+        }
       };
 
+      // Update meta tags using metafields
+      const metafields: any[] = [];
+
+      if (product.seo_title) {
+        metafields.push({
+          namespace: "global",
+          key: "title_tag",
+          value: product.seo_title,
+          type: "single_line_text_field"
+        });
+      }
+
+      if (product.seo_description) {
+        metafields.push({
+          namespace: "global",
+          key: "description_tag",
+          value: product.seo_description,
+          type: "multi_line_text_field"
+        });
+      }
+
+      // Add Google Shopping data if enabled
+      if (syncGoogleShopping) {
+        if (product.category) {
+          metafields.push({
+            namespace: "google",
+            key: "google_product_category",
+            value: product.category,
+            type: "single_line_text_field"
+          });
+        }
+        
+        if (product.sub_category) {
+          metafields.push({
+            namespace: "custom",
+            key: "product_subcategory",
+            value: product.sub_category,
+            type: "single_line_text_field"
+          });
+        }
+      }
+
+      if (metafields.length > 0) {
+        updateData.product.metafields = metafields;
+      }
+
+      // Sync tags if requested
       if (syncTags && product.tags) {
-        updateData.tags = product.tags;
+        updateData.product.tags = product.tags;
+      }
+
+      // Sync product type for Google Shopping
+      if (syncGoogleShopping && product.category) {
+        updateData.product.product_type = product.category;
       }
 
       const shopifyResponse = await fetch(
@@ -66,14 +121,13 @@ Deno.serve(async (req: Request) => {
             "X-Shopify-Access-Token": shopifyAccessToken,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            product: updateData,
-          }),
+          body: JSON.stringify(updateData),
         }
       );
 
       if (!shopifyResponse.ok) {
         const errorText = await shopifyResponse.text();
+        console.error(`Shopify API error for product ${product.shopify_id}:`, errorText);
         throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
       }
 
@@ -141,6 +195,7 @@ Deno.serve(async (req: Request) => {
 
       if (!shopifyResponse.ok) {
         const errorText = await shopifyResponse.text();
+        console.error(`Shopify API error for image ${image.shopify_image_id}:`, errorText);
         throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
       }
 
@@ -158,7 +213,7 @@ Deno.serve(async (req: Request) => {
 
     throw new Error("Either productId or imageId must be provided");
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Sync error:", error);
 
     return new Response(
       JSON.stringify({

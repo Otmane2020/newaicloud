@@ -243,7 +243,11 @@ export function TagOptimization() {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ productId: productIds[i], syncTags: true }),
+          body: JSON.stringify({ 
+            productId: productIds[i], 
+            syncTags: true,
+            syncGoogleShopping: true
+          }),
         });
 
         if (response.ok) {

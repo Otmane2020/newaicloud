@@ -189,7 +189,11 @@ export function SeoOptimization() {
     for (let i = 0; i < productsToSync.length; i++) {
       try {
         await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: { productId: productsToSync[i].id }
+          body: { 
+            productId: productsToSync[i].id,
+            syncTags: true,
+            syncGoogleShopping: true
+          }
         });
         setProgress({ current: i + 1, total: productsToSync.length });
       } catch (error) {
