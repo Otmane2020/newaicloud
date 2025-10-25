@@ -1,4 +1,4 @@
-import { LayoutDashboard, ShoppingBag, FileText, Search, User, LogOut, Sparkles, Tags, Image, Settings, ShoppingCart, MessageSquare, Zap, Lightbulb, Package } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, FileText, Search, User, LogOut, Sparkles, Tags, Image, Settings, ShoppingCart, MessageSquare, Zap, Lightbulb, Package, Database } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -31,7 +31,7 @@ const menuItems = [
 
 const chatSubItems = [
   { title: "Chat Assistant", url: "/chat", icon: MessageSquare },
-  { title: "Produit Enrichi", url: "/product-enrichment", icon: Zap },
+  { title: "Source Produits", url: "/product-source", icon: Database },
 ];
 
 const seoSubItems = [
@@ -61,7 +61,7 @@ export function AppSidebar() {
     return currentPath === path;
   };
 
-  const isChatActive = currentPath === '/chat' || currentPath === '/product-enrichment' || chatSubItems.some(item => isActive(item.url));
+  const isChatActive = currentPath === '/chat' || currentPath === '/product-enrichment' || currentPath === '/product-source' || chatSubItems.some(item => isActive(item.url));
   const isSeoActive = currentPath === '/seo' || seoSubItems.some(item => isActive(item.url));
   const isBlogActive = currentPath === '/blog' || blogSubItems.some(item => isActive(item.url));
 

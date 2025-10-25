@@ -18,6 +18,7 @@ import SEO from "./pages/SEO";
 import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
 import ProductEnrichment from "./pages/ProductEnrichment";
+import ProductSource from "./pages/ProductSource";
 import Account from "./pages/Account";
 import Subscription from "./pages/Subscription";
 import Merchant from "./pages/Merchant";
@@ -93,6 +94,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ProductEnrichment />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/product-source"
+              element={
+                <ProtectedLayout>
+                  <ProductSource />
                 </ProtectedLayout>
               }
             />
