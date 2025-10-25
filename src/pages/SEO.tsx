@@ -3,7 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SeoOptimization } from '@/components/seo/SeoOptimization';
 import { TagOptimization } from '@/components/seo/TagOptimization';
 import { SeoAltImage } from '@/components/seo/SeoAltImage';
-import { Sparkles, Tags, Image } from 'lucide-react';
+import { SeoAutomation } from '@/components/seo/SeoAutomation';
+import { Sparkles, Tags, Image, Settings } from 'lucide-react';
 
 export default function SEO() {
   return (
@@ -19,7 +20,7 @@ export default function SEO() {
         </div>
 
         <Tabs defaultValue="seo-optimization" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <TabsList className="grid w-full grid-cols-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <TabsTrigger value="seo-optimization" className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               SEO Optimisation
@@ -31,6 +32,10 @@ export default function SEO() {
             <TabsTrigger value="alt-image" className="flex items-center gap-2">
               <Image className="w-4 h-4" />
               ALT Image
+            </TabsTrigger>
+            <TabsTrigger value="automation" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Automatisation
             </TabsTrigger>
           </TabsList>
 
@@ -44,6 +49,10 @@ export default function SEO() {
 
           <TabsContent value="alt-image" className="space-y-6">
             <SeoAltImage />
+          </TabsContent>
+
+          <TabsContent value="automation" className="space-y-6">
+            <SeoAutomation />
           </TabsContent>
         </Tabs>
       </div>

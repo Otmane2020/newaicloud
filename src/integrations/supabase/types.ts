@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      automation_settings: {
+        Row: {
+          alt_auto_enabled: boolean | null
+          alt_auto_frequency: string | null
+          alt_auto_schedule_hour: number | null
+          created_at: string
+          id: string
+          seo_auto_enabled: boolean | null
+          seo_auto_frequency: string | null
+          seo_auto_schedule_hour: number | null
+          sync_after_optimization: boolean | null
+          sync_auto_enabled: boolean | null
+          tag_auto_enabled: boolean | null
+          tag_auto_frequency: string | null
+          tag_auto_schedule_hour: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alt_auto_enabled?: boolean | null
+          alt_auto_frequency?: string | null
+          alt_auto_schedule_hour?: number | null
+          created_at?: string
+          id?: string
+          seo_auto_enabled?: boolean | null
+          seo_auto_frequency?: string | null
+          seo_auto_schedule_hour?: number | null
+          sync_after_optimization?: boolean | null
+          sync_auto_enabled?: boolean | null
+          tag_auto_enabled?: boolean | null
+          tag_auto_frequency?: string | null
+          tag_auto_schedule_hour?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alt_auto_enabled?: boolean | null
+          alt_auto_frequency?: string | null
+          alt_auto_schedule_hour?: number | null
+          created_at?: string
+          id?: string
+          seo_auto_enabled?: boolean | null
+          seo_auto_frequency?: string | null
+          seo_auto_schedule_hour?: number | null
+          sync_after_optimization?: boolean | null
+          sync_auto_enabled?: boolean | null
+          tag_auto_enabled?: boolean | null
+          tag_auto_frequency?: string | null
+          tag_auto_schedule_hour?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       blog_articles: {
         Row: {
           content: string
