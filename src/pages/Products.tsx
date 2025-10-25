@@ -227,7 +227,13 @@ export default function Products() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} {...product} />
+                  <div
+                    key={product.id}
+                    onClick={() => navigate(`/product-landing/${product.id}`)}
+                    className="cursor-pointer"
+                  >
+                    <ProductCard {...product} />
+                  </div>
                 ))}
               </div>
             )}

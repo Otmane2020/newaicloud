@@ -129,6 +129,43 @@ const ProductSource = () => {
     toast.success("Données exportées avec succès");
   };
 
+  const handleEnrichProduct = async (productId: string) => {
+    try {
+      toast.info("Enrichissement en cours...");
+      
+      const { data, error } = await supabase.functions.invoke('enrich-product', {
+        body: { productId }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Produit enrichi avec succès !");
+        await loadProducts();
+      } else {
+        throw new Error(data?.error || "Erreur lors de l'enrichissement");
+      }
+    } catch (error: any) {
+      console.error("Error enriching product:", error);
+      toast.error(error.message || "Erreur lors de l'enrichissement");
+    }
+  };
+
+  const handleEnrichAll = async () => {
+    const pendingProducts = products.filter(p => p.enrichment_status === "pending");
+    
+    if (pendingProducts.length === 0) {
+      toast.info("Tous les produits sont déjà enrichis");
+      return;
+    }
+
+    toast.info(`Enrichissement de ${pendingProducts.length} produit(s)...`);
+    
+    for (const product of pendingProducts) {
+      await handleEnrichProduct(product.id);
+    }
+  };
+
   const enrichedCount = products.filter(p => p.enrichment_status === "enriched").length;
   const enrichmentRate = products.length > 0 ? (enrichedCount / products.length) * 100 : 0;
   const avgQuality = products.filter(p => p.ai_presentation_quality).reduce((sum, p) => sum + (p.ai_presentation_quality || 0), 0) / enrichedCount || 0;
@@ -155,12 +192,16 @@ const ProductSource = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button onClick={handleEnrichAll} variant="secondary">
+            <Sparkles className="w-4 h-4 mr-2" />
+            Enrichir tout
+          </Button>
           <Button onClick={exportData} variant="outline">
             <Download className="w-4 h-4 mr-2" />
             Exporter
           </Button>
           <Button onClick={loadProducts}>
-            <Sparkles className="w-4 h-4 mr-2" />
+            <TrendingUp className="w-4 h-4 mr-2" />
             Actualiser
           </Button>
         </div>
@@ -320,16 +361,30 @@ const ProductSource = () => {
                 </div>
               )}
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => setSelectedProduct(product)}
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                {product.enrichment_status !== "enriched" && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleEnrichProduct(product.id)}
+                    className="flex-1"
                   >
-                    Voir détails complets
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Enrichir IA
                   </Button>
-                </DialogTrigger>
+                )}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setSelectedProduct(product)}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      Détails
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{product.title}</DialogTitle>
@@ -536,7 +591,8 @@ const ProductSource = () => {
                     </Tabs>
                   )}
                 </DialogContent>
-              </Dialog>
+                </Dialog>
+              </div>
             </CardContent>
           </Card>
         ))}
