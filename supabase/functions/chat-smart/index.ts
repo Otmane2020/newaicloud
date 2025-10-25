@@ -456,6 +456,26 @@ Deno.serve(async (req: Request) => {
     );
 
     const response = await OmnIAChat(userMessage, history || [], storeId, sellerId);
+    
+    // Increment chat_responses_count usage tracking
+    if (sellerId) {
+      try {
+        const supabase = getSupabaseClient();
+        const { error: usageError } = await supabase.rpc('increment_usage', {
+          p_seller_id: sellerId,
+          p_field: 'chat_responses_count',
+          p_increment: 1
+        });
+        
+        if (usageError) {
+          console.error('❌ Error incrementing chat usage:', usageError);
+        } else {
+          console.log('✅ Chat usage incremented for seller:', sellerId);
+        }
+      } catch (usageErr) {
+        console.error('❌ Usage tracking error:', usageErr);
+      }
+    }
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }

@@ -24,6 +24,9 @@ import { ChevronRight } from "lucide-react";
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Produits", url: "/products", icon: ShoppingBag },
+  { title: "Google Merchant", url: "/merchant", icon: ShoppingBag },
+  { title: "Google Shopping", url: "/shopping", icon: ShoppingCart },
+  { title: "Recherche IA", url: "/search", icon: Search },
 ];
 
 const seoSubItems = [
@@ -31,12 +34,6 @@ const seoSubItems = [
   { title: "Tag Optimisation", url: "/seo?tab=tags", icon: Tags },
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
   { title: "Automatisation", url: "/seo?tab=automation", icon: Settings },
-];
-
-const googleItems = [
-  { title: "Google Merchant", url: "/merchant", icon: ShoppingBag },
-  { title: "Google Shopping", url: "/shopping", icon: ShoppingCart },
-  { title: "Recherche IA", url: "/search", icon: Search },
 ];
 
 const blogItems = [
@@ -59,7 +56,6 @@ export function AppSidebar() {
   };
 
   const isSeoActive = currentPath === '/seo' || seoSubItems.some(item => isActive(item.url));
-  const isGoogleActive = googleItems.some(item => isActive(item.url));
 
   return (
     <Sidebar collapsible="icon">
@@ -92,33 +88,6 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {seoSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
-                              <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-
-              {/* Google Menu with Submenu */}
-              <Collapsible defaultOpen={isGoogleActive} className="group/collapsible">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isGoogleActive}>
-                      <ShoppingBag className="h-4 w-4" />
-                      <span>Google</span>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {googleItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>

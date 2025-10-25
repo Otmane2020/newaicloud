@@ -10,7 +10,7 @@ export function GoogleMerchant() {
   const [copied, setCopied] = useState(false);
 
   // Générer l'URL du flux selon le nouveau format
-  const feedUrl = `${window.location.origin}/Shoppingfeed/${user?.id || 'YOUR_SELLER_ID'}.xml`;
+  const feedUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/shopping-feed/shoppingfeed/${user?.id || 'YOUR_SELLER_ID'}/xml`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);
@@ -63,7 +63,7 @@ export function GoogleMerchant() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Format: <code className="bg-muted px-1 rounded">omnia.sale/Shoppingfeed/&#123;SELLER_ID&#125;.xml</code>
+                Format: <code className="bg-muted px-1 rounded">&#123;SUPABASE_URL&#125;/functions/v1/shopping-feed/shoppingfeed/&#123;SELLER_ID&#125;/xml</code>
               </p>
             </div>
 
@@ -174,7 +174,7 @@ export function GoogleMerchant() {
                       {feedUrl}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Format: <code className="bg-muted px-1 rounded">omnia.sale/Shoppingfeed/VOTRE_ID.xml</code>
+                      Format de l'URL du flux XML Google Shopping
                     </p>
                   </div>
                 </div>

@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.generate-alt-texts]
 verify_jwt = true
+
+[functions.shopping-feed]
+verify_jwt = false

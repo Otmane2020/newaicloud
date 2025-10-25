@@ -89,8 +89,9 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
 
       const { data, error } = await supabase.functions.invoke('chat-smart', {
         body: { 
-          message: context,
-          products: products.slice(0, 20)
+          userMessage: input,
+          history: messages,
+          sellerId: user?.id
         }
       });
 
@@ -98,25 +99,9 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.response || 'Désolé, je n\'ai pas pu traiter votre demande.'
+        content: data.content || 'Désolé, je n\'ai pas pu traiter votre demande.',
+        products: data.products || []
       };
-
-      // Parse product suggestions from response
-      const productPattern = /\[PRODUCT:([^:]+):([^\]]+)\]/g;
-      const suggestedProducts: any[] = [];
-      let match;
-
-      while ((match = productPattern.exec(assistantMessage.content)) !== null) {
-        const productId = match[1];
-        const product = products.find(p => p.id === productId);
-        if (product) {
-          suggestedProducts.push(product);
-        }
-      }
-
-      if (suggestedProducts.length > 0) {
-        assistantMessage.products = suggestedProducts;
-      }
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
