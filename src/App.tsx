@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedLayout } from "./components/ProtectedLayout";
-import { Navigation } from "./components/Navigation";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -43,7 +42,6 @@ const App = () => (
               path="/dashboard"
               element={
                 <ProtectedLayout>
-                  <Navigation />
                   <Dashboard />
                 </ProtectedLayout>
               }
@@ -52,7 +50,6 @@ const App = () => (
               path="/products"
               element={
                 <ProtectedLayout>
-                  <Navigation />
                   <Products />
                 </ProtectedLayout>
               }
@@ -61,7 +58,6 @@ const App = () => (
               path="/blog"
               element={
                 <ProtectedLayout>
-                  <Navigation />
                   <Blog />
                 </ProtectedLayout>
               }
@@ -70,7 +66,6 @@ const App = () => (
               path="/seo"
               element={
                 <ProtectedLayout>
-                  <Navigation />
                   <SEO />
                 </ProtectedLayout>
               }
@@ -79,7 +74,6 @@ const App = () => (
               path="/chat"
               element={
                 <ProtectedLayout>
-                  <Navigation />
                   <Chat />
                 </ProtectedLayout>
               }
@@ -88,7 +82,6 @@ const App = () => (
               path="/account"
               element={
                 <ProtectedLayout>
-                  <Navigation />
                   <Account />
                 </ProtectedLayout>
               }
@@ -97,7 +90,6 @@ const App = () => (
               path="/subscription"
               element={
                 <ProtectedLayout>
-                  <Navigation />
                   <Subscription />
                 </ProtectedLayout>
               }
@@ -106,7 +98,6 @@ const App = () => (
               path="/integration"
               element={
                 <ProtectedLayout>
-                  <Navigation />
                   <Integration />
                 </ProtectedLayout>
               }
