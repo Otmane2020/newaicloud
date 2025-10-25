@@ -89,6 +89,8 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
+      console.log('🚀 Creating checkout for plan:', selectedPlanId, 'billing:', billingCycle);
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: selectedPlanId,
@@ -98,15 +100,22 @@ export default function Onboarding() {
         }
       });
 
-      if (error) throw error;
+      console.log('📦 Checkout response:', { data, error });
+
+      if (error) {
+        console.error('❌ Checkout error:', error);
+        throw error;
+      }
 
       if (data?.url) {
+        console.log('✅ Redirecting to:', data.url);
         window.location.href = data.url;
       } else {
+        console.error('❌ No URL in response:', data);
         throw new Error('No checkout URL returned');
       }
     } catch (error) {
-      console.error('Error creating checkout:', error);
+      console.error('💥 Error creating checkout:', error);
       toast.error('Erreur lors de la création du paiement');
       setLoading(false);
     }
