@@ -128,6 +128,48 @@ export type Database = {
         }
         Relationships: []
       }
+      import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current_page: number | null
+          error_message: string | null
+          id: string
+          products_processed: number | null
+          started_at: string | null
+          status: string
+          store_id: string | null
+          total_pages: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_page?: number | null
+          error_message?: string | null
+          id?: string
+          products_processed?: number | null
+          started_at?: string | null
+          status?: string
+          store_id?: string | null
+          total_pages?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_page?: number | null
+          error_message?: string | null
+          id?: string
+          products_processed?: number | null
+          started_at?: string | null
+          status?: string
+          store_id?: string | null
+          total_pages?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           alt_text: string | null
@@ -203,7 +245,7 @@ export type Database = {
           price: number | null
           product_id: string
           raw_data: Json | null
-          shopify_variant_id: string | null
+          shopify_variant_id: number | null
           sku: string | null
           title: string | null
           updated_at: string
@@ -237,7 +279,7 @@ export type Database = {
           price?: number | null
           product_id: string
           raw_data?: Json | null
-          shopify_variant_id?: string | null
+          shopify_variant_id?: number | null
           sku?: string | null
           title?: string | null
           updated_at?: string
@@ -271,7 +313,7 @@ export type Database = {
           price?: number | null
           product_id?: string
           raw_data?: Json | null
-          shopify_variant_id?: string | null
+          shopify_variant_id?: number | null
           sku?: string | null
           title?: string | null
           updated_at?: string

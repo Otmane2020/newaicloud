@@ -74,6 +74,8 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  let importJob: any = null;
+
   try {
     // Authenticate user first with anon key
     const authHeader = req.headers.get('Authorization');
@@ -130,6 +132,29 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Create import job
+    const { data: jobData, error: jobError } = await supabaseServiceClient
+      .from('import_jobs')
+      .insert({
+        user_id: user.id,
+        store_id: storeId || null,
+        status: 'in_progress',
+        started_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (jobError || !jobData) {
+      console.error('Failed to create import job:', jobError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create import job' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    importJob = jobData;
+    console.log('Import job created:', importJob.id);
 
     // Verify store ownership if storeId is provided
     if (storeId) {
@@ -244,11 +269,25 @@ Deno.serve(async (req: Request) => {
       allProducts = allProducts.concat(pageProducts);
 
       const linkHeader = shopifyResponse.headers.get("Link");
-      nextPageUrl = parseLinkHeader(linkHeader);
+      const parsedNextUrl = parseLinkHeader(linkHeader);
 
-      if (nextPageUrl) {
+      // Update job progress
+      const estimatedTotalPages = parsedNextUrl ? pageCount + 10 : pageCount;
+      await supabaseServiceClient
+        .from('import_jobs')
+        .update({
+          current_page: pageCount,
+          total_pages: estimatedTotalPages,
+          products_processed: allProducts.length
+        })
+        .eq('id', importJob.id);
+
+      if (parsedNextUrl) {
+        nextPageUrl = parsedNextUrl;
         console.log(`Next page URL found, continuing...`);
         await new Promise(resolve => setTimeout(resolve, 500));
+      } else {
+        nextPageUrl = null;
       }
     }
 
@@ -256,8 +295,21 @@ Deno.serve(async (req: Request) => {
     console.log(`Total products fetched across ${pageCount} pages: ${products.length}`);
 
     if (products.length === 0) {
+      await supabaseServiceClient
+        .from('import_jobs')
+        .update({
+          status: 'completed',
+          total_pages: pageCount,
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', importJob.id);
+
       return new Response(
-        JSON.stringify({ count: 0, message: "No products found in store" }),
+        JSON.stringify({ 
+          count: 0, 
+          message: "No products found in store",
+          jobId: importJob.id
+        }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -402,6 +454,7 @@ Deno.serve(async (req: Request) => {
     const { error: logError } = await supabaseServiceClient
       .from("sync_logs")
       .insert({
+        seller_id: user.id,
         store_id: storeId || null,
         store_name: cleanShopName,
         operation_type: "import",
@@ -418,6 +471,17 @@ Deno.serve(async (req: Request) => {
       console.error("Sync log insert error:", logError);
     }
 
+    // Mark job as completed
+    await supabaseServiceClient
+      .from('import_jobs')
+      .update({
+        status: 'completed',
+        total_pages: pageCount,
+        products_processed: products.length,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', importJob.id);
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -425,6 +489,7 @@ Deno.serve(async (req: Request) => {
         variantsCount: totalVariants,
         imagesCount: totalImages,
         pagesProcessed: pageCount,
+        jobId: importJob.id,
         message: `Successfully imported ${products.length} products, ${totalVariants} variants, and ${totalImages} images across ${pageCount} pages`,
       }),
       {
@@ -434,6 +499,24 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("Error:", error);
+    
+    // Mark job as failed if it was created
+    if (importJob) {
+      const supabaseServiceClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      
+      await supabaseServiceClient
+        .from('import_jobs')
+        .update({
+          status: 'failed',
+          error_message: error instanceof Error ? error.message : 'Unknown error',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', importJob.id);
+    }
+    
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "An unknown error occurred",

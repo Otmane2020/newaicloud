@@ -39,6 +39,7 @@ const App = () => (
               path="/dashboard"
               element={
                 <ProtectedLayout>
+                  <Navigation />
                   <Dashboard />
                 </ProtectedLayout>
               }
@@ -47,6 +48,7 @@ const App = () => (
               path="/products"
               element={
                 <ProtectedLayout>
+                  <Navigation />
                   <Products />
                 </ProtectedLayout>
               }
@@ -55,6 +57,7 @@ const App = () => (
               path="/blog"
               element={
                 <ProtectedLayout>
+                  <Navigation />
                   <Blog />
                 </ProtectedLayout>
               }
@@ -63,6 +66,7 @@ const App = () => (
               path="/seo"
               element={
                 <ProtectedLayout>
+                  <Navigation />
                   <SEO />
                 </ProtectedLayout>
               }

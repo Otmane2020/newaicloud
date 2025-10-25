@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ShoppingBag, Link as LinkIcon, Download } from 'lucide-react';
+import { Loader2, ShoppingBag, Link as LinkIcon, Download, Package, FileText } from 'lucide-react';
 import { shopifyConnectionSchema } from '@/lib/validationSchemas';
 
 export function ShopifyConnection() {
@@ -18,8 +18,13 @@ export function ShopifyConnection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState(0);
-  const [importStatus, setImportStatus] = useState('');
+  const [importJobId, setImportJobId] = useState<string | null>(null);
+  const [progress, setProgress] = useState({
+    currentPage: 0,
+    totalPages: 0,
+    productsProcessed: 0,
+    percentage: 0
+  });
   const [store, setStore] = useState<any>(null);
   const [storeName, setStoreName] = useState('');
   const [apiToken, setApiToken] = useState('');
@@ -28,6 +33,49 @@ export function ShopifyConnection() {
   useEffect(() => {
     loadStore();
   }, [user]);
+
+  // Poll import job progress
+  useEffect(() => {
+    if (!importJobId || !importing) return;
+
+    const interval = setInterval(async () => {
+      const { data: job } = await supabase
+        .from('import_jobs')
+        .select('*')
+        .eq('id', importJobId)
+        .single();
+
+      if (job) {
+        const percentage = job.total_pages > 0 
+          ? Math.round((job.current_page / job.total_pages) * 100)
+          : 0;
+
+        setProgress({
+          currentPage: job.current_page,
+          totalPages: job.total_pages,
+          productsProcessed: job.products_processed,
+          percentage
+        });
+
+        if (job.status === 'completed') {
+          clearInterval(interval);
+          setImporting(false);
+          toast.success(`${job.products_processed} produits importés avec succès !`);
+          setTimeout(() => {
+            navigate('/products');
+          }, 1500);
+        }
+
+        if (job.status === 'failed') {
+          clearInterval(interval);
+          setImporting(false);
+          toast.error(job.error_message || 'Erreur lors de l\'import');
+        }
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [importJobId, importing, navigate]);
 
   const loadStore = async () => {
     try {
@@ -39,7 +87,6 @@ export function ShopifyConnection() {
 
       if (data) {
         setStore(data);
-        // Extract store name from store_url (remove .myshopify.com)
         const storeName = data.store_url?.replace('.myshopify.com', '') || '';
         setStoreName(storeName);
       }
@@ -56,7 +103,6 @@ export function ShopifyConnection() {
     setSaving(true);
 
     try {
-      // Validate inputs
       const validationResult = shopifyConnectionSchema.safeParse({
         storeName,
         apiToken
@@ -76,7 +122,6 @@ export function ShopifyConnection() {
       const storeUrl = `${storeName}.myshopify.com`;
       
       if (store) {
-        // Update existing
         const { error } = await supabase
           .from('shopify_connections')
           .update({
@@ -88,7 +133,6 @@ export function ShopifyConnection() {
 
         if (error) throw error;
       } else {
-        // Create new
         const { data, error } = await supabase
           .from('shopify_connections')
           .insert({
@@ -102,7 +146,6 @@ export function ShopifyConnection() {
 
         if (error) throw error;
         
-        // Update local state with the new store
         if (data) {
           setStore(data);
         }
@@ -127,10 +170,13 @@ export function ShopifyConnection() {
 
     try {
       setImporting(true);
-      setImportProgress(0);
-      setImportStatus('Démarrage de l\'import...');
+      setProgress({
+        currentPage: 0,
+        totalPages: 0,
+        productsProcessed: 0,
+        percentage: 0
+      });
       
-      // Extract store name from store_url
       const shopName = store.store_url?.replace('.myshopify.com', '') || '';
       
       const { data, error } = await supabase.functions.invoke('import-products', {
@@ -143,24 +189,13 @@ export function ShopifyConnection() {
 
       if (error) throw error;
 
-      setImportProgress(100);
-      setImportStatus(`Import terminé : ${data.count || 0} produits importés`);
-      
-      toast.success(`${data.count || 0} produits importés avec succès !`, {
-        description: 'Redirection vers la page des produits...'
-      });
-
-      // Redirect to products page after 1.5 seconds
-      setTimeout(() => {
-        navigate('/products');
-      }, 1500);
+      if (data?.jobId) {
+        setImportJobId(data.jobId);
+      }
     } catch (error: any) {
       console.error('Import error:', error);
-      setImportProgress(0);
-      setImportStatus('');
-      toast.error(error.message || 'Erreur lors de l\'import des produits');
-    } finally {
       setImporting(false);
+      toast.error(error.message || 'Erreur lors de l\'import des produits');
     }
   };
 
@@ -239,7 +274,7 @@ export function ShopifyConnection() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold">Boutique connectée</h3>
-            <Badge variant={store.is_active ? "default" : "destructive"} className={store.is_active ? "bg-green-500 hover:bg-green-600" : ""}>
+            <Badge variant={store.is_active ? "success" : "destructive"}>
               {store.is_active ? 'Active' : 'Inactive'}
             </Badge>
           </div>
@@ -254,18 +289,41 @@ export function ShopifyConnection() {
           </div>
 
           {importing && (
-            <div className="space-y-3 mb-4">
-              <Progress value={importProgress} className="h-2" />
-              <p className="text-sm text-muted-foreground text-center">
-                {importStatus}
-              </p>
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <span className="text-sm font-medium">Import en cours...</span>
+              </div>
+
+              <Progress value={progress.percentage} className="h-3" />
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-muted/50 rounded-lg">
+                  <div className="text-2xl font-bold text-foreground">{progress.percentage}%</div>
+                  <div className="text-xs text-muted-foreground mt-1">Progression</div>
+                </div>
+                <div className="text-center p-3 bg-muted/50 rounded-lg">
+                  <div className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
+                    <FileText className="w-5 h-5" />
+                    {progress.currentPage}/{progress.totalPages || '?'}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Pages</div>
+                </div>
+                <div className="text-center p-3 bg-muted/50 rounded-lg">
+                  <div className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
+                    <Package className="w-5 h-5" />
+                    {progress.productsProcessed}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Produits</div>
+                </div>
+              </div>
             </div>
           )}
 
           <Button 
             onClick={handleImportProducts}
             disabled={importing}
-            className="w-full"
+            className="w-full mt-6"
           >
             {importing ? (
               <>

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Sparkles, Menu, X } from "lucide-react";
+import { Sparkles, Menu, X, LayoutDashboard, ShoppingBag, FileText, Zap, LogOut } from "lucide-react";
 import { useState } from "react";
 
 export function Navigation() {
@@ -12,16 +12,23 @@ export function Navigation() {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const menuItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/products', label: 'Produits', icon: ShoppingBag },
+    { path: '/blog', label: 'Blog SEO', icon: FileText },
+    { path: '/seo', label: 'Optimisation', icon: Zap },
+  ];
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button 
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 group"
+            className="flex items-center gap-2 group transition-transform hover:scale-105"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
+            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-elegant">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
@@ -30,34 +37,31 @@ export function Navigation() {
           </button>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
-                <Button
-                  variant={isActive('/dashboard') ? 'default' : 'ghost'}
-                  onClick={() => navigate('/dashboard')}
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.path);
+                  return (
+                    <Button
+                      key={item.path}
+                      variant={active ? 'default' : 'ghost'}
+                      onClick={() => navigate(item.path)}
+                      className="gap-2"
+                    >
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                    </Button>
+                  );
+                })}
+                <div className="w-px h-6 bg-border mx-2" />
+                <Button 
+                  variant="outline" 
+                  onClick={signOut}
+                  className="gap-2"
                 >
-                  Dashboard
-                </Button>
-                <Button
-                  variant={isActive('/products') ? 'default' : 'ghost'}
-                  onClick={() => navigate('/products')}
-                >
-                  Produits
-                </Button>
-                <Button
-                  variant={isActive('/blog') ? 'default' : 'ghost'}
-                  onClick={() => navigate('/blog')}
-                >
-                  Blog SEO
-                </Button>
-                <Button
-                  variant={isActive('/seo') ? 'default' : 'ghost'}
-                  onClick={() => navigate('/seo')}
-                >
-                  Optimisation
-                </Button>
-                <Button variant="outline" onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
                   Déconnexion
                 </Button>
               </>
@@ -91,54 +95,33 @@ export function Navigation() {
           <div className="md:hidden py-4 space-y-2 border-t border-border">
             {user ? (
               <>
-                <Button
-                  variant={isActive('/dashboard') ? 'default' : 'ghost'}
-                  className="w-full"
-                  onClick={() => {
-                    navigate('/dashboard');
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Dashboard
-                </Button>
-                <Button
-                  variant={isActive('/products') ? 'default' : 'ghost'}
-                  className="w-full"
-                  onClick={() => {
-                    navigate('/products');
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Produits
-                </Button>
-                <Button
-                  variant={isActive('/blog') ? 'default' : 'ghost'}
-                  className="w-full"
-                  onClick={() => {
-                    navigate('/blog');
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Blog SEO
-                </Button>
-                <Button
-                  variant={isActive('/seo') ? 'default' : 'ghost'}
-                  className="w-full"
-                  onClick={() => {
-                    navigate('/seo');
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Optimisation
-                </Button>
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.path);
+                  return (
+                    <Button
+                      key={item.path}
+                      variant={active ? 'default' : 'ghost'}
+                      className="w-full justify-start gap-2"
+                      onClick={() => {
+                        navigate(item.path);
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                    </Button>
+                  );
+                })}
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full justify-start gap-2"
                   onClick={() => {
                     signOut();
                     setMobileMenuOpen(false);
                   }}
                 >
+                  <LogOut className="w-4 h-4" />
                   Déconnexion
                 </Button>
               </>
