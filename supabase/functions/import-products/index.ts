@@ -125,9 +125,15 @@ Deno.serve(async (req: Request) => {
 
     const { shopName, apiToken, storeId } = validation.data;
 
+    // Create service role client for database operations
+    const supabaseServiceClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
     // Verify store ownership if storeId is provided
     if (storeId) {
-      const { data: store, error: storeError } = await supabaseClient
+      const { data: store, error: storeError } = await supabaseServiceClient
         .from('shopify_connections')
         .select('user_id')
         .eq('id', storeId)
@@ -166,12 +172,6 @@ Deno.serve(async (req: Request) => {
         );
       }
     }
-
-    // Now use service role key for actual operations (after authorization check)
-    const supabaseServiceClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
 
     const cleanShopName = shopName.replace(".myshopify.com", "");
     const startTime = new Date().toISOString();
