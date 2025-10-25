@@ -6,15 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, ShoppingBag, Link as LinkIcon, Download } from 'lucide-react';
 import { shopifyConnectionSchema } from '@/lib/validationSchemas';
 
 export function ShopifyConnection() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importStatus, setImportStatus] = useState('');
   const [store, setStore] = useState<any>(null);
   const [storeName, setStoreName] = useState('');
   const [apiToken, setApiToken] = useState('');
@@ -120,8 +125,11 @@ export function ShopifyConnection() {
       return;
     }
 
-    setImporting(true);
     try {
+      setImporting(true);
+      setImportProgress(0);
+      setImportStatus('Démarrage de l\'import...');
+      
       // Extract store name from store_url
       const shopName = store.store_url?.replace('.myshopify.com', '') || '';
       
@@ -135,15 +143,22 @@ export function ShopifyConnection() {
 
       if (error) throw error;
 
-      if (data.success) {
-        toast.success(`${data.count} produits importés avec succès!`);
-        await loadStore();
-      } else {
-        toast.error(data.error || 'Erreur lors de l\'import');
-      }
-    } catch (error) {
-      console.error('Error importing products:', error);
-      toast.error('Erreur lors de l\'import des produits');
+      setImportProgress(100);
+      setImportStatus(`Import terminé : ${data.count || 0} produits importés`);
+      
+      toast.success(`${data.count || 0} produits importés avec succès !`, {
+        description: 'Redirection vers la page des produits...'
+      });
+
+      // Redirect to products page after 1.5 seconds
+      setTimeout(() => {
+        navigate('/products');
+      }, 1500);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      setImportProgress(0);
+      setImportStatus('');
+      toast.error(error.message || 'Erreur lors de l\'import des produits');
     } finally {
       setImporting(false);
     }
@@ -237,6 +252,15 @@ export function ShopifyConnection() {
               Connectée le: {new Date(store.created_at).toLocaleDateString('fr-FR')}
             </p>
           </div>
+
+          {importing && (
+            <div className="space-y-3 mb-4">
+              <Progress value={importProgress} className="h-2" />
+              <p className="text-sm text-muted-foreground text-center">
+                {importStatus}
+              </p>
+            </div>
+          )}
 
           <Button 
             onClick={handleImportProducts}

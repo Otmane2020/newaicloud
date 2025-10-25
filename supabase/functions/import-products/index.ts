@@ -274,6 +274,8 @@ Deno.serve(async (req: Request) => {
       );
 
       return {
+        seller_id: user.id,
+        store_id: storeId || null,
         shopify_id: product.id,
         title: product.title,
         description: product.body_html || "",
@@ -293,7 +295,6 @@ Deno.serve(async (req: Request) => {
         currency: shopCurrency,
         raw_data: product,
         shop_name: cleanShopName,
-        store_id: storeId || null,
       };
     });
 

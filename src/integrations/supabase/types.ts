@@ -128,55 +128,162 @@ export type Database = {
         }
         Relationships: []
       }
+      product_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          height: number | null
+          id: string
+          position: number | null
+          product_id: string
+          shopify_image_id: number | null
+          src: string
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          position?: number | null
+          product_id: string
+          shopify_image_id?: number | null
+          src: string
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          position?: number | null
+          product_id?: string
+          shopify_image_id?: number | null
+          src?: string
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
+          ai_color: string | null
+          ai_design_elements: string | null
+          ai_enrichment_status: string | null
+          ai_finish: string | null
+          ai_material: string | null
+          ai_pattern: string | null
+          ai_product_name: string | null
+          ai_shape: string | null
+          ai_texture: string | null
+          ai_vision_analysis: string | null
+          ai_vision_confidence: number | null
+          ai_vision_model: string | null
+          ai_vision_timestamp: string | null
+          barcode: string | null
           compare_at_price: number | null
           created_at: string
+          currency: string | null
           id: string
+          image_url: string | null
           inventory_quantity: number | null
           option1: string | null
           option2: string | null
           option3: string | null
           price: number | null
           product_id: string
+          raw_data: Json | null
           shopify_variant_id: string | null
           sku: string | null
+          title: string | null
           updated_at: string
+          weight: number | null
+          weight_unit: string | null
         }
         Insert: {
+          ai_color?: string | null
+          ai_design_elements?: string | null
+          ai_enrichment_status?: string | null
+          ai_finish?: string | null
+          ai_material?: string | null
+          ai_pattern?: string | null
+          ai_product_name?: string | null
+          ai_shape?: string | null
+          ai_texture?: string | null
+          ai_vision_analysis?: string | null
+          ai_vision_confidence?: number | null
+          ai_vision_model?: string | null
+          ai_vision_timestamp?: string | null
+          barcode?: string | null
           compare_at_price?: number | null
           created_at?: string
+          currency?: string | null
           id?: string
+          image_url?: string | null
           inventory_quantity?: number | null
           option1?: string | null
           option2?: string | null
           option3?: string | null
           price?: number | null
           product_id: string
+          raw_data?: Json | null
           shopify_variant_id?: string | null
           sku?: string | null
+          title?: string | null
           updated_at?: string
+          weight?: number | null
+          weight_unit?: string | null
         }
         Update: {
+          ai_color?: string | null
+          ai_design_elements?: string | null
+          ai_enrichment_status?: string | null
+          ai_finish?: string | null
+          ai_material?: string | null
+          ai_pattern?: string | null
+          ai_product_name?: string | null
+          ai_shape?: string | null
+          ai_texture?: string | null
+          ai_vision_analysis?: string | null
+          ai_vision_confidence?: number | null
+          ai_vision_model?: string | null
+          ai_vision_timestamp?: string | null
+          barcode?: string | null
           compare_at_price?: number | null
           created_at?: string
+          currency?: string | null
           id?: string
+          image_url?: string | null
           inventory_quantity?: number | null
           option1?: string | null
           option2?: string | null
           option3?: string | null
           price?: number | null
           product_id?: string
+          raw_data?: Json | null
           shopify_variant_id?: string | null
           sku?: string | null
+          title?: string | null
           updated_at?: string
+          weight?: number | null
+          weight_unit?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "product_variants_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "shopify_products"
             referencedColumns: ["id"]
           },
         ]
@@ -305,6 +412,293 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      shopify_products: {
+        Row: {
+          ai_background_style: string | null
+          ai_color: string | null
+          ai_condition_notes: string | null
+          ai_craftsmanship_level: string | null
+          ai_design_elements: string | null
+          ai_finish: string | null
+          ai_lighting_type: string | null
+          ai_material: string | null
+          ai_pattern: string | null
+          ai_presentation_quality: number | null
+          ai_shape: string | null
+          ai_texture: string | null
+          ai_vision_analysis: string | null
+          ai_vision_confidence: number | null
+          ai_vision_model: string | null
+          ai_vision_timestamp: string | null
+          category: string | null
+          characteristics: string | null
+          chat_text: string | null
+          compare_at_price: number | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          dimensions_source: string | null
+          dimensions_text: string | null
+          enrichment_error: string | null
+          enrichment_status: string | null
+          functionality: string | null
+          google_age_group: string | null
+          google_availability: string | null
+          google_brand: string | null
+          google_condition: string | null
+          google_custom_label_0: string | null
+          google_custom_label_1: string | null
+          google_custom_label_2: string | null
+          google_custom_label_3: string | null
+          google_custom_label_4: string | null
+          google_custom_product: boolean | null
+          google_gender: string | null
+          google_gtin: string | null
+          google_mpn: string | null
+          google_product_category: string | null
+          google_synced_at: string | null
+          handle: string | null
+          height: number | null
+          height_unit: string | null
+          id: string
+          image_url: string | null
+          imported_at: string | null
+          inventory_quantity: number | null
+          last_enriched_at: string | null
+          last_seo_sync_at: string | null
+          length: number | null
+          length_unit: string | null
+          other_dimensions: Json | null
+          price: number | null
+          product_type: string | null
+          raw_data: Json | null
+          room: string | null
+          seller_id: string
+          seo_description: string | null
+          seo_sync_error: string | null
+          seo_synced_to_shopify: boolean | null
+          seo_title: string | null
+          shop_name: string | null
+          shopify_id: number | null
+          smart_depth: number | null
+          smart_depth_unit: string | null
+          smart_diameter: number | null
+          smart_diameter_unit: string | null
+          smart_height: number | null
+          smart_height_unit: string | null
+          smart_length: number | null
+          smart_length_unit: string | null
+          smart_seat_height: number | null
+          smart_seat_height_unit: string | null
+          smart_weight: number | null
+          smart_weight_unit: string | null
+          smart_width: number | null
+          smart_width_unit: string | null
+          status: string | null
+          store_id: string | null
+          style: string | null
+          sub_category: string | null
+          tags: string | null
+          title: string
+          updated_at: string
+          vendor: string | null
+          width: number | null
+          width_unit: string | null
+        }
+        Insert: {
+          ai_background_style?: string | null
+          ai_color?: string | null
+          ai_condition_notes?: string | null
+          ai_craftsmanship_level?: string | null
+          ai_design_elements?: string | null
+          ai_finish?: string | null
+          ai_lighting_type?: string | null
+          ai_material?: string | null
+          ai_pattern?: string | null
+          ai_presentation_quality?: number | null
+          ai_shape?: string | null
+          ai_texture?: string | null
+          ai_vision_analysis?: string | null
+          ai_vision_confidence?: number | null
+          ai_vision_model?: string | null
+          ai_vision_timestamp?: string | null
+          category?: string | null
+          characteristics?: string | null
+          chat_text?: string | null
+          compare_at_price?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          dimensions_source?: string | null
+          dimensions_text?: string | null
+          enrichment_error?: string | null
+          enrichment_status?: string | null
+          functionality?: string | null
+          google_age_group?: string | null
+          google_availability?: string | null
+          google_brand?: string | null
+          google_condition?: string | null
+          google_custom_label_0?: string | null
+          google_custom_label_1?: string | null
+          google_custom_label_2?: string | null
+          google_custom_label_3?: string | null
+          google_custom_label_4?: string | null
+          google_custom_product?: boolean | null
+          google_gender?: string | null
+          google_gtin?: string | null
+          google_mpn?: string | null
+          google_product_category?: string | null
+          google_synced_at?: string | null
+          handle?: string | null
+          height?: number | null
+          height_unit?: string | null
+          id?: string
+          image_url?: string | null
+          imported_at?: string | null
+          inventory_quantity?: number | null
+          last_enriched_at?: string | null
+          last_seo_sync_at?: string | null
+          length?: number | null
+          length_unit?: string | null
+          other_dimensions?: Json | null
+          price?: number | null
+          product_type?: string | null
+          raw_data?: Json | null
+          room?: string | null
+          seller_id: string
+          seo_description?: string | null
+          seo_sync_error?: string | null
+          seo_synced_to_shopify?: boolean | null
+          seo_title?: string | null
+          shop_name?: string | null
+          shopify_id?: number | null
+          smart_depth?: number | null
+          smart_depth_unit?: string | null
+          smart_diameter?: number | null
+          smart_diameter_unit?: string | null
+          smart_height?: number | null
+          smart_height_unit?: string | null
+          smart_length?: number | null
+          smart_length_unit?: string | null
+          smart_seat_height?: number | null
+          smart_seat_height_unit?: string | null
+          smart_weight?: number | null
+          smart_weight_unit?: string | null
+          smart_width?: number | null
+          smart_width_unit?: string | null
+          status?: string | null
+          store_id?: string | null
+          style?: string | null
+          sub_category?: string | null
+          tags?: string | null
+          title: string
+          updated_at?: string
+          vendor?: string | null
+          width?: number | null
+          width_unit?: string | null
+        }
+        Update: {
+          ai_background_style?: string | null
+          ai_color?: string | null
+          ai_condition_notes?: string | null
+          ai_craftsmanship_level?: string | null
+          ai_design_elements?: string | null
+          ai_finish?: string | null
+          ai_lighting_type?: string | null
+          ai_material?: string | null
+          ai_pattern?: string | null
+          ai_presentation_quality?: number | null
+          ai_shape?: string | null
+          ai_texture?: string | null
+          ai_vision_analysis?: string | null
+          ai_vision_confidence?: number | null
+          ai_vision_model?: string | null
+          ai_vision_timestamp?: string | null
+          category?: string | null
+          characteristics?: string | null
+          chat_text?: string | null
+          compare_at_price?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          dimensions_source?: string | null
+          dimensions_text?: string | null
+          enrichment_error?: string | null
+          enrichment_status?: string | null
+          functionality?: string | null
+          google_age_group?: string | null
+          google_availability?: string | null
+          google_brand?: string | null
+          google_condition?: string | null
+          google_custom_label_0?: string | null
+          google_custom_label_1?: string | null
+          google_custom_label_2?: string | null
+          google_custom_label_3?: string | null
+          google_custom_label_4?: string | null
+          google_custom_product?: boolean | null
+          google_gender?: string | null
+          google_gtin?: string | null
+          google_mpn?: string | null
+          google_product_category?: string | null
+          google_synced_at?: string | null
+          handle?: string | null
+          height?: number | null
+          height_unit?: string | null
+          id?: string
+          image_url?: string | null
+          imported_at?: string | null
+          inventory_quantity?: number | null
+          last_enriched_at?: string | null
+          last_seo_sync_at?: string | null
+          length?: number | null
+          length_unit?: string | null
+          other_dimensions?: Json | null
+          price?: number | null
+          product_type?: string | null
+          raw_data?: Json | null
+          room?: string | null
+          seller_id?: string
+          seo_description?: string | null
+          seo_sync_error?: string | null
+          seo_synced_to_shopify?: boolean | null
+          seo_title?: string | null
+          shop_name?: string | null
+          shopify_id?: number | null
+          smart_depth?: number | null
+          smart_depth_unit?: string | null
+          smart_diameter?: number | null
+          smart_diameter_unit?: string | null
+          smart_height?: number | null
+          smart_height_unit?: string | null
+          smart_length?: number | null
+          smart_length_unit?: string | null
+          smart_seat_height?: number | null
+          smart_seat_height_unit?: string | null
+          smart_weight?: number | null
+          smart_weight_unit?: string | null
+          smart_width?: number | null
+          smart_width_unit?: string | null
+          status?: string | null
+          store_id?: string | null
+          style?: string | null
+          sub_category?: string | null
+          tags?: string | null
+          title?: string
+          updated_at?: string
+          vendor?: string | null
+          width?: number | null
+          width_unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopify_products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_plans: {
         Row: {
@@ -436,6 +830,65 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_logs: {
+        Row: {
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          images_processed: number | null
+          operation_type: string
+          products_added: number | null
+          products_processed: number | null
+          products_updated: number | null
+          seller_id: string
+          started_at: string
+          status: string
+          store_id: string | null
+          store_name: string
+          variants_processed: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          images_processed?: number | null
+          operation_type?: string
+          products_added?: number | null
+          products_processed?: number | null
+          products_updated?: number | null
+          seller_id: string
+          started_at?: string
+          status?: string
+          store_id?: string | null
+          store_name: string
+          variants_processed?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          images_processed?: number | null
+          operation_type?: string
+          products_added?: number | null
+          products_processed?: number | null
+          products_updated?: number | null
+          seller_id?: string
+          started_at?: string
+          status?: string
+          store_id?: string | null
+          store_name?: string
+          variants_processed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
             referencedColumns: ["id"]
           },
         ]
