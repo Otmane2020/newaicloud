@@ -100,16 +100,22 @@ export function ShopifyConnection() {
 
     setImporting(true);
     try {
-      // This would call an edge function to import products
-      toast.success('Import des produits démarré');
-      
-      // Update last sync time
-      await (supabase as any)
-        .from('shopify_stores')
-        .update({ last_sync_at: new Date().toISOString() })
-        .eq('id', store.id);
+      const { data, error } = await supabase.functions.invoke('import-products', {
+        body: {
+          shopName: store.store_name,
+          apiToken: store.api_token,
+          storeId: store.id
+        }
+      });
 
-      await loadStore();
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(`${data.count} produits importés avec succès!`);
+        await loadStore();
+      } else {
+        toast.error(data.error || 'Erreur lors de l\'import');
+      }
     } catch (error) {
       console.error('Error importing products:', error);
       toast.error('Erreur lors de l\'import des produits');
