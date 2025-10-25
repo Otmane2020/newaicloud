@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.chat-smart]
 verify_jwt = true
+
+[functions.generate-blog-article]
+verify_jwt = true
+
+[functions.sync-blog-to-shopify]
+verify_jwt = true

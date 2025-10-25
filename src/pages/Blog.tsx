@@ -51,6 +51,58 @@ export default function Blog() {
     }
   };
 
+  const handleCreateArticle = async () => {
+    try {
+      setLoading(true);
+      toast.info('Génération de l\'article en cours...');
+
+      const { data, error } = await supabase.functions.invoke('generate-blog-article', {
+        body: {
+          user_id: user?.id,
+          title: 'Guide Complet pour Bien Choisir',
+          keywords: ['guide', 'comparatif', 'conseils'],
+          mode: 'manual'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Article généré avec succès !');
+        loadData();
+      } else {
+        throw new Error(data?.error || 'Erreur lors de la génération');
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Erreur lors de la génération');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSyncArticle = async (articleId: string) => {
+    try {
+      toast.info('Synchronisation avec Shopify...');
+
+      const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
+        body: { articleId }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Article publié sur Shopify !');
+        loadData();
+      } else {
+        throw new Error(data?.error || 'Erreur lors de la synchronisation');
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Erreur lors de la synchronisation');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle p-8">
       <div className="container mx-auto max-w-7xl">
@@ -80,16 +132,17 @@ export default function Blog() {
             <Card className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Articles de Blog</h2>
-                <Button size="lg">
+                <Button size="lg" onClick={handleCreateArticle} disabled={loading}>
                   <Sparkles className="w-5 h-5 mr-2" />
-                  Créer Article IA
+                  {loading ? 'Génération...' : 'Créer Article IA'}
                 </Button>
               </div>
 
               {articles.length === 0 ? (
                 <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">Aucun article</p>
-                  <Button>
+                  <Button onClick={handleCreateArticle} disabled={loading}>
                     <Plus className="w-5 h-5 mr-2" />
                     Créer votre premier article
                   </Button>
@@ -97,9 +150,28 @@ export default function Blog() {
               ) : (
                 <div className="space-y-4">
                   {articles.map((article) => (
-                    <Card key={article.id} className="p-4">
-                      <h3 className="font-semibold">{article.title}</h3>
-                      <Badge variant="secondary">{article.status}</Badge>
+                    <Card key={article.id} className="p-4 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-lg">{article.title}</h3>
+                            <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                              {article.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(article.created_at).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
+                        {article.status === 'draft' && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleSyncArticle(article.id)}
+                          >
+                            Publier sur Shopify
+                          </Button>
+                        )}
+                      </div>
                     </Card>
                   ))}
                 </div>
@@ -119,10 +191,11 @@ export default function Blog() {
 
               {campaigns.length === 0 ? (
                 <div className="text-center py-12">
+                  <CalendarClock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">Aucune campagne</p>
                   <Button>
                     <Plus className="w-5 h-5 mr-2" />
-                    Créer campagne
+                    Créer campagne automatique
                   </Button>
                 </div>
               ) : (
@@ -130,6 +203,9 @@ export default function Blog() {
                   {campaigns.map((campaign) => (
                     <Card key={campaign.id} className="p-4">
                       <h3 className="font-semibold">{campaign.name}</h3>
+                      <Badge variant={campaign.is_active ? 'default' : 'secondary'}>
+                        {campaign.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
                     </Card>
                   ))}
                 </div>
