@@ -11,7 +11,10 @@ import {
   Settings,
   Sparkles,
   User,
-  CreditCard
+  CreditCard,
+  ChevronDown,
+  Tag,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,11 +22,20 @@ import { useAuth } from '@/contexts/AuthContext';
 const menuItems = [
   { path: '/', label: 'Accueil', icon: Home },
   { path: '/products', label: 'Produits', icon: ShoppingBag },
-  { path: '/seo', label: 'SEO', icon: Zap },
+  { 
+    path: '/seo', 
+    label: 'SEO', 
+    icon: Zap,
+    subItems: [
+      { path: '/seo?tab=optimization', label: 'SEO Optimisation', icon: Sparkles },
+      { path: '/seo?tab=tags', label: 'Tag Optimisation', icon: Tag },
+      { path: '/seo?tab=alt', label: 'ALT Image', icon: ImageIcon },
+    ]
+  },
   { path: '/blog', label: 'Blog', icon: FileText },
 ];
 
-const subMenuItems = [
+const bottomMenuItems = [
   { path: '/dashboard', label: 'Compte', icon: User },
   { path: '/dashboard', label: 'Abonnement', icon: CreditCard },
   { path: '/integration', label: 'Shopify', icon: Settings },
@@ -34,10 +46,19 @@ export function Navigation() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo']);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const toggleMenu = (path: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(path) 
+        ? prev.filter(p => p !== path)
+        : [...prev, path]
+    );
   };
 
   return (
@@ -48,11 +69,11 @@ export function Navigation() {
         {/* Logo / Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg shadow-blue-300/50 flex-shrink-0">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             {!collapsed && (
-              <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
                 NewAI
               </span>
             )}
@@ -65,34 +86,81 @@ export function Navigation() {
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
               const Icon = item.icon;
+              const hasSubItems = 'subItems' in item && item.subItems;
+              const isExpanded = expandedMenus.includes(item.path);
               
               return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive 
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md' 
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  {!collapsed && <span className="font-medium">{item.label}</span>}
-                </Link>
+                <div key={item.path}>
+                  {hasSubItems ? (
+                    <>
+                      <button
+                        onClick={() => toggleMenu(item.path)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                          isActive 
+                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
+                            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        {!collapsed && (
+                          <>
+                            <span className="font-medium flex-1 text-left">{item.label}</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </>
+                        )}
+                      </button>
+                      {!collapsed && isExpanded && item.subItems && (
+                        <div className="ml-4 mt-1 space-y-1 border-l-2 border-blue-200 pl-2">
+                          {item.subItems.map((subItem) => {
+                            const SubIcon = subItem.icon;
+                            const isSubActive = location.pathname === item.path && location.search.includes(subItem.path.split('?')[1]);
+                            
+                            return (
+                              <Link
+                                key={subItem.path}
+                                to={subItem.path}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                                  isSubActive
+                                    ? 'bg-blue-100 text-blue-700 font-medium'
+                                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                                }`}
+                              >
+                                <SubIcon className="w-4 h-4 flex-shrink-0" />
+                                <span>{subItem.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Link
+                      to={item.path}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                        isActive 
+                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
+                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                      }`}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span className="font-medium">{item.label}</span>}
+                    </Link>
+                  )}
+                </div>
               );
             })}
           </div>
         </nav>
 
-        {/* Sub Menu */}
+        {/* Bottom Menu */}
         <div className="px-2 pb-2 space-y-1 border-t border-gray-200 pt-2">
           {!collapsed && (
             <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Paramètres
             </div>
           )}
-          {subMenuItems.map((item) => {
+          {bottomMenuItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             
@@ -102,8 +170,8 @@ export function Navigation() {
                 to={item.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                   isActive 
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md' 
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-300/50' 
+                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                 }`}
                 title={collapsed ? item.label : undefined}
               >
