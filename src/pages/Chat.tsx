@@ -2,10 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { MessageSquare, Send, Bot, User, ShoppingCart, Sparkles } from 'lucide-react';
+import { MessageSquare, Send, Bot, User, ShoppingCart, Sparkles, Code, Copy, Check, Settings as SettingsIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Message {
@@ -25,7 +28,13 @@ export default function Chat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
+  const [showEmbed, setShowEmbed] = useState(false);
+  const [copied, setCopied] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Chat embed configuration
+  const [chatPosition, setChatPosition] = useState<'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'>('bottom-right');
+  const [welcomeMessage, setWelcomeMessage] = useState('Bonjour ! Comment puis-je vous aider aujourd\'hui ?');
 
   useEffect(() => {
     if (user) {
@@ -131,27 +140,249 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
     }
   };
 
+  // Generate embed code
+  const embedCode = `<!-- Chat Intelligent Shopify - Powered by IA -->
+<div id="smart-chat-widget"></div>
+
+<script>
+(function() {
+  const config = {
+    sellerId: '${user?.id || 'YOUR_SELLER_ID'}',
+    position: '${chatPosition}',
+    welcomeMessage: '${welcomeMessage}',
+    apiUrl: 'https://votre-api.com/chat'
+  };
+
+  const positions = {
+    'bottom-right': 'bottom: 20px; right: 20px;',
+    'bottom-left': 'bottom: 20px; left: 20px;',
+    'top-right': 'top: 20px; right: 20px;',
+    'top-left': 'top: 20px; left: 20px;'
+  };
+
+  const widget = document.createElement('div');
+  widget.id = 'smart-chat-container';
+  widget.style.cssText = \`
+    position: fixed;
+    \${positions[config.position]}
+    z-index: 9999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  \`;
+
+  widget.innerHTML = \`
+    <button id="chat-toggle" style="
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+      <svg width="32" height="32" fill="white" viewBox="0 0 24 24">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+      </svg>
+    </button>
+    <div id="chat-window" style="
+      display: none;
+      width: 380px;
+      height: 500px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      flex-direction: column;
+      overflow: hidden;
+      margin-bottom: 16px;
+    ">
+      <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 20px;">
+        <h3 style="margin: 0; font-size: 18px; font-weight: 600;">💬 Assistant IA</h3>
+        <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">\${config.welcomeMessage}</p>
+      </div>
+      <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 16px;"></div>
+      <div style="padding: 16px; border-top: 1px solid #e5e5e5;">
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="chat-input" placeholder="Votre message..." style="flex: 1; padding: 10px; border: 1px solid #e5e5e5; border-radius: 8px; outline: none;" />
+          <button id="chat-send" style="padding: 10px 16px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border: none; border-radius: 8px; cursor: pointer;">Envoyer</button>
+        </div>
+      </div>
+    </div>
+  \`;
+
+  document.body.appendChild(widget);
+
+  const toggle = document.getElementById('chat-toggle');
+  const window = document.getElementById('chat-window');
+  const input = document.getElementById('chat-input');
+  const send = document.getElementById('chat-send');
+  const messages = document.getElementById('chat-messages');
+
+  toggle.onclick = () => {
+    window.style.display = window.style.display === 'none' ? 'flex' : 'none';
+  };
+
+  send.onclick = sendMessage;
+  input.onkeypress = (e) => {
+    if (e.key === 'Enter') sendMessage();
+  };
+
+  function sendMessage() {
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage('user', message);
+    input.value = '';
+
+    // Call API
+    fetch(config.apiUrl + '?seller_id=' + config.sellerId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    })
+    .then(r => r.json())
+    .then(data => {
+      addMessage('assistant', data.response || 'Désolé, je n\\'ai pas compris.');
+    })
+    .catch(() => {
+      addMessage('assistant', 'Erreur de connexion. Veuillez réessayer.');
+    });
+  }
+
+  function addMessage(role, content) {
+    const div = document.createElement('div');
+    div.style.cssText = \`
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      \${role === 'user' ? 'background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; margin-left: 40px;' : 'background: #f3f4f6; margin-right: 40px;'}
+      font-size: 14px;
+      line-height: 1.5;
+    \`;
+    div.textContent = content;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+})();
+</script>`;
+
+  const handleCopyEmbed = () => {
+    navigator.clipboard.writeText(embedCode);
+    setCopied(true);
+    toast.success('Code copié dans le presse-papier !');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle p-8">
-      <div className="container mx-auto max-w-5xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-            <MessageSquare className="w-10 h-10 text-primary" />
-            Chat Smart
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Assistant intelligent connecté à votre catalogue Shopify
-          </p>
-          <div className="flex gap-2 mt-4">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              {products.length} produits disponibles
-            </Badge>
-            <Badge variant="outline">Propulsé par IA</Badge>
+      <div className="container mx-auto max-w-6xl">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
+              <MessageSquare className="w-10 h-10 text-primary" />
+              Chat Smart
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              Assistant intelligent connecté à votre catalogue Shopify
+            </p>
+            <div className="flex gap-2 mt-4">
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                {products.length} produits disponibles
+              </Badge>
+              <Badge variant="outline">Propulsé par IA</Badge>
+            </div>
           </div>
+          <Button
+            onClick={() => setShowEmbed(!showEmbed)}
+            variant="outline"
+            size="lg"
+          >
+            <Code className="w-4 h-4 mr-2" />
+            {showEmbed ? 'Masquer' : 'Code Embed'}
+          </Button>
         </div>
 
-        <Card className="h-[calc(100vh-280px)] flex flex-col">
+        {showEmbed && (
+          <Card className="mb-6 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <SettingsIcon className="w-6 h-6 text-primary" />
+                <div>
+                  <h3 className="text-lg font-bold">Configuration du Chat Embed</h3>
+                  <p className="text-sm text-muted-foreground">Personnalisez et intégrez le chat sur votre boutique</p>
+                </div>
+              </div>
+              <Button onClick={handleCopyEmbed} variant="default">
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Copié!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copier le code
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <Label htmlFor="position">Position du widget</Label>
+                <Select value={chatPosition} onValueChange={(value: any) => setChatPosition(value)}>
+                  <SelectTrigger id="position">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bottom-right">Bas droite</SelectItem>
+                    <SelectItem value="bottom-left">Bas gauche</SelectItem>
+                    <SelectItem value="top-right">Haut droite</SelectItem>
+                    <SelectItem value="top-left">Haut gauche</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="welcome">Message d'accueil</Label>
+                <Input
+                  id="welcome"
+                  value={welcomeMessage}
+                  onChange={(e) => setWelcomeMessage(e.target.value)}
+                  placeholder="Message d'accueil personnalisé"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Code d'intégration Shopify</Label>
+              <Textarea
+                readOnly
+                value={embedCode}
+                className="font-mono text-xs h-64 resize-none bg-secondary mt-2"
+              />
+            </div>
+
+            <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
+                📝 Instructions d'installation :
+              </p>
+              <ol className="text-sm text-yellow-800 dark:text-yellow-300 space-y-1 ml-4 list-decimal">
+                <li>Copiez le code ci-dessus</li>
+                <li>Dans Shopify, allez dans <strong>Boutique en ligne → Thèmes</strong></li>
+                <li>Cliquez sur <strong>Modifier le code</strong></li>
+                <li>Ouvrez <code>theme.liquid</code></li>
+                <li>Collez le code juste avant la balise <code>&lt;/body&gt;</code></li>
+                <li>Sauvegardez</li>
+              </ol>
+            </div>
+          </Card>
+        )}
+
+        <Card className="h-[calc(100vh-380px)] flex flex-col">
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {messages.map((message, index) => (

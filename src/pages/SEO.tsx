@@ -4,7 +4,10 @@ import { SeoOptimization } from '@/components/seo/SeoOptimization';
 import { TagOptimization } from '@/components/seo/TagOptimization';
 import { SeoAltImage } from '@/components/seo/SeoAltImage';
 import { SeoAutomation } from '@/components/seo/SeoAutomation';
-import { Sparkles, Tags, Image, Settings } from 'lucide-react';
+import { GoogleMerchant } from '@/components/seo/GoogleMerchant';
+import { GoogleShopping } from '@/components/seo/GoogleShopping';
+import { ProductSearch } from '@/components/seo/ProductSearch';
+import { Sparkles, Tags, Image, Settings, ShoppingBag, ShoppingCart, Search } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +17,7 @@ export default function SEO() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['optimization', 'tags', 'alt', 'automation'].includes(tab)) {
+    if (tab && ['optimization', 'tags', 'alt', 'automation', 'merchant', 'shopping', 'search'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -43,6 +46,24 @@ export default function SEO() {
       label: 'Automation',
       icon: Settings,
       description: 'Paramètres'
+    },
+    {
+      id: 'merchant',
+      label: 'Merchant',
+      icon: ShoppingBag,
+      description: 'Flux XML'
+    },
+    {
+      id: 'shopping',
+      label: 'Shopping',
+      icon: ShoppingCart,
+      description: 'Google Ads'
+    },
+    {
+      id: 'search',
+      label: 'Recherche',
+      icon: Search,
+      description: 'IA Search'
     }
   ];
 
@@ -58,7 +79,7 @@ export default function SEO() {
       </div>
 
       {/* Mobile-friendly Tab Navigation */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -102,6 +123,9 @@ export default function SEO() {
         {activeTab === 'tags' && <TagOptimization />}
         {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'automation' && <SeoAutomation />}
+        {activeTab === 'merchant' && <GoogleMerchant />}
+        {activeTab === 'shopping' && <GoogleShopping />}
+        {activeTab === 'search' && <ProductSearch />}
       </div>
     </div>
   );

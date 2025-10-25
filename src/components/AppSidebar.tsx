@@ -1,4 +1,4 @@
-import { LayoutDashboard, ShoppingBag, FileText, Search, User, LogOut, Sparkles, Tags, Image, Settings } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, FileText, Search, User, LogOut, Sparkles, Tags, Image, Settings, ShoppingCart } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -32,6 +32,9 @@ const seoSubItems = [
   { title: "Tag Optimisation", url: "/seo?tab=tags", icon: Tags },
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
   { title: "Automatisation", url: "/seo?tab=automation", icon: Settings },
+  { title: "Google Merchant", url: "/seo?tab=merchant", icon: ShoppingBag },
+  { title: "Google Shopping", url: "/seo?tab=shopping", icon: ShoppingCart },
+  { title: "Recherche produits", url: "/seo?tab=search", icon: Search },
 ];
 
 export function AppSidebar() {
