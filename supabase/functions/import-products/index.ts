@@ -74,10 +74,35 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Authenticate user first with anon key
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     const { shopName, apiToken, storeId }: RequestBody = await req.json();
 
@@ -90,6 +115,32 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+
+    // Verify store ownership if storeId is provided
+    if (storeId) {
+      const { data: store, error: storeError } = await supabaseClient
+        .from('shopify_connections')
+        .select('user_id')
+        .eq('id', storeId)
+        .single();
+
+      if (storeError || !store || store.user_id !== user.id) {
+        console.error('Store ownership verification failed:', storeError);
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized access to store' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+    }
+
+    // Now use service role key for actual operations (after authorization check)
+    const supabaseServiceClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
     const cleanShopName = shopName.replace(".myshopify.com", "");
     const startTime = new Date().toISOString();
@@ -118,9 +169,9 @@ Deno.serve(async (req: Request) => {
 
     // Update store currency if storeId is provided
     if (storeId) {
-      await supabaseClient
-        .from('shopify_stores')
-        .update({ currency: shopCurrency })
+      await supabaseServiceClient
+        .from('shopify_connections')
+        .update({ store_url: `${cleanShopName}.myshopify.com` })
         .eq('id', storeId);
     }
 
@@ -215,7 +266,7 @@ Deno.serve(async (req: Request) => {
       };
     });
 
-    const { data: upsertedProducts, error: insertError } = await supabaseClient
+    const { data: upsertedProducts, error: insertError } = await supabaseServiceClient
       .from("shopify_products")
       .upsert(productsToInsert, {
         onConflict: "shopify_id",
@@ -273,7 +324,7 @@ Deno.serve(async (req: Request) => {
         }));
 
         if (variantsToInsert.length > 0) {
-          const { error: variantError } = await supabaseClient
+          const { error: variantError } = await supabaseServiceClient
             .from("product_variants")
             .upsert(variantsToInsert, {
               onConflict: "shopify_variant_id",
@@ -299,7 +350,7 @@ Deno.serve(async (req: Request) => {
           height: (image as any).height || null,
         }));
 
-        const { error: imageError } = await supabaseClient
+        const { error: imageError } = await supabaseServiceClient
           .from("product_images")
           .upsert(imagesToInsert, {
             onConflict: "shopify_image_id",
@@ -316,7 +367,7 @@ Deno.serve(async (req: Request) => {
 
     const completedAt = new Date().toISOString();
 
-    const { error: logError } = await supabaseClient
+    const { error: logError } = await supabaseServiceClient
       .from("sync_logs")
       .insert({
         store_id: storeId || null,
