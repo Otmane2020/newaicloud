@@ -266,10 +266,10 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <MessageSquare className="w-8 md:w-10 h-8 md:h-10 text-primary" />
+              <div className="p-3 bg-gradient-to-br from-primary to-primary/50 rounded-2xl shadow-lg">
+                <MessageSquare className="w-8 md:w-10 h-8 md:h-10 text-white" />
               </div>
-              Chat Smart
+              💬 Chat Smart AI
             </h1>
             <p className="text-muted-foreground text-base md:text-lg">
               Assistant intelligent connecté à votre catalogue Shopify
@@ -370,16 +370,19 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
           </Card>
         )}
 
-        <Card className="h-[calc(100vh-380px)] flex flex-col bg-card shadow-xl border-2">
-          {/* Header du chat */}
-          <div className="px-6 py-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+        <Card className="h-[calc(100vh-380px)] flex flex-col bg-white dark:bg-card shadow-2xl border-4 border-primary/20 rounded-2xl overflow-hidden">
+          {/* Header du chat avec design moderne */}
+          <div className="px-6 py-5 border-b-2 bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-white">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                <Bot className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <Bot className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold">Assistant IA</h3>
-                <p className="text-xs text-muted-foreground">En ligne • Répond en quelques secondes</p>
+                <h3 className="font-bold text-lg">🤖 Assistant IA Intelligent</h3>
+                <p className="text-xs text-white/90 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  En ligne • Prêt à vous aider
+                </p>
               </div>
             </div>
           </div>
@@ -469,24 +472,24 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="border-t p-4 bg-gradient-to-r from-muted/30 to-muted/10">
-            <div className="flex gap-2">
+          {/* Input avec design moderne */}
+          <div className="border-t-2 p-5 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-muted/30 dark:to-muted/10">
+            <div className="flex gap-3">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Posez une question sur vos produits..."
-                className="flex-1 bg-card border-2 focus:border-primary transition-colors"
+                placeholder="💬 Tapez votre message ici..."
+                className="flex-1 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary shadow-sm rounded-xl h-12 text-base"
                 disabled={loading}
               />
               <Button 
                 onClick={handleSend} 
                 disabled={loading || !input.trim()}
-                size="icon"
-                className="bg-primary hover:bg-primary/90 shadow-lg"
+                size="lg"
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg rounded-xl px-6 h-12"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-5 h-5" />
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
