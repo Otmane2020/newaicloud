@@ -25,7 +25,7 @@ const handler = async (req: Request): Promise<Response> => {
       connection: {
         hostname: Deno.env.get('SMTP_HOST')!,
         port: parseInt(Deno.env.get('SMTP_PORT') || '465'),
-        tls: Deno.env.get('SMTP_SECURE') === 'true',
+        tls: true,
         auth: {
           username: Deno.env.get('SMTP_USER')!,
           password: Deno.env.get('SMTP_PASSWORD')!,
