@@ -1,4 +1,4 @@
-import { LayoutDashboard, ShoppingBag, FileText, Search, User, LogOut } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, FileText, Search, User, LogOut, Sparkles, Tags, Image, Settings } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -9,17 +9,29 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarFooter,
   useSidebar,
+  SidebarMenuAction,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronRight } from "lucide-react";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Produits", url: "/products", icon: ShoppingBag },
   { title: "Blog SEO", url: "/blog", icon: FileText },
-  { title: "Optimisation", url: "/seo", icon: Search },
+];
+
+const seoSubItems = [
+  { title: "SEO Optimisation", url: "/seo?tab=optimization", icon: Sparkles },
+  { title: "Tag Optimisation", url: "/seo?tab=tags", icon: Tags },
+  { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
+  { title: "Automatisation", url: "/seo?tab=automation", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -27,8 +39,17 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const currentPath = location.pathname;
+  const currentSearch = location.search;
 
-  const isActive = (path: string) => currentPath === path;
+  const isActive = (path: string) => {
+    if (path.includes('?')) {
+      const [pathPart, searchPart] = path.split('?');
+      return currentPath === pathPart && currentSearch.includes(searchPart);
+    }
+    return currentPath === path;
+  };
+
+  const isSeoActive = currentPath === '/seo' || seoSubItems.some(item => isActive(item.url));
 
   return (
     <Sidebar collapsible="icon">
@@ -47,6 +68,33 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* SEO Menu with Submenu */}
+              <Collapsible defaultOpen={isSeoActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isSeoActive}>
+                      <Search className="h-4 w-4" />
+                      <span>SEO</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {seoSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

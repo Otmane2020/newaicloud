@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { OptimizationProgressDialog } from './OptimizationProgressDialog';
 import {
   Search,
   RefreshCw,
@@ -61,6 +62,8 @@ export function SeoAltImage() {
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
 
   const IMAGES_PER_PAGE = 50;
 
@@ -153,6 +156,8 @@ export function SeoAltImage() {
     }
 
     setGenerating(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     setProgress({ current: 0, total: imagesToGenerate.length });
 
     for (let i = 0; i < imagesToGenerate.length; i++) {
@@ -167,9 +172,7 @@ export function SeoAltImage() {
     }
 
     setGenerating(false);
-    setProgress({ current: 0, total: 0 });
-    setSelectedImages(new Set());
-    toast.success('Génération des textes ALT terminée');
+    setIsOptimizationComplete(true);
     await fetchImages();
   };
 
@@ -183,6 +186,7 @@ export function SeoAltImage() {
       return;
     }
 
+    setShowProgressDialog(false);
     setSyncing(true);
     setProgress({ current: 0, total: imagesToSync.length });
 
@@ -202,6 +206,12 @@ export function SeoAltImage() {
     setSelectedImages(new Set());
     toast.success('Synchronisation terminée');
     await fetchImages();
+  };
+
+  const handleCloseProgressDialog = () => {
+    setShowProgressDialog(false);
+    setIsOptimizationComplete(false);
+    setSelectedImages(new Set());
   };
 
   if (loading) {
@@ -543,6 +553,18 @@ export function SeoAltImage() {
           </div>
         </div>
       )}
+
+      {/* Optimization Progress Dialog */}
+      <OptimizationProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        title={generating ? "Génération des textes ALT en cours" : "Synchronisation Shopify"}
+        current={progress.current}
+        total={progress.total}
+        isComplete={isOptimizationComplete}
+        onSyncClick={handleSyncSelected}
+        onClose={handleCloseProgressDialog}
+      />
     </div>
   );
 }

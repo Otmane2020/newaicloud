@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { OptimizationProgressDialog } from './OptimizationProgressDialog';
 import {
   Search,
   RefreshCw,
@@ -47,6 +48,8 @@ export function SeoOptimization() {
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
 
   const ITEMS_PER_PAGE = 50;
 
@@ -119,6 +122,8 @@ export function SeoOptimization() {
     }
 
     setGenerating(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productsToGenerate.length });
 
     for (let i = 0; i < productsToGenerate.length; i++) {
@@ -133,9 +138,7 @@ export function SeoOptimization() {
     }
 
     setGenerating(false);
-    setProgress({ current: 0, total: 0 });
-    setSelectedProducts(new Set());
-    toast.success('Génération SEO terminée');
+    setIsOptimizationComplete(true);
     await fetchProducts();
   };
 
@@ -148,6 +151,8 @@ export function SeoOptimization() {
     }
 
     setGenerating(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productsToGenerate.length });
 
     const BATCH_SIZE = 3;
@@ -168,8 +173,7 @@ export function SeoOptimization() {
     }
 
     setGenerating(false);
-    setProgress({ current: 0, total: 0 });
-    toast.success('Génération SEO terminée');
+    setIsOptimizationComplete(true);
     await fetchProducts();
   };
 
@@ -183,6 +187,7 @@ export function SeoOptimization() {
       return;
     }
 
+    setShowProgressDialog(false);
     setSyncing(true);
     setProgress({ current: 0, total: productsToSync.length });
 
@@ -206,6 +211,12 @@ export function SeoOptimization() {
     setSelectedProducts(new Set());
     toast.success('Synchronisation terminée');
     await fetchProducts();
+  };
+
+  const handleCloseProgressDialog = () => {
+    setShowProgressDialog(false);
+    setIsOptimizationComplete(false);
+    setSelectedProducts(new Set());
   };
 
   if (loading) {
@@ -551,6 +562,18 @@ export function SeoOptimization() {
           </div>
         )}
       </Card>
+
+      {/* Optimization Progress Dialog */}
+      <OptimizationProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        title={generating ? "Optimisation SEO en cours" : "Synchronisation Shopify"}
+        current={progress.current}
+        total={progress.total}
+        isComplete={isOptimizationComplete}
+        onSyncClick={handleSyncSelected}
+        onClose={handleCloseProgressDialog}
+      />
     </div>
   );
 }

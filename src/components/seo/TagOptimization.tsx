@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { OptimizationProgressDialog } from './OptimizationProgressDialog';
 import { 
   Search, 
   RefreshCw, 
@@ -51,6 +52,8 @@ export function TagOptimization() {
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -162,6 +165,8 @@ export function TagOptimization() {
 
   const handleBulkGenerate = async (productIds: string[]) => {
     setGenerating(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productIds.length });
 
     let successCount = 0;
@@ -199,10 +204,7 @@ export function TagOptimization() {
     }
 
     setGenerating(false);
-    setProgress({ current: 0, total: 0 });
-    setSelectedProducts(new Set());
-    
-    toast.success(`Génération terminée: ${successCount} succès, ${skipCount} ignorés, ${errorCount} erreurs`);
+    setIsOptimizationComplete(true);
     await fetchProducts();
   };
 
@@ -228,6 +230,7 @@ export function TagOptimization() {
   };
 
   const handleBulkSync = async (productIds: string[]) => {
+    setShowProgressDialog(false);
     setSyncing(true);
     setProgress({ current: 0, total: productIds.length });
 
@@ -268,6 +271,12 @@ export function TagOptimization() {
     
     toast.success(`Synchronisation terminée: ${successCount} succès, ${errorCount} erreurs`);
     await fetchProducts();
+  };
+
+  const handleCloseProgressDialog = () => {
+    setShowProgressDialog(false);
+    setIsOptimizationComplete(false);
+    setSelectedProducts(new Set());
   };
 
   if (loading) {
@@ -691,6 +700,18 @@ export function TagOptimization() {
           <p className="text-muted-foreground">Aucun produit trouvé</p>
         </div>
       )}
+
+      {/* Optimization Progress Dialog */}
+      <OptimizationProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        title={generating ? "Optimisation des tags en cours" : "Synchronisation Shopify"}
+        current={progress.current}
+        total={progress.total}
+        isComplete={isOptimizationComplete}
+        onSyncClick={handleSyncSelected}
+        onClose={handleCloseProgressDialog}
+      />
     </div>
   );
 }

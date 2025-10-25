@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { SeoOptimization } from '@/components/seo/SeoOptimization';
 import { TagOptimization } from '@/components/seo/TagOptimization';
 import { SeoAltImage } from '@/components/seo/SeoAltImage';
@@ -8,7 +9,15 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 export default function SEO() {
-  const [activeTab, setActiveTab] = useState('optimization');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'optimization');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['optimization', 'tags', 'alt', 'automation'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const tabs = [
     {
@@ -49,27 +58,34 @@ export default function SEO() {
       </div>
 
       {/* Mobile-friendly Tab Navigation */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {tabs.map((tab) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
             <Card
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setSearchParams({ tab: tab.id });
+              }}
               className={cn(
-                "p-4 cursor-pointer transition-all hover:shadow-md",
-                activeTab === tab.id
+                "p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105",
+                isActive
                   ? "bg-primary text-primary-foreground shadow-lg border-primary"
-                  : "hover:bg-muted"
+                  : "hover:bg-muted border-2 border-transparent hover:border-primary/20"
               )}
             >
               <div className="flex flex-col items-center text-center gap-2">
-                <Icon className="w-6 h-6 md:w-7 md:h-7" />
+                <Icon className={cn(
+                  "w-6 h-6 md:w-7 md:h-7 transition-transform",
+                  isActive && "animate-scale-in"
+                )} />
                 <div>
                   <div className="font-semibold text-sm md:text-base">{tab.label}</div>
                   <div className={cn(
                     "text-xs mt-1",
-                    activeTab === tab.id ? "text-primary-foreground/80" : "text-muted-foreground"
+                    isActive ? "text-primary-foreground/80" : "text-muted-foreground"
                   )}>
                     {tab.description}
                   </div>
