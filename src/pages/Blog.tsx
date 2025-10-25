@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { BlogWizard } from '@/components/blog/BlogWizard';
+import { BlogOpportunities } from '@/components/blog/BlogOpportunities';
+import { CampaignWizard } from '@/components/blog/CampaignWizard';
 import { cn } from '@/lib/utils';
 
 export default function Blog() {
@@ -18,6 +20,7 @@ export default function Blog() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
+  const [showCampaignWizard, setShowCampaignWizard] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
@@ -255,12 +258,23 @@ export default function Blog() {
                           Publier
                         </Button>
                       )}
-                      {!article.meta_description && (
+                       {!article.meta_description && (
                         <Button
                           size="sm"
                           variant="secondary"
                           className="flex-1"
-                          onClick={() => toast.info('Génération SEO à venir')}
+                          onClick={async () => {
+                            try {
+                              const { error } = await supabase.functions.invoke('generate-article-seo', {
+                                body: { article_id: article.id }
+                              });
+                              if (error) throw error;
+                              toast.success('SEO généré avec succès !');
+                              loadData();
+                            } catch (error: any) {
+                              toast.error(error.message || 'Erreur lors de la génération SEO');
+                            }
+                          }}
                         >
                           <Sparkles className="w-3 h-3 mr-1" />
                           SEO
@@ -277,18 +291,20 @@ export default function Blog() {
       )}
 
       {activeTab === 'opportunities' && (
-        <Card className="p-6">
-          <div className="text-center py-12">
-            <Lightbulb className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Opportunités de Contenu</h3>
-            <p className="text-muted-foreground mb-6">
-              Découvrez des idées d'articles basées sur vos produits
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Cette fonctionnalité sera disponible prochainement
-            </p>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+              <Lightbulb className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold">Opportunités de Contenu</h2>
+              <p className="text-sm text-muted-foreground">
+                Idées d'articles détectées automatiquement basées sur votre catalogue
+              </p>
+            </div>
           </div>
-        </Card>
+          <BlogOpportunities />
+        </div>
       )}
 
       {/* Campaigns Section */}
@@ -304,7 +320,7 @@ export default function Blog() {
               Automatisez la création de contenu avec des campagnes
             </p>
           </div>
-          <Button size="lg">
+          <Button size="lg" onClick={() => setShowCampaignWizard(true)}>
             <Plus className="w-5 h-5 mr-2" />
             Créer Campagne
           </Button>
@@ -315,7 +331,7 @@ export default function Blog() {
             <div className="text-center py-12">
               <CalendarClock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">Aucune campagne</p>
-              <Button>
+              <Button onClick={() => setShowCampaignWizard(true)}>
                 <Plus className="w-5 h-5 mr-2" />
                 Créer campagne automatique
               </Button>
@@ -346,6 +362,13 @@ export default function Blog() {
           categories={categories}
         />
       )}
+
+      {/* Campaign Wizard Modal */}
+      <CampaignWizard
+        open={showCampaignWizard}
+        onOpenChange={setShowCampaignWizard}
+        onSuccess={loadData}
+      />
     </div>
   );
 }

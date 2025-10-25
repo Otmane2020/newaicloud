@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Database, Eye, Download, Sparkles, TrendingUp, Package } from "lucide-react";
+import { Loader2, Database, Eye, Download, Sparkles, TrendingUp, Package, CheckSquare, Square } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ProductSourceData {
   id: string;
@@ -66,6 +67,8 @@ const ProductSource = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedProduct, setSelectedProduct] = useState<ProductSourceData | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [enriching, setEnriching] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -159,11 +162,103 @@ const ProductSource = () => {
       return;
     }
 
+    setEnriching(true);
     toast.info(`Enrichissement de ${pendingProducts.length} produit(s)...`);
     
     for (const product of pendingProducts) {
       await handleEnrichProduct(product.id);
     }
+    setEnriching(false);
+  };
+
+  const handleEnrichSelected = async () => {
+    if (selectedProducts.size === 0) {
+      toast.info("Aucun produit sélectionné");
+      return;
+    }
+
+    setEnriching(true);
+    toast.info(`Enrichissement de ${selectedProducts.size} produit(s)...`);
+    
+    for (const productId of Array.from(selectedProducts)) {
+      await handleEnrichProduct(productId);
+    }
+    setSelectedProducts(new Set());
+    setEnriching(false);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedProducts.size === 0) {
+      toast.info("Aucun produit sélectionné");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("shopify_products")
+        .delete()
+        .in("id", Array.from(selectedProducts));
+
+      if (error) throw error;
+
+      toast.success(`${selectedProducts.size} produit(s) supprimé(s)`);
+      setSelectedProducts(new Set());
+      await loadProducts();
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la suppression");
+    }
+  };
+
+  const toggleProductSelection = (productId: string) => {
+    const newSelection = new Set(selectedProducts);
+    if (newSelection.has(productId)) {
+      newSelection.delete(productId);
+    } else {
+      newSelection.add(productId);
+    }
+    setSelectedProducts(newSelection);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      "Titre", "Catégorie", "Couleur", "Matériau", "Forme", 
+      "Longueur", "Largeur", "Hauteur", "Qualité", "Status"
+    ];
+    
+    const rows = filteredProducts.map(p => [
+      p.title,
+      p.category || "",
+      p.ai_color || "",
+      p.ai_material || "",
+      p.ai_shape || "",
+      p.smart_length ? `${p.smart_length} ${p.smart_length_unit}` : "",
+      p.smart_width ? `${p.smart_width} ${p.smart_width_unit}` : "",
+      p.smart_height ? `${p.smart_height} ${p.smart_height_unit}` : "",
+      p.ai_presentation_quality || "",
+      p.enrichment_status
+    ]);
+
+    const csv = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `products-enriched-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Export CSV réussi");
   };
 
   const enrichedCount = products.filter(p => p.enrichment_status === "enriched").length;
@@ -192,15 +287,30 @@ const ProductSource = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleEnrichAll} variant="secondary">
+          {selectedProducts.size > 0 && (
+            <>
+              <Button onClick={handleEnrichSelected} variant="default" disabled={enriching}>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Enrichir sélection ({selectedProducts.size})
+              </Button>
+              <Button onClick={handleDeleteSelected} variant="destructive">
+                Supprimer sélection ({selectedProducts.size})
+              </Button>
+            </>
+          )}
+          <Button onClick={handleEnrichAll} variant="secondary" disabled={enriching}>
             <Sparkles className="w-4 h-4 mr-2" />
-            Enrichir tout
+            {enriching ? "Enrichissement..." : "Enrichir tout"}
+          </Button>
+          <Button onClick={exportToCSV} variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
           </Button>
           <Button onClick={exportData} variant="outline">
             <Download className="w-4 h-4 mr-2" />
-            Exporter
+            Export JSON
           </Button>
-          <Button onClick={loadProducts}>
+          <Button onClick={loadProducts} disabled={enriching}>
             <TrendingUp className="w-4 h-4 mr-2" />
             Actualiser
           </Button>
@@ -249,7 +359,16 @@ const ProductSource = () => {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                onCheckedChange={toggleSelectAll}
+              />
+              <span className="text-sm font-medium">
+                Tout sélectionner ({selectedProducts.size}/{filteredProducts.length})
+              </span>
+            </div>
             <Input
               placeholder="Rechercher un produit..."
               value={searchTerm}
@@ -287,7 +406,14 @@ const ProductSource = () => {
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProducts.map((product) => (
-          <Card key={product.id} className="hover:shadow-lg transition-shadow">
+          <Card key={product.id} className="hover:shadow-lg transition-shadow relative">
+            <div className="absolute top-4 left-4 z-10">
+              <Checkbox
+                checked={selectedProducts.has(product.id)}
+                onCheckedChange={() => toggleProductSelection(product.id)}
+                className="bg-card"
+              />
+            </div>
             <CardHeader>
               {product.image_url && (
                 <img

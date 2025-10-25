@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Star,
   ShoppingCart,
@@ -25,6 +26,8 @@ import { toast } from "sonner";
 export default function ProductLanding() {
   const { id } = useParams();
   const [product, setProduct] = useState<any>(null);
+  const [variants, setVariants] = useState<any[]>([]);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
 
@@ -45,6 +48,18 @@ export default function ProductLanding() {
 
       if (error) throw error;
       setProduct(data);
+
+      // Charger les variations
+      const { data: variantsData, error: variantsError } = await supabase
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", id)
+        .order("created_at", { ascending: true });
+
+      if (!variantsError && variantsData) {
+        setVariants(variantsData);
+        setSelectedVariant(variantsData[0] || null);
+      }
     } catch (error: any) {
       toast.error("Erreur lors du chargement du produit");
       console.error(error);
@@ -150,13 +165,105 @@ export default function ProductLanding() {
                 </p>
               )}
 
+              {/* Variations Selector */}
+              {variants.length > 0 && (
+                <div className="space-y-4 mb-6">
+                  <h3 className="font-semibold">Options disponibles</h3>
+                  
+                  {/* Option 1 */}
+                  {variants.some(v => v.option1) && (
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">
+                        {variants[0].option1 ? "Option 1" : ""}
+                      </label>
+                      <Select 
+                        value={selectedVariant?.option1 || ""} 
+                        onValueChange={(val) => {
+                          const variant = variants.find(v => v.option1 === val);
+                          if (variant) setSelectedVariant(variant);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez une option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[...new Set(variants.map(v => v.option1).filter(Boolean))].map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Option 2 */}
+                  {variants.some(v => v.option2) && (
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">
+                        {variants[0].option2 ? "Option 2" : ""}
+                      </label>
+                      <Select 
+                        value={selectedVariant?.option2 || ""} 
+                        onValueChange={(val) => {
+                          const variant = variants.find(v => v.option2 === val);
+                          if (variant) setSelectedVariant(variant);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez une option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[...new Set(variants.map(v => v.option2).filter(Boolean))].map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Option 3 */}
+                  {variants.some(v => v.option3) && (
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">
+                        {variants[0].option3 ? "Option 3" : ""}
+                      </label>
+                      <Select 
+                        value={selectedVariant?.option3 || ""} 
+                        onValueChange={(val) => {
+                          const variant = variants.find(v => v.option3 === val);
+                          if (variant) setSelectedVariant(variant);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez une option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[...new Set(variants.map(v => v.option3).filter(Boolean))].map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Stock Info */}
+                  {selectedVariant && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Check className="w-4 h-4 text-green-500" />
+                      <span className="text-muted-foreground">
+                        Stock disponible: {selectedVariant.inventory_quantity || 0} unités
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-baseline gap-4 mb-6">
                 <span className="text-4xl font-bold text-primary">
-                  {product.price} {product.currency}
+                  {selectedVariant ? `${selectedVariant.price} ${selectedVariant.currency}` : `${product.price} ${product.currency}`}
                 </span>
-                {product.compare_at_price && product.compare_at_price > product.price && (
+                {selectedVariant?.compare_at_price && selectedVariant.compare_at_price > selectedVariant.price && (
                   <span className="text-2xl text-muted-foreground line-through">
-                    {product.compare_at_price} {product.currency}
+                    {selectedVariant.compare_at_price} {selectedVariant.currency}
                   </span>
                 )}
               </div>
