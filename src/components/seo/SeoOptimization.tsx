@@ -107,7 +107,7 @@ export function SeoOptimization() {
 
   const handleGenerateForSelected = async () => {
     const productsToGenerate = products.filter(
-      p => selectedProducts.has(p.id) && !p.seo_title
+      p => selectedProducts.has(p.id) && (!p.seo_title || !p.seo_description)
     );
 
     if (productsToGenerate.length === 0) {
@@ -120,7 +120,7 @@ export function SeoOptimization() {
 
     for (let i = 0; i < productsToGenerate.length; i++) {
       try {
-        await supabase.functions.invoke('enrich-product-with-ai', {
+        await supabase.functions.invoke('generate-seo-with-deepseek', {
           body: { productId: productsToGenerate[i].id }
         });
         setProgress({ current: i + 1, total: productsToGenerate.length });
@@ -132,6 +132,40 @@ export function SeoOptimization() {
     setGenerating(false);
     setProgress({ current: 0, total: 0 });
     setSelectedProducts(new Set());
+    toast.success('Génération SEO terminée');
+    await fetchProducts();
+  };
+
+  const handleGenerateAll = async () => {
+    const productsToGenerate = products.filter(p => !p.seo_title || !p.seo_description);
+
+    if (productsToGenerate.length === 0) {
+      toast.info('Tous les produits sont déjà optimisés');
+      return;
+    }
+
+    setGenerating(true);
+    setProgress({ current: 0, total: productsToGenerate.length });
+
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < productsToGenerate.length; i += BATCH_SIZE) {
+      const batch = productsToGenerate.slice(i, i + BATCH_SIZE);
+      
+      await Promise.all(batch.map(async (product) => {
+        try {
+          await supabase.functions.invoke('generate-seo-with-deepseek', {
+            body: { productId: product.id }
+          });
+        } catch (error) {
+          console.error('Error generating SEO:', error);
+        }
+      }));
+
+      setProgress({ current: Math.min(i + BATCH_SIZE, productsToGenerate.length), total: productsToGenerate.length });
+    }
+
+    setGenerating(false);
+    setProgress({ current: 0, total: 0 });
     toast.success('Génération SEO terminée');
     await fetchProducts();
   };
@@ -254,40 +288,54 @@ export function SeoOptimization() {
             />
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {selectedProducts.size > 0 && (
+            <>
+              <Button
+                onClick={handleGenerateForSelected}
+                disabled={generating}
+                className="gap-2"
+                variant="secondary"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Générer ({selectedProducts.size})
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleSyncSelected}
+                disabled={syncing}
+                className="gap-2"
+              >
+                {syncing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Synchro...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    Synchroniser ({selectedProducts.size})
+                  </>
+                )}
+              </Button>
+            </>
+          )}
           <Button
-            onClick={handleGenerateForSelected}
-            disabled={generating || selectedProducts.size === 0}
+            onClick={handleGenerateAll}
+            disabled={generating}
             className="gap-2"
+            variant="outline"
           >
-            {generating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Génération...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Générer SEO
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={handleSyncSelected}
-            disabled={syncing || selectedProducts.size === 0}
-            className="gap-2"
-          >
-            {syncing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Synchro...
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
-                Synchroniser
-              </>
-            )}
+            <Sparkles className="w-4 h-4" />
+            Tout générer
           </Button>
           <Button variant="outline" size="icon" onClick={fetchProducts}>
             <RefreshCw className="w-4 h-4" />

@@ -1,156 +1,107 @@
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Sparkles, Menu, X, LayoutDashboard, ShoppingBag, FileText, Zap, LogOut } from "lucide-react";
-import { useState } from "react";
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  Home, 
+  LayoutDashboard, 
+  ShoppingBag, 
+  FileText,
+  Zap,
+  LogOut,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+
+const menuItems = [
+  { path: '/', label: 'Accueil', icon: Home },
+  { path: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+  { path: '/products', label: 'Produits', icon: ShoppingBag },
+  { path: '/seo', label: 'SEO', icon: Zap },
+  { path: '/blog', label: 'Blog', icon: FileText },
+];
 
 export function Navigation() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
-  const isActive = (path: string) => location.pathname === path;
-
-  const menuItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/products', label: 'Produits', icon: ShoppingBag },
-    { path: '/blog', label: 'Blog SEO', icon: FileText },
-    { path: '/seo', label: 'Optimisation', icon: Zap },
-  ];
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <button 
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 group transition-transform hover:scale-105"
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-elegant">
-              <Sparkles className="w-5 h-5 text-white" />
+    <aside className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-300 z-50 ${
+      collapsed ? 'w-16' : 'w-64'
+    }`}>
+      <div className="flex flex-col h-full">
+        {/* Logo / Header */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+              <ShoppingBag className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              NewAI
-            </span>
-          </button>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-2">
-            {user ? (
-              <>
-                {menuItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.path);
-                  return (
-                    <Button
-                      key={item.path}
-                      variant={active ? 'default' : 'ghost'}
-                      onClick={() => navigate(item.path)}
-                      className="gap-2"
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.label}
-                    </Button>
-                  );
-                })}
-                <div className="w-px h-6 bg-border mx-2" />
-                <Button 
-                  variant="outline" 
-                  onClick={signOut}
-                  className="gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Déconnexion
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" onClick={() => navigate('/auth')}>
-                  Connexion
-                </Button>
-                <Button onClick={() => navigate('/auth?mode=signup')}>
-                  Commencer Gratuitement
-                </Button>
-              </>
+            {!collapsed && (
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                ShopSync
+              </span>
             )}
           </div>
+        </div>
 
-          {/* Mobile Menu Button */}
+        {/* Navigation Links */}
+        <nav className="flex-1 overflow-y-auto py-4">
+          <div className="px-2 space-y-1">
+            {menuItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const Icon = item.icon;
+              
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                    isActive 
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md' 
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                  title={collapsed ? item.label : undefined}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!collapsed && <span className="font-medium">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Footer - Logout & Collapse */}
+        <div className="border-t border-gray-200 p-2 space-y-1">
           <button
-            className="md:hidden p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+            title={collapsed ? 'Déconnexion' : undefined}
           >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6" />
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span className="font-medium">Déconnexion</span>}
+          </button>
+          
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="w-full flex items-center justify-center gap-3 px-3 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+          >
+            {collapsed ? (
+              <ChevronRight className="w-5 h-5" />
             ) : (
-              <Menu className="w-6 h-6" />
+              <>
+                <ChevronLeft className="w-5 h-5" />
+                <span className="font-medium">Réduire</span>
+              </>
             )}
           </button>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-2 border-t border-border">
-            {user ? (
-              <>
-                {menuItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.path);
-                  return (
-                    <Button
-                      key={item.path}
-                      variant={active ? 'default' : 'ghost'}
-                      className="w-full justify-start gap-2"
-                      onClick={() => {
-                        navigate(item.path);
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.label}
-                    </Button>
-                  );
-                })}
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => {
-                    signOut();
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <LogOut className="w-4 h-4" />
-                  Déconnexion
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => {
-                    navigate('/auth');
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Connexion
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    navigate('/auth?mode=signup');
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Commencer Gratuitement
-                </Button>
-              </>
-            )}
-          </div>
-        )}
       </div>
-    </nav>
+    </aside>
   );
 }
