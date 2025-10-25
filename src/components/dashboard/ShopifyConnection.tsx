@@ -26,15 +26,17 @@ export function ShopifyConnection() {
 
   const loadStore = async () => {
     try {
-      const { data } = await (supabase as any)
-        .from('shopify_stores')
+      const { data } = await supabase
+        .from('shopify_connections')
         .select('*')
-        .eq('seller_id', user?.id)
+        .eq('user_id', user?.id)
         .maybeSingle();
 
       if (data) {
         setStore(data);
-        setStoreName(data.store_name || '');
+        // Extract store name from store_url (remove .myshopify.com)
+        const storeName = data.store_url?.replace('.myshopify.com', '') || '';
+        setStoreName(storeName);
       }
     } catch (error) {
       console.error('Error loading store:', error);
@@ -70,12 +72,11 @@ export function ShopifyConnection() {
       
       if (store) {
         // Update existing
-        const { error } = await (supabase as any)
-          .from('shopify_stores')
+        const { error } = await supabase
+          .from('shopify_connections')
           .update({
-            store_name: storeName,
             store_url: storeUrl,
-            api_token: apiToken,
+            access_token: apiToken,
             updated_at: new Date().toISOString()
           })
           .eq('id', store.id);
@@ -83,13 +84,12 @@ export function ShopifyConnection() {
         if (error) throw error;
       } else {
         // Create new
-        const { error } = await (supabase as any)
-          .from('shopify_stores')
+        const { error } = await supabase
+          .from('shopify_connections')
           .insert({
-            store_name: storeName,
             store_url: storeUrl,
-            api_token: apiToken,
-            seller_id: user?.id,
+            access_token: apiToken,
+            user_id: user?.id,
             is_active: true
           });
 
@@ -115,10 +115,13 @@ export function ShopifyConnection() {
 
     setImporting(true);
     try {
+      // Extract store name from store_url
+      const shopName = store.store_url?.replace('.myshopify.com', '') || '';
+      
       const { data, error } = await supabase.functions.invoke('import-products', {
         body: {
-          shopName: store.store_name,
-          apiToken: store.api_token,
+          shopName: shopName,
+          apiToken: store.access_token,
           storeId: store.id
         }
       });
@@ -221,13 +224,11 @@ export function ShopifyConnection() {
 
           <div className="space-y-2 mb-6">
             <p className="text-sm">
-              <span className="font-medium">Boutique:</span> {store.store_name}.myshopify.com
+              <span className="font-medium">Boutique:</span> {store.store_url}
             </p>
-            {store.last_sync_at && (
-              <p className="text-sm text-muted-foreground">
-                Dernière synchronisation: {new Date(store.last_sync_at).toLocaleDateString('fr-FR')}
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground">
+              Connectée le: {new Date(store.created_at).toLocaleDateString('fr-FR')}
+            </p>
           </div>
 
           <Button 
