@@ -109,7 +109,7 @@ Deno.serve(async (req: Request) => {
 
     // Validate input
     const validation = validateImportProducts(requestBody);
-    if (!validation.success) {
+    if (!validation.success || !validation.data) {
       console.error('Validation errors:', validation.errors);
       return new Response(
         JSON.stringify({ 

@@ -29,7 +29,7 @@ serve(async (req) => {
 
     // Validate input
     const validation = validateCreateCheckout(requestBody);
-    if (!validation.success) {
+    if (!validation.success || !validation.data) {
       console.error('Validation errors:', validation.errors);
       return new Response(
         JSON.stringify({ 
