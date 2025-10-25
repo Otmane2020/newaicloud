@@ -6,12 +6,15 @@ import { Plus, Sparkles, FileText, CalendarClock, PenSquare } from 'lucide-react
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { BlogWizard } from '@/components/blog/BlogWizard';
 
 export default function Blog() {
   const { user } = useAuth();
   const [articles, setArticles] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showWizard, setShowWizard] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -38,6 +41,15 @@ export default function Blog() {
 
       if (campaignsError) throw campaignsError;
       setCampaigns(campaignsData || []);
+
+      // Load categories
+      const { data: productsData } = await supabase
+        .from('shopify_products')
+        .select('category')
+        .not('category', 'is', null);
+      
+      const uniqueCategories = [...new Set(productsData?.map(p => p.category).filter(Boolean))];
+      setCategories(uniqueCategories as string[]);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Erreur lors du chargement');
@@ -123,9 +135,9 @@ export default function Blog() {
               Gérez et publiez vos articles de blog
             </p>
           </div>
-          <Button size="lg" onClick={handleCreateArticle} disabled={loading}>
+          <Button size="lg" onClick={() => setShowWizard(true)} disabled={loading}>
             <Sparkles className="w-5 h-5 mr-2" />
-            {loading ? 'Génération...' : 'Créer Article IA'}
+            Créer Article IA
           </Button>
         </div>
 
@@ -134,7 +146,7 @@ export default function Blog() {
             <div className="text-center py-12">
               <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">Aucun article</p>
-              <Button onClick={handleCreateArticle} disabled={loading}>
+              <Button onClick={() => setShowWizard(true)} disabled={loading}>
                 <Plus className="w-5 h-5 mr-2" />
                 Créer votre premier article
               </Button>
@@ -213,6 +225,17 @@ export default function Blog() {
           )}
         </Card>
       </div>
+
+      {/* Blog Wizard Modal */}
+      {showWizard && (
+        <BlogWizard
+          onClose={() => {
+            setShowWizard(false);
+            loadData();
+          }}
+          categories={categories}
+        />
+      )}
     </div>
   );
 }
