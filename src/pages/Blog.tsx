@@ -1,20 +1,31 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Sparkles, FileText, CalendarClock, PenSquare } from 'lucide-react';
+import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { BlogWizard } from '@/components/blog/BlogWizard';
+import { cn } from '@/lib/utils';
 
 export default function Blog() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'articles');
   const [articles, setArticles] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['articles', 'opportunities'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (user) {
@@ -110,21 +121,65 @@ export default function Blog() {
     }
   };
 
+  const tabs = [
+    { id: 'articles', label: 'Articles', icon: PenSquare, description: 'Gérer vos articles' },
+    { id: 'opportunities', label: 'Opportunités', icon: Lightbulb, description: 'Idées de contenu' }
+  ];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-          <FileText className="w-10 h-10 text-primary" />
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">
           Blog SEO AI
         </h1>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-muted-foreground text-base md:text-lg">
           Créez des articles optimisés avec l'IA
         </p>
       </div>
 
-      {/* Articles Section */}
-      <div className="space-y-4">
+      {/* Tab Navigation */}
+      <div className="grid grid-cols-2 gap-3">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <Card
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setSearchParams({ tab: tab.id });
+              }}
+              className={cn(
+                "p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105",
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-lg border-primary ring-2 ring-primary"
+                  : "hover:bg-muted border-2 border-transparent hover:border-primary/20"
+              )}
+            >
+              <div className="flex flex-col items-center text-center gap-2">
+                <Icon className={cn(
+                  "w-6 h-6 md:w-7 md:h-7 transition-transform",
+                  isActive && "animate-scale-in"
+                )} />
+                <div>
+                  <div className="font-semibold text-sm md:text-base">{tab.label}</div>
+                  <div className={cn(
+                    "text-xs mt-1",
+                    isActive ? "text-primary-foreground/80" : "text-muted-foreground"
+                  )}>
+                    {tab.description}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'articles' && (
+        <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-cyan-100 dark:bg-cyan-900 rounded-lg">
             <PenSquare className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
@@ -181,10 +236,27 @@ export default function Blog() {
             </div>
           )}
         </Card>
-      </div>
+        </div>
+      )}
+
+      {activeTab === 'opportunities' && (
+        <Card className="p-6">
+          <div className="text-center py-12">
+            <Lightbulb className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Opportunités de Contenu</h3>
+            <p className="text-muted-foreground mb-6">
+              Découvrez des idées d'articles basées sur vos produits
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Cette fonctionnalité sera disponible prochainement
+            </p>
+          </div>
+        </Card>
+      )}
 
       {/* Campaigns Section */}
-      <div className="space-y-4">
+      {activeTab === 'articles' && (
+        <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
             <CalendarClock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
@@ -224,7 +296,8 @@ export default function Blog() {
             </div>
           )}
         </Card>
-      </div>
+        </div>
+      )}
 
       {/* Blog Wizard Modal */}
       {showWizard && (

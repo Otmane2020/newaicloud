@@ -1,4 +1,4 @@
-import { LayoutDashboard, ShoppingBag, FileText, Search, User, LogOut, Sparkles, Tags, Image, Settings, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, FileText, Search, User, LogOut, Sparkles, Tags, Image, Settings, ShoppingCart, MessageSquare, Zap, Lightbulb, Package } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -29,6 +29,11 @@ const menuItems = [
   { title: "Recherche IA", url: "/search", icon: Search },
 ];
 
+const chatSubItems = [
+  { title: "Chat Assistant", url: "/chat", icon: MessageSquare },
+  { title: "Produit Enrichi", url: "/product-enrichment", icon: Zap },
+];
+
 const seoSubItems = [
   { title: "SEO Optimisation", url: "/seo?tab=optimization", icon: Sparkles },
   { title: "Tag Optimisation", url: "/seo?tab=tags", icon: Tags },
@@ -36,8 +41,9 @@ const seoSubItems = [
   { title: "Automatisation", url: "/seo?tab=automation", icon: Settings },
 ];
 
-const blogItems = [
-  { title: "Blog SEO", url: "/blog", icon: FileText },
+const blogSubItems = [
+  { title: "Articles", url: "/blog?tab=articles", icon: FileText },
+  { title: "Opportunités", url: "/blog?tab=opportunities", icon: Lightbulb },
 ];
 
 export function AppSidebar() {
@@ -55,7 +61,9 @@ export function AppSidebar() {
     return currentPath === path;
   };
 
+  const isChatActive = currentPath === '/chat' || currentPath === '/product-enrichment' || chatSubItems.some(item => isActive(item.url));
   const isSeoActive = currentPath === '/seo' || seoSubItems.some(item => isActive(item.url));
+  const isBlogActive = currentPath === '/blog' || blogSubItems.some(item => isActive(item.url));
 
   return (
     <Sidebar collapsible="icon">
@@ -75,6 +83,33 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               
+              {/* Chat Menu with Submenu */}
+              <Collapsible defaultOpen={isChatActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isChatActive}>
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Chat</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {chatSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
               {/* SEO Menu with Submenu */}
               <Collapsible defaultOpen={isSeoActive} className="group/collapsible">
                 <SidebarMenuItem>
@@ -102,17 +137,32 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Blog Menu */}
-              {blogItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
+              {/* Blog Menu with Submenu */}
+              <Collapsible defaultOpen={isBlogActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isBlogActive}>
+                      <FileText className="h-4 w-4" />
+                      <span>Blog SEO</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {blogSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
                 </SidebarMenuItem>
-              ))}
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

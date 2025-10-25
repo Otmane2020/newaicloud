@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.shopping-feed]
 verify_jwt = false
+
+[functions.enrich-product]
+verify_jwt = true
