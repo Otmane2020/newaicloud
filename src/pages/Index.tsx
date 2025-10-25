@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import { 
   Zap, 
   ShoppingBag, 
@@ -14,7 +16,9 @@ import {
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-gradient-subtle pt-16">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-dark opacity-95" />
@@ -28,23 +32,23 @@ const Index = () => {
             </Badge>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white max-w-4xl leading-tight">
-              Optimize Your Store with{" "}
+              Optimisez votre boutique avec{" "}
               <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
-                AI Intelligence
+                NewAI
               </span>
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-2xl text-gray-300">
-              Automate SEO, manage products, create content, and boost sales with intelligent AI tools designed for modern e-commerce.
+              Automatisez le SEO, gérez vos produits, créez du contenu et boostez vos ventes avec des outils IA intelligents pour l'e-commerce moderne.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" className="group">
-                Get Started Free
+              <Button size="lg" className="group" onClick={() => window.location.href = '/auth?mode=signup'}>
+                Commencer Gratuitement
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10">
-                Watch Demo
+                Voir la Démo
               </Button>
             </div>
           </div>
@@ -57,13 +61,13 @@ const Index = () => {
 
       {/* Features Section */}
       <section className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-primary text-primary">Features</Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">Everything You Need to Scale</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Powerful tools built for Shopify sellers who want to grow faster
-          </p>
-        </div>
+          <div className="text-center mb-16 space-y-4">
+            <Badge variant="outline" className="border-primary text-primary">Fonctionnalités</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold">Tout ce dont vous avez besoin</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Des outils puissants pour les vendeurs Shopify qui veulent grandir plus vite
+            </p>
+          </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
@@ -92,12 +96,12 @@ const Index = () => {
       <section className="container mx-auto px-4 py-24">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <Badge variant="outline" className="border-success text-success">Results</Badge>
+            <Badge variant="outline" className="border-success text-success">Résultats</Badge>
             <h2 className="text-4xl md:text-5xl font-bold">
-              Proven Results for Shopify Stores
+              Des résultats prouvés pour boutiques Shopify
             </h2>
             <p className="text-muted-foreground text-lg">
-              Join hundreds of sellers who've transformed their stores with AI-powered optimization
+              Rejoignez des centaines de vendeurs qui ont transformé leur boutique avec l'optimisation IA
             </p>
             
             <div className="space-y-4 pt-4">
@@ -112,8 +116,8 @@ const Index = () => {
               ))}
             </div>
 
-            <Button size="lg" className="mt-6">
-              Start Optimizing Now
+            <Button size="lg" className="mt-6" onClick={() => window.location.href = '/auth?mode=signup'}>
+              Commencer maintenant
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
@@ -142,85 +146,87 @@ const Index = () => {
         <div className="container relative mx-auto px-4 py-24">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <h2 className="text-4xl md:text-5xl font-bold text-white">
-              Ready to Transform Your Store?
+              Prêt à transformer votre boutique ?
             </h2>
             <p className="text-xl text-gray-300">
-              Start your free trial today. No credit card required.
+              Commencez gratuitement aujourd'hui. Aucune carte bancaire requise.
             </p>
-            <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90">
-              Get Started Free
+            <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90" onClick={() => window.location.href = '/auth?mode=signup'}>
+              Commencer Gratuitement
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
         </div>
       </section>
+      <Footer />
     </div>
+    </>
   );
 };
 
 const features = [
   {
     icon: ShoppingBag,
-    title: "Product Management",
-    description: "Manage products with variants, GTIN generation, and Google Shopping integration",
-    tags: ["Multi-vendor", "Variants", "Google"]
+    title: "Gestion Produits",
+    description: "Gérez produits avec variantes, génération GTIN et intégration Google Shopping",
+    tags: ["Multi-vendeur", "Variantes", "Google"]
   },
   {
     icon: BarChart3,
     title: "Google Merchant Center",
-    description: "Generate XML feeds automatically and sync with Google Shopping",
-    tags: ["XML Feeds", "Auto-sync"]
+    description: "Génération automatique de flux XML et synchronisation Google Shopping",
+    tags: ["Flux XML", "Auto-sync"]
   },
   {
     icon: FileText,
-    title: "AI Blog SEO",
-    description: "Create SEO-optimized blog posts automatically with product linking",
-    tags: ["AI Content", "Auto-post"]
+    title: "Blog SEO AI",
+    description: "Création automatique d'articles SEO optimisés avec liens produits",
+    tags: ["Contenu AI", "Auto-post"]
   },
   {
     icon: Zap,
-    title: "SEO Optimization",
-    description: "AI-powered optimization for meta tags, descriptions, and keywords",
-    tags: ["Meta Tags", "Keywords"]
+    title: "Optimisation SEO",
+    description: "Optimisation IA des meta tags, descriptions et mots-clés",
+    tags: ["Meta Tags", "Mots-clés"]
   },
   {
     icon: MessageSquare,
-    title: "Smart Chat",
-    description: "AI assistant for product recommendations and customer support",
-    tags: ["AI Chat", "Support"]
+    title: "Chat Intelligent",
+    description: "Assistant IA pour recommandations produits et support client",
+    tags: ["Chat IA", "Support"]
   },
   {
     icon: Sparkles,
-    title: "Campaign Automation",
-    description: "Schedule and automate content creation campaigns",
-    tags: ["Automation", "Scheduling"]
+    title: "Automatisation Campagnes",
+    description: "Planification et automatisation de création de contenu",
+    tags: ["Automatisation", "Planning"]
   }
 ];
 
 const benefits = [
   {
-    title: "3x Faster Product Listing",
-    description: "Automate product data entry and optimization"
+    title: "3x Plus rapide",
+    description: "Automatisez la saisie et l'optimisation produits"
   },
   {
-    title: "50% More Organic Traffic",
-    description: "AI-optimized SEO drives quality visitors"
+    title: "50% Plus de trafic",
+    description: "SEO optimisé IA attire des visiteurs qualifiés"
   },
   {
-    title: "Save 10+ Hours Weekly",
-    description: "Automated content creation and management"
+    title: "10h+ économisées",
+    description: "Création et gestion de contenu automatisées"
   },
   {
-    title: "Better Google Rankings",
-    description: "Structured data and optimized feeds"
+    title: "Meilleur classement Google",
+    description: "Données structurées et flux optimisés"
   }
 ];
 
 const stats = [
-  { value: "10K+", label: "Products Optimized" },
-  { value: "500+", label: "Active Sellers" },
-  { value: "95%", label: "Satisfaction Rate" },
-  { value: "24/7", label: "AI Support" }
+  { value: "10K+", label: "Produits Optimisés" },
+  { value: "500+", label: "Vendeurs Actifs" },
+  { value: "95%", label: "Taux Satisfaction" },
+  { value: "24/7", label: "Support IA" }
 ];
 
 export default Index;
