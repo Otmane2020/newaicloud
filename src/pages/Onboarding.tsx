@@ -65,7 +65,14 @@ export default function Onboarding() {
         .order('display_order');
 
       if (error) throw error;
-      setPlans(data || []);
+      
+      // Cast features from Json to Record<string, any>
+      const formattedPlans = (data || []).map(plan => ({
+        ...plan,
+        features: (plan.features as Record<string, any>) || {}
+      })) as Plan[];
+      
+      setPlans(formattedPlans);
     } catch (error) {
       console.error('Error loading plans:', error);
       toast.error('Erreur lors du chargement des forfaits');
