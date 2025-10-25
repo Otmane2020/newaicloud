@@ -58,6 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       toast.error(error.message);
     } else {
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-welcome-email', {
+          body: { email, fullName }
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
+      
       toast.success('Inscription réussie ! Redirection vers onboarding...');
       setTimeout(() => navigate('/onboarding'), 1000);
     }

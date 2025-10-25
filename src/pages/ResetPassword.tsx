@@ -41,6 +41,16 @@ export default function ResetPassword() {
     if (error) {
       toast.error(error.message);
     } else {
+      // Send custom reset password email
+      try {
+        const resetLink = `${window.location.origin}/update-password`;
+        await supabase.functions.invoke('send-reset-password-email', {
+          body: { email, resetLink }
+        });
+      } catch (emailError) {
+        console.error('Failed to send custom reset email:', emailError);
+      }
+      
       setSent(true);
       toast.success('Email de réinitialisation envoyé !');
     }
