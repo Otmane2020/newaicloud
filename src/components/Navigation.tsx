@@ -7,7 +7,8 @@ import {
   Zap,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Settings
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +19,7 @@ const menuItems = [
   { path: '/products', label: 'Produits', icon: ShoppingBag },
   { path: '/seo', label: 'SEO', icon: Zap },
   { path: '/blog', label: 'Blog', icon: FileText },
+  { path: '/integration', label: 'Intégration', icon: Settings },
 ];
 
 export function Navigation() {

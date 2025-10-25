@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Blog from "./pages/Blog";
 import SEO from "./pages/SEO";
+import Integration from "./pages/Integration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,15 @@ const App = () => (
                 <ProtectedLayout>
                   <Navigation />
                   <SEO />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/integration"
+              element={
+                <ProtectedLayout>
+                  <Navigation />
+                  <Integration />
                 </ProtectedLayout>
               }
             />

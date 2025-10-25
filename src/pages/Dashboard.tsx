@@ -2,8 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AccountSettings } from '@/components/dashboard/AccountSettings';
 import { SubscriptionManagement } from '@/components/dashboard/SubscriptionManagement';
-import { ShopifyConnection } from '@/components/dashboard/ShopifyConnection';
-import { User, CreditCard, ShoppingBag } from 'lucide-react';
+import { User, CreditCard } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -16,12 +15,12 @@ export default function Dashboard() {
             Tableau de bord
           </h1>
           <p className="text-muted-foreground text-lg">
-            Gérez votre compte, abonnement et connexion Shopify
+            Gérez votre compte et abonnement
           </p>
         </div>
 
         <Tabs defaultValue="account" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="account" className="flex items-center gap-2">
               <User className="w-4 h-4" />
               Compte
@@ -29,10 +28,6 @@ export default function Dashboard() {
             <TabsTrigger value="subscription" className="flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
               Abonnement
-            </TabsTrigger>
-            <TabsTrigger value="shopify" className="flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" />
-              Shopify
             </TabsTrigger>
           </TabsList>
 
@@ -42,10 +37,6 @@ export default function Dashboard() {
 
           <TabsContent value="subscription">
             <SubscriptionManagement />
-          </TabsContent>
-
-          <TabsContent value="shopify">
-            <ShopifyConnection />
           </TabsContent>
         </Tabs>
       </div>
