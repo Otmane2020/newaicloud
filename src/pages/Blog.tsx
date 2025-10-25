@@ -187,7 +187,7 @@ export default function Blog() {
           <div className="flex-1">
             <h2 className="text-2xl font-bold">Articles de Blog</h2>
             <p className="text-sm text-muted-foreground">
-              Gérez et publiez vos articles de blog
+              Gérez et publiez vos articles de blog avec SEO optimisé
             </p>
           </div>
           <Button size="lg" onClick={() => setShowWizard(true)} disabled={loading}>
@@ -207,29 +207,66 @@ export default function Blog() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {articles.map((article) => (
-                <Card key={article.id} className="p-4 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{article.title}</h3>
-                        <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
-                          {article.status}
+                <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02]">
+                  <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                    <FileText className="w-16 h-16 text-primary" />
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                        {article.status}
+                      </Badge>
+                      {article.meta_description && (
+                        <Badge variant="outline" className="text-xs">
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          SEO
                         </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(article.created_at).toLocaleDateString('fr-FR')}
-                      </p>
+                      )}
                     </div>
-                    {article.status === 'draft' && (
+                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">{article.title}</h3>
+                    {article.meta_description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {article.meta_description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+                      <span>{new Date(article.created_at).toLocaleDateString('fr-FR')}</span>
+                      {article.keywords && article.keywords.length > 0 && (
+                        <span>{article.keywords.length} mots-clés</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleSyncArticle(article.id)}
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
                       >
-                        Publier sur Shopify
+                        Voir
                       </Button>
-                    )}
+                      {article.status === 'draft' && (
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleSyncArticle(article.id)}
+                        >
+                          Publier
+                        </Button>
+                      )}
+                      {!article.meta_description && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="flex-1"
+                          onClick={() => toast.info('Génération SEO à venir')}
+                        >
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          SEO
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </Card>
               ))}

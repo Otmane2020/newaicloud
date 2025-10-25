@@ -79,19 +79,21 @@ export function ProductSearch() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
-          <Search className="w-8 h-8 text-primary" />
+    <div className="space-y-6 p-4 md:p-0">
+      <div className="text-center md:text-left">
+        <h2 className="text-3xl md:text-4xl font-bold mb-3 flex items-center justify-center md:justify-start gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Search className="w-8 h-8 text-primary" />
+          </div>
           Recherche IA de Produits
         </h2>
-        <p className="text-muted-foreground">
-          Recherche intelligente alimentée par DeepSeek IA
+        <p className="text-muted-foreground text-base md:text-lg">
+          Recherche intelligente alimentée par IA - Trouvez le produit parfait en langage naturel
         </p>
       </div>
 
       {/* Search Bar */}
-      <Card className="p-6">
+      <Card className="p-4 md:p-6 shadow-lg border-2">
         <div className="flex gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />

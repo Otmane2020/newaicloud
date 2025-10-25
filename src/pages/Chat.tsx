@@ -261,15 +261,15 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="container mx-auto max-w-6xl">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-              <MessageSquare className="w-10 h-10 text-primary" />
+            <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
+              <MessageSquare className="w-8 md:w-10 h-8 md:h-10 text-primary" />
               Chat Smart
             </h1>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-base md:text-lg">
               Assistant intelligent connecté à votre catalogue Shopify
             </p>
             <div className="flex gap-2 mt-4">
@@ -367,9 +367,9 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
           </Card>
         )}
 
-        <Card className="h-[calc(100vh-380px)] flex flex-col">
+        <Card className="h-[calc(100vh-380px)] flex flex-col bg-card">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-background">
             {messages.map((message, index) => (
               <div
                 key={index}

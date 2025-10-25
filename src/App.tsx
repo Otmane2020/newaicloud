@@ -19,6 +19,8 @@ import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
 import ProductEnrichment from "./pages/ProductEnrichment";
 import ProductSource from "./pages/ProductSource";
+import ProductLanding from "./pages/ProductLanding";
+import ArticleLanding from "./pages/ArticleLanding";
 import Account from "./pages/Account";
 import Subscription from "./pages/Subscription";
 import Merchant from "./pages/Merchant";
@@ -158,6 +160,22 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ProductDetail />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/product-landing/:id"
+              element={
+                <ProtectedLayout>
+                  <ProductLanding />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/article-landing/:id"
+              element={
+                <ProtectedLayout>
+                  <ArticleLanding />
                 </ProtectedLayout>
               }
             />
