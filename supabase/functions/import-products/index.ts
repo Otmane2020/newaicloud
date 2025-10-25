@@ -131,10 +131,32 @@ Deno.serve(async (req: Request) => {
         .from('shopify_connections')
         .select('user_id')
         .eq('id', storeId)
-        .single();
+        .maybeSingle();
 
-      if (storeError || !store || store.user_id !== user.id) {
-        console.error('Store ownership verification failed:', storeError);
+      if (storeError) {
+        console.error('Store query error:', storeError);
+        return new Response(
+          JSON.stringify({ error: 'Error verifying store ownership' }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      if (!store) {
+        console.error('Store not found with id:', storeId);
+        return new Response(
+          JSON.stringify({ error: 'Store not found' }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      if (store.user_id !== user.id) {
+        console.error('User does not own this store');
         return new Response(
           JSON.stringify({ error: 'Unauthorized access to store' }),
           {

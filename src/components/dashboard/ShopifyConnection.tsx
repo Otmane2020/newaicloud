@@ -84,16 +84,23 @@ export function ShopifyConnection() {
         if (error) throw error;
       } else {
         // Create new
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('shopify_connections')
           .insert({
             store_url: storeUrl,
             access_token: apiToken,
             user_id: user?.id,
             is_active: true
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+        
+        // Update local state with the new store
+        if (data) {
+          setStore(data);
+        }
       }
 
       toast.success('Connexion Shopify enregistrée avec succès');
@@ -108,7 +115,7 @@ export function ShopifyConnection() {
   };
 
   const handleImportProducts = async () => {
-    if (!store) {
+    if (!store || !store.id) {
       toast.error('Veuillez d\'abord connecter votre boutique');
       return;
     }
