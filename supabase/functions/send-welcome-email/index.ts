@@ -1,10 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const welcomeEmailSchema = z.object({
+  email: z.string().email().max(255),
+  fullName: z.string().trim().min(1).max(100),
+});
 
 interface WelcomeEmailRequest {
   email: string;
@@ -17,7 +23,22 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, fullName }: WelcomeEmailRequest = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate input
+    const validation = welcomeEmailSchema.safeParse(requestBody);
+    if (!validation.success) {
+      console.error('Invalid input:', validation.error.errors);
+      return new Response(
+        JSON.stringify({ error: 'Invalid input data' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    const { email, fullName } = validation.data;
     
     console.log('Sending welcome email to:', email);
 
@@ -79,9 +100,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error: any) {
-    console.error('Error sending welcome email:', error);
+    // Sanitized error logging - don't expose SMTP details
+    console.error('Email sending failed');
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Failed to send email' }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },

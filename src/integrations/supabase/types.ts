@@ -483,27 +483,36 @@ export type Database = {
         Row: {
           access_token: string
           created_at: string
+          encrypted_token: string | null
           id: string
           is_active: boolean | null
+          is_encrypted: boolean | null
           store_url: string
+          token_iv: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           access_token: string
           created_at?: string
+          encrypted_token?: string | null
           id?: string
           is_active?: boolean | null
+          is_encrypted?: boolean | null
           store_url: string
+          token_iv?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           access_token?: string
           created_at?: string
+          encrypted_token?: string | null
           id?: string
           is_active?: boolean | null
+          is_encrypted?: boolean | null
           store_url?: string
+          token_iv?: string | null
           updated_at?: string
           user_id?: string
         }
