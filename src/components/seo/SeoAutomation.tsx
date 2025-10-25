@@ -69,7 +69,21 @@ export function SeoAutomation() {
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        setSettings(data);
+        // Extract and validate only the settings properties we need
+        const validatedSettings: AutomationSettings = {
+          seo_auto_enabled: data.seo_auto_enabled || false,
+          seo_auto_frequency: (data.seo_auto_frequency as 'hourly' | 'daily' | 'weekly') || 'daily',
+          seo_auto_schedule_hour: data.seo_auto_schedule_hour || 9,
+          tag_auto_enabled: data.tag_auto_enabled || false,
+          tag_auto_frequency: (data.tag_auto_frequency as 'hourly' | 'daily' | 'weekly') || 'daily',
+          tag_auto_schedule_hour: data.tag_auto_schedule_hour || 9,
+          alt_auto_enabled: data.alt_auto_enabled || false,
+          alt_auto_frequency: (data.alt_auto_frequency as 'hourly' | 'daily' | 'weekly') || 'daily',
+          alt_auto_schedule_hour: data.alt_auto_schedule_hour || 9,
+          sync_auto_enabled: data.sync_auto_enabled || false,
+          sync_after_optimization: data.sync_after_optimization !== false,
+        };
+        setSettings(validatedSettings);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
