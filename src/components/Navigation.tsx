@@ -8,18 +8,25 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Settings
+  Settings,
+  Sparkles,
+  User,
+  CreditCard
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const menuItems = [
   { path: '/', label: 'Accueil', icon: Home },
-  { path: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { path: '/products', label: 'Produits', icon: ShoppingBag },
   { path: '/seo', label: 'SEO', icon: Zap },
   { path: '/blog', label: 'Blog', icon: FileText },
-  { path: '/integration', label: 'Intégration', icon: Settings },
+];
+
+const subMenuItems = [
+  { path: '/dashboard', label: 'Compte', icon: User },
+  { path: '/dashboard', label: 'Abonnement', icon: CreditCard },
+  { path: '/integration', label: 'Shopify', icon: Settings },
 ];
 
 export function Navigation() {
@@ -41,12 +48,12 @@ export function Navigation() {
         {/* Logo / Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
-              <ShoppingBag className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+              <Sparkles className="w-6 h-6 text-white" />
             </div>
             {!collapsed && (
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                ShopSync
+              <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                NewAI
               </span>
             )}
           </div>
@@ -65,7 +72,7 @@ export function Navigation() {
                   to={item.path}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                     isActive 
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md' 
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md' 
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                   title={collapsed ? item.label : undefined}
@@ -77,6 +84,35 @@ export function Navigation() {
             })}
           </div>
         </nav>
+
+        {/* Sub Menu */}
+        <div className="px-2 pb-2 space-y-1 border-t border-gray-200 pt-2">
+          {!collapsed && (
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Paramètres
+            </div>
+          )}
+          {subMenuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+            
+            return (
+              <Link
+                key={item.path + item.label}
+                to={item.path}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                  isActive 
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+                title={collapsed ? item.label : undefined}
+              >
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && <span className="font-medium text-sm">{item.label}</span>}
+              </Link>
+            );
+          })}
+        </div>
 
         {/* Footer - Logout & Collapse */}
         <div className="border-t border-gray-200 p-2 space-y-1">
