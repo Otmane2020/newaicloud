@@ -71,6 +71,14 @@ export const PublicHeader = () => {
             >
               Avantages
             </button>
+            <button
+              onClick={() => scrollToSection("pricing")}
+              className={`font-medium transition-colors hover:text-primary ${
+                isScrolled ? "text-foreground" : "text-white"
+              }`}
+            >
+              Tarifs
+            </button>
           </nav>
 
           {/* Desktop Auth Buttons */}
@@ -121,6 +129,12 @@ export const PublicHeader = () => {
                 className="text-left font-medium hover:text-primary transition-colors"
               >
                 Avantages
+              </button>
+              <button
+                onClick={() => scrollToSection("pricing")}
+                className="text-left font-medium hover:text-primary transition-colors"
+              >
+                Tarifs
               </button>
               <div className="flex flex-col gap-2 pt-4 border-t">
                 <Button

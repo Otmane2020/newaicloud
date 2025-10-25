@@ -160,6 +160,60 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className="container mx-auto px-4 py-24">
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-primary text-primary">Tarification</Badge>
+          <h2 className="text-4xl md:text-5xl font-bold">Des plans pour chaque boutique</h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Commencez gratuitement et évoluez au rythme de votre croissance
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {pricingPlans.map((plan, index) => (
+            <Card 
+              key={index}
+              className={`p-8 relative ${plan.featured ? 'border-2 border-primary shadow-primary' : 'border-2 border-transparent'}`}
+            >
+              {plan.featured && (
+                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-primary">
+                  Plus Populaire
+                </Badge>
+              )}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  <p className="text-muted-foreground text-sm">{plan.description}</p>
+                </div>
+                
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold">{plan.price}</span>
+                  {plan.period && <span className="text-muted-foreground">/ {plan.period}</span>}
+                </div>
+
+                <Button 
+                  className={plan.featured ? "w-full" : "w-full"} 
+                  variant={plan.featured ? "default" : "outline"}
+                  onClick={() => window.location.href = '/auth?mode=signup'}
+                >
+                  {plan.cta}
+                </Button>
+
+                <div className="space-y-3 pt-6 border-t">
+                  {plan.features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-dark" />
@@ -246,6 +300,58 @@ const stats = [
   { value: "500+", label: "Vendeurs Actifs" },
   { value: "95%", label: "Taux Satisfaction" },
   { value: "24/7", label: "Support IA" }
+];
+
+const pricingPlans = [
+  {
+    name: "Starter",
+    description: "Pour les petites boutiques qui débutent",
+    price: "Gratuit",
+    period: "",
+    cta: "Commencer",
+    featured: false,
+    features: [
+      "Jusqu'à 50 produits",
+      "Optimisation SEO de base",
+      "1 article de blog / mois",
+      "Support par email",
+      "Intégration Shopify"
+    ]
+  },
+  {
+    name: "Pro",
+    description: "Pour les boutiques en croissance",
+    price: "49€",
+    period: "mois",
+    cta: "Essayer gratuitement",
+    featured: true,
+    features: [
+      "Produits illimités",
+      "Optimisation SEO avancée",
+      "10 articles de blog / mois",
+      "Google Merchant Center",
+      "Chat IA intelligent",
+      "Automatisation complète",
+      "Support prioritaire 24/7"
+    ]
+  },
+  {
+    name: "Enterprise",
+    description: "Pour les grandes boutiques",
+    price: "Sur mesure",
+    period: "",
+    cta: "Nous contacter",
+    featured: false,
+    features: [
+      "Tout du plan Pro",
+      "Articles illimités",
+      "Multi-boutiques",
+      "API personnalisée",
+      "Account manager dédié",
+      "Formation personnalisée",
+      "SLA garanti"
+    ]
+  }
 ];
 
 export default Index;
