@@ -25,6 +25,9 @@ const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Produits", url: "/products", icon: ShoppingBag },
   { title: "Blog SEO", url: "/blog", icon: FileText },
+  { title: "Google Merchant", url: "/merchant", icon: ShoppingBag },
+  { title: "Google Shopping", url: "/shopping", icon: ShoppingCart },
+  { title: "Recherche produits", url: "/search", icon: Search },
 ];
 
 const seoSubItems = [
@@ -32,9 +35,6 @@ const seoSubItems = [
   { title: "Tag Optimisation", url: "/seo?tab=tags", icon: Tags },
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
   { title: "Automatisation", url: "/seo?tab=automation", icon: Settings },
-  { title: "Google Merchant", url: "/seo?tab=merchant", icon: ShoppingBag },
-  { title: "Google Shopping", url: "/seo?tab=shopping", icon: ShoppingCart },
-  { title: "Recherche produits", url: "/seo?tab=search", icon: Search },
 ];
 
 export function AppSidebar() {

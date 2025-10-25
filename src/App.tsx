@@ -18,6 +18,9 @@ import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
 import Account from "./pages/Account";
 import Subscription from "./pages/Subscription";
+import Merchant from "./pages/Merchant";
+import Shopping from "./pages/Shopping";
+import SearchProducts from "./pages/SearchProducts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -103,6 +106,30 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Integration />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/merchant"
+              element={
+                <ProtectedLayout>
+                  <Merchant />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/shopping"
+              element={
+                <ProtectedLayout>
+                  <Shopping />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <ProtectedLayout>
+                  <SearchProducts />
                 </ProtectedLayout>
               }
             />
