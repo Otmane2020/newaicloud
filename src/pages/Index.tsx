@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
+import { PublicHeader } from "@/components/PublicHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
@@ -36,8 +37,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <PublicHeader />
+      
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section id="hero" className="relative overflow-hidden pt-16">
         <div className="absolute inset-0 bg-gradient-dark opacity-95" />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMzYjgyZjYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00em0wLTEwYzAtMi4yMS0xLjc5LTQtNC00cy00IDEuNzktNCA0IDEuNzkgNCA0IDQgNC0xLjc5IDQtNHptMC0xMGMwLTIuMjEtMS43OS00LTQtNHMtNCAxLjc5LTQgNCAxLjc5IDQgNCA0IDQtMS43OSA0LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
         
@@ -77,7 +80,7 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-24">
+      <section id="features" className="container mx-auto px-4 py-24">
           <div className="text-center mb-16 space-y-4">
             <Badge variant="outline" className="border-primary text-primary">Fonctionnalités</Badge>
             <h2 className="text-4xl md:text-5xl font-bold">Tout ce dont vous avez besoin</h2>
@@ -110,7 +113,7 @@ const Index = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="container mx-auto px-4 py-24">
+      <section id="benefits" className="container mx-auto px-4 py-24">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <Badge variant="outline" className="border-success text-success">Résultats</Badge>
