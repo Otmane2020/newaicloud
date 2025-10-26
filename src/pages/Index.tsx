@@ -7,6 +7,7 @@ import PricingComparison from "@/components/PricingComparison";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { 
   Zap, 
   ShoppingBag, 
@@ -22,6 +23,7 @@ import {
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [currency, setCurrency] = useState<'EUR' | 'USD'>('EUR');
 
@@ -47,27 +49,27 @@ const Index = () => {
           <div className="flex flex-col items-center text-center space-y-8 animate-fade-in">
             <Badge className="bg-primary/20 text-primary-foreground border-primary/30 px-6 py-2">
               <Sparkles className="w-4 h-4 mr-2" />
-              AI-Powered Shopify Optimization
+              {t('hero.badge')}
             </Badge>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white max-w-4xl leading-tight">
-              Optimisez votre boutique avec{" "}
+              {t('hero.title')}{" "}
               <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
                 NewAI
               </span>
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-2xl text-gray-300">
-              Automatisez le SEO, gérez vos produits, créez du contenu et boostez vos ventes avec des outils IA intelligents pour l'e-commerce moderne.
+              {t('hero.subtitle')}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button size="lg" className="group" onClick={() => navigate('/auth?mode=signup')}>
-                Commencer Gratuitement
+                {t('hero.cta_start')}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10">
-                Voir la Démo
+                {t('hero.cta_demo')}
               </Button>
             </div>
           </div>
@@ -81,10 +83,10 @@ const Index = () => {
       {/* Features Section */}
       <section id="features" className="container mx-auto px-4 py-24">
           <div className="text-center mb-16 space-y-4">
-            <Badge variant="outline" className="border-primary text-primary">Fonctionnalités</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold">Tout ce dont vous avez besoin</h2>
+            <Badge variant="outline" className="border-primary text-primary">{t('nav.features')}</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold">{t('features.title')}</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Des outils puissants pour les vendeurs Shopify qui veulent grandir plus vite
+              {t('features.subtitle')}
             </p>
           </div>
 
@@ -115,12 +117,12 @@ const Index = () => {
       <section id="benefits" className="container mx-auto px-4 py-24">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <Badge variant="outline" className="border-success text-success">Résultats</Badge>
+            <Badge variant="outline" className="border-success text-success">{t('benefits.title', 'Résultats')}</Badge>
             <h2 className="text-4xl md:text-5xl font-bold">
-              Des résultats prouvés pour boutiques Shopify
+              {t('benefits.title')}
             </h2>
             <p className="text-muted-foreground text-lg">
-              Rejoignez des centaines de vendeurs qui ont transformé leur boutique avec l'optimisation IA
+              {t('benefits.subtitle')}
             </p>
             
             <div className="space-y-4 pt-4">
@@ -136,7 +138,7 @@ const Index = () => {
             </div>
 
             <Button size="lg" className="mt-6" onClick={() => navigate('/auth?mode=signup')}>
-              Commencer maintenant
+              {t('benefits.cta')}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
@@ -164,12 +166,11 @@ const Index = () => {
         <div className="text-center mb-16 space-y-4">
           <Badge variant="outline" className="border-primary text-primary">
             <Globe className="w-4 h-4 mr-2" />
-            Tarification
+            {t('nav.pricing')}
           </Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">Plans & Tarifs</h2>
+          <h2 className="text-4xl md:text-5xl font-bold">{t('pricing.title')}</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Choisissez le plan adapté à la taille de votre boutique.
-            Tous nos plans incluent l'intégration Shopify et un support dédié.
+            {t('pricing.subtitle')}
           </p>
           
           {/* Billing Cycle Toggle */}
@@ -180,7 +181,7 @@ const Index = () => {
                 billingCycle === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Mensuel
+              {t('pricing.monthly')}
             </button>
             <button
               onClick={() => setBillingCycle('yearly')}
@@ -188,8 +189,8 @@ const Index = () => {
                 billingCycle === 'yearly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Annuel
-              <Badge className="absolute -top-2 -right-2 bg-success text-xs">-20%</Badge>
+              {t('pricing.yearly')}
+              <Badge className="absolute -top-2 -right-2 bg-success text-xs">{t('pricing.discount')}</Badge>
             </button>
           </div>
 
@@ -237,11 +238,11 @@ const Index = () => {
                   <div>
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-bold">{displayPrice}</span>
-                      <span className="text-muted-foreground">/mois</span>
+                      <span className="text-muted-foreground">{t('pricing.per_month')}</span>
                     </div>
                     {billingCycle === 'yearly' && (
                       <p className="text-sm text-success mt-1">
-                        payé annuellement (soit {currency === 'EUR' ? `$${plan.yearlyTotal}` : `$${plan.yearlyTotal}`}/an)
+                        {t('pricing.billed_yearly')} {currency === 'EUR' ? `$${plan.yearlyTotal}` : `$${plan.yearlyTotal}`}{t('pricing.per_year')})
                       </p>
                     )}
                     {plan.trial && (
@@ -285,8 +286,8 @@ const Index = () => {
         {/* Comparison Table */}
         <div className="mt-16">
           <div className="text-center mb-8">
-            <h3 className="text-3xl font-bold mb-2">Tableau comparatif des plans</h3>
-            <p className="text-muted-foreground">Comparez en détail toutes les fonctionnalités</p>
+            <h3 className="text-3xl font-bold mb-2">{t('pricing.comparison_title')}</h3>
+            <p className="text-muted-foreground">{t('pricing.comparison_subtitle')}</p>
           </div>
           <PricingComparison />
         </div>
@@ -298,13 +299,13 @@ const Index = () => {
         <div className="container relative mx-auto px-4 py-24">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <h2 className="text-4xl md:text-5xl font-bold text-white">
-              Prêt à transformer votre boutique ?
+              {t('cta.title')}
             </h2>
             <p className="text-xl text-gray-300">
-              Commencez gratuitement aujourd'hui. Aucune carte bancaire requise.
+              {t('cta.subtitle')}
             </p>
             <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90" onClick={() => navigate('/auth?mode=signup')}>
-              Commencer Gratuitement
+              {t('cta.button')}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>

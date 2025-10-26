@@ -1,0 +1,126 @@
+{
+  "hero": {
+    "badge": "AI-Powered Shopify Optimization",
+    "title": "Optimisez votre boutique avec",
+    "subtitle": "Automatisez le SEO, gérez vos produits, créez du contenu et boostez vos ventes avec des outils IA intelligents pour l'e-commerce moderne.",
+    "cta_start": "Commencer Gratuitement",
+    "cta_demo": "Voir la Démo"
+  },
+  "features": {
+    "title": "Tout ce dont vous avez besoin",
+    "subtitle": "Des outils puissants pour les vendeurs Shopify qui veulent grandir plus vite",
+    "products": {
+      "title": "Gestion Produits",
+      "description": "Gérez produits avec variantes, génération GTIN et intégration Google Shopping"
+    },
+    "merchant": {
+      "title": "Google Merchant Center",
+      "description": "Génération automatique de flux XML et synchronisation Google Shopping"
+    },
+    "blog": {
+      "title": "Blog SEO AI",
+      "description": "Création automatique d'articles SEO optimisés avec liens produits"
+    },
+    "seo": {
+      "title": "Optimisation SEO",
+      "description": "Optimisation IA des meta tags, descriptions et mots-clés"
+    },
+    "chat": {
+      "title": "Chat Intelligent",
+      "description": "Assistant IA pour recommandations produits et support client"
+    },
+    "automation": {
+      "title": "Automatisation Campagnes",
+      "description": "Planification et automatisation de création de contenu"
+    }
+  },
+  "benefits": {
+    "title": "Des résultats prouvés pour boutiques Shopify",
+    "subtitle": "Rejoignez des centaines de vendeurs qui ont transformé leur boutique avec l'optimisation IA",
+    "cta": "Commencer maintenant",
+    "speed": {
+      "title": "3x Plus rapide",
+      "description": "Automatisez la saisie et l'optimisation produits"
+    },
+    "traffic": {
+      "title": "50% Plus de trafic",
+      "description": "SEO optimisé IA attire des visiteurs qualifiés"
+    },
+    "time": {
+      "title": "10h+ économisées",
+      "description": "Création et gestion de contenu automatisées"
+    },
+    "ranking": {
+      "title": "Meilleur classement Google",
+      "description": "Données structurées et flux optimisés"
+    }
+  },
+  "pricing": {
+    "title": "Plans & Tarifs",
+    "subtitle": "Choisissez le plan adapté à la taille de votre boutique. Tous nos plans incluent l'intégration Shopify et un support dédié.",
+    "monthly": "Mensuel",
+    "yearly": "Annuel",
+    "discount": "-20%",
+    "per_month": "/mois",
+    "per_year": "/an",
+    "billed_yearly": "payé annuellement (soit",
+    "comparison_title": "Tableau comparatif des plans",
+    "comparison_subtitle": "Comparez en détail toutes les fonctionnalités"
+  },
+  "plans": {
+    "starter": {
+      "name": "Starter",
+      "description": "Pour les petites boutiques qui veulent découvrir la puissance de l'IA",
+      "trial": "essai gratuit de 14 jours",
+      "cta": "Commencer l'essai gratuit",
+      "highlight": "Profitez de la puissance de l'IA, avec des fonctionnalités essentielles et des quotas adaptés à vos débuts."
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Pour les boutiques en croissance",
+      "badge": "Plus Populaire 🔥",
+      "cta": "Essayer gratuitement",
+      "highlight": "Le plan Pro offre toute la puissance IA sans limites inutiles. Parfait pour les boutiques qui veulent accélérer leur croissance."
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Pour les grandes boutiques et multi-enseignes",
+      "cta": "Contacter les ventes",
+      "highlight": "Le plan Enterprise est conçu pour les vendeurs sérieux qui gèrent plusieurs boutiques ou ont des besoins avancés."
+    }
+  },
+  "cta": {
+    "title": "Prêt à transformer votre boutique ?",
+    "subtitle": "Commencez gratuitement aujourd'hui. Aucune carte bancaire requise.",
+    "button": "Commencer Gratuitement"
+  },
+  "auth": {
+    "login": "Se connecter",
+    "signup": "S'inscrire",
+    "email": "Email",
+    "password": "Mot de passe",
+    "fullname": "Nom complet",
+    "forgot_password": "Mot de passe oublié ?",
+    "no_account": "Pas de compte ?",
+    "have_account": "Déjà un compte ?",
+    "creating": "Création du compte...",
+    "connecting": "Connexion...",
+    "loading": "Chargement..."
+  },
+  "nav": {
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "dashboard": "Dashboard",
+    "account": "Mon Compte"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer"
+  }
+}
