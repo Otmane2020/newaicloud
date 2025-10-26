@@ -19,6 +19,7 @@ export function BlogOpportunities() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
     loadOpportunities();
@@ -26,7 +27,6 @@ export function BlogOpportunities() {
 
   const generateOptimizedTitles = async (opportunities: Opportunity[], userId: string, products: any[]) => {
     try {
-      // Enrichir chaque opportunité avec des exemples de produits
       const enrichedOpportunities = opportunities.map(opp => {
         let relevantProducts: any[] = [];
         
@@ -50,36 +50,39 @@ export function BlogOpportunities() {
         };
       });
 
-      const prompt = `Tu es un expert en rédaction de titres d'articles de blog SEO pour e-commerce de meubles et décoration.
+      const prompt = `Tu es un expert SEO e-commerce spécialisé en meubles et décoration.
 
-RÈGLES STRICTES pour chaque titre:
-1. Doit être accrocheur et donner envie de cliquer
-2. Doit contenir des mots-clés SEO naturels (pas de keyword stuffing)
-3. Doit être entre 50-70 caractères maximum
-4. Doit être professionnel et en français correct
-5. Doit refléter la vraie valeur de l'article pour le lecteur
-6. Pour les guides: focus sur l'aide à la décision et les conseils d'expert
-7. Pour les collections: focus sur la découverte et l'inspiration
-8. Pour les comparatifs: focus sur le choix éclairé
+Génère des titres d'articles de blog EXCEPTIONNELS et UNIQUES pour chaque opportunité ci-dessous.
 
-OPPORTUNITÉS À TRAITER:
-${enrichedOpportunities.map((opp, i) => `
-${i + 1}. ${opp.type === 'guide' ? '📖 GUIDE D\'ACHAT' : opp.type === 'comparison' ? '⚖️ COMPARATIF' : '✨ COLLECTION'}
-   Catégorie: ${opp.category}
-   Nombre de produits: ${opp.productsCount}
-   Exemples de produits: ${opp.productExamples || 'Divers produits'}
-`).join('\n')}
+RÈGLES ABSOLUES:
+• 50-65 caractères maximum
+• Accrocheur et professionnel
+• Mots-clés SEO naturels intégrés
+• Évite les formulations génériques
+• Chaque titre doit être DIFFÉRENT et ORIGINAL
+• Utilise des chiffres, dates, superlatifs quand approprié
 
-Réponds UNIQUEMENT avec un JSON array valide de ${opportunities.length} titres, dans l'ordre exact ci-dessus.
-Format: ["Titre 1", "Titre 2", "Titre 3", ...]
+OPPORTUNITÉS:
+${enrichedOpportunities.map((opp, i) => {
+  const typeLabel = opp.type === 'guide' ? '📚 GUIDE ACHAT' : 
+                    opp.type === 'comparison' ? '⚖️ COMPARATIF' : 
+                    '✨ COLLECTION MARQUE';
+  return `${i + 1}. ${typeLabel}
+   • Catégorie: ${opp.category}
+   • ${opp.productsCount} produits
+   • Exemples: ${opp.productExamples || 'Divers'}`;
+}).join('\n\n')}
 
-EXEMPLES de BONS titres:
-- "Canapé Modulable : Guide Complet 2024 pour Bien Choisir"
-- "Chaises Design : Top 10 des Modèles Tendance"
-- "Table Ronde vs Table Rectangulaire : Notre Comparatif"
-- "Collection Scandinave : 15 Meubles Incontournables"
+Réponds UNIQUEMENT avec ce format JSON exact (${opportunities.length} titres):
+["Titre 1", "Titre 2", "Titre 3", ...]
 
-Génère maintenant les ${opportunities.length} titres:`;
+EXEMPLES INSPIRANTS:
+✓ "Canapé Convertible 2024 : Top 12 Modèles Testés"
+✓ "Chaise Scandinave : Le Guide Ultime [+Photos]"
+✓ "Table Basse Design : 8 Tendances Incontournables"
+✓ "Comparatif : Cuir vs Tissu pour Votre Canapé"
+
+Génère maintenant ${opportunities.length} titres EXCEPTIONNELS:`;
 
       const { data } = await supabase.functions.invoke("chat-smart", {
         body: { 
@@ -311,8 +314,36 @@ Réponds uniquement avec le titre, sans guillemets ni ponctuation finale.`;
     );
   }
 
+  const handleRegenerate = async () => {
+    setRegenerating(true);
+    await loadOpportunities();
+    setRegenerating(false);
+  };
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <p className="text-sm text-muted-foreground">
+          {opportunities.length} opportunités détectées
+        </p>
+        <Button
+          onClick={handleRegenerate}
+          disabled={regenerating}
+          variant="outline"
+        >
+          {regenerating ? (
+            <>
+              <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+              Régénération...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Nouvelles opportunités
+            </>
+          )}
+        </Button>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {opportunities.map((opp) => {
           const Icon = getIcon(opp.type);

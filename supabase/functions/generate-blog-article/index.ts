@@ -162,16 +162,53 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     
     console.log(`📝 Titre optimisé: ${optimizedTitle}`);
 
+    // Get store URL for product links
+    let storeUrl = '';
+    if (products[0]?.store_id) {
+      const { data: storeData } = await supabaseClient
+        .from('shopify_connections')
+        .select('store_url')
+        .eq('id', products[0].store_id)
+        .single();
+      
+      if (storeData?.store_url) {
+        storeUrl = storeData.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        storeUrl = `https://${storeUrl}`;
+      }
+    }
+
     const productLinks = products.map((p: any) => 
-      `<a href="/product-landing/${p.id}" class="product-link">${p.title}</a>`
+      storeUrl ? 
+        `<a href="${storeUrl}/products/${p.handle}" class="product-link" target="_blank">${p.title}</a>` :
+        `<a href="/product-landing/${p.id}" class="product-link">${p.title}</a>`
     ).join(', ');
 
     const productCards = products.map((p: any) => `
-      <div class="product-card" onclick="window.location.href='/product-landing/${p.id}'" style="cursor: pointer;">
-        <img src="${p.image_url || '/placeholder.svg'}" alt="${p.title}" class="product-image" />
+      <div class="product-card">
+        ${p.image_url ? `<a href="${storeUrl ? `${storeUrl}/products/${p.handle}` : `/product-landing/${p.id}`}" target="${storeUrl ? '_blank' : '_self'}">
+          <img src="${p.image_url}" alt="${p.title}" class="product-image" />
+        </a>` : ''}
         <h4>${p.title}</h4>
-        <p class="product-price">${p.price}€</p>
-        <p class="product-description">${p.description?.substring(0, 150) || ''}...</p>
+        <div class="product-pricing">
+          ${p.compare_at_price && p.compare_at_price > p.price ? 
+            `<span class="product-price-original">${p.compare_at_price} €</span>` : 
+            ''}
+          <span class="product-price">${p.price} €</span>
+        </div>
+        ${p.inventory_quantity !== undefined ? 
+          `<div class="product-stock ${p.inventory_quantity > 0 ? 'in-stock' : 'out-of-stock'}">
+            ${p.inventory_quantity > 0 ? 
+              `✓ En stock (${p.inventory_quantity > 10 ? '10+' : p.inventory_quantity} disponible${p.inventory_quantity > 1 ? 's' : ''})` : 
+              '✗ Rupture de stock'}
+          </div>` : 
+          ''}
+        <p class="product-description">${(p.description || '').substring(0, 120)}...</p>
+        <a href="${storeUrl ? `${storeUrl}/products/${p.handle}` : `/product-landing/${p.id}`}" 
+           class="product-link" 
+           target="${storeUrl ? '_blank' : '_self'}" 
+           rel="${storeUrl ? 'noopener' : ''}">
+          Voir le produit →
+        </a>
       </div>
     `).join('');
 
@@ -207,15 +244,21 @@ ${productDetails}
     .comparison-table th { padding: 1rem; text-align: left; font-weight: 600; }
     .comparison-table td { padding: 1rem; border-bottom: 1px solid #e2e8f0; }
     .comparison-table tbody tr:hover { background: #f7fafc; }
-    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; margin: 2rem 0; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; margin: 2rem 0; }
     .product-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .product-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
-    .product-image { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); border-color: #3182ce; }
+    .product-image { width: 100%; height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; transition: opacity 0.2s; }
+    .product-image:hover { opacity: 0.9; }
     .product-card h4 { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0; color: #2d3748; }
-    .product-price { font-size: 1.25rem; font-weight: 700; color: #3182ce; margin: 0.5rem 0; }
-    .product-description { font-size: 0.9rem; color: #718096; line-clamp: 3; }
-    .product-link { color: #3182ce; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; transition: border-color 0.2s; }
-    .product-link:hover { border-bottom-color: #3182ce; }
+    .product-pricing { display: flex; align-items: center; gap: 0.75rem; margin: 0.75rem 0; }
+    .product-price { font-size: 1.4rem; font-weight: 700; color: #3182ce; }
+    .product-price-original { font-size: 1.1rem; color: #a0aec0; text-decoration: line-through; }
+    .product-stock { font-size: 0.85rem; font-weight: 600; padding: 0.4rem 0.8rem; border-radius: 6px; margin: 0.5rem 0; display: inline-block; }
+    .product-stock.in-stock { background: #c6f6d5; color: #22543d; }
+    .product-stock.out-of-stock { background: #fed7d7; color: #742a2a; }
+    .product-description { font-size: 0.9rem; color: #718096; margin: 1rem 0; line-height: 1.5; }
+    .product-link { display: inline-block; color: white; background: #3182ce; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; transition: background 0.2s; margin-top: 0.5rem; width: 100%; text-align: center; box-sizing: border-box; }
+    .product-link:hover { background: #2c5aa0; }
     .cta-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3rem; border-radius: 12px; text-align: center; margin: 3rem 0; }
     .cta-section h2 { color: white; border: none; font-size: 2rem; }
     .cta-button { display: inline-block; background: white; color: #667eea; padding: 1rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; margin-top: 1rem; transition: transform 0.2s; }
