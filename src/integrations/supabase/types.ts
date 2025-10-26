@@ -149,6 +149,80 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_opportunities: {
+        Row: {
+          article_id: string | null
+          article_title: string
+          created_at: string
+          difficulty: string | null
+          estimated_word_count: number | null
+          generated_at: string | null
+          id: string
+          intro_excerpt: string | null
+          language: string | null
+          meta_description: string | null
+          primary_keywords: string[] | null
+          product_ids: string[] | null
+          secondary_keywords: string[] | null
+          seo_opportunity_score: number | null
+          status: string | null
+          structure: Json | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          article_title: string
+          created_at?: string
+          difficulty?: string | null
+          estimated_word_count?: number | null
+          generated_at?: string | null
+          id?: string
+          intro_excerpt?: string | null
+          language?: string | null
+          meta_description?: string | null
+          primary_keywords?: string[] | null
+          product_ids?: string[] | null
+          secondary_keywords?: string[] | null
+          seo_opportunity_score?: number | null
+          status?: string | null
+          structure?: Json | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          article_title?: string
+          created_at?: string
+          difficulty?: string | null
+          estimated_word_count?: number | null
+          generated_at?: string | null
+          id?: string
+          intro_excerpt?: string | null
+          language?: string | null
+          meta_description?: string | null
+          primary_keywords?: string[] | null
+          product_ids?: string[] | null
+          secondary_keywords?: string[] | null
+          seo_opportunity_score?: number | null
+          status?: string | null
+          structure?: Json | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_opportunities_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string

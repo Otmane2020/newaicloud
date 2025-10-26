@@ -44,3 +44,6 @@ verify_jwt = true
 
 [functions.generate-article-seo]
 verify_jwt = true
+
+[functions.generate-daily-opportunities]
+verify_jwt = true
