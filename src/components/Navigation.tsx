@@ -17,7 +17,8 @@ import {
   MessageSquare,
   PenSquare,
   CalendarClock,
-  BarChart3
+  BarChart3,
+  Clock
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,8 +53,9 @@ const menuItems = [
     label: 'Chat Smart', 
     icon: MessageSquare,
     subItems: [
+      { path: '/chat', label: 'Conversation', icon: MessageSquare },
+      { path: '/chat-history', label: 'Historique', icon: CalendarClock },
       { path: '/product-source', label: 'Source Produits', icon: ShoppingBag },
-      { path: '/chat', label: 'Paramètres', icon: Settings },
     ]
   },
 ];

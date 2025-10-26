@@ -26,6 +26,7 @@ import Subscription from "./pages/Subscription";
 import Merchant from "./pages/Merchant";
 import Shopping from "./pages/Shopping";
 import SearchProducts from "./pages/SearchProducts";
+import ChatHistory from "./pages/ChatHistory";
 import ProductDetail from "./pages/ProductDetail";
 import NotFound from "./pages/NotFound";
 
@@ -152,6 +153,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <SearchProducts />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/chat-history"
+              element={
+                <ProtectedLayout>
+                  <ChatHistory />
                 </ProtectedLayout>
               }
             />
