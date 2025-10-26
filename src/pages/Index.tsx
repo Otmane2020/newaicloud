@@ -25,11 +25,11 @@ const Index = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [currency, setCurrency] = useState<'EUR' | 'USD'>('EUR');
 
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [user, loading, navigate]);
+  // Intelligent CTA link based on user authentication status
+  const getCtaLink = () => {
+    if (!user) return '/auth?mode=signup';
+    return '/onboarding';
+  };
 
   if (loading) {
     return (
@@ -67,7 +67,7 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" className="group" onClick={() => window.location.href = '/auth?mode=signup'}>
+              <Button size="lg" className="group" onClick={() => navigate(getCtaLink())}>
                 Commencer Gratuitement
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -140,7 +140,7 @@ const Index = () => {
               ))}
             </div>
 
-            <Button size="lg" className="mt-6" onClick={() => window.location.href = '/auth?mode=signup'}>
+            <Button size="lg" className="mt-6" onClick={() => navigate(getCtaLink())}>
               Commencer maintenant
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
@@ -260,7 +260,7 @@ const Index = () => {
                     className="w-full" 
                     variant={plan.featured ? "default" : "outline"}
                     size="lg"
-                    onClick={() => window.location.href = '/auth?mode=signup'}
+                    onClick={() => navigate(getCtaLink())}
                   >
                     {plan.cta}
                     <ArrowRight className="ml-2 w-4 h-4" />
@@ -308,7 +308,7 @@ const Index = () => {
             <p className="text-xl text-gray-300">
               Commencez gratuitement aujourd'hui. Aucune carte bancaire requise.
             </p>
-            <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90" onClick={() => window.location.href = '/auth?mode=signup'}>
+            <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90" onClick={() => navigate(getCtaLink())}>
               Commencer Gratuitement
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
