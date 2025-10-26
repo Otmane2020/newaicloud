@@ -30,22 +30,38 @@ export function SubscriptionManagement() {
 
   const loadSubscriptionData = async () => {
     try {
-      // Load current subscription
-      const { data: subData } = await supabase.functions.invoke('check-subscription');
+      console.log('🔄 Loading subscription data...');
       
-      if (subData?.subscribed && subData?.plan_id) {
-        // Find plan by Stripe price ID
+      // Load current subscription from Stripe
+      const { data: subData, error: subError } = await supabase.functions.invoke('check-subscription');
+      
+      if (subError) {
+        console.error('❌ Error checking subscription:', subError);
+        throw subError;
+      }
+
+      console.log('✅ Subscription data:', subData);
+      
+      if (subData?.subscribed && subData?.product_id) {
+        // Find plan by Stripe product ID
         const { data: plansData } = await supabase
           .from('subscription_plans')
           .select('*');
 
-        const plan = plansData?.find(
-          (p: Plan) => p.stripe_price_id_monthly === subData.plan_id || 
-                      p.stripe_price_id_yearly === subData.plan_id
-        );
+        console.log('📋 Available plans:', plansData);
 
+        // Match by product_id from Stripe
+        const plan = plansData?.find((p: Plan) => {
+          // Get product ID from the price IDs in Stripe
+          return p.stripe_price_id_monthly === subData.plan_id || 
+                 p.stripe_price_id_yearly === subData.plan_id;
+        });
+
+        console.log('🎯 Matched plan:', plan);
         setCurrentPlan(plan || null);
         setSubscriptionEnd(subData.subscription_end);
+      } else {
+        console.log('⚠️ No active subscription found');
       }
 
       // Load all plans
@@ -56,7 +72,7 @@ export function SubscriptionManagement() {
 
       setPlans(allPlans || []);
     } catch (error) {
-      console.error('Error loading subscription:', error);
+      console.error('❌ Error loading subscription:', error);
       toast.error('Erreur lors du chargement de l\'abonnement');
     } finally {
       setLoading(false);
