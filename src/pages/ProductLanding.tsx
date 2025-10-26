@@ -54,9 +54,23 @@ export default function ProductLanding() {
         .single();
 
       if (error) throw error;
+
+      // Get shop name from shopify_connections
+      if (data.store_id) {
+        const { data: storeData } = await supabase
+          .from('shopify_connections')
+          .select('store_url')
+          .eq('id', data.store_id)
+          .single();
+
+        if (storeData?.store_url) {
+          data.shop_name = storeData.store_url.replace('https://', '').replace('http://', '').replace('/', '');
+        }
+      }
+
       setProduct(data);
 
-      // Load variants
+      // Load variants from product_variants table or extract from raw_data
       const { data: variantsData, error: variantsError } = await supabase
         .from('product_variants')
         .select('*')
@@ -66,6 +80,23 @@ export default function ProductLanding() {
       if (!variantsError && variantsData && variantsData.length > 0) {
         setVariants(variantsData);
         setSelectedVariant(variantsData[0]);
+      } else {
+        // Extract variants from raw_data if not in product_variants table
+        const rawData = data.raw_data as any;
+        if (rawData?.variants && Array.isArray(rawData.variants) && rawData.variants.length > 0) {
+          const extractedVariants = rawData.variants.map((v: any) => ({
+            id: v.id,
+            title: v.title,
+            price: v.price,
+            option1: v.option1,
+            option2: v.option2,
+            option3: v.option3,
+            inventory_quantity: v.inventory_quantity,
+            image_url: v.image_id && rawData.images ? rawData.images.find((img: any) => img.id === v.image_id)?.src : null
+          }));
+          setVariants(extractedVariants);
+          setSelectedVariant(extractedVariants[0]);
+        }
       }
     } catch (error: any) {
       toast.error('Erreur lors du chargement du produit');
@@ -114,22 +145,40 @@ export default function ProductLanding() {
         ? product.shop_name 
         : `${product.shop_name}.myshopify.com`;
       window.open(`https://${shopUrl}/products/${product.handle}`, '_blank');
+    } else {
+      toast.error('Impossible d\'ouvrir le lien du produit');
+      console.error('Missing shop_name or handle:', { shop_name: product.shop_name, handle: product.handle });
     }
   };
 
   const handleShare = async () => {
-    if (navigator.share && product.shop_name && product.handle) {
+    if (!product.shop_name || !product.handle) {
+      toast.error('Impossible de partager ce produit');
+      return;
+    }
+
+    const shopUrl = product.shop_name.includes('.myshopify.com') 
+      ? product.shop_name 
+      : `${product.shop_name}.myshopify.com`;
+    const shareUrl = `https://${shopUrl}/products/${product.handle}`;
+
+    if (navigator.share) {
       try {
-        const shopUrl = product.shop_name.includes('.myshopify.com') 
-          ? product.shop_name 
-          : `${product.shop_name}.myshopify.com`;
         await navigator.share({
           title: product.title,
           text: `Découvrez ce produit : ${product.title}`,
-          url: `https://${shopUrl}/products/${product.handle}`
+          url: shareUrl
         });
       } catch (err) {
         console.log('Share cancelled');
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Lien copié dans le presse-papier');
+      } catch (err) {
+        toast.error('Impossible de copier le lien');
       }
     }
   };
