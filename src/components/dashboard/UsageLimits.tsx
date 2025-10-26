@@ -32,7 +32,9 @@ export function UsageLimits() {
         products_count: 0,
         optimizations_count: 0,
         articles_count: 0,
-        chat_responses_count: 0
+        chat_responses_count: 0,
+        campaigns_count: 0,
+        shopify_requests_count: 0
       };
     },
     enabled: !!user?.id
@@ -78,21 +80,35 @@ export function UsageLimits() {
       color: "hsl(var(--primary))"
     },
     {
-      label: "Optimisations",
+      label: "Optimisations SEO",
       current: usage?.optimizations_count || 0,
       limit: plan?.max_optimizations_monthly || 0,
       icon: <Zap className="h-4 w-4" />,
       color: "hsl(var(--chart-2))"
     },
     {
-      label: "Articles",
+      label: "Articles IA",
       current: usage?.articles_count || 0,
       limit: plan?.max_articles_monthly || 0,
       icon: <FileText className="h-4 w-4" />,
       color: "hsl(var(--chart-3))"
     },
     {
-      label: "Chat",
+      label: "Campagnes auto",
+      current: usage?.campaigns_count || 0,
+      limit: plan?.max_campaigns || 0,
+      icon: <Zap className="h-4 w-4" />,
+      color: "hsl(var(--chart-5))"
+    },
+    {
+      label: "Recherche IA Shopify",
+      current: usage?.shopify_requests_count || 0,
+      limit: plan?.max_shopify_requests_monthly || 0,
+      icon: <Package className="h-4 w-4" />,
+      color: "hsl(var(--chart-1))"
+    },
+    {
+      label: "Réponses Chat IA",
       current: usage?.chat_responses_count || 0,
       limit: plan?.max_chat_responses_monthly || 0,
       icon: <MessageSquare className="h-4 w-4" />,

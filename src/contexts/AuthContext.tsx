@@ -67,8 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Failed to send welcome email:', emailError);
       }
       
-      toast.success('Inscription réussie ! Redirection vers onboarding...');
-      setTimeout(() => navigate('/onboarding'), 1000);
+      toast.success('Inscription réussie ! Choisissez votre plan...');
+      // Ne pas rediriger, l'utilisateur restera sur la page onboarding après connexion
     }
 
     return { error };

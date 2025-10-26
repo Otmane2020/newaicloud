@@ -245,16 +245,24 @@ export default function Onboarding() {
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                      {getPrice(plan).toFixed(0)}€
+                      {billingCycle === 'yearly' 
+                        ? `${(plan.price_yearly / 12).toFixed(2)}€`
+                        : `${plan.price_monthly.toFixed(2)}€`
+                      }
                     </span>
                     <span className="text-muted-foreground">
-                      /{billingCycle === 'yearly' ? 'an' : 'mois'}
+                      /mois
                     </span>
                   </div>
                   {billingCycle === 'yearly' && (
-                    <p className="text-sm text-green-600 mt-1">
-                      Économisez {getSavingsPercent(plan)}% par an
-                    </p>
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Payé annuellement ({plan.price_yearly.toFixed(2)}€/an)
+                      </p>
+                      <p className="text-sm text-green-600 mt-1">
+                        Économisez {getSavingsPercent(plan)}%
+                      </p>
+                    </>
                   )}
                 </div>
 

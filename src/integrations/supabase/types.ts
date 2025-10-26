@@ -976,6 +976,7 @@ export type Database = {
           max_chat_responses_monthly: number
           max_optimizations_monthly: number
           max_products: number
+          max_shopify_requests_monthly: number | null
           name: string
           popular: boolean | null
           price_monthly: number
@@ -985,6 +986,11 @@ export type Database = {
           stripe_price_id_monthly: string | null
           stripe_price_id_yearly: string | null
           trial_days: number | null
+          trial_max_articles: number | null
+          trial_max_chat_responses: number | null
+          trial_max_optimizations: number | null
+          trial_max_products: number | null
+          trial_max_shopify_requests: number | null
           updated_at: string
         }
         Insert: {
@@ -1000,6 +1006,7 @@ export type Database = {
           max_chat_responses_monthly?: number
           max_optimizations_monthly?: number
           max_products?: number
+          max_shopify_requests_monthly?: number | null
           name: string
           popular?: boolean | null
           price_monthly: number
@@ -1009,6 +1016,11 @@ export type Database = {
           stripe_price_id_monthly?: string | null
           stripe_price_id_yearly?: string | null
           trial_days?: number | null
+          trial_max_articles?: number | null
+          trial_max_chat_responses?: number | null
+          trial_max_optimizations?: number | null
+          trial_max_products?: number | null
+          trial_max_shopify_requests?: number | null
           updated_at?: string
         }
         Update: {
@@ -1024,6 +1036,7 @@ export type Database = {
           max_chat_responses_monthly?: number
           max_optimizations_monthly?: number
           max_products?: number
+          max_shopify_requests_monthly?: number | null
           name?: string
           popular?: boolean | null
           price_monthly?: number
@@ -1033,6 +1046,11 @@ export type Database = {
           stripe_price_id_monthly?: string | null
           stripe_price_id_yearly?: string | null
           trial_days?: number | null
+          trial_max_articles?: number | null
+          trial_max_chat_responses?: number | null
+          trial_max_optimizations?: number | null
+          trial_max_products?: number | null
+          trial_max_shopify_requests?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -1158,6 +1176,7 @@ export type Database = {
       usage_tracking: {
         Row: {
           articles_count: number | null
+          campaigns_count: number | null
           chat_responses_count: number | null
           created_at: string | null
           id: string
@@ -1165,10 +1184,12 @@ export type Database = {
           optimizations_count: number | null
           products_count: number | null
           seller_id: string
+          shopify_requests_count: number | null
           updated_at: string | null
         }
         Insert: {
           articles_count?: number | null
+          campaigns_count?: number | null
           chat_responses_count?: number | null
           created_at?: string | null
           id?: string
@@ -1176,10 +1197,12 @@ export type Database = {
           optimizations_count?: number | null
           products_count?: number | null
           seller_id: string
+          shopify_requests_count?: number | null
           updated_at?: string | null
         }
         Update: {
           articles_count?: number | null
+          campaigns_count?: number | null
           chat_responses_count?: number | null
           created_at?: string | null
           id?: string
@@ -1187,6 +1210,7 @@ export type Database = {
           optimizations_count?: number | null
           products_count?: number | null
           seller_id?: string
+          shopify_requests_count?: number | null
           updated_at?: string | null
         }
         Relationships: []
