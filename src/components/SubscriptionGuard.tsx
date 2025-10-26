@@ -26,6 +26,8 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
+      console.log('🔍 Loading profile for user:', user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('subscription_status, current_plan_id, trial_ends_at')
@@ -33,14 +35,20 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error loading profile:', error);
+        console.error('❌ Error loading profile:', error);
         setLoading(false);
         return;
       }
 
+      console.log('✅ Profile loaded:', {
+        status: data.subscription_status,
+        plan: data.current_plan_id,
+        trialEnds: data.trial_ends_at
+      });
+
       setProfile(data);
     } catch (error) {
-      console.error('Error in loadUserProfile:', error);
+      console.error('❌ Error in loadUserProfile:', error);
     } finally {
       setLoading(false);
     }
@@ -54,11 +62,16 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Si pas d'abonnement actif ou en essai, rediriger vers onboarding
-  if (!profile?.subscription_status || 
-      !['active', 'trialing'].includes(profile.subscription_status)) {
+  // Check subscription status
+  const hasValidSubscription = profile?.subscription_status && 
+    ['active', 'trialing'].includes(profile.subscription_status);
+
+  if (!hasValidSubscription) {
+    console.log('⚠️ No valid subscription, redirecting to onboarding. Status:', profile?.subscription_status);
     return <Navigate to="/onboarding" replace />;
   }
+
+  console.log('✅ Valid subscription found, allowing access');
 
   return <>{children}</>;
 }

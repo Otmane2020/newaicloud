@@ -83,6 +83,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   console.log('🎉 Checkout completed for user:', userId);
+  console.log('💳 Stripe customer ID:', customer);
 
   // Récupérer les détails utilisateur
   const { data: userData } = await supabase.auth.admin.getUserById(userId);
@@ -105,6 +106,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
+        stripe_customer_id: typeof customer === 'string' ? customer : null,
         subscription_status: status,
         current_plan_id: metadata?.plan_id,
         trial_ends_at: trialEnd,
@@ -162,10 +164,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const { status, current_period_start, current_period_end, cancel_at_period_end, metadata } = subscription;
+  const { status, current_period_start, current_period_end, cancel_at_period_end, metadata, customer } = subscription;
   
-  console.log('🔄 Subscription updated:', subscription.id);
+  console.log('🔄 Subscription updated:', subscription.id, 'Status:', status);
 
+  // Update subscriptions table
   const { error } = await supabase
     .from('subscriptions')
     .update({
@@ -180,7 +183,53 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   if (error) {
     console.error('❌ Error updating subscription:', error);
   } else {
-    console.log('✅ Subscription updated');
+    console.log('✅ Subscription updated in subscriptions table');
+  }
+
+  // CRITICAL: Also update the profiles table with the subscription status
+  // This is what SubscriptionGuard checks!
+  const userId = metadata?.user_id;
+  if (userId) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        subscription_status: status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('❌ Error updating profile subscription status:', profileError);
+    } else {
+      console.log('✅ Profile subscription status updated to:', status);
+    }
+  } else {
+    console.warn('⚠️ No user_id in subscription metadata, trying to find by customer_id');
+    
+    // Fallback: try to find user by stripe_customer_id
+    if (customer && typeof customer === 'string') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('stripe_customer_id', customer)
+        .single();
+      
+      if (profile) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            subscription_status: status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', profile.id);
+
+        if (profileError) {
+          console.error('❌ Error updating profile via customer_id:', profileError);
+        } else {
+          console.log('✅ Profile updated via customer_id lookup');
+        }
+      }
+    }
   }
 }
 

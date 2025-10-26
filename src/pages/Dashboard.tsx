@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { 
   ShoppingBag, 
   Zap, 
@@ -26,6 +28,8 @@ interface Stats {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0,
     optimizedProducts: 0,
@@ -38,6 +42,38 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       loadStats();
+      
+      // Check if returning from successful checkout
+      const checkoutStatus = searchParams.get('checkout');
+      if (checkoutStatus === 'success') {
+        console.log('✅ Returning from successful checkout, refreshing profile...');
+        
+        // Show success message
+        toast({
+          title: "🎉 Abonnement activé !",
+          description: "Votre abonnement a été activé avec succès. Bienvenue !",
+        });
+        
+        // Remove the checkout parameter from URL
+        searchParams.delete('checkout');
+        searchParams.delete('session_id');
+        setSearchParams(searchParams);
+        
+        // Force refresh the page to ensure SubscriptionGuard reloads
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else if (checkoutStatus === 'cancelled') {
+        toast({
+          title: "Paiement annulé",
+          description: "Vous avez annulé le processus de paiement.",
+          variant: "destructive"
+        });
+        
+        searchParams.delete('checkout');
+        searchParams.delete('plan_id');
+        setSearchParams(searchParams);
+      }
     }
   }, [user]);
 
