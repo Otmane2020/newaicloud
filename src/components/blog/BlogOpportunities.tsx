@@ -24,6 +24,52 @@ export function BlogOpportunities() {
     loadOpportunities();
   }, []);
 
+  const generateOptimizedTitles = async (opportunities: Opportunity[], userId: string) => {
+    try {
+      // Générer des titres optimisés pour plusieurs opportunités en une seule requête
+      const prompt = `Tu es un expert en rédaction d'articles de blog SEO pour e-commerce. Génère des titres accrocheurs et optimisés SEO pour les articles suivants.
+
+Pour chaque opportunité, crée un titre qui:
+- Est pertinent et spécifique à la catégorie
+- Attire l'attention du lecteur
+- Est optimisé pour le SEO
+- Est naturel et professionnel en français
+- Fait entre 50-70 caractères
+
+Opportunités:
+${opportunities.map((opp, i) => `${i + 1}. Type: ${opp.type === 'guide' ? 'Guide d\'achat' : opp.type === 'comparison' ? 'Comparatif' : 'Collection'}, Catégorie: ${opp.category}, Produits: ${opp.productsCount}`).join('\n')}
+
+Réponds UNIQUEMENT avec un JSON array de titres dans cet ordre exact:
+["Titre 1", "Titre 2", "Titre 3", ...]`;
+
+      const { data } = await supabase.functions.invoke("chat-smart", {
+        body: { 
+          userMessage: prompt,
+          sellerId: userId,
+          useDeepseek: true
+        }
+      });
+
+      if (data?.content) {
+        try {
+          // Extraire le JSON de la réponse
+          const jsonMatch = data.content.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            const titles = JSON.parse(jsonMatch[0]);
+            if (Array.isArray(titles) && titles.length === opportunities.length) {
+              return titles;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse AI titles:", e);
+        }
+      }
+    } catch (error) {
+      console.error("Error generating titles:", error);
+    }
+    return null;
+  };
+
   const loadOpportunities = async () => {
     try {
       setLoading(true);
@@ -125,7 +171,21 @@ export function BlogOpportunities() {
         });
       }
 
-      setOpportunities(opps.slice(0, 8));
+      const selectedOpps = opps.slice(0, 8);
+
+      // Générer des titres optimisés avec DeepSeek
+      toast.info("Optimisation des titres avec IA...");
+      const optimizedTitles = await generateOptimizedTitles(selectedOpps, user.id);
+
+      if (optimizedTitles) {
+        selectedOpps.forEach((opp, i) => {
+          if (optimizedTitles[i]) {
+            opp.title = optimizedTitles[i];
+          }
+        });
+      }
+
+      setOpportunities(selectedOpps);
     } catch (error) {
       console.error("Error loading opportunities:", error);
     } finally {
