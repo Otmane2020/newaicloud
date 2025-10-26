@@ -127,95 +127,137 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
     }
   }
 
+  // Détection des attributs (TOUJOURS exécutée, même avec catégorie spécifique)
+  console.log("🎨 Detecting attributes from query:", searchNormalized);
+
+  // Couleurs avec variantes
+  const colorMap = {
+    blanc: ["blanc", "blanche", "white"],
+    noir: ["noir", "noire", "black"],
+    gris: ["gris", "grise", "gray", "grey"],
+    beige: ["beige"],
+    bois: ["bois", "wood", "boise"],
+    marron: ["marron", "brown", "brun", "brune"],
+    bleu: ["bleu", "bleue", "blue"],
+    vert: ["vert", "verte", "green"],
+    rouge: ["rouge", "red"],
+    jaune: ["jaune", "yellow"],
+    orange: ["orange"],
+    rose: ["rose", "pink"],
+    violet: ["violet", "violette", "purple", "mauve"],
+  };
+
+  for (const [color, variants] of Object.entries(colorMap)) {
+    if (variants.some((variant) => searchNormalized.includes(variant))) {
+      filters.color = color;
+      console.log("🎨 Color detected:", color);
+      break;
+    }
+  }
+
+  // Matériaux avec variantes
+  const materialMap = {
+    bois: ["bois", "wood", "boise", "en bois", "bois massif", "chene", "chenê", "noyer", "teck", "pin"],
+    metal: ["metal", "métal", "acier", "inox", "fer", "aluminium", "chrome", "or", "argent"],
+    verre: ["verre", "glass", "vitre"],
+    marbre: ["marbre", "marbree", "marbré", "marble"],
+    cuir: ["cuir", "leather", "cuir", "simili cuir"],
+    tissu: ["tissu", "tissée", "tissé", "tissus", "textile", "fabric", "velours", "lin", "coton", "soie"],
+    plastique: ["plastique", "plastic", "resine", "résine", "composite"],
+    ceramique: ["ceramique", "céramique", "ceramic", "porcelaine", "faïence"],
+    pierre: ["pierre", "stone", "granit", "granite", "ardoise"],
+    rotin: ["rotin", "osier", "bambou", "wicker"],
+  };
+
+  for (const [material, variants] of Object.entries(materialMap)) {
+    if (variants.some((variant) => searchNormalized.includes(variant))) {
+      filters.material = material;
+      console.log("🏗️ Material detected:", material);
+      break;
+    }
+  }
+
+  // Styles avec variantes
+  const styleMap = {
+    moderne: ["moderne", "modern", "contemporain", "contemporaine", "design"],
+    classique: ["classique", "traditionnel", "traditionnelle", "ancien", "ancienne"],
+    vintage: ["vintage", "retro", "rétro", "ancien", "ancienne"],
+    scandinave: ["scandinave", "scandinavie", "nordique", "danemark", "suède"],
+    industriel: ["industriel", "industrielle", "industrie", "metal", "métal", "usine"],
+    rustique: ["rustique", "campagne", "provence", "provencal", "provençale"],
+    minimaliste: ["minimaliste", "minimal", "epure", "épuré", "simple", "sobre"],
+    design: ["design", "contemporain", "moderne", "tendance"],
+    elegant: ["elegant", "élégant", "raffine", "raffiné", "chic", "luxe", "luxueux"],
+  };
+
+  for (const [style, variants] of Object.entries(styleMap)) {
+    if (variants.some((variant) => searchNormalized.includes(variant))) {
+      filters.style = style;
+      console.log("🎭 Style detected:", style);
+      break;
+    }
+  }
+
+  // Pièces avec variantes
+  const roomMap = {
+    salon: ["salon", "sejour", "séjour", "living", "salle de sejour", "salle à manger"],
+    chambre: ["chambre", "chambre a coucher", "chambre à coucher", "bedroom"],
+    cuisine: ["cuisine", "kitchen", "salle de cuisine"],
+    "salle de bain": ["salle de bain", "salle de bains", "bain", "bains", "bathroom", "douche", "toilette"],
+    bureau: ["bureau", "office", "studie", "studio", "travail"],
+    jardin: ["jardin", "exterieur", "extérieur", "terrasse", "balcon", "jardinnage"],
+    entree: ["entree", "entrée", "hall", "couloir", "vestibule"],
+  };
+
+  for (const [room, variants] of Object.entries(roomMap)) {
+    if (variants.some((variant) => searchNormalized.includes(variant))) {
+      filters.room = room;
+      console.log("🏠 Room detected:", room);
+      break;
+    }
+  }
+
+  // Filtres de prix (AMÉLIORÉ)
+  const priceMatch = searchNormalized.match(
+    /(?:moins de|max|maximum|jusqu'?a|jusqu'?à|inferieur a|inférieur à|pas plus de|<\s*)\s*(\d+)(?:\s*euros?|\s*€|\s*euro)?/i,
+  );
+  if (priceMatch) {
+    filters.maxPrice = parseInt(priceMatch[1]);
+    console.log("💰 Max price detected:", filters.maxPrice);
+  }
+
+  const minPriceMatch = searchNormalized.match(
+    /(?:plus de|min|minimum|a partir de|à partir de|superieur a|supérieur à|>\s*)\s*(\d+)(?:\s*euros?|\s*€|\s*euro)?/i,
+  );
+  if (minPriceMatch) {
+    filters.minPrice = parseInt(minPriceMatch[1]);
+    console.log("💰 Min price detected:", filters.minPrice);
+  }
+
+  const priceRangeMatch = searchNormalized.match(
+    /(?:entre\s*)(\d+)(?:\s*et|\s*à|\s*-)\s*(\d+)(?:\s*euros?|\s*€|\s*euro)?/i,
+  );
+  if (priceRangeMatch) {
+    filters.minPrice = parseInt(priceRangeMatch[1]);
+    filters.maxPrice = parseInt(priceRangeMatch[2]);
+    console.log("💰 Price range detected:", filters.minPrice, "-", filters.maxPrice);
+  }
+
   // Si pas de catégorie spécifique, utiliser la détection normale
   if (!foundSpecificCategory) {
-    const genericKeywords = ["produits", "articles", "catalogue", "collection", "tout", "tous", "tes", "vos"];
+    const genericKeywords = [
+      "produits",
+      "articles",
+      "catalogue",
+      "collection",
+      "tout",
+      "tous",
+      "tes",
+      "vos",
+      "montre",
+      "voir",
+    ];
     const isGenericRequest = genericKeywords.some((word) => searchNormalized.includes(word));
-
-    const colors = [
-      "blanc",
-      "noir",
-      "gris",
-      "beige",
-      "bois",
-      "marron",
-      "bleu",
-      "vert",
-      "rouge",
-      "jaune",
-      "orange",
-      "rose",
-      "violet",
-      "white",
-      "black",
-      "gray",
-      "brown",
-      "blue",
-      "green",
-      "red",
-      "yellow",
-      "pink",
-      "purple",
-    ];
-    const foundColor = colors.find((c) => searchNormalized.includes(normalizeText(c)));
-    if (foundColor) filters.color = foundColor;
-
-    const materials = [
-      "bois",
-      "metal",
-      "métal",
-      "verre",
-      "marbre",
-      "cuir",
-      "tissu",
-      "plastique",
-      "ceramique",
-      "céramique",
-      "wood",
-      "metal",
-      "glass",
-      "marble",
-      "leather",
-      "fabric",
-      "plastic",
-      "ceramic",
-    ];
-    const foundMaterial = materials.find((m) => searchNormalized.includes(normalizeText(m)));
-    if (foundMaterial) filters.material = foundMaterial;
-
-    const styles = [
-      "moderne",
-      "contemporain",
-      "classique",
-      "vintage",
-      "scandinave",
-      "industriel",
-      "rustique",
-      "tendance",
-      "elegant",
-      "élégant",
-      "design",
-      "minimaliste",
-    ];
-    const foundStyle = styles.find((s) => searchNormalized.includes(normalizeText(s)));
-    if (foundStyle) filters.style = foundStyle;
-
-    const rooms = ["salon", "chambre", "cuisine", "salle de bain", "bureau", "jardin", "terrasse", "entree", "entrée"];
-    const foundRoom = rooms.find((r) => searchNormalized.includes(normalizeText(r)));
-    if (foundRoom) filters.room = foundRoom;
-
-    // Extract price filters
-    const priceMatch = searchNormalized.match(/(?:moins de|max|maximum|jusqu'a|jusqu a|inferieur a|<)\s*(\d+)/);
-    if (priceMatch) {
-      filters.maxPrice = parseInt(priceMatch[1]);
-      console.log("🏷️ Max price detected:", filters.maxPrice);
-    }
-
-    const minPriceMatch = searchNormalized.match(/(?:plus de|min|minimum|a partir de|superieur a|>)\s*(\d+)/);
-    if (minPriceMatch) {
-      filters.minPrice = parseInt(minPriceMatch[1]);
-      console.log("🏷️ Min price detected:", filters.minPrice);
-    }
 
     const categories = [
       "canape",
@@ -236,13 +278,61 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
     } else if (isGenericRequest) {
       filters.query = "";
     } else {
-      filters.query = searchQuery;
+      // Extraction des termes principaux pour la recherche
+      const stopWords = [
+        "je",
+        "tu",
+        "il",
+        "elle",
+        "on",
+        "nous",
+        "vous",
+        "ils",
+        "elles",
+        "de",
+        "du",
+        "des",
+        "le",
+        "la",
+        "les",
+        "un",
+        "une",
+        "au",
+        "aux",
+        "avec",
+        "pour",
+        "dans",
+        "sur",
+        "sous",
+        "chez",
+        "est",
+        "sont",
+        "ai",
+        "as",
+        "a",
+        "avons",
+        "avez",
+        "ont",
+        "veux",
+        "voudrais",
+        "cherche",
+        "recherche",
+      ];
+      const queryWords = searchNormalized
+        .split(" ")
+        .filter((word) => word.length > 2 && !stopWords.includes(word))
+        .filter((word) => !Object.values(colorMap).flat().includes(word))
+        .filter((word) => !Object.values(materialMap).flat().includes(word))
+        .filter((word) => !Object.values(styleMap).flat().includes(word))
+        .filter((word) => !Object.values(roomMap).flat().includes(word));
+
+      filters.query = queryWords.join(" ");
     }
   }
 
   filters.status = "active";
   filters.limit = 12;
-  console.log("📋 Extracted filters:", filters);
+  console.log("📋 Final extracted filters:", filters);
   return filters;
 }
 
@@ -384,52 +474,76 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       console.log("🔍 [SEARCH] No seller/store filter - searching all");
     }
 
+    // Construction des conditions de recherche AVEC les filtres d'attributs
+    const searchConditions = [];
+
     // Recherche avec correspondance exacte pour les catégories spécifiques
     if (filters.query && filters.query.trim().length > 0) {
       if (filters.exactMatch) {
         // Recherche exacte pour les catégories spécifiques
         console.log("🎯 [SEARCH] Using exact match for:", filters.query);
-        query = query.or(
-          `category.eq.${filters.query},sub_category.eq.${filters.query},title.ilike.%${filters.query}%`,
-        );
+        searchConditions.push(`category.eq.${filters.query}`);
+        searchConditions.push(`sub_category.eq.${filters.query}`);
+        searchConditions.push(`title.ilike.%${filters.query}%`);
       } else {
-        // Recherche normale
+        // Recherche normale avec termes
         const searchTerms = normalizeText(filters.query)
           .split(" ")
           .filter((term) => term.length > 2);
         console.log("🔍 [SEARCH] Search terms:", searchTerms);
 
         if (searchTerms.length > 0) {
-          const orConditions = searchTerms
-            .flatMap((term) => [
-              `title.ilike.%${term}%`,
-              `description.ilike.%${term}%`,
-              `tags.ilike.%${term}%`,
-              `category.ilike.%${term}%`,
-              `sub_category.ilike.%${term}%`,
-              `product_type.ilike.%${term}%`,
-              `vendor.ilike.%${term}%`,
-              `ai_color.ilike.%${term}%`,
-              `ai_material.ilike.%${term}%`,
-              `ai_shape.ilike.%${term}%`,
-              `style.ilike.%${term}%`,
-              `room.ilike.%${term}%`,
-              `chat_text.ilike.%${term}%`,
-            ])
-            .join(",");
-
-          console.log("🔍 [SEARCH] OR conditions (first 200 chars):", orConditions.substring(0, 200));
-          query = query.or(orConditions);
+          searchTerms.forEach((term) => {
+            searchConditions.push(`title.ilike.%${term}%`);
+            searchConditions.push(`description.ilike.%${term}%`);
+            searchConditions.push(`tags.ilike.%${term}%`);
+            searchConditions.push(`category.ilike.%${term}%`);
+            searchConditions.push(`sub_category.ilike.%${term}%`);
+            searchConditions.push(`product_type.ilike.%${term}%`);
+            searchConditions.push(`vendor.ilike.%${term}%`);
+            searchConditions.push(`ai_color.ilike.%${term}%`);
+            searchConditions.push(`ai_material.ilike.%${term}%`);
+            searchConditions.push(`ai_shape.ilike.%${term}%`);
+            searchConditions.push(`style.ilike.%${term}%`);
+            searchConditions.push(`room.ilike.%${term}%`);
+            searchConditions.push(`chat_text.ilike.%${term}%`);
+          });
         }
       }
     } else {
       console.log("🔍 [SEARCH] No query filter - will return all active products");
     }
 
-    if (filters.color) query = query.or(`ai_color.ilike.%${filters.color}%,title.ilike.%${filters.color}%`);
-    if (filters.material) query = query.or(`ai_material.ilike.%${filters.material}%,title.ilike.%${filters.material}%`);
-    if (filters.style) query = query.or(`style.ilike.%${filters.style}%,tags.ilike.%${filters.style}%`);
-    if (filters.room) query = query.or(`room.ilike.%${filters.room}%,tags.ilike.%${filters.room}%`);
+    // APPLICATION DES FILTRES D'ATTRIBUTS (CRITIQUE)
+    if (filters.color) {
+      console.log("🎨 [FILTER] Applying color filter:", filters.color);
+      query = query.or(
+        `ai_color.ilike.%${filters.color}%,title.ilike.%${filters.color}%,tags.ilike.%${filters.color}%`,
+      );
+    }
+
+    if (filters.material) {
+      console.log("🏗️ [FILTER] Applying material filter:", filters.material);
+      query = query.or(
+        `ai_material.ilike.%${filters.material}%,title.ilike.%${filters.material}%,tags.ilike.%${filters.material}%`,
+      );
+    }
+
+    if (filters.style) {
+      console.log("🎭 [FILTER] Applying style filter:", filters.style);
+      query = query.or(`style.ilike.%${filters.style}%,tags.ilike.%${filters.style}%,title.ilike.%${filters.style}%`);
+    }
+
+    if (filters.room) {
+      console.log("🏠 [FILTER] Applying room filter:", filters.room);
+      query = query.or(`room.ilike.%${filters.room}%,tags.ilike.%${filters.room}%,title.ilike.%${filters.room}%`);
+    }
+
+    // Application des conditions de recherche textuelle
+    if (searchConditions.length > 0) {
+      console.log("🔍 [SEARCH] Applying search conditions:", searchConditions);
+      query = query.or(searchConditions.join(","));
+    }
 
     if (filters.category) query = query.ilike("category", `%${filters.category}%`);
     if (filters.subCategory) query = query.ilike("sub_category", `%${filters.subCategory}%`);
@@ -456,14 +570,14 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
         const price = parseFloat(p.price);
         return !isNaN(price) && price <= filters.maxPrice!;
       });
-      console.log(`🏷️ [PRICE FILTER] After max price ${filters.maxPrice}: ${filteredData.length} products`);
+      console.log(`💰 [PRICE FILTER] After max price ${filters.maxPrice}: ${filteredData.length} products`);
     }
     if (filters.minPrice) {
       filteredData = filteredData.filter((p) => {
         const price = parseFloat(p.price);
         return !isNaN(price) && price >= filters.minPrice!;
       });
-      console.log(`🏷️ [PRICE FILTER] After min price ${filters.minPrice}: ${filteredData.length} products`);
+      console.log(`💰 [PRICE FILTER] After min price ${filters.minPrice}: ${filteredData.length} products`);
     }
 
     if (filteredData.length === 0) {
@@ -487,6 +601,8 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
         title: p.title,
         score: p._relevance_score,
         category: p.category,
+        color: p.ai_color,
+        material: p.ai_material,
       })),
     );
 
@@ -675,11 +791,11 @@ async function detectIntent(userMessage: string): Promise<"simple_chat" | "produ
   });
 
   productShowKeywords.forEach((word) => {
-    if (msg.includes(word)) scores.product_show += 25; // Augmenté
+    if (msg.includes(word)) scores.product_show += 25;
   });
 
   productChatKeywords.forEach((word) => {
-    if (msg.includes(word)) scores.product_chat += 12; // Augmenté
+    if (msg.includes(word)) scores.product_chat += 12;
   });
 
   productKeywords.forEach((word) => {
