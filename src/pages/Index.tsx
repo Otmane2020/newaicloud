@@ -3,9 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
 import { PublicHeader } from "@/components/PublicHeader";
+import PricingComparison from "@/components/PricingComparison";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { 
   Zap, 
   ShoppingBag, 
@@ -14,12 +15,15 @@ import {
   MessageSquare, 
   Sparkles,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Globe
 } from "lucide-react";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [currency, setCurrency] = useState<'EUR' | 'USD'>('EUR');
 
   useEffect(() => {
     if (!loading && user) {
@@ -163,54 +167,133 @@ const Index = () => {
       {/* Pricing Section */}
       <section id="pricing" className="container mx-auto px-4 py-24">
         <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-primary text-primary">Tarification</Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">Des plans pour chaque boutique</h2>
+          <Badge variant="outline" className="border-primary text-primary">
+            <Globe className="w-4 h-4 mr-2" />
+            Tarification
+          </Badge>
+          <h2 className="text-4xl md:text-5xl font-bold">Plans & Tarifs</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Commencez gratuitement et évoluez au rythme de votre croissance
+            Choisissez le plan adapté à la taille de votre boutique.
+            Tous nos plans incluent l'intégration Shopify et un support dédié.
           </p>
+          
+          {/* Billing Cycle Toggle */}
+          <div className="flex items-center justify-center gap-4 pt-4">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                billingCycle === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Mensuel
+            </button>
+            <button
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
+                billingCycle === 'yearly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Annuel
+              <Badge className="absolute -top-2 -right-2 bg-success text-xs">-20%</Badge>
+            </button>
+          </div>
+
+          {/* Currency Toggle */}
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <button
+              onClick={() => setCurrency('EUR')}
+              className={`px-3 py-1 rounded ${currency === 'EUR' ? 'bg-primary/10 text-primary font-medium' : ''}`}
+            >
+              💶 EUR
+            </button>
+            <span>|</span>
+            <button
+              onClick={() => setCurrency('USD')}
+              className={`px-3 py-1 rounded ${currency === 'USD' ? 'bg-primary/10 text-primary font-medium' : ''}`}
+            >
+              💵 USD
+            </button>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {pricingPlans.map((plan, index) => (
-            <Card 
-              key={index}
-              className={`p-8 relative ${plan.featured ? 'border-2 border-primary shadow-primary' : 'border-2 border-transparent'}`}
-            >
-              {plan.featured && (
-                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-primary">
-                  Plus Populaire
-                </Badge>
-              )}
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <p className="text-muted-foreground text-sm">{plan.description}</p>
-                </div>
-                
-                <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">{plan.price}</span>
-                  {plan.period && <span className="text-muted-foreground">/ {plan.period}</span>}
-                </div>
-
-                <Button 
-                  className={plan.featured ? "w-full" : "w-full"} 
-                  variant={plan.featured ? "default" : "outline"}
-                  onClick={() => window.location.href = '/auth?mode=signup'}
-                >
-                  {plan.cta}
-                </Button>
-
-                <div className="space-y-3 pt-6 border-t">
-                  {plan.features.map((feature, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
+          {pricingPlans.map((plan, index) => {
+            const price = billingCycle === 'monthly' ? plan.priceMonthly : plan.priceYearly;
+            const displayPrice = currency === 'EUR' ? `${price}€` : `$${price}`;
+            
+            return (
+              <Card 
+                key={index}
+                className={`p-8 relative ${plan.featured ? 'border-2 border-primary shadow-primary scale-105' : 'border-2 border-transparent'}`}
+              >
+                {plan.badge && (
+                  <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 ${plan.badgeColor || 'bg-gradient-primary'}`}>
+                    {plan.badge}
+                  </Badge>
+                )}
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-2xl font-bold">{plan.icon} {plan.name}</h3>
                     </div>
-                  ))}
+                    <p className="text-muted-foreground text-sm">{plan.description}</p>
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-bold">{displayPrice}</span>
+                      <span className="text-muted-foreground">/mois</span>
+                    </div>
+                    {billingCycle === 'yearly' && (
+                      <p className="text-sm text-success mt-1">
+                        payé annuellement (soit {currency === 'EUR' ? `${plan.yearlyTotal}€` : `$${plan.yearlyTotal}`}/an)
+                      </p>
+                    )}
+                    {plan.trial && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {plan.trial}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button 
+                    className="w-full" 
+                    variant={plan.featured ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => window.location.href = '/auth?mode=signup'}
+                  >
+                    {plan.cta}
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+
+                  {plan.highlight && (
+                    <p className="text-sm text-muted-foreground italic">
+                      💡 {plan.highlight}
+                    </p>
+                  )}
+
+                  <div className="space-y-3 pt-6 border-t">
+                    <p className="font-semibold text-sm">Inclus dans le plan :</p>
+                    {plan.features.map((feature, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Comparison Table */}
+        <div className="mt-16">
+          <div className="text-center mb-8">
+            <h3 className="text-3xl font-bold mb-2">Tableau comparatif des plans</h3>
+            <p className="text-muted-foreground">Comparez en détail toutes les fonctionnalités</p>
+          </div>
+          <PricingComparison />
         </div>
       </section>
 
@@ -305,48 +388,73 @@ const stats = [
 const pricingPlans = [
   {
     name: "Starter",
-    description: "Pour les petites boutiques qui débutent",
-    price: "Gratuit",
-    period: "",
-    cta: "Commencer",
+    icon: "🟢",
+    description: "Pour les petites boutiques qui veulent découvrir la puissance de l'IA",
+    priceMonthly: 9.99,
+    priceYearly: 7.99,
+    yearlyTotal: 95.88,
+    trial: "essai gratuit de 14 jours",
+    cta: "Commencer l'essai gratuit",
     featured: false,
+    badge: null,
+    highlight: "Profitez de la puissance de l'IA, avec des fonctionnalités essentielles et des quotas adaptés à vos débuts.",
     features: [
-      "Jusqu'à 50 produits",
-      "Optimisation SEO de base",
-      "1 article de blog / mois",
-      "Support par email",
-      "Intégration Shopify"
+      "1 000 optimisations SEO avancées / mois avec IA (SEO, ALT Image et Tag)",
+      "5 articles IA / mois",
+      "100 recherches IA Shopify / mois",
+      "200 réponses Chat IA / mois",
+      "1 boutique Shopify connectable",
+      "Automatisation complète (SEO + blog + chat)",
+      "Support prioritaire par e-mail",
+      "Intégration Shopify complète"
     ]
   },
   {
     name: "Pro",
+    icon: "🟠",
     description: "Pour les boutiques en croissance",
-    price: "49€",
-    period: "mois",
+    priceMonthly: 49,
+    priceYearly: 39,
+    yearlyTotal: 468,
+    trial: null,
     cta: "Essayer gratuitement",
     featured: true,
+    badge: "Plus Populaire 🔥",
+    badgeColor: "bg-primary",
+    highlight: "Le plan Pro offre toute la puissance IA sans limites inutiles. Parfait pour les boutiques qui veulent accélérer leur croissance.",
     features: [
       "Produits illimités",
-      "Optimisation SEO avancée",
-      "10 articles de blog / mois",
-      "Google Merchant Center",
-      "Chat IA intelligent",
-      "Automatisation complète",
+      "2 000 optimisations SEO avancées / mois avec IA",
+      "10 articles IA / mois",
+      "5 campagnes automatiques / mois",
+      "500 recherches IA Shopify / mois",
+      "1 000 réponses Chat IA / mois",
+      "Jusqu'à 3 boutiques Shopify connectables",
+      "Google Merchant Center intégré",
+      "Automatisation complète (SEO + blog + chat)",
       "Support prioritaire 24/7"
     ]
   },
   {
     name: "Enterprise",
-    description: "Pour les grandes boutiques",
-    price: "Sur mesure",
-    period: "",
+    icon: "🔵",
+    description: "Pour les grandes boutiques et agences",
+    priceMonthly: 199,
+    priceYearly: 159,
+    yearlyTotal: 1908,
+    trial: null,
     cta: "Nous contacter",
     featured: false,
+    badge: null,
+    highlight: "Conçu pour les grandes enseignes et agences. Une solution IA complète, évolutive et encadrée par un support premium.",
     features: [
-      "Tout du plan Pro",
-      "Articles illimités",
-      "Multi-boutiques",
-      "API personnalisée",
+      "10 000 optimisations SEO avancées / mois",
+      "100 articles IA / mois",
+      "20 campagnes automatiques / mois",
+      "5 000 recherches IA Shopify / mois",
+      "10 000 réponses Chat IA / mois",
+      "Jusqu'à 10 boutiques Shopify connectables",
+      "Multi-boutiques & API personnalisée",
       "Account manager dédié",
       "Formation personnalisée",
       "SLA garanti"
