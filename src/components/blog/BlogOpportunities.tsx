@@ -50,39 +50,50 @@ export function BlogOpportunities() {
         };
       });
 
-      const prompt = `Tu es un expert SEO e-commerce spécialisé en meubles et décoration.
+      const prompt = `Tu es un expert SEO e-commerce spécialisé en meubles et décoration d'intérieur.
 
-Génère des titres d'articles de blog EXCEPTIONNELS et UNIQUES pour chaque opportunité ci-dessous.
+Génère des titres d'articles de blog PRATIQUES et INSPIRANTS axés sur l'AMÉNAGEMENT et la DÉCORATION.
 
-RÈGLES ABSOLUES:
-• 50-65 caractères maximum
-• Accrocheur et professionnel
-• Mots-clés SEO naturels intégrés
-• Évite les formulations génériques
-• Chaque titre doit être DIFFÉRENT et ORIGINAL
-• Utilise des chiffres, dates, superlatifs quand approprié
+❌ INTERDICTIONS ABSOLUES:
+• Pas de titres génériques type "Collection X"
+• Pas de simple liste de produits
+• Pas de titres ennuyeux
 
-OPPORTUNITÉS:
+✅ OBJECTIF:
+• Conseils pratiques d'aménagement
+• Inspiration décoration
+• Guides d'utilisation et astuces
+• Solutions à des problèmes concrets
+
+RÈGLES:
+• 50-65 caractères max
+• Accrocheur et inspirant
+• Mots-clés SEO naturels
+• Chaque titre UNIQUE et ORIGINAL
+• Focus sur la VALEUR pour le lecteur
+
+OPPORTUNITÉS À TRANSFORMER:
 ${enrichedOpportunities.map((opp, i) => {
-  const typeLabel = opp.type === 'guide' ? '📚 GUIDE ACHAT' : 
+  const typeLabel = opp.type === 'guide' ? '🏠 GUIDE AMÉNAGEMENT' : 
                     opp.type === 'comparison' ? '⚖️ COMPARATIF' : 
-                    '✨ COLLECTION MARQUE';
+                    '✨ INSPIRATION DÉCO';
   return `${i + 1}. ${typeLabel}
-   • Catégorie: ${opp.category}
-   • ${opp.productsCount} produits
-   • Exemples: ${opp.productExamples || 'Divers'}`;
+   • Sujet: ${opp.category}
+   • ${opp.productsCount} options disponibles
+   • Ex produits: ${opp.productExamples || 'Divers'}`;
 }).join('\n\n')}
 
-Réponds UNIQUEMENT avec ce format JSON exact (${opportunities.length} titres):
+FORMAT JSON EXACT (${opportunities.length} titres):
 ["Titre 1", "Titre 2", "Titre 3", ...]
 
 EXEMPLES INSPIRANTS:
-✓ "Canapé Convertible 2024 : Top 12 Modèles Testés"
-✓ "Chaise Scandinave : Le Guide Ultime [+Photos]"
-✓ "Table Basse Design : 8 Tendances Incontournables"
-✓ "Comparatif : Cuir vs Tissu pour Votre Canapé"
+✓ "Canapé en L : 7 Astuces pour Optimiser Votre Salon"
+✓ "Aménager un Petit Espace avec une Table Gain de Place"
+✓ "Chaise de Bureau Ergonomique : Le Guide 2024"
+✓ "Style Scandinave : Comment Créer un Intérieur Cosy"
+✓ "Comparatif : Table Ronde ou Rectangulaire ?"
 
-Génère maintenant ${opportunities.length} titres EXCEPTIONNELS:`;
+Génère ${opportunities.length} titres EXCEPTIONNELS orientés AMÉNAGEMENT:`;
 
       const { data } = await supabase.functions.invoke("chat-smart", {
         body: { 
@@ -149,8 +160,8 @@ Génère maintenant ${opportunities.length} titres EXCEPTIONNELS:`;
         if (count >= 2) {
           opps.push({
             id: `guide-category-${category}`,
-            title: `Guide d'achat ${category}`,
-            description: `Guide complet pour choisir parmi ${count} produits ${category}`,
+            title: `Comment bien choisir ${category}`,
+            description: `Guide complet pour aménager avec ${count} ${category}`,
             category,
             productsCount: count,
             type: "guide",
@@ -158,13 +169,13 @@ Génère maintenant ${opportunities.length} titres EXCEPTIONNELS:`;
         }
       });
 
-      // 2. Guides par type de produit
+      // 2. Guides d'aménagement par type
       productTypeMap.forEach((count, type) => {
-        if (count >= 2) {
+        if (count >= 3) {
           opps.push({
-            id: `guide-type-${type}`,
-            title: `Guide : Comment choisir ${type}`,
-            description: `Conseils d'expert pour ${count} ${type}`,
+            id: `deco-type-${type}`,
+            title: `Aménager avec ${type}`,
+            description: `Conseils déco et idées d'aménagement avec ${count} ${type}`,
             category: type,
             productsCount: count,
             type: "guide",
@@ -179,7 +190,7 @@ Génère maintenant ${opportunities.length} titres EXCEPTIONNELS:`;
           opps.push({
             id: `comparison-${categories[i]}-${categories[i + 1]}`,
             title: `${categories[i]} vs ${categories[i + 1]}`,
-            description: `Comparaison détaillée pour vous aider à choisir`,
+            description: `Comparatif pour bien choisir entre ces options`,
             category: `${categories[i]} & ${categories[i + 1]}`,
             productsCount: (categoryMap.get(categories[i]) || 0) + (categoryMap.get(categories[i + 1]) || 0),
             type: "comparison",
@@ -187,13 +198,17 @@ Génère maintenant ${opportunities.length} titres EXCEPTIONNELS:`;
         }
       }
 
-      // 4. Articles par marque/vendeur
-      vendorMap.forEach((count, vendor) => {
-        if (count >= 3) {
+      // 4. Guides d'aménagement par style/marque (top marques uniquement)
+      const topVendors = Array.from(vendorMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+      
+      topVendors.forEach(([vendor, count]) => {
+        if (count >= 5) {
           opps.push({
-            id: `trend-vendor-${vendor}`,
-            title: `Collection ${vendor}`,
-            description: `Découvrez la gamme ${vendor} - ${count} produits disponibles`,
+            id: `style-vendor-${vendor}`,
+            title: `Style ${vendor}`,
+            description: `Créer un intérieur harmonieux avec ${vendor} - ${count} produits`,
             category: vendor,
             productsCount: count,
             type: "trend",
