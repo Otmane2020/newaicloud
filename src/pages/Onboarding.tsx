@@ -167,21 +167,21 @@ export default function Onboarding() {
     <div className="min-h-screen bg-gradient-subtle p-8">
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <div className="text-center mb-12">
-          <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
-            <Sparkles className="w-4 h-4 mr-2" />
-            Essai gratuit de 14 jours
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
-            Choisissez votre{' '}
-            <span className="bg-gradient-primary bg-clip-text text-transparent">
-              forfait NewAI
-            </span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Commencez gratuitement pendant 14 jours. Aucune carte bancaire requise.
-          </p>
-        </div>
+      <div className="text-center mb-12">
+        <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
+          <Sparkles className="w-4 h-4 mr-2" />
+          ✨ Essai gratuit de 14 jours - Carte bancaire requise
+        </Badge>
+        <h1 className="text-4xl md:text-6xl font-bold mb-4">
+          Choisissez votre{' '}
+          <span className="bg-gradient-primary bg-clip-text text-transparent">
+            forfait NewAI
+          </span>
+        </h1>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          Commencez gratuitement pendant 14 jours. Votre carte ne sera débitée qu'à la fin de l'essai.
+        </p>
+      </div>
 
         {/* Billing Toggle */}
         <div className="flex justify-center mb-12">
@@ -207,7 +207,7 @@ export default function Onboarding() {
         </div>
 
         {/* Plans */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto mb-12">
           {plans.map((plan) => {
             const Icon = getPlanIcon(plan.id);
             const isSelected = selectedPlanId === plan.id;
@@ -243,26 +243,28 @@ export default function Onboarding() {
                 <p className="text-muted-foreground mb-6">{plan.description}</p>
 
                 <div className="mb-6">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                      {billingCycle === 'yearly' 
-                        ? `${(plan.price_yearly / 12).toFixed(2)}€`
-                        : `${plan.price_monthly.toFixed(2)}€`
-                      }
-                    </span>
-                    <span className="text-muted-foreground">
-                      /mois
-                    </span>
+                  <div className="flex flex-col items-center justify-center mb-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                        {billingCycle === 'yearly' 
+                          ? `${(plan.price_yearly / 12).toFixed(2)}€`
+                          : `${plan.price_monthly.toFixed(2)}€`
+                        }
+                      </span>
+                      <span className="text-muted-foreground">
+                        /mois
+                      </span>
+                    </div>
+                    {billingCycle === 'yearly' && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        soit {plan.price_yearly.toFixed(2)}€ facturé annuellement
+                      </p>
+                    )}
                   </div>
-                  {billingCycle === 'yearly' && (
-                    <>
-                      <p className="text-sm text-muted-foreground">
-                        Payé annuellement ({plan.price_yearly.toFixed(2)}€/an)
-                      </p>
-                      <p className="text-sm text-green-600 mt-1">
-                        Économisez {getSavingsPercent(plan)}%
-                      </p>
-                    </>
+                  {billingCycle === 'yearly' && getSavingsPercent(plan) > 0 && (
+                    <p className="text-sm text-green-600 font-medium text-center">
+                      Économisez {getSavingsPercent(plan)}% par an
+                    </p>
                   )}
                 </div>
 
@@ -334,7 +336,7 @@ export default function Onboarding() {
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                Redirection...
+                Redirection sécurisée...
               </>
             ) : (
               <>
@@ -344,7 +346,7 @@ export default function Onboarding() {
             )}
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
-            Aucune carte bancaire requise • Annulez à tout moment • Support 24/7
+            💳 Carte bancaire requise • Aucun débit pendant 14 jours • Annulez à tout moment
           </p>
         </div>
       </div>

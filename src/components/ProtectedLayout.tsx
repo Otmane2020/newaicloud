@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigation } from "@/components/Navigation";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -18,11 +19,13 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Navigation />
-      <main className="flex-1 ml-16 md:ml-64 transition-all duration-300 p-8">
-        {children}
-      </main>
-    </div>
+    <SubscriptionGuard>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Navigation />
+        <main className="flex-1 ml-16 md:ml-64 transition-all duration-300 p-8">
+          {children}
+        </main>
+      </div>
+    </SubscriptionGuard>
   );
 }

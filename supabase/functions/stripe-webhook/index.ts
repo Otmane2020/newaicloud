@@ -84,13 +84,30 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   console.log('🎉 Checkout completed for user:', userId);
 
+  // Récupérer les détails utilisateur
+  const { data: userData } = await supabase.auth.admin.getUserById(userId);
+  const userEmail = userData?.user?.email;
+  const userName = userData?.user?.user_metadata?.full_name;
+
   if (subscription && typeof subscription === 'string') {
+    // Récupérer les détails de la subscription Stripe
+    const subscriptionDetails = await stripe.subscriptions.retrieve(subscription);
+    
+    // Déterminer le statut (trialing pendant l'essai, active après)
+    const status = subscriptionDetails.status;
+    const trialEnd = subscriptionDetails.trial_end 
+      ? new Date(subscriptionDetails.trial_end * 1000).toISOString()
+      : null;
+
+    console.log('📋 Subscription status:', status);
+    console.log('⏰ Trial end:', trialEnd);
+
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
-        subscription_status: 'active',
+        subscription_status: status,
         current_plan_id: metadata?.plan_id,
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        trial_ends_at: trialEnd,
         onboarding_completed: true,
         updated_at: new Date().toISOString()
       })
@@ -108,12 +125,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         seller_id: userId,
         stripe_subscription_id: subscription,
         plan_id: metadata?.plan_id,
-        status: 'active',
+        status: status,
         billing_period: metadata?.billing_period || 'monthly',
-        current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        trial_start: new Date().toISOString(),
-        trial_end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        current_period_start: new Date(subscriptionDetails.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscriptionDetails.current_period_end * 1000).toISOString(),
+        trial_start: trialEnd ? new Date().toISOString() : null,
+        trial_end: trialEnd,
         cancel_at_period_end: false
       }, {
         onConflict: 'stripe_subscription_id'
@@ -123,6 +140,23 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       console.error('❌ Error creating subscription:', subError);
     } else {
       console.log('✅ Subscription created');
+    }
+
+    // Envoyer l'email de confirmation
+    if (userEmail) {
+      try {
+        await supabase.functions.invoke('send-subscription-confirmed', {
+          body: {
+            email: userEmail,
+            planName: metadata?.plan_name || 'Premium',
+            trialEnd: trialEnd,
+            fullName: userName
+          }
+        });
+        console.log('✅ Confirmation email sent to:', userEmail);
+      } catch (emailError) {
+        console.error('❌ Error sending confirmation email:', emailError);
+      }
     }
   }
 }

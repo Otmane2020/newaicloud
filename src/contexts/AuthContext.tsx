@@ -83,8 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Connexion réussie ! Redirection...');
-      setTimeout(() => navigate('/dashboard'), 1000);
+      toast.success('Connexion réussie !');
+      // Ne pas rediriger automatiquement - SubscriptionGuard gèrera la redirection
     }
 
     return { error };
