@@ -574,6 +574,7 @@ export type Database = {
           full_name: string | null
           id: string
           onboarding_completed: boolean | null
+          preferred_language: string | null
           stripe_customer_id: string | null
           subscription_status: string | null
           trial_ends_at: string | null
@@ -587,6 +588,7 @@ export type Database = {
           full_name?: string | null
           id: string
           onboarding_completed?: boolean | null
+          preferred_language?: string | null
           stripe_customer_id?: string | null
           subscription_status?: string | null
           trial_ends_at?: string | null
@@ -600,6 +602,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           onboarding_completed?: boolean | null
+          preferred_language?: string | null
           stripe_customer_id?: string | null
           subscription_status?: string | null
           trial_ends_at?: string | null

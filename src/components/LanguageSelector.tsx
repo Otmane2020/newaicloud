@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { useTranslation } from "react-i18next";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const languages = [
   { code: 'fr', name: 'Français', flag: '🇫🇷' },
@@ -22,9 +22,9 @@ const languages = [
 ];
 
 export const LanguageSelector = () => {
-  const { i18n } = useTranslation();
+  const { language, changeLanguage } = useTranslation();
   const currentLang = languages.find(lang => 
-    i18n.language.startsWith(lang.code)
+    language.startsWith(lang.code)
   ) || languages[0];
 
   return (
@@ -40,8 +40,8 @@ export const LanguageSelector = () => {
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
-            onClick={() => i18n.changeLanguage(lang.code)}
-            className={i18n.language.startsWith(lang.code) ? 'bg-primary/10' : ''}
+            onClick={() => changeLanguage(lang.code)}
+            className={language.startsWith(lang.code) ? 'bg-primary/10' : ''}
           >
             <span className="mr-2">{lang.flag}</span>
             {lang.name}

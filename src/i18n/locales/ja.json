@@ -1,0 +1,185 @@
+{
+  "hero": {
+    "badge": "AI駆動のShopify最適化",
+    "title": "ストアを最適化する",
+    "subtitle": "SEOを自動化し、製品を管理し、コンテンツを作成し、現代のeコマース向けのインテリジェントAIツールで売上を向上させます。",
+    "cta_start": "無料で開始",
+    "cta_demo": "デモを見る"
+  },
+  "features": {
+    "title": "必要なものすべて",
+    "subtitle": "より速く成長したいShopify販売者のための強力なツール",
+    "products": {
+      "title": "商品管理",
+      "description": "バリアント、GTIN生成、Googleショッピング統合で製品を管理"
+    },
+    "merchant": {
+      "title": "Google Merchant Center",
+      "description": "XMLフィードの自動生成とGoogleショッピング同期"
+    },
+    "blog": {
+      "title": "AI SEOブログ",
+      "description": "製品リンク付きのSEO最適化記事の自動作成"
+    },
+    "seo": {
+      "title": "SEO最適化",
+      "description": "メタタグ、説明、キーワードのAI最適化"
+    },
+    "chat": {
+      "title": "スマートチャット",
+      "description": "製品推奨とカスタマーサポート用のAIアシスタント"
+    },
+    "automation": {
+      "title": "キャンペーン自動化",
+      "description": "コンテンツ作成のスケジュールと自動化"
+    }
+  },
+  "benefits": {
+    "title": "Shopifyストアでの実証済みの結果",
+    "subtitle": "AI最適化でストアを変革した何百もの販売者に参加",
+    "cta": "今すぐ開始",
+    "speed": {
+      "title": "3倍速い",
+      "description": "製品入力と最適化を自動化"
+    },
+    "traffic": {
+      "title": "50%増のトラフィック",
+      "description": "AI最適化SEOが資格のある訪問者を引き付ける"
+    },
+    "time": {
+      "title": "10時間以上節約",
+      "description": "コンテンツ作成と管理の自動化"
+    },
+    "ranking": {
+      "title": "Googleランキング向上",
+      "description": "構造化データと最適化されたフィード"
+    }
+  },
+  "pricing": {
+    "title": "プランと価格",
+    "subtitle": "ストアのサイズに合ったプランを選択してください。すべてのプランにShopify統合と専用サポートが含まれています。",
+    "monthly": "月額",
+    "yearly": "年額",
+    "discount": "-20%",
+    "per_month": "/月",
+    "per_year": "/年",
+    "billed_yearly": "年払い（つまり",
+    "comparison_title": "プラン比較表",
+    "comparison_subtitle": "すべての機能を詳しく比較"
+  },
+  "plans": {
+    "starter": {
+      "name": "スターター",
+      "description": "AIの力を発見したい小規模ストア向け",
+      "trial": "14日間無料トライアル",
+      "cta": "無料トライアルを開始",
+      "highlight": "開始に合わせた基本機能とクォータでAIの力をお楽しみください。"
+    },
+    "pro": {
+      "name": "プロ",
+      "description": "成長中のストア向け",
+      "badge": "最も人気 🔥",
+      "cta": "無料で試す",
+      "highlight": "Proプランは不要な制限なしで完全なAIパワーを提供します。成長を加速したいストアに最適です。"
+    },
+    "enterprise": {
+      "name": "エンタープライズ",
+      "description": "大規模ストアとマルチストア向け",
+      "cta": "営業に連絡",
+      "highlight": "エンタープライズプランは、複数のストアを管理する、または高度なニーズを持つ本格的な販売者向けに設計されています。"
+    }
+  },
+  "cta": {
+    "title": "ストアを変革する準備はできていますか？",
+    "subtitle": "今日から無料で始めましょう。クレジットカード不要。",
+    "button": "無料で開始"
+  },
+  "auth": {
+    "login": "ログイン",
+    "signup": "サインアップ",
+    "email": "メール",
+    "password": "パスワード",
+    "fullname": "フルネーム",
+    "forgot_password": "パスワードをお忘れですか？",
+    "no_account": "アカウントをお持ちでないですか？",
+    "have_account": "既にアカウントをお持ちですか？",
+    "creating": "アカウント作成中...",
+    "connecting": "接続中...",
+    "loading": "読み込み中..."
+  },
+  "nav": {
+    "features": "機能",
+    "pricing": "価格",
+    "dashboard": "ダッシュボード",
+    "account": "マイアカウント",
+    "home": "ホーム",
+    "benefits": "利点"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "success": "成功",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "close": "閉じる"
+  },
+  "account": {
+    "title": "マイアカウント",
+    "subtitle": "個人情報を管理",
+    "personal_info": "個人情報",
+    "security": "セキュリティ",
+    "email": "メール",
+    "email_note": "メールは変更できません",
+    "full_name": "フルネーム",
+    "full_name_placeholder": "あなたのフルネーム",
+    "save_changes": "変更を保存",
+    "new_password": "新しいパスワード",
+    "new_password_placeholder": "最低6文字",
+    "confirm_password": "パスワードを確認",
+    "confirm_password_placeholder": "新しいパスワードを再入力",
+    "change_password": "パスワード変更",
+    "security_tips": "セキュリティのヒント：",
+    "tip_length": "少なくとも6文字を使用",
+    "tip_case": "大文字と小文字を混在",
+    "tip_special": "数字と特殊文字を追加",
+    "tip_personal": "個人情報を使用しない",
+    "profile_updated": "プロファイルが正常に更新されました",
+    "profile_error": "プロファイルの更新エラー",
+    "password_updated": "パスワードが正常に変更されました",
+    "password_error": "パスワード変更エラー",
+    "password_mismatch": "パスワードが一致しません",
+    "password_short": "パスワードは少なくとも6文字である必要があります",
+    "fill_all_fields": "すべてのフィールドを入力してください"
+  },
+  "pricingComparison": {
+    "features": "機能",
+    "starter": "スターター",
+    "pro": "プロ",
+    "enterprise": "エンタープライズ",
+    "products": "製品と最適化",
+    "products_count": "製品",
+    "optimizations": "高度なSEO最適化 / 月",
+    "articles": "AI記事 / 月",
+    "campaigns": "自動化されたキャンペーン / 月",
+    "ai": "人工知能",
+    "shopify_searches": "Shopify AI検索 / 月",
+    "chat_responses": "AIチャット応答 / 月",
+    "deepseek": "DeepSeekでのAI最適化",
+    "integrations": "統合",
+    "shopify_stores": "接続可能なShopifyストア",
+    "google_merchant": "Google Merchant Center",
+    "custom_api": "カスタムAPI",
+    "multi_stores": "マルチストア",
+    "automation": "自動化とサポート",
+    "full_automation": "完全な自動化",
+    "support": "サポート",
+    "support_email": "優先メール",
+    "support_247": "24/7優先",
+    "support_manager": "専任アカウントマネージャー",
+    "custom_training": "カスタムトレーニング",
+    "sla": "保証されたSLA",
+    "unlimited": "無制限"
+  }
+}

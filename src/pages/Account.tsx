@@ -1,17 +1,20 @@
 import { AccountSettings } from '@/components/dashboard/AccountSettings';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Account() {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen bg-gradient-subtle p-8">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8 flex justify-between items-start">
           <div>
             <h1 className="text-4xl font-bold mb-2">
-              Mon Compte
+              {t('account.title')}
             </h1>
             <p className="text-muted-foreground text-lg">
-              Gérez vos informations personnelles
+              {t('account.subtitle')}
             </p>
           </div>
           <LanguageSelector />

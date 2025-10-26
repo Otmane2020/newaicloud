@@ -1,0 +1,185 @@
+{
+  "hero": {
+    "badge": "AI驱动的Shopify优化",
+    "title": "优化您的商店",
+    "subtitle": "自动化SEO，管理产品，创建内容并通过智能AI工具提升现代电子商务的销售。",
+    "cta_start": "免费开始",
+    "cta_demo": "观看演示"
+  },
+  "features": {
+    "title": "您需要的一切",
+    "subtitle": "为想要更快成长的Shopify卖家提供的强大工具",
+    "products": {
+      "title": "产品管理",
+      "description": "管理带有变体、GTIN生成和Google购物集成的产品"
+    },
+    "merchant": {
+      "title": "Google Merchant Center",
+      "description": "自动XML Feed生成和Google购物同步"
+    },
+    "blog": {
+      "title": "AI SEO博客",
+      "description": "自动创建带有产品链接的SEO优化文章"
+    },
+    "seo": {
+      "title": "SEO优化",
+      "description": "AI优化元标签、描述和关键词"
+    },
+    "chat": {
+      "title": "智能聊天",
+      "description": "用于产品推荐和客户支持的AI助手"
+    },
+    "automation": {
+      "title": "活动自动化",
+      "description": "计划和自动化内容创建"
+    }
+  },
+  "benefits": {
+    "title": "Shopify商店的经过验证的结果",
+    "subtitle": "加入数百位通过AI优化转变商店的卖家",
+    "cta": "立即开始",
+    "speed": {
+      "title": "快3倍",
+      "description": "自动化产品录入和优化"
+    },
+    "traffic": {
+      "title": "增加50%流量",
+      "description": "AI优化的SEO吸引合格的访问者"
+    },
+    "time": {
+      "title": "节省10小时以上",
+      "description": "自动化内容创建和管理"
+    },
+    "ranking": {
+      "title": "更好的Google排名",
+      "description": "结构化数据和优化的Feed"
+    }
+  },
+  "pricing": {
+    "title": "计划和价格",
+    "subtitle": "选择适合您商店规模的计划。所有计划都包括Shopify集成和专用支持。",
+    "monthly": "月付",
+    "yearly": "年付",
+    "discount": "-20%",
+    "per_month": "/月",
+    "per_year": "/年",
+    "billed_yearly": "按年计费（即",
+    "comparison_title": "计划对比表",
+    "comparison_subtitle": "详细比较所有功能"
+  },
+  "plans": {
+    "starter": {
+      "name": "入门版",
+      "description": "适合想要发现AI力量的小型商店",
+      "trial": "14天免费试用",
+      "cta": "开始免费试用",
+      "highlight": "享受AI的强大功能，提供基本功能和适合您起步的配额。"
+    },
+    "pro": {
+      "name": "专业版",
+      "description": "适合成长中的商店",
+      "badge": "最受欢迎 🔥",
+      "cta": "免费试用",
+      "highlight": "专业版计划提供完整的AI功能，没有不必要的限制。非常适合希望加速增长的商店。"
+    },
+    "enterprise": {
+      "name": "企业版",
+      "description": "适合大型商店和多商店",
+      "cta": "联系销售",
+      "highlight": "企业版计划专为管理多个商店或有高级需求的认真卖家而设计。"
+    }
+  },
+  "cta": {
+    "title": "准备好转变您的商店了吗？",
+    "subtitle": "今天免费开始。无需信用卡。",
+    "button": "免费开始"
+  },
+  "auth": {
+    "login": "登录",
+    "signup": "注册",
+    "email": "电子邮件",
+    "password": "密码",
+    "fullname": "全名",
+    "forgot_password": "忘记密码？",
+    "no_account": "没有账户？",
+    "have_account": "已有账户？",
+    "creating": "创建账户中...",
+    "connecting": "连接中...",
+    "loading": "加载中..."
+  },
+  "nav": {
+    "features": "功能",
+    "pricing": "价格",
+    "dashboard": "仪表板",
+    "account": "我的账户",
+    "home": "首页",
+    "benefits": "优势"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "close": "关闭"
+  },
+  "account": {
+    "title": "我的账户",
+    "subtitle": "管理您的个人信息",
+    "personal_info": "个人信息",
+    "security": "安全",
+    "email": "电子邮件",
+    "email_note": "电子邮件无法更改",
+    "full_name": "全名",
+    "full_name_placeholder": "您的全名",
+    "save_changes": "保存更改",
+    "new_password": "新密码",
+    "new_password_placeholder": "至少6个字符",
+    "confirm_password": "确认密码",
+    "confirm_password_placeholder": "重新输入新密码",
+    "change_password": "更改密码",
+    "security_tips": "安全提示：",
+    "tip_length": "使用至少6个字符",
+    "tip_case": "混合使用大小写字母",
+    "tip_special": "添加数字和特殊字符",
+    "tip_personal": "不要使用个人信息",
+    "profile_updated": "个人资料更新成功",
+    "profile_error": "更新个人资料时出错",
+    "password_updated": "密码更改成功",
+    "password_error": "更改密码时出错",
+    "password_mismatch": "密码不匹配",
+    "password_short": "密码必须至少6个字符",
+    "fill_all_fields": "请填写所有字段"
+  },
+  "pricingComparison": {
+    "features": "功能",
+    "starter": "入门版",
+    "pro": "专业版",
+    "enterprise": "企业版",
+    "products": "产品和优化",
+    "products_count": "产品",
+    "optimizations": "高级SEO优化 / 月",
+    "articles": "AI文章 / 月",
+    "campaigns": "自动化活动 / 月",
+    "ai": "人工智能",
+    "shopify_searches": "Shopify AI搜索 / 月",
+    "chat_responses": "AI聊天回复 / 月",
+    "deepseek": "使用DeepSeek的AI优化",
+    "integrations": "集成",
+    "shopify_stores": "可连接的Shopify商店",
+    "google_merchant": "Google Merchant Center",
+    "custom_api": "自定义API",
+    "multi_stores": "多商店",
+    "automation": "自动化和支持",
+    "full_automation": "完全自动化",
+    "support": "支持",
+    "support_email": "优先电子邮件",
+    "support_247": "24/7优先",
+    "support_manager": "专属客户经理",
+    "custom_training": "定制培训",
+    "sla": "保证的SLA",
+    "unlimited": "无限"
+  }
+}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Menu, X, Sparkles } from "lucide-react";
 import { LanguageSelector } from "./LanguageSelector";
-import { useTranslation } from "react-i18next";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export const PublicHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -56,7 +56,7 @@ export const PublicHeader = () => {
                 isScrolled ? "text-foreground" : "text-white"
               }`}
             >
-              Accueil
+              {t('nav.home')}
             </button>
             <button
               onClick={() => scrollToSection("features")}
@@ -72,7 +72,7 @@ export const PublicHeader = () => {
                 isScrolled ? "text-foreground" : "text-white"
               }`}
             >
-              Avantages
+              {t('nav.benefits')}
             </button>
             <button
               onClick={() => scrollToSection("pricing")}
@@ -120,7 +120,7 @@ export const PublicHeader = () => {
                 onClick={() => scrollToSection("hero")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                Accueil
+                {t('nav.home')}
               </button>
               <button
                 onClick={() => scrollToSection("features")}
@@ -132,7 +132,7 @@ export const PublicHeader = () => {
                 onClick={() => scrollToSection("benefits")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                Avantages
+                {t('nav.benefits')}
               </button>
               <button
                 onClick={() => scrollToSection("pricing")}

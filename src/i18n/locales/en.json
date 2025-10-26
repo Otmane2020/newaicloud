@@ -1,0 +1,185 @@
+{
+  "hero": {
+    "badge": "AI-Powered Shopify Optimization",
+    "title": "Optimize your store with",
+    "subtitle": "Automate SEO, manage products, create content and boost sales with intelligent AI tools for modern e-commerce.",
+    "cta_start": "Start Free Trial",
+    "cta_demo": "Watch Demo"
+  },
+  "features": {
+    "title": "Everything you need",
+    "subtitle": "Powerful tools for Shopify sellers who want to grow faster",
+    "products": {
+      "title": "Product Management",
+      "description": "Manage products with variants, GTIN generation and Google Shopping integration"
+    },
+    "merchant": {
+      "title": "Google Merchant Center",
+      "description": "Automatic XML feed generation and Google Shopping sync"
+    },
+    "blog": {
+      "title": "AI SEO Blog",
+      "description": "Automatic creation of SEO-optimized articles with product links"
+    },
+    "seo": {
+      "title": "SEO Optimization",
+      "description": "AI optimization of meta tags, descriptions and keywords"
+    },
+    "chat": {
+      "title": "Smart Chat",
+      "description": "AI assistant for product recommendations and customer support"
+    },
+    "automation": {
+      "title": "Campaign Automation",
+      "description": "Schedule and automate content creation"
+    }
+  },
+  "benefits": {
+    "title": "Proven results for Shopify stores",
+    "subtitle": "Join hundreds of sellers who have transformed their store with AI optimization",
+    "cta": "Start now",
+    "speed": {
+      "title": "3x Faster",
+      "description": "Automate product entry and optimization"
+    },
+    "traffic": {
+      "title": "50% More traffic",
+      "description": "AI-optimized SEO attracts qualified visitors"
+    },
+    "time": {
+      "title": "10h+ saved",
+      "description": "Automated content creation and management"
+    },
+    "ranking": {
+      "title": "Better Google ranking",
+      "description": "Structured data and optimized feeds"
+    }
+  },
+  "pricing": {
+    "title": "Plans & Pricing",
+    "subtitle": "Choose the plan that fits your store size. All plans include Shopify integration and dedicated support.",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "discount": "-20%",
+    "per_month": "/month",
+    "per_year": "/year",
+    "billed_yearly": "billed annually (i.e.",
+    "comparison_title": "Plan Comparison Table",
+    "comparison_subtitle": "Compare all features in detail"
+  },
+  "plans": {
+    "starter": {
+      "name": "Starter",
+      "description": "For small stores wanting to discover the power of AI",
+      "trial": "14-day free trial",
+      "cta": "Start Free Trial",
+      "highlight": "Enjoy the power of AI with essential features and quotas tailored to your start."
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "For growing stores",
+      "badge": "Most Popular 🔥",
+      "cta": "Try for free",
+      "highlight": "The Pro plan offers full AI power without unnecessary limits. Perfect for stores looking to accelerate growth."
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "For large stores and multi-stores",
+      "cta": "Contact Sales",
+      "highlight": "The Enterprise plan is designed for serious sellers managing multiple stores or with advanced needs."
+    }
+  },
+  "cta": {
+    "title": "Ready to transform your store?",
+    "subtitle": "Start free today. No credit card required.",
+    "button": "Start Free Trial"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "fullname": "Full Name",
+    "forgot_password": "Forgot password?",
+    "no_account": "No account?",
+    "have_account": "Already have an account?",
+    "creating": "Creating account...",
+    "connecting": "Connecting...",
+    "loading": "Loading..."
+  },
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "dashboard": "Dashboard",
+    "account": "My Account",
+    "home": "Home",
+    "benefits": "Benefits"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close"
+  },
+  "account": {
+    "title": "My Account",
+    "subtitle": "Manage your personal information",
+    "personal_info": "Personal Information",
+    "security": "Security",
+    "email": "Email",
+    "email_note": "Email cannot be changed",
+    "full_name": "Full Name",
+    "full_name_placeholder": "Your full name",
+    "save_changes": "Save Changes",
+    "new_password": "New Password",
+    "new_password_placeholder": "Minimum 6 characters",
+    "confirm_password": "Confirm Password",
+    "confirm_password_placeholder": "Re-enter new password",
+    "change_password": "Change Password",
+    "security_tips": "Security Tips:",
+    "tip_length": "Use at least 6 characters",
+    "tip_case": "Mix uppercase and lowercase letters",
+    "tip_special": "Add numbers and special characters",
+    "tip_personal": "Don't use personal information",
+    "profile_updated": "Profile updated successfully",
+    "profile_error": "Error updating profile",
+    "password_updated": "Password changed successfully",
+    "password_error": "Error changing password",
+    "password_mismatch": "Passwords do not match",
+    "password_short": "Password must be at least 6 characters",
+    "fill_all_fields": "Please fill all fields"
+  },
+  "pricingComparison": {
+    "features": "Features",
+    "starter": "Starter",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "products": "Products & Optimizations",
+    "products_count": "Products",
+    "optimizations": "Advanced SEO optimizations / month",
+    "articles": "AI articles / month",
+    "campaigns": "Automated campaigns / month",
+    "ai": "Artificial Intelligence",
+    "shopify_searches": "Shopify AI searches / month",
+    "chat_responses": "AI Chat responses / month",
+    "deepseek": "AI Optimization with DeepSeek",
+    "integrations": "Integrations",
+    "shopify_stores": "Connectable Shopify stores",
+    "google_merchant": "Google Merchant Center",
+    "custom_api": "Custom API",
+    "multi_stores": "Multi-stores",
+    "automation": "Automation & Support",
+    "full_automation": "Complete automation",
+    "support": "Support",
+    "support_email": "Priority email",
+    "support_247": "24/7 priority",
+    "support_manager": "Dedicated account manager",
+    "custom_training": "Custom training",
+    "sla": "Guaranteed SLA",
+    "unlimited": "Unlimited"
+  }
+}

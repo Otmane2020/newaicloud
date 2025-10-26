@@ -1,0 +1,185 @@
+{
+  "hero": {
+    "badge": "KI-gestützte Shopify-Optimierung",
+    "title": "Optimieren Sie Ihren Shop mit",
+    "subtitle": "Automatisieren Sie SEO, verwalten Sie Produkte, erstellen Sie Inhalte und steigern Sie den Umsatz mit intelligenten KI-Tools für modernen E-Commerce.",
+    "cta_start": "Kostenlos Starten",
+    "cta_demo": "Demo Ansehen"
+  },
+  "features": {
+    "title": "Alles, was Sie brauchen",
+    "subtitle": "Leistungsstarke Tools für Shopify-Verkäufer, die schneller wachsen möchten",
+    "products": {
+      "title": "Produktverwaltung",
+      "description": "Verwalten Sie Produkte mit Varianten, GTIN-Generierung und Google Shopping-Integration"
+    },
+    "merchant": {
+      "title": "Google Merchant Center",
+      "description": "Automatische XML-Feed-Generierung und Google Shopping-Synchronisierung"
+    },
+    "blog": {
+      "title": "KI SEO-Blog",
+      "description": "Automatische Erstellung von SEO-optimierten Artikeln mit Produktlinks"
+    },
+    "seo": {
+      "title": "SEO-Optimierung",
+      "description": "KI-Optimierung von Meta-Tags, Beschreibungen und Schlüsselwörtern"
+    },
+    "chat": {
+      "title": "Intelligenter Chat",
+      "description": "KI-Assistent für Produktempfehlungen und Kundensupport"
+    },
+    "automation": {
+      "title": "Kampagnen-Automatisierung",
+      "description": "Planen und automatisieren Sie die Content-Erstellung"
+    }
+  },
+  "benefits": {
+    "title": "Bewährte Ergebnisse für Shopify-Shops",
+    "subtitle": "Schließen Sie sich Hunderten von Verkäufern an, die ihren Shop mit KI-Optimierung transformiert haben",
+    "cta": "Jetzt starten",
+    "speed": {
+      "title": "3x Schneller",
+      "description": "Automatisieren Sie Produkteingabe und -optimierung"
+    },
+    "traffic": {
+      "title": "50% Mehr Traffic",
+      "description": "KI-optimiertes SEO zieht qualifizierte Besucher an"
+    },
+    "time": {
+      "title": "10h+ gespart",
+      "description": "Automatisierte Content-Erstellung und -Verwaltung"
+    },
+    "ranking": {
+      "title": "Besseres Google-Ranking",
+      "description": "Strukturierte Daten und optimierte Feeds"
+    }
+  },
+  "pricing": {
+    "title": "Pläne & Preise",
+    "subtitle": "Wählen Sie den Plan, der zur Größe Ihres Shops passt. Alle Pläne beinhalten Shopify-Integration und dedizierten Support.",
+    "monthly": "Monatlich",
+    "yearly": "Jährlich",
+    "discount": "-20%",
+    "per_month": "/Monat",
+    "per_year": "/Jahr",
+    "billed_yearly": "jährlich abgerechnet (d.h.",
+    "comparison_title": "Plan-Vergleichstabelle",
+    "comparison_subtitle": "Vergleichen Sie alle Funktionen im Detail"
+  },
+  "plans": {
+    "starter": {
+      "name": "Starter",
+      "description": "Für kleine Shops, die die Kraft der KI entdecken möchten",
+      "trial": "14 Tage kostenlose Testversion",
+      "cta": "Kostenlos Testen",
+      "highlight": "Genießen Sie die Kraft der KI mit wesentlichen Funktionen und Kontingenten, die auf Ihren Start zugeschnitten sind."
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Für wachsende Shops",
+      "badge": "Am Beliebtesten 🔥",
+      "cta": "Kostenlos testen",
+      "highlight": "Der Pro-Plan bietet volle KI-Power ohne unnötige Grenzen. Perfekt für Shops, die ihr Wachstum beschleunigen möchten."
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Für große Shops und Multi-Shops",
+      "cta": "Vertrieb Kontaktieren",
+      "highlight": "Der Enterprise-Plan ist für ernsthafte Verkäufer konzipiert, die mehrere Shops verwalten oder erweiterte Anforderungen haben."
+    }
+  },
+  "cta": {
+    "title": "Bereit, Ihren Shop zu transformieren?",
+    "subtitle": "Starten Sie heute kostenlos. Keine Kreditkarte erforderlich.",
+    "button": "Kostenlos Starten"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "signup": "Registrieren",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "fullname": "Vollständiger Name",
+    "forgot_password": "Passwort vergessen?",
+    "no_account": "Kein Konto?",
+    "have_account": "Bereits ein Konto?",
+    "creating": "Konto wird erstellt...",
+    "connecting": "Verbinden...",
+    "loading": "Laden..."
+  },
+  "nav": {
+    "features": "Funktionen",
+    "pricing": "Preise",
+    "dashboard": "Dashboard",
+    "account": "Mein Konto",
+    "home": "Startseite",
+    "benefits": "Vorteile"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen"
+  },
+  "account": {
+    "title": "Mein Konto",
+    "subtitle": "Verwalten Sie Ihre persönlichen Informationen",
+    "personal_info": "Persönliche Informationen",
+    "security": "Sicherheit",
+    "email": "E-Mail",
+    "email_note": "E-Mail kann nicht geändert werden",
+    "full_name": "Vollständiger Name",
+    "full_name_placeholder": "Ihr vollständiger Name",
+    "save_changes": "Änderungen Speichern",
+    "new_password": "Neues Passwort",
+    "new_password_placeholder": "Mindestens 6 Zeichen",
+    "confirm_password": "Passwort Bestätigen",
+    "confirm_password_placeholder": "Neues Passwort erneut eingeben",
+    "change_password": "Passwort Ändern",
+    "security_tips": "Sicherheitstipps:",
+    "tip_length": "Verwenden Sie mindestens 6 Zeichen",
+    "tip_case": "Mischen Sie Groß- und Kleinbuchstaben",
+    "tip_special": "Fügen Sie Zahlen und Sonderzeichen hinzu",
+    "tip_personal": "Verwenden Sie keine persönlichen Informationen",
+    "profile_updated": "Profil erfolgreich aktualisiert",
+    "profile_error": "Fehler beim Aktualisieren des Profils",
+    "password_updated": "Passwort erfolgreich geändert",
+    "password_error": "Fehler beim Ändern des Passworts",
+    "password_mismatch": "Passwörter stimmen nicht überein",
+    "password_short": "Passwort muss mindestens 6 Zeichen lang sein",
+    "fill_all_fields": "Bitte füllen Sie alle Felder aus"
+  },
+  "pricingComparison": {
+    "features": "Funktionen",
+    "starter": "Starter",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "products": "Produkte & Optimierungen",
+    "products_count": "Produkte",
+    "optimizations": "Erweiterte SEO-Optimierungen / Monat",
+    "articles": "KI-Artikel / Monat",
+    "campaigns": "Automatisierte Kampagnen / Monat",
+    "ai": "Künstliche Intelligenz",
+    "shopify_searches": "Shopify KI-Suchen / Monat",
+    "chat_responses": "KI-Chat-Antworten / Monat",
+    "deepseek": "KI-Optimierung mit DeepSeek",
+    "integrations": "Integrationen",
+    "shopify_stores": "Verbindbare Shopify-Shops",
+    "google_merchant": "Google Merchant Center",
+    "custom_api": "Benutzerdefinierte API",
+    "multi_stores": "Multi-Shops",
+    "automation": "Automatisierung & Support",
+    "full_automation": "Vollständige Automatisierung",
+    "support": "Support",
+    "support_email": "Prioritäts-E-Mail",
+    "support_247": "24/7 Priorität",
+    "support_manager": "Dedizierter Account Manager",
+    "custom_training": "Individuelle Schulung",
+    "sla": "Garantiertes SLA",
+    "unlimited": "Unbegrenzt"
+  }
+}

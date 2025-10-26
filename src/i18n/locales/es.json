@@ -1,0 +1,185 @@
+{
+  "hero": {
+    "badge": "Optimización Shopify con IA",
+    "title": "Optimiza tu tienda con",
+    "subtitle": "Automatiza el SEO, gestiona productos, crea contenido y aumenta las ventas con herramientas inteligentes de IA para e-commerce moderno.",
+    "cta_start": "Comenzar Gratis",
+    "cta_demo": "Ver Demo"
+  },
+  "features": {
+    "title": "Todo lo que necesitas",
+    "subtitle": "Herramientas potentes para vendedores de Shopify que quieren crecer más rápido",
+    "products": {
+      "title": "Gestión de Productos",
+      "description": "Gestiona productos con variantes, generación de GTIN e integración con Google Shopping"
+    },
+    "merchant": {
+      "title": "Google Merchant Center",
+      "description": "Generación automática de feeds XML y sincronización con Google Shopping"
+    },
+    "blog": {
+      "title": "Blog SEO con IA",
+      "description": "Creación automática de artículos SEO optimizados con enlaces de productos"
+    },
+    "seo": {
+      "title": "Optimización SEO",
+      "description": "Optimización IA de meta tags, descripciones y palabras clave"
+    },
+    "chat": {
+      "title": "Chat Inteligente",
+      "description": "Asistente IA para recomendaciones de productos y soporte al cliente"
+    },
+    "automation": {
+      "title": "Automatización de Campañas",
+      "description": "Planifica y automatiza la creación de contenido"
+    }
+  },
+  "benefits": {
+    "title": "Resultados probados para tiendas Shopify",
+    "subtitle": "Únete a cientos de vendedores que han transformado su tienda con optimización IA",
+    "cta": "Comenzar ahora",
+    "speed": {
+      "title": "3x Más rápido",
+      "description": "Automatiza la entrada y optimización de productos"
+    },
+    "traffic": {
+      "title": "50% Más tráfico",
+      "description": "SEO optimizado con IA atrae visitantes cualificados"
+    },
+    "time": {
+      "title": "10h+ ahorradas",
+      "description": "Creación y gestión de contenido automatizadas"
+    },
+    "ranking": {
+      "title": "Mejor posicionamiento Google",
+      "description": "Datos estructurados y feeds optimizados"
+    }
+  },
+  "pricing": {
+    "title": "Planes y Precios",
+    "subtitle": "Elige el plan que se adapte al tamaño de tu tienda. Todos los planes incluyen integración Shopify y soporte dedicado.",
+    "monthly": "Mensual",
+    "yearly": "Anual",
+    "discount": "-20%",
+    "per_month": "/mes",
+    "per_year": "/año",
+    "billed_yearly": "facturado anualmente (es decir",
+    "comparison_title": "Tabla Comparativa de Planes",
+    "comparison_subtitle": "Compara todas las funciones en detalle"
+  },
+  "plans": {
+    "starter": {
+      "name": "Starter",
+      "description": "Para pequeñas tiendas que quieren descubrir el poder de la IA",
+      "trial": "prueba gratuita de 14 días",
+      "cta": "Comenzar Prueba Gratuita",
+      "highlight": "Disfruta del poder de la IA con funciones esenciales y cuotas adaptadas a tus inicios."
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Para tiendas en crecimiento",
+      "badge": "Más Popular 🔥",
+      "cta": "Probar gratis",
+      "highlight": "El plan Pro ofrece todo el poder de la IA sin límites innecesarios. Perfecto para tiendas que quieren acelerar su crecimiento."
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Para grandes tiendas y multi-tiendas",
+      "cta": "Contactar Ventas",
+      "highlight": "El plan Enterprise está diseñado para vendedores serios que gestionan múltiples tiendas o tienen necesidades avanzadas."
+    }
+  },
+  "cta": {
+    "title": "¿Listo para transformar tu tienda?",
+    "subtitle": "Comienza gratis hoy. No se requiere tarjeta de crédito.",
+    "button": "Comenzar Gratis"
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "signup": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "fullname": "Nombre Completo",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "no_account": "¿No tienes cuenta?",
+    "have_account": "¿Ya tienes cuenta?",
+    "creating": "Creando cuenta...",
+    "connecting": "Conectando...",
+    "loading": "Cargando..."
+  },
+  "nav": {
+    "features": "Funciones",
+    "pricing": "Precios",
+    "dashboard": "Panel",
+    "account": "Mi Cuenta",
+    "home": "Inicio",
+    "benefits": "Ventajas"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar"
+  },
+  "account": {
+    "title": "Mi Cuenta",
+    "subtitle": "Gestiona tu información personal",
+    "personal_info": "Información Personal",
+    "security": "Seguridad",
+    "email": "Correo electrónico",
+    "email_note": "El correo electrónico no se puede cambiar",
+    "full_name": "Nombre Completo",
+    "full_name_placeholder": "Tu nombre completo",
+    "save_changes": "Guardar Cambios",
+    "new_password": "Nueva Contraseña",
+    "new_password_placeholder": "Mínimo 6 caracteres",
+    "confirm_password": "Confirmar Contraseña",
+    "confirm_password_placeholder": "Vuelve a introducir la nueva contraseña",
+    "change_password": "Cambiar Contraseña",
+    "security_tips": "Consejos de Seguridad:",
+    "tip_length": "Usa al menos 6 caracteres",
+    "tip_case": "Mezcla mayúsculas y minúsculas",
+    "tip_special": "Añade números y caracteres especiales",
+    "tip_personal": "No uses información personal",
+    "profile_updated": "Perfil actualizado con éxito",
+    "profile_error": "Error al actualizar el perfil",
+    "password_updated": "Contraseña cambiada con éxito",
+    "password_error": "Error al cambiar la contraseña",
+    "password_mismatch": "Las contraseñas no coinciden",
+    "password_short": "La contraseña debe tener al menos 6 caracteres",
+    "fill_all_fields": "Por favor completa todos los campos"
+  },
+  "pricingComparison": {
+    "features": "Funciones",
+    "starter": "Starter",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "products": "Productos y Optimizaciones",
+    "products_count": "Productos",
+    "optimizations": "Optimizaciones SEO avanzadas / mes",
+    "articles": "Artículos IA / mes",
+    "campaigns": "Campañas automatizadas / mes",
+    "ai": "Inteligencia Artificial",
+    "shopify_searches": "Búsquedas IA Shopify / mes",
+    "chat_responses": "Respuestas Chat IA / mes",
+    "deepseek": "Optimización IA con DeepSeek",
+    "integrations": "Integraciones",
+    "shopify_stores": "Tiendas Shopify conectables",
+    "google_merchant": "Google Merchant Center",
+    "custom_api": "API personalizada",
+    "multi_stores": "Multi-tiendas",
+    "automation": "Automatización y Soporte",
+    "full_automation": "Automatización completa",
+    "support": "Soporte",
+    "support_email": "Email prioritario",
+    "support_247": "24/7 prioritario",
+    "support_manager": "Account manager dedicado",
+    "custom_training": "Formación personalizada",
+    "sla": "SLA garantizado",
+    "unlimited": "Ilimitado"
+  }
+}

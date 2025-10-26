@@ -1,0 +1,185 @@
+{
+  "hero": {
+    "badge": "AI-aangedreven Shopify Optimalisatie",
+    "title": "Optimaliseer je winkel met",
+    "subtitle": "Automatiseer SEO, beheer producten, creëer content en verhoog verkoop met intelligente AI-tools voor moderne e-commerce.",
+    "cta_start": "Gratis Beginnen",
+    "cta_demo": "Bekijk Demo"
+  },
+  "features": {
+    "title": "Alles wat je nodig hebt",
+    "subtitle": "Krachtige tools voor Shopify-verkopers die sneller willen groeien",
+    "products": {
+      "title": "Productbeheer",
+      "description": "Beheer producten met varianten, GTIN-generatie en Google Shopping-integratie"
+    },
+    "merchant": {
+      "title": "Google Merchant Center",
+      "description": "Automatische XML-feedgeneratie en Google Shopping-synchronisatie"
+    },
+    "blog": {
+      "title": "AI SEO-blog",
+      "description": "Automatische creatie van SEO-geoptimaliseerde artikelen met productlinks"
+    },
+    "seo": {
+      "title": "SEO-optimalisatie",
+      "description": "AI-optimalisatie van metatags, beschrijvingen en zoekwoorden"
+    },
+    "chat": {
+      "title": "Slimme Chat",
+      "description": "AI-assistent voor productaanbevelingen en klantenservice"
+    },
+    "automation": {
+      "title": "Campagne-automatisering",
+      "description": "Plan en automatiseer contentcreatie"
+    }
+  },
+  "benefits": {
+    "title": "Bewezen resultaten voor Shopify-winkels",
+    "subtitle": "Sluit je aan bij honderden verkopers die hun winkel hebben getransformeerd met AI-optimalisatie",
+    "cta": "Start nu",
+    "speed": {
+      "title": "3x Sneller",
+      "description": "Automatiseer productinvoer en -optimalisatie"
+    },
+    "traffic": {
+      "title": "50% Meer verkeer",
+      "description": "AI-geoptimaliseerde SEO trekt gekwalificeerde bezoekers aan"
+    },
+    "time": {
+      "title": "10u+ bespaard",
+      "description": "Geautomatiseerde contentcreatie en -beheer"
+    },
+    "ranking": {
+      "title": "Betere Google-ranking",
+      "description": "Gestructureerde data en geoptimaliseerde feeds"
+    }
+  },
+  "pricing": {
+    "title": "Plannen en Prijzen",
+    "subtitle": "Kies het plan dat past bij de grootte van je winkel. Alle plannen omvatten Shopify-integratie en toegewijde ondersteuning.",
+    "monthly": "Maandelijks",
+    "yearly": "Jaarlijks",
+    "discount": "-20%",
+    "per_month": "/maand",
+    "per_year": "/jaar",
+    "billed_yearly": "jaarlijks gefactureerd (d.w.z.",
+    "comparison_title": "Planvergelijkingstabel",
+    "comparison_subtitle": "Vergelijk alle functies in detail"
+  },
+  "plans": {
+    "starter": {
+      "name": "Starter",
+      "description": "Voor kleine winkels die de kracht van AI willen ontdekken",
+      "trial": "14 dagen gratis proefperiode",
+      "cta": "Gratis Proberen",
+      "highlight": "Geniet van de kracht van AI met essentiële functies en quota's aangepast aan je start."
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Voor groeiende winkels",
+      "badge": "Meest Populair 🔥",
+      "cta": "Gratis proberen",
+      "highlight": "Het Pro-plan biedt volledige AI-kracht zonder onnodige limieten. Perfect voor winkels die hun groei willen versnellen."
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Voor grote winkels en multi-winkels",
+      "cta": "Contact Verkoop",
+      "highlight": "Het Enterprise-plan is ontworpen voor serieuze verkopers die meerdere winkels beheren of geavanceerde behoeften hebben."
+    }
+  },
+  "cta": {
+    "title": "Klaar om je winkel te transformeren?",
+    "subtitle": "Begin vandaag gratis. Geen creditcard vereist.",
+    "button": "Gratis Beginnen"
+  },
+  "auth": {
+    "login": "Inloggen",
+    "signup": "Registreren",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "fullname": "Volledige Naam",
+    "forgot_password": "Wachtwoord vergeten?",
+    "no_account": "Geen account?",
+    "have_account": "Al een account?",
+    "creating": "Account aanmaken...",
+    "connecting": "Verbinden...",
+    "loading": "Laden..."
+  },
+  "nav": {
+    "features": "Functies",
+    "pricing": "Prijzen",
+    "dashboard": "Dashboard",
+    "account": "Mijn Account",
+    "home": "Home",
+    "benefits": "Voordelen"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Fout",
+    "success": "Succes",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "close": "Sluiten"
+  },
+  "account": {
+    "title": "Mijn Account",
+    "subtitle": "Beheer je persoonlijke informatie",
+    "personal_info": "Persoonlijke Informatie",
+    "security": "Beveiliging",
+    "email": "E-mail",
+    "email_note": "E-mail kan niet worden gewijzigd",
+    "full_name": "Volledige Naam",
+    "full_name_placeholder": "Je volledige naam",
+    "save_changes": "Wijzigingen Opslaan",
+    "new_password": "Nieuw Wachtwoord",
+    "new_password_placeholder": "Minimaal 6 tekens",
+    "confirm_password": "Bevestig Wachtwoord",
+    "confirm_password_placeholder": "Voer nieuw wachtwoord opnieuw in",
+    "change_password": "Wachtwoord Wijzigen",
+    "security_tips": "Beveiligingstips:",
+    "tip_length": "Gebruik minimaal 6 tekens",
+    "tip_case": "Mix hoofd- en kleine letters",
+    "tip_special": "Voeg cijfers en speciale tekens toe",
+    "tip_personal": "Gebruik geen persoonlijke informatie",
+    "profile_updated": "Profiel succesvol bijgewerkt",
+    "profile_error": "Fout bij het bijwerken van profiel",
+    "password_updated": "Wachtwoord succesvol gewijzigd",
+    "password_error": "Fout bij het wijzigen van wachtwoord",
+    "password_mismatch": "Wachtwoorden komen niet overeen",
+    "password_short": "Wachtwoord moet minimaal 6 tekens bevatten",
+    "fill_all_fields": "Vul alle velden in"
+  },
+  "pricingComparison": {
+    "features": "Functies",
+    "starter": "Starter",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "products": "Producten & Optimalisaties",
+    "products_count": "Producten",
+    "optimizations": "Geavanceerde SEO-optimalisaties / maand",
+    "articles": "AI-artikelen / maand",
+    "campaigns": "Geautomatiseerde campagnes / maand",
+    "ai": "Kunstmatige Intelligentie",
+    "shopify_searches": "Shopify AI-zoekopdrachten / maand",
+    "chat_responses": "AI-chatreacties / maand",
+    "deepseek": "AI-optimalisatie met DeepSeek",
+    "integrations": "Integraties",
+    "shopify_stores": "Koppelbare Shopify-winkels",
+    "google_merchant": "Google Merchant Center",
+    "custom_api": "Aangepaste API",
+    "multi_stores": "Multi-winkels",
+    "automation": "Automatisering & Ondersteuning",
+    "full_automation": "Volledige automatisering",
+    "support": "Ondersteuning",
+    "support_email": "Prioritaire e-mail",
+    "support_247": "24/7 prioritair",
+    "support_manager": "Toegewijde accountmanager",
+    "custom_training": "Aangepaste training",
+    "sla": "Gegarandeerde SLA",
+    "unlimited": "Onbeperkt"
+  }
+}

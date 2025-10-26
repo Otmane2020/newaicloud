@@ -1,42 +1,45 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, X } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const PricingComparison = () => {
+  const { t } = useTranslation();
+  
   const features = [
     {
-      category: "Produits & Optimisations",
+      category: t('pricingComparison.products'),
       items: [
-        { name: "Produits", starter: "1 000", pro: "Illimité", enterprise: "Illimité" },
-        { name: "Optimisations SEO avancées / mois", starter: "1 000", pro: "2 000", enterprise: "10 000" },
-        { name: "Articles IA / mois", starter: "5", pro: "10", enterprise: "100" },
-        { name: "Campagnes automatiques / mois", starter: "0", pro: "5", enterprise: "20" },
+        { name: t('pricingComparison.products_count'), starter: "1 000", pro: t('pricingComparison.unlimited'), enterprise: t('pricingComparison.unlimited') },
+        { name: t('pricingComparison.optimizations'), starter: "1 000", pro: "2 000", enterprise: "10 000" },
+        { name: t('pricingComparison.articles'), starter: "5", pro: "10", enterprise: "100" },
+        { name: t('pricingComparison.campaigns'), starter: "0", pro: "5", enterprise: "20" },
       ]
     },
     {
-      category: "Intelligence Artificielle",
+      category: t('pricingComparison.ai'),
       items: [
-        { name: "Recherches IA Shopify / mois", starter: "100", pro: "500", enterprise: "5 000" },
-        { name: "Réponses Chat IA / mois", starter: "200", pro: "1 000", enterprise: "10 000" },
-        { name: "Optimisation IA avec DeepSeek", starter: true, pro: true, enterprise: true },
+        { name: t('pricingComparison.shopify_searches'), starter: "100", pro: "500", enterprise: "5 000" },
+        { name: t('pricingComparison.chat_responses'), starter: "200", pro: "1 000", enterprise: "10 000" },
+        { name: t('pricingComparison.deepseek'), starter: true, pro: true, enterprise: true },
       ]
     },
     {
-      category: "Intégrations",
+      category: t('pricingComparison.integrations'),
       items: [
-        { name: "Boutiques Shopify connectables", starter: "1", pro: "3", enterprise: "10" },
-        { name: "Google Merchant Center", starter: false, pro: true, enterprise: true },
-        { name: "API personnalisée", starter: false, pro: false, enterprise: true },
-        { name: "Multi-boutiques", starter: false, pro: false, enterprise: true },
+        { name: t('pricingComparison.shopify_stores'), starter: "1", pro: "3", enterprise: "10" },
+        { name: t('pricingComparison.google_merchant'), starter: false, pro: true, enterprise: true },
+        { name: t('pricingComparison.custom_api'), starter: false, pro: false, enterprise: true },
+        { name: t('pricingComparison.multi_stores'), starter: false, pro: false, enterprise: true },
       ]
     },
     {
-      category: "Automatisation & Support",
+      category: t('pricingComparison.automation'),
       items: [
-        { name: "Automatisation complète", starter: true, pro: true, enterprise: true },
-        { name: "Support", starter: "E-mail prioritaire", pro: "24/7 prioritaire", enterprise: "Account manager dédié" },
-        { name: "Formation personnalisée", starter: false, pro: false, enterprise: true },
-        { name: "SLA garanti", starter: false, pro: false, enterprise: true },
+        { name: t('pricingComparison.full_automation'), starter: true, pro: true, enterprise: true },
+        { name: t('pricingComparison.support'), starter: t('pricingComparison.support_email'), pro: t('pricingComparison.support_247'), enterprise: t('pricingComparison.support_manager') },
+        { name: t('pricingComparison.custom_training'), starter: false, pro: false, enterprise: true },
+        { name: t('pricingComparison.sla'), starter: false, pro: false, enterprise: true },
       ]
     }
   ];
@@ -58,15 +61,15 @@ const PricingComparison = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="p-4 text-left font-semibold min-w-[250px]">Fonctionnalités</th>
+              <th className="p-4 text-left font-semibold min-w-[250px]">{t('pricingComparison.features')}</th>
               <th className="p-4 text-center font-semibold min-w-[150px]">
-                <Badge variant="outline" className="text-base">Starter</Badge>
+                <Badge variant="outline" className="text-base">{t('pricingComparison.starter')}</Badge>
               </th>
               <th className="p-4 text-center font-semibold min-w-[150px]">
-                <Badge className="bg-primary text-base">Pro 🔥</Badge>
+                <Badge className="bg-primary text-base">{t('pricingComparison.pro')} 🔥</Badge>
               </th>
               <th className="p-4 text-center font-semibold min-w-[150px]">
-                <Badge variant="outline" className="text-base">Enterprise</Badge>
+                <Badge variant="outline" className="text-base">{t('pricingComparison.enterprise')}</Badge>
               </th>
             </tr>
           </thead>
