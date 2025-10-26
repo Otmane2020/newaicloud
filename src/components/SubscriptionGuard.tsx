@@ -28,6 +28,36 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔍 Loading profile for user:', user.id);
       
+      // First check Stripe for the real subscription status
+      console.log('🔄 Checking Stripe subscription status...');
+      const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription');
+      
+      if (stripeError) {
+        console.error('❌ Error checking Stripe subscription:', stripeError);
+      } else {
+        console.log('✅ Stripe subscription data:', stripeData);
+        
+        // If user has active subscription in Stripe, update profile
+        if (stripeData?.subscribed) {
+          console.log('🔄 Updating profile with Stripe subscription status...');
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              subscription_status: 'active',
+              onboarding_completed: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+            
+          if (updateError) {
+            console.error('❌ Error updating profile:', updateError);
+          } else {
+            console.log('✅ Profile updated with active subscription');
+          }
+        }
+      }
+      
+      // Then load the updated profile
       const { data, error } = await supabase
         .from('profiles')
         .select('subscription_status, current_plan_id, trial_ends_at')
