@@ -171,7 +171,7 @@ Réponds UNIQUEMENT avec un JSON array de titres dans cet ordre exact:
         });
       }
 
-      const selectedOpps = opps.slice(0, 8);
+      const selectedOpps = opps.slice(0, 20);
 
       // Générer des titres optimisés avec DeepSeek
       toast.info("Optimisation des titres avec IA...");
