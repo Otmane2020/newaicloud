@@ -12,7 +12,16 @@ interface Opportunity {
   description: string;
   category: string;
   productsCount: number;
-  type: "comparison" | "guide" | "trend";
+  type: "comparison" | "guide" | "trend" | "howto" | "expert";
+  angle?: string;
+  targetAudience?: string;
+  primaryKeywords?: string[];
+  secondaryKeywords?: string[];
+  metaDescription?: string;
+  estimatedWordCount?: number;
+  seoScore?: number;
+  difficulty?: "easy" | "medium" | "hard";
+  productIds?: string[];
 }
 
 export function BlogOpportunities() {
@@ -25,75 +34,103 @@ export function BlogOpportunities() {
     loadOpportunities();
   }, []);
 
-  const generateOptimizedTitles = async (opportunities: Opportunity[], userId: string, products: any[]) => {
+  const analyzeAndGenerateOpportunities = async (products: any[], userId: string) => {
     try {
-      const enrichedOpportunities = opportunities.map(opp => {
-        let relevantProducts: any[] = [];
-        
-        if (opp.type === 'guide' && opp.category) {
-          relevantProducts = products.filter(p => 
-            p.category === opp.category || p.product_type === opp.category
-          ).slice(0, 3);
-        } else if (opp.type === 'trend' && opp.category) {
-          relevantProducts = products.filter(p => p.vendor === opp.category).slice(0, 3);
-        } else if (opp.type === 'comparison') {
-          const categories = opp.category.split(' & ');
-          relevantProducts = [
-            ...products.filter(p => p.category === categories[0]).slice(0, 2),
-            ...products.filter(p => p.category === categories[1]).slice(0, 2)
-          ];
-        }
-        
-        return {
-          ...opp,
-          productExamples: relevantProducts.map(p => p.title).join(', ')
-        };
-      });
+      // Préparer les données du catalogue avec détails enrichis (limiter à 100 premiers pour ne pas exploser le token count)
+      const catalogueAnalysis = products.slice(0, 100).map(p => ({
+        title: p.title,
+        category: p.product_type || p.category || 'Non catégorisé',
+        vendor: p.vendor || 'Inconnu',
+        price: p.price ? `${p.price} EUR` : 'Prix non disponible',
+        description: p.description?.substring(0, 200) || '',
+        tags: p.tags || '',
+        style: p.style || '',
+        room: p.room || ''
+      }));
 
-      const prompt = `Tu es un expert SEO e-commerce spécialisé en meubles et décoration d'intérieur.
+      // Statistiques du catalogue
+      const categories = [...new Set(products.map(p => p.product_type || p.category).filter(Boolean))];
+      const priceRanges = {
+        budget: products.filter(p => p.price && p.price < 300).length,
+        mid: products.filter(p => p.price && p.price >= 300 && p.price < 1000).length,
+        premium: products.filter(p => p.price && p.price >= 1000).length
+      };
 
-Génère des titres d'articles de blog PRATIQUES et INSPIRANTS axés sur l'AMÉNAGEMENT et la DÉCORATION.
+      const prompt = `Tu es un expert en marketing de contenu, SEO et décoration d'intérieur pour e-commerce mobilier.
 
-❌ INTERDICTIONS ABSOLUES:
-• Pas de titres génériques type "Collection X"
-• Pas de simple liste de produits
-• Pas de titres ennuyeux
+MISSION : Analyse ce catalogue de ${products.length} produits mobilier et génère des opportunités d'articles de blog à FORT POTENTIEL SEO et VALEUR AJOUTÉE pour les clients.
 
-✅ OBJECTIF:
-• Conseils pratiques d'aménagement
-• Inspiration décoration
-• Guides d'utilisation et astuces
-• Solutions à des problèmes concrets
+📊 STATISTIQUES DU CATALOGUE :
+- Total produits : ${products.length}
+- Catégories principales : ${categories.slice(0, 10).join(', ')}
+- Prix : ${priceRanges.budget} budget, ${priceRanges.mid} milieu de gamme, ${priceRanges.premium} premium
 
-RÈGLES:
-• 50-65 caractères max
-• Accrocheur et inspirant
-• Mots-clés SEO naturels
-• Chaque titre UNIQUE et ORIGINAL
-• Focus sur la VALEUR pour le lecteur
+📦 ÉCHANTILLON PRODUITS (${catalogueAnalysis.length} premiers) :
+${JSON.stringify(catalogueAnalysis.slice(0, 20), null, 2)}
 
-OPPORTUNITÉS À TRANSFORMER:
-${enrichedOpportunities.map((opp, i) => {
-  const typeLabel = opp.type === 'guide' ? '🏠 GUIDE AMÉNAGEMENT' : 
-                    opp.type === 'comparison' ? '⚖️ COMPARATIF' : 
-                    '✨ INSPIRATION DÉCO';
-  return `${i + 1}. ${typeLabel}
-   • Sujet: ${opp.category}
-   • ${opp.productsCount} options disponibles
-   • Ex produits: ${opp.productExamples || 'Divers'}`;
-}).join('\n\n')}
+🎯 OBJECTIF : Identifier les MEILLEURS angles d'articles qui :
+1. Résolvent des PROBLÈMES RÉELS des clients
+2. Répondent à des QUESTIONS FRÉQUENTES 
+3. Ont un FORT POTENTIEL SEO (mots-clés longue traîne)
+4. Apportent une VRAIE VALEUR (conseils experts, guides pratiques)
+5. Sont ORIGINAUX (pas des guides génériques)
 
-FORMAT JSON EXACT (${opportunities.length} titres):
-["Titre 1", "Titre 2", "Titre 3", ...]
+✅ TYPES D'ARTICLES À PRIVILÉGIER :
 
-EXEMPLES INSPIRANTS:
-✓ "Canapé en L : 7 Astuces pour Optimiser Votre Salon"
-✓ "Aménager un Petit Espace avec une Table Gain de Place"
-✓ "Chaise de Bureau Ergonomique : Le Guide 2024"
-✓ "Style Scandinave : Comment Créer un Intérieur Cosy"
-✓ "Comparatif : Table Ronde ou Rectangulaire ?"
+**Guides Problème/Solution** (score élevé)
+- "Petit Salon : 7 Astuces pour Optimiser l'Espace avec Style"
+- "Canapé pour Petit Appartement : Top 5 Modèles Gain de Place"
+- "Bureau à Domicile : Aménager un Espace Productif en 2024"
 
-Génère ${opportunities.length} titres EXCEPTIONNELS orientés AMÉNAGEMENT:`;
+**Guides d'Achat par Besoin** (fort potentiel SEO)
+- "Chaise de Bureau Ergonomique : 5 Critères Essentiels"
+- "Table à Manger Extensible : Guide Complet pour Famille"
+- "Mobilier Scandinave : Comment Créer un Intérieur Harmonieux"
+
+**Comparatifs Intelligents** (engagement élevé)
+- "Canapé en L vs Canapé Droit : Lequel Choisir pour Votre Salon ?"
+- "Table Ronde vs Rectangulaire : Le Guide Complet 2024"
+- "Chaise Scandinave vs Industrielle : Comparatif Styles"
+
+**Tendances & Inspiration** (partages élevés)
+- "Style Japandi : Marier Scandinave et Japonais en 2024"
+- "Couleurs Tendance 2024 : Comment les Intégrer à Votre Intérieur"
+- "Minimalisme Chaleureux : 10 Astuces pour un Intérieur Cosy"
+
+**Conseils d'Expert** (autorité SEO)
+- "7 Erreurs à Éviter lors du Choix d'un Canapé"
+- "Comment Agencer une Salle à Manger pour Recevoir"
+- "Entretien Mobilier : Guide Complet par Matériau"
+
+❌ INTERDICTIONS ABSOLUES :
+- Pas de "Collection X" ou "Découvrez nos produits"
+- Pas de titres commerciaux directs
+- Pas de simple description de produits
+- Pas de contenu générique sans valeur
+
+📋 FORMAT DE RÉPONSE (JSON uniquement) :
+
+{
+  "opportunities": [
+    {
+      "title": "Titre SEO optimisé, engageant et spécifique (max 60 caractères)",
+      "description": "Description détaillée de la valeur de l'article (2-3 phrases)",
+      "category": "Catégorie principale liée",
+      "type": "guide|comparison|trend|howto|expert",
+      "angle": "Angle unique de l'article (problème résolu ou bénéfice clair)",
+      "targetAudience": "Audience cible (ex: jeunes couples, télétravail, petit espace)",
+      "primaryKeywords": ["mot-clé principal 1", "mot-clé principal 2"],
+      "secondaryKeywords": ["mot-clé secondaire 1", "mot-clé 2", "mot-clé 3"],
+      "metaDescription": "Meta description SEO optimisée (150-160 caractères)",
+      "estimatedWordCount": 1500,
+      "seoScore": 85,
+      "difficulty": "easy|medium|hard"
+    }
+  ]
+}
+
+Génère 12-15 opportunités d'articles PERTINENTES, ORIGINALES et à FORT POTENTIEL.
+Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
 
       const { data } = await supabase.functions.invoke("chat-smart", {
         body: { 
@@ -103,24 +140,75 @@ Génère ${opportunities.length} titres EXCEPTIONNELS orientés AMÉNAGEMENT:`;
         }
       });
 
-      if (data?.content) {
-        try {
-          // Extraire le JSON de la réponse
-          const jsonMatch = data.content.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
-            const titles = JSON.parse(jsonMatch[0]);
-            if (Array.isArray(titles) && titles.length === opportunities.length) {
-              return titles;
-            }
-          }
-        } catch (e) {
-          console.error("Failed to parse AI titles:", e);
-        }
+      if (!data?.content) {
+        throw new Error('Pas de réponse de l\'IA');
       }
+
+      const aiResponse = data.content;
+      
+      let optimizedData;
+      try {
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          optimizedData = JSON.parse(jsonMatch[0]);
+        } else {
+          optimizedData = JSON.parse(aiResponse);
+        }
+      } catch (parseError) {
+        console.error('Error parsing AI response:', parseError);
+        throw new Error('Erreur lors du parsing de la réponse IA');
+      }
+
+      if (!optimizedData.opportunities || !Array.isArray(optimizedData.opportunities)) {
+        throw new Error('Structure de réponse IA invalide');
+      }
+
+      // Matcher les opportunités avec les produits du catalogue
+      return optimizedData.opportunities.map((opt: any, index: number) => {
+        const relatedProducts = products.filter(p => {
+          const category = (p.product_type || p.category || '').toLowerCase();
+          const title = (p.title || '').toLowerCase();
+          const vendor = (p.vendor || '').toLowerCase();
+          const tags = (p.tags || '').toLowerCase();
+          
+          // Matching par catégorie
+          if (opt.category && category.includes(opt.category.toLowerCase())) {
+            return true;
+          }
+          
+          // Matching par mots-clés
+          const allKeywords = [...(opt.primaryKeywords || []), ...(opt.secondaryKeywords || [])];
+          return allKeywords.some(keyword => 
+            title.includes(keyword.toLowerCase()) ||
+            category.includes(keyword.toLowerCase()) ||
+            vendor.includes(keyword.toLowerCase()) ||
+            tags.includes(keyword.toLowerCase())
+          );
+        });
+
+        return {
+          id: `opp-${index}`,
+          title: opt.title || 'Article sans titre',
+          description: opt.description || '',
+          category: opt.category || '',
+          productsCount: relatedProducts.length,
+          type: opt.type || 'guide',
+          angle: opt.angle || '',
+          targetAudience: opt.targetAudience || '',
+          primaryKeywords: opt.primaryKeywords || [],
+          secondaryKeywords: opt.secondaryKeywords || [],
+          metaDescription: opt.metaDescription || '',
+          estimatedWordCount: opt.estimatedWordCount || 1500,
+          seoScore: opt.seoScore || 70,
+          difficulty: opt.difficulty || 'medium',
+          productIds: relatedProducts.slice(0, 20).map(p => p.id)
+        };
+      }).filter(opt => opt.productsCount > 0); // Garder seulement les opportunités avec des produits matchés
+
     } catch (error) {
-      console.error("Error generating titles:", error);
+      console.error('Error in analyzeAndGenerateOpportunities:', error);
+      throw error;
     }
-    return null;
   };
 
   const loadOpportunities = async () => {
@@ -129,122 +217,31 @@ Génère ${opportunities.length} titres EXCEPTIONNELS orientés AMÉNAGEMENT:`;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Récupérer les produits avec description pour analyser
+      // Récupérer TOUS les produits avec leurs détails complets
       const { data: products } = await supabase
         .from("shopify_products")
-        .select("title, description, category, tags, product_type, vendor")
+        .select("id, title, description, category, tags, product_type, vendor, price, style, room")
         .eq("seller_id", user.id);
 
-      if (!products || products.length === 0) return;
-
-      const opps: Opportunity[] = [];
-      const categoryMap = new Map<string, number>();
-      const productTypeMap = new Map<string, number>();
-      const vendorMap = new Map<string, number>();
-
-      // Analyser catégories, types et vendeurs
-      products.forEach((p) => {
-        if (p.category) {
-          categoryMap.set(p.category, (categoryMap.get(p.category) || 0) + 1);
-        }
-        if (p.product_type) {
-          productTypeMap.set(p.product_type, (productTypeMap.get(p.product_type) || 0) + 1);
-        }
-        if (p.vendor) {
-          vendorMap.set(p.vendor, (vendorMap.get(p.vendor) || 0) + 1);
-        }
-      });
-
-      // 1. Guides par catégorie (minimum 2 produits)
-      categoryMap.forEach((count, category) => {
-        if (count >= 2) {
-          opps.push({
-            id: `guide-category-${category}`,
-            title: `Comment bien choisir ${category}`,
-            description: `Guide complet pour aménager avec ${count} ${category}`,
-            category,
-            productsCount: count,
-            type: "guide",
-          });
-        }
-      });
-
-      // 2. Guides d'aménagement par type
-      productTypeMap.forEach((count, type) => {
-        if (count >= 3) {
-          opps.push({
-            id: `deco-type-${type}`,
-            title: `Aménager avec ${type}`,
-            description: `Conseils déco et idées d'aménagement avec ${count} ${type}`,
-            category: type,
-            productsCount: count,
-            type: "guide",
-          });
-        }
-      });
-
-      // 3. Comparatifs entre catégories
-      const categories = Array.from(categoryMap.keys());
-      if (categories.length >= 2) {
-        for (let i = 0; i < Math.min(2, categories.length - 1); i++) {
-          opps.push({
-            id: `comparison-${categories[i]}-${categories[i + 1]}`,
-            title: `${categories[i]} vs ${categories[i + 1]}`,
-            description: `Comparatif pour bien choisir entre ces options`,
-            category: `${categories[i]} & ${categories[i + 1]}`,
-            productsCount: (categoryMap.get(categories[i]) || 0) + (categoryMap.get(categories[i + 1]) || 0),
-            type: "comparison",
-          });
-        }
+      if (!products || products.length === 0) {
+        toast.info("Aucun produit trouvé. Importez des produits d'abord.");
+        return;
       }
 
-      // 4. Guides d'aménagement par style/marque (top marques uniquement)
-      const topVendors = Array.from(vendorMap.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3);
-      
-      topVendors.forEach(([vendor, count]) => {
-        if (count >= 5) {
-          opps.push({
-            id: `style-vendor-${vendor}`,
-            title: `Style ${vendor}`,
-            description: `Créer un intérieur harmonieux avec ${vendor} - ${count} produits`,
-            category: vendor,
-            productsCount: count,
-            type: "trend",
-          });
-        }
-      });
+      // Analyser le catalogue et générer des opportunités intelligentes avec DeepSeek
+      toast.info("Analyse intelligente du catalogue en cours...");
+      const intelligentOpportunities = await analyzeAndGenerateOpportunities(products, user.id);
 
-      // 5. Article général si on a assez de produits
-      if (products.length >= 5) {
-        opps.push({
-          id: "guide-general",
-          title: "Guide complet de nos produits",
-          description: `Découvrez tous nos ${products.length} produits et trouvez celui qui vous convient`,
-          category: "Tous produits",
-          productsCount: products.length,
-          type: "guide",
-        });
+      if (intelligentOpportunities && intelligentOpportunities.length > 0) {
+        setOpportunities(intelligentOpportunities);
+        toast.success(`${intelligentOpportunities.length} opportunités d'articles détectées !`);
+      } else {
+        toast.error("Aucune opportunité générée. Réessayez.");
       }
 
-      const selectedOpps = opps.slice(0, 20);
-
-      // Générer des titres optimisés avec DeepSeek
-      toast.info("Optimisation des titres avec IA...");
-      const optimizedTitles = await generateOptimizedTitles(selectedOpps, user.id, products);
-
-      if (optimizedTitles) {
-        selectedOpps.forEach((opp, i) => {
-          if (optimizedTitles[i]) {
-            opp.title = optimizedTitles[i];
-          }
-        });
-      }
-
-      setOpportunities(selectedOpps);
     } catch (error) {
       console.error("Error loading opportunities:", error);
+      toast.error("Erreur lors de l'analyse du catalogue");
     } finally {
       setLoading(false);
     }
@@ -253,40 +250,26 @@ Génère ${opportunities.length} titres EXCEPTIONNELS orientés AMÉNAGEMENT:`;
   const handleCreateArticle = async (opp: Opportunity) => {
     try {
       setGenerating(opp.id);
-      toast.info("Génération du titre avec DeepSeek...");
+      toast.info("Génération de l'article...");
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
-
-      // Générer un titre optimisé avec DeepSeek
-      const titlePrompt = `Génère un titre d'article de blog SEO optimisé et accrocheur pour une boutique e-commerce.
-Catégorie: ${opp.category}
-Type: ${opp.type}
-Produits: ${opp.productsCount}
-Réponds uniquement avec le titre, sans guillemets ni ponctuation finale.`;
-
-      const { data: deepseekData } = await supabase.functions.invoke("chat-smart", {
-        body: { 
-          userMessage: titlePrompt,
-          sellerId: user.id,
-          useDeepseek: true
-        }
-      });
-
-      const optimizedTitle = deepseekData?.content?.trim() || opp.title;
-      toast.info("Génération de l'article...");
 
       const { data, error } = await supabase.functions.invoke("generate-blog-article", {
         body: {
           user_id: user.id,
-          title: optimizedTitle,
+          title: opp.title,
           category: opp.category,
-          keywords: [opp.category, opp.type],
+          keywords: [...(opp.primaryKeywords || []), ...(opp.secondaryKeywords || [])],
+          meta_description: opp.metaDescription,
+          angle: opp.angle,
+          target_audience: opp.targetAudience,
+          estimated_word_count: opp.estimatedWordCount || 1500
         },
       });
 
       if (error) throw error;
 
-      toast.success(`Article "${optimizedTitle}" généré avec succès !`);
+      toast.success(`Article "${opp.title}" généré avec succès !`);
       window.location.href = "/blog?tab=articles";
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la génération de l'article");
@@ -365,20 +348,42 @@ Réponds uniquement avec le titre, sans guillemets ni ponctuation finale.`;
           return (
             <Card key={opp.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <Icon className="w-8 h-8 text-primary mb-2" />
-                  <Badge variant="outline">
-                    {opp.productsCount} produit{opp.productsCount > 1 ? "s" : ""}
-                  </Badge>
+                <div className="flex items-start justify-between gap-2">
+                  <Icon className="w-8 h-8 text-primary mb-2 flex-shrink-0" />
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge variant="outline">
+                      {opp.productsCount} produit{opp.productsCount > 1 ? "s" : ""}
+                    </Badge>
+                    {opp.seoScore && (
+                      <Badge variant={opp.seoScore >= 80 ? "default" : "secondary"}>
+                        SEO: {opp.seoScore}/100
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <CardTitle className="text-lg">{opp.title}</CardTitle>
                 <CardDescription>{opp.description}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
+                  {opp.angle && (
+                    <div className="text-sm">
+                      <span className="font-semibold">Angle:</span> {opp.angle}
+                    </div>
+                  )}
+                  {opp.targetAudience && (
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-semibold">Audience:</span> {opp.targetAudience}
+                    </div>
+                  )}
                   <div className="text-sm text-muted-foreground">
-                    Catégorie: {opp.category}
+                    <span className="font-semibold">Catégorie:</span> {opp.category}
                   </div>
+                  {opp.difficulty && (
+                    <Badge variant="outline" className="capitalize">
+                      {opp.difficulty === 'easy' ? '🟢 Facile' : opp.difficulty === 'medium' ? '🟡 Moyen' : '🔴 Difficile'}
+                    </Badge>
+                  )}
                   <Button
                     className="w-full"
                     onClick={() => handleCreateArticle(opp)}
