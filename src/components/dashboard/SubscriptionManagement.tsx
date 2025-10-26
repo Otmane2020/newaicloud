@@ -154,10 +154,10 @@ export function SubscriptionManagement() {
               className={`p-4 ${currentPlan?.id === plan.id ? 'border-2 border-primary' : ''}`}
             >
               <h4 className="font-semibold text-lg">{plan.name}</h4>
-              <p className="text-2xl font-bold mt-2">
-                {plan.price_monthly}€
-                <span className="text-sm font-normal text-muted-foreground">/mois</span>
-              </p>
+                <p className="text-2xl font-bold mt-2">
+                  ${plan.price_monthly}
+                  <span className="text-sm font-normal text-muted-foreground">/mois</span>
+                </p>
               {currentPlan?.id === plan.id && (
                 <Badge variant="default" className="bg-green-500 hover:bg-green-600 mt-2">Plan actuel</Badge>
               )}

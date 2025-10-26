@@ -246,10 +246,10 @@ export default function Onboarding() {
                   <div className="flex flex-col items-center justify-center mb-2">
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        {billingCycle === 'yearly' 
-                          ? `${(plan.price_yearly / 12).toFixed(2)}€`
-                          : `${plan.price_monthly.toFixed(2)}€`
-                        }
+                  {billingCycle === 'yearly' 
+                    ? `$${(plan.price_yearly / 12).toFixed(2)}`
+                    : `$${plan.price_monthly.toFixed(2)}`
+                  }
                       </span>
                       <span className="text-muted-foreground">
                         /mois
@@ -257,7 +257,7 @@ export default function Onboarding() {
                     </div>
                     {billingCycle === 'yearly' && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        soit {plan.price_yearly.toFixed(2)}€ facturé annuellement
+                        soit ${plan.price_yearly.toFixed(2)} facturé annuellement
                       </p>
                     )}
                   </div>

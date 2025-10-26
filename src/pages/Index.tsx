@@ -214,7 +214,7 @@ const Index = () => {
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
           {pricingPlans.map((plan, index) => {
             const price = billingCycle === 'monthly' ? plan.priceMonthly : plan.priceYearly;
-            const displayPrice = currency === 'EUR' ? `${price}€` : `$${price}`;
+            const displayPrice = currency === 'EUR' ? `$${price}` : `$${price}`;
             
             return (
               <Card 
@@ -241,7 +241,7 @@ const Index = () => {
                     </div>
                     {billingCycle === 'yearly' && (
                       <p className="text-sm text-success mt-1">
-                        payé annuellement (soit {currency === 'EUR' ? `${plan.yearlyTotal}€` : `$${plan.yearlyTotal}`}/an)
+                        payé annuellement (soit {currency === 'EUR' ? `$${plan.yearlyTotal}` : `$${plan.yearlyTotal}`}/an)
                       </p>
                     )}
                     {plan.trial && (
