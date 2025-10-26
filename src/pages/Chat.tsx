@@ -370,7 +370,7 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
           </Card>
         )}
 
-        <Card className="h-[calc(100vh-380px)] flex flex-col bg-white dark:bg-card shadow-2xl border-4 border-primary/20 rounded-2xl overflow-hidden">
+        <Card className="h-[calc(100vh-240px)] flex flex-col bg-card shadow-2xl border-4 border-primary/20 rounded-2xl overflow-hidden">
           {/* Header du chat avec design moderne */}
           <div className="px-6 py-5 border-b-2 bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-white">
             <div className="flex items-center gap-3">
@@ -407,35 +407,51 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
                     className={`rounded-2xl px-4 py-3 ${
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
-                        : 'bg-card text-card-foreground'
+                        : 'bg-muted text-foreground'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap text-foreground">{message.content}</p>
+                    <p className="whitespace-pre-wrap">{message.content}</p>
                   </div>
                   
                   {/* Product suggestions */}
                   {message.products && message.products.length > 0 && (
                     <div className="space-y-2">
                       {message.products.map((product, idx) => (
-                        <Card key={idx} className="p-3 flex items-center gap-3 hover:shadow-md transition-shadow">
+                        <Card 
+                          key={idx} 
+                          className="p-3 flex items-center gap-3 hover:shadow-lg transition-all cursor-pointer group"
+                          onClick={() => {
+                            if (product.id) {
+                              window.open(`/product-landing/${product.id}`, '_blank');
+                            }
+                          }}
+                        >
                           {product.image_url && (
                             <img
                               src={product.image_url}
                               alt={product.title}
-                              className="w-16 h-16 object-cover rounded"
+                              className="w-16 h-16 object-cover rounded group-hover:scale-105 transition-transform"
                             />
                           )}
                           <div className="flex-1">
-                            <p className="font-semibold">{product.title}</p>
+                            <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{product.title}</p>
                             <p className="text-sm text-muted-foreground">
-                              {product.price}€
+                              {product.price} {product.currency || 'EUR'}
                             </p>
                           </div>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              toast.success('Produit ajouté au panier !');
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const shopUrl = product.shop_name?.includes('.myshopify.com') 
+                                ? product.shop_name 
+                                : `${product.shop_name}.myshopify.com`;
+                              if (product.shop_name && product.handle) {
+                                window.open(`https://${shopUrl}/products/${product.handle}`, '_blank');
+                              } else {
+                                toast.info('Voir plus de détails');
+                              }
                             }}
                           >
                             <ShoppingCart className="w-4 h-4" />

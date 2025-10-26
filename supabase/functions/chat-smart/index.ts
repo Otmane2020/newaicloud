@@ -42,6 +42,8 @@ interface ProductSearchFilters {
   room?: string;
   limit?: number;
   status?: string;
+  maxPrice?: number;
+  minPrice?: number;
 }
 
 interface ChatResponse {
@@ -101,7 +103,20 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
   const foundRoom = rooms.find(r => searchNormalized.includes(normalizeText(r)));
   if (foundRoom) filters.room = foundRoom;
 
-  const categories = ['canape', 'table', 'chaise', 'fauteuil', 'meuble', 'armoire', 'lit', 'bureau', 'lampe', 'miroir'];
+  // Extract price filters
+  const priceMatch = searchNormalized.match(/(?:moins de|max|maximum|jusqu'a|jusqu a|inferieur a|<)\s*(\d+)/);
+  if (priceMatch) {
+    filters.maxPrice = parseInt(priceMatch[1]);
+    console.log('🏷️ Max price detected:', filters.maxPrice);
+  }
+
+  const minPriceMatch = searchNormalized.match(/(?:plus de|min|minimum|a partir de|superieur a|>)\s*(\d+)/);
+  if (minPriceMatch) {
+    filters.minPrice = parseInt(minPriceMatch[1]);
+    console.log('🏷️ Min price detected:', filters.minPrice);
+  }
+
+  const categories = ['canape', 'table', 'chaise', 'fauteuil', 'meuble', 'armoire', 'lit', 'bureau', 'lampe', 'miroir', 'table basse', 'tablebasse'];
   const foundCategory = categories.find(c => searchNormalized.includes(c));
 
   if (foundCategory) {
@@ -247,6 +262,8 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
     query = query.limit((filters.limit || 12) * 3);
     const { data, error } = await query;
 
+    console.log('🔍 [SEARCH] Raw query returned:', data?.length || 0, 'products');
+
     if (error) {
       console.error('❌ [SEARCH] Database error:', error);
       throw error;
@@ -257,8 +274,30 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       return [];
     }
 
+    // Apply price filters
+    let filteredData = data;
+    if (filters.maxPrice) {
+      filteredData = filteredData.filter(p => {
+        const price = parseFloat(p.price);
+        return !isNaN(price) && price <= filters.maxPrice!;
+      });
+      console.log(`🏷️ [PRICE FILTER] After max price ${filters.maxPrice}: ${filteredData.length} products`);
+    }
+    if (filters.minPrice) {
+      filteredData = filteredData.filter(p => {
+        const price = parseFloat(p.price);
+        return !isNaN(price) && price >= filters.minPrice!;
+      });
+      console.log(`🏷️ [PRICE FILTER] After min price ${filters.minPrice}: ${filteredData.length} products`);
+    }
+
+    if (filteredData.length === 0) {
+      console.log('✅ [SEARCH] Found 0 products after price filtering');
+      return [];
+    }
+
     const searchQuery = filters.query || '';
-    const scoredProducts = data.map(product => ({
+    const scoredProducts = filteredData.map(product => ({
       ...product,
       _relevance_score: calculateRelevanceScore(product, searchQuery)
     }));
