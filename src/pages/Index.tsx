@@ -7,7 +7,7 @@ import PricingComparison from "@/components/PricingComparison";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/hooks/useTranslation';
 import { 
   Zap, 
   ShoppingBag, 
