@@ -71,27 +71,38 @@ export function SeoAltImage() {
     try {
       setLoading(true);
       
-      const { data: imagesData, error: imagesError } = await supabase
-        .from('product_images')
-        .select('*')
-        .order('position', { ascending: true });
-
-      if (imagesError) throw imagesError;
-
+      // Récupérer tous les produits avec leurs images
       const { data: productsData, error: productsError } = await supabase
         .from('shopify_products')
         .select('id, title, vendor, category, image_url');
 
       if (productsError) throw productsError;
 
+      // Récupérer toutes les images de tous les produits
+      const { data: imagesData, error: imagesError } = await supabase
+        .from('product_images')
+        .select('*')
+        .order('product_id', { ascending: true })
+        .order('position', { ascending: true });
+
+      if (imagesError) throw imagesError;
+
       const productMap = new Map(productsData?.map(p => [p.id, p]));
       
+      // Grouper les images par produit
       const imagesWithProducts = (imagesData || [])
         .map(img => ({
           ...img,
           product: productMap.get(img.product_id)
         }))
         .filter(img => img.product) as ImageWithProduct[];
+
+      // Trier par produit pour regrouper visuellement
+      imagesWithProducts.sort((a, b) => {
+        if (a.product.title < b.product.title) return -1;
+        if (a.product.title > b.product.title) return 1;
+        return a.position - b.position;
+      });
 
       setImages(imagesWithProducts);
     } catch (error) {

@@ -135,53 +135,145 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       }
     }
     
-    const prompt = `Tu es un rédacteur expert en e-commerce. Rédige un article professionnel en français intitulé "${articleTitle}".
+    // Générer un titre optimisé avec DeepSeek
+    const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { 
+            role: "system", 
+            content: "Tu es un expert SEO qui génère des titres d'articles percutants et optimisés pour le référencement." 
+          },
+          { 
+            role: "user", 
+            content: `Génère un titre d'article SEO captivant pour cette catégorie: ${category}. Le titre doit contenir entre 50-60 caractères, inclure des mots-clés pertinents, et inciter au clic. Retourne UNIQUEMENT le titre, sans guillemets ni explications.`
+          }
+        ]
+      })
+    });
 
-📦 PRODUITS À INTÉGRER :
+    const titleData = await titleResponse.json();
+    const optimizedTitle = titleData.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
+    
+    console.log(`📝 Titre optimisé: ${optimizedTitle}`);
+
+    const productLinks = products.map((p: any) => 
+      `<a href="/product-landing/${p.id}" class="product-link">${p.title}</a>`
+    ).join(', ');
+
+    const productCards = products.map((p: any) => `
+      <div class="product-card" onclick="window.location.href='/product-landing/${p.id}'" style="cursor: pointer;">
+        <img src="${p.image_url || '/placeholder.svg'}" alt="${p.title}" class="product-image" />
+        <h4>${p.title}</h4>
+        <p class="product-price">${p.price}€</p>
+        <p class="product-description">${p.description?.substring(0, 150) || ''}...</p>
+      </div>
+    `).join('');
+
+    const prompt = `Tu es un rédacteur expert en e-commerce. Rédige un article professionnel en français.
+
+📦 PRODUITS SÉLECTIONNÉS :
 ${productDetails}
 
-📝 STRUCTURE REQUISE (HTML strict) :
+📝 STRUCTURE HTML STRICTE À RESPECTER :
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <style>
+    .blog-article { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 0 auto; line-height: 1.8; color: #333; }
+    .article-hero { text-align: center; margin-bottom: 3rem; }
+    .hero-image { width: 100%; max-height: 500px; object-fit: cover; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+    .article-title { font-size: 2.5rem; font-weight: 800; margin: 1rem 0; color: #1a202c; line-height: 1.2; }
+    .article-toc { background: #f7fafc; border-left: 4px solid #3182ce; padding: 1.5rem; border-radius: 8px; margin: 2rem 0; }
+    .article-toc h2 { font-size: 1.25rem; margin-bottom: 1rem; color: #2d3748; }
+    .article-toc ol { margin: 0; padding-left: 1.5rem; }
+    .article-toc li { margin: 0.5rem 0; }
+    .article-toc a { color: #3182ce; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+    .article-toc a:hover { color: #2c5282; text-decoration: underline; }
+    .article-section { margin: 3rem 0; scroll-margin-top: 2rem; }
+    .article-section h2 { font-size: 2rem; font-weight: 700; margin: 2rem 0 1rem; color: #2d3748; border-bottom: 3px solid #3182ce; padding-bottom: 0.5rem; }
+    .article-section h3 { font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 1rem; color: #4a5568; }
+    .article-section p { margin: 1rem 0; font-size: 1.1rem; }
+    .article-section ul, .article-section ol { margin: 1rem 0; padding-left: 2rem; }
+    .article-section li { margin: 0.5rem 0; }
+    .comparison-table { width: 100%; border-collapse: collapse; margin: 2rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+    .comparison-table thead { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .comparison-table th { padding: 1rem; text-align: left; font-weight: 600; }
+    .comparison-table td { padding: 1rem; border-bottom: 1px solid #e2e8f0; }
+    .comparison-table tbody tr:hover { background: #f7fafc; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; margin: 2rem 0; }
+    .product-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
+    .product-image { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; }
+    .product-card h4 { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0; color: #2d3748; }
+    .product-price { font-size: 1.25rem; font-weight: 700; color: #3182ce; margin: 0.5rem 0; }
+    .product-description { font-size: 0.9rem; color: #718096; line-clamp: 3; }
+    .product-link { color: #3182ce; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; transition: border-color 0.2s; }
+    .product-link:hover { border-bottom-color: #3182ce; }
+    .cta-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3rem; border-radius: 12px; text-align: center; margin: 3rem 0; }
+    .cta-section h2 { color: white; border: none; font-size: 2rem; }
+    .cta-button { display: inline-block; background: white; color: #667eea; padding: 1rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; margin-top: 1rem; transition: transform 0.2s; }
+    .cta-button:hover { transform: scale(1.05); }
+  </style>
+</head>
+<body>
 <article class="blog-article">
   <div class="article-hero">
-    ${imageUrl ? `<img src="${imageUrl}" alt="${articleTitle}" class="hero-image" />` : ''}
-    <h1 class="article-title">${articleTitle}</h1>
+    ${imageUrl ? `<img src="${imageUrl}" alt="${optimizedTitle}" class="hero-image" />` : ''}
+    <h1 class="article-title">${optimizedTitle}</h1>
   </div>
 
   <nav class="article-toc">
-    <h2>Table des matières</h2>
+    <h2>📋 Table des matières</h2>
     <ol>
       <li><a href="#section-1">Introduction</a></li>
       <li><a href="#section-2">Les critères essentiels</a></li>
-      <li><a href="#section-3">Notre sélection</a></li>
+      <li><a href="#section-3">Notre sélection de produits</a></li>
       <li><a href="#section-4">Comparatif détaillé</a></li>
-      <li><a href="#section-5">Comment choisir ?</a></li>
+      <li><a href="#section-5">Comment faire votre choix</a></li>
       <li><a href="#section-6">Conclusion</a></li>
     </ol>
   </nav>
 
   <section id="section-1" class="article-section">
-    <h2>1. Introduction</h2>
-    <p>[Paragraphe d'introduction accrocheur avec mots-clés : ${targetKeywords.join(", ")}]</p>
+    <h2>1. 🎯 Introduction</h2>
+    <p>[Rédige une introduction captivante de 200-250 mots qui présente le sujet et inclut naturellement ces mots-clés : ${targetKeywords.join(", ")}. Explique pourquoi ce guide est important et ce que le lecteur va découvrir.]</p>
   </section>
 
   <section id="section-2" class="article-section">
-    <h2>2. Les critères essentiels</h2>
+    <h2>2. 🔍 Les critères essentiels de sélection</h2>
     <h3>2.1. Qualité et matériaux</h3>
-    <p>[Contenu détaillé]</p>
+    <p>[Détaille les aspects qualité à considérer - 150 mots]</p>
+    
     <h3>2.2. Budget et rapport qualité-prix</h3>
-    <p>[Contenu détaillé]</p>
+    <p>[Explique comment évaluer le rapport qualité-prix - 150 mots]</p>
+    
     <h3>2.3. Design et style</h3>
-    <p>[Contenu détaillé]</p>
+    <p>[Décrit les tendances et styles disponibles - 150 mots]</p>
+    
+    <h3>2.4. Fonctionnalités pratiques</h3>
+    <p>[Liste les fonctionnalités importantes à rechercher - 150 mots]</p>
   </section>
 
   <section id="section-3" class="article-section">
-    <h2>3. Notre sélection de produits</h2>
-    [Présente CHAQUE produit avec un <h3> et paragraphe dédié]
+    <h2>3. ⭐ Notre sélection de produits</h2>
+    <p>Voici notre sélection de ${products.length} produits soigneusement choisis pour vous : ${productLinks}.</p>
+    
+    <div class="product-grid">
+      ${productCards}
+    </div>
+    
+    <p>[Pour chaque produit ci-dessus, rédige un paragraphe de 100-150 mots décrivant ses caractéristiques uniques, avantages, et pour quel type d'utilisateur il est idéal.]</p>
   </section>
 
   <section id="section-4" class="article-section">
-    <h2>4. Comparatif détaillé</h2>
+    <h2>4. 📊 Comparatif détaillé</h2>
     <table class="comparison-table">
       <thead>
         <tr>
@@ -189,35 +281,50 @@ ${productDetails}
           <th>Prix</th>
           <th>Points forts</th>
           <th>Pour qui ?</th>
+          <th>Note</th>
         </tr>
       </thead>
       <tbody>
-        [Une ligne par produit]
+        [Crée une ligne par produit avec des données réalistes basées sur les produits fournis]
       </tbody>
     </table>
   </section>
 
   <section id="section-5" class="article-section">
-    <h2>5. Comment faire votre choix ?</h2>
+    <h2>5. 💡 Comment faire votre choix ?</h2>
     <h3>5.1. Selon votre budget</h3>
-    <p>[Conseils]</p>
-    <h3>5.2. Selon vos besoins</h3>
-    <p>[Conseils]</p>
+    <p>[Conseils pour choisir selon le budget - 200 mots]</p>
+    
+    <h3>5.2. Selon vos besoins spécifiques</h3>
+    <p>[Conseils pour choisir selon les besoins - 200 mots]</p>
+    
+    <h3>5.3. Notre recommandation finale</h3>
+    <p>[Donne une recommandation claire basée sur différents profils - 150 mots]</p>
   </section>
 
   <section id="section-6" class="article-section">
-    <h2>6. Conclusion</h2>
-    <p>[Résumé + CTA : "Découvrez notre collection complète"]</p>
+    <h2>6. ✅ Conclusion</h2>
+    <p>[Résumé des points clés et rappel des meilleurs produits - 200 mots]</p>
   </section>
-</article>
 
-⚠️ IMPORTANT :
+  <div class="cta-section">
+    <h2>🛍️ Prêt à faire votre choix ?</h2>
+    <p>Découvrez l'intégralité de notre collection et trouvez le produit parfait pour vous !</p>
+    <a href="/products" class="cta-button">Voir toute notre collection →</a>
+  </div>
+</article>
+</body>
+</html>
+
+⚠️ RÈGLES STRICTES :
 - Utilise UNIQUEMENT les ${products.length} produits fournis
-- Structure HTML STRICTE avec IDs pour ancres
-- Table des matières cliquable
-- Mots-clés : ${targetKeywords.join(", ")}
-- Longueur : 1800-2500 mots
-- Ton professionnel mais accessible`;
+- Structure HTML complète avec balises H1, H2, H3
+- Table des matières avec ancres cliquables (#section-X)
+- Intègre les produits avec liens cliquables vers /product-landing/{id}
+- Mots-clés naturellement intégrés : ${targetKeywords.join(", ")}
+- Longueur totale : 2000-2500 mots
+- Ton : professionnel, informatif, engageant
+- Retourne le HTML complet prêt à l'emploi`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -248,14 +355,43 @@ ${productDetails}
     // Nettoyer les balises markdown si présentes
     content = content.replace(/```html/g, '').replace(/```/g, '').trim();
 
+    // Générer keywords SEO avec l'IA
+    const keywordsResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { 
+            role: "system", 
+            content: "Tu es un expert SEO qui génère des mots-clés pertinents." 
+          },
+          { 
+            role: "user", 
+            content: `Génère 8-12 mots-clés SEO pour cet article sur "${optimizedTitle}". Retourne une liste séparée par des virgules, sans numérotation.`
+          }
+        ]
+      })
+    });
+
+    const keywordsData = await keywordsResponse.json();
+    const seoKeywords = keywordsData.choices[0].message.content.trim()
+      .split(',')
+      .map((k: string) => k.trim())
+      .filter(Boolean)
+      .slice(0, 12);
+
     const { data: savedArticle, error: saveError } = await supabaseClient
       .from("blog_articles")
       .insert([{
         user_id,
-        title: articleTitle,
+        title: optimizedTitle,
         content,
-        meta_description: `Découvrez notre guide complet : ${articleTitle}. Comparatif, conseils d'experts et sélection des meilleurs produits.`,
-        keywords: targetKeywords,
+        meta_description: `Découvrez notre guide complet : ${optimizedTitle}. Comparatif, conseils d'experts et sélection des meilleurs produits. ✓ ${category}`,
+        keywords: [...targetKeywords, ...seoKeywords].slice(0, 15),
         status: "draft"
       }])
       .select()

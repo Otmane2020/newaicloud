@@ -19,7 +19,8 @@ import {
   Sparkles,
   Ruler,
   Palette,
-  Box
+  Box,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -274,17 +275,35 @@ export default function ProductLanding() {
                 )}
               </div>
 
+              {/* Stock Badge */}
+              {selectedVariant && (
+                <div className="mb-6">
+                  {selectedVariant.inventory_quantity > 0 ? (
+                    <Badge className="bg-green-100 text-green-800 border-green-200 gap-2 px-3 py-1">
+                      <Check className="w-4 h-4" />
+                      En stock ({selectedVariant.inventory_quantity} disponible{selectedVariant.inventory_quantity > 1 ? 's' : ''})
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="gap-2 px-3 py-1">
+                      <X className="w-4 h-4" />
+                      Rupture de stock
+                    </Badge>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-3 mb-6">
                 <Button 
                   size="lg" 
                   className="flex-1"
+                  disabled={selectedVariant && selectedVariant.inventory_quantity <= 0}
                   onClick={() => {
                     const shopifyUrl = `https://${product.shop_name}/products/${product.handle}`;
                     window.open(shopifyUrl, '_blank');
                   }}
                 >
                   <ShoppingCart className="w-5 h-5 mr-2" />
-                  Voir sur le site
+                  {selectedVariant && selectedVariant.inventory_quantity <= 0 ? 'Produit indisponible' : 'Voir sur le site'}
                 </Button>
                 <Button size="lg" variant="outline">
                   <Heart className="w-5 h-5" />

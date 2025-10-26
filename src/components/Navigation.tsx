@@ -25,6 +25,9 @@ import { useAuth } from '@/contexts/AuthContext';
 const menuItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/products', label: 'Catalogue', icon: ShoppingBag },
+  { path: '/merchant', label: 'Google Merchant', icon: ShoppingBag },
+  { path: '/shopping', label: 'Google Shopping', icon: ShoppingBag },
+  { path: '/search-products', label: 'Recherche IA', icon: MessageSquare },
   { 
     path: '/seo', 
     label: 'SEO', 

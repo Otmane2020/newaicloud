@@ -128,6 +128,9 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
       const finalKeywords = keywords.length > 0 ? keywords : formData.keywords.split(',').map(k => k.trim()).filter(Boolean);
 
+      // Animation de génération
+      toast.loading('🎨 Génération en cours...', { id: 'generating' });
+
       const response = await supabase.functions.invoke('generate-blog-article', {
         body: {
           user_id: user.id,
@@ -139,11 +142,32 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
       if (response.error) throw response.error;
 
-      toast.success('Article généré avec succès !');
+      toast.success('✅ Article généré avec succès !', { id: 'generating' });
+
+      // Demander si l'utilisateur veut publier sur Shopify
+      const wantsToPublish = window.confirm(
+        '🚀 Votre article est prêt !\n\nVoulez-vous le publier immédiatement sur Shopify ?'
+      );
+
+      if (wantsToPublish && response.data?.article_id) {
+        toast.loading('📤 Publication sur Shopify...', { id: 'publishing' });
+        
+        const syncResponse = await supabase.functions.invoke('sync-blog-to-shopify', {
+          body: { articleId: response.data.article_id }
+        });
+
+        if (syncResponse.error) {
+          toast.error('Erreur de publication Shopify', { id: 'publishing' });
+          console.error(syncResponse.error);
+        } else {
+          toast.success('✅ Article publié sur Shopify !', { id: 'publishing' });
+        }
+      }
+
       onClose();
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Erreur lors de la génération');
+      toast.error(error.message || 'Erreur lors de la génération', { id: 'generating' });
     } finally {
       setGenerating(false);
     }

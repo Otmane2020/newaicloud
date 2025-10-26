@@ -58,17 +58,58 @@ Deno.serve(async (req) => {
       .update({ status: "syncing" })
       .eq("id", articleId);
 
-    const shopifyUrl = store.store_url.replace(/^https?:\/\//, "");
-    const apiBase = `https://${shopifyUrl}/admin/api/2024-01/blogs`;
+    const shopifyUrl = store.store_url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const apiBase = `https://${shopifyUrl}/admin/api/2025-01/blogs`;
 
+    console.log("🔗 Shopify URL:", apiBase);
+
+    // Get blogs
     const blogsResp = await fetch(`${apiBase}.json`, {
-      headers: { "X-Shopify-Access-Token": store.access_token },
+      headers: { 
+        "X-Shopify-Access-Token": store.access_token,
+        "Content-Type": "application/json"
+      },
     });
 
-    const blogsData = await blogsResp.json();
-    const blogId = blogsData.blogs?.[0]?.id;
+    if (!blogsResp.ok) {
+      const errText = await blogsResp.text();
+      console.error("❌ Blogs fetch error:", errText);
+      throw new Error(`Failed to fetch blogs: ${blogsResp.status} ${errText}`);
+    }
 
-    if (!blogId) throw new Error("No blog found");
+    const blogsData = await blogsResp.json();
+    console.log("📚 Blogs found:", blogsData.blogs?.length || 0);
+
+    let blogId = blogsData.blogs?.[0]?.id;
+
+    // Create a blog if none exists
+    if (!blogId) {
+      console.log("📝 Creating new blog...");
+      const createBlogResp = await fetch(`${apiBase}.json`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": store.access_token,
+        },
+        body: JSON.stringify({
+          blog: {
+            title: "Blog SEO"
+          }
+        })
+      });
+
+      if (!createBlogResp.ok) {
+        const errText = await createBlogResp.text();
+        console.error("❌ Blog creation error:", errText);
+        throw new Error(`Failed to create blog: ${errText}`);
+      }
+
+      const createdBlog = await createBlogResp.json();
+      blogId = createdBlog.blog?.id;
+      console.log("✅ Blog created:", blogId);
+    }
+
+    if (!blogId) throw new Error("No blog ID available");
 
     const articleData = {
       article: {
@@ -79,6 +120,8 @@ Deno.serve(async (req) => {
         published: true,
       },
     };
+
+    console.log("📤 Publishing article to blog:", blogId);
 
     const createRes = await fetch(`${apiBase}/${blogId}/articles.json`, {
       method: "POST",
@@ -91,7 +134,8 @@ Deno.serve(async (req) => {
 
     if (!createRes.ok) {
       const errText = await createRes.text();
-      throw new Error(`Shopify error: ${errText}`);
+      console.error("❌ Article creation error:", errText);
+      throw new Error(`Shopify error: ${createRes.status} - ${errText}`);
     }
 
     const created = await createRes.json();
@@ -105,7 +149,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", articleId);
 
-    console.log("✅ Article published");
+    console.log("✅ Article published successfully");
 
     return new Response(JSON.stringify({ success: true, shopifyArticleId: created.article?.id }), {
       status: 200,
@@ -113,7 +157,25 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("❌ Error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+    
+    // Update article status to error
+    try {
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await supabase
+        .from("blog_articles")
+        .update({ status: "error" })
+        .eq("id", (await req.json()).articleId);
+    } catch (e) {
+      console.error("Failed to update article status:", e);
+    }
+
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      details: error instanceof Error ? error.stack : undefined
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
