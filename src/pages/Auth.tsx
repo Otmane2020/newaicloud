@@ -25,6 +25,9 @@ export default function Auth() {
   useEffect(() => {
     const checkUserAndRedirect = async () => {
       if (user) {
+        // Petit délai pour laisser le temps au toast d'apparaître
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const { data: profile } = await supabase
           .from('profiles')
           .select('subscription_status')
@@ -66,7 +69,12 @@ export default function Auth() {
     setLoading(true);
 
     if (mode === 'signup') {
-      await signUp(email, password, fullName);
+      const result = await signUp(email, password, fullName);
+      
+      if (!result.error) {
+        // Délai pour permettre à l'utilisateur de voir le toast de succès
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
     } else {
       await signIn(email, password);
     }
@@ -177,7 +185,9 @@ export default function Auth() {
               disabled={loading}
             >
               {loading
-                ? 'Chargement...'
+                ? mode === 'signup'
+                  ? 'Création du compte...'
+                  : 'Connexion...'
                 : mode === 'login'
                 ? 'Se connecter'
                 : "S'inscrire"}
