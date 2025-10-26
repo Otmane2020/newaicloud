@@ -388,7 +388,7 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-white dark:bg-background">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-background">
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -407,10 +407,10 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
                     className={`rounded-2xl px-4 py-3 ${
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary'
+                        : 'bg-card text-card-foreground'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <p className="whitespace-pre-wrap text-foreground">{message.content}</p>
                   </div>
                   
                   {/* Product suggestions */}

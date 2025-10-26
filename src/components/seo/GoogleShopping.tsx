@@ -41,16 +41,9 @@ interface Product {
   title: string;
   image_url: string;
   google_product_category: string | null;
-  google_gender: string | null;
-  google_age_group: string | null;
   google_mpn: string | null;
   google_condition: string | null;
-  google_custom_product: boolean | null;
-  google_custom_label_0: string | null;
-  google_custom_label_1: string | null;
-  google_custom_label_2: string | null;
-  google_custom_label_3: string | null;
-  google_custom_label_4: string | null;
+  google_gtin: string | null;
   seo_synced_to_shopify: boolean;
 }
 
@@ -73,17 +66,11 @@ export function GoogleShopping() {
           id, 
           title, 
           image_url,
+          vendor,
           google_product_category,
-          google_gender,
-          google_age_group,
           google_mpn,
           google_condition,
-          google_custom_product,
-          google_custom_label_0,
-          google_custom_label_1,
-          google_custom_label_2,
-          google_custom_label_3,
-          google_custom_label_4,
+          google_gtin,
           seo_synced_to_shopify
         `)
         .order('title', { ascending: true });
@@ -130,16 +117,9 @@ export function GoogleShopping() {
     setEditingProduct(product.id);
     setEditData({
       google_product_category: product.google_product_category || undefined,
-      google_gender: product.google_gender || undefined,
-      google_age_group: product.google_age_group || undefined,
       google_mpn: product.google_mpn || undefined,
       google_condition: product.google_condition || undefined,
-      google_custom_product: product.google_custom_product || undefined,
-      google_custom_label_0: product.google_custom_label_0 || undefined,
-      google_custom_label_1: product.google_custom_label_1 || undefined,
-      google_custom_label_2: product.google_custom_label_2 || undefined,
-      google_custom_label_3: product.google_custom_label_3 || undefined,
-      google_custom_label_4: product.google_custom_label_4 || undefined,
+      google_gtin: product.google_gtin || undefined,
     });
   };
 
@@ -327,16 +307,9 @@ export function GoogleShopping() {
                 <TableHead>Image</TableHead>
                 <TableHead>Titre</TableHead>
                 <TableHead>Catégorie Produit</TableHead>
-                <TableHead>Genre</TableHead>
-                <TableHead>Groupe d'âge</TableHead>
                 <TableHead>MPN</TableHead>
                 <TableHead>Condition</TableHead>
-                <TableHead>Custom Product</TableHead>
-                <TableHead>Label 0</TableHead>
-                <TableHead>Label 1</TableHead>
-                <TableHead>Label 2</TableHead>
-                <TableHead>Label 3</TableHead>
-                <TableHead>Label 4</TableHead>
+                <TableHead>GTIN</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -376,50 +349,10 @@ export function GoogleShopping() {
                     </TableCell>
                     <TableCell>
                       {isEditing ? (
-                        <Select
-                          value={editData.google_gender || ''}
-                          onValueChange={(value) => setEditData({ ...editData, google_gender: value })}
-                        >
-                          <SelectTrigger className="min-w-[120px]">
-                            <SelectValue placeholder="Genre" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="male">Homme</SelectItem>
-                            <SelectItem value="female">Femme</SelectItem>
-                            <SelectItem value="unisex">Unisexe</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-sm">{product.google_gender || '-'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
-                        <Select
-                          value={editData.google_age_group || ''}
-                          onValueChange={(value) => setEditData({ ...editData, google_age_group: value })}
-                        >
-                          <SelectTrigger className="min-w-[120px]">
-                            <SelectValue placeholder="Âge" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="newborn">Nouveau-né</SelectItem>
-                            <SelectItem value="infant">Bébé</SelectItem>
-                            <SelectItem value="toddler">Bambin</SelectItem>
-                            <SelectItem value="kids">Enfant</SelectItem>
-                            <SelectItem value="adult">Adulte</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-sm">{product.google_age_group || '-'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
                         <Input
                           value={editData.google_mpn || ''}
                           onChange={(e) => setEditData({ ...editData, google_mpn: e.target.value })}
-                          placeholder="MPN"
+                          placeholder="MPN ou Marque"
                           className="min-w-[120px]"
                         />
                       ) : (
@@ -447,72 +380,14 @@ export function GoogleShopping() {
                     </TableCell>
                     <TableCell>
                       {isEditing ? (
-                        <Checkbox
-                          checked={editData.google_custom_product || false}
-                          onCheckedChange={(checked) => setEditData({ ...editData, google_custom_product: checked as boolean })}
-                        />
-                      ) : (
-                        <Checkbox checked={product.google_custom_product || false} disabled />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
                         <Input
-                          value={editData.google_custom_label_0 || ''}
-                          onChange={(e) => setEditData({ ...editData, google_custom_label_0: e.target.value })}
-                          placeholder="Label 0"
-                          className="min-w-[120px]"
+                          value={editData.google_gtin || ''}
+                          onChange={(e) => setEditData({ ...editData, google_gtin: e.target.value })}
+                          placeholder="GTIN (optionnel)"
+                          className="min-w-[150px]"
                         />
                       ) : (
-                        <span className="text-sm">{product.google_custom_label_0 || '-'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={editData.google_custom_label_1 || ''}
-                          onChange={(e) => setEditData({ ...editData, google_custom_label_1: e.target.value })}
-                          placeholder="Label 1"
-                          className="min-w-[120px]"
-                        />
-                      ) : (
-                        <span className="text-sm">{product.google_custom_label_1 || '-'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={editData.google_custom_label_2 || ''}
-                          onChange={(e) => setEditData({ ...editData, google_custom_label_2: e.target.value })}
-                          placeholder="Label 2"
-                          className="min-w-[120px]"
-                        />
-                      ) : (
-                        <span className="text-sm">{product.google_custom_label_2 || '-'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={editData.google_custom_label_3 || ''}
-                          onChange={(e) => setEditData({ ...editData, google_custom_label_3: e.target.value })}
-                          placeholder="Label 3"
-                          className="min-w-[120px]"
-                        />
-                      ) : (
-                        <span className="text-sm">{product.google_custom_label_3 || '-'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={editData.google_custom_label_4 || ''}
-                          onChange={(e) => setEditData({ ...editData, google_custom_label_4: e.target.value })}
-                          placeholder="Label 4"
-                          className="min-w-[120px]"
-                        />
-                      ) : (
-                        <span className="text-sm">{product.google_custom_label_4 || '-'}</span>
+                        <span className="text-sm">{product.google_gtin || '-'}</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -576,23 +451,22 @@ export function GoogleShopping() {
       {/* Info Card */}
       <Card className="p-6 bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800">
         <h3 className="text-lg font-semibold mb-3">
-          Exigences Google Shopping
+          Champs Google Shopping Simplifiés
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
-            <h4 className="font-medium mb-2">Champs Obligatoires :</h4>
+            <h4 className="font-medium mb-2">Champs Essentiels :</h4>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>Catégorie de produit Google</li>
-              <li>GTIN ou (Marque + MPN)</li>
-              <li>Condition du produit</li>
+              <li>Catégorie de produit (obligatoire)</li>
+              <li>MPN = Marque ou Référence (auto-rempli)</li>
+              <li>Condition = Neuf par défaut</li>
             </ul>
           </div>
           <div>
-            <h4 className="font-medium mb-2">Champs Recommandés :</h4>
+            <h4 className="font-medium mb-2">Champ Optionnel :</h4>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>Genre</li>
-              <li>Groupe d'âge</li>
-              <li>Custom Labels (pour campagnes)</li>
+              <li>GTIN (code-barres international)</li>
+              <li>Améliore la visibilité si disponible</li>
             </ul>
           </div>
         </div>

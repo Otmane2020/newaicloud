@@ -21,13 +21,9 @@ interface Product {
   status: string;
   currency: string | null;
   google_product_category?: string | null;
-  google_gender?: string | null;
-  google_age_group?: string | null;
   google_mpn?: string | null;
   google_condition?: string | null;
-  google_brand?: string | null;
-  ai_color?: string | null;
-  ai_material?: string | null;
+  google_gtin?: string | null;
 }
 
 function getSupabaseClient() {
@@ -66,7 +62,7 @@ function generateGoogleShoppingFeed(products: Product[], sellerId: string): stri
     const currency = product.currency || 'EUR';
     const availability = product.status === 'active' ? 'in stock' : 'out of stock';
     const condition = product.google_condition || 'new';
-    const brand = product.google_brand || product.vendor || 'Generic';
+    const mpn = product.google_mpn || product.vendor || 'N/A';
     
     xml += `
     <item>
@@ -78,7 +74,7 @@ function generateGoogleShoppingFeed(products: Product[], sellerId: string): stri
       <g:availability>${escapeXml(availability)}</g:availability>
       <g:price>${price.toFixed(2)} ${currency}</g:price>
       <g:condition>${escapeXml(condition)}</g:condition>
-      <g:brand>${escapeXml(brand)}</g:brand>`;
+      <g:mpn>${escapeXml(mpn)}</g:mpn>`;
     
     if (product.compare_at_price) {
       const comparePrice = parseFloat(product.compare_at_price);
@@ -93,34 +89,9 @@ function generateGoogleShoppingFeed(products: Product[], sellerId: string): stri
       <g:google_product_category>${escapeXml(product.google_product_category)}</g:google_product_category>`;
     }
     
-    if (product.category) {
+    if (product.google_gtin) {
       xml += `
-      <g:product_type>${escapeXml(product.category)}</g:product_type>`;
-    }
-    
-    if (product.google_gender) {
-      xml += `
-      <g:gender>${escapeXml(product.google_gender)}</g:gender>`;
-    }
-    
-    if (product.google_age_group) {
-      xml += `
-      <g:age_group>${escapeXml(product.google_age_group)}</g:age_group>`;
-    }
-    
-    if (product.google_mpn) {
-      xml += `
-      <g:mpn>${escapeXml(product.google_mpn)}</g:mpn>`;
-    }
-    
-    if (product.ai_color) {
-      xml += `
-      <g:color>${escapeXml(product.ai_color)}</g:color>`;
-    }
-    
-    if (product.ai_material) {
-      xml += `
-      <g:material>${escapeXml(product.ai_material)}</g:material>`;
+      <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
     }
     
     xml += `

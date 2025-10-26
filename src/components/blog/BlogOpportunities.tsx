@@ -136,13 +136,32 @@ export function BlogOpportunities() {
   const handleCreateArticle = async (opp: Opportunity) => {
     try {
       setGenerating(opp.id);
+      toast.info("Génération du titre avec DeepSeek...");
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
+
+      // Générer un titre optimisé avec DeepSeek
+      const titlePrompt = `Génère un titre d'article de blog SEO optimisé et accrocheur pour une boutique e-commerce.
+Catégorie: ${opp.category}
+Type: ${opp.type}
+Produits: ${opp.productsCount}
+Réponds uniquement avec le titre, sans guillemets ni ponctuation finale.`;
+
+      const { data: deepseekData } = await supabase.functions.invoke("chat-smart", {
+        body: { 
+          userMessage: titlePrompt,
+          sellerId: user.id,
+          useDeepseek: true
+        }
+      });
+
+      const optimizedTitle = deepseekData?.content?.trim() || opp.title;
+      toast.info("Génération de l'article...");
 
       const { data, error } = await supabase.functions.invoke("generate-blog-article", {
         body: {
           user_id: user.id,
-          title: opp.title,
+          title: optimizedTitle,
           category: opp.category,
           keywords: [opp.category, opp.type],
         },
@@ -150,8 +169,7 @@ export function BlogOpportunities() {
 
       if (error) throw error;
 
-      toast.success(`Article "${opp.title}" généré avec succès !`);
-      // Recharger la page blog
+      toast.success(`Article "${optimizedTitle}" généré avec succès !`);
       window.location.href = "/blog?tab=articles";
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la génération de l'article");

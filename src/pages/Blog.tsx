@@ -126,6 +126,7 @@ export default function Blog() {
 
   const tabs = [
     { id: 'articles', label: 'Articles', icon: PenSquare, description: 'Gérer vos articles' },
+    { id: 'campaigns', label: 'Campagnes', icon: CalendarClock, description: 'Automatiser le blog' },
     { id: 'opportunities', label: 'Opportunités', icon: Lightbulb, description: 'Idées de contenu' }
   ];
 
@@ -142,7 +143,7 @@ export default function Blog() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -307,48 +308,57 @@ export default function Blog() {
         </div>
       )}
 
-      {/* Campaigns Section */}
-      {activeTab === 'articles' && (
+      {activeTab === 'campaigns' && (
         <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-            <CalendarClock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+              <CalendarClock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold">Campagnes Automatiques</h2>
+              <p className="text-sm text-muted-foreground">
+                Automatisez la création d'articles selon un calendrier défini
+              </p>
+            </div>
+            <Button size="lg" onClick={() => setShowCampaignWizard(true)}>
+              <Plus className="w-5 h-5 mr-2" />
+              Créer Campagne
+            </Button>
           </div>
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold">Campagnes Auto</h2>
-            <p className="text-sm text-muted-foreground">
-              Automatisez la création de contenu avec des campagnes
-            </p>
-          </div>
-          <Button size="lg" onClick={() => setShowCampaignWizard(true)}>
-            <Plus className="w-5 h-5 mr-2" />
-            Créer Campagne
-          </Button>
-        </div>
 
-        <Card className="p-6">
-          {campaigns.length === 0 ? (
-            <div className="text-center py-12">
-              <CalendarClock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">Aucune campagne</p>
-              <Button onClick={() => setShowCampaignWizard(true)}>
-                <Plus className="w-5 h-5 mr-2" />
-                Créer campagne automatique
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {campaigns.map((campaign) => (
-                <Card key={campaign.id} className="p-4">
-                  <h3 className="font-semibold">{campaign.name}</h3>
-                  <Badge variant={campaign.is_active ? 'default' : 'secondary'}>
-                    {campaign.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </Card>
-              ))}
-            </div>
-          )}
-        </Card>
+          <Card className="p-6">
+            {campaigns.length === 0 ? (
+              <div className="text-center py-12">
+                <CalendarClock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">Aucune campagne créée</p>
+                <Button onClick={() => setShowCampaignWizard(true)}>
+                  <Plus className="w-5 h-5 mr-2" />
+                  Créer votre première campagne
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {campaigns.map((campaign) => (
+                  <Card key={campaign.id} className="p-4 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">{campaign.name}</h3>
+                        <p className="text-sm text-muted-foreground">{campaign.description}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
+                            {campaign.status}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {campaign.frequency} • {campaign.articles_generated} articles
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
       )}
 

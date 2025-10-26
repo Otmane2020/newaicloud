@@ -25,7 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const menuItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/products', label: 'Catalogue', icon: ShoppingBag },
-  { path: '/merchant', label: 'Google Merchant', icon: ShoppingBag },
+  { path: '/merchant', label: 'Google Merchant', icon: BarChart3 },
   { path: '/shopping', label: 'Google Shopping', icon: ShoppingBag },
   { path: '/search-products', label: 'Recherche IA', icon: MessageSquare },
   { 
@@ -47,7 +47,15 @@ const menuItems = [
       { path: '/blog?tab=campaigns', label: 'Campagnes', icon: CalendarClock },
     ]
   },
-  { path: '/chat', label: 'Chat Smart', icon: MessageSquare },
+  { 
+    path: '/chat', 
+    label: 'Chat Smart', 
+    icon: MessageSquare,
+    subItems: [
+      { path: '/product-source', label: 'Source Produits', icon: ShoppingBag },
+      { path: '/chat', label: 'Paramètres', icon: Settings },
+    ]
+  },
 ];
 
 const bottomMenuItems = [

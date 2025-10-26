@@ -148,7 +148,7 @@ const App = () => (
               }
             />
             <Route
-              path="/search"
+              path="/search-products"
               element={
                 <ProtectedLayout>
                   <SearchProducts />
