@@ -14,6 +14,12 @@ const supabase = createClient(
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
 serve(async (req) => {
+  console.log('🎯 Webhook received:', {
+    method: req.method,
+    hasSignature: !!req.headers.get('stripe-signature'),
+    hasSecret: !!webhookSecret,
+  });
+
   try {
     if (req.method === 'OPTIONS') {
       return new Response(null, { status: 200 });
@@ -25,6 +31,11 @@ serve(async (req) => {
       return new Response('No signature', { status: 400 });
     }
 
+    if (!webhookSecret) {
+      console.error('❌ No webhook secret configured');
+      return new Response('No webhook secret', { status: 400 });
+    }
+
     const body = await req.text();
     let event: Stripe.Event;
 
@@ -32,14 +43,14 @@ serve(async (req) => {
       event = await stripe.webhooks.constructEventAsync(
         body,
         signature,
-        webhookSecret || ''
+        webhookSecret
       );
     } catch (err) {
       console.error('❌ Webhook signature verification failed:', err);
       return new Response(`Webhook Error: ${err instanceof Error ? err.message : 'Unknown'}`, { status: 400 });
     }
 
-    console.log('✅ Webhook event received:', event.type);
+    console.log('📨 Webhook event received:', event.type, 'ID:', event.id);
 
     switch (event.type) {
       case 'checkout.session.completed':
@@ -63,6 +74,7 @@ serve(async (req) => {
         console.log('ℹ️ Unhandled event type:', event.type);
     }
 
+    console.log('✅ Webhook processed successfully');
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   } catch (error) {
     console.error('💥 Webhook error:', error);
@@ -74,190 +86,274 @@ serve(async (req) => {
 });
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const { customer, subscription, metadata, client_reference_id } = session;
-  const userId = client_reference_id || metadata?.user_id;
+  try {
+    console.log('🛒 Processing checkout.session.completed');
+    const { customer, subscription, metadata, client_reference_id } = session;
+    const userId = client_reference_id || metadata?.user_id;
 
-  if (!userId) {
-    console.error('❌ No user_id found in session');
-    return;
-  }
+    if (!userId) {
+      console.error('❌ No user_id found in session');
+      return;
+    }
 
-  console.log('🎉 Checkout completed for user:', userId);
-  console.log('💳 Stripe customer ID:', customer);
+    console.log('👤 User ID:', userId);
+    console.log('💳 Customer ID:', customer);
 
-  // Récupérer les détails utilisateur
-  const { data: userData } = await supabase.auth.admin.getUserById(userId);
-  const userEmail = userData?.user?.email;
-  const userName = userData?.user?.user_metadata?.full_name;
-
-  if (subscription && typeof subscription === 'string') {
-    // Récupérer les détails de la subscription Stripe
-    const subscriptionDetails = await stripe.subscriptions.retrieve(subscription);
+    // Récupérer les détails utilisateur
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
     
-    // Déterminer le statut (trialing pendant l'essai, active après)
-    const status = subscriptionDetails.status;
-    const trialEnd = subscriptionDetails.trial_end 
-      ? new Date(subscriptionDetails.trial_end * 1000).toISOString()
-      : null;
-
-    console.log('📋 Subscription status:', status);
-    console.log('⏰ Trial end:', trialEnd);
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        stripe_customer_id: typeof customer === 'string' ? customer : null,
-        subscription_status: status,
-        current_plan_id: metadata?.plan_id,
-        trial_ends_at: trialEnd,
-        onboarding_completed: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-
-    if (profileError) {
-      console.error('❌ Error updating profile:', profileError);
-    } else {
-      console.log('✅ Profile updated for user:', userId);
+    if (userError || !userData) {
+      console.error('❌ Error fetching user:', userError);
+      return;
     }
+    
+    const userEmail = userData?.user?.email;
+    const userName = userData?.user?.user_metadata?.full_name;
+    console.log('✅ User found:', userEmail);
 
-    const { error: subError } = await supabase
-      .from('subscriptions')
-      .upsert({
-        seller_id: userId,
-        stripe_subscription_id: subscription,
-        plan_id: metadata?.plan_id,
-        status: status,
-        billing_period: metadata?.billing_period || 'monthly',
-        current_period_start: new Date(subscriptionDetails.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscriptionDetails.current_period_end * 1000).toISOString(),
-        trial_start: trialEnd ? new Date().toISOString() : null,
-        trial_end: trialEnd,
-        cancel_at_period_end: false
-      }, {
-        onConflict: 'stripe_subscription_id'
-      });
+    if (subscription && typeof subscription === 'string') {
+      console.log('📝 Fetching subscription details:', subscription);
+      
+      // Récupérer les détails de la subscription Stripe
+      const subscriptionDetails = await stripe.subscriptions.retrieve(subscription);
+      
+      // Déterminer le statut (trialing pendant l'essai, active après)
+      const status = subscriptionDetails.status;
+      const trialEnd = subscriptionDetails.trial_end 
+        ? new Date(subscriptionDetails.trial_end * 1000).toISOString()
+        : null;
 
-    if (subError) {
-      console.error('❌ Error creating subscription:', subError);
-    } else {
-      console.log('✅ Subscription created');
-    }
+      console.log('📋 Subscription status:', status);
+      console.log('⏰ Trial end:', trialEnd);
+      console.log('📦 Plan ID:', metadata?.plan_id);
 
-    // Envoyer l'email de confirmation
-    if (userEmail) {
-      try {
-        await supabase.functions.invoke('send-subscription-confirmed', {
-          body: {
-            email: userEmail,
-            planName: metadata?.plan_name || 'Premium',
-            trialEnd: trialEnd,
-            fullName: userName
-          }
-        });
-        console.log('✅ Confirmation email sent to:', userEmail);
-      } catch (emailError) {
-        console.error('❌ Error sending confirmation email:', emailError);
+      console.log('💾 Updating profile...');
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          stripe_customer_id: typeof customer === 'string' ? customer : null,
+          subscription_status: status,
+          current_plan_id: metadata?.plan_id,
+          trial_ends_at: trialEnd,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('❌ Error updating profile:', profileError);
+      } else {
+        console.log('✅ Profile updated successfully');
       }
+
+      console.log('💾 Creating/updating subscription record...');
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .upsert({
+          seller_id: userId,
+          stripe_subscription_id: subscription,
+          plan_id: metadata?.plan_id,
+          status: status,
+          billing_period: metadata?.billing_period || 'monthly',
+          current_period_start: new Date(subscriptionDetails.current_period_start * 1000).toISOString(),
+          current_period_end: new Date(subscriptionDetails.current_period_end * 1000).toISOString(),
+          trial_start: trialEnd ? new Date().toISOString() : null,
+          trial_end: trialEnd,
+          cancel_at_period_end: false
+        }, {
+          onConflict: 'stripe_subscription_id'
+        });
+
+      if (subError) {
+        console.error('❌ Error creating subscription:', subError);
+      } else {
+        console.log('✅ Subscription record saved');
+      }
+
+      // Envoyer l'email de confirmation
+      if (userEmail) {
+        try {
+          console.log('📧 Sending confirmation email to:', userEmail);
+          await supabase.functions.invoke('send-subscription-confirmed', {
+            body: {
+              email: userEmail,
+              planName: metadata?.plan_name || 'Premium',
+              trialEnd: trialEnd,
+              fullName: userName
+            }
+          });
+          console.log('✅ Confirmation email sent');
+        } catch (emailError) {
+          console.error('❌ Error sending confirmation email:', emailError);
+        }
+      }
+      
+      console.log('✅ Checkout processing completed for user:', userId);
+    } else {
+      console.warn('⚠️ No subscription found in checkout session');
     }
+  } catch (error) {
+    console.error('❌ Error in handleCheckoutCompleted:', error);
+    throw error;
   }
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const { status, current_period_start, current_period_end, cancel_at_period_end, metadata, customer } = subscription;
-  
-  console.log('🔄 Subscription updated:', subscription.id, 'Status:', status);
+  try {
+    console.log('🔄 Processing subscription.updated/created');
+    const { status, current_period_start, current_period_end, cancel_at_period_end, metadata, customer } = subscription;
+    
+    console.log('📋 Subscription:', subscription.id, 'Status:', status);
+    console.log('💳 Customer:', customer);
 
-  // Update subscriptions table
-  const { error } = await supabase
-    .from('subscriptions')
-    .update({
-      status: status,
-      current_period_start: new Date(current_period_start * 1000).toISOString(),
-      current_period_end: new Date(current_period_end * 1000).toISOString(),
-      cancel_at_period_end,
-      updated_at: new Date().toISOString()
-    })
-    .eq('stripe_subscription_id', subscription.id);
-
-  if (error) {
-    console.error('❌ Error updating subscription:', error);
-  } else {
-    console.log('✅ Subscription updated in subscriptions table');
-  }
-
-  // CRITICAL: Also update the profiles table with the subscription status
-  // This is what SubscriptionGuard checks!
-  const userId = metadata?.user_id;
-  if (userId) {
-    const { error: profileError } = await supabase
-      .from('profiles')
+    // Update subscriptions table
+    console.log('💾 Updating subscriptions table...');
+    const { error } = await supabase
+      .from('subscriptions')
       .update({
-        subscription_status: status,
+        status: status,
+        current_period_start: new Date(current_period_start * 1000).toISOString(),
+        current_period_end: new Date(current_period_end * 1000).toISOString(),
+        cancel_at_period_end,
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId);
+      .eq('stripe_subscription_id', subscription.id);
 
-    if (profileError) {
-      console.error('❌ Error updating profile subscription status:', profileError);
+    if (error) {
+      console.error('❌ Error updating subscription:', error);
     } else {
-      console.log('✅ Profile subscription status updated to:', status);
+      console.log('✅ Subscription table updated');
     }
-  } else {
-    console.warn('⚠️ No user_id in subscription metadata, trying to find by customer_id');
-    
-    // Fallback: try to find user by stripe_customer_id
-    if (customer && typeof customer === 'string') {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('stripe_customer_id', customer)
-        .single();
-      
-      if (profile) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            subscription_status: status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', profile.id);
 
+    // CRITICAL: Also update the profiles table with the subscription status
+    // This is what SubscriptionGuard checks!
+    const userId = metadata?.user_id;
+    if (userId) {
+      console.log('👤 Updating profile for user:', userId);
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          subscription_status: status,
+          current_plan_id: subscription.items.data[0].price.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('❌ Error updating profile subscription status:', profileError);
+      } else {
+        console.log('✅ Profile subscription status updated to:', status);
+      }
+    } else {
+      console.warn('⚠️ No user_id in subscription metadata, trying to find by customer_id');
+      
+      // Fallback: try to find user by stripe_customer_id
+      if (customer && typeof customer === 'string') {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('stripe_customer_id', customer)
+          .single();
+        
         if (profileError) {
-          console.error('❌ Error updating profile via customer_id:', profileError);
+          console.error('❌ Error finding profile by customer_id:', profileError);
+        } else if (profile) {
+          console.log('👤 Found profile via customer_id:', profile.id);
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              subscription_status: status,
+              current_plan_id: subscription.items.data[0].price.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', profile.id);
+
+          if (updateError) {
+            console.error('❌ Error updating profile via customer_id:', updateError);
+          } else {
+            console.log('✅ Profile updated via customer_id lookup');
+          }
         } else {
-          console.log('✅ Profile updated via customer_id lookup');
+          console.error('❌ No profile found for customer_id:', customer);
         }
       }
     }
+    
+    console.log('✅ Subscription update completed');
+  } catch (error) {
+    console.error('❌ Error in handleSubscriptionUpdated:', error);
+    throw error;
   }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const { metadata } = subscription;
-  const userId = metadata?.user_id;
+  try {
+    console.log('🗑️ Processing subscription.deleted');
+    const { metadata, customer } = subscription;
+    const userId = metadata?.user_id;
 
-  console.log('❌ Subscription cancelled:', subscription.id);
+    console.log('📋 Subscription:', subscription.id);
+    console.log('💳 Customer:', customer);
 
-  if (userId) {
-    await supabase
-      .from('profiles')
+    if (userId) {
+      console.log('👤 Updating profile for user:', userId);
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          subscription_status: 'cancelled',
+          current_plan_id: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('❌ Error updating profile:', profileError);
+      } else {
+        console.log('✅ Profile updated');
+      }
+    } else if (customer && typeof customer === 'string') {
+      console.log('⚠️ No user_id, trying customer_id lookup');
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('stripe_customer_id', customer)
+        .single();
+
+      if (profileError) {
+        console.error('❌ Error finding profile:', profileError);
+      } else if (profile) {
+        console.log('👤 Found profile:', profile.id);
+        await supabase
+          .from('profiles')
+          .update({
+            subscription_status: 'cancelled',
+            current_plan_id: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', profile.id);
+        console.log('✅ Profile updated via customer lookup');
+      }
+    }
+
+    console.log('💾 Updating subscription record...');
+    const { error: subError } = await supabase
+      .from('subscriptions')
       .update({
-        subscription_status: 'cancelled',
-        current_plan_id: null,
+        status: 'canceled',
+        cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId);
+      .eq('stripe_subscription_id', subscription.id);
+
+    if (subError) {
+      console.error('❌ Error updating subscription:', subError);
+    } else {
+      console.log('✅ Subscription record updated');
+    }
+
+    console.log('✅ Subscription deletion completed');
+  } catch (error) {
+    console.error('❌ Error in handleSubscriptionDeleted:', error);
+    throw error;
   }
-
-  await supabase
-    .from('subscriptions')
-    .update({
-      status: 'canceled',
-      cancelled_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
-    .eq('stripe_subscription_id', subscription.id);
-
-  console.log('✅ Subscription deleted');
 }

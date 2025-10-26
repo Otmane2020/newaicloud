@@ -47,6 +47,7 @@ export default function Onboarding() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [loading, setLoading] = useState(false);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -54,6 +55,11 @@ export default function Onboarding() {
       return;
     }
     loadPlans();
+    
+    // Check if user is returning from checkout
+    if (searchParams.get('checkout') === 'success') {
+      handleCheckSubscription();
+    }
   }, [user, navigate]);
 
   const loadPlans = async () => {
@@ -81,6 +87,47 @@ export default function Onboarding() {
     }
   };
 
+  const handleCheckSubscription = async () => {
+    setCheckingSubscription(true);
+    try {
+      console.log('🔍 Checking subscription status...');
+      
+      // First try check-subscription
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      
+      if (error) {
+        console.error('❌ Error checking subscription:', error);
+        // Fallback: try fix-stuck-subscriptions
+        console.log('🔧 Attempting to fix stuck subscription...');
+        const { data: fixData, error: fixError } = await supabase.functions.invoke('fix-stuck-subscriptions');
+        
+        if (fixError) {
+          throw fixError;
+        }
+        
+        console.log('✅ Fix result:', fixData);
+        
+        if (fixData?.fixed > 0) {
+          toast.success('Votre abonnement a été activé avec succès !');
+          setTimeout(() => navigate('/dashboard'), 1500);
+          return;
+        }
+      }
+      
+      if (data?.subscribed) {
+        toast.success('Abonnement vérifié avec succès !');
+        setTimeout(() => navigate('/dashboard'), 1500);
+      } else {
+        toast.error('Aucun abonnement actif trouvé. Veuillez contacter le support.');
+      }
+    } catch (error) {
+      console.error('💥 Error checking subscription:', error);
+      toast.error('Erreur lors de la vérification de l\'abonnement');
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
+
   const handleSelectPlan = async () => {
     if (!user) {
       toast.error('Vous devez être connecté');
@@ -95,7 +142,7 @@ export default function Onboarding() {
         body: {
           plan_id: selectedPlanId,
           billing_period: billingCycle,
-          success_url: `${window.location.origin}/dashboard?checkout=success`,
+          success_url: `${window.location.origin}/onboarding?checkout=success`,
           cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`
         }
       });
@@ -159,6 +206,24 @@ export default function Onboarding() {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show verification message if returning from checkout
+  if (checkingSubscription || searchParams.get('checkout') === 'success') {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-8">
+        <Card className="p-8 max-w-md text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold mb-2">Vérification de votre abonnement</h2>
+          <p className="text-muted-foreground mb-6">
+            Nous vérifions votre paiement avec Stripe...
+          </p>
+          <Button onClick={handleCheckSubscription} disabled={checkingSubscription}>
+            Vérifier maintenant
+          </Button>
+        </Card>
       </div>
     );
   }
