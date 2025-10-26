@@ -24,23 +24,62 @@ export function BlogOpportunities() {
     loadOpportunities();
   }, []);
 
-  const generateOptimizedTitles = async (opportunities: Opportunity[], userId: string) => {
+  const generateOptimizedTitles = async (opportunities: Opportunity[], userId: string, products: any[]) => {
     try {
-      // Générer des titres optimisés pour plusieurs opportunités en une seule requête
-      const prompt = `Tu es un expert en rédaction d'articles de blog SEO pour e-commerce. Génère des titres accrocheurs et optimisés SEO pour les articles suivants.
+      // Enrichir chaque opportunité avec des exemples de produits
+      const enrichedOpportunities = opportunities.map(opp => {
+        let relevantProducts: any[] = [];
+        
+        if (opp.type === 'guide' && opp.category) {
+          relevantProducts = products.filter(p => 
+            p.category === opp.category || p.product_type === opp.category
+          ).slice(0, 3);
+        } else if (opp.type === 'trend' && opp.category) {
+          relevantProducts = products.filter(p => p.vendor === opp.category).slice(0, 3);
+        } else if (opp.type === 'comparison') {
+          const categories = opp.category.split(' & ');
+          relevantProducts = [
+            ...products.filter(p => p.category === categories[0]).slice(0, 2),
+            ...products.filter(p => p.category === categories[1]).slice(0, 2)
+          ];
+        }
+        
+        return {
+          ...opp,
+          productExamples: relevantProducts.map(p => p.title).join(', ')
+        };
+      });
 
-Pour chaque opportunité, crée un titre qui:
-- Est pertinent et spécifique à la catégorie
-- Attire l'attention du lecteur
-- Est optimisé pour le SEO
-- Est naturel et professionnel en français
-- Fait entre 50-70 caractères
+      const prompt = `Tu es un expert en rédaction de titres d'articles de blog SEO pour e-commerce de meubles et décoration.
 
-Opportunités:
-${opportunities.map((opp, i) => `${i + 1}. Type: ${opp.type === 'guide' ? 'Guide d\'achat' : opp.type === 'comparison' ? 'Comparatif' : 'Collection'}, Catégorie: ${opp.category}, Produits: ${opp.productsCount}`).join('\n')}
+RÈGLES STRICTES pour chaque titre:
+1. Doit être accrocheur et donner envie de cliquer
+2. Doit contenir des mots-clés SEO naturels (pas de keyword stuffing)
+3. Doit être entre 50-70 caractères maximum
+4. Doit être professionnel et en français correct
+5. Doit refléter la vraie valeur de l'article pour le lecteur
+6. Pour les guides: focus sur l'aide à la décision et les conseils d'expert
+7. Pour les collections: focus sur la découverte et l'inspiration
+8. Pour les comparatifs: focus sur le choix éclairé
 
-Réponds UNIQUEMENT avec un JSON array de titres dans cet ordre exact:
-["Titre 1", "Titre 2", "Titre 3", ...]`;
+OPPORTUNITÉS À TRAITER:
+${enrichedOpportunities.map((opp, i) => `
+${i + 1}. ${opp.type === 'guide' ? '📖 GUIDE D\'ACHAT' : opp.type === 'comparison' ? '⚖️ COMPARATIF' : '✨ COLLECTION'}
+   Catégorie: ${opp.category}
+   Nombre de produits: ${opp.productsCount}
+   Exemples de produits: ${opp.productExamples || 'Divers produits'}
+`).join('\n')}
+
+Réponds UNIQUEMENT avec un JSON array valide de ${opportunities.length} titres, dans l'ordre exact ci-dessus.
+Format: ["Titre 1", "Titre 2", "Titre 3", ...]
+
+EXEMPLES de BONS titres:
+- "Canapé Modulable : Guide Complet 2024 pour Bien Choisir"
+- "Chaises Design : Top 10 des Modèles Tendance"
+- "Table Ronde vs Table Rectangulaire : Notre Comparatif"
+- "Collection Scandinave : 15 Meubles Incontournables"
+
+Génère maintenant les ${opportunities.length} titres:`;
 
       const { data } = await supabase.functions.invoke("chat-smart", {
         body: { 
@@ -175,7 +214,7 @@ Réponds UNIQUEMENT avec un JSON array de titres dans cet ordre exact:
 
       // Générer des titres optimisés avec DeepSeek
       toast.info("Optimisation des titres avec IA...");
-      const optimizedTitles = await generateOptimizedTitles(selectedOpps, user.id);
+      const optimizedTitles = await generateOptimizedTitles(selectedOpps, user.id, products);
 
       if (optimizedTitles) {
         selectedOpps.forEach((opp, i) => {
