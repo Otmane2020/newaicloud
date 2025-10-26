@@ -582,7 +582,9 @@ export type Database = {
       }
       shopify_products: {
         Row: {
+          ai_assembly_required: boolean | null
           ai_background_style: string | null
+          ai_care_instructions: string | null
           ai_color: string | null
           ai_condition_notes: string | null
           ai_craftsmanship_level: string | null
@@ -590,6 +592,7 @@ export type Database = {
           ai_finish: string | null
           ai_lighting_type: string | null
           ai_material: string | null
+          ai_package_dimensions: string | null
           ai_pattern: string | null
           ai_presentation_quality: number | null
           ai_shape: string | null
@@ -598,6 +601,10 @@ export type Database = {
           ai_vision_confidence: number | null
           ai_vision_model: string | null
           ai_vision_timestamp: string | null
+          ai_volume: number | null
+          ai_volume_unit: string | null
+          ai_weight: number | null
+          ai_weight_unit: string | null
           category: string | null
           characteristics: string | null
           chat_text: string | null
@@ -674,7 +681,9 @@ export type Database = {
           width_unit: string | null
         }
         Insert: {
+          ai_assembly_required?: boolean | null
           ai_background_style?: string | null
+          ai_care_instructions?: string | null
           ai_color?: string | null
           ai_condition_notes?: string | null
           ai_craftsmanship_level?: string | null
@@ -682,6 +691,7 @@ export type Database = {
           ai_finish?: string | null
           ai_lighting_type?: string | null
           ai_material?: string | null
+          ai_package_dimensions?: string | null
           ai_pattern?: string | null
           ai_presentation_quality?: number | null
           ai_shape?: string | null
@@ -690,6 +700,10 @@ export type Database = {
           ai_vision_confidence?: number | null
           ai_vision_model?: string | null
           ai_vision_timestamp?: string | null
+          ai_volume?: number | null
+          ai_volume_unit?: string | null
+          ai_weight?: number | null
+          ai_weight_unit?: string | null
           category?: string | null
           characteristics?: string | null
           chat_text?: string | null
@@ -766,7 +780,9 @@ export type Database = {
           width_unit?: string | null
         }
         Update: {
+          ai_assembly_required?: boolean | null
           ai_background_style?: string | null
+          ai_care_instructions?: string | null
           ai_color?: string | null
           ai_condition_notes?: string | null
           ai_craftsmanship_level?: string | null
@@ -774,6 +790,7 @@ export type Database = {
           ai_finish?: string | null
           ai_lighting_type?: string | null
           ai_material?: string | null
+          ai_package_dimensions?: string | null
           ai_pattern?: string | null
           ai_presentation_quality?: number | null
           ai_shape?: string | null
@@ -782,6 +799,10 @@ export type Database = {
           ai_vision_confidence?: number | null
           ai_vision_model?: string | null
           ai_vision_timestamp?: string | null
+          ai_volume?: number | null
+          ai_volume_unit?: string | null
+          ai_weight?: number | null
+          ai_weight_unit?: string | null
           category?: string | null
           characteristics?: string | null
           chat_text?: string | null

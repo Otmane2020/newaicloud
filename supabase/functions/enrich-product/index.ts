@@ -147,7 +147,11 @@ INSTRUCTIONS:
 1. Identifie la COULEUR principale (ex: "noir", "blanc", "bois naturel", "transparent")
 2. Identifie le MATÉRIAU principal (ex: "bois", "métal", "verre", "tissu", "cuir")
 3. Identifie la FORME (ex: "rectangulaire", "rond", "carré", "ovale")
-4. Si l'information n'est pas disponible, utilise null
+4. Estime le POIDS approximatif en kg (ex: 15.5)
+5. Identifie le VOLUME approximatif en L ou m³ si pertinent
+6. Détermine si assemblage requis (true/false)
+7. Identifie les instructions d'entretien si mentionnées
+8. Si l'information n'est pas disponible, utilise null
 
 IMPORTANT: Ne génère PAS de titre SEO, meta description, tags ou alt text.
 
@@ -155,7 +159,13 @@ Réponds UNIQUEMENT en JSON valide:
 {
   "ai_color": "couleur_principale",
   "ai_material": "matériau_principal",
-  "ai_shape": "forme"
+  "ai_shape": "forme",
+  "ai_weight": 15.5,
+  "ai_weight_unit": "kg",
+  "ai_volume": 0.5,
+  "ai_volume_unit": "m3",
+  "ai_assembly_required": false,
+  "ai_care_instructions": "instructions"
 }`;
 
     console.log('🤖 Calling DeepSeek API for attribute detection...');
@@ -169,7 +179,7 @@ Réponds UNIQUEMENT en JSON valide:
         role: 'user',
         content: prompt
       }
-    ], 300);
+    ], 400);
 
     console.log('✅ AI response received');
 
@@ -188,6 +198,12 @@ Réponds UNIQUEMENT en JSON valide:
         ai_color: parsedData.ai_color || null,
         ai_material: parsedData.ai_material || null,
         ai_shape: parsedData.ai_shape || null,
+        ai_weight: parsedData.ai_weight || null,
+        ai_weight_unit: parsedData.ai_weight_unit || null,
+        ai_volume: parsedData.ai_volume || null,
+        ai_volume_unit: parsedData.ai_volume_unit || null,
+        ai_assembly_required: parsedData.ai_assembly_required || false,
+        ai_care_instructions: parsedData.ai_care_instructions || null,
         enrichment_status: 'enriched',
         last_enriched_at: new Date().toISOString(),
       })
@@ -219,6 +235,12 @@ Réponds UNIQUEMENT en JSON valide:
           ai_color: parsedData.ai_color,
           ai_material: parsedData.ai_material,
           ai_shape: parsedData.ai_shape,
+          ai_weight: parsedData.ai_weight,
+          ai_weight_unit: parsedData.ai_weight_unit,
+          ai_volume: parsedData.ai_volume,
+          ai_volume_unit: parsedData.ai_volume_unit,
+          ai_assembly_required: parsedData.ai_assembly_required,
+          ai_care_instructions: parsedData.ai_care_instructions,
         }
       }),
       {

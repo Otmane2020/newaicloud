@@ -30,6 +30,7 @@ export default function Chat() {
   const [products, setProducts] = useState<any[]>([]);
   const [showEmbed, setShowEmbed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Chat embed configuration
@@ -39,8 +40,31 @@ export default function Chat() {
   useEffect(() => {
     if (user) {
       loadProducts();
+      createSession();
     }
   }, [user]);
+
+  const createSession = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_sessions')
+        .insert({
+          user_id: user.id,
+          title: 'Nouvelle conversation',
+          message_count: 1,
+          last_message: 'Bonjour ! Comment puis-je vous aider ?'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setSessionId(data.id);
+    } catch (error) {
+      console.error('Error creating session:', error);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -77,6 +101,24 @@ export default function Chat() {
     setInput('');
     setLoading(true);
 
+    // Save user message to session
+    if (sessionId) {
+      await supabase.from('chat_messages').insert({
+        session_id: sessionId,
+        role: 'user',
+        content: input
+      });
+
+      await supabase
+        .from('chat_sessions')
+        .update({
+          last_message: input,
+          message_count: messages.length + 1,
+          title: messages.length === 1 ? input.substring(0, 50) : undefined
+        })
+        .eq('id', sessionId);
+    }
+
     try {
       // Create a context-aware prompt with product data
       const context = `Tu es un assistant commercial intelligent connecté à un catalogue Shopify. 
@@ -104,6 +146,23 @@ Réponds de manière professionnelle et suggère des produits pertinents si appr
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Save assistant message to session
+      if (sessionId) {
+        await supabase.from('chat_messages').insert({
+          session_id: sessionId,
+          role: 'assistant',
+          content: assistantMessage.content
+        });
+
+        await supabase
+          .from('chat_sessions')
+          .update({
+            last_message: assistantMessage.content.substring(0, 200),
+            message_count: messages.length + 2
+          })
+          .eq('id', sessionId);
+      }
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast.error(error.message || 'Erreur lors de l\'envoi du message');
