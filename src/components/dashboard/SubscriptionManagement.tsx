@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, CreditCard, Calendar, Package } from 'lucide-react';
+import { Loader2, CreditCard, Calendar, Package, Check, Zap, Crown } from 'lucide-react';
 
 interface Plan {
   id: string;
@@ -14,6 +14,13 @@ interface Plan {
   price_yearly: number;
   stripe_price_id_monthly: string;
   stripe_price_id_yearly: string;
+  max_products: number;
+  max_optimizations_monthly: number;
+  max_articles_monthly: number;
+  max_chat_responses_monthly: number;
+  features?: any;
+  popular?: boolean;
+  best_value?: boolean;
 }
 
 export function SubscriptionManagement() {
@@ -79,6 +86,28 @@ export function SubscriptionManagement() {
     }
   };
 
+  const handleUpgrade = async (plan: Plan) => {
+    if (currentPlan?.id === plan.id) return;
+    
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId: plan.stripe_price_id_monthly }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+      toast.error('Erreur lors de la création du paiement');
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
   const handleManageSubscription = async () => {
     setPortalLoading(true);
     try {
@@ -97,6 +126,12 @@ export function SubscriptionManagement() {
     }
   };
 
+  const getPlanIcon = (planName: string) => {
+    if (planName.toLowerCase().includes('enterprise')) return <Crown className="w-6 h-6" />;
+    if (planName.toLowerCase().includes('pro')) return <Zap className="w-6 h-6" />;
+    return <Package className="w-6 h-6" />;
+  };
+
   if (loading) {
     return (
       <Card className="p-6 flex items-center justify-center min-h-[400px]">
@@ -106,81 +141,124 @@ export function SubscriptionManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <h2 className="text-2xl font-bold mb-6">Mon abonnement</h2>
-        
-        {currentPlan ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Package className="w-8 h-8 text-primary" />
-                <div>
-                  <h3 className="text-xl font-semibold">{currentPlan.name}</h3>
-                  <p className="text-sm text-muted-foreground">Plan actuel</p>
-                </div>
+    <div className="space-y-8">
+      {/* Current Plan Card */}
+      {currentPlan && (
+        <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="text-primary">
+                {getPlanIcon(currentPlan.name)}
               </div>
-              <Badge variant="default" className="bg-green-500 hover:bg-green-600">Actif</Badge>
+              <div>
+                <h3 className="text-xl font-semibold">{currentPlan.name}</h3>
+                <p className="text-sm text-muted-foreground">Plan actuel</p>
+              </div>
             </div>
+            <Badge className="bg-success text-success-foreground">Actif</Badge>
+          </div>
 
-            {subscriptionEnd && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                Renouvellement le {new Date(subscriptionEnd).toLocaleDateString('fr-FR')}
-              </div>
+          {subscriptionEnd && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <Calendar className="w-4 h-4" />
+              Renouvellement le {new Date(subscriptionEnd).toLocaleDateString('fr-FR')}
+            </div>
+          )}
+
+          <Button 
+            onClick={handleManageSubscription}
+            disabled={portalLoading}
+            variant="outline"
+            className="w-full"
+          >
+            {portalLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Chargement...
+              </>
+            ) : (
+              <>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Gérer la facturation
+              </>
             )}
+          </Button>
+        </Card>
+      )}
 
-            <Button 
-              onClick={handleManageSubscription}
-              disabled={portalLoading}
-              variant="outline"
-              className="w-full"
-            >
-              {portalLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Chargement...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Gérer mon abonnement
-                </>
-              )}
-            </Button>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">
-              Vous n'avez pas d'abonnement actif
-            </p>
-            <Button onClick={() => window.location.href = '/onboarding'}>
-              Choisir un plan
-            </Button>
-          </div>
-        )}
-      </Card>
+      {/* Plans Comparison */}
+      <div>
+        <h2 className="text-2xl font-bold mb-6">
+          {currentPlan ? 'Modifier votre plan' : 'Choisissez votre plan'}
+        </h2>
+        
+        <div className="grid md:grid-cols-3 gap-6">
+          {plans.map((plan) => {
+            const isCurrentPlan = currentPlan?.id === plan.id;
+            const features = [
+              `${plan.max_products} produits`,
+              `${plan.max_optimizations_monthly} optimisations SEO/mois`,
+              `${plan.max_articles_monthly} articles/mois`,
+              `${plan.max_chat_responses_monthly} réponses chat/mois`,
+            ];
 
-      <Card className="p-6">
-        <h3 className="text-xl font-bold mb-4">Plans disponibles</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          {plans.map((plan) => (
-            <Card 
-              key={plan.id} 
-              className={`p-4 ${currentPlan?.id === plan.id ? 'border-2 border-primary' : ''}`}
-            >
-              <h4 className="font-semibold text-lg">{plan.name}</h4>
-                <p className="text-2xl font-bold mt-2">
-                  ${plan.price_monthly}
-                  <span className="text-sm font-normal text-muted-foreground">/mois</span>
-                </p>
-              {currentPlan?.id === plan.id && (
-                <Badge variant="default" className="bg-green-500 hover:bg-green-600 mt-2">Plan actuel</Badge>
-              )}
-            </Card>
-          ))}
+            return (
+              <Card 
+                key={plan.id}
+                className={`relative p-6 transition-all hover:shadow-lg ${
+                  isCurrentPlan ? 'border-2 border-primary shadow-lg' : ''
+                } ${plan.popular ? 'border-primary/50' : ''}`}
+              >
+                {plan.popular && (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
+                    Populaire
+                  </Badge>
+                )}
+                {plan.best_value && (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-success">
+                    Meilleure valeur
+                  </Badge>
+                )}
+
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mb-4">
+                    {getPlanIcon(plan.name)}
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-4xl font-bold">${plan.price_monthly}</span>
+                    <span className="text-muted-foreground">/mois</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-3 mb-6">
+                  {features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  onClick={() => handleUpgrade(plan)}
+                  disabled={isCurrentPlan || portalLoading}
+                  variant={isCurrentPlan ? 'outline' : 'default'}
+                  className="w-full"
+                >
+                  {portalLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isCurrentPlan ? (
+                    'Plan actuel'
+                  ) : (
+                    'Choisir ce plan'
+                  )}
+                </Button>
+              </Card>
+            );
+          })}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
