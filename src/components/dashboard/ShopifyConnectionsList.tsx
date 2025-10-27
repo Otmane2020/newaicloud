@@ -172,6 +172,41 @@ export function ShopifyConnectionsList() {
     if (!deleteStore) return;
 
     try {
+      // 1. Delete all product images associated with products from this store
+      const { data: storeProducts } = await supabase
+        .from('shopify_products')
+        .select('id')
+        .eq('store_id', deleteStore.id);
+
+      if (storeProducts && storeProducts.length > 0) {
+        const productIds = storeProducts.map(p => p.id);
+        
+        // Delete product images
+        await supabase
+          .from('product_images')
+          .delete()
+          .in('product_id', productIds);
+      }
+
+      // 2. Delete all products from this store
+      await supabase
+        .from('shopify_products')
+        .delete()
+        .eq('store_id', deleteStore.id);
+
+      // 3. Delete sync logs for this store
+      await supabase
+        .from('sync_logs')
+        .delete()
+        .eq('store_id', deleteStore.id);
+
+      // 4. Delete import jobs for this store
+      await supabase
+        .from('import_jobs')
+        .delete()
+        .eq('store_id', deleteStore.id);
+
+      // 5. Finally delete the store connection
       const { error } = await supabase
         .from('shopify_connections')
         .delete()
@@ -179,7 +214,7 @@ export function ShopifyConnectionsList() {
 
       if (error) throw error;
 
-      toast.success('Boutique supprimée avec succès');
+      toast.success('Boutique et toutes ses données supprimées avec succès');
       setDeleteStore(null);
       await loadStores();
     } catch (error) {
@@ -413,16 +448,31 @@ export function ShopifyConnectionsList() {
       <AlertDialog open={!!deleteStore} onOpenChange={(open) => !open && setDeleteStore(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer la boutique ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer la connexion à <strong>{deleteStore?.store_url}</strong> ?
-              Cette action ne supprimera pas les produits déjà importés.
+            <AlertDialogTitle>⚠️ Supprimer la boutique ?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Êtes-vous sûr de vouloir supprimer la connexion à <strong>{deleteStore?.store_url}</strong> ?
+              </p>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <p className="font-semibold text-destructive mb-2">⚠️ Attention : Cette action est irréversible</p>
+                <p className="text-sm text-muted-foreground">
+                  Tous les éléments suivants seront <strong className="text-destructive">définitivement supprimés</strong> :
+                </p>
+                <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
+                  <li>Tous les produits importés de cette boutique</li>
+                  <li>Toutes les images de produits</li>
+                  <li>Toutes les optimisations SEO (titres, descriptions, tags)</li>
+                  <li>Tous les textes ALT des images</li>
+                  <li>Toutes les pages Shopify importées</li>
+                  <li>Toutes les données de synchronisation</li>
+                </ul>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteStore} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Supprimer
+              Oui, tout supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

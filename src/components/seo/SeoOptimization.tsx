@@ -346,6 +346,135 @@ export function SeoOptimization() {
         </div>
       </Card>
 
+      {/* Filters & Stats */}
+      <Card className="p-6">
+        <div className="flex flex-wrap gap-3 mb-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setCurrentPage(1);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
+                activeTab === tab.id
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {tab.label}
+              <Badge variant={activeTab === tab.id ? 'secondary' : 'outline'}>
+                {tab.count}
+              </Badge>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Rechercher un produit..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+            >
+              {selectedProducts.size === filteredProducts.length ? 'Désélectionner' : 'Tout sélectionner'}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleGenerateForSelected}
+              disabled={generating || selectedProducts.size === 0}
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Optimiser ({selectedProducts.size})
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Products List */}
+      <div className="space-y-3">
+        {paginatedProducts.map((product) => (
+          <Card key={product.id} className="p-4 hover:shadow-md transition">
+            <div className="flex items-center gap-4">
+              <input
+                type="checkbox"
+                checked={selectedProducts.has(product.id)}
+                onChange={() => handleSelectProduct(product.id)}
+                className="w-5 h-5"
+              />
+              {product.image_url && (
+                <img
+                  src={product.image_url}
+                  alt={product.title}
+                  className="w-16 h-16 object-cover rounded"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold truncate">{product.title}</h3>
+                <p className="text-sm text-muted-foreground">{product.vendor}</p>
+                {product.seo_title && (
+                  <p className="text-xs text-green-600 mt-1">✓ SEO optimisé</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
+                  {product.enrichment_status === 'enriched' ? 'Enrichi' : 'En attente'}
+                </Badge>
+                {product.seo_synced_to_shopify && (
+                  <Badge variant="outline" className="bg-green-50">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Synchro
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            Précédent
+          </Button>
+          <span className="text-sm">
+            Page {currentPage} sur {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Suivant
+          </Button>
+        </div>
+      )}
       
       <OptimizationProgressDialog
         open={showProgressDialog}

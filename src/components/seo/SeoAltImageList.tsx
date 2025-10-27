@@ -45,43 +45,53 @@ export function SeoAltImageList() {
     try {
       setLoading(true);
       
-      // Fetch all products with their images
-      const { data: productsData, error: productsError } = await supabase
-        .from('shopify_products')
-        .select('id, title, handle')
-        .eq('seller_id', user?.id);
+      // Fetch all images with their product info
+      const { data: imagesData, error: imagesError } = await supabase
+        .from('product_images')
+        .select(`
+          *,
+          shopify_products!inner(
+            id,
+            title,
+            handle,
+            seller_id
+          )
+        `)
+        .eq('shopify_products.seller_id', user?.id)
+        .order('product_id', { ascending: true })
+        .order('position', { ascending: true });
 
-      if (productsError) throw productsError;
+      if (imagesError) throw imagesError;
 
-      if (!productsData || productsData.length === 0) {
+      if (!imagesData || imagesData.length === 0) {
         setProducts([]);
         setLoading(false);
         return;
       }
 
-      // Fetch all images for all products
-      const { data: imagesData, error: imagesError } = await supabase
-        .from('product_images')
-        .select('*')
-        .in('product_id', productsData.map(p => p.id))
-        .order('position', { ascending: true });
-
-      if (imagesError) throw imagesError;
-
       // Group images by product
-      const productsWithImages: ProductWithImages[] = productsData
-        .map(product => {
-          const productImages = (imagesData || []).filter(img => img.product_id === product.id);
-          return {
-            id: product.id,
-            title: product.title,
-            handle: product.handle,
-            images: productImages
-          };
-        })
-        .filter(p => p.images.length > 0);
+      const productsMap = new Map<string, ProductWithImages>();
+      
+      imagesData.forEach((img: any) => {
+        const productId = img.shopify_products.id;
+        if (!productsMap.has(productId)) {
+          productsMap.set(productId, {
+            id: productId,
+            title: img.shopify_products.title,
+            handle: img.shopify_products.handle,
+            images: []
+          });
+        }
+        productsMap.get(productId)!.images.push({
+          id: img.id,
+          src: img.src,
+          alt_text: img.alt_text,
+          position: img.position,
+          product_id: productId
+        });
+      });
 
-      setProducts(productsWithImages);
+      setProducts(Array.from(productsMap.values()));
     } catch (error) {
       console.error('Error fetching images:', error);
       toast.error('Erreur lors du chargement des images');

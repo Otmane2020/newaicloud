@@ -4,7 +4,8 @@ import { SeoOptimization } from '@/components/seo/SeoOptimization';
 import { TagOptimization } from '@/components/seo/TagOptimization';
 import { SeoAltImage } from '@/components/seo/SeoAltImage';
 import { SeoAutomation } from '@/components/seo/SeoAutomation';
-import { Sparkles, Tags, Image, Settings } from 'lucide-react';
+import { PageOptimization } from '@/components/seo/PageOptimization';
+import { Sparkles, Tags, Image, Settings, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +15,7 @@ export default function SEO() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['optimization', 'tags', 'alt', 'automation'].includes(tab)) {
+    if (tab && ['optimization', 'tags', 'pages', 'alt', 'automation'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -31,6 +32,12 @@ export default function SEO() {
       label: 'Tags',
       icon: Tags,
       description: 'Organisation'
+    },
+    {
+      id: 'pages',
+      label: 'Pages',
+      icon: FileText,
+      description: 'Pages Shopify'
     },
     {
       id: 'alt',
@@ -100,6 +107,7 @@ export default function SEO() {
       <div className="mt-6">
         {activeTab === 'optimization' && <SeoOptimization />}
         {activeTab === 'tags' && <TagOptimization />}
+        {activeTab === 'pages' && <PageOptimization />}
         {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'automation' && <SeoAutomation />}
       </div>

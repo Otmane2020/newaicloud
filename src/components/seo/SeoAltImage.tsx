@@ -143,13 +143,13 @@ export function SeoAltImage() {
     setSelectedImages(newSelected);
   };
 
-  const handleGenerateForSelected = async () => {
+  const handleGenerateForSelected = async (useVision = false) => {
     const imagesToGenerate = images.filter(
-      img => selectedImages.has(img.id) && !img.alt_text
+      img => selectedImages.has(img.id)
     );
 
     if (imagesToGenerate.length === 0) {
-      toast.info('Aucune image à traiter');
+      toast.info('Aucune image sélectionnée');
       return;
     }
 
@@ -158,9 +158,11 @@ export function SeoAltImage() {
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: imagesToGenerate.length });
 
+    const functionName = useVision ? 'generate-alt-texts-vision' : 'generate-alt-texts';
+
     for (let i = 0; i < imagesToGenerate.length; i++) {
       try {
-        await supabase.functions.invoke('generate-alt-texts', {
+        await supabase.functions.invoke(functionName, {
           body: { imageId: imagesToGenerate[i].id }
         });
         setProgress({ current: i + 1, total: imagesToGenerate.length });
@@ -368,7 +370,7 @@ export function SeoAltImage() {
             {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
           </Button>
           <Button
-            onClick={handleGenerateForSelected}
+            onClick={() => handleGenerateForSelected(false)}
             disabled={generating || selectedImages.size === 0}
             className="gap-2"
           >
@@ -381,6 +383,24 @@ export function SeoAltImage() {
               <>
                 <Sparkles className="w-4 h-4" />
                 Générer ALT ({selectedImages.size})
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={() => handleGenerateForSelected(true)}
+            disabled={generating || selectedImages.size === 0}
+            variant="outline"
+            className="gap-2"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Vision IA...
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4" />
+                ALT Vision IA ({selectedImages.size})
               </>
             )}
           </Button>

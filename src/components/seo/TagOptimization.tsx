@@ -152,18 +152,20 @@ export function TagOptimization() {
     await handleBulkGenerate(productsToGenerate.map(p => p.id));
   };
 
-  const handleGenerateSelected = async () => {
-    const productsToGenerate = Array.from(selectedProducts).filter(id =>
-      !products.find(p => p.id === id)?.tags
-    );
+  const handleGenerateSelected = async (force = false) => {
+    const productsToGenerate = force 
+      ? Array.from(selectedProducts)
+      : Array.from(selectedProducts).filter(id =>
+          !products.find(p => p.id === id)?.tags
+        );
     if (productsToGenerate.length === 0) {
-      toast.info('Les produits sélectionnés ont déjà des tags');
+      toast.info('Aucun produit sélectionné');
       return;
     }
-    await handleBulkGenerate(productsToGenerate);
+    await handleBulkGenerate(productsToGenerate, force);
   };
 
-  const handleBulkGenerate = async (productIds: string[]) => {
+  const handleBulkGenerate = async (productIds: string[], force = false) => {
     setGenerating(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
@@ -182,7 +184,7 @@ export function TagOptimization() {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ productId: productIds[i] }),
+          body: JSON.stringify({ productId: productIds[i], force }),
         });
 
         const result = await response.json();
@@ -459,11 +461,20 @@ export function TagOptimization() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleGenerateSelected}
+              onClick={() => handleGenerateSelected(false)}
               disabled={generating || selectedProducts.size === 0}
             >
               <Zap className="w-4 h-4 mr-2" />
               Optimiser sélection ({selectedProducts.size})
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleGenerateSelected(true)}
+              disabled={generating || selectedProducts.size === 0}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Régénérer ({selectedProducts.size})
             </Button>
             <Button
               variant="outline"
