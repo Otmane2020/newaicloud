@@ -231,13 +231,27 @@ Deno.serve(async (req: Request) => {
         .eq('id', storeId);
     }
 
+    const { data: limitsData } = await supabaseServiceClient.functions.invoke(
+      'check-usage-limits',
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    const maxProducts = limitsData?.limits?.max_products || 50;
+    const currentProductsCount = limitsData?.usage?.products_count || 0;
+    const availableSlots = Math.max(0, maxProducts - currentProductsCount);
+
+    console.log(`User can import up to ${availableSlots} more products (current: ${currentProductsCount}/${maxProducts})`);
+
     let allProducts: ShopifyProduct[] = [];
     let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=50&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
     let pageCount = 0;
+    let quotaReached = false;
 
-    console.log(`Starting import from ${cleanShopName} - NO PAGE LIMIT`);
+    console.log(`Starting import from ${cleanShopName} - Limited to ${availableSlots} products`);
 
-    while (nextPageUrl) {
+    while (nextPageUrl && !quotaReached) {
       pageCount++;
       console.log(`Fetching page ${pageCount}: ${nextPageUrl}`);
 
@@ -266,6 +280,17 @@ Deno.serve(async (req: Request) => {
       const pageProducts = shopifyData.products || [];
 
       console.log(`Page ${pageCount}: Fetched ${pageProducts.length} products`);
+      
+      // Check if adding these products would exceed quota
+      if (allProducts.length + pageProducts.length > availableSlots) {
+        // Only take what we can
+        const remainingSlots = availableSlots - allProducts.length;
+        allProducts = allProducts.concat(pageProducts.slice(0, remainingSlots));
+        quotaReached = true;
+        console.log(`Quota reached. Imported ${allProducts.length} products (limit: ${availableSlots})`);
+        break;
+      }
+      
       allProducts = allProducts.concat(pageProducts);
 
       const linkHeader = shopifyResponse.headers.get("Link");
@@ -471,14 +496,15 @@ Deno.serve(async (req: Request) => {
       console.error("Sync log insert error:", logError);
     }
 
-    // Mark job as completed
+    // Mark job as completed or quota_reached
     await supabaseServiceClient
       .from('import_jobs')
       .update({
-        status: 'completed',
+        status: quotaReached ? 'quota_reached' : 'completed',
         total_pages: pageCount,
         products_processed: products.length,
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
+        error_message: quotaReached ? `Quota atteint (${maxProducts} produits max)` : null
       })
       .eq('id', importJob.id);
 
