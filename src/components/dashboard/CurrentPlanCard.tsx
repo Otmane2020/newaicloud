@@ -31,22 +31,38 @@ export function CurrentPlanCard() {
 
   const loadSubscriptionData = async () => {
     try {
-      const { data: subData, error: subError } = await supabase.functions.invoke('check-subscription');
-      
-      if (subError) throw subError;
-      
-      if (subData?.subscribed && subData?.product_id) {
-        const { data: plansData } = await supabase
-          .from('subscription_plans')
-          .select('*');
+      // Récupérer d'abord les données du profil Supabase
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('current_plan_id, subscription_status, trial_ends_at')
+        .eq('id', user?.id)
+        .single();
 
-        const plan = plansData?.find((p: Plan) => {
-          return p.stripe_price_id_monthly === subData.plan_id || 
-                 p.stripe_price_id_yearly === subData.plan_id;
-        });
+      const { data: plansData } = await supabase
+        .from('subscription_plans')
+        .select('*');
 
-        setCurrentPlan(plan || null);
-        setSubscriptionEnd(subData.subscription_end);
+      // Si l'utilisateur a un plan dans Supabase, l'utiliser directement
+      if (profileData?.current_plan_id) {
+        const plan = plansData?.find((p: Plan) => p.id === profileData.current_plan_id);
+        
+        if (plan) {
+          const isTrialing = profileData.subscription_status === 'trialing';
+          setCurrentPlan({
+            ...plan,
+            name: isTrialing ? `${plan.name} (Trial)` : plan.name
+          });
+          
+          // Si en trial, utiliser trial_ends_at, sinon appeler check-subscription pour Stripe
+          if (isTrialing) {
+            setSubscriptionEnd(profileData.trial_ends_at);
+          } else {
+            const { data: subData } = await supabase.functions.invoke('check-subscription');
+            if (subData?.subscription_end) {
+              setSubscriptionEnd(subData.subscription_end);
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading subscription:', error);
@@ -101,8 +117,19 @@ export function CurrentPlanCard() {
           {subscriptionEnd && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="w-4 h-4" />
-              {t('account.renewal_date')}: {new Date(subscriptionEnd).toLocaleDateString('fr-FR')}
+              {currentPlan.name.includes('Trial') ? 'Expire le' : t('account.renewal_date')}: {new Date(subscriptionEnd).toLocaleDateString('fr-FR')}
             </div>
+          )}
+
+          {currentPlan.name.includes('Trial') && (
+            <Button 
+              onClick={() => window.location.href = '/subscription'}
+              variant="default"
+              className="w-full"
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Activer le plan complet
+            </Button>
           )}
 
           <Button 

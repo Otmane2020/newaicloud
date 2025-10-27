@@ -35,6 +35,9 @@ interface UsageLimits {
   isTrialing: boolean;
   isPaid: boolean;
   planId: string;
+  trialEndsAt: string | null;
+  currentPlanId: string | null;
+  subscriptionStatus: string | null;
 }
 
 export const useUsageLimits = () => {
@@ -44,11 +47,26 @@ export const useUsageLimits = () => {
   const checkLimits = async () => {
     try {
       setLoading(true);
+      const { data: user } = await supabase.auth.getUser();
       const { data, error } = await supabase.functions.invoke('check-usage-limits');
       
       if (error) throw error;
       
-      setLimits(data);
+      // Récupérer les infos du profil pour le trial
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('current_plan_id, subscription_status, trial_ends_at')
+        .eq('id', user.user?.id)
+        .single();
+      
+      const enrichedData = {
+        ...data,
+        trialEndsAt: profileData?.trial_ends_at || null,
+        currentPlanId: profileData?.current_plan_id || null,
+        subscriptionStatus: profileData?.subscription_status || null,
+      };
+      
+      setLimits(enrichedData);
     } catch (error) {
       console.error('Error checking usage limits:', error);
     } finally {
