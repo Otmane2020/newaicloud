@@ -24,9 +24,9 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Produit</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#features" className="hover:text-primary transition-colors">Fonctionnalités</a></li>
-              <li><a href="#pricing" className="hover:text-primary transition-colors">Tarifs</a></li>
-              <li><a href="#demo" className="hover:text-primary transition-colors">Démo</a></li>
+              <li><a href="/#features" className="hover:text-primary transition-colors">Fonctionnalités</a></li>
+              <li><a href="/#pricing" className="hover:text-primary transition-colors">Tarifs</a></li>
+              <li><a href="/auth" className="hover:text-primary transition-colors">Démo</a></li>
             </ul>
           </div>
 
@@ -34,9 +34,9 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Ressources</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#docs" className="hover:text-primary transition-colors">Documentation</a></li>
-              <li><a href="#blog" className="hover:text-primary transition-colors">Blog</a></li>
-              <li><a href="#support" className="hover:text-primary transition-colors">Support</a></li>
+              <li><a href="https://docs.newai.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Documentation</a></li>
+              <li><a href="/blog" className="hover:text-primary transition-colors">Blog</a></li>
+              <li><a href="mailto:support@newai.com" className="hover:text-primary transition-colors">Support</a></li>
             </ul>
           </div>
 
@@ -44,9 +44,9 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Légal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#privacy" className="hover:text-primary transition-colors">Confidentialité</a></li>
-              <li><a href="#terms" className="hover:text-primary transition-colors">CGU</a></li>
-              <li><a href="#cookies" className="hover:text-primary transition-colors">Cookies</a></li>
+              <li><a href="/privacy" className="hover:text-primary transition-colors">Confidentialité</a></li>
+              <li><a href="/terms" className="hover:text-primary transition-colors">CGU</a></li>
+              <li><a href="/privacy#cookies" className="hover:text-primary transition-colors">Cookies</a></li>
             </ul>
           </div>
         </div>
