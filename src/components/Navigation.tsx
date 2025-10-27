@@ -75,9 +75,10 @@ export function Navigation() {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog']);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userPlan, setUserPlan] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkAdminAndPlan = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase.rpc('has_role', {
@@ -85,9 +86,31 @@ export function Navigation() {
           _role: 'admin'
         });
         setIsAdmin(data || false);
+
+        // Get user plan
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('current_plan_id, subscription_status')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.current_plan_id) {
+          const { data: plan } = await supabase
+            .from('subscription_plans')
+            .select('name')
+            .eq('id', profile.current_plan_id)
+            .single();
+
+          if (plan) {
+            const planName = profile.subscription_status === 'trialing' 
+              ? `${plan.name} (Trial)` 
+              : plan.name;
+            setUserPlan(planName);
+          }
+        }
       }
     };
-    checkAdmin();
+    checkAdminAndPlan();
   }, []);
 
   const handleLogout = async () => {
@@ -213,6 +236,14 @@ export function Navigation() {
 
         {/* Bottom Menu */}
         <div className="px-2 pb-2 space-y-1 border-t border-gray-200 pt-2">
+          {!collapsed && userPlan && (
+            <div className="px-3 py-2 mb-2 text-center">
+              <div className="text-xs text-muted-foreground mb-1">Plan actuel</div>
+              <div className="px-2 py-1 bg-gradient-primary text-white rounded-md text-xs font-semibold">
+                {userPlan}
+              </div>
+            </div>
+          )}
           {!collapsed && (
             <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Paramètres

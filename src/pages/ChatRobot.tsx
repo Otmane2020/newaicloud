@@ -147,37 +147,54 @@ export default function ChatRobot() {
   };
 
   return (
-    <div className={`${fullscreen ? "fixed inset-0 z-50" : "min-h-screen"} bg-gradient-subtle flex flex-col`}>
-      {/* Header */}
-      <header className="border-b bg-background p-4 flex-shrink-0">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
+    <div className={`${fullscreen ? "fixed inset-0 z-50" : "h-screen"} flex flex-col`}>
+      {/* PARTIE 1: Header fixe avec statut d'écoute */}
+      <header className="flex-shrink-0 bg-card border-b shadow-lg">
+        <div className="container mx-auto p-6">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <span className="font-bold text-2xl bg-gradient-primary bg-clip-text text-transparent">
+                  NewAI Robot
+                </span>
               </div>
-              <span className="font-bold text-2xl bg-gradient-primary bg-clip-text text-transparent">
-                NewAI Robot
+              <Button variant="outline" onClick={() => navigate("/dashboard")}>
+                <Home className="w-4 h-4 mr-2" />
+                Accueil
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon" onClick={toggleFullscreen}>
+                {fullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => navigate("/chat-settings")}>
+                <Settings className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Animation d'écoute */}
+          {listening && (
+            <div className="flex items-center justify-center gap-4 py-4 animate-fade-in">
+              {/* Ondes sonores animées */}
+              <div className="flex gap-1.5">
+                <div className="w-1.5 rounded-full bg-primary animate-sound-wave-1" style={{ height: '1.5rem' }} />
+                <div className="w-1.5 rounded-full bg-primary animate-sound-wave-2" style={{ height: '1.5rem' }} />
+                <div className="w-1.5 rounded-full bg-primary animate-sound-wave-3" style={{ height: '1.5rem' }} />
+              </div>
+              <span className="text-lg font-semibold text-primary animate-pulse">
+                Écoute en cours...
               </span>
             </div>
-            <Button variant="outline" onClick={() => navigate("/dashboard")}>
-              <Home className="w-4 h-4 mr-2" />
-              Accueil
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={toggleFullscreen}>
-              {fullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => navigate("/chat-settings")}>
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
+          )}
         </div>
       </header>
 
-      {/* Chat Zone */}
-      <div className="flex-1 overflow-y-auto p-6">
+      {/* PARTIE 2: Zone de chat scrollable */}
+      <div className="flex-1 overflow-y-auto bg-gradient-subtle p-6">
         <div className="container mx-auto max-w-4xl space-y-6">
           {messages.length === 0 ? (
             <div className="text-center py-20">
@@ -217,31 +234,33 @@ export default function ChatRobot() {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="border-t bg-background p-6 flex-shrink-0">
+      {/* PARTIE 3: Contrôles micro (sticky bottom) */}
+      <div className="flex-shrink-0 bg-card border-t shadow-lg p-6">
         <div className="container mx-auto flex justify-center items-center gap-4">
           <Button
             size="lg"
-            className={`w-20 h-20 rounded-full ${listening ? "bg-destructive hover:bg-destructive/90" : ""}`}
+            className={`w-24 h-24 rounded-full relative ${listening ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"}`}
             onClick={listening ? stopListening : startListening}
             disabled={processing}
           >
             {processing ? (
-              <Loader2 className="w-8 h-8 animate-spin" />
+              <Loader2 className="w-10 h-10 animate-spin" />
             ) : listening ? (
-              <MicOff className="w-8 h-8" />
+              <div className="relative">
+                <MicOff className="w-10 h-10" />
+                {/* Cercles animés qui s'agrandissent */}
+                <div className="absolute inset-0 animate-ripple rounded-full bg-destructive/50" />
+                <div className="absolute inset-0 animate-ripple rounded-full bg-destructive/30" style={{ animationDelay: '0.5s' }} />
+              </div>
             ) : (
-              <Mic className="w-8 h-8" />
+              <Mic className="w-10 h-10" />
             )}
           </Button>
-          {listening && (
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-destructive rounded-full animate-pulse" />
-              <span className="text-sm font-medium">Écoute en cours...</span>
-            </div>
-          )}
           {processing && (
-            <span className="text-sm text-muted-foreground">Traitement en cours...</span>
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span className="text-sm font-medium text-muted-foreground">Traitement en cours...</span>
+            </div>
           )}
         </div>
       </div>

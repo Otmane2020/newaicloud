@@ -56,6 +56,22 @@ export default function Integration() {
         </div>
 
         <div className="space-y-6">
+          {/* Encart explicatif OAuth */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  Connexion OAuth recommandée
+                </h3>
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  La méthode OAuth est plus sécurisée et permet une connexion en un clic. 
+                  Votre token d'accès est géré automatiquement et renouvelé si nécessaire.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <Tabs value={connectionMode} onValueChange={setConnectionMode}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="oauth">
