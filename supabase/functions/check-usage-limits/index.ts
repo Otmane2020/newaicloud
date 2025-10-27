@@ -66,6 +66,7 @@ serve(async (req) => {
       chat_responses_count: 0,
       shopify_requests_count: 0,
       products_count: 0,
+      shopify_stores_count: 0,
     };
 
     // Determine limits based on subscription status
@@ -77,6 +78,7 @@ serve(async (req) => {
         max_chat_responses: plan.trial_max_chat_responses || 50,
         max_shopify_requests: plan.trial_max_shopify_requests || 20,
         max_products: plan.trial_max_products || 50,
+        max_shopify_stores: 1, // Trial users get 1 store
       };
     } else {
       limits = {
@@ -85,6 +87,7 @@ serve(async (req) => {
         max_chat_responses: plan.max_chat_responses_monthly || 200,
         max_shopify_requests: plan.max_shopify_requests_monthly || 100,
         max_products: plan.max_products || 100,
+        max_shopify_stores: plan.max_shopify_stores || 1,
       };
     }
 
@@ -94,6 +97,7 @@ serve(async (req) => {
     const canUseChat = currentUsage.chat_responses_count < limits.max_chat_responses;
     const canUseShopifySearch = currentUsage.shopify_requests_count < limits.max_shopify_requests;
     const canAddProducts = currentUsage.products_count < limits.max_products;
+    const canAddShopifyStore = currentUsage.shopify_stores_count < limits.max_shopify_stores;
 
     return new Response(
       JSON.stringify({
@@ -102,12 +106,14 @@ serve(async (req) => {
         canUseChat,
         canUseShopifySearch,
         canAddProducts,
+        canAddShopifyStore,
         limitReached: {
           optimizations: !canUseOptimizations,
           articles: !canUseArticles,
           chat: !canUseChat,
           shopifySearch: !canUseShopifySearch,
           products: !canAddProducts,
+          shopifyStores: !canAddShopifyStore,
         },
         usage: currentUsage,
         limits,

@@ -7,12 +7,14 @@ interface UsageLimits {
   canUseChat: boolean;
   canUseShopifySearch: boolean;
   canAddProducts: boolean;
+  canAddShopifyStore: boolean;
   limitReached: {
     optimizations: boolean;
     articles: boolean;
     chat: boolean;
     shopifySearch: boolean;
     products: boolean;
+    shopifyStores: boolean;
   };
   usage: {
     optimizations_count: number;
@@ -20,6 +22,7 @@ interface UsageLimits {
     chat_responses_count: number;
     shopify_requests_count: number;
     products_count: number;
+    shopify_stores_count: number;
   };
   limits: {
     max_optimizations: number;
@@ -27,6 +30,7 @@ interface UsageLimits {
     max_chat_responses: number;
     max_shopify_requests: number;
     max_products: number;
+    max_shopify_stores: number;
   };
   isTrialing: boolean;
   isPaid: boolean;
@@ -56,13 +60,14 @@ export const useUsageLimits = () => {
     checkLimits();
   }, []);
 
-  const canDoAction = (action: 'optimizations' | 'articles' | 'chat' | 'shopifySearch' | 'products') => {
+  const canDoAction = (action: 'optimizations' | 'articles' | 'chat' | 'shopifySearch' | 'products' | 'shopifyStores') => {
     const actionMap = {
       optimizations: 'canUseOptimizations',
       articles: 'canUseArticles',
       chat: 'canUseChat',
       shopifySearch: 'canUseShopifySearch',
       products: 'canAddProducts',
+      shopifyStores: 'canAddShopifyStore',
     };
     
     return limits?.[actionMap[action] as keyof UsageLimits] as boolean || false;

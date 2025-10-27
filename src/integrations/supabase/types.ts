@@ -980,6 +980,7 @@ export type Database = {
           max_optimizations_monthly: number
           max_products: number
           max_shopify_requests_monthly: number | null
+          max_shopify_stores: number
           name: string
           popular: boolean | null
           price_monthly: number
@@ -1010,6 +1011,7 @@ export type Database = {
           max_optimizations_monthly?: number
           max_products?: number
           max_shopify_requests_monthly?: number | null
+          max_shopify_stores?: number
           name: string
           popular?: boolean | null
           price_monthly: number
@@ -1040,6 +1042,7 @@ export type Database = {
           max_optimizations_monthly?: number
           max_products?: number
           max_shopify_requests_monthly?: number | null
+          max_shopify_stores?: number
           name?: string
           popular?: boolean | null
           price_monthly?: number
@@ -1188,6 +1191,7 @@ export type Database = {
           products_count: number | null
           seller_id: string
           shopify_requests_count: number | null
+          shopify_stores_count: number
           updated_at: string | null
         }
         Insert: {
@@ -1201,6 +1205,7 @@ export type Database = {
           products_count?: number | null
           seller_id: string
           shopify_requests_count?: number | null
+          shopify_stores_count?: number
           updated_at?: string | null
         }
         Update: {
@@ -1214,6 +1219,7 @@ export type Database = {
           products_count?: number | null
           seller_id?: string
           shopify_requests_count?: number | null
+          shopify_stores_count?: number
           updated_at?: string | null
         }
         Relationships: []
