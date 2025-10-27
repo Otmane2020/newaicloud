@@ -92,12 +92,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+    
+    // Clear all local storage to remove stale tokens
+    localStorage.clear();
+    
     if (error) {
       toast.error(error.message);
     } else {
       toast.success('Déconnexion réussie');
-      navigate('/');
     }
+    
+    // Force a complete page reload to clear all state
+    window.location.href = '/';
   };
 
   return (
