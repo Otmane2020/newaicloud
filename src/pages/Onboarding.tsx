@@ -54,6 +54,9 @@ export default function Onboarding() {
       navigate('/auth');
       return;
     }
+    
+    // Check if user already has active subscription
+    checkExistingSubscription();
     loadPlans();
     
     // Check if user is returning from checkout
@@ -61,6 +64,47 @@ export default function Onboarding() {
       handleCheckSubscription();
     }
   }, [user, navigate]);
+
+  const checkExistingSubscription = async () => {
+    try {
+      console.log('🔍 Checking if user already has subscription...');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status, onboarding_completed')
+        .eq('id', user?.id)
+        .single();
+      
+      console.log('📋 Profile data:', profile);
+      
+      // If user has active subscription and onboarding is completed, redirect to dashboard
+      if (profile?.subscription_status === 'active' && profile?.onboarding_completed) {
+        console.log('✅ User already has active subscription, redirecting to dashboard');
+        navigate('/dashboard');
+        return;
+      }
+      
+      // Otherwise, verify with Stripe
+      const { data: subData } = await supabase.functions.invoke('check-subscription');
+      
+      if (subData?.subscribed) {
+        console.log('✅ Active subscription found in Stripe, redirecting to dashboard');
+        // Update profile
+        await supabase
+          .from('profiles')
+          .update({
+            subscription_status: 'active',
+            onboarding_completed: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user?.id);
+        
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Error checking existing subscription:', error);
+    }
+  };
 
   const loadPlans = async () => {
     try {
