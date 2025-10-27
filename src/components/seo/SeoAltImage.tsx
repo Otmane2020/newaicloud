@@ -71,40 +71,27 @@ export function SeoAltImage() {
     try {
       setLoading(true);
       
-      // Récupérer tous les produits avec leurs images
-      const { data: productsData, error: productsError } = await supabase
-        .from('shopify_products')
-        .select('id, title, vendor, category, image_url');
-
-      if (productsError) throw productsError;
-
-      // Récupérer toutes les images de tous les produits
+      // Récupérer TOUS les produits avec leurs images, groupés par produit
       const { data: imagesData, error: imagesError } = await supabase
         .from('product_images')
-        .select('*')
+        .select(`
+          *,
+          product:shopify_products(id, title, vendor, category)
+        `)
         .order('product_id', { ascending: true })
         .order('position', { ascending: true });
 
       if (imagesError) throw imagesError;
 
-      const productMap = new Map(productsData?.map(p => [p.id, p]));
-      
-      // Grouper les images par produit
-      const imagesWithProducts = (imagesData || [])
+      // Filtrer et typer les images
+      const validImages = (imagesData || [])
+        .filter(img => img.product && img.product.id)
         .map(img => ({
           ...img,
-          product: productMap.get(img.product_id)
-        }))
-        .filter(img => img.product) as ImageWithProduct[];
+          product: img.product as { id: string; title: string; vendor: string | null; category: string | null }
+        })) as ImageWithProduct[];
 
-      // Trier par produit pour regrouper visuellement
-      imagesWithProducts.sort((a, b) => {
-        if (a.product.title < b.product.title) return -1;
-        if (a.product.title > b.product.title) return 1;
-        return a.position - b.position;
-      });
-
-      setImages(imagesWithProducts);
+      setImages(validImages);
     } catch (error) {
       console.error('Error fetching images:', error);
       toast.error('Erreur lors du chargement des images');
@@ -437,43 +424,69 @@ export function SeoAltImage() {
 
       {/* Images Grid/List */}
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {paginatedImages.map((img) => (
-            <Card key={img.id} className="overflow-hidden hover:shadow-md transition group">
-              <div className="aspect-square bg-muted relative">
-                <img 
-                  src={img.src} 
-                  alt={img.alt_text || ''} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                />
-                <div className="absolute top-2 left-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedImages.has(img.id)}
-                    onChange={() => handleSelectImage(img.id)}
-                    className="w-5 h-5 rounded shadow-lg"
-                  />
+        <div className="space-y-6">
+          {/* Group images by product */}
+          {(() => {
+            const groupedImages = new Map<string, ImageWithProduct[]>();
+            paginatedImages.forEach(img => {
+              const productId = img.product.id;
+              if (!groupedImages.has(productId)) {
+                groupedImages.set(productId, []);
+              }
+              groupedImages.get(productId)!.push(img);
+            });
+
+            return Array.from(groupedImages.entries()).map(([productId, productImages]) => (
+              <Card key={productId} className="p-4">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg">{productImages[0].product.title}</h3>
+                    {productImages[0].product.vendor && (
+                      <p className="text-sm text-muted-foreground">{productImages[0].product.vendor}</p>
+                    )}
+                  </div>
+                  <Badge variant="outline">{productImages.length} image{productImages.length > 1 ? 's' : ''}</Badge>
                 </div>
-              </div>
-              <div className="p-3 space-y-2">
-                <div className="text-sm font-medium line-clamp-2">{img.product.title}</div>
-                {img.alt_text ? (
-                  <>
-                    <div className="text-xs text-muted-foreground line-clamp-2">{img.alt_text}</div>
-                    <Badge variant="secondary" className="gap-1 text-xs">
-                      <CheckCircle className="w-3 h-3" />
-                      ALT OK
-                    </Badge>
-                  </>
-                ) : (
-                  <Badge variant="outline" className="gap-1 text-xs">
-                    <Clock className="w-3 h-3" />
-                    Sans ALT
-                  </Badge>
-                )}
-              </div>
-            </Card>
-          ))}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {productImages.map((img) => (
+                    <div key={img.id} className="overflow-hidden hover:shadow-md transition group rounded-lg border">
+                      <div className="aspect-square bg-muted relative">
+                        <img 
+                          src={img.src} 
+                          alt={img.alt_text || ''} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                        />
+                        <div className="absolute top-2 left-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedImages.has(img.id)}
+                            onChange={() => handleSelectImage(img.id)}
+                            className="w-5 h-5 rounded shadow-lg"
+                          />
+                        </div>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        {img.alt_text ? (
+                          <>
+                            <div className="text-xs text-muted-foreground line-clamp-2">{img.alt_text}</div>
+                            <Badge variant="secondary" className="gap-1 text-xs">
+                              <CheckCircle className="w-3 h-3" />
+                              ALT OK
+                            </Badge>
+                          </>
+                        ) : (
+                          <Badge variant="outline" className="gap-1 text-xs">
+                            <Clock className="w-3 h-3" />
+                            Sans ALT
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ));
+          })()}
         </div>
       ) : (
         <Card className="overflow-hidden">

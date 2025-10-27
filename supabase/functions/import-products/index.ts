@@ -235,7 +235,7 @@ Deno.serve(async (req: Request) => {
     let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=50&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
     let pageCount = 0;
 
-    console.log(`Starting import from ${cleanShopName}`);
+    console.log(`Starting import from ${cleanShopName} - NO PAGE LIMIT`);
 
     while (nextPageUrl) {
       pageCount++;

@@ -430,14 +430,48 @@ export function GoogleShopping() {
                           </Button>
                         </div>
                       ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(product)}
-                        >
-                          <Sparkles className="w-4 h-4 mr-1" />
-                          Modifier
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                setSaving(true);
+                                toast.info('Génération de la catégorie Google...');
+                                const { data, error } = await supabase.functions.invoke('generate-google-category', {
+                                  body: { productId: product.id }
+                                });
+                                if (error) throw error;
+                                if (data.success) {
+                                  toast.success('Catégorie générée avec succès !');
+                                  fetchProducts();
+                                } else {
+                                  throw new Error(data.error || 'Erreur');
+                                }
+                              } catch (error: any) {
+                                console.error('Error:', error);
+                                toast.error(error.message || 'Erreur lors de la génération');
+                              } finally {
+                                setSaving(false);
+                              }
+                            }}
+                            disabled={saving}
+                          >
+                            {saving ? (
+                              <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                            ) : (
+                              <Sparkles className="w-4 h-4 mr-1" />
+                            )}
+                            Optimiser avec IA
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(product)}
+                          >
+                            Modifier
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>

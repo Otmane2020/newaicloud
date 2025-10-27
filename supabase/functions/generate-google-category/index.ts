@@ -6,12 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-interface TagGenerationRequest {
+interface CategoryGenerationRequest {
   productId: string;
-  force?: boolean;
 }
 
-async function callDeepSeek(messages: any[], maxTokens = 500) {
+async function callDeepSeek(messages: any[], maxTokens = 300) {
   const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
 
   if (!deepseekApiKey) {
@@ -27,7 +26,7 @@ async function callDeepSeek(messages: any[], maxTokens = 500) {
     body: JSON.stringify({
       model: 'deepseek-chat',
       messages,
-      temperature: 0.5,
+      temperature: 0.3,
       max_tokens: maxTokens,
     }),
   });
@@ -54,7 +53,7 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { productId, force = false }: TagGenerationRequest = await req.json();
+    const { productId }: CategoryGenerationRequest = await req.json();
 
     if (!productId) {
       return new Response(
@@ -68,7 +67,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags, seller_id")
+      .select("id, title, description, product_type, category, sub_category, vendor, seller_id")
       .eq("id", productId)
       .maybeSingle();
 
@@ -82,82 +81,78 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (product.tags && product.tags.trim() !== "" && !force) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          skipped: true,
-          message: "Product already has tags",
-          data: { tags: product.tags }
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    console.log(`Generating Google category with DeepSeek for product: ${product.title}`);
 
-    console.log(`Generating tags with DeepSeek for product: ${product.title}`);
-
-    const tagPrompt = `Generate SEO-optimized product tags for this item:
+    const categoryPrompt = `You are a Google Shopping product categorization expert. Based on the product information below, generate the EXACT Google Shopping category hierarchy.
 
 Product Information:
 - Title: ${product.title}
 - Description: ${product.description || "Not provided"}
 - Type: ${product.product_type || "Not specified"}
-- Vendor: ${product.vendor || "Not specified"}
 - Category: ${product.category || "Not specified"}
 - Sub-Category: ${product.sub_category || "Not specified"}
-- Color: ${product.ai_color || "Not specified"}
-- Material: ${product.ai_material || "Not specified"}
+- Vendor: ${product.vendor || "Not specified"}
 
-Generate 8-15 relevant tags that:
-1. Include the product type, category, and material
-2. Include color if applicable
-3. Include style descriptors (modern, classic, rustic, etc.)
-4. Include use cases or room types
-5. Are single words or short phrases (2-3 words max)
-6. Are in lowercase
-7. Are SEO-friendly and searchable
-8. Don't repeat the same information
+Generate the response in JSON format with:
+1. google_product_category: The full hierarchical Google Shopping category (e.g., "Furniture > Tables > Coffee Tables" or "Home & Garden > Kitchen & Dining > Cookware")
+2. google_mpn: The manufacturer part number (use vendor name if available, or "N/A")
+3. google_condition: Product condition ("new", "refurbished", or "used")
+4. google_brand: The brand name (use vendor if available)
 
-Provide response as a comma-separated list in JSON format:
+Example response format:
 {
-  "tags": "tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8"
+  "google_product_category": "Furniture > Tables > Coffee Tables",
+  "google_mpn": "ACME-123",
+  "google_condition": "new",
+  "google_brand": "ACME Furniture"
 }
 
-Example for a wooden coffee table:
-{
-  "tags": "table basse, bois, salon, meuble, design moderne, rangement, naturel, scandinave"
-}`;
+IMPORTANT:
+- Use the official Google Shopping category taxonomy
+- Be specific and accurate (3-4 levels deep when applicable)
+- Default condition to "new" unless context suggests otherwise
+- Use vendor as brand if no other brand information is available`;
 
-    const tagResponse = await callDeepSeek([
+    const categoryResponse = await callDeepSeek([
       {
         role: "system",
-        content: "You are a product tagging expert. Generate relevant, SEO-optimized tags. Always respond with valid JSON only.",
+        content: "You are a Google Shopping categorization expert. Always respond with valid JSON only.",
       },
       {
         role: "user",
-        content: tagPrompt,
+        content: categoryPrompt,
       },
     ]);
 
-    const tagContent = tagResponse.choices[0].message.content;
+    const categoryContent = categoryResponse.choices[0].message.content;
 
-    let tags = "";
+    let googleData = {
+      google_product_category: "",
+      google_mpn: product.vendor || "N/A",
+      google_condition: "new",
+      google_brand: product.vendor || "",
+    };
+
     try {
-      const parsed = JSON.parse(tagContent);
-      tags = parsed.tags || "";
+      const parsed = JSON.parse(categoryContent);
+      googleData = {
+        google_product_category: parsed.google_product_category || googleData.google_product_category,
+        google_mpn: parsed.google_mpn || googleData.google_mpn,
+        google_condition: parsed.google_condition || googleData.google_condition,
+        google_brand: parsed.google_brand || googleData.google_brand,
+      };
     } catch (e) {
-      console.error("Failed to parse tag JSON:", tagContent);
-      tags = product.product_type || product.category || "";
+      console.error("Failed to parse category JSON:", categoryContent);
+      // Keep defaults
     }
 
     const { error: updateError } = await supabaseClient
       .from("shopify_products")
       .update({
-        tags: tags,
-        seo_synced_to_shopify: false
+        google_product_category: googleData.google_product_category,
+        google_mpn: googleData.google_mpn,
+        google_condition: googleData.google_condition,
+        google_brand: googleData.google_brand,
       })
       .eq("id", productId);
 
@@ -165,7 +160,7 @@ Example for a wooden coffee table:
       throw updateError;
     }
 
-    console.log(`Tags generated with DeepSeek for product ${productId}: ${tags}`);
+    console.log(`Google category generated for product ${productId}: ${googleData.google_product_category}`);
 
     // Track usage - 1 optimization
     await supabaseClient.rpc('increment_usage', {
@@ -177,11 +172,8 @@ Example for a wooden coffee table:
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Tags generated successfully with DeepSeek",
-        data: {
-          product_id: productId,
-          tags: tags,
-        },
+        message: "Google category generated successfully",
+        data: googleData,
       }),
       {
         status: 200,
@@ -202,3 +194,4 @@ Example for a wooden coffee table:
     );
   }
 });
+

@@ -362,6 +362,32 @@ export default function Blog() {
         </div>
       )}
 
+      {/* Opportunités Tab */}
+      {activeTab === 'opportunities' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <p className="text-muted-foreground">Opportunités de contenu SEO</p>
+            <Button
+              onClick={async () => {
+                try {
+                  toast.info('Génération...');
+                  const { data, error } = await supabase.functions.invoke('generate-daily-opportunities');
+                  if (error) throw error;
+                  toast.success('Opportunités générées !');
+                  loadData();
+                } catch (error: any) {
+                  toast.error(error.message || 'Erreur');
+                }
+              }}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Générer
+            </Button>
+          </div>
+          <BlogOpportunities />
+        </div>
+      )}
+
       {/* Blog Wizard Modal */}
       {showWizard && (
         <BlogWizard

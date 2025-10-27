@@ -67,6 +67,7 @@ serve(async (req) => {
       shopify_requests_count: 0,
       products_count: 0,
       shopify_stores_count: 0,
+      campaigns_count: 0,
     };
 
     // Determine limits based on subscription status
@@ -78,7 +79,8 @@ serve(async (req) => {
         max_chat_responses: plan.trial_max_chat_responses || 50,
         max_shopify_requests: plan.trial_max_shopify_requests || 20,
         max_products: plan.trial_max_products || 50,
-        max_shopify_stores: 1, // Trial users get 1 store
+        max_shopify_stores: 1,
+        max_campaigns: 0, // No campaigns in trial
       };
     } else {
       limits = {
@@ -88,6 +90,7 @@ serve(async (req) => {
         max_shopify_requests: plan.max_shopify_requests_monthly || 100,
         max_products: plan.max_products || 100,
         max_shopify_stores: plan.max_shopify_stores || 1,
+        max_campaigns: plan.max_campaigns || 0,
       };
     }
 
@@ -98,6 +101,7 @@ serve(async (req) => {
     const canUseShopifySearch = currentUsage.shopify_requests_count < limits.max_shopify_requests;
     const canAddProducts = currentUsage.products_count < limits.max_products;
     const canAddShopifyStore = currentUsage.shopify_stores_count < limits.max_shopify_stores;
+    const canAddCampaign = currentUsage.campaigns_count < limits.max_campaigns;
 
     return new Response(
       JSON.stringify({
@@ -107,6 +111,7 @@ serve(async (req) => {
         canUseShopifySearch,
         canAddProducts,
         canAddShopifyStore,
+        canAddCampaign,
         limitReached: {
           optimizations: !canUseOptimizations,
           articles: !canUseArticles,
@@ -114,6 +119,7 @@ serve(async (req) => {
           shopifySearch: !canUseShopifySearch,
           products: !canAddProducts,
           shopifyStores: !canAddShopifyStore,
+          campaigns: !canAddCampaign,
         },
         usage: currentUsage,
         limits,

@@ -569,17 +569,41 @@ export function TagOptimization() {
                   </td>
                   <td className="px-4 py-3">
                     {product.tags ? (
-                      product.seo_synced_to_shopify ? (
-                        <Badge variant="default" className="gap-1">
-                          <CheckCircle className="w-3 h-3" />
-                          Synchronisé
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="gap-1">
-                          <Upload className="w-3 h-3" />
-                          À synchroniser
-                        </Badge>
-                      )
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              setGenerating(true);
+                              const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-tags`;
+                              const response = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: {
+                                  'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ productId: product.id, force: true }),
+                              });
+                              const result = await response.json();
+                              if (response.ok && result.success) {
+                                toast.success('Tags régénérés avec succès');
+                                await fetchProducts();
+                              } else {
+                                throw new Error(result.error || 'Erreur');
+                              }
+                            } catch (error) {
+                              console.error('Error regenerating tags:', error);
+                              toast.error('Erreur lors de la régénération');
+                            } finally {
+                              setGenerating(false);
+                            }
+                          }}
+                        >
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Régénérer
+                        </Button>
+                      </div>
                     ) : (
                       <Badge variant="outline" className="gap-1">
                         <Plus className="w-3 h-3" />

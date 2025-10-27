@@ -69,6 +69,19 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
+      // Vérifier les limites avant de créer la campagne
+      const { data: limitsData, error: limitsError } = await supabase.functions.invoke('check-usage-limits');
+      
+      if (limitsError) throw limitsError;
+
+      if (!limitsData.canAddCampaign) {
+        toast.error('Limite de campagnes atteinte', {
+          description: 'Passez à un plan supérieur pour créer plus de campagnes'
+        });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('blog_campaigns')
         .insert({
@@ -79,6 +92,13 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
         });
 
       if (error) throw error;
+
+      // Incrémenter le compteur de campagnes
+      await supabase.rpc('increment_usage', {
+        p_seller_id: user.id,
+        p_field: 'campaigns_count',
+        p_increment: 1
+      });
 
       toast.success('Campagne créée avec succès !');
       onSuccess();
