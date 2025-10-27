@@ -62,7 +62,7 @@ serve(async (req) => {
     const cleanShopName = shopName.replace(".myshopify.com", "");
     
     // Build OAuth URL
-    const scopes = "read_products,write_products,read_orders,read_content,write_content";
+    const scopes = "write_checkout_branding_settings,write_checkouts,read_files,write_files,write_inventory,read_inventory,write_inventory_shipments,read_inventory_shipments,write_inventory_shipments_received_items,read_inventory_shipments_received_items,write_inventory_transfers,read_inventory_transfers,read_online_store_pages,write_online_store_pages,read_product_feeds,write_product_feeds,read_product_listings,write_product_listings,read_products,write_products,read_shipping,write_shipping,unauthenticated_read_product_pickup_locations,unauthenticated_read_product_inventory,unauthenticated_read_product_listings,unauthenticated_read_product_tags,read_orders,read_content,write_content";
     const redirectUri = `${appUrl}/integration?oauth=callback`;
     
     const authUrl = `https://${cleanShopName}.myshopify.com/admin/oauth/authorize?` +

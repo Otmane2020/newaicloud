@@ -1,5 +1,6 @@
 import { LayoutDashboard, ShoppingBag, FileText, Search, User, LogOut, Sparkles, Tags, Image, Settings, ShoppingCart, MessageSquare, Zap, Lightbulb, Package, Database, History, CreditCard, Receipt, Link, Bot, CalendarClock, ChevronRight } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +19,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 const mainMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -69,6 +72,31 @@ export function AppSidebar() {
   const { user, signOut } = useAuth();
   const currentPath = location.pathname;
   const currentSearch = location.search;
+  const [userPlan, setUserPlan] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      if (!user?.id) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_plan_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile?.current_plan_id) {
+        const { data: plan } = await supabase
+          .from('subscription_plans')
+          .select('name')
+          .eq('id', profile.current_plan_id)
+          .single();
+        
+        setUserPlan(plan?.name || null);
+      }
+    };
+
+    fetchUserPlan();
+  }, [user?.id]);
 
   const isActive = (path: string) => {
     if (path.includes('?')) {
@@ -272,10 +300,17 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <div className="flex items-center gap-2 px-2">
-                <User className="h-4 w-4" />
-                {state === "expanded" && (
-                  <span className="text-sm truncate">{user?.email}</span>
+              <div className="flex flex-col gap-1 px-2 py-2">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {state === "expanded" && (
+                    <span className="text-sm truncate">{user?.email}</span>
+                  )}
+                </div>
+                {state === "expanded" && userPlan && (
+                  <Badge variant="secondary" className="w-fit text-xs">
+                    {userPlan}
+                  </Badge>
                 )}
               </div>
             </SidebarMenuButton>
