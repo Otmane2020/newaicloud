@@ -1,15 +1,49 @@
 import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { AccountSettings } from '@/components/dashboard/AccountSettings';
 import { CurrentPlanCard } from '@/components/dashboard/CurrentPlanCard';
 import { BillingPortal } from '@/components/dashboard/BillingPortal';
-import { ShopifyConnectionsList } from '@/components/dashboard/ShopifyConnectionsList';
+import { ShopifyIntegrationTabs } from '@/components/integration/ShopifyIntegrationTabs';
 import { UsageLimits } from '@/components/dashboard/UsageLimits';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Package, CreditCard, Receipt } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { User, Package, CreditCard, Receipt, Sparkles } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Account() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'profile';
+  const { user } = useAuth();
+  const [planName, setPlanName] = useState<string | null>(null);
+  const [isTrialing, setIsTrialing] = useState(false);
+
+  useEffect(() => {
+    const loadPlan = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_plan_id, trial_ends_at')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.current_plan_id) {
+        const { data: plan } = await supabase
+          .from('subscription_plans')
+          .select('name')
+          .eq('id', profile.current_plan_id)
+          .single();
+
+        if (plan) {
+          setPlanName(plan.name);
+          setIsTrialing(profile.trial_ends_at ? new Date(profile.trial_ends_at) > new Date() : false);
+        }
+      }
+    };
+
+    loadPlan();
+  }, [user]);
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
@@ -18,7 +52,15 @@ export default function Account() {
   return (
     <div className="min-h-screen bg-gradient-subtle p-8">
       <div className="container mx-auto max-w-6xl">
-        <h1 className="text-4xl font-bold mb-8">Mon Compte</h1>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Mon Compte</h1>
+          {planName && (
+            <Badge variant="secondary" className="mt-2">
+              <Sparkles className="w-3 h-3 mr-1" />
+              {planName}{isTrialing && ' (Trial)'}
+            </Badge>
+          )}
+        </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-4 mb-8">
@@ -45,7 +87,7 @@ export default function Account() {
           </TabsContent>
 
           <TabsContent value="integrations">
-            <ShopifyConnectionsList />
+            <ShopifyIntegrationTabs />
           </TabsContent>
 
           <TabsContent value="subscription">
