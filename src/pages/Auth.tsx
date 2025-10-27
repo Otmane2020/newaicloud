@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,38 +22,12 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkUserAndRedirect = async () => {
-      if (user) {
-        // Petit délai pour laisser le temps au toast d'apparaître
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Check if user is admin first
-        const { data: isAdmin } = await supabase.rpc('has_role', {
-          _user_id: user.id,
-          _role: 'admin'
-        });
-        
-        if (isAdmin) {
-          console.log('👑 Admin detected, redirecting to dashboard');
-          navigate('/dashboard');
-          return;
-        }
-        
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('subscription_status')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (profile?.subscription_status && ['active', 'trialing'].includes(profile.subscription_status)) {
-          navigate('/dashboard');
-        } else {
-          navigate('/onboarding');
-        }
-      }
-    };
-
-    checkUserAndRedirect();
+    if (user) {
+      // Always redirect to dashboard after authentication
+      // SubscriptionGuard will handle redirecting to onboarding if needed
+      console.log('✅ User authenticated, redirecting to dashboard');
+      navigate('/dashboard');
+    }
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
