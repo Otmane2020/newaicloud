@@ -94,6 +94,33 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('❌ Error loading profile:', error);
+        
+        // If profile doesn't exist, create it
+        if (error.code === 'PGRST116') {
+          console.log('📝 Profile not found, creating new profile...');
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email,
+              full_name: user.user_metadata?.full_name || '',
+              subscription_status: 'inactive',
+              onboarding_completed: false
+            });
+          
+          if (insertError) {
+            console.error('❌ Error creating profile:', insertError);
+          } else {
+            console.log('✅ Profile created successfully');
+            // Set default profile
+            setProfile({
+              subscription_status: 'inactive',
+              current_plan_id: null,
+              trial_ends_at: null
+            });
+          }
+        }
+        
         setLoading(false);
         return;
       }
