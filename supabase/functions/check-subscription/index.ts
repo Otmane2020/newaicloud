@@ -47,7 +47,27 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
-    if (!profile?.stripe_customer_id) {
+    let customerId = profile?.stripe_customer_id;
+
+    // If no customer ID in profile, search Stripe by email
+    if (!customerId && user.email) {
+      const customers = await stripe.customers.list({
+        email: user.email,
+        limit: 1,
+      });
+
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        
+        // Update profile with customer ID for future use
+        await supabase
+          .from('profiles')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', user.id);
+      }
+    }
+
+    if (!customerId) {
       return new Response(
         JSON.stringify({ 
           subscribed: false, 
@@ -60,7 +80,7 @@ serve(async (req) => {
 
     // Check Stripe for active subscriptions
     const subscriptions = await stripe.subscriptions.list({
-      customer: profile.stripe_customer_id,
+      customer: customerId,
       status: 'active',
       limit: 1,
     });
