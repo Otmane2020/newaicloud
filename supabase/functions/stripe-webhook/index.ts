@@ -206,12 +206,41 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     console.log('📋 Subscription:', subscription.id, 'Status:', status);
     console.log('💳 Customer:', customer);
 
+    // Get the Stripe price ID and map it to our plan ID
+    const stripePriceId = subscription.items.data[0].price.id;
+    console.log('💰 Stripe Price ID:', stripePriceId);
+
+    // Find the corresponding plan in our database
+    const { data: plans, error: plansError } = await supabase
+      .from('subscription_plans')
+      .select('id, stripe_price_id_monthly, stripe_price_id_yearly')
+      .eq('is_active', true);
+
+    if (plansError) {
+      console.error('❌ Error fetching plans:', plansError);
+    }
+
+    // Map the Stripe price ID to our plan ID
+    let planId = metadata?.plan_id; // Try metadata first
+    if (!planId && plans) {
+      const matchingPlan = plans.find(
+        plan => plan.stripe_price_id_monthly === stripePriceId || plan.stripe_price_id_yearly === stripePriceId
+      );
+      if (matchingPlan) {
+        planId = matchingPlan.id;
+        console.log('✅ Mapped Stripe price to plan:', planId);
+      } else {
+        console.warn('⚠️ No matching plan found for Stripe price:', stripePriceId);
+      }
+    }
+
     // Update subscriptions table
     console.log('💾 Updating subscriptions table...');
     const { error } = await supabase
       .from('subscriptions')
       .update({
         status: status,
+        plan_id: planId || 'starter', // Fallback to starter
         current_period_start: new Date(current_period_start * 1000).toISOString(),
         current_period_end: new Date(current_period_end * 1000).toISOString(),
         cancel_at_period_end,
@@ -234,7 +263,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         .from('profiles')
         .update({
           subscription_status: status,
-          current_plan_id: subscription.items.data[0].price.id,
+          current_plan_id: planId || 'starter', // Use mapped plan ID
           updated_at: new Date().toISOString()
         })
         .eq('id', userId);
@@ -242,7 +271,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       if (profileError) {
         console.error('❌ Error updating profile subscription status:', profileError);
       } else {
-        console.log('✅ Profile subscription status updated to:', status);
+        console.log('✅ Profile subscription status updated to:', status, 'with plan:', planId);
       }
     } else {
       console.warn('⚠️ No user_id in subscription metadata, trying to find by customer_id');
@@ -263,7 +292,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
             .from('profiles')
             .update({
               subscription_status: status,
-              current_plan_id: subscription.items.data[0].price.id,
+              current_plan_id: planId || 'starter', // Use mapped plan ID
               updated_at: new Date().toISOString()
             })
             .eq('id', profile.id);
@@ -271,7 +300,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
           if (updateError) {
             console.error('❌ Error updating profile via customer_id:', updateError);
           } else {
-            console.log('✅ Profile updated via customer_id lookup');
+            console.log('✅ Profile updated via customer_id lookup with plan:', planId);
           }
         } else {
           console.error('❌ No profile found for customer_id:', customer);
