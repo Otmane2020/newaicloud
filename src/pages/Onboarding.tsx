@@ -69,6 +69,18 @@ export default function Onboarding() {
     try {
       console.log('🔍 Checking if user already has subscription...');
       
+      // Check if user is admin first
+      const { data: adminCheck } = await supabase.rpc('has_role', {
+        _user_id: user?.id,
+        _role: 'admin'
+      });
+      
+      if (adminCheck) {
+        console.log('👑 Admin user detected, redirecting to dashboard');
+        navigate('/dashboard');
+        return;
+      }
+      
       const { data: profile } = await supabase
         .from('profiles')
         .select('subscription_status, onboarding_completed')
