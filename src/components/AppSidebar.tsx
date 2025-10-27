@@ -112,7 +112,7 @@ export function AppSidebar() {
               </Collapsible>
 
               {/* SEO Menu with Submenu */}
-              <Collapsible defaultOpen={isSeoActive} className="group/collapsible">
+              <Collapsible defaultOpen={true} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isSeoActive}>

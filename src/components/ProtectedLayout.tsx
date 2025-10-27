@@ -1,7 +1,8 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigation } from "@/components/Navigation";
+import { AppSidebar } from "@/components/AppSidebar";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -20,12 +21,21 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SubscriptionGuard>
-      <div className="min-h-screen bg-gray-50 flex">
-        <Navigation />
-        <main className="flex-1 ml-16 md:ml-64 transition-all duration-300 p-8">
-          {children}
-        </main>
-      </div>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-gray-50">
+          <AppSidebar />
+          <main className="flex-1">
+            <div className="border-b bg-background">
+              <div className="flex h-16 items-center px-4">
+                <SidebarTrigger />
+              </div>
+            </div>
+            <div className="p-8">
+              {children}
+            </div>
+          </main>
+        </div>
+      </SidebarProvider>
     </SubscriptionGuard>
   );
 }
