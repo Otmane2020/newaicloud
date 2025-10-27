@@ -1,4 +1,5 @@
 import { AccountSettings } from '@/components/dashboard/AccountSettings';
+import { CurrentPlanCard } from '@/components/dashboard/CurrentPlanCard';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -20,7 +21,10 @@ export default function Account() {
           <LanguageSelector />
         </div>
 
-        <AccountSettings />
+        <div className="space-y-6">
+          <CurrentPlanCard />
+          <AccountSettings />
+        </div>
       </div>
     </div>
   );
