@@ -119,12 +119,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       
       // Déterminer le statut (trialing pendant l'essai, active après)
       const status = subscriptionDetails.status;
-      const trialEnd = subscriptionDetails.trial_end 
-        ? new Date(subscriptionDetails.trial_end * 1000).toISOString()
-        : null;
+      
+      // Si l'utilisateur upgrade depuis un trial actif, ne pas écraser trial_ends_at
+      const upgradedFromTrial = metadata?.upgraded_from_trial === 'true';
+      
+      // Récupérer le profile existant pour vérifier le trial_ends_at
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('trial_ends_at')
+        .eq('id', userId)
+        .single();
+      
+      const trialEnd = upgradedFromTrial && existingProfile?.trial_ends_at
+        ? existingProfile.trial_ends_at // Conserver la date existante
+        : (subscriptionDetails.trial_end 
+            ? new Date(subscriptionDetails.trial_end * 1000).toISOString()
+            : null);
 
       console.log('📋 Subscription status:', status);
       console.log('⏰ Trial end:', trialEnd);
+      console.log('🔄 Upgraded from trial:', upgradedFromTrial);
       console.log('📦 Plan ID:', metadata?.plan_id);
 
       console.log('💾 Updating profile...');

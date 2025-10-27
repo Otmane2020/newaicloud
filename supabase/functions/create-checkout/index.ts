@@ -102,6 +102,19 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
+    // Vérifier si l'utilisateur a un trial actif
+    const hasActiveTrial = profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date();
+    const trialDaysRemaining = hasActiveTrial 
+      ? Math.ceil((new Date(profile.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+    console.log('🎯 Trial status:', {
+      hasActiveTrial,
+      trialDaysRemaining,
+      trialEndsAt: profile?.trial_ends_at,
+      subscriptionStatus: profile?.subscription_status
+    });
+
     let customerId = profile?.stripe_customer_id;
 
     if (!customerId) {
@@ -140,14 +153,25 @@ serve(async (req) => {
         user_id: user.id,
         plan_id: plan_id,
         billing_period: billing_period,
-        plan_name: plan.name
+        plan_name: plan.name,
+        upgraded_from_trial: hasActiveTrial ? 'true' : 'false'
       },
       subscription_data: {
-        trial_period_days: plan.trial_days || 14,
+        // Logique de trial :
+        // - Si trial actif ET mensuel (limite atteinte) : 0 jours (paiement immédiat)
+        // - Si trial actif ET annuel : conserver les jours restants
+        // - Sinon : appliquer le trial du plan (14 jours)
+        trial_period_days: hasActiveTrial 
+          ? (billing_period === 'yearly' ? trialDaysRemaining : 0)
+          : (plan.trial_days || 14),
+        ...(hasActiveTrial && billing_period === 'yearly' && profile?.trial_ends_at ? {
+          trial_end: Math.floor(new Date(profile.trial_ends_at).getTime() / 1000)
+        } : {}),
         metadata: {
           user_id: user.id,
           plan_id: plan_id,
-          billing_period: billing_period
+          billing_period: billing_period,
+          upgraded_from_trial: hasActiveTrial ? 'true' : 'false'
         }
       },
       success_url: success_url || `${origin}/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
