@@ -172,47 +172,8 @@ export function ShopifyConnectionsList() {
     if (!deleteStore) return;
 
     try {
-      // 1. Delete all product images associated with products from this store
-      const { data: storeProducts } = await supabase
-        .from('shopify_products')
-        .select('id')
-        .eq('store_id', deleteStore.id);
-
-      if (storeProducts && storeProducts.length > 0) {
-        const productIds = storeProducts.map(p => p.id);
-        
-        // Delete product images
-        await supabase
-          .from('product_images')
-          .delete()
-          .in('product_id', productIds);
-      }
-
-      // 2. Delete all products from this store
-      await supabase
-        .from('shopify_products')
-        .delete()
-        .eq('store_id', deleteStore.id);
-
-      // 3. Delete all Shopify pages from this store
-      await supabase
-        .from('shopify_pages')
-        .delete()
-        .eq('store_id', deleteStore.id);
-
-      // 4. Delete sync logs for this store
-      await supabase
-        .from('sync_logs')
-        .delete()
-        .eq('store_id', deleteStore.id);
-
-      // 5. Delete import jobs for this store
-      await supabase
-        .from('import_jobs')
-        .delete()
-        .eq('store_id', deleteStore.id);
-
-      // 6. Finally delete the store connection
+      // The trigger will automatically cascade delete all related data
+      // (products, variants, images, pages, logs, jobs)
       const { error } = await supabase
         .from('shopify_connections')
         .delete()
