@@ -149,6 +149,50 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_netlinking: {
+        Row: {
+          anchor_text: string
+          article_id: string | null
+          click_count: number | null
+          created_at: string | null
+          id: string
+          link_type: string | null
+          target_url: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          anchor_text: string
+          article_id?: string | null
+          click_count?: number | null
+          created_at?: string | null
+          id?: string
+          link_type?: string | null
+          target_url: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          anchor_text?: string
+          article_id?: string | null
+          click_count?: number | null
+          created_at?: string | null
+          id?: string
+          link_type?: string | null
+          target_url?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_netlinking_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_opportunities: {
         Row: {
           article_id: string | null
@@ -282,6 +326,60 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      chat_settings: {
+        Row: {
+          assistant_style: string | null
+          created_at: string | null
+          custom_instructions: string | null
+          default_language: string | null
+          embed_button_text: string | null
+          embed_enabled: boolean | null
+          embed_position: string | null
+          embed_primary_color: string | null
+          embed_welcome_message: string | null
+          id: string
+          response_length: string | null
+          save_history: boolean | null
+          tone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          assistant_style?: string | null
+          created_at?: string | null
+          custom_instructions?: string | null
+          default_language?: string | null
+          embed_button_text?: string | null
+          embed_enabled?: boolean | null
+          embed_position?: string | null
+          embed_primary_color?: string | null
+          embed_welcome_message?: string | null
+          id?: string
+          response_length?: string | null
+          save_history?: boolean | null
+          tone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          assistant_style?: string | null
+          created_at?: string | null
+          custom_instructions?: string | null
+          default_language?: string | null
+          embed_button_text?: string | null
+          embed_enabled?: boolean | null
+          embed_position?: string | null
+          embed_primary_color?: string | null
+          embed_welcome_message?: string | null
+          id?: string
+          response_length?: string | null
+          save_history?: boolean | null
+          tone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

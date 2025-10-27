@@ -34,6 +34,8 @@ import SearchProducts from "./pages/SearchProducts";
 import ChatHistory from "./pages/ChatHistory";
 import ProductDetail from "./pages/ProductDetail";
 import NotFound from "./pages/NotFound";
+import ChatSettings from "./pages/ChatSettings";
+import ChatRobot from "./pages/ChatRobot";
 
 const queryClient = new QueryClient();
 
@@ -166,6 +168,30 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ChatHistory />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/chat-settings"
+              element={
+                <ProtectedLayout>
+                  <ChatSettings />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/chat-robot"
+              element={
+                <ProtectedLayout>
+                  <ChatRobot />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <ProtectedLayout>
+                  <SearchProducts />
                 </ProtectedLayout>
               }
             />

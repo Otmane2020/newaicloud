@@ -3,7 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb } from 'lucide-react';
+import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb, Link, Settings } from 'lucide-react';
+import { NetlinkingTable } from '@/components/blog/NetlinkingTable';
+import { OpportunitiesSettings } from '@/components/blog/OpportunitiesSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -16,6 +18,7 @@ export default function Blog() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'articles');
+  const [activeView, setActiveView] = useState(searchParams.get('view') || 'main');
   const [articles, setArticles] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +28,7 @@ export default function Blog() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['articles', 'opportunities'].includes(tab)) {
+    if (tab && ['articles', 'campaigns', 'opportunities'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -304,7 +307,44 @@ export default function Blog() {
               </p>
             </div>
           </div>
-          <BlogOpportunities />
+
+          {/* Sub-navigation for Opportunities */}
+          <div className="flex gap-2">
+            <Button
+              variant={activeView === 'main' ? 'default' : 'outline'}
+              onClick={() => {
+                setActiveView('main');
+                setSearchParams({ tab: 'opportunities', view: 'main' });
+              }}
+            >
+              Vue principale
+            </Button>
+            <Button
+              variant={activeView === 'netlinking' ? 'default' : 'outline'}
+              onClick={() => {
+                setActiveView('netlinking');
+                setSearchParams({ tab: 'opportunities', view: 'netlinking' });
+              }}
+            >
+              <Link className="w-4 h-4 mr-2" />
+              Netlinking
+            </Button>
+            <Button
+              variant={activeView === 'settings' ? 'default' : 'outline'}
+              onClick={() => {
+                setActiveView('settings');
+                setSearchParams({ tab: 'opportunities', view: 'settings' });
+              }}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Paramètres
+            </Button>
+          </div>
+
+          {/* Content based on view */}
+          {activeView === 'main' && <BlogOpportunities />}
+          {activeView === 'netlinking' && <NetlinkingTable />}
+          {activeView === 'settings' && <OpportunitiesSettings />}
         </div>
       )}
 
