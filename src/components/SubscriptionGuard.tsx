@@ -14,6 +14,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasActiveStripeSubscription, setHasActiveStripeSubscription] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -54,6 +55,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         // If user has active subscription in Stripe, bypass the redirect
         if (stripeData?.subscribed) {
           console.log('✅ Active subscription found in Stripe, allowing access');
+          setHasActiveStripeSubscription(true);
           
           // Update profile in background (don't wait for it)
           supabase
@@ -128,7 +130,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const hasValidSubscription = profile?.subscription_status && 
     ['active', 'trialing'].includes(profile.subscription_status);
 
-  if (!hasValidSubscription) {
+  if (!hasValidSubscription && !hasActiveStripeSubscription) {
     console.log('⚠️ No valid subscription, redirecting to onboarding. Status:', profile?.subscription_status);
     return <Navigate to="/onboarding" replace />;
   }
