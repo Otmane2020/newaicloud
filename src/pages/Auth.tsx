@@ -28,6 +28,18 @@ export default function Auth() {
         // Petit délai pour laisser le temps au toast d'apparaître
         await new Promise(resolve => setTimeout(resolve, 500));
         
+        // Check if user is admin first
+        const { data: isAdmin } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'admin'
+        });
+        
+        if (isAdmin) {
+          console.log('👑 Admin detected, redirecting to dashboard');
+          navigate('/dashboard');
+          return;
+        }
+        
         const { data: profile } = await supabase
           .from('profiles')
           .select('subscription_status')
