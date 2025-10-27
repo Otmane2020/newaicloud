@@ -194,19 +194,25 @@ export function ShopifyConnectionsList() {
         .delete()
         .eq('store_id', deleteStore.id);
 
-      // 3. Delete sync logs for this store
+      // 3. Delete all Shopify pages from this store
+      await supabase
+        .from('shopify_pages')
+        .delete()
+        .eq('store_id', deleteStore.id);
+
+      // 4. Delete sync logs for this store
       await supabase
         .from('sync_logs')
         .delete()
         .eq('store_id', deleteStore.id);
 
-      // 4. Delete import jobs for this store
+      // 5. Delete import jobs for this store
       await supabase
         .from('import_jobs')
         .delete()
         .eq('store_id', deleteStore.id);
 
-      // 5. Finally delete the store connection
+      // 6. Finally delete the store connection
       const { error } = await supabase
         .from('shopify_connections')
         .delete()

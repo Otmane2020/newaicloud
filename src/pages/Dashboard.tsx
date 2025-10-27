@@ -82,11 +82,21 @@ export default function Dashboard() {
 
   const loadStats = async () => {
     try {
-      // Load products stats
+      // Get active stores
+      const { data: activeStores } = await supabase
+        .from('shopify_connections')
+        .select('id')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      const activeStoreIds = activeStores?.map(s => s.id) || [];
+
+      // Load products stats (only from active stores)
       const { data: products, error: productsError } = await supabase
         .from('shopify_products')
         .select('price, seo_title, seo_description')
-        .eq('seller_id', user?.id);
+        .eq('seller_id', user?.id)
+        .in('store_id', activeStoreIds.length > 0 ? activeStoreIds : ['']);
 
       if (productsError) throw productsError;
 

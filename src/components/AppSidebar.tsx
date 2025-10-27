@@ -37,6 +37,7 @@ const chatSubItems = [
 const seoSubItems = [
   { title: "SEO Optimisation", url: "/seo?tab=optimization", icon: Sparkles },
   { title: "Tag Optimisation", url: "/seo?tab=tags", icon: Tags },
+  { title: "Pages", url: "/seo?tab=pages", icon: FileText },
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
   { title: "Automatisation", url: "/seo?tab=automation", icon: Settings },
 ];

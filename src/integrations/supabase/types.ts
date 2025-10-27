@@ -657,6 +657,68 @@ export type Database = {
         }
         Relationships: []
       }
+      shopify_pages: {
+        Row: {
+          body_html: string | null
+          created_at: string
+          handle: string | null
+          id: string
+          last_synced_at: string | null
+          optimized: boolean | null
+          published_at: string | null
+          seo_description: string | null
+          seo_title: string | null
+          shopify_page_id: number | null
+          store_id: string | null
+          template_suffix: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body_html?: string | null
+          created_at?: string
+          handle?: string | null
+          id?: string
+          last_synced_at?: string | null
+          optimized?: boolean | null
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          shopify_page_id?: number | null
+          store_id?: string | null
+          template_suffix?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body_html?: string | null
+          created_at?: string
+          handle?: string | null
+          id?: string
+          last_synced_at?: string | null
+          optimized?: boolean | null
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          shopify_page_id?: number | null
+          store_id?: string | null
+          template_suffix?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopify_pages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shopify_products: {
         Row: {
           ai_assembly_required: boolean | null
