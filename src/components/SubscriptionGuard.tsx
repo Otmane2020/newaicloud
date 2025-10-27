@@ -13,20 +13,34 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (user) {
-      loadUserProfile();
+      checkAdminAndLoadProfile();
     } else {
       setLoading(false);
     }
   }, [user]);
 
-  const loadUserProfile = async () => {
+  const checkAdminAndLoadProfile = async () => {
     if (!user) return;
     
     try {
       console.log('🔍 Loading profile for user:', user.id);
+
+      // Check if user is admin first
+      const { data: adminCheck } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
+
+      if (adminCheck) {
+        console.log('👑 Admin user detected, bypassing subscription check');
+        setIsAdmin(true);
+        setLoading(false);
+        return;
+      }
       
       // First check Stripe for the real subscription status
       console.log('🔄 Checking Stripe subscription status...');
@@ -90,6 +104,12 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  // Admins bypass subscription check
+  if (isAdmin) {
+    console.log('✅ Admin access granted');
+    return <>{children}</>;
   }
 
   // Check subscription status
