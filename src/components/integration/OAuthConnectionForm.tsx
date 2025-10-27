@@ -32,9 +32,9 @@ export function OAuthConnectionForm() {
       if (error) throw error;
 
       if (data?.authUrl) {
-        // Open OAuth URL in new window
-        window.open(data.authUrl, "_blank", "width=600,height=700");
-        toast.success("Fenêtre OAuth ouverte. Veuillez autoriser l'application.");
+        // Redirect to Shopify OAuth in same window
+        toast.success("Redirection vers Shopify pour autorisation...");
+        window.location.href = data.authUrl;
       }
     } catch (error: any) {
       console.error("OAuth error:", error);
