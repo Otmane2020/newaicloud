@@ -474,81 +474,29 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       console.log("🔍 [SEARCH] No seller/store filter - searching all");
     }
 
-    // Construction des conditions de recherche AVEC les filtres d'attributs
-    const searchConditions = [];
-
-    // Recherche avec correspondance exacte pour les catégories spécifiques
+    // Recherche textuelle principale
     if (filters.query && filters.query.trim().length > 0) {
+      const searchTerms = normalizeText(filters.query).split(" ").filter(t => t.length > 2);
+      console.log("🔍 [SEARCH] Search terms:", searchTerms);
+      
       if (filters.exactMatch) {
-        // Recherche exacte pour les catégories spécifiques
-        console.log("🎯 [SEARCH] Using exact match for:", filters.query);
-        searchConditions.push(`category.eq.${filters.query}`);
-        searchConditions.push(`sub_category.eq.${filters.query}`);
-        searchConditions.push(`title.ilike.%${filters.query}%`);
-      } else {
-        // Recherche normale avec termes
-        const searchTerms = normalizeText(filters.query)
-          .split(" ")
-          .filter((term) => term.length > 2);
-        console.log("🔍 [SEARCH] Search terms:", searchTerms);
-
-        if (searchTerms.length > 0) {
-          searchTerms.forEach((term) => {
-            searchConditions.push(`title.ilike.%${term}%`);
-            searchConditions.push(`description.ilike.%${term}%`);
-            searchConditions.push(`tags.ilike.%${term}%`);
-            searchConditions.push(`category.ilike.%${term}%`);
-            searchConditions.push(`sub_category.ilike.%${term}%`);
-            searchConditions.push(`product_type.ilike.%${term}%`);
-            searchConditions.push(`vendor.ilike.%${term}%`);
-            searchConditions.push(`ai_color.ilike.%${term}%`);
-            searchConditions.push(`ai_material.ilike.%${term}%`);
-            searchConditions.push(`ai_shape.ilike.%${term}%`);
-            searchConditions.push(`style.ilike.%${term}%`);
-            searchConditions.push(`room.ilike.%${term}%`);
-            searchConditions.push(`chat_text.ilike.%${term}%`);
-          });
-        }
+        // Recherche exacte pour catégories spécifiques
+        console.log("🎯 [SEARCH] Exact match for:", filters.query);
+        const exactConditions = searchTerms.map(term => 
+          `title.ilike.%${term}%,category.ilike.%${term}%,sub_category.ilike.%${term}%,product_type.ilike.%${term}%`
+        );
+        query = query.or(exactConditions.join(","));
+      } else if (searchTerms.length > 0) {
+        // Recherche large
+        const conditions = searchTerms.map(term =>
+          `title.ilike.%${term}%,description.ilike.%${term}%,tags.ilike.%${term}%,category.ilike.%${term}%,sub_category.ilike.%${term}%,chat_text.ilike.%${term}%`
+        );
+        query = query.or(conditions.join(","));
       }
-    } else {
-      console.log("🔍 [SEARCH] No query filter - will return all active products");
     }
 
-    // APPLICATION DES FILTRES D'ATTRIBUTS (CRITIQUE)
-    if (filters.color) {
-      console.log("🎨 [FILTER] Applying color filter:", filters.color);
-      query = query.or(
-        `ai_color.ilike.%${filters.color}%,title.ilike.%${filters.color}%,tags.ilike.%${filters.color}%`,
-      );
-    }
-
-    if (filters.material) {
-      console.log("🏗️ [FILTER] Applying material filter:", filters.material);
-      query = query.or(
-        `ai_material.ilike.%${filters.material}%,title.ilike.%${filters.material}%,tags.ilike.%${filters.material}%`,
-      );
-    }
-
-    if (filters.style) {
-      console.log("🎭 [FILTER] Applying style filter:", filters.style);
-      query = query.or(`style.ilike.%${filters.style}%,tags.ilike.%${filters.style}%,title.ilike.%${filters.style}%`);
-    }
-
-    if (filters.room) {
-      console.log("🏠 [FILTER] Applying room filter:", filters.room);
-      query = query.or(`room.ilike.%${filters.room}%,tags.ilike.%${filters.room}%,title.ilike.%${filters.room}%`);
-    }
-
-    // Application des conditions de recherche textuelle
-    if (searchConditions.length > 0) {
-      console.log("🔍 [SEARCH] Applying search conditions:", searchConditions);
-      query = query.or(searchConditions.join(","));
-    }
-
-    if (filters.category) query = query.ilike("category", `%${filters.category}%`);
-    if (filters.subCategory) query = query.ilike("sub_category", `%${filters.subCategory}%`);
-
-    query = query.limit((filters.limit || 12) * 3);
+    // Récupérer plus de produits pour filtrage en mémoire
+    query = query.limit(100);
     const { data, error } = await query;
 
     console.log("🔍 [SEARCH] Raw query returned:", data?.length || 0, "products");
@@ -563,28 +511,96 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       return [];
     }
 
-    // Apply price filters
+    // FILTRAGE EN MÉMOIRE avec logique ET
     let filteredData = data;
+
+    // Filtrer par couleur (AND)
+    if (filters.color) {
+      console.log("🎨 [FILTER] Applying color filter:", filters.color);
+      filteredData = filteredData.filter(p => {
+        const color = normalizeText(filters.color || "");
+        const aiColor = normalizeText(p.ai_color || "");
+        const title = normalizeText(p.title || "");
+        const tags = normalizeText(p.tags || "");
+        return aiColor.includes(color) || title.includes(color) || tags.includes(color);
+      });
+      console.log(`🎨 After color filter: ${filteredData.length} products`);
+    }
+
+    // Filtrer par matériau (AND)
+    if (filters.material) {
+      console.log("🏗️ [FILTER] Applying material filter:", filters.material);
+      filteredData = filteredData.filter(p => {
+        const material = normalizeText(filters.material || "");
+        const aiMaterial = normalizeText(p.ai_material || "");
+        const title = normalizeText(p.title || "");
+        const tags = normalizeText(p.tags || "");
+        const desc = normalizeText(p.description || "");
+        return aiMaterial.includes(material) || title.includes(material) || tags.includes(material) || desc.includes(material);
+      });
+      console.log(`🏗️ After material filter: ${filteredData.length} products`);
+    }
+
+    // Filtrer par style (AND)
+    if (filters.style) {
+      console.log("🎭 [FILTER] Applying style filter:", filters.style);
+      filteredData = filteredData.filter(p => {
+        const style = normalizeText(filters.style || "");
+        const pStyle = normalizeText(p.style || "");
+        const title = normalizeText(p.title || "");
+        const tags = normalizeText(p.tags || "");
+        return pStyle.includes(style) || title.includes(style) || tags.includes(style);
+      });
+      console.log(`🎭 After style filter: ${filteredData.length} products`);
+    }
+
+    // Filtrer par pièce (AND)
+    if (filters.room) {
+      console.log("🏠 [FILTER] Applying room filter:", filters.room);
+      filteredData = filteredData.filter(p => {
+        const room = normalizeText(filters.room || "");
+        const pRoom = normalizeText(p.room || "");
+        const title = normalizeText(p.title || "");
+        const tags = normalizeText(p.tags || "");
+        return pRoom.includes(room) || title.includes(room) || tags.includes(room);
+      });
+      console.log(`🏠 After room filter: ${filteredData.length} products`);
+    }
+
+    // Filtrer par catégorie/sous-catégorie
+    if (filters.category) {
+      filteredData = filteredData.filter(p => 
+        normalizeText(p.category || "").includes(normalizeText(filters.category || ""))
+      );
+    }
+    if (filters.subCategory) {
+      filteredData = filteredData.filter(p =>
+        normalizeText(p.sub_category || "").includes(normalizeText(filters.subCategory || ""))
+      );
+    }
+
+    // Filtrer par prix (AND)
     if (filters.maxPrice) {
-      filteredData = filteredData.filter((p) => {
+      filteredData = filteredData.filter(p => {
         const price = parseFloat(p.price);
         return !isNaN(price) && price <= filters.maxPrice!;
       });
-      console.log(`💰 [PRICE FILTER] After max price ${filters.maxPrice}: ${filteredData.length} products`);
+      console.log(`💰 After max price ${filters.maxPrice}: ${filteredData.length} products`);
     }
     if (filters.minPrice) {
-      filteredData = filteredData.filter((p) => {
+      filteredData = filteredData.filter(p => {
         const price = parseFloat(p.price);
         return !isNaN(price) && price >= filters.minPrice!;
       });
-      console.log(`💰 [PRICE FILTER] After min price ${filters.minPrice}: ${filteredData.length} products`);
+      console.log(`💰 After min price ${filters.minPrice}: ${filteredData.length} products`);
     }
 
     if (filteredData.length === 0) {
-      console.log("✅ [SEARCH] Found 0 products after price filtering");
+      console.log("✅ [SEARCH] Found 0 products after filtering");
       return [];
     }
 
+    // Scoring et tri par pertinence
     const searchQuery = filters.query || "";
     const scoredProducts = filteredData.map((product) => ({
       ...product,
