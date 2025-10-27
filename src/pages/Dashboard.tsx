@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useTrialLimits } from '@/hooks/useTrialLimits';
+import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { 
   ShoppingBag, 
   Zap, 
@@ -30,6 +32,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const { trialStatus, showUpgradeDialog, setShowUpgradeDialog } = useTrialLimits();
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0,
     optimizedProducts: 0,
@@ -181,6 +184,13 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      <TrialUpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        reason={trialStatus.trialExpired ? 'trial_expired' : 'limit_reached'}
+        limitType={trialStatus.limitType}
+      />
+      
       <div>
         <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
           <BarChart3 className="w-10 h-10 text-primary" />

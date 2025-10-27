@@ -224,6 +224,36 @@ export default function Onboarding() {
     }
   };
 
+  const handleStartFreeTrial = async () => {
+    if (!user) {
+      toast.error('Vous devez être connecté');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('🎁 Starting free trial...');
+      
+      const { data, error } = await supabase.functions.invoke('start-free-trial');
+
+      if (error) {
+        console.error('❌ Error starting trial:', error);
+        throw error;
+      }
+
+      console.log('✅ Trial started:', data);
+      toast.success('Essai gratuit activé ! Bienvenue 🎉');
+      
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
+    } catch (error) {
+      console.error('💥 Error starting free trial:', error);
+      toast.error('Erreur lors de l\'activation de l\'essai gratuit');
+      setLoading(false);
+    }
+  };
+
   const getPlanIcon = (planId: string) => {
     switch (planId) {
       case 'starter': return ShoppingBag;
@@ -291,7 +321,7 @@ export default function Onboarding() {
       <div className="text-center mb-12">
         <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
           <Sparkles className="w-4 h-4 mr-2" />
-          ✨ Essai gratuit de 14 jours - Carte bancaire requise
+          ✨ Essai gratuit de 14 jours - Aucune carte requise
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold mb-4">
           Choisissez votre{' '}
@@ -300,7 +330,7 @@ export default function Onboarding() {
           </span>
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Commencez gratuitement pendant 14 jours. Votre carte ne sera débitée qu'à la fin de l'essai.
+          Commencez gratuitement pendant 14 jours. Pas de carte bancaire requise.
         </p>
       </div>
 
@@ -447,28 +477,42 @@ export default function Onboarding() {
         </div>
 
         {/* CTA */}
-        <div className="text-center">
+        <div className="text-center space-y-4">
           <Button
             size="lg"
-            onClick={handleSelectPlan}
+            onClick={handleStartFreeTrial}
             disabled={loading}
             className="px-12"
           >
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                Redirection sécurisée...
+                Activation en cours...
               </>
             ) : (
               <>
-                <Shield className="w-5 h-5 mr-2" />
+                <Sparkles className="w-5 h-5 mr-2" />
                 Commencer l'essai gratuit
               </>
             )}
           </Button>
-          <p className="text-sm text-muted-foreground mt-4">
-            💳 Carte bancaire requise • Aucun débit pendant 14 jours • Annulez à tout moment
+          <p className="text-sm text-muted-foreground">
+            🎁 14 jours gratuits • Aucune carte requise • Upgrade simple quand vous voulez
           </p>
+          <div className="pt-4 border-t border-border max-w-md mx-auto">
+            <p className="text-xs text-muted-foreground mb-2">
+              Vous voulez payer maintenant et débloquer toutes les fonctionnalités ?
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectPlan}
+              disabled={loading}
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Payer maintenant (plan {selectedPlanId})
+            </Button>
+          </div>
         </div>
       </div>
     </div>

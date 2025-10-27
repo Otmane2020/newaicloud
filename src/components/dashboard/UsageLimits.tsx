@@ -34,7 +34,8 @@ export function UsageLimits() {
         articles_count: 0,
         chat_responses_count: 0,
         campaigns_count: 0,
-        shopify_requests_count: 0
+        shopify_requests_count: 0,
+        shopify_stores_count: 0
       };
     },
     enabled: !!user?.id
@@ -78,6 +79,13 @@ export function UsageLimits() {
       limit: plan?.max_products || 0,
       icon: <Package className="h-4 w-4" />,
       color: "hsl(var(--primary))"
+    },
+    {
+      label: "Boutiques Shopify",
+      current: usage?.shopify_stores_count || 0,
+      limit: plan?.max_shopify_stores || 0,
+      icon: <Package className="h-4 w-4" />,
+      color: "hsl(var(--chart-6))"
     },
     {
       label: "Optimisations SEO",
