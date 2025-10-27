@@ -8,8 +8,10 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
+import { SuperAdminLayout } from "./components/SuperAdminLayout";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
+import SuperAdmin from "./pages/SuperAdmin";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -197,6 +199,14 @@ const App = () => (
                 <AdminLayout>
                   <Admin />
                 </AdminLayout>
+              }
+            />
+            <Route
+              path="/superadmin"
+              element={
+                <SuperAdminLayout>
+                  <SuperAdmin />
+                </SuperAdminLayout>
               }
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
