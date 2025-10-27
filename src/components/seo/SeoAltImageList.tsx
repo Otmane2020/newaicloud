@@ -1,0 +1,344 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
+import { Loader2, Image as ImageIcon, Wand2, AlertCircle, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
+interface ProductImage {
+  id: string;
+  src: string;
+  alt_text: string | null;
+  position: number;
+  product_id: string;
+}
+
+interface ProductWithImages {
+  id: string;
+  title: string;
+  handle: string;
+  images: ProductImage[];
+}
+
+export function SeoAltImageList() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [products, setProducts] = useState<ProductWithImages[]>([]);
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
+  const [filterStatus, setFilterStatus] = useState<'all' | 'empty' | 'filled'>('all');
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+
+  useEffect(() => {
+    fetchImages();
+  }, [user]);
+
+  const fetchImages = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch all products with their images
+      const { data: productsData, error: productsError } = await supabase
+        .from('shopify_products')
+        .select('id, title, handle')
+        .eq('seller_id', user?.id);
+
+      if (productsError) throw productsError;
+
+      if (!productsData || productsData.length === 0) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch all images for all products
+      const { data: imagesData, error: imagesError } = await supabase
+        .from('product_images')
+        .select('*')
+        .in('product_id', productsData.map(p => p.id))
+        .order('position', { ascending: true });
+
+      if (imagesError) throw imagesError;
+
+      // Group images by product
+      const productsWithImages: ProductWithImages[] = productsData
+        .map(product => {
+          const productImages = (imagesData || []).filter(img => img.product_id === product.id);
+          return {
+            id: product.id,
+            title: product.title,
+            handle: product.handle,
+            images: productImages
+          };
+        })
+        .filter(p => p.images.length > 0);
+
+      setProducts(productsWithImages);
+    } catch (error) {
+      console.error('Error fetching images:', error);
+      toast.error('Erreur lors du chargement des images');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleProduct = (productId: string) => {
+    const newExpanded = new Set(expandedProducts);
+    if (newExpanded.has(productId)) {
+      newExpanded.delete(productId);
+    } else {
+      newExpanded.add(productId);
+    }
+    setExpandedProducts(newExpanded);
+  };
+
+  const handleSelectImage = (imageId: string, checked: boolean) => {
+    const newSelected = new Set(selectedImages);
+    if (checked) {
+      newSelected.add(imageId);
+    } else {
+      newSelected.delete(imageId);
+    }
+    setSelectedImages(newSelected);
+  };
+
+  const handleGenerateForSelected = async () => {
+    const allImages = products.flatMap(p => p.images);
+    const imagesToGenerate = allImages.filter(
+      img => selectedImages.has(img.id) && !img.alt_text
+    );
+
+    if (imagesToGenerate.length === 0) {
+      toast.info('Aucune image sans ALT text sélectionnée');
+      return;
+    }
+
+    setGenerating(true);
+    setProgress({ current: 0, total: imagesToGenerate.length });
+
+    for (let i = 0; i < imagesToGenerate.length; i++) {
+      try {
+        await supabase.functions.invoke('generate-alt-texts', {
+          body: { imageId: imagesToGenerate[i].id }
+        });
+        setProgress({ current: i + 1, total: imagesToGenerate.length });
+      } catch (error) {
+        console.error('Error generating ALT text:', error);
+      }
+    }
+
+    setGenerating(false);
+    setSelectedImages(new Set());
+    toast.success(`${imagesToGenerate.length} textes ALT générés avec succès`);
+    await fetchImages();
+  };
+
+  const filteredProducts = products.map(product => ({
+    ...product,
+    images: product.images.filter(img => {
+      if (filterStatus === 'empty') return !img.alt_text;
+      if (filterStatus === 'filled') return !!img.alt_text;
+      return true;
+    })
+  })).filter(p => p.images.length > 0);
+
+  const allImages = products.flatMap(p => p.images);
+  const stats = {
+    total: allImages.length,
+    empty: allImages.filter(img => !img.alt_text).length,
+    filled: allImages.filter(img => !!img.alt_text).length
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <ImageIcon className="w-8 h-8 text-muted-foreground" />
+            <div>
+              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-sm text-muted-foreground">Total images</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 border-warning">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-8 h-8 text-warning" />
+            <div>
+              <p className="text-2xl font-bold">{stats.empty}</p>
+              <p className="text-sm text-muted-foreground">Sans ALT text</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 border-success">
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-8 h-8 text-success" />
+            <div>
+              <p className="text-2xl font-bold">{stats.filled}</p>
+              <p className="text-sm text-muted-foreground">Avec ALT text</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filter Tabs */}
+      <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+        <TabsList>
+          <TabsTrigger value="all">Toutes ({stats.total})</TabsTrigger>
+          <TabsTrigger value="empty">Sans ALT ({stats.empty})</TabsTrigger>
+          <TabsTrigger value="filled">Avec ALT ({stats.filled})</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Actions */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {selectedImages.size} image(s) sélectionnée(s)
+        </p>
+        <Button
+          onClick={handleGenerateForSelected}
+          disabled={generating || selectedImages.size === 0}
+        >
+          {generating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Génération...
+            </>
+          ) : (
+            <>
+              <Wand2 className="mr-2 h-4 w-4" />
+              Générer ALT ({selectedImages.size})
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Progress */}
+      {generating && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Génération en cours...</span>
+            <span className="text-sm text-muted-foreground">
+              {progress.current} / {progress.total}
+            </span>
+          </div>
+          <Progress value={(progress.current / progress.total) * 100} />
+        </Card>
+      )}
+
+      {/* Products List with Collapsible Images */}
+      <ScrollArea className="h-[600px]">
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <p className="text-lg text-muted-foreground">Aucune image trouvée</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredProducts.map((product) => {
+              const isExpanded = expandedProducts.has(product.id);
+              const mainImage = product.images.find(img => img.position === 0) || product.images[0];
+              const imagesWithAlt = product.images.filter(img => img.alt_text).length;
+
+              return (
+                <Card key={product.id} className="overflow-hidden">
+                  <Collapsible open={isExpanded} onOpenChange={() => toggleProduct(product.id)}>
+                    <CollapsibleTrigger className="w-full">
+                      <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          {isExpanded ? (
+                            <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                          )}
+                          {mainImage && (
+                            <img
+                              src={mainImage.src}
+                              alt={product.title}
+                              className="w-16 h-16 object-cover rounded flex-shrink-0"
+                            />
+                          )}
+                          <div className="text-left">
+                            <h3 className="font-semibold">{product.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {product.images.length} image(s)
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant={imagesWithAlt === product.images.length ? "default" : "secondary"}>
+                          {imagesWithAlt}/{product.images.length} ALT
+                        </Badge>
+                      </div>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="p-4 pt-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {product.images.map((image) => (
+                          <Card key={image.id} className="overflow-hidden">
+                            <div className="relative aspect-square">
+                              <img
+                                src={image.src}
+                                alt={image.alt_text || 'Product image'}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute top-2 left-2">
+                                <Checkbox
+                                  checked={selectedImages.has(image.id)}
+                                  onCheckedChange={(checked) => handleSelectImage(image.id, checked as boolean)}
+                                  className="bg-background"
+                                />
+                              </div>
+                              {image.alt_text && (
+                                <Badge className="absolute top-2 right-2 bg-success text-xs">
+                                  ALT ✓
+                                </Badge>
+                              )}
+                              {image.position === 0 && (
+                                <Badge className="absolute bottom-2 left-2 bg-primary text-xs">
+                                  Principale
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="p-2">
+                              {image.alt_text ? (
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {image.alt_text}
+                                </p>
+                              ) : (
+                                <div className="flex items-center gap-1 text-xs text-warning">
+                                  <AlertCircle className="w-3 h-3" />
+                                  <span>Pas de texte ALT</span>
+                                </div>
+                              )}
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </ScrollArea>
+    </div>
+  );
+}

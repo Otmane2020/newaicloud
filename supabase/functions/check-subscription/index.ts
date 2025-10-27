@@ -100,7 +100,12 @@ serve(async (req) => {
     if (hasActiveSub && activeSubscription) {
       const subscription = activeSubscription;
       status = subscription.status;
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      
+      // Safely handle subscription end date
+      if (subscription.current_period_end) {
+        subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      }
+      
       logStep('Active subscription found', { 
         subscriptionId: subscription.id, 
         status: status,

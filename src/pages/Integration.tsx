@@ -1,4 +1,4 @@
-import { ShopifyConnection } from '@/components/dashboard/ShopifyConnection';
+import { ShopifyConnectionsList } from '@/components/dashboard/ShopifyConnectionsList';
 
 export default function Integration() {
   return (
@@ -6,14 +6,14 @@ export default function Integration() {
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
-            Intégration Shopify
+            Intégrations Shopify
           </h1>
           <p className="text-muted-foreground text-lg">
-            Connectez et gérez votre boutique Shopify
+            Connectez et gérez vos boutiques Shopify
           </p>
         </div>
 
-        <ShopifyConnection />
+        <ShopifyConnectionsList />
       </div>
     </div>
   );
