@@ -3,6 +3,9 @@ project_id = "nekqqlhrjgmyudmmewas"
 [functions.check-subscription]
 verify_jwt = true
 
+[functions.check-usage-limits]
+verify_jwt = true
+
 [functions.send-subscription-confirmed]
 verify_jwt = false
 

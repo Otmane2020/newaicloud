@@ -92,6 +92,35 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`Generating SEO with DeepSeek for product: ${product.title}`);
+    
+    // Check usage limits before proceeding
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      console.log('🔍 Checking usage limits for user:', product.seller_id);
+      const limitResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/check-usage-limits`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (limitResponse.ok) {
+        const limitCheck = await limitResponse.json();
+        if (!limitCheck?.canUseOptimizations) {
+          console.log('⚠️ User has reached optimization limit');
+          return new Response(
+            JSON.stringify({ 
+              error: 'trial_limit_reached',
+              message: 'Limite d\'essai atteinte. Activez votre abonnement pour continuer.',
+              usage: limitCheck.usage,
+              limits: limitCheck.limits
+            }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        console.log('✅ Usage limits OK, proceeding with optimization');
+      }
+    }
 
     const seoPrompt = `Generate optimized SEO title and meta description for this e-commerce product:
 

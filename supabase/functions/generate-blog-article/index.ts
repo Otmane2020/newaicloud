@@ -66,12 +66,32 @@ Deno.serve(async (req) => {
   }
 });
 
-async function generateSingleArticle(requestData: any, supabaseClient: any, apiKey: string) {
+async function generateSingleArticle(requestData: any, supabaseClient: any, apiKey: string, authHeader?: string) {
   try {
     const { user_id, category = "Guide", keywords = [], title } = requestData;
     
     if (!user_id) {
       throw new Error("user_id is required");
+    }
+    
+    // Check usage limits before proceeding
+    if (authHeader) {
+      console.log('🔍 Checking usage limits for user:', user_id);
+      const limitResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/check-usage-limits`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (limitResponse.ok) {
+        const limitCheck = await limitResponse.json();
+        if (!limitCheck?.canUseArticles) {
+          console.log('⚠️ User has reached article generation limit');
+          throw new Error('trial_limit_reached: Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+        }
+        console.log('✅ Usage limits OK, proceeding with article generation');
+      }
     }
     
     const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;

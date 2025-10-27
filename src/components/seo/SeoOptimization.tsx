@@ -7,6 +7,9 @@ import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Search,
   RefreshCw,
@@ -50,6 +53,8 @@ export function SeoOptimization() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   const ITEMS_PER_PAGE = 50;
 
@@ -112,6 +117,13 @@ export function SeoOptimization() {
   };
 
   const handleGenerateForSelected = async () => {
+    // Check usage limits
+    if (!limits?.canUseOptimizations) {
+      toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     const productsToGenerate = products.filter(
       p => selectedProducts.has(p.id) && (!p.seo_title || !p.seo_description)
     );
@@ -132,17 +144,30 @@ export function SeoOptimization() {
           body: { productId: productsToGenerate[i].id }
         });
         setProgress({ current: i + 1, total: productsToGenerate.length });
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error generating SEO:', error);
+        if (error.message?.includes('trial_limit_reached')) {
+          toast.error('Limite d\'essai atteinte.');
+          setShowUpgradeDialog(true);
+          break;
+        }
       }
     }
 
     setGenerating(false);
     setIsOptimizationComplete(true);
     await fetchProducts();
+    await refreshLimits();
   };
 
   const handleGenerateAll = async () => {
+    // Check usage limits
+    if (!limits?.canUseOptimizations) {
+      toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     const productsToGenerate = products.filter(p => !p.seo_title || !p.seo_description);
 
     if (productsToGenerate.length === 0) {
@@ -164,8 +189,13 @@ export function SeoOptimization() {
           await supabase.functions.invoke('generate-seo-with-deepseek', {
             body: { productId: product.id }
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error generating SEO:', error);
+          if (error.message?.includes('trial_limit_reached')) {
+            toast.error('Limite d\'essai atteinte.');
+            setShowUpgradeDialog(true);
+            return;
+          }
         }
       }));
 
@@ -175,6 +205,7 @@ export function SeoOptimization() {
     setGenerating(false);
     setIsOptimizationComplete(true);
     await fetchProducts();
+    await refreshLimits();
   };
 
   const handleSyncSelected = async () => {
@@ -243,6 +274,23 @@ export function SeoOptimization() {
 
   return (
     <div className="space-y-6">
+      {/* Usage limits alert */}
+      {limits && limits.isTrialing && (
+        <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+          <AlertDescription className="text-sm">
+            {limits.limitReached.optimizations ? (
+              <span className="text-orange-900 dark:text-orange-100 font-medium">
+                ⚠️ Limite d'essai atteinte : {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimisations utilisées
+              </span>
+            ) : (
+              <span>
+                📊 Essai gratuit : {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimisations utilisées
+              </span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Hero Banner with CTA */}
       <Card className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950 dark:via-purple-950 dark:to-pink-950 border-2 border-primary/20 p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -298,281 +346,24 @@ export function SeoOptimization() {
         </div>
       </Card>
 
-      {/* Dashboard Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
-                <Package className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-              </div>
-              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Total Produits</h3>
-            </div>
-          </div>
-          <p className="text-4xl font-bold mb-1">{products.length}</p>
-          <p className="text-sm text-muted-foreground">Dans votre catalogue</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
-                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100">Optimisés</h3>
-            </div>
-            <Badge className="bg-green-600 text-white">{optimizationRate}%</Badge>
-          </div>
-          <p className="text-4xl font-bold text-green-900 dark:text-green-100 mb-1">{enrichedCount}</p>
-          <p className="text-sm text-green-700 dark:text-green-300">Sur {products.length} produits</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-xl">
-                <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100">À synchroniser</h3>
-            </div>
-          </div>
-          <p className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-1">{pendingSyncCount}</p>
-          <p className="text-sm text-blue-700 dark:text-blue-300">Prêts pour Shopify</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-xl">
-                <Upload className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <h3 className="font-semibold text-purple-900 dark:text-purple-100">Synchronisés</h3>
-            </div>
-          </div>
-          <p className="text-4xl font-bold text-purple-900 dark:text-purple-100 mb-1">{syncedCount}</p>
-          <p className="text-sm text-purple-700 dark:text-purple-300">Actifs sur Shopify</p>
-        </Card>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-background border rounded-lg p-1 flex flex-wrap gap-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id);
-              setCurrentPage(1);
-            }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
-              activeTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {tab.label}
-            <Badge variant={activeTab === tab.id ? 'secondary' : 'outline'}>
-              {tab.count}
-            </Badge>
-          </button>
-        ))}
-      </div>
-
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex-1 w-full sm:w-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Rechercher des produits..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {selectedProducts.size > 0 && (
-            <>
-              <Button
-                onClick={handleGenerateForSelected}
-                disabled={generating}
-                className="gap-2"
-                variant="secondary"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Génération...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Générer ({selectedProducts.size})
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={handleSyncSelected}
-                disabled={syncing}
-                className="gap-2"
-              >
-                {syncing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Synchro...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Synchroniser ({selectedProducts.size})
-                  </>
-                )}
-              </Button>
-            </>
-          )}
-          <Button variant="outline" size="icon" onClick={fetchProducts}>
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Progress */}
-      {(generating || syncing) && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium">
-              {generating ? 'Génération SEO...' : 'Synchronisation...'}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {progress.current} / {progress.total}
-            </span>
-          </div>
-          <Progress value={(progress.current / progress.total) * 100} className="h-2" />
-        </Card>
-      )}
-
-      {/* Products Table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted/50 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left w-12">
-                  <input
-                    type="checkbox"
-                    checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
-                    onChange={handleSelectAll}
-                    className="rounded"
-                  />
-                </th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[250px]">Produit</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[150px]">Catégorie</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[300px]">Titre SEO</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[350px]">Description SEO</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[150px]">Statut</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {paginatedProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.has(product.id)}
-                      onChange={() => handleSelectProduct(product.id)}
-                      className="rounded"
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {product.image_url && (
-                        <img src={product.image_url} alt={product.title} className="w-12 h-12 object-cover rounded" />
-                      )}
-                      <div>
-                        <div className="font-medium line-clamp-1">{product.title}</div>
-                        <div className="text-xs text-muted-foreground">{product.vendor}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{product.category || '-'}</div>
-                    <div className="text-xs text-muted-foreground">{product.sub_category || '-'}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="line-clamp-2">{product.seo_title || '-'}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="line-clamp-2">{product.seo_description || '-'}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col gap-1">
-                      {product.enrichment_status === 'enriched' ? (
-                        <Badge variant="secondary" className="gap-1 w-fit">
-                          <Sparkles className="w-3 h-3" />
-                          Enrichi
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="gap-1 w-fit">
-                          <Clock className="w-3 h-3" />
-                          Non enrichi
-                        </Badge>
-                      )}
-                      {product.seo_synced_to_shopify && (
-                        <Badge variant="default" className="gap-1 w-fit bg-green-500">
-                          <CheckCircle className="w-3 h-3" />
-                          Synchronisé
-                        </Badge>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30">
-            <div className="text-sm text-muted-foreground">
-              Affichage {startIndex + 1} à {Math.min(startIndex + ITEMS_PER_PAGE, filteredProducts.length)} sur {filteredProducts.length}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
-                Précédent
-              </Button>
-              <span className="text-sm">
-                Page {currentPage} sur {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Suivant
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Optimization Progress Dialog */}
+      
       <OptimizationProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        title={generating ? "Optimisation SEO en cours" : "Synchronisation Shopify"}
+        title="Optimisation SEO en cours"
         current={progress.current}
         total={progress.total}
         isComplete={isOptimizationComplete}
         onSyncClick={handleSyncSelected}
         onClose={handleCloseProgressDialog}
+      />
+      
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+        usage={limits?.usage.optimizations_count}
+        limit={limits?.limits.max_optimizations}
       />
     </div>
   );

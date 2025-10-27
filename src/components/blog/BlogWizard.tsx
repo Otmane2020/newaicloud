@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   ChevronRight,
   ChevronLeft,
@@ -65,6 +68,9 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     productCount: 3,
   });
 
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -119,6 +125,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   };
 
   const handleGenerate = async () => {
+    // Check usage limits
+    if (!limits?.canUseArticles) {
+      toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     try {
       setGenerating(true);
 
@@ -167,7 +180,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       onClose();
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Erreur lors de la génération', { id: 'generating' });
+      if (error.message?.includes('trial_limit_reached')) {
+        toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+        setShowUpgradeDialog(true);
+      } else {
+        toast.error(error.message || 'Erreur lors de la génération', { id: 'generating' });
+      }
     } finally {
       setGenerating(false);
     }
@@ -184,6 +202,23 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <X className="w-5 h-5" />
             </button>
           </div>
+
+          {/* Usage limits alert */}
+          {limits && limits.isTrialing && (
+            <Alert className="mb-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+              <AlertDescription className="text-sm">
+                {limits.limitReached.articles ? (
+                  <span className="text-orange-900 dark:text-orange-100 font-medium">
+                    ⚠️ Limite d'essai atteinte : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
+                  </span>
+                ) : (
+                  <span>
+                    📊 Essai gratuit : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Progress Steps */}
           <div className="flex items-center justify-between mb-8">
@@ -355,6 +390,14 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           </div>
         </div>
       </Card>
+      
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="articles"
+        usage={limits?.usage.articles_count}
+        limit={limits?.limits.max_articles}
+      />
     </div>
   );
 }
