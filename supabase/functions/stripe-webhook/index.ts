@@ -155,8 +155,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           plan_id: metadata?.plan_id,
           status: status,
           billing_period: metadata?.billing_period || 'monthly',
-          current_period_start: new Date(subscriptionDetails.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscriptionDetails.current_period_end * 1000).toISOString(),
+          current_period_start: subscriptionDetails.current_period_start 
+            ? new Date(subscriptionDetails.current_period_start * 1000).toISOString()
+            : null,
+          current_period_end: subscriptionDetails.current_period_end 
+            ? new Date(subscriptionDetails.current_period_end * 1000).toISOString()
+            : null,
           trial_start: trialEnd ? new Date().toISOString() : null,
           trial_end: trialEnd,
           cancel_at_period_end: false
