@@ -42,7 +42,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // First check Stripe for the real subscription status
+      // Check Stripe for the real subscription status
       console.log('🔄 Checking Stripe subscription status...');
       const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription');
       
@@ -51,27 +51,39 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       } else {
         console.log('✅ Stripe subscription data:', stripeData);
         
-        // If user has active subscription in Stripe, update profile
+        // If user has active subscription in Stripe, bypass the redirect
         if (stripeData?.subscribed) {
-          console.log('🔄 Updating profile with Stripe subscription status...');
-          const { error: updateError } = await supabase
+          console.log('✅ Active subscription found in Stripe, allowing access');
+          
+          // Update profile in background (don't wait for it)
+          supabase
             .from('profiles')
             .update({
               subscription_status: 'active',
               onboarding_completed: true,
               updated_at: new Date().toISOString()
             })
-            .eq('id', user.id);
-            
-          if (updateError) {
-            console.error('❌ Error updating profile:', updateError);
-          } else {
-            console.log('✅ Profile updated with active subscription');
-          }
+            .eq('id', user.id)
+            .then(({ error: updateError }) => {
+              if (updateError) {
+                console.error('❌ Error updating profile:', updateError);
+              } else {
+                console.log('✅ Profile updated with active subscription');
+              }
+            });
+          
+          // Set a valid profile to bypass the redirect check
+          setProfile({
+            subscription_status: 'active',
+            current_plan_id: null,
+            trial_ends_at: null
+          });
+          setLoading(false);
+          return;
         }
       }
       
-      // Then load the updated profile
+      // Load the profile from database
       const { data, error } = await supabase
         .from('profiles')
         .select('subscription_status, current_plan_id, trial_ends_at')
