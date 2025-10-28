@@ -515,6 +515,48 @@ Deno.serve(async (req: Request) => {
       p_increment: products.length
     });
 
+    // Import pages from Shopify
+    try {
+      console.log('Importing Shopify pages...');
+      const pagesResponse = await fetch(
+        `https://${cleanShopName}.myshopify.com/admin/api/2024-01/pages.json?limit=250`,
+        {
+          headers: {
+            "X-Shopify-Access-Token": apiToken,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (pagesResponse.ok) {
+        const { pages } = await pagesResponse.json();
+        
+        if (pages && pages.length > 0) {
+          const pagesToInsert = pages.map((page: any) => ({
+            user_id: user.id,
+            store_id: storeId || null,
+            shopify_page_id: page.id,
+            title: page.title,
+            body_html: page.body_html,
+            handle: page.handle,
+            published_at: page.published_at,
+            template_suffix: page.template_suffix,
+          }));
+
+          await supabaseServiceClient
+            .from('shopify_pages')
+            .upsert(pagesToInsert, {
+              onConflict: 'shopify_page_id',
+              ignoreDuplicates: false,
+            });
+          
+          console.log(`Successfully imported ${pages.length} pages`);
+        }
+      }
+    } catch (error) {
+      console.error('Error importing pages (non-critical):', error);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

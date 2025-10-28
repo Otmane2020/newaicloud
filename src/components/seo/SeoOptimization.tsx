@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
+import { OptimizationResultsDialog } from './OptimizationResultsDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
@@ -55,6 +56,8 @@ export function SeoOptimization() {
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   const ITEMS_PER_PAGE = 50;
@@ -164,6 +167,22 @@ export function SeoOptimization() {
     setIsOptimizationComplete(true);
     await fetchProducts();
     await refreshLimits();
+
+    // Get updated products with new SEO data
+    const updatedProducts = await Promise.all(
+      productsToGenerate.map(async (p) => {
+        const { data } = await supabase
+          .from('shopify_products')
+          .select('id, title, seo_title, seo_description, image_url')
+          .eq('id', p.id)
+          .single();
+        return data;
+      })
+    );
+
+    setOptimizedProducts(updatedProducts.filter(Boolean) as Product[]);
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
   };
 
   const handleGenerateAll = async () => {
@@ -253,6 +272,12 @@ export function SeoOptimization() {
   const handleCloseProgressDialog = () => {
     setShowProgressDialog(false);
     setIsOptimizationComplete(false);
+    setSelectedProducts(new Set());
+  };
+
+  const handleCloseResultsDialog = () => {
+    setShowResultsDialog(false);
+    setOptimizedProducts([]);
     setSelectedProducts(new Set());
   };
 
@@ -492,6 +517,19 @@ export function SeoOptimization() {
         onSyncClick={handleSyncSelected}
         onClose={handleCloseProgressDialog}
       />
+
+      {/* Results Dialog */}
+      <OptimizationResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="seo"
+        items={optimizedProducts}
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          handleSyncSelected();
+        }}
+        onClose={handleCloseResultsDialog}
+      />
       
       {limits?.shouldForcePayment ? (
         <TrialLimitDialog
@@ -500,6 +538,7 @@ export function SeoOptimization() {
           limitType="optimizations"
           currentUsage={limits?.usage.optimizations_count || 0}
           maxUsage={limits?.limits.max_optimizations || 0}
+          trialMaxUsage={limits?.isTrialing ? limits?.limits.max_optimizations : undefined}
         />
       ) : (
         <UpgradeDialog

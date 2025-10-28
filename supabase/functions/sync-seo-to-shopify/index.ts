@@ -25,30 +25,53 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
+
+    // Authenticate user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
 
     const { productId, imageId, syncTags, syncAltText, syncGoogleShopping }: SyncRequest = await req.json();
 
-    const shopifyAccessToken = Deno.env.get("SHOPIFY_ACCESS_TOKEN");
-
-    if (!shopifyAccessToken) {
-      throw new Error("Shopify access token not configured");
-    }
-
     // Sync product SEO data
     if (productId) {
+      // Get store connection for this user
       const { data: product, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("shopify_id, seo_title, seo_description, tags, category, sub_category, vendor")
+        .select("shopify_id, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id")
         .eq("id", productId)
+        .eq("seller_id", user.id)
         .maybeSingle();
 
       if (productError || !product) {
-        throw new Error("Product not found");
+        console.error('Product fetch error:', productError);
+        throw new Error("Product not found or unauthorized");
       }
 
-      const shopUrl = Deno.env.get("SHOPIFY_STORE_URL") || "";
+      // Get Shopify connection for this product's store
+      const { data: storeConnection, error: storeError } = await supabaseClient
+        .from("shopify_connections")
+        .select("store_url, access_token")
+        .eq("id", product.store_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (storeError || !storeConnection) {
+        console.error('Store connection error:', storeError);
+        throw new Error("Store connection not found");
+      }
+
+      const shopUrl = storeConnection.store_url;
+      const shopifyAccessToken = storeConnection.access_token;
       
       // Build product update data
       const updateData: any = {
@@ -103,9 +126,10 @@ Deno.serve(async (req: Request) => {
         updateData.product.metafields = metafields;
       }
 
-      // Sync tags if requested
+      // Sync tags if requested - Shopify expects comma-separated string
       if (syncTags && product.tags) {
-        updateData.product.tags = product.tags;
+        // Ensure tags is a string (it should already be from the database)
+        updateData.product.tags = typeof product.tags === 'string' ? product.tags : '';
       }
 
       // Sync product type for Google Shopping
@@ -141,6 +165,8 @@ Deno.serve(async (req: Request) => {
         })
         .eq("id", productId);
 
+      console.log(`Product ${product.shopify_id} synced successfully`);
+      
       return new Response(
         JSON.stringify({
           success: true,
@@ -167,15 +193,29 @@ Deno.serve(async (req: Request) => {
 
       const { data: product } = await supabaseClient
         .from("shopify_products")
-        .select("shopify_id")
+        .select("shopify_id, store_id, seller_id")
         .eq("id", image.product_id)
+        .eq("seller_id", user.id)
         .maybeSingle();
 
       if (!product) {
         throw new Error("Product not found for image");
       }
 
-      const shopUrl = Deno.env.get("SHOPIFY_STORE_URL") || "";
+      // Get Shopify connection
+      const { data: storeConnection, error: storeError } = await supabaseClient
+        .from("shopify_connections")
+        .select("store_url, access_token")
+        .eq("id", product.store_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (storeError || !storeConnection) {
+        throw new Error("Store connection not found");
+      }
+
+      const shopUrl = storeConnection.store_url;
+      const shopifyAccessToken = storeConnection.access_token;
       const shopifyResponse = await fetch(
         `https://${shopUrl}/admin/api/2024-01/products/${product.shopify_id}/images/${image.shopify_image_id}.json`,
         {

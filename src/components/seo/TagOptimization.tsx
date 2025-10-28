@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
+import { OptimizationResultsDialog } from './OptimizationResultsDialog';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -58,6 +59,8 @@ export function TagOptimization() {
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const { limits, loading: limitsLoading } = useUsageLimits();
 
   const fetchProducts = async () => {
@@ -207,6 +210,7 @@ export function TagOptimization() {
     let successCount = 0;
     let skipCount = 0;
     let errorCount = 0;
+    const generatedProducts: Product[] = [];
 
     for (let i = 0; i < productIds.length; i++) {
       try {
@@ -227,6 +231,11 @@ export function TagOptimization() {
             skipCount++;
           } else {
             successCount++;
+            // Get the updated product
+            const product = products.find(p => p.id === productIds[i]);
+            if (product) {
+              generatedProducts.push(product);
+            }
           }
         } else {
           errorCount++;
@@ -241,6 +250,22 @@ export function TagOptimization() {
     setGenerating(false);
     setIsOptimizationComplete(true);
     await fetchProducts();
+    
+    // Get updated products with new tags
+    const updatedProducts = await Promise.all(
+      productIds.map(async (id) => {
+        const { data } = await supabase
+          .from('shopify_products')
+          .select('id, title, tags, image_url')
+          .eq('id', id)
+          .single();
+        return data;
+      })
+    );
+
+    setOptimizedProducts(updatedProducts.filter(Boolean) as Product[]);
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
   };
 
   const handleSyncAll = async () => {
@@ -266,36 +291,45 @@ export function TagOptimization() {
 
   const handleBulkSync = async (productIds: string[]) => {
     setShowProgressDialog(false);
+    setShowResultsDialog(false);
     setSyncing(true);
     setProgress({ current: 0, total: productIds.length });
 
     let successCount = 0;
     let errorCount = 0;
+    const errors: string[] = [];
 
     for (let i = 0; i < productIds.length; i++) {
       try {
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-seo-to-shopify`;
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            productId: productIds[i], 
-            syncTags: true,
-            syncGoogleShopping: true
-          }),
-        });
+        const { data: authData } = await supabase.auth.getSession();
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-seo-to-shopify`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${authData.session?.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              productId: productIds[i], 
+              syncTags: true,
+              syncGoogleShopping: true
+            }),
+          }
+        );
 
         if (response.ok) {
           successCount++;
         } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           errorCount++;
+          errors.push(`Produit ${i + 1}: ${errorData.error || 'Erreur inconnue'}`);
+          console.error(`Sync error for product ${productIds[i]}:`, errorData);
         }
       } catch (error) {
         console.error('Error syncing:', error);
         errorCount++;
+        errors.push(`Produit ${i + 1}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
       }
       setProgress({ current: i + 1, total: productIds.length });
     }
@@ -304,13 +338,25 @@ export function TagOptimization() {
     setProgress({ current: 0, total: 0 });
     setSelectedProducts(new Set());
     
-    toast.success(`Synchronisation terminée: ${successCount} succès, ${errorCount} erreurs`);
+    if (errorCount > 0) {
+      console.error('Sync errors:', errors);
+      toast.error(`Synchronisation terminée: ${successCount} succès, ${errorCount} erreurs. Vérifiez vos identifiants Shopify.`);
+    } else {
+      toast.success(`Synchronisation réussie: ${successCount} produits synchronisés`);
+    }
+    
     await fetchProducts();
   };
 
   const handleCloseProgressDialog = () => {
     setShowProgressDialog(false);
     setIsOptimizationComplete(false);
+    setSelectedProducts(new Set());
+  };
+
+  const handleCloseResultsDialog = () => {
+    setShowResultsDialog(false);
+    setOptimizedProducts([]);
     setSelectedProducts(new Set());
   };
 
@@ -779,6 +825,19 @@ export function TagOptimization() {
         isComplete={isOptimizationComplete}
         onSyncClick={handleSyncSelected}
         onClose={handleCloseProgressDialog}
+      />
+
+      {/* Results Dialog */}
+      <OptimizationResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="tags"
+        items={optimizedProducts}
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          handleSyncSelected();
+        }}
+        onClose={handleCloseResultsDialog}
       />
 
       {/* Upgrade Dialogs */}

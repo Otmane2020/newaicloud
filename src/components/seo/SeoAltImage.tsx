@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
+import { OptimizationResultsDialog } from './OptimizationResultsDialog';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -68,6 +69,8 @@ export function SeoAltImage() {
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [optimizedImages, setOptimizedImages] = useState<ImageWithProduct[]>([]);
   const { limits, loading: limitsLoading } = useUsageLimits();
 
   const IMAGES_PER_PAGE = 50;
@@ -192,6 +195,22 @@ export function SeoAltImage() {
     setGenerating(false);
     setIsOptimizationComplete(true);
     await fetchImages();
+
+    // Get updated images with new ALT texts
+    const updatedImages = await Promise.all(
+      finalImagesToGenerate.map(async (img) => {
+        const { data } = await supabase
+          .from('product_images')
+          .select('*, product:shopify_products(id, title, vendor, category)')
+          .eq('id', img.id)
+          .single();
+        return data ? { ...data, product: data.product } as ImageWithProduct : null;
+      })
+    );
+
+    setOptimizedImages(updatedImages.filter(Boolean) as ImageWithProduct[]);
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
   };
 
   const handleSyncSelected = async () => {
@@ -229,6 +248,12 @@ export function SeoAltImage() {
   const handleCloseProgressDialog = () => {
     setShowProgressDialog(false);
     setIsOptimizationComplete(false);
+    setSelectedImages(new Set());
+  };
+
+  const handleCloseResultsDialog = () => {
+    setShowResultsDialog(false);
+    setOptimizedImages([]);
     setSelectedImages(new Set());
   };
 
@@ -626,6 +651,24 @@ export function SeoAltImage() {
         isComplete={isOptimizationComplete}
         onSyncClick={handleSyncSelected}
         onClose={handleCloseProgressDialog}
+      />
+
+      {/* Results Dialog */}
+      <OptimizationResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="alt"
+        items={optimizedImages.map(img => ({
+          id: img.id,
+          title: img.product.title,
+          alt_text: img.alt_text || '',
+          image_url: img.src
+        }))}
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          handleSyncSelected();
+        }}
+        onClose={handleCloseResultsDialog}
       />
 
       {/* Upgrade Dialogs */}
