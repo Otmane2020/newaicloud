@@ -28,13 +28,15 @@ i18n
       zh: { translation: translationZH },
       ar: { translation: translationAR },
     },
+    lng: 'en', // Set default language to English
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      order: ['querystring', 'localStorage'],
       caches: ['localStorage'],
+      lookupQuerystring: 'lng',
     },
   });
 
