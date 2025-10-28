@@ -90,11 +90,12 @@ export default function Chat() {
   };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
+    const userMessageText = input.trim();
     const userMessage: Message = {
       role: 'user',
-      content: input
+      content: userMessageText
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -106,59 +107,99 @@ export default function Chat() {
       await supabase.from('chat_messages').insert({
         session_id: sessionId,
         role: 'user',
-        content: input
+        content: userMessageText
       });
 
       await supabase
         .from('chat_sessions')
         .update({
-          last_message: input,
+          last_message: userMessageText,
           message_count: messages.length + 1,
-          title: messages.length === 1 ? input.substring(0, 50) : undefined
+          title: messages.length === 1 ? userMessageText.substring(0, 50) : undefined
         })
         .eq('id', sessionId);
     }
 
     try {
-      // Create a context-aware prompt with product data
-      const context = `Tu es un assistant commercial intelligent connecté à un catalogue Shopify. 
-Voici le catalogue actuel (${products.length} produits):
-${products.slice(0, 20).map(p => `- ${p.title}: ${p.price}€ ${p.description ? '- ' + p.description.substring(0, 100) : ''}`).join('\n')}
-
-L'utilisateur demande: ${input}
-
-Réponds de manière professionnelle et suggère des produits pertinents si approprié. Si tu suggères des produits, formate-les comme: [PRODUCT:id:title]`;
-
-      const { data, error } = await supabase.functions.invoke('chat-smart', {
-        body: { 
-          userMessage: input,
-          history: messages,
-          sellerId: user?.id
+      // ✅ Use SSE streaming
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-smart`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            userMessage: userMessageText,
+            history: messages.slice(-5),
+            sellerId: user?.id,
+          }),
         }
-      });
+      );
 
-      if (error) throw error;
+      if (!response.ok) throw new Error("Network error");
+      if (!response.body) throw new Error("No response body");
 
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.content || 'Désolé, je n\'ai pas pu traiter votre demande.',
-        products: data.products || []
-      };
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let assistantContent = "";
+      let assistantProducts: any[] = [];
 
-      setMessages(prev => [...prev, assistantMessage]);
+      // ✅ Create temporary assistant message
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "", products: [] },
+      ]);
 
-      // Save assistant message to session
-      if (sessionId) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.trim() || line === "data: [DONE]") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          try {
+            const data = JSON.parse(line.slice(6));
+            assistantContent += data.content || "";
+            if (data.products && data.products.length > 0) {
+              assistantProducts = data.products;
+            }
+
+            // ✅ Update last assistant message
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                role: "assistant",
+                content: assistantContent,
+                products: assistantProducts,
+              };
+              return updated;
+            });
+          } catch (e) {
+            console.error("Parse error:", e);
+          }
+        }
+      }
+
+      // Save assistant message to session after stream completes
+      if (sessionId && assistantContent) {
         await supabase.from('chat_messages').insert({
           session_id: sessionId,
           role: 'assistant',
-          content: assistantMessage.content
+          content: assistantContent
         });
 
         await supabase
           .from('chat_sessions')
           .update({
-            last_message: assistantMessage.content.substring(0, 200),
+            last_message: assistantContent.substring(0, 200),
             message_count: messages.length + 2
           })
           .eq('id', sessionId);

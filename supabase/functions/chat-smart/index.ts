@@ -1,10 +1,13 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
+
+// Initialize Deno KV for caching
+const kv = await Deno.openKv();
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -69,6 +72,25 @@ function normalizeText(text: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
+}
+
+// Cache helpers
+async function getCachedResponse(cacheKey: string): Promise<string | null> {
+  try {
+    const entry = await kv.get<string>(["chat-cache", cacheKey]);
+    return entry.value;
+  } catch (err) {
+    console.error("Cache read error:", err);
+    return null;
+  }
+}
+
+async function setCachedResponse(cacheKey: string, response: string): Promise<void> {
+  try {
+    await kv.set(["chat-cache", cacheKey], response, { expireIn: 3600000 }); // 1h TTL
+  } catch (err) {
+    console.error("Cache write error:", err);
+  }
 }
 
 function extractContextFromHistory(history: ChatMessage[]): string {
@@ -864,9 +886,15 @@ async function detectIntent(userMessage: string): Promise<"simple_chat" | "produ
   return "simple_chat";
 }
 
-async function callDeepSeek(messages: ChatMessage[], maxTokens = 300): Promise<string> {
+async function* callDeepSeek(
+  messages: ChatMessage[], 
+  maxTokens = 300
+): AsyncGenerator<string, void, unknown> {
   const deepseekKey = Deno.env.get("DEEPSEEK_API_KEY");
-  if (!deepseekKey) return "Bonjour ! Je suis votre assistant commercial. Comment puis-je vous aider ?";
+  if (!deepseekKey) {
+    yield "Bonjour ! Je suis votre assistant commercial. Comment puis-je vous aider ?";
+    return;
+  }
 
   try {
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -880,33 +908,74 @@ async function callDeepSeek(messages: ChatMessage[], maxTokens = 300): Promise<s
         messages,
         temperature: 0.7,
         max_tokens: maxTokens,
-        stream: false,
+        stream: true, // ✅ Enable streaming
       }),
     });
 
     if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+    if (!response.body) throw new Error("No response body");
 
-    const data = await response.json();
-    if (data.choices && data.choices[0] && data.choices[0].message) return data.choices[0].message.content;
+    // ✅ Stream SSE (Server-Sent Events)
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
 
-    return "Je suis votre assistant commercial. Comment puis-je vous aider ?";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === "data: [DONE]") continue;
+        if (!trimmed.startsWith("data: ")) continue;
+
+        try {
+          const json = JSON.parse(trimmed.slice(6));
+          const content = json.choices?.[0]?.delta?.content;
+          if (content) yield content;
+        } catch (e) {
+          console.error("Parse error:", e);
+        }
+      }
+    }
   } catch (err) {
     console.error("❌ Error calling DeepSeek:", err);
-    return "Je suis votre assistant commercial. Décrivez-moi ce que vous cherchez !";
+    yield "Je suis votre assistant commercial. Décrivez-moi ce que vous cherchez !";
   }
 }
 
-async function OmnIAChat(
+async function* OmnIAChat(
   userMessage: string,
   history: ChatMessage[] = [],
   storeId?: string,
   sellerId?: string,
-): Promise<ChatResponse> {
+): AsyncGenerator<ChatResponse, void, unknown> {
   console.log("🚀 [OMNIA] Message received:", userMessage);
 
   try {
     const intent = await detectIntent(userMessage);
     console.log("🎯 Final intent:", intent);
+
+    // Check cache
+    const cacheKey = `${intent}:${userMessage.toLowerCase().trim()}:${sellerId || storeId || 'global'}`;
+    const cached = await getCachedResponse(cacheKey);
+    
+    if (cached && intent === "simple_chat") {
+      console.log("✅ Cache HIT for:", cacheKey);
+      yield {
+        role: "assistant",
+        content: cached,
+        intent: "simple_chat",
+        products: [],
+        mode: "conversation",
+        sector: "général",
+      };
+      return;
+    }
 
     if (intent === "simple_chat") {
       const messages: ChatMessage[] = [
@@ -917,15 +986,22 @@ async function OmnIAChat(
         { role: "user", content: userMessage },
       ];
 
-      const response = await callDeepSeek(messages, 80);
-      return {
-        role: "assistant",
-        content: response,
-        intent: "simple_chat",
-        products: [],
-        mode: "conversation",
-        sector: "général",
-      };
+      let fullResponse = "";
+      for await (const chunk of callDeepSeek(messages, 80)) {
+        fullResponse += chunk;
+        yield {
+          role: "assistant",
+          content: chunk,
+          intent: "simple_chat",
+          products: [],
+          mode: "conversation",
+          sector: "général",
+        };
+      }
+      
+      // Cache the full response
+      await setCachedResponse(cacheKey, fullResponse);
+      return;
     }
 
     if (intent === "product_chat") {
@@ -953,15 +1029,17 @@ async function OmnIAChat(
         },
       ];
 
-      const response = await callDeepSeek(messages, 200);
-      return {
-        role: "assistant",
-        content: response,
-        intent: "product_chat",
-        products: [],
-        mode: "conversation",
-        sector: "général",
-      };
+      for await (const chunk of callDeepSeek(messages, 200)) {
+        yield {
+          role: "assistant",
+          content: chunk,
+          intent: "product_chat",
+          products: [],
+          mode: "conversation",
+          sector: "général",
+        };
+      }
+      return;
     }
 
     console.log("🛍️ Searching products for display...");
@@ -979,7 +1057,7 @@ async function OmnIAChat(
       response = `J'ai trouvé ${productCount} produit${productCount > 1 ? "s" : ""} correspondant à votre recherche. ${promoCount > 0 ? `📢 ${promoCount} en promotion ! ` : ""}Découvrez-les ci-dessous 👇`;
     }
 
-    return {
+    yield {
       role: "assistant",
       content: response,
       intent: "product_show",
@@ -989,7 +1067,7 @@ async function OmnIAChat(
     };
   } catch (error) {
     console.error("❌ [OMNIA] Global error:", error);
-    return {
+    yield {
       role: "assistant",
       content: "Je suis désolé, je rencontre un problème technique. Pouvez-vous réessayer dans un instant ?",
       intent: "conversation",
@@ -1012,30 +1090,56 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
-    const response = await OmnIAChat(userMessage, history || [], storeId, sellerId);
-
-    // Increment chat_responses_count usage tracking
-    if (sellerId) {
-      try {
-        const supabase = getSupabaseClient();
-        const { error: usageError } = await supabase.rpc("increment_usage", {
-          p_seller_id: sellerId,
-          p_field: "chat_responses_count",
-          p_increment: 1,
-        });
-
-        if (usageError) {
-          console.error("❌ Error incrementing chat usage:", usageError);
-        } else {
-          console.log("✅ Chat usage incremented for seller:", sellerId);
+    // ✅ Return SSE stream
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        
+        try {
+          for await (const chunk of OmnIAChat(userMessage, history || [], storeId, sellerId)) {
+            const data = `data: ${JSON.stringify(chunk)}\n\n`;
+            controller.enqueue(encoder.encode(data));
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        } catch (error) {
+          console.error("Stream error:", error);
+          const errorData = `data: ${JSON.stringify({ 
+            role: "assistant",
+            content: "Erreur lors du traitement.",
+            intent: "conversation",
+            products: [],
+            mode: "conversation",
+            sector: "général"
+          })}\n\n`;
+          controller.enqueue(encoder.encode(errorData));
+        } finally {
+          controller.close();
         }
-      } catch (usageErr) {
-        console.error("❌ Usage tracking error:", usageErr);
-      }
-    }
 
-    return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+        // Usage tracking after stream
+        if (sellerId) {
+          try {
+            const supabase = getSupabaseClient();
+            await supabase.rpc("increment_usage", {
+              p_seller_id: sellerId,
+              p_field: "chat_responses_count",
+              p_increment: 1,
+            });
+            console.log("✅ Chat usage incremented for seller:", sellerId);
+          } catch (usageErr) {
+            console.error("❌ Usage tracking error:", usageErr);
+          }
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
     });
   } catch (error) {
     console.error("❌ Edge function error:", error);
