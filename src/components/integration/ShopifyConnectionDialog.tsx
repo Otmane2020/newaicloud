@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Info, Loader2, Store, ShoppingBag, Key, Shield } from "lucide-react";
+import { Info, Loader2, Store, ShoppingBag, Key, Shield, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -21,6 +21,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
   const [oauthShopName, setOauthShopName] = useState("");
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [appInstallLoading, setAppInstallLoading] = useState(false);
 
   const handleTokenSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +77,10 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       setOauthLoading(true);
 
       const { data, error } = await supabase.functions.invoke("shopify-oauth", {
-        body: { shopName: oauthShopName.trim() },
+        body: { 
+          action: 'connect',
+          shopName: oauthShopName.trim() 
+        },
       });
 
       if (error) throw error;
@@ -90,6 +94,30 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       toast.error(error.message || "Erreur lors de la connexion OAuth");
     } finally {
       setOauthLoading(false);
+    }
+  };
+
+  const handleAppInstall = async () => {
+    try {
+      setAppInstallLoading(true);
+
+      const { data, error } = await supabase.functions.invoke("shopify-oauth", {
+        body: { 
+          action: 'install'
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.installUrl) {
+        toast.success("Installation de l'application Shopify...");
+        window.location.href = data.installUrl;
+      }
+    } catch (error: any) {
+      console.error("App install error:", error);
+      toast.error(error.message || "Erreur lors de l'installation");
+    } finally {
+      setAppInstallLoading(false);
     }
   };
 
@@ -107,18 +135,69 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* OAuth Method */}
+          {/* App Installation Method - NOUVELLE MÉTHODE */}
+          <div className="space-y-4 p-4 border rounded-lg bg-card border-primary/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ExternalLink className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold">Installation Automatique</h3>
+              </div>
+              <Badge variant="default" className="bg-green-600">Recommandé</Badge>
+            </div>
+            
+            <p className="text-sm text-muted-foreground">
+              Installation en 1 clic depuis Shopify - Plus besoin de nom de boutique
+            </p>
+
+            <div className="space-y-3">
+              <Alert className="bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-xs text-blue-700">
+                  Méthode la plus simple ! Vous serez redirigé vers Shopify pour installer l'application directement.
+                </AlertDescription>
+              </Alert>
+
+              <Button 
+                onClick={handleAppInstall}
+                disabled={appInstallLoading} 
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                {appInstallLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Installation...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Installer depuis Shopify App Store
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">ou</span>
+            </div>
+          </div>
+
+          {/* OAuth Method - Ancienne méthode */}
           <div className="space-y-4 p-4 border rounded-lg bg-card">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-primary" />
                 <h3 className="font-semibold">Connexion Rapide</h3>
               </div>
-              <Badge variant="default">Recommandé</Badge>
+              <Badge variant="secondary">Méthode classique</Badge>
             </div>
             
             <p className="text-sm text-muted-foreground">
-              Connexion OAuth sécurisée en un clic
+              Connexion OAuth sécurisée (nécessite le nom de boutique)
             </p>
 
             <div className="space-y-3">
@@ -149,6 +228,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                 onClick={handleOAuthConnect}
                 disabled={oauthLoading} 
                 className="w-full"
+                variant="outline"
               >
                 {oauthLoading ? (
                   <>
@@ -234,7 +314,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                   <>
                     <Key className="mr-2 h-4 w-4" />
                     Connecter avec Token
-                  </>
+                  </
                 )}
               </Button>
             </div>
