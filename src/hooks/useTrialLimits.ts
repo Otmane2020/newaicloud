@@ -59,22 +59,22 @@ export function useTrialLimits() {
         let limitType = '';
 
         if (usage) {
-          if (usage.products_count >= plan.max_products) {
+          if (usage.products_count >= (plan.trial_max_products || plan.max_products)) {
             limitReached = true;
             limitType = 'produits';
-          } else if (usage.optimizations_count >= plan.max_optimizations_monthly) {
+          } else if (usage.optimizations_count >= (plan.trial_max_optimizations || plan.max_optimizations_monthly)) {
             limitReached = true;
             limitType = 'optimisations SEO';
-          } else if (usage.articles_count >= plan.max_articles_monthly) {
+          } else if (usage.articles_count >= (plan.trial_max_articles || plan.max_articles_monthly)) {
             limitReached = true;
             limitType = 'articles';
-          } else if (usage.shopify_requests_count >= plan.max_shopify_requests_monthly) {
+          } else if (usage.shopify_requests_count >= (plan.max_shopify_requests_monthly || 20)) {
             limitReached = true;
             limitType = 'recherches Shopify';
-          } else if (usage.chat_responses_count >= plan.max_chat_responses_monthly) {
+          } else if (usage.chat_responses_count >= (plan.max_chat_responses_monthly || 100)) {
             limitReached = true;
             limitType = 'réponses chat';
-          } else if (usage.shopify_stores_count >= plan.max_shopify_stores) {
+          } else if (usage.shopify_stores_count >= (plan.max_shopify_stores || 1)) {
             limitReached = true;
             limitType = 'boutiques Shopify';
           }

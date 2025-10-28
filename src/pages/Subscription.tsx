@@ -161,7 +161,7 @@ export default function Subscription() {
               Passez au plan supérieur pour débloquer plus de fonctionnalités
             </p>
 
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {plans.map((plan) => {
                 const Icon = getPlanIcon(plan.name);
                 const isCurrent = isCurrentPlan(plan.id);
@@ -219,7 +219,7 @@ export default function Subscription() {
                 return (
                   <Card 
                     key={plan.id}
-                    className={`relative p-6 transition-all hover:shadow-xl ${
+                    className={`relative p-4 sm:p-6 transition-all hover:shadow-xl ${
                       isCurrent ? 'border-2 border-primary shadow-primary' : ''
                     } ${plan.popular ? 'ring-2 ring-primary' : ''}`}
                   >

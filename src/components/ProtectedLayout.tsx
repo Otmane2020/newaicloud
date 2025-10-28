@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import { TrialWarningBanner } from "@/components/TrialWarningBanner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sparkles } from "lucide-react";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -26,12 +27,17 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
         <div className="min-h-screen flex w-full bg-gray-50">
           <AppSidebar />
           <main className="flex-1">
-            <TrialWarningBanner />
-            <div className="border-b bg-background">
-              <div className="flex h-16 items-center px-4">
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b">
+              <div className="flex h-16 items-center px-4 gap-3">
                 <SidebarTrigger />
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <span className="font-bold text-lg">NewAI</span>
+                </div>
               </div>
             </div>
+            <TrialWarningBanner />
             <div className="p-8">
               {children}
             </div>

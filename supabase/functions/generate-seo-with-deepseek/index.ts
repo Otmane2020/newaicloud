@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("*")
+      .select("*, optimization_count")
       .eq("id", productId)
       .maybeSingle();
 
@@ -88,6 +88,24 @@ Deno.serve(async (req: Request) => {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
+      );
+    }
+
+    // Vérifier le statut trial du user
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('subscription_status')
+      .eq('id', product.seller_id)
+      .single();
+
+    // Si en trial et produit déjà optimisé, bloquer
+    if (profile?.subscription_status === 'trialing' && (product.optimization_count || 0) >= 1) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'trial_product_already_optimized',
+          message: 'Ce produit a déjà été optimisé pendant votre période d\'essai. Activez votre abonnement pour ré-optimiser.'
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -197,6 +215,7 @@ Example for a gray fabric sofa:
         seo_description: seoDescription,
         enrichment_status: 'enriched',
         seo_synced_to_shopify: false,
+        optimization_count: (product.optimization_count || 0) + 1,
         updated_at: new Date().toISOString()
       })
       .eq("id", productId);

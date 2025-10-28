@@ -30,8 +30,25 @@ export function PageOptimization() {
   const fetchPages = async () => {
     try {
       setLoading(true);
-      // For now, show empty state - will be implemented with Shopify pages import
-      setPages([]);
+      const { data, error } = await supabase
+        .from('shopify_pages')
+        .select('*')
+        .order('published_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Map Shopify pages to our interface
+      const mappedPages: ShopifyPage[] = (data || []).map((page: any) => ({
+        id: page.id,
+        title: page.title,
+        handle: page.handle,
+        body_html: page.body_html || '',
+        seo_title: page.seo_title,
+        seo_description: page.seo_description,
+        optimized: !!(page.seo_title && page.seo_description)
+      }));
+      
+      setPages(mappedPages);
     } catch (error) {
       console.error('Error fetching pages:', error);
       toast.error('Erreur lors du chargement des pages');

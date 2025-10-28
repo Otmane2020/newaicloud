@@ -81,10 +81,13 @@ export function ImportProgressDialog({
 
             <div className="text-center">
               <p className="text-2xl font-bold mb-2 animate-pulse">
-                Import en cours...
+                ⏳ Veuillez patienter, nous importons vos produits...
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-lg text-muted-foreground animate-fade-in">
                 {progress.productsProcessed} produits importés
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Cela peut prendre quelques minutes selon le nombre de produits
               </p>
             </div>
 

@@ -310,7 +310,8 @@ Deno.serve(async (req: Request) => {
       if (parsedNextUrl) {
         nextPageUrl = parsedNextUrl;
         console.log(`Next page URL found, continuing...`);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Réduire le délai pour accélérer l'import
+        await new Promise(resolve => setTimeout(resolve, 200));
       } else {
         nextPageUrl = null;
       }

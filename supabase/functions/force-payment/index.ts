@@ -14,69 +14,56 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
+    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
   );
 
   try {
-    console.log("🚀 Force payment started");
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
-
+    const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user?.email) throw new Error("User not authenticated");
+    const { data } = await supabaseClient.auth.getUser(token);
+    const user = data.user;
+    
+    if (!user?.email) {
+      throw new Error("User not authenticated or email not available");
+    }
 
-    const user = userData.user;
-    console.log("👤 User:", user.email);
-
-    // Get user's current plan
-    const { data: profile, error: profileError } = await supabaseClient
-      .from("profiles")
-      .select("current_plan_id, subscription_status")
-      .eq("id", user.id)
+    // Get current plan
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('current_plan_id')
+      .eq('id', user.id)
       .single();
 
-    if (profileError) throw profileError;
-    if (!profile?.current_plan_id) throw new Error("No plan selected");
-
-    console.log("📋 Current plan:", profile.current_plan_id);
+    // If trial, use starter plan
+    let planId = profile?.current_plan_id || 'starter';
+    if (planId === 'trial') {
+      planId = 'starter';
+    }
 
     // Get plan details
-    const { data: plan, error: planError } = await supabaseClient
-      .from("subscription_plans")
-      .select("stripe_price_id_monthly, stripe_price_id_yearly")
-      .eq("id", profile.current_plan_id)
+    const { data: plan } = await supabaseClient
+      .from('subscription_plans')
+      .select('stripe_price_id_monthly')
+      .eq('id', planId)
       .single();
 
-    if (planError || !plan) throw new Error("Plan not found");
+    if (!plan?.stripe_price_id_monthly) {
+      throw new Error('Plan not found');
+    }
 
-    const { success_url, cancel_url } = await req.json();
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Find or create Stripe customer
+    // Check if customer exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
-
-    // If customer exists, cancel any active trial subscriptions
-    if (customerId) {
-      console.log("🔍 Checking for active subscriptions...");
-      const subscriptions = await stripe.subscriptions.list({
-        customer: customerId,
-        status: "trialing",
-        limit: 10,
-      });
-
-      for (const sub of subscriptions.data) {
-        console.log(`❌ Cancelling trial subscription: ${sub.id}`);
-        await stripe.subscriptions.cancel(sub.id);
-      }
+    let customerId;
+    
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
     }
 
-    // Create immediate payment checkout session (no trial)
+    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -87,27 +74,19 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: success_url || `${req.headers.get("origin")}/dashboard?payment=success`,
-      cancel_url: cancel_url || `${req.headers.get("origin")}/dashboard?payment=cancelled`,
-      subscription_data: {
-        trial_period_days: undefined, // No trial
-      },
+      success_url: `${req.headers.get("origin")}/dashboard?payment=success`,
+      cancel_url: `${req.headers.get("origin")}/dashboard`,
     });
-
-    console.log("✅ Checkout session created:", session.id);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
-    console.error("❌ Error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+  } catch (error: any) {
+    console.error('Force payment error:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });

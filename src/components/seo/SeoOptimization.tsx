@@ -39,6 +39,7 @@ interface Product {
   seo_synced_to_shopify: boolean;
   image_url: string;
   imported_at: string;
+  optimization_count: number;
 }
 
 type QuickFilterTab = 'all' | 'not-enriched' | 'enriched' | 'pending-sync' | 'synced';
@@ -67,7 +68,7 @@ export function SeoOptimization() {
       setLoading(true);
       const { data, error } = await supabase
         .from('shopify_products')
-        .select('*')
+        .select('*, optimization_count')
         .order('imported_at', { ascending: false });
 
       if (error) throw error;
@@ -133,12 +134,25 @@ export function SeoOptimization() {
       return;
     }
 
-    const productsToGenerate = products.filter(
-      p => selectedProducts.has(p.id) && (!p.seo_title || !p.seo_description)
-    );
+    // Filtrer les produits éligibles
+    const productsToGenerate = products.filter(p => {
+      if (!selectedProducts.has(p.id)) return false;
+      
+      // Si en trial, exclure les produits déjà optimisés
+      if (limits?.isTrialing && (p.optimization_count || 0) >= 1) {
+        return false;
+      }
+      
+      // Sinon, seulement les produits sans SEO
+      return !p.seo_title || !p.seo_description;
+    });
 
     if (productsToGenerate.length === 0) {
-      toast.info('Aucun produit à optimiser');
+      if (limits?.isTrialing) {
+        toast.info('Les produits sélectionnés ont déjà été optimisés pendant votre trial. Activez votre abonnement pour ré-optimiser.');
+      } else {
+        toast.info('Aucun produit à optimiser');
+      }
       return;
     }
 
@@ -155,10 +169,15 @@ export function SeoOptimization() {
         setProgress({ current: i + 1, total: productsToGenerate.length });
       } catch (error: any) {
         console.error('Error generating SEO:', error);
-        if (error.message?.includes('trial_limit_reached')) {
+        
+        if (error.message?.includes('trial_product_already_optimized')) {
+          toast.warning('Certains produits ont déjà été optimisés pendant votre trial.');
+        } else if (error.message?.includes('trial_limit_reached')) {
           toast.error('Limite d\'essai atteinte.');
           setShowUpgradeDialog(true);
           break;
+        } else {
+          toast.error('Erreur lors de l\'optimisation');
         }
       }
     }
@@ -470,6 +489,14 @@ export function SeoOptimization() {
                 <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
                   {product.enrichment_status === 'enriched' ? 'Enrichi' : 'En attente'}
                 </Badge>
+                
+                {/* Badge pour Trial - produit déjà optimisé */}
+                {limits?.isTrialing && (product.optimization_count || 0) >= 1 && (
+                  <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50">
+                    ⚠️ Déjà optimisé
+                  </Badge>
+                )}
+                
                 {product.seo_synced_to_shopify && (
                   <Badge variant="outline" className="bg-green-50">
                     <CheckCircle className="w-3 h-3 mr-1" />

@@ -1,13 +1,16 @@
-import { AlertCircle, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export function TrialWarningBanner() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ['profile-trial', user?.id],
@@ -51,11 +54,34 @@ export function TrialWarningBanner() {
           </div>
         </div>
         <Button 
-          onClick={() => navigate('/subscription')}
+          onClick={async () => {
+            setLoading(true);
+            try {
+              const { data, error } = await supabase.functions.invoke('force-payment');
+              if (error) throw error;
+              if (data?.url) {
+                window.open(data.url, '_blank');
+              }
+            } catch (error) {
+              toast.error("Erreur lors de la création du paiement");
+            } finally {
+              setLoading(false);
+            }
+          }}
+          disabled={loading}
           className="bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 text-white whitespace-nowrap shadow-lg"
         >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Activer mon abonnement
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Chargement...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Activer mon abonnement
+            </>
+          )}
         </Button>
       </div>
     </div>
