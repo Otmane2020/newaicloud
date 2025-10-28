@@ -17,7 +17,8 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
-  Globe
+  Globe,
+  CreditCard
 } from "lucide-react";
 
 const Index = () => {
@@ -290,6 +291,82 @@ const Index = () => {
             <p className="text-muted-foreground">{t('pricing.comparison_subtitle')}</p>
           </div>
           <PricingComparison />
+        </div>
+
+        {/* Pay As You Go Section */}
+        <div className="mt-16">
+          <Card className="border-2 border-dashed border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5 max-w-4xl mx-auto">
+            <div className="p-8 md:p-12">
+              <div className="text-center mb-8">
+                <Badge className="bg-primary mb-4">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Flexibilité maximale
+                </Badge>
+                <h3 className="text-3xl font-bold mb-2">Pay as you go</h3>
+                <p className="text-muted-foreground text-lg">
+                  Dépassez vos limites mensuelles sans changer de plan
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8 mb-8">
+                <div className="space-y-4">
+                  <p className="font-semibold text-lg">💰 Tarifs à la demande :</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">Optimisation SEO</span>
+                      <span className="font-bold text-primary">$0.01</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">Article IA</span>
+                      <span className="font-bold text-primary">$2.00</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">Recherche IA</span>
+                      <span className="font-bold text-primary">$0.05</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">Réponse Chat</span>
+                      <span className="font-bold text-primary">$0.02</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <p className="font-semibold text-lg">✨ Avantages :</p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Pas de limite</p>
+                        <p className="text-sm text-muted-foreground">Continuez sans interruption</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Facturation automatique</p>
+                        <p className="text-sm text-muted-foreground">En fin de mois uniquement</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Tarifs dégressifs</p>
+                        <p className="text-sm text-muted-foreground">À partir de 10 000 crédits</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  💡 <strong>Le pay-as-you-go est automatiquement activé sur tous les plans.</strong><br />
+                  Vous ne payez que ce que vous consommez au-delà de vos limites mensuelles.
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
       </section>
 

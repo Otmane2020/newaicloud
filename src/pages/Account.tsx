@@ -5,6 +5,7 @@ import { CurrentPlanCard } from '@/components/dashboard/CurrentPlanCard';
 import { BillingPortal } from '@/components/dashboard/BillingPortal';
 import { ShopifyIntegrationTabs } from '@/components/integration/ShopifyIntegrationTabs';
 import { UsageLimits } from '@/components/dashboard/UsageLimits';
+import { SubscriptionPlans } from '@/components/dashboard/SubscriptionPlans';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { User, Package, CreditCard, Receipt, Sparkles } from 'lucide-react';
@@ -93,6 +94,7 @@ export default function Account() {
           <TabsContent value="subscription">
             <div className="space-y-6">
               <CurrentPlanCard />
+              <SubscriptionPlans />
               <UsageLimits />
             </div>
           </TabsContent>
