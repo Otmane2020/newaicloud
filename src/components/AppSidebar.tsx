@@ -348,15 +348,21 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <div className="flex flex-col gap-1 px-2 py-2">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  {state === "expanded" && <span className="text-sm truncate">{user?.email}</span>}
-                </div>
-                {state === "expanded" && (
-                  <Badge variant="secondary" className="w-fit text-xs mt-1">
-                    {userPlan || "Chargement..."}
-                  </Badge>
+              <div className="flex flex-col gap-2 px-2 py-3">
+                {state === "expanded" ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 shrink-0" />
+                      <span className="text-sm truncate">{user?.email}</span>
+                    </div>
+                    <Badge variant="default" className="w-fit text-xs font-semibold">
+                      {userPlan || "Chargement..."}
+                    </Badge>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <User className="h-4 w-4" />
+                  </div>
                 )}
               </div>
             </SidebarMenuButton>

@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProductCard } from '@/components/ProductCard';
-import { Plus, Search, Filter, Package } from 'lucide-react';
+import { Plus, Search, Filter, Package, Grid3x3, List } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -41,6 +42,7 @@ export default function Products() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('recent');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     if (user) {
@@ -148,10 +150,19 @@ export default function Products() {
               {products.length} produit{products.length !== 1 ? 's' : ''} • Valeur totale: {totalValue.toFixed(2)} EUR
             </p>
           </div>
-          <Button size="lg" onClick={() => navigate('/dashboard')}>
-            <Plus className="w-5 h-5 mr-2" />
-            Importer des produits
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+            >
+              {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
+            </Button>
+            <Button size="lg" onClick={() => navigate('/dashboard')}>
+              <Plus className="w-5 h-5 mr-2" />
+              Importer des produits
+            </Button>
+          </div>
         </div>
 
         {products.length === 0 ? (
@@ -217,14 +228,14 @@ export default function Products() {
               </div>
             </Card>
 
-            {/* Products grid */}
+            {/* Products grid/list */}
             {filteredProducts.length === 0 ? (
               <Card className="p-8 text-center">
                 <p className="text-muted-foreground">
                   Aucun produit ne correspond à vos critères de recherche
                 </p>
               </Card>
-            ) : (
+            ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
                   <div
@@ -234,6 +245,42 @@ export default function Products() {
                   >
                     <ProductCard {...product} />
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredProducts.map((product) => (
+                  <Card
+                    key={product.id}
+                    onClick={() => navigate(`/product-landing/${product.id}`)}
+                    className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-center gap-4">
+                      {product.image_url && (
+                        <img
+                          src={product.image_url}
+                          alt={product.title}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg truncate">{product.title}</h3>
+                        <p className="text-sm text-muted-foreground truncate">{product.description || 'Pas de description'}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant={product.status === 'active' ? 'success' : 'outline'}>
+                            {product.status}
+                          </Badge>
+                          {product.vendor && (
+                            <Badge variant="outline">{product.vendor}</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold">{product.price?.toFixed(2) || '0.00'} {product.currency}</div>
+                        <div className="text-sm text-muted-foreground">Stock: {product.inventory_quantity}</div>
+                      </div>
+                    </div>
+                  </Card>
                 ))}
               </div>
             )}

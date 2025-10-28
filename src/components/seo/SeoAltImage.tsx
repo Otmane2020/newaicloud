@@ -7,6 +7,9 @@ import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
+import { TrialLimitDialog } from '@/components/TrialLimitDialog';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
 import {
   Search,
   RefreshCw,
@@ -64,6 +67,8 @@ export function SeoAltImage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { limits, loading: limitsLoading } = useUsageLimits();
 
   const IMAGES_PER_PAGE = 50;
 
@@ -153,19 +158,32 @@ export function SeoAltImage() {
       return;
     }
 
+    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
+    let finalImagesToGenerate = imagesToGenerate;
+    
+    if (imagesToGenerate.length > remainingLimit) {
+      if (limits?.isTrialing) {
+        setShowUpgradeDialog(true);
+        return;
+      } else {
+        toast.warning(`Limite atteinte. Seulement ${remainingLimit} images seront optimisées.`);
+        finalImagesToGenerate = imagesToGenerate.slice(0, remainingLimit);
+      }
+    }
+
     setGenerating(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: imagesToGenerate.length });
+    setProgress({ current: 0, total: finalImagesToGenerate.length });
 
     const functionName = useVision ? 'generate-alt-texts-vision' : 'generate-alt-texts';
 
-    for (let i = 0; i < imagesToGenerate.length; i++) {
+    for (let i = 0; i < finalImagesToGenerate.length; i++) {
       try {
         await supabase.functions.invoke(functionName, {
-          body: { imageId: imagesToGenerate[i].id }
+          body: { imageId: finalImagesToGenerate[i].id }
         });
-        setProgress({ current: i + 1, total: imagesToGenerate.length });
+        setProgress({ current: i + 1, total: finalImagesToGenerate.length });
       } catch (error) {
         console.error('Error generating ALT text:', error);
       }
@@ -608,6 +626,22 @@ export function SeoAltImage() {
         isComplete={isOptimizationComplete}
         onSyncClick={handleSyncSelected}
         onClose={handleCloseProgressDialog}
+      />
+
+      {/* Upgrade Dialogs */}
+      <TrialLimitDialog
+        open={showUpgradeDialog && limits?.shouldForcePayment === true}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+        currentUsage={limits?.usage.optimizations_count || 0}
+        maxUsage={limits?.limits.max_optimizations || 100}
+        trialMaxUsage={limits?.isTrialing ? limits?.limits.max_optimizations : undefined}
+      />
+      
+      <UpgradeDialog
+        open={showUpgradeDialog && limits?.shouldForcePayment !== true}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
       />
     </div>
   );

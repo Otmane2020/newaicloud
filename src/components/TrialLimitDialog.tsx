@@ -17,6 +17,7 @@ interface TrialLimitDialogProps {
   limitType: string;
   currentUsage: number;
   maxUsage: number;
+  trialMaxUsage?: number;
 }
 
 export function TrialLimitDialog({
@@ -25,6 +26,7 @@ export function TrialLimitDialog({
   limitType,
   currentUsage,
   maxUsage,
+  trialMaxUsage,
 }: TrialLimitDialogProps) {
   const [loading, setLoading] = useState(false);
 
@@ -66,7 +68,7 @@ export function TrialLimitDialog({
           <DialogDescription className="text-base pt-2">
             Vous avez atteint votre limite d'essai gratuit pour{' '}
             <span className="font-semibold text-foreground">{limitType}</span> (
-            {currentUsage}/{maxUsage}).
+            {currentUsage}/{trialMaxUsage || maxUsage}).
           </DialogDescription>
         </DialogHeader>
 
@@ -77,10 +79,10 @@ export function TrialLimitDialog({
               <span className="font-medium">En activant votre abonnement maintenant :</span>
             </div>
             <ul className="text-sm text-muted-foreground space-y-1 ml-6">
-              <li>• Accès immédiat aux limites complètes</li>
-              <li>• Votre période d'essai sera annulée</li>
+              <li>• Accès immédiat aux limites complètes du plan</li>
               <li>• Le paiement sera effectué immédiatement</li>
               <li>• Facturation mensuelle dès aujourd'hui</li>
+              <li>• Votre essai de 14 jours reste valide (pas de double facturation)</li>
             </ul>
           </div>
 

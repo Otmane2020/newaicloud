@@ -8,6 +8,9 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
+import { TrialLimitDialog } from '@/components/TrialLimitDialog';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { 
   Search, 
   RefreshCw, 
@@ -54,6 +57,8 @@ export function TagOptimization() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { limits, loading: limitsLoading } = useUsageLimits();
 
   const fetchProducts = async () => {
     try {
@@ -149,6 +154,20 @@ export function TagOptimization() {
       toast.info('Tous les produits ont déjà des tags');
       return;
     }
+
+    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
+    
+    if (productsToGenerate.length > remainingLimit) {
+      if (limits?.isTrialing) {
+        setShowUpgradeDialog(true);
+        return;
+      } else {
+        toast.warning(`Limite atteinte. Seulement ${remainingLimit} produits seront optimisés.`);
+        await handleBulkGenerate(productsToGenerate.slice(0, remainingLimit).map(p => p.id));
+        return;
+      }
+    }
+
     await handleBulkGenerate(productsToGenerate.map(p => p.id));
   };
 
@@ -162,6 +181,20 @@ export function TagOptimization() {
       toast.info('Aucun produit sélectionné');
       return;
     }
+
+    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
+    
+    if (productsToGenerate.length > remainingLimit) {
+      if (limits?.isTrialing) {
+        setShowUpgradeDialog(true);
+        return;
+      } else {
+        toast.warning(`Limite atteinte. Seulement ${remainingLimit} produits seront optimisés.`);
+        await handleBulkGenerate(productsToGenerate.slice(0, remainingLimit), force);
+        return;
+      }
+    }
+
     await handleBulkGenerate(productsToGenerate, force);
   };
 
@@ -746,6 +779,22 @@ export function TagOptimization() {
         isComplete={isOptimizationComplete}
         onSyncClick={handleSyncSelected}
         onClose={handleCloseProgressDialog}
+      />
+
+      {/* Upgrade Dialogs */}
+      <TrialLimitDialog
+        open={showUpgradeDialog && limits?.shouldForcePayment === true}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+        currentUsage={limits?.usage.optimizations_count || 0}
+        maxUsage={limits?.limits.max_optimizations || 100}
+        trialMaxUsage={limits?.isTrialing ? limits?.limits.max_optimizations : undefined}
+      />
+      
+      <UpgradeDialog
+        open={showUpgradeDialog && limits?.shouldForcePayment !== true}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
       />
     </div>
   );
