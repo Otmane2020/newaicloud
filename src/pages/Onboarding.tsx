@@ -443,7 +443,7 @@ export default function Onboarding() {
                   ) : (
                     <>
                       <Shield className="w-5 h-5 mr-2" />
-                      Commencer avec {plan.name}
+                      Commencer l'essai gratuit
                     </>
                   )}
                 </Button>
