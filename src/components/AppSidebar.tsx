@@ -76,22 +76,40 @@ export function AppSidebar() {
 
   useEffect(() => {
     const fetchUserPlan = async () => {
-      if (!user?.id) return;
+      console.log('🔍 Fetching user plan for:', user?.id);
       
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('current_plan_id')
-        .eq('id', user.id)
-        .single();
+      if (!user?.id) {
+        console.log('❌ No user ID');
+        return;
+      }
       
-      if (profile?.current_plan_id) {
-        const { data: plan } = await supabase
-          .from('subscription_plans')
-          .select('name')
-          .eq('id', profile.current_plan_id)
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('current_plan_id')
+          .eq('id', user.id)
           .single();
         
-        setUserPlan(plan?.name || null);
+        console.log('📊 Profile data:', profile);
+        console.log('❌ Profile error:', profileError);
+        
+        if (profile?.current_plan_id) {
+          const { data: plan, error: planError } = await supabase
+            .from('subscription_plans')
+            .select('name')
+            .eq('id', profile.current_plan_id)
+            .single();
+          
+          console.log('📋 Plan data:', plan);
+          console.log('❌ Plan error:', planError);
+          console.log('✅ Setting userPlan to:', plan?.name);
+          
+          setUserPlan(plan?.name || null);
+        } else {
+          console.log('⚠️ No current_plan_id in profile');
+        }
+      } catch (error) {
+        console.error('💥 Error fetching user plan:', error);
       }
     };
 
@@ -296,25 +314,28 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <div className="flex flex-col gap-1 px-2 py-2">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <div className="flex flex-col gap-1 px-2 py-2">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {state === "expanded" && (
+                      <span className="text-sm truncate">{user?.email}</span>
+                    )}
+                  </div>
                   {state === "expanded" && (
-                    <span className="text-sm truncate">{user?.email}</span>
+                    <Badge 
+                      variant="secondary" 
+                      className="w-fit text-xs mt-1"
+                    >
+                      {userPlan || 'Chargement...'}
+                    </Badge>
                   )}
                 </div>
-                {state === "expanded" && userPlan && (
-                  <Badge variant="secondary" className="w-fit text-xs">
-                    {userPlan}
-                  </Badge>
-                )}
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Button
