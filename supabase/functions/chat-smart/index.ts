@@ -6,8 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Initialize Deno KV for caching
-const kv = await Deno.openKv();
+// Cache en mémoire avec TTL (remplace Deno.openKv qui n'est pas supporté)
+const responseCache = new Map<string, { response: string; timestamp: number }>();
+const CACHE_TTL = 3600000; // 1 heure
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -74,22 +75,29 @@ function normalizeText(text: string): string {
     .trim();
 }
 
-// Cache helpers
-async function getCachedResponse(cacheKey: string): Promise<string | null> {
-  try {
-    const entry = await kv.get<string>(["chat-cache", cacheKey]);
-    return entry.value;
-  } catch (err) {
-    console.error("Cache read error:", err);
+// Cache helpers (en mémoire)
+function getCachedResponse(cacheKey: string): string | null {
+  const entry = responseCache.get(cacheKey);
+  if (!entry) return null;
+  
+  // Vérifier l'expiration
+  if (Date.now() - entry.timestamp > CACHE_TTL) {
+    responseCache.delete(cacheKey);
     return null;
   }
+  
+  console.log("✅ Cache HIT:", cacheKey);
+  return entry.response;
 }
 
-async function setCachedResponse(cacheKey: string, response: string): Promise<void> {
-  try {
-    await kv.set(["chat-cache", cacheKey], response, { expireIn: 3600000 }); // 1h TTL
-  } catch (err) {
-    console.error("Cache write error:", err);
+function setCachedResponse(cacheKey: string, response: string): void {
+  responseCache.set(cacheKey, { response, timestamp: Date.now() });
+  console.log("💾 Cache SET:", cacheKey);
+  
+  // Nettoyage périodique du cache (garder max 100 entrées)
+  if (responseCache.size > 100) {
+    const firstKey = responseCache.keys().next().value;
+    if (firstKey) responseCache.delete(firstKey);
   }
 }
 
@@ -954,22 +962,29 @@ async function* OmnIAChat(
   storeId?: string,
   sellerId?: string,
 ): AsyncGenerator<ChatResponse, void, unknown> {
+  const startTime = Date.now();
   console.log("🚀 [OMNIA] Message received:", userMessage);
 
   try {
+    // Mesurer la détection d'intent
+    const intentStart = Date.now();
     const intent = await detectIntent(userMessage);
-    console.log("🎯 Final intent:", intent);
+    const intentDuration = Date.now() - intentStart;
+    console.log(`🎯 Final intent: ${intent} (${intentDuration}ms)`);
+    
+    // Logger la métrique d'intent
+    logMetric(sellerId, "chat-smart", "intent_detection", intentDuration, { intent });
 
     // Check cache
-    const cacheKey = `${intent}:${userMessage.toLowerCase().trim()}:${sellerId || storeId || 'global'}`;
-    const cached = await getCachedResponse(cacheKey);
+    const cacheKey = `${intent}:${normalizeText(userMessage)}:${sellerId || 'anon'}`;
+    const cached = getCachedResponse(cacheKey);
     
-    if (cached && intent === "simple_chat") {
-      console.log("✅ Cache HIT for:", cacheKey);
+    if (cached) {
+      logMetric(sellerId, "chat-smart", "cache_hit", Date.now() - startTime);
       yield {
         role: "assistant",
         content: cached,
-        intent: "simple_chat",
+        intent,
         products: [],
         mode: "conversation",
         sector: "général",
@@ -987,8 +1002,17 @@ async function* OmnIAChat(
       ];
 
       let fullResponse = "";
+      const deepseekStart = Date.now();
+      let firstToken = true;
+      let tokenCount = 0;
+      
       for await (const chunk of callDeepSeek(messages, 80)) {
+        if (firstToken) {
+          logMetric(sellerId, "chat-smart", "deepseek_first_token", Date.now() - deepseekStart);
+          firstToken = false;
+        }
         fullResponse += chunk;
+        tokenCount++;
         yield {
           role: "assistant",
           content: chunk,
@@ -1000,7 +1024,12 @@ async function* OmnIAChat(
       }
       
       // Cache the full response
-      await setCachedResponse(cacheKey, fullResponse);
+      setCachedResponse(cacheKey, fullResponse);
+      logMetric(sellerId, "chat-smart", "total_response", Date.now() - startTime, {
+        intent: "simple_chat",
+        tokens: tokenCount,
+        cached: false,
+      });
       return;
     }
 
@@ -1075,6 +1104,42 @@ async function* OmnIAChat(
       mode: "conversation",
       sector: "général",
     };
+  }
+}
+
+// Helper pour logger les métriques de performance
+async function logMetric(
+  userId: string | undefined,
+  functionName: string,
+  operation: string,
+  durationMs: number,
+  metadata: Record<string, any> = {}
+): Promise<void> {
+  if (!userId) return; // Skip si pas d'utilisateur
+  
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !serviceKey) return;
+    
+    // Appel asynchrone non-bloquant
+    fetch(`${supabaseUrl}/functions/v1/performance-logger`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        function_name: functionName,
+        operation,
+        duration_ms: Math.round(durationMs),
+        metadata,
+      }),
+    }).catch((err) => console.error("Failed to log metric:", err));
+  } catch (err) {
+    console.error("Metric logging error:", err);
   }
 }
 

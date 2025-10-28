@@ -485,6 +485,36 @@ export type Database = {
         }
         Relationships: []
       }
+      performance_metrics: {
+        Row: {
+          created_at: string | null
+          duration_ms: number
+          function_name: string
+          id: string
+          metadata: Json | null
+          operation: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms: number
+          function_name: string
+          id?: string
+          metadata?: Json | null
+          operation: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number
+          function_name?: string
+          id?: string
+          metadata?: Json | null
+          operation?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           alt_text: string | null

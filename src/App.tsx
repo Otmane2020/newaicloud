@@ -38,6 +38,7 @@ import ChatSettings from "./pages/ChatSettings";
 import ChatRobot from "./pages/ChatRobot";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import PerformanceMonitor from "./pages/PerformanceMonitor";
 
 const queryClient = new QueryClient();
 
@@ -188,6 +189,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ChatRobot />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/performance"
+              element={
+                <ProtectedLayout>
+                  <PerformanceMonitor />
                 </ProtectedLayout>
               }
             />
