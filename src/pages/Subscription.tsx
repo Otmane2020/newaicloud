@@ -61,7 +61,7 @@ export default function Subscription() {
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
-        .not('id', 'in', '("trial","pay-as-you-go")')
+        .not('id', 'in', '(trial,pay-as-you-go)')
         .order('price_monthly', { ascending: true });
 
       setPlans(plansData || []);
