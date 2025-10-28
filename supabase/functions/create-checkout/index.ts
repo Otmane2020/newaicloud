@@ -140,7 +140,9 @@ serve(async (req) => {
     console.log('🎫 Creating Stripe checkout session...');
 
     const origin = req.headers.get('origin') || 'http://localhost:8080';
-    const session = await stripe.checkout.sessions.create({
+    
+    // Configuration de base de la session
+    const sessionConfig: any = {
       payment_method_types: ['card'],
       mode: 'subscription',
       customer: customerId,
@@ -156,35 +158,72 @@ serve(async (req) => {
         plan_name: plan.name,
         upgraded_from_trial: hasActiveTrial ? 'true' : 'false'
       },
-      subscription_data: {
-        // Logique de trial :
-        // - Si force_immediate_payment : 0 jours (paiement immédiat, limite atteinte)
-        // - Si trial actif ET mensuel : 0 jours (paiement immédiat)
-        // - Si trial actif ET annuel : conserver les jours restants
-        // - Sinon : appliquer le trial du plan (14 jours)
-        trial_period_days: force_immediate_payment
-          ? 0
-          : hasActiveTrial && billing_period === 'monthly'
-            ? 0
-            : hasActiveTrial && billing_period === 'yearly'
-              ? trialDaysRemaining
-              : (plan.trial_days || 14),
-        ...(hasActiveTrial && billing_period === 'yearly' && profile?.trial_ends_at ? {
-          trial_end: Math.floor(new Date(profile.trial_ends_at).getTime() / 1000)
-        } : {}),
+      success_url: success_url || `${origin}/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancel_url || `${origin}/onboarding?checkout=cancelled&plan_id=${plan_id}`,
+      allow_promotion_codes: true,
+      billing_address_collection: 'required'
+    };
+
+    // Déterminer la configuration du trial
+    // IMPORTANT: Stripe n'accepte PAS trial_period_days: 0
+    // Pour un paiement immédiat, on doit OMETTRE trial_period_days complètement
+    if (force_immediate_payment) {
+      // Paiement forcé immédiat (limite atteinte) - PAS de trial
+      console.log('💳 Force immediate payment - no trial');
+      sessionConfig.subscription_data = {
         metadata: {
           user_id: user.id,
           plan_id: plan_id,
           billing_period: billing_period,
           upgraded_from_trial: hasActiveTrial ? 'true' : 'false',
-          forced_payment: force_immediate_payment ? 'true' : 'false'
+          forced_payment: 'true'
         }
-      },
-      success_url: success_url || `${origin}/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancel_url || `${origin}/onboarding?checkout=cancelled&plan_id=${plan_id}`,
-      allow_promotion_codes: true,
-      billing_address_collection: 'required'
-    });
+        // trial_period_days omis = paiement immédiat
+      };
+    } else if (hasActiveTrial && billing_period === 'monthly') {
+      // Trial actif + abonnement mensuel = paiement immédiat SANS trial
+      console.log('💳 Active trial with monthly plan - immediate payment');
+      sessionConfig.subscription_data = {
+        metadata: {
+          user_id: user.id,
+          plan_id: plan_id,
+          billing_period: billing_period,
+          upgraded_from_trial: 'true',
+          forced_payment: 'false'
+        }
+        // trial_period_days omis = paiement immédiat
+      };
+    } else if (hasActiveTrial && billing_period === 'yearly' && trialDaysRemaining > 0) {
+      // Trial actif + abonnement annuel = conserver les jours restants
+      console.log(`⏰ Active trial with yearly plan - preserve ${trialDaysRemaining} days`);
+      sessionConfig.subscription_data = {
+        trial_period_days: trialDaysRemaining,
+        trial_end: Math.floor(new Date(profile.trial_ends_at).getTime() / 1000),
+        metadata: {
+          user_id: user.id,
+          plan_id: plan_id,
+          billing_period: billing_period,
+          upgraded_from_trial: 'true',
+          forced_payment: 'false'
+        }
+      };
+    } else {
+      // Nouveau user sans trial actif = appliquer le trial du plan
+      const trialDays = plan.trial_days || 14;
+      console.log(`🎁 New subscription - apply ${trialDays} days trial`);
+      sessionConfig.subscription_data = {
+        trial_period_days: trialDays,
+        metadata: {
+          user_id: user.id,
+          plan_id: plan_id,
+          billing_period: billing_period,
+          upgraded_from_trial: 'false',
+          forced_payment: 'false'
+        }
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log('✅ Checkout session created:', session.id);
 
