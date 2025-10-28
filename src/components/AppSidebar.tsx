@@ -60,8 +60,7 @@ const seoSubItems = [
 ];
 
 const blogSubItems = [
-  { title: "Gestion Articles", url: "/blog/seo", icon: Sparkles },
-  { title: "Articles IA", url: "/blog?tab=articles", icon: FileText },
+  { title: "Articles", url: "/blog?tab=articles", icon: FileText },
   { title: "Campagnes IA", url: "/blog?tab=campaigns", icon: CalendarClock },
 ];
 

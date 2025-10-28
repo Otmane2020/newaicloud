@@ -45,7 +45,6 @@ export default function Blog() {
         .from('blog_articles')
         .select('*')
         .eq('user_id', user?.id)
-        .eq('source', 'ai_generated') // Only AI-generated articles
         .order('created_at', { ascending: false });
 
       if (articlesError) throw articlesError;
@@ -223,10 +222,6 @@ export default function Blog() {
                   </div>
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="default" className="bg-blue-500">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        IA
-                      </Badge>
                       <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
                         {article.status}
                       </Badge>

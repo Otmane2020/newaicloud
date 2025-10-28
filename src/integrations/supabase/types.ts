@@ -77,7 +77,6 @@ export type Database = {
           meta_description: string | null
           published_at: string | null
           shopify_blog_id: string | null
-          source: string | null
           status: string | null
           title: string
           updated_at: string
@@ -91,7 +90,6 @@ export type Database = {
           meta_description?: string | null
           published_at?: string | null
           shopify_blog_id?: string | null
-          source?: string | null
           status?: string | null
           title: string
           updated_at?: string
@@ -105,7 +103,6 @@ export type Database = {
           meta_description?: string | null
           published_at?: string | null
           shopify_blog_id?: string | null
-          source?: string | null
           status?: string | null
           title?: string
           updated_at?: string

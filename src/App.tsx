@@ -20,7 +20,6 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Blog from "./pages/Blog";
-import ArticleManagement from "./pages/ArticleManagement";
 import SEO from "./pages/SEO";
 import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
@@ -43,7 +42,6 @@ import Terms from "./pages/Terms";
 import PerformanceMonitor from "./pages/PerformanceMonitor";
 import Documentation from "./pages/Documentation";
 import PublicBlog from "./pages/PublicBlog";
-import BlogArticle from "./pages/BlogArticle";
 
 const queryClient = new QueryClient();
 
@@ -58,7 +56,6 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/documentation" element={<Documentation />} />
             <Route path="/blog" element={<PublicBlog />} />
-            <Route path="/blog/:slug" element={<BlogArticle />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
@@ -91,14 +88,6 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Blog />
-                </ProtectedLayout>
-              }
-            />
-            <Route
-              path="/blog/seo"
-              element={
-                <ProtectedLayout>
-                  <ArticleManagement />
                 </ProtectedLayout>
               }
             />

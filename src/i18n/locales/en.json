@@ -113,8 +113,7 @@
     "dashboard": "Dashboard",
     "account": "My Account",
     "home": "Home",
-    "benefits": "Benefits",
-    "blog": "Blog"
+    "benefits": "Benefits"
   },
   "common": {
     "loading": "Loading...",
