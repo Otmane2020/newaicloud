@@ -151,7 +151,16 @@
     "password_error": "Error changing password",
     "password_mismatch": "Passwords do not match",
     "password_short": "Password must be at least 6 characters",
-    "fill_all_fields": "Please fill all fields"
+    "fill_all_fields": "Please fill in all fields",
+    "subscription": "Subscription",
+    "current_plan": "Current plan",
+    "active": "Active",
+    "expires_on": "Expires on",
+    "renewal_date": "Renewal date",
+    "loading": "Loading...",
+    "manage_subscription": "Manage subscription",
+    "no_subscription": "You don't have an active subscription",
+    "choose_plan": "Choose a plan"
   },
   "pricingComparison": {
     "features": "Features",
@@ -181,5 +190,164 @@
     "custom_training": "Custom training",
     "sla": "Guaranteed SLA",
     "unlimited": "Unlimited"
+  },
+  "subscriptionPlans": {
+    "title": "Choose your plan",
+    "subtitle": "Select the plan that best fits your needs",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "savings": "-20%",
+    "per_month": "/month",
+    "per_year": "/year",
+    "current_plan": "Current plan",
+    "why_choose": "Why choose this plan:",
+    "included": "Included:",
+    "payg": {
+      "title": "Pay as you go",
+      "description": "Exceed your monthly limits without changing plans",
+      "pricing_title": "On-demand pricing:",
+      "seo_opt": "SEO Optimization: $0.01 / optimization",
+      "article": "AI Article: $2.00 / article",
+      "search": "AI Search: $0.05 / search",
+      "chat": "Chat Response: $0.02 / response",
+      "benefits_title": "Benefits:",
+      "no_limit": "No limit - continue without interruption",
+      "auto_billing": "Automatic billing at the end of month",
+      "volume_discount": "Volume discounts from 10,000 credits",
+      "tip": "Tip: Pay-as-you-go is automatically enabled on all plans. You only pay for what you consume beyond your monthly limits."
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "For small stores discovering AI",
+      "badge": "14-day free trial",
+      "cta": "Start free trial",
+      "benefits": [
+        "Complete SEO automation",
+        "AI content generation",
+        "Fast Shopify integration",
+        "Responsive support"
+      ],
+      "features": [
+        "1,000 SEO optimizations / month",
+        "5 AI articles / month",
+        "100 AI searches / month",
+        "200 AI chat responses / month",
+        "1 Shopify store",
+        "Priority email support"
+      ]
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "For growing stores",
+      "badge": "Most Popular 🔥",
+      "cta": "Upgrade to Pro",
+      "benefits": [
+        "Guaranteed accelerated growth",
+        "Multi-store support",
+        "Automated campaigns",
+        "24/7 dedicated support"
+      ],
+      "features": [
+        "Unlimited products",
+        "2,000 SEO optimizations / month",
+        "10 AI articles / month",
+        "5 automated campaigns / month",
+        "500 AI searches / month",
+        "1,000 AI chat responses / month",
+        "3 Shopify stores",
+        "Integrated Google Merchant",
+        "24/7 priority support"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "For large stores and agencies",
+      "cta": "Contact sales",
+      "benefits": [
+        "Custom solution",
+        "Maximum performance",
+        "Custom API",
+        "Dedicated account manager"
+      ],
+      "features": [
+        "Everything unlimited",
+        "10,000 SEO optimizations / month",
+        "100 AI articles / month",
+        "20 campaigns / month",
+        "5,000 AI searches / month",
+        "10,000 AI chat responses / month",
+        "10 Shopify stores",
+        "Custom API",
+        "Dedicated manager",
+        "Guaranteed SLA"
+      ]
+    }
+  },
+  "trialUpgrade": {
+    "limit_reached": "Limit reached!",
+    "trial_expired": "Trial period ended",
+    "limit_message": "You have reached your free trial limit for {limitType}. Upgrade to the Starter plan to continue.",
+    "trial_ended_message": "Your 14-day free trial has ended. Upgrade to the Starter plan to continue enjoying all features.",
+    "starter_plan": "Starter Plan",
+    "later": "Later",
+    "activate_now": "Activate now",
+    "loading": "Loading...",
+    "features": [
+      "Up to 100 products",
+      "1,000 SEO optimizations / month",
+      "5 AI blog articles / month",
+      "100 Shopify AI searches / month",
+      "200 AI chat responses / month",
+      "1 Shopify store",
+      "Email support",
+      "Shopify integration"
+    ]
+  },
+  "upgradeDialog": {
+    "title": "Activate your Starter subscription",
+    "reached_limit": "You have reached your free trial limit:",
+    "starter_plan_title": "Starter Plan (9.99€/month)",
+    "activate_button": "Activate my subscription (9.99€/month)",
+    "later": "Later",
+    "all_features": "All features unlocked",
+    "limit_types": {
+      "optimizations": {
+        "title": "SEO Optimizations",
+        "message": "{usage}/{limit} optimizations used",
+        "trial": "10 SEO optimizations",
+        "paid": "1,000 SEO optimizations / month"
+      },
+      "articles": {
+        "title": "Blog articles",
+        "message": "{usage}/{limit} articles used",
+        "trial": "1 AI blog article",
+        "paid": "5 AI blog articles / month"
+      },
+      "chat": {
+        "title": "AI chat responses",
+        "message": "{usage}/{limit} responses used",
+        "trial": "50 chat responses",
+        "paid": "200 chat responses / month"
+      },
+      "shopifySearch": {
+        "title": "Shopify AI searches",
+        "message": "{usage}/{limit} searches used",
+        "trial": "20 Shopify AI queries",
+        "paid": "100 Shopify AI queries / month"
+      }
+    },
+    "features": [
+      "1,000 SEO optimizations with AI / month",
+      "5 AI blog articles / month",
+      "200 AI chat responses / month",
+      "100 Shopify AI queries / month"
+    ]
+  },
+  "billingPortal": {
+    "title": "Billing",
+    "description": "Manage your payment methods and view your invoices",
+    "open_button": "Open billing portal",
+    "opening": "Opening...",
+    "footer_note": "You will be redirected to the Stripe portal to manage your payment information and download your invoices."
   }
 }

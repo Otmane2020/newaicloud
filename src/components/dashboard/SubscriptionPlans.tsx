@@ -8,115 +8,51 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Plan {
   id: string;
-  name: string;
-  description: string;
+  icon: any;
+  badgeColor?: string;
   price_monthly: number;
   price_yearly: number;
-  icon: any;
-  badge?: string;
-  badgeColor?: string;
-  features: string[];
-  benefits: string[];
-  cta: string;
   featured?: boolean;
 }
-
-const plans: Plan[] = [
-  {
-    id: "starter",
-    name: "Starter",
-    description: "Pour les petites boutiques qui découvrent l'IA",
-    price_monthly: 9.99,
-    price_yearly: 95.88,
-    icon: Sparkles,
-    badge: "14 jours gratuits",
-    badgeColor: "bg-green-500",
-    features: [
-      "1 000 optimisations SEO / mois",
-      "5 articles IA / mois",
-      "100 recherches IA / mois",
-      "200 réponses Chat IA / mois",
-      "1 boutique Shopify",
-      "Support prioritaire email"
-    ],
-    benefits: [
-      "Automatisation SEO complète",
-      "Génération de contenu IA",
-      "Intégration Shopify rapide",
-      "Support réactif"
-    ],
-    cta: "Démarrer l'essai gratuit",
-    featured: false
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    description: "Pour les boutiques en croissance",
-    price_monthly: 49,
-    price_yearly: 468,
-    icon: Zap,
-    badge: "Plus Populaire 🔥",
-    badgeColor: "bg-primary",
-    features: [
-      "Produits illimités",
-      "2 000 optimisations SEO / mois",
-      "10 articles IA / mois",
-      "5 campagnes automatiques / mois",
-      "500 recherches IA / mois",
-      "1 000 réponses Chat IA / mois",
-      "3 boutiques Shopify",
-      "Google Merchant intégré",
-      "Support prioritaire 24/7"
-    ],
-    benefits: [
-      "Croissance accélérée garantie",
-      "Multi-boutiques",
-      "Campagnes automatisées",
-      "Support dédié 24/7"
-    ],
-    cta: "Passer à Pro",
-    featured: true
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    description: "Pour les grandes boutiques et agences",
-    price_monthly: 199,
-    price_yearly: 1908,
-    icon: Crown,
-    features: [
-      "Tout illimité",
-      "10 000 optimisations SEO / mois",
-      "100 articles IA / mois",
-      "20 campagnes / mois",
-      "5 000 recherches IA / mois",
-      "10 000 réponses Chat IA / mois",
-      "10 boutiques Shopify",
-      "API personnalisée",
-      "Manager dédié",
-      "SLA garanti"
-    ],
-    benefits: [
-      "Solution sur-mesure",
-      "Performance maximale",
-      "API personnalisée",
-      "Account manager dédié"
-    ],
-    cta: "Nous contacter",
-    featured: false
-  }
-];
 
 export function SubscriptionPlans() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+
+  const plans: Plan[] = [
+    {
+      id: "starter",
+      price_monthly: 9.99,
+      price_yearly: 95.88,
+      icon: Sparkles,
+      badgeColor: "bg-green-500",
+      featured: false
+    },
+    {
+      id: "pro",
+      price_monthly: 49,
+      price_yearly: 468,
+      icon: Zap,
+      badgeColor: "bg-primary",
+      featured: true
+    },
+    {
+      id: "enterprise",
+      price_monthly: 199,
+      price_yearly: 1908,
+      icon: Crown,
+      featured: false
+    }
+  ];
 
   useEffect(() => {
     const loadCurrentPlan = async () => {
@@ -155,8 +91,8 @@ export function SubscriptionPlans() {
     } catch (error) {
       console.error('Error creating checkout:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de créer la session de paiement",
+        title: t('common.error'),
+        description: "Unable to create payment session",
         variant: "destructive"
       });
     } finally {
@@ -180,20 +116,19 @@ export function SubscriptionPlans() {
   return (
     <div className="space-y-8">
       <div className="text-center space-y-4">
-        <h2 className="text-3xl font-bold">Choisissez votre plan</h2>
+        <h2 className="text-3xl font-bold">{t('subscriptionPlans.title')}</h2>
         <p className="text-muted-foreground">
-          Sélectionnez le plan qui correspond le mieux à vos besoins
+          {t('subscriptionPlans.subtitle')}
         </p>
         
-        {/* Toggle Mensuel / Annuel */}
         <div className="flex justify-center">
           <Tabs value={billingPeriod} onValueChange={(value) => setBillingPeriod(value as 'monthly' | 'yearly')}>
             <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="monthly">Mensuel</TabsTrigger>
+              <TabsTrigger value="monthly">{t('subscriptionPlans.monthly')}</TabsTrigger>
               <TabsTrigger value="yearly">
-                Annuel
+                {t('subscriptionPlans.yearly')}
                 <Badge variant="secondary" className="ml-2 bg-success/20 text-success">
-                  -20%
+                  {t('subscriptionPlans.savings')}
                 </Badge>
               </TabsTrigger>
             </TabsList>
@@ -201,52 +136,57 @@ export function SubscriptionPlans() {
         </div>
       </div>
 
-      {/* Plans Grid */}
       <div className="grid md:grid-cols-3 gap-6">
         {plans.map((plan) => {
           const Icon = plan.icon;
           const isCurrent = isCurrentPlan(plan.id);
+          const planKey = `subscriptionPlans.${plan.id}`;
+          const name = t(`${planKey}.name`);
+          const description = t(`${planKey}.description`);
+          const badge = t(`${planKey}.badge`);
+          const cta = t(`${planKey}.cta`);
+          const benefits = t(`${planKey}.benefits`, { returnObjects: true }) as string[];
+          const features = t(`${planKey}.features`, { returnObjects: true }) as string[];
           
           return (
             <Card 
               key={plan.id}
               className={`relative ${plan.featured ? 'border-2 border-primary shadow-primary' : ''} ${isCurrent ? 'border-2 border-success' : ''}`}
             >
-              {plan.badge && (
+              {badge && (
                 <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 ${plan.badgeColor || 'bg-primary'}`}>
-                  {plan.badge}
+                  {badge}
                 </Badge>
               )}
               {isCurrent && (
                 <Badge className="absolute -top-3 right-4 bg-success">
-                  ✓ Plan actuel
+                  ✓ {t('subscriptionPlans.current_plan')}
                 </Badge>
               )}
               
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   <Icon className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  <CardTitle className="text-2xl">{name}</CardTitle>
                 </div>
-                <CardDescription>{plan.description}</CardDescription>
+                <CardDescription>{description}</CardDescription>
                 <div className="mt-4 flex items-baseline gap-2">
                   <span className="text-4xl font-bold">{getPrice(plan)}€</span>
                   <span className="text-muted-foreground">
-                    /{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                    {billingPeriod === 'monthly' ? t('subscriptionPlans.per_month') : t('subscriptionPlans.per_year')}
                   </span>
                   {billingPeriod === 'yearly' && (
                     <Badge variant="secondary" className="bg-success/20 text-success text-xs">
-                      Économisez {getSavings(plan)}%
+                      {t('subscriptionPlans.savings')} {getSavings(plan)}%
                     </Badge>
                   )}
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-6">
-                {/* Benefits - Points "Pour" */}
                 <div className="space-y-2">
-                  <p className="font-semibold text-sm text-primary">✨ Pourquoi choisir ce plan :</p>
-                  {plan.benefits.map((benefit, i) => (
+                  <p className="font-semibold text-sm text-primary">✨ {t('subscriptionPlans.why_choose')}</p>
+                  {benefits.map((benefit, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                       <span className="text-sm font-medium text-primary">{benefit}</span>
@@ -254,10 +194,9 @@ export function SubscriptionPlans() {
                   ))}
                 </div>
 
-                {/* Features */}
                 <div className="space-y-2 pt-4 border-t">
-                  <p className="font-semibold text-sm">Inclus :</p>
-                  {plan.features.map((feature, i) => (
+                  <p className="font-semibold text-sm">{t('subscriptionPlans.included')}</p>
+                  {features.map((feature, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
                       <span className="text-sm text-muted-foreground">{feature}</span>
@@ -271,7 +210,7 @@ export function SubscriptionPlans() {
                   onClick={() => handleSelectPlan(plan.id)}
                   disabled={isCurrent || loading}
                 >
-                  {isCurrent ? "Plan actuel" : plan.cta}
+                  {isCurrent ? t('subscriptionPlans.current_plan') : cta}
                 </Button>
               </CardContent>
             </Card>
@@ -279,43 +218,42 @@ export function SubscriptionPlans() {
         })}
       </div>
 
-      {/* Pay As You Go Section */}
       <Card className="border-2 border-dashed border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5">
         <CardHeader>
           <div className="flex items-center gap-2">
             <CreditCard className="w-6 h-6 text-primary" />
-            <CardTitle className="text-2xl">Pay as you go</CardTitle>
+            <CardTitle className="text-2xl">{t('subscriptionPlans.payg.title')}</CardTitle>
           </div>
           <CardDescription className="text-base">
-            Dépassez vos limites mensuelles sans changer de plan
+            {t('subscriptionPlans.payg.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <p className="font-semibold">💰 Tarifs à la demande :</p>
+              <p className="font-semibold">💰 {t('subscriptionPlans.payg.pricing_title')}</p>
               <ul className="space-y-1 text-sm text-muted-foreground">
-                <li>• Optimisation SEO : <span className="font-medium text-foreground">$0.01 / optimisation</span></li>
-                <li>• Article IA : <span className="font-medium text-foreground">$2.00 / article</span></li>
-                <li>• Recherche IA : <span className="font-medium text-foreground">$0.05 / recherche</span></li>
-                <li>• Réponse Chat : <span className="font-medium text-foreground">$0.02 / réponse</span></li>
+                <li>• {t('subscriptionPlans.payg.seo_opt')}</li>
+                <li>• {t('subscriptionPlans.payg.article')}</li>
+                <li>• {t('subscriptionPlans.payg.search')}</li>
+                <li>• {t('subscriptionPlans.payg.chat')}</li>
               </ul>
             </div>
             
             <div className="space-y-2">
-              <p className="font-semibold">✨ Avantages :</p>
+              <p className="font-semibold">✨ {t('subscriptionPlans.payg.benefits_title')}</p>
               <ul className="space-y-1">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-sm"><strong>Pas de limite</strong> - continuez sans interruption</span>
+                  <span className="text-sm"><strong>{t('subscriptionPlans.payg.no_limit')}</strong></span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-sm"><strong>Facturation automatique</strong> en fin de mois</span>
+                  <span className="text-sm"><strong>{t('subscriptionPlans.payg.auto_billing')}</strong></span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-sm"><strong>Tarifs dégressifs</strong> à partir de 10 000 crédits</span>
+                  <span className="text-sm"><strong>{t('subscriptionPlans.payg.volume_discount')}</strong></span>
                 </li>
               </ul>
             </div>
@@ -323,8 +261,7 @@ export function SubscriptionPlans() {
 
           <div className="bg-muted/50 rounded-lg p-4 mt-4">
             <p className="text-sm text-muted-foreground text-center">
-              💡 <strong>Astuce :</strong> Le pay-as-you-go est automatiquement activé sur tous les plans. 
-              Vous ne payez que ce que vous consommez au-delà de vos limites mensuelles.
+              💡 {t('subscriptionPlans.payg.tip')}
             </p>
           </div>
         </CardContent>

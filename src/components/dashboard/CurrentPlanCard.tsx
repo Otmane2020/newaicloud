@@ -117,7 +117,7 @@ export function CurrentPlanCard() {
           {subscriptionEnd && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="w-4 h-4" />
-              {currentPlan.name.includes('Trial') ? 'Expire le' : t('account.renewal_date')}: {new Date(subscriptionEnd).toLocaleDateString('fr-FR')}
+              {currentPlan.name.includes('Trial') ? t('account.expires_on') : t('account.renewal_date')}: {new Date(subscriptionEnd).toLocaleDateString()}
             </div>
           )}
 
