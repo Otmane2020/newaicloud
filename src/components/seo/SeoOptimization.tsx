@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Search,
@@ -117,7 +118,12 @@ export function SeoOptimization() {
   };
 
   const handleGenerateForSelected = async () => {
-    // Check usage limits
+    // Check usage limits - show trial limit dialog if shouldForcePayment
+    if (limits?.shouldForcePayment) {
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
     if (!limits?.canUseOptimizations) {
       toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
       setShowUpgradeDialog(true);
@@ -487,13 +493,23 @@ export function SeoOptimization() {
         onClose={handleCloseProgressDialog}
       />
       
-      <UpgradeDialog
-        open={showUpgradeDialog}
-        onOpenChange={setShowUpgradeDialog}
-        limitType="optimizations"
-        usage={limits?.usage.optimizations_count}
-        limit={limits?.limits.max_optimizations}
-      />
+      {limits?.shouldForcePayment ? (
+        <TrialLimitDialog
+          open={showUpgradeDialog}
+          onOpenChange={setShowUpgradeDialog}
+          limitType="optimizations"
+          currentUsage={limits?.usage.optimizations_count || 0}
+          maxUsage={limits?.limits.max_optimizations || 0}
+        />
+      ) : (
+        <UpgradeDialog
+          open={showUpgradeDialog}
+          onOpenChange={setShowUpgradeDialog}
+          limitType="optimizations"
+          usage={limits?.usage.optimizations_count}
+          limit={limits?.limits.max_optimizations}
+        />
+      )}
     </div>
   );
 }

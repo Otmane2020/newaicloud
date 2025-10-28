@@ -38,6 +38,7 @@ interface UsageLimits {
   trialEndsAt: string | null;
   currentPlanId: string | null;
   subscriptionStatus: string | null;
+  shouldForcePayment: boolean;
 }
 
 export const useUsageLimits = () => {

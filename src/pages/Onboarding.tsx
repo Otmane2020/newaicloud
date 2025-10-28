@@ -43,7 +43,6 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState('professional');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [loading, setLoading] = useState(false);
   const [loadingPlans, setLoadingPlans] = useState(true);
@@ -185,7 +184,7 @@ export default function Onboarding() {
     }
   };
 
-  const handleSelectPlan = async () => {
+  const handleSelectPlan = async (planId: string) => {
     if (!user) {
       toast.error('Vous devez être connecté');
       return;
@@ -193,11 +192,11 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      console.log('🚀 Creating checkout for plan:', selectedPlanId, 'billing:', billingCycle);
+      console.log('🚀 Creating checkout for plan:', planId, 'billing:', billingCycle);
       
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
-          plan_id: selectedPlanId,
+          plan_id: planId,
           billing_period: billingCycle,
           success_url: `${window.location.origin}/onboarding?checkout=success`,
           cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`
@@ -213,7 +212,7 @@ export default function Onboarding() {
 
       if (data?.url) {
         console.log('✅ Redirecting to:', data.url);
-        window.location.href = data.url;
+        window.open(data.url, '_blank');
       } else {
         console.error('❌ No URL in response:', data);
         throw new Error('No checkout URL returned');
@@ -221,36 +220,7 @@ export default function Onboarding() {
     } catch (error) {
       console.error('💥 Error creating checkout:', error);
       toast.error('Erreur lors de la création du paiement');
-      setLoading(false);
-    }
-  };
-
-  const handleStartFreeTrial = async () => {
-    if (!user) {
-      toast.error('Vous devez être connecté');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      console.log('🎁 Starting free trial...');
-      
-      const { data, error } = await supabase.functions.invoke('start-free-trial');
-
-      if (error) {
-        console.error('❌ Error starting trial:', error);
-        throw error;
-      }
-
-      console.log('✅ Trial started:', data);
-      toast.success('Essai gratuit activé ! Bienvenue 🎉');
-      
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
-    } catch (error) {
-      console.error('💥 Error starting free trial:', error);
-      toast.error('Erreur lors de l\'activation de l\'essai gratuit');
+    } finally {
       setLoading(false);
     }
   };
@@ -318,11 +288,11 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-gradient-subtle p-8">
       <div className="container mx-auto max-w-7xl">
-        {/* Header */}
+      {/* Header */}
       <div className="text-center mb-12">
         <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
-          <Sparkles className="w-4 h-4 mr-2" />
-          ✨ Essai gratuit de 14 jours - Aucune carte requise
+          <Shield className="w-4 h-4 mr-2" />
+          💳 Essai de 14 jours • Carte bancaire requise
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold mb-4">
           Choisissez votre{' '}
@@ -331,7 +301,7 @@ export default function Onboarding() {
           </span>
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Commencez gratuitement pendant 14 jours. Pas de carte bancaire requise.
+          Démarrez avec un essai de 14 jours • Accès complet dès maintenant • Premier paiement dans 14 jours
         </p>
       </div>
 
@@ -362,17 +332,13 @@ export default function Onboarding() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto mb-12">
           {plans.map((plan) => {
             const Icon = getPlanIcon(plan.id);
-            const isSelected = selectedPlanId === plan.id;
 
             return (
               <Card
                 key={plan.id}
-                className={`p-8 cursor-pointer transition-all duration-300 hover:-translate-y-2 ${
-                  isSelected 
-                    ? 'border-2 border-primary shadow-primary' 
-                    : 'border-2 border-transparent hover:border-primary/20'
-                } ${plan.popular ? 'ring-2 ring-primary' : ''}`}
-                onClick={() => setSelectedPlanId(plan.id)}
+                className={`p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow ${
+                  plan.popular ? 'ring-2 ring-primary' : 'border-2 border-border'
+                }`}
               >
                 {plan.popular && (
                   <Badge className="mb-4 bg-primary">
@@ -466,54 +432,42 @@ export default function Onboarding() {
                   ))}
                 </div>
 
-                {isSelected && (
-                  <div className="flex items-center gap-2 text-primary font-semibold">
-                    <Check className="w-5 h-5" />
-                    Plan sélectionné
-                  </div>
-                )}
+                <Button
+                  size="lg"
+                  onClick={() => handleSelectPlan(plan.id)}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                  ) : (
+                    <>
+                      <Shield className="w-5 h-5 mr-2" />
+                      Commencer avec {plan.name}
+                    </>
+                  )}
+                </Button>
+                
+                <p className="text-xs text-muted-foreground text-center mt-3">
+                  💳 Carte requise • Premier paiement le{' '}
+                  {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}
+                </p>
               </Card>
             );
           })}
         </div>
 
-        {/* CTA */}
-        <div className="text-center space-y-4">
-          <Button
-            size="lg"
-            onClick={handleStartFreeTrial}
-            disabled={loading}
-            className="px-12"
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                Activation en cours...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 mr-2" />
-                Commencer l'essai gratuit
-              </>
-            )}
-          </Button>
+        {/* Info footer */}
+        <div className="text-center mt-8 space-y-2">
           <p className="text-sm text-muted-foreground">
-            🎁 14 jours gratuits • Aucune carte requise • Upgrade simple quand vous voulez
+            ✨ Profitez de 14 jours d'essai complet avec limites réduites
           </p>
-          <div className="pt-4 border-t border-border max-w-md mx-auto">
-            <p className="text-xs text-muted-foreground mb-2">
-              Vous voulez payer maintenant et débloquer toutes les fonctionnalités ?
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSelectPlan}
-              disabled={loading}
-            >
-              <Shield className="w-4 h-4 mr-2" />
-              Payer maintenant (plan {selectedPlanId})
-            </Button>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            💡 Si vous atteignez les limites pendant l'essai, vous devrez payer immédiatement pour continuer
+          </p>
+          <p className="text-xs text-muted-foreground">
+            🔒 Annulation à tout moment avant la fin de l'essai
+          </p>
         </div>
       </div>
     </div>
