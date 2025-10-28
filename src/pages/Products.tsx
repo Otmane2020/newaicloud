@@ -140,27 +140,29 @@ export default function Products() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle p-8">
+    <div className="min-h-screen bg-gradient-subtle p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Gestion des Produits</h1>
-            <p className="text-muted-foreground">
-              {products.length} produit{products.length !== 1 ? 's' : ''} • Valeur totale: {totalValue.toFixed(2)} EUR
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+          <div className="w-full sm:w-auto">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">Gestion des Produits</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {products.length} produit{products.length !== 1 ? 's' : ''} • {totalValue.toFixed(2)} EUR
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="icon"
               onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="shrink-0"
             >
               {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
             </Button>
-            <Button size="lg" onClick={() => navigate('/dashboard')}>
-              <Plus className="w-5 h-5 mr-2" />
-              Importer des produits
+            <Button size="sm" onClick={() => navigate('/dashboard')} className="flex-1 sm:flex-none text-xs sm:text-sm">
+              <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Importer des produits</span>
+              <span className="sm:hidden">Importer</span>
             </Button>
           </div>
         </div>
@@ -186,27 +188,27 @@ export default function Products() {
         ) : (
           <>
             {/* Filters */}
-            <Card className="p-6 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
                 {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Rechercher un produit..."
+                    placeholder="Rechercher..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 text-sm"
                   />
                 </div>
 
                 {/* Status filter */}
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm">
                     <Filter className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Statut" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="all">Tous</SelectItem>
                     <SelectItem value="active">Actifs</SelectItem>
                     <SelectItem value="draft">Brouillons</SelectItem>
                   </SelectContent>
@@ -214,15 +216,15 @@ export default function Products() {
 
                 {/* Sort */}
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm">
                     <SelectValue placeholder="Trier par" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="recent">Plus récents</SelectItem>
-                    <SelectItem value="name-asc">Nom (A-Z)</SelectItem>
-                    <SelectItem value="name-desc">Nom (Z-A)</SelectItem>
-                    <SelectItem value="price-asc">Prix croissant</SelectItem>
-                    <SelectItem value="price-desc">Prix décroissant</SelectItem>
+                    <SelectItem value="recent">Récents</SelectItem>
+                    <SelectItem value="name-asc">A-Z</SelectItem>
+                    <SelectItem value="name-desc">Z-A</SelectItem>
+                    <SelectItem value="price-asc">Prix ↑</SelectItem>
+                    <SelectItem value="price-desc">Prix ↓</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

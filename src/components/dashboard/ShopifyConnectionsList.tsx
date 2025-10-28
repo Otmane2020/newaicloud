@@ -30,6 +30,7 @@ export function ShopifyConnectionsList() {
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importJobId, setImportJobId] = useState<string | null>(null);
+  const [importingPages, setImportingPages] = useState(false);
   const [progress, setProgress] = useState({
     currentPage: 0,
     totalPages: 0,
@@ -232,6 +233,29 @@ export function ShopifyConnectionsList() {
     }
   };
 
+  const handleImportPages = async (store: Store) => {
+    try {
+      setImportingPages(true);
+      toast.info('Import des pages en cours...');
+      
+      const { data, error } = await supabase.functions.invoke('import-shopify-pages', {
+        body: {
+          storeId: store.id
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`${data?.count || 0} pages importées avec succès !`);
+      
+    } catch (error: any) {
+      console.error('Pages import error:', error);
+      toast.error(error.message || 'Erreur lors de l\'import des pages');
+    } finally {
+      setImportingPages(false);
+    }
+  };
+
   if (loading || limitsLoading) {
     return (
       <Card className="p-6 flex items-center justify-center min-h-[400px]">
@@ -243,26 +267,26 @@ export function ShopifyConnectionsList() {
   return (
     <div className="space-y-6">
       {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Boutiques Shopify</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="text-xl sm:text-2xl font-bold">Boutiques Shopify</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             {stores.length} / {limits?.limits?.max_shopify_stores || 1} boutique(s) connectée(s)
           </p>
         </div>
         {canAddStore() && !showAddForm && (
-          <Button onClick={() => setShowAddForm(true)}>
+          <Button onClick={() => setShowAddForm(true)} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
-            Ajouter une boutique
+            Ajouter
           </Button>
         )}
       </div>
 
       {/* Add Form */}
       {showAddForm && (
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold">Nouvelle boutique</h3>
+            <h3 className="text-lg sm:text-xl font-bold">Nouvelle boutique</h3>
             <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)}>
               Annuler
             </Button>
@@ -270,12 +294,12 @@ export function ShopifyConnectionsList() {
           
           <form onSubmit={handleSaveConnection} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="storeName" className="flex items-center gap-2">
+              <Label htmlFor="storeName" className="flex items-center gap-2 text-sm">
                 <ShoppingBag className="w-4 h-4" />
                 Nom de la boutique
               </Label>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <Input
                     id="storeName"
                     type="text"
@@ -285,18 +309,18 @@ export function ShopifyConnectionsList() {
                       if (errors.storeName) setErrors({ ...errors, storeName: '' });
                     }}
                     placeholder="mon-magasin"
-                    className={`flex-1 ${errors.storeName ? 'border-destructive' : ''}`}
+                    className={`flex-1 text-sm ${errors.storeName ? 'border-destructive' : ''}`}
                   />
-                  <span className="text-muted-foreground">.myshopify.com</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left whitespace-nowrap">.myshopify.com</span>
                 </div>
                 {errors.storeName && (
-                  <p className="text-sm text-destructive">{errors.storeName}</p>
+                  <p className="text-xs sm:text-sm text-destructive">{errors.storeName}</p>
                 )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="apiToken" className="flex items-center gap-2">
+              <Label htmlFor="apiToken" className="flex items-center gap-2 text-sm">
                 <LinkIcon className="w-4 h-4" />
                 Token API (Storefront Access Token)
               </Label>
@@ -309,16 +333,16 @@ export function ShopifyConnectionsList() {
                   if (errors.apiToken) setErrors({ ...errors, apiToken: '' });
                 }}
                 placeholder="Entrez votre token API"
-                className={errors.apiToken ? 'border-destructive' : ''}
+                className={`text-sm ${errors.apiToken ? 'border-destructive' : ''}`}
               />
               {errors.apiToken && (
-                <p className="text-sm text-destructive">{errors.apiToken}</p>
+                <p className="text-xs sm:text-sm text-destructive">{errors.apiToken}</p>
               )}
             </div>
 
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} className="w-full sm:w-auto">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Connecter la boutique
+              Connecter
             </Button>
           </form>
         </Card>
@@ -342,19 +366,19 @@ export function ShopifyConnectionsList() {
       ) : (
         <div className="grid gap-6">
           {stores.map((store) => (
-            <Card key={store.id} className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <ShoppingBag className="w-8 h-8 text-primary" />
-                  <div>
-                    <h3 className="text-xl font-bold">{store.store_url}</h3>
-                    <p className="text-sm text-muted-foreground">
+            <Card key={store.id} className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <ShoppingBag className="w-6 h-6 sm:w-8 sm:h-8 text-primary shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base sm:text-xl font-bold truncate">{store.store_url}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Connectée le: {new Date(store.created_at).toLocaleDateString('fr-FR')}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant={store.is_active ? "default" : "secondary"}>
+                <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto">
+                  <Badge variant={store.is_active ? "default" : "secondary"} className="text-xs">
                     {store.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                   <Button
@@ -370,52 +394,72 @@ export function ShopifyConnectionsList() {
               {importing && (
                 <div className="mt-6 space-y-4">
                   <div className="flex items-center gap-3">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                    <span className="text-sm font-medium">Import en cours...</span>
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-primary" />
+                    <span className="text-xs sm:text-sm font-medium">Import en cours...</span>
                   </div>
 
-                  <Progress value={progress.percentage} className="h-3" />
+                  <Progress value={progress.percentage} className="h-2 sm:h-3" />
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold">{progress.percentage}%</div>
-                      <div className="text-xs text-muted-foreground mt-1">Progression</div>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
+                      <div className="text-lg sm:text-2xl font-bold">{progress.percentage}%</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground mt-1">Progression</div>
                     </div>
-                    <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold flex items-center justify-center gap-1">
-                        <FileText className="w-5 h-5" />
+                    <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
+                      <div className="text-lg sm:text-2xl font-bold flex items-center justify-center gap-1">
+                        <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                         {progress.currentPage}/{progress.totalPages || '?'}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">Pages</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground mt-1">Pages</div>
                     </div>
-                    <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold flex items-center justify-center gap-1">
-                        <Package className="w-5 h-5" />
+                    <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
+                      <div className="text-lg sm:text-2xl font-bold flex items-center justify-center gap-1">
+                        <Package className="w-4 h-4 sm:w-5 sm:h-5" />
                         {progress.productsProcessed}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">Produits</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground mt-1">Produits</div>
                     </div>
                   </div>
                 </div>
               )}
 
-              <Button 
-                onClick={() => handleImportProducts(store)}
-                disabled={importing}
-                className="w-full mt-6"
-              >
-                {importing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Import en cours...
-                  </>
-                ) : (
-                  <>
-                    <Download className="mr-2 h-4 w-4" />
-                    Importer les produits
-                  </>
-                )}
-              </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+                <Button 
+                  onClick={() => handleImportProducts(store)}
+                  disabled={importing || importingPages}
+                  className="w-full"
+                >
+                  {importing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Import...
+                    </>
+                  ) : (
+                    <>
+                      <Package className="mr-2 h-4 w-4" />
+                      Importer produits
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  onClick={() => handleImportPages(store)}
+                  disabled={importing || importingPages}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {importingPages ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Import...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="mr-2 h-4 w-4" />
+                      Importer pages
+                    </>
+                  )}
+                </Button>
+              </div>
             </Card>
           ))}
         </div>

@@ -18,17 +18,17 @@ export function ShopifyIntegrationTabs() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <ShoppingBag className="w-5 h-5" />
                 Connexion Shopify
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Connectez votre boutique en quelques secondes
               </CardDescription>
             </div>
-            <Button onClick={() => setShowDialog(true)} size="lg">
+            <Button onClick={() => setShowDialog(true)} size="lg" className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Ajouter une boutique
             </Button>
