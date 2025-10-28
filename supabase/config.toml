@@ -53,3 +53,6 @@ verify_jwt = true
 
 [functions.generate-daily-opportunities]
 verify_jwt = true
+
+[functions.report-usage-to-stripe]
+verify_jwt = false

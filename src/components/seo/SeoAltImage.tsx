@@ -242,11 +242,11 @@ export function SeoAltImage() {
             <div className="flex items-center gap-2">
               <ImageIcon className="w-6 h-6 text-purple-600" />
               <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Textes ALT Image Intelligents
+                Analyse d'Images avec Vision IA
               </h2>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              Améliorez l'accessibilité et le SEO avec des descriptions d'images optimisées par IA. Augmentez votre référencement images de 40%.
+              Génération intelligente de textes ALT grâce à l'analyse visuelle par IA. Descriptions précises et contextualisées pour un meilleur référencement.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <div className="flex items-center gap-2 text-sm">
@@ -273,8 +273,8 @@ export function SeoAltImage() {
               onClick={() => toast.info('Sélectionnez des images ci-dessous')}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
             >
-              <Sparkles className="w-5 h-5" />
-              Optimiser les images
+              <Eye className="w-5 h-5" />
+              Analyser avec Vision IA
               <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
@@ -390,17 +390,17 @@ export function SeoAltImage() {
             onClick={() => handleGenerateForSelected(true)}
             disabled={generating || selectedImages.size === 0}
             variant="outline"
-            className="gap-2"
+            className="gap-2 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950"
           >
             {generating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Vision IA...
+                Analyse Vision IA...
               </>
             ) : (
               <>
                 <Eye className="w-4 h-4" />
-                ALT Vision IA ({selectedImages.size})
+                Analyse Vision IA ({selectedImages.size})
               </>
             )}
           </Button>
