@@ -1,64 +1,30 @@
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
-import { Loader2, User, Mail, Lock, Eye, EyeOff, CreditCard } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { Loader2, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export function AccountSettings() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
-  const [email] = useState(user?.email || '');
-  
+  const [fullName, setFullName] = useState(user?.user_metadata?.full_name || "");
+  const [email] = useState(user?.email || "");
+
   // Password change states
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Récupérer le profil de l'utilisateur
-  const { data: profile } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('current_plan_id, subscription_status')
-        .eq('id', user?.id)
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
-
-  // Récupérer le plan d'abonnement
-  const { data: plan } = useQuery({
-    queryKey: ['subscription-plan', profile?.current_plan_id],
-    queryFn: async () => {
-      if (!profile?.current_plan_id) return null;
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('name')
-        .eq('id', profile.current_plan_id)
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!profile?.current_plan_id
-  });
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,20 +32,17 @@ export function AccountSettings() {
 
     try {
       const { error } = await supabase.auth.updateUser({
-        data: { full_name: fullName }
+        data: { full_name: fullName },
       });
 
       if (error) throw error;
 
-      await supabase
-        .from('profiles')
-        .update({ full_name: fullName })
-        .eq('id', user?.id);
+      await supabase.from("profiles").update({ full_name: fullName }).eq("id", user?.id);
 
-      toast.success(t('account.profile_updated'));
+      toast.success(t("account.profile_updated"));
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error(t('account.profile_error'));
+      console.error("Error updating profile:", error);
+      toast.error(t("account.profile_error"));
     } finally {
       setLoading(false);
     }
@@ -87,20 +50,20 @@ export function AccountSettings() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!newPassword || !confirmPassword) {
-      toast.error(t('account.fill_all_fields'));
+      toast.error(t("account.fill_all_fields"));
       return;
     }
-    
+
     if (newPassword.length < 6) {
-      toast.error(t('account.password_short'));
+      toast.error(t("account.password_short"));
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
-      toast.error(t('account.password_mismatch'));
+      toast.error(t("account.password_mismatch"));
       return;
     }
 
@@ -108,20 +71,20 @@ export function AccountSettings() {
 
     try {
       const { error } = await supabase.auth.updateUser({
-        password: newPassword
+        password: newPassword,
       });
 
       if (error) throw error;
 
       // Clear password fields
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      
-      toast.success(t('account.password_updated'));
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      toast.success(t("account.password_updated"));
     } catch (error: any) {
-      console.error('Error changing password:', error);
-      toast.error(error.message || t('account.password_error'));
+      console.error("Error changing password:", error);
+      toast.error(error.message || t("account.password_error"));
     } finally {
       setPasswordLoading(false);
     }
@@ -133,61 +96,36 @@ export function AccountSettings() {
       <Card className="p-6">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <User className="w-6 h-6 text-primary" />
-          {t('account.personal_info')}
+          {t("account.personal_info")}
         </h2>
-        
+
         <form onSubmit={handleUpdateProfile} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="email" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
-              {t('account.email')}
+              {t("account.email")}
             </Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              disabled
-              className="bg-muted"
-            />
-            <p className="text-sm text-muted-foreground">
-              {t('account.email_note')}
-            </p>
+            <Input id="email" type="email" value={email} disabled className="bg-muted" />
+            <p className="text-sm text-muted-foreground">{t("account.email_note")}</p>
           </div>
-
-          {plan && (
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                {t('account.subscription_plan')}
-              </Label>
-              <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/20 rounded-md">
-                <span className="font-semibold text-primary">{plan.name}</span>
-                {profile?.subscription_status === 'trialing' && (
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                    Trial
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="fullName" className="flex items-center gap-2">
               <User className="w-4 h-4" />
-              {t('account.full_name')}
+              {t("account.full_name")}
             </Label>
             <Input
               id="fullName"
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder={t('account.full_name_placeholder')}
+              placeholder={t("account.full_name_placeholder")}
             />
           </div>
 
           <Button type="submit" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t('account.save_changes')}
+            {t("account.save_changes")}
           </Button>
         </form>
       </Card>
@@ -196,14 +134,14 @@ export function AccountSettings() {
       <Card className="p-6">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <Lock className="w-6 h-6 text-primary" />
-          {t('account.security')}
+          {t("account.security")}
         </h2>
-        
+
         <form onSubmit={handleChangePassword} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="newPassword" className="flex items-center gap-2">
               <Lock className="w-4 h-4" />
-              {t('account.new_password')}
+              {t("account.new_password")}
             </Label>
             <div className="relative">
               <Input
@@ -211,7 +149,7 @@ export function AccountSettings() {
                 type={showNewPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={t('account.new_password_placeholder')}
+                placeholder={t("account.new_password_placeholder")}
               />
               <Button
                 type="button"
@@ -228,7 +166,7 @@ export function AccountSettings() {
           <div className="space-y-2">
             <Label htmlFor="confirmPassword" className="flex items-center gap-2">
               <Lock className="w-4 h-4" />
-              {t('account.confirm_password')}
+              {t("account.confirm_password")}
             </Label>
             <div className="relative">
               <Input
@@ -236,7 +174,7 @@ export function AccountSettings() {
                 type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder={t('account.confirm_password_placeholder')}
+                placeholder={t("account.confirm_password_placeholder")}
               />
               <Button
                 type="button"
@@ -252,19 +190,19 @@ export function AccountSettings() {
 
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>{t('account.security_tips')}</strong>
+              <strong>{t("account.security_tips")}</strong>
             </p>
             <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1 ml-4 list-disc">
-              <li>{t('account.tip_length')}</li>
-              <li>{t('account.tip_case')}</li>
-              <li>{t('account.tip_special')}</li>
-              <li>{t('account.tip_personal')}</li>
+              <li>{t("account.tip_length")}</li>
+              <li>{t("account.tip_case")}</li>
+              <li>{t("account.tip_special")}</li>
+              <li>{t("account.tip_personal")}</li>
             </ul>
           </div>
 
           <Button type="submit" disabled={passwordLoading || !newPassword || !confirmPassword}>
             {passwordLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t('account.change_password')}
+            {t("account.change_password")}
           </Button>
         </form>
       </Card>
