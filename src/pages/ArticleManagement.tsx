@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { BlogWizard } from '@/components/blog/BlogWizard';
 import { 
   Select,
   SelectContent,
@@ -54,6 +55,8 @@ export default function ArticleManagement() {
   const [optimizing, setOptimizing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -74,6 +77,15 @@ export default function ArticleManagement() {
 
       if (error) throw error;
       setArticles(data || []);
+
+      // Load categories for wizard
+      const { data: productsData } = await supabase
+        .from('shopify_products')
+        .select('category')
+        .not('category', 'is', null);
+      
+      const uniqueCategories = [...new Set(productsData?.map(p => p.category).filter(Boolean))];
+      setCategories(uniqueCategories as string[]);
     } catch (error) {
       console.error('Error loading articles:', error);
       toast.error('Erreur lors du chargement des articles');
@@ -249,10 +261,16 @@ export default function ArticleManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={importFromShopify} disabled={importing}>
-              <Upload className="w-4 h-4 mr-2" />
-              {importing ? 'Import...' : 'Importer de Shopify'}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowWizard(true)}>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Créer un article
+              </Button>
+              <Button onClick={importFromShopify} disabled={importing} variant="outline">
+                <Upload className="w-4 h-4 mr-2" />
+                {importing ? 'Import...' : 'Importer Shopify'}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -338,6 +356,13 @@ export default function ArticleManagement() {
                         checked={selectedArticles.includes(article.id)}
                         onCheckedChange={() => toggleArticleSelection(article.id)}
                       />
+                    </div>
+                    
+                    {/* Article Icon/Image */}
+                    <div className="flex-shrink-0">
+                      <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                        <FileText className="w-10 h-10 text-primary" />
+                      </div>
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -433,6 +458,17 @@ export default function ArticleManagement() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Blog Wizard Modal */}
+      {showWizard && (
+        <BlogWizard
+          onClose={() => {
+            setShowWizard(false);
+            loadArticles();
+          }}
+          categories={categories}
+        />
       )}
     </div>
   );
