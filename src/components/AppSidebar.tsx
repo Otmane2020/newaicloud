@@ -62,6 +62,7 @@ const seoSubItems = [
 const blogSubItems = [
   { title: "Articles", url: "/blog?tab=articles", icon: FileText },
   { title: "Campagnes IA", url: "/blog?tab=campaigns", icon: CalendarClock },
+  { title: "Blog SEO", url: "/blog/seo", icon: Sparkles },
 ];
 
 const blogOpportunitiesSubItems = [
