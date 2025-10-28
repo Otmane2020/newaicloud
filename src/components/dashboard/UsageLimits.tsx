@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,7 +47,7 @@ export function UsageLimits() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('current_plan_id')
+        .select('current_plan_id, subscription_status')
         .eq('id', user?.id)
         .single();
 
@@ -57,19 +58,23 @@ export function UsageLimits() {
   });
 
   const { data: plan } = useQuery({
-    queryKey: ['subscription-plan', profile?.current_plan_id],
+    queryKey: ['subscription-plan', profile?.current_plan_id, profile?.subscription_status],
     queryFn: async () => {
-      if (!profile?.current_plan_id) return null;
+      // Si pas de plan ou en trial, utiliser le plan trial
+      const planId = profile?.subscription_status === 'active' 
+        ? (profile?.current_plan_id || 'starter') 
+        : 'trial';
+      
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
-        .eq('id', profile.current_plan_id)
+        .eq('id', planId)
         .single();
 
       if (error) throw error;
       return data;
     },
-    enabled: !!profile?.current_plan_id
+    enabled: !!profile
   });
 
   const limits: UsageLimit[] = [
@@ -129,13 +134,32 @@ export function UsageLimits() {
     return Math.min((current / limit) * 100, 100);
   };
 
+  const optimizationsLeft = (plan?.max_optimizations_monthly || 0) - (usage?.optimizations_count || 0);
+  const isTrialPlan = profile?.subscription_status !== 'active';
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Limites d'utilisation</CardTitle>
-        <CardDescription>
-          Votre utilisation ce mois-ci
-        </CardDescription>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <CardTitle>Limites d'utilisation</CardTitle>
+            <CardDescription>
+              Votre utilisation ce mois-ci
+            </CardDescription>
+          </div>
+          {plan && (
+            <div className="text-right">
+              <Badge variant="outline" className="text-base font-semibold mb-1">
+                {plan.name}
+              </Badge>
+              {!isTrialPlan && (
+                <p className="text-sm text-muted-foreground">
+                  {optimizationsLeft} optimisations restantes
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {limits.map((item) => (

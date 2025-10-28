@@ -22,6 +22,7 @@ import {
   Bot,
   CalendarClock,
   ChevronRight,
+  BarChart3,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -57,6 +58,7 @@ const seoSubItems = [
   { title: "Pages", url: "/seo?tab=pages", icon: FileText },
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
   { title: "Automatisation", url: "/seo?tab=automation", icon: Settings },
+  { title: "KPIs & Audit", url: "/seo?tab=kpis", icon: BarChart3 },
 ];
 
 const blogSubItems = [

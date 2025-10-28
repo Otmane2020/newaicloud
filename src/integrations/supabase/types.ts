@@ -1012,6 +1012,7 @@ export type Database = {
           last_seo_sync_at: string | null
           length: number | null
           length_unit: string | null
+          optimization_count: number | null
           other_dimensions: Json | null
           price: number | null
           product_type: string | null
@@ -1111,6 +1112,7 @@ export type Database = {
           last_seo_sync_at?: string | null
           length?: number | null
           length_unit?: string | null
+          optimization_count?: number | null
           other_dimensions?: Json | null
           price?: number | null
           product_type?: string | null
@@ -1210,6 +1212,7 @@ export type Database = {
           last_seo_sync_at?: string | null
           length?: number | null
           length_unit?: string | null
+          optimization_count?: number | null
           other_dimensions?: Json | null
           price?: number | null
           product_type?: string | null

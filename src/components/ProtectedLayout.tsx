@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
+import { TrialWarningBanner } from "@/components/TrialWarningBanner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
         <div className="min-h-screen flex w-full bg-gray-50">
           <AppSidebar />
           <main className="flex-1">
+            <TrialWarningBanner />
             <div className="border-b bg-background">
               <div className="flex h-16 items-center px-4">
                 <SidebarTrigger />
