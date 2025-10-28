@@ -23,7 +23,7 @@ export function OAuthConnectionForm() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase.functions.invoke("shopify-oauth-start", {
+      const { data, error } = await supabase.functions.invoke("shopify-oauth", {
         body: { shopName: shopName.trim() },
       });
 

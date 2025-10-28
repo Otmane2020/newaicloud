@@ -19,24 +19,18 @@ export function ShopifyIntegrationTabs() {
       const state = searchParams.get('state');
       const shop = searchParams.get('shop');
 
-      if (isCallback && code && state && shop) {
-        try {
-          const { error } = await supabase.functions.invoke('shopify-oauth-callback', {
-            body: { code, state, shop }
-          });
+      const success = searchParams.get('success');
+      const error = searchParams.get('error');
 
-          if (error) throw error;
-
-          toast.success('Boutique Shopify connectée avec succès !');
-          // Clear URL params
-          setSearchParams({});
-          // Reload connections
-          window.location.reload();
-        } catch (error: any) {
-          console.error('OAuth callback error:', error);
-          toast.error(error.message || 'Erreur lors de la connexion OAuth');
-          setSearchParams({});
-        }
+      if (success === 'true') {
+        toast.success('Boutique Shopify connectée avec succès !');
+        // Clear URL params
+        setSearchParams({});
+        // Reload connections
+        window.location.reload();
+      } else if (error) {
+        toast.error(`Erreur: ${error}`);
+        setSearchParams({});
       }
     };
 
