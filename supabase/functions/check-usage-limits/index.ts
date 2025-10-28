@@ -39,11 +39,12 @@ serve(async (req) => {
     const isTrialing = profile.subscription_status === 'trialing';
     const isPaid = profile.subscription_status === 'active';
     
-    // Get plan limits
+    // Get plan limits - if in trial without payment, use trial plan
+    const planId = isPaid ? (profile.current_plan_id || 'starter') : 'trial';
     const { data: plan, error: planError } = await supabaseClient
       .from('subscription_plans')
       .select('*')
-      .eq('id', profile.current_plan_id || 'starter')
+      .eq('id', planId)
       .single();
 
     if (planError) throw planError;
