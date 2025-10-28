@@ -18,9 +18,18 @@ serve(async (req) => {
     const state = url.searchParams.get('state');
     const shop = url.searchParams.get('shop');
 
+    console.log('[SHOPIFY-OAUTH] Request received', {
+      hasCode: !!code,
+      hasShop: !!shop,
+      hasState: !!state,
+      method: req.method,
+      url: url.toString()
+    });
+
     // 🔄 ACTION 1: OAuth Callback (retour de Shopify)
     // Si code ET shop sont présents = callback OAuth
     if (code && shop) {
+      console.log('[SHOPIFY-OAUTH] Handling OAuth callback');
 
       if (!state) {
         const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
@@ -135,10 +144,13 @@ serve(async (req) => {
     }
 
     // 🚀 ACTION 2: Démarrer l'OAuth (depuis votre app)
+    console.log('[SHOPIFY-OAUTH] Handling OAuth initiation');
+    
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error('[SHOPIFY-OAUTH] Missing Authorization header');
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Unauthorized - Missing Authorization header" }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 401,
@@ -154,6 +166,7 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     if (authError || !user) {
+      console.error('[SHOPIFY-OAUTH] Invalid token', authError);
       return new Response(
         JSON.stringify({ error: "Invalid token" }),
         {
@@ -163,7 +176,23 @@ serve(async (req) => {
       );
     }
 
-    const { shopName } = await req.json();
+    console.log('[SHOPIFY-OAUTH] User authenticated', { userId: user.id });
+
+    let shopName;
+    try {
+      const body = await req.json();
+      shopName = body.shopName;
+      console.log('[SHOPIFY-OAUTH] Request body parsed', { shopName });
+    } catch (e) {
+      console.error('[SHOPIFY-OAUTH] Failed to parse request body', e);
+      return new Response(
+        JSON.stringify({ error: "Invalid request body" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
+    }
 
     if (!shopName) {
       return new Response(
