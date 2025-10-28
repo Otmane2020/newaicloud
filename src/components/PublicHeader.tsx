@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Menu, X, Sparkles } from "lucide-react";
@@ -6,19 +6,9 @@ import { LanguageSelector } from "./LanguageSelector";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export const PublicHeader = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -30,11 +20,7 @@ export const PublicHeader = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? "bg-background/95 backdrop-blur-md shadow-lg border-b"
-          : "bg-transparent"
-      }`}
+      className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200"
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
@@ -43,7 +29,7 @@ export const PublicHeader = () => {
             <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className={`text-xl font-bold ${isScrolled ? "text-foreground" : "text-white"}`}>
+            <span className="text-xl font-bold text-foreground">
               NewAI
             </span>
           </div>
@@ -52,33 +38,25 @@ export const PublicHeader = () => {
           <nav className="hidden md:flex items-center gap-8">
             <button
               onClick={() => scrollToSection("hero")}
-              className={`font-medium transition-colors hover:text-primary ${
-                isScrolled ? "text-foreground" : "text-white"
-              }`}
+              className="font-medium text-foreground transition-colors hover:text-primary"
             >
               {t('nav.home')}
             </button>
             <button
               onClick={() => scrollToSection("features")}
-              className={`font-medium transition-colors hover:text-primary ${
-                isScrolled ? "text-foreground" : "text-white"
-              }`}
+              className="font-medium text-foreground transition-colors hover:text-primary"
             >
               {t('nav.features')}
             </button>
             <button
               onClick={() => scrollToSection("benefits")}
-              className={`font-medium transition-colors hover:text-primary ${
-                isScrolled ? "text-foreground" : "text-white"
-              }`}
+              className="font-medium text-foreground transition-colors hover:text-primary"
             >
               {t('nav.benefits')}
             </button>
             <button
               onClick={() => scrollToSection("pricing")}
-              className={`font-medium transition-colors hover:text-primary ${
-                isScrolled ? "text-foreground" : "text-white"
-              }`}
+              className="font-medium text-foreground transition-colors hover:text-primary"
             >
               {t('nav.pricing')}
             </button>
@@ -90,7 +68,6 @@ export const PublicHeader = () => {
             <Button
               variant="ghost"
               onClick={() => navigate("/auth?mode=login")}
-              className={isScrolled ? "" : "text-white hover:text-white hover:bg-white/10"}
             >
               {t('auth.login')}
             </Button>
@@ -105,9 +82,9 @@ export const PublicHeader = () => {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? (
-              <X className={`w-6 h-6 ${isScrolled ? "text-foreground" : "text-white"}`} />
+              <X className="w-6 h-6 text-foreground" />
             ) : (
-              <Menu className={`w-6 h-6 ${isScrolled ? "text-foreground" : "text-white"}`} />
+              <Menu className="w-6 h-6 text-foreground" />
             )}
           </button>
         </div>
