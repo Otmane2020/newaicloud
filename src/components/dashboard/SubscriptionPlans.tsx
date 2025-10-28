@@ -1,17 +1,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, Sparkles, Zap, Crown, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Plan {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price_monthly: number;
+  price_yearly: number;
   icon: any;
   badge?: string;
   badgeColor?: string;
@@ -26,7 +29,8 @@ const plans: Plan[] = [
     id: "starter",
     name: "Starter",
     description: "Pour les petites boutiques qui découvrent l'IA",
-    price: 9.99,
+    price_monthly: 9.99,
+    price_yearly: 95.88,
     icon: Sparkles,
     badge: "14 jours gratuits",
     badgeColor: "bg-green-500",
@@ -51,7 +55,8 @@ const plans: Plan[] = [
     id: "pro",
     name: "Pro",
     description: "Pour les boutiques en croissance",
-    price: 49,
+    price_monthly: 49,
+    price_yearly: 468,
     icon: Zap,
     badge: "Plus Populaire 🔥",
     badgeColor: "bg-primary",
@@ -79,7 +84,8 @@ const plans: Plan[] = [
     id: "enterprise",
     name: "Enterprise",
     description: "Pour les grandes boutiques et agences",
-    price: 199,
+    price_monthly: 199,
+    price_yearly: 1908,
     icon: Crown,
     features: [
       "Tout illimité",
@@ -107,8 +113,10 @@ const plans: Plan[] = [
 export function SubscriptionPlans() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   useEffect(() => {
     const loadCurrentPlan = async () => {
@@ -128,30 +136,71 @@ export function SubscriptionPlans() {
   }, [user?.id]);
 
   const handleSelectPlan = async (planId: string) => {
-    if (planId === "enterprise") {
-      window.location.href = "mailto:support@newai.sale?subject=Enterprise Plan";
-      return;
-    }
-
     try {
+      setLoading(true);
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { planId }
+        body: { 
+          plan_id: planId,
+          billing_period: billingPeriod,
+          success_url: `${window.location.origin}/dashboard?checkout=success`,
+          cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
+        }
       });
 
       if (error) throw error;
       
       if (data?.url) {
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la session de paiement",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   const isCurrentPlan = (planId: string) => currentPlanId === planId;
 
+  const getPrice = (plan: Plan) => {
+    return billingPeriod === 'yearly' ? plan.price_yearly : plan.price_monthly;
+  };
+
+  const getSavings = (plan: Plan) => {
+    const monthlyCost = plan.price_monthly * 12;
+    const yearlyCost = plan.price_yearly;
+    const savings = ((monthlyCost - yearlyCost) / monthlyCost * 100).toFixed(0);
+    return savings;
+  };
+
   return (
     <div className="space-y-8">
+      <div className="text-center space-y-4">
+        <h2 className="text-3xl font-bold">Choisissez votre plan</h2>
+        <p className="text-muted-foreground">
+          Sélectionnez le plan qui correspond le mieux à vos besoins
+        </p>
+        
+        {/* Toggle Mensuel / Annuel */}
+        <div className="flex justify-center">
+          <Tabs value={billingPeriod} onValueChange={(value) => setBillingPeriod(value as 'monthly' | 'yearly')}>
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="monthly">Mensuel</TabsTrigger>
+              <TabsTrigger value="yearly">
+                Annuel
+                <Badge variant="secondary" className="ml-2 bg-success/20 text-success">
+                  -20%
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
+
       {/* Plans Grid */}
       <div className="grid md:grid-cols-3 gap-6">
         {plans.map((plan) => {
@@ -180,9 +229,16 @@ export function SubscriptionPlans() {
                   <CardTitle className="text-2xl">{plan.name}</CardTitle>
                 </div>
                 <CardDescription>{plan.description}</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">${plan.price}</span>
-                  <span className="text-muted-foreground">/mois</span>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-4xl font-bold">{getPrice(plan)}€</span>
+                  <span className="text-muted-foreground">
+                    /{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                  </span>
+                  {billingPeriod === 'yearly' && (
+                    <Badge variant="secondary" className="bg-success/20 text-success text-xs">
+                      Économisez {getSavings(plan)}%
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
 

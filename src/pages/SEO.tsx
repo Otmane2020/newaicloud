@@ -20,39 +20,6 @@ export default function SEO() {
     }
   }, [searchParams]);
 
-  const tabs = [
-    {
-      id: 'optimization',
-      label: 'SEO',
-      icon: Sparkles,
-      description: 'Titre & Meta'
-    },
-    {
-      id: 'tags',
-      label: 'Tags',
-      icon: Tags,
-      description: 'Organisation'
-    },
-    {
-      id: 'pages',
-      label: 'Pages',
-      icon: FileText,
-      description: 'Pages Shopify'
-    },
-    {
-      id: 'alt',
-      label: 'ALT Text',
-      icon: Image,
-      description: 'Images'
-    },
-    {
-      id: 'automation',
-      label: 'Automation',
-      icon: Settings,
-      description: 'Paramètres'
-    }
-  ];
-
   return (
     <div className="space-y-6">
       <div>
@@ -64,46 +31,7 @@ export default function SEO() {
         </p>
       </div>
 
-      {/* Mobile-friendly Tab Navigation - Responsive grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <Card
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setSearchParams({ tab: tab.id });
-              }}
-              className={cn(
-                "p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-lg border-primary ring-2 ring-primary"
-                  : "hover:bg-muted border-2 border-transparent hover:border-primary/20"
-              )}
-            >
-              <div className="flex flex-col items-center text-center gap-2">
-                <Icon className={cn(
-                  "w-6 h-6 md:w-7 md:h-7 transition-transform",
-                  isActive && "animate-scale-in"
-                )} />
-                <div>
-                  <div className="font-semibold text-sm md:text-base">{tab.label}</div>
-                  <div className={cn(
-                    "text-xs mt-1",
-                    isActive ? "text-primary-foreground/80" : "text-muted-foreground"
-                  )}>
-                    {tab.description}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Tab Content */}
+      {/* Tab Content - Navigation via sidebar uniquement */}
       <div className="mt-6">
         {activeTab === 'optimization' && <SeoOptimization />}
         {activeTab === 'tags' && <TagOptimization />}
