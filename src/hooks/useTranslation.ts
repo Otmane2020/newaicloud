@@ -27,8 +27,13 @@ export const useTranslation = () => {
 
   // Save language preference to user profile
   const changeLanguage = async (lang: string) => {
+    // Change i18n language immediately
     await i18n.changeLanguage(lang);
     
+    // Store in localStorage for persistence
+    localStorage.setItem('i18nextLng', lang);
+    
+    // Update user profile in database
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase
@@ -36,6 +41,9 @@ export const useTranslation = () => {
         .update({ preferred_language: lang })
         .eq('id', user.id);
     }
+    
+    // Force page reload to apply language changes everywhere
+    window.location.reload();
   };
 
   return {
