@@ -14,17 +14,17 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const action = url.searchParams.get('action');
+    const code = url.searchParams.get('code');
+    const state = url.searchParams.get('state');
+    const shop = url.searchParams.get('shop');
 
     // 🔄 ACTION 1: OAuth Callback (retour de Shopify)
-    if (action === 'callback') {
-      const code = url.searchParams.get('code');
-      const state = url.searchParams.get('state');
-      const shop = url.searchParams.get('shop');
+    // Si code ET shop sont présents = callback OAuth
+    if (code && shop) {
 
-      if (!code || !state || !shop) {
+      if (!state) {
         const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
-        return Response.redirect(`${appUrl}/integration?error=missing_params`);
+        return Response.redirect(`${appUrl}/integration?error=missing_state`);
       }
 
       const supabaseClient = createClient(
@@ -217,7 +217,7 @@ serve(async (req) => {
 
     // Construire l'URL OAuth
     const scopes = "write_checkout_branding_settings,write_checkouts,read_files,write_files,write_inventory,read_inventory,write_inventory_shipments,read_inventory_shipments,write_inventory_shipments_received_items,read_inventory_shipments_received_items,write_inventory_transfers,read_inventory_transfers,read_online_store_pages,write_online_store_pages,read_product_feeds,write_product_feeds,read_product_listings,write_product_listings,read_products,write_products,read_shipping,write_shipping,unauthenticated_read_product_pickup_locations,unauthenticated_read_product_inventory,unauthenticated_read_product_listings,unauthenticated_read_product_tags,read_orders,read_content,write_content";
-    const redirectUri = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-oauth?action=callback`;
+    const redirectUri = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-oauth`;
 
     const authUrl = `https://${cleanShopName}.myshopify.com/admin/oauth/authorize?` +
       `client_id=${apiKey}&` +
