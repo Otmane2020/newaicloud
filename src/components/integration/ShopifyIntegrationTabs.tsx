@@ -1,24 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Key } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { OAuthConnectionForm } from './OAuthConnectionForm';
-import { ShopifyConnectionsList } from '@/components/dashboard/ShopifyConnectionsList';
+import { TokenApiGuide } from './TokenApiGuide';
+import { SkeletonLoader } from './SkeletonLoader';
+
+// Lazy load the connections list for better performance
+const ShopifyConnectionsList = lazy(() => 
+  import('@/components/dashboard/ShopifyConnectionsList').then(module => ({
+    default: module.ShopifyConnectionsList
+  }))
+);
 
 export function ShopifyIntegrationTabs() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [connectionMode, setConnectionMode] = useState<string>("oauth");
 
   // Handle OAuth callback
   useEffect(() => {
     const handleOAuthCallback = async () => {
-      const isCallback = searchParams.get('oauth') === 'callback';
-      const code = searchParams.get('code');
-      const state = searchParams.get('state');
-      const shop = searchParams.get('shop');
-
       const success = searchParams.get('success');
       const error = searchParams.get('error');
 
@@ -38,27 +39,40 @@ export function ShopifyIntegrationTabs() {
   }, [searchParams, setSearchParams]);
 
   return (
-    <div className="space-y-6">
-      <Tabs value={connectionMode} onValueChange={setConnectionMode}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="oauth">
-            <Shield className="w-4 h-4 mr-2" />
-            Connexion rapide
-          </TabsTrigger>
-          <TabsTrigger value="token">
-            <Key className="w-4 h-4 mr-2" />
-            Token API
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="oauth" className="mt-6">
-          <OAuthConnectionForm />
-        </TabsContent>
-
-        <TabsContent value="token" className="mt-6">
-          <ShopifyConnectionsList />
-        </TabsContent>
-      </Tabs>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Left Column: OAuth Quick Connection */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="text-xl font-bold">Connexion Rapide</h3>
+          <Badge variant="default">Recommandé</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Connexion sécurisée en un clic sans configuration manuelle
+        </p>
+        
+        <OAuthConnectionForm />
+      </div>
+      
+      {/* Right Column: Token API Advanced Connection */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Key className="w-5 h-5 text-muted-foreground" />
+          <h3 className="text-xl font-bold">Connexion Avancée</h3>
+          <Badge variant="outline">Token API</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Utilisez votre propre token API Shopify pour une configuration personnalisée
+        </p>
+        
+        <TokenApiGuide />
+        
+        <div className="mt-6">
+          <Suspense fallback={<SkeletonLoader />}>
+            <ShopifyConnectionsList />
+          </Suspense>
+        </div>
+      </div>
     </div>
   );
 }

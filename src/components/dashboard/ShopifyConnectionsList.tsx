@@ -92,15 +92,25 @@ export function ShopifyConnectionsList() {
 
   const loadStores = async () => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       const { data } = await supabase
         .from('shopify_connections')
-        .select('*')
+        .select('id, store_url, is_active, created_at, access_token')
         .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .abortSignal(controller.signal);
 
+      clearTimeout(timeoutId);
       setStores(data || []);
-    } catch (error) {
-      console.error('Error loading stores:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('Request timeout');
+        toast.error('La requête a pris trop de temps');
+      } else {
+        console.error('Error loading stores:', error);
+      }
     } finally {
       setLoading(false);
     }
