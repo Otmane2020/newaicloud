@@ -46,6 +46,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const mainMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -100,6 +101,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const currentSearch = location.search;
   const [userPlan, setUserPlan] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchUserPlan = async () => {
@@ -163,15 +165,15 @@ export function AppSidebar() {
   const isOpportunitiesActive = currentSearch.includes("tab=opportunities");
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
       {/* Logo Header */}
-      <div className="border-b p-4">
+      <div className="border-b p-3 sm:p-4">
         <NavLink to="/dashboard" className="flex items-center gap-2 group transition-transform hover:scale-105">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
           </div>
           {state === "expanded" && (
-            <span className="font-bold text-xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               NewAI
             </span>
           )}
@@ -352,12 +354,12 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <div className="flex flex-col gap-2 px-2 py-3">
+              <div className="flex flex-col gap-2 px-2 py-2 sm:py-3">
                 {state === "expanded" ? (
                   <>
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 shrink-0" />
-                      <span className="text-sm truncate">{user?.email}</span>
+                      <span className="text-xs sm:text-sm truncate">{user?.email}</span>
                     </div>
                     <Badge variant="default" className="w-fit text-xs font-semibold">
                       {userPlan || "Chargement..."}
@@ -373,7 +375,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Button variant="ghost" className="w-full justify-start" onClick={signOut}>
+              <Button variant="ghost" className="w-full justify-start text-xs sm:text-sm" onClick={signOut}>
                 <LogOut className="h-4 w-4" />
                 {state === "expanded" && <span>Déconnexion</span>}
               </Button>

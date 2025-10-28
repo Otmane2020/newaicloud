@@ -60,29 +60,39 @@ export function TrialLimitDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-orange-500" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+              <Zap className="w-6 h-6 text-primary" />
             </div>
-            <DialogTitle className="text-xl">Limite d'essai atteinte</DialogTitle>
+            <DialogTitle className="text-xl">✨ Libérez toutes les fonctionnalités</DialogTitle>
           </div>
           <DialogDescription className="text-base pt-2">
-            Vous avez atteint votre limite d'essai gratuit pour{' '}
-            <span className="font-semibold text-foreground">{limitType}</span> (
-            {currentUsage}/{trialMaxUsage || maxUsage}).
+            Profitez de l'ensemble des fonctionnalités de NewAI sans limite en activant votre abonnement maintenant.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Zap className="w-4 h-4 text-primary" />
-              <span className="font-medium">En activant votre abonnement maintenant :</span>
+          <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Zap className="w-5 h-5 text-primary" />
+              <span>Avec le plan Starter à 9,99€/mois :</span>
             </div>
-            <ul className="text-sm text-muted-foreground space-y-1 ml-6">
-              <li>• Accès immédiat aux limites complètes du plan</li>
-              <li>• Le paiement sera effectué immédiatement</li>
-              <li>• Facturation mensuelle dès aujourd'hui</li>
-              <li>• Votre essai de 14 jours reste valide (pas de double facturation)</li>
+            <ul className="text-sm space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✓</span>
+                <span>Optimisations SEO illimitées</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✓</span>
+                <span>Génération d'articles IA</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✓</span>
+                <span>Chat assistant avancé</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✓</span>
+                <span>Automatisations complètes</span>
+              </li>
             </ul>
           </div>
 
@@ -114,8 +124,7 @@ export function TrialLimitDialog({
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            💡 Vous ne pourrez plus utiliser cette fonctionnalité tant que vous n'aurez pas activé
-            votre abonnement
+            🚀 Activez votre abonnement en quelques clics et continuez à faire croître votre business
           </p>
         </div>
       </DialogContent>
