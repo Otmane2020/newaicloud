@@ -192,3 +192,98 @@ All colors MUST be HSL.
 .animate-fade-in {
   animation: fade-in 0.5s ease-out forwards;
 }
+
+/* Blog Article Styles */
+.article-content .table-of-contents {
+  background: hsl(var(--muted));
+  border-left: 4px solid hsl(var(--primary));
+  padding: 1.5rem;
+  margin: 2rem 0;
+  border-radius: 8px;
+}
+
+.article-content .table-of-contents h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: hsl(var(--foreground));
+}
+
+.article-content .table-of-contents ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.article-content .table-of-contents li {
+  margin: 0.5rem 0;
+}
+
+.article-content .table-of-contents a {
+  color: hsl(var(--primary));
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.article-content .table-of-contents a:hover {
+  color: hsl(var(--primary) / 0.8);
+  text-decoration: underline;
+}
+
+.article-content h2 {
+  scroll-margin-top: 100px;
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  border-bottom: 2px solid hsl(var(--border));
+  padding-bottom: 0.5rem;
+}
+
+.article-content h3 {
+  scroll-margin-top: 100px;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.article-content p {
+  margin: 1rem 0;
+  line-height: 1.75;
+  color: hsl(var(--foreground));
+}
+
+.article-content ul, 
+.article-content ol {
+  margin: 1rem 0;
+  padding-left: 2rem;
+}
+
+.article-content li {
+  margin: 0.5rem 0;
+  line-height: 1.75;
+}
+
+.article-content a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s;
+}
+
+.article-content a:hover {
+  color: hsl(var(--primary) / 0.8);
+}
+
+.article-content strong {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.article-content nav {
+  position: sticky;
+  top: 80px;
+}

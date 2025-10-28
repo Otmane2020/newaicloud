@@ -214,7 +214,7 @@ const BlogArticle = () => {
           {/* Article Content */}
           <Card className="p-8 mb-8">
             <div 
-              className="prose prose-lg max-w-none"
+              className="prose prose-lg max-w-none article-content"
               dangerouslySetInnerHTML={{ __html: post.content }}
             />
           </Card>
