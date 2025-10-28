@@ -107,22 +107,62 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* OAuth Method - Temporarily Disabled */}
-          <div className="space-y-4 p-4 border rounded-lg bg-muted/50 opacity-60">
+          {/* OAuth Method */}
+          <div className="space-y-4 p-4 border rounded-lg bg-card">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-muted-foreground" />
-                <h3 className="font-semibold">Connexion OAuth</h3>
+                <Shield className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold">Connexion Rapide</h3>
               </div>
-              <Badge variant="outline">Bientôt disponible</Badge>
+              <Badge variant="default">Recommandé</Badge>
             </div>
             
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                La connexion OAuth nécessite une configuration préalable de l'application Shopify. Utilisez la méthode Token API en attendant.
-              </AlertDescription>
-            </Alert>
+            <p className="text-sm text-muted-foreground">
+              Connexion OAuth sécurisée en un clic
+            </p>
+
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="oauth-shop-name">Nom de votre boutique</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="oauth-shop-name"
+                    placeholder="qnxv91-2w"
+                    value={oauthShopName}
+                    onChange={(e) => setOauthShopName(e.target.value)}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    .myshopify.com
+                  </span>
+                </div>
+              </div>
+
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Trouvez le nom dans l'URL : <code className="bg-muted px-1 py-0.5 rounded">admin.shopify.com/store/<strong>qnxv91-2w</strong></code>
+                </AlertDescription>
+              </Alert>
+
+              <Button 
+                onClick={handleOAuthConnect}
+                disabled={oauthLoading} 
+                className="w-full"
+              >
+                {oauthLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connexion...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Connecter avec OAuth
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           <div className="relative">
