@@ -147,7 +147,8 @@
     "password_error": "Erreur lors du changement de mot de passe",
     "fill_all_fields": "Veuillez remplir tous les champs",
     "password_short": "Le mot de passe doit contenir au moins 6 caractères",
-    "password_mismatch": "Les mots de passe ne correspondent pas"
+    "password_mismatch": "Les mots de passe ne correspondent pas",
+    "subscription_plan": "Plan d'abonnement"
   },
   "common": {
     "loading": "Chargement...",

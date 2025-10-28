@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, User, Mail, Lock, Eye, EyeOff, CreditCard } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useQuery } from '@tanstack/react-query';
 
 export function AccountSettings() {
   const { user } = useAuth();
@@ -25,6 +26,39 @@ export function AccountSettings() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Récupérer le profil de l'utilisateur
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('current_plan_id, subscription_status')
+        .eq('id', user?.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  // Récupérer le plan d'abonnement
+  const { data: plan } = useQuery({
+    queryKey: ['subscription-plan', profile?.current_plan_id],
+    queryFn: async () => {
+      if (!profile?.current_plan_id) return null;
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('name')
+        .eq('id', profile.current_plan_id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!profile?.current_plan_id
+  });
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +153,23 @@ export function AccountSettings() {
               {t('account.email_note')}
             </p>
           </div>
+
+          {plan && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                {t('account.subscription_plan')}
+              </Label>
+              <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/20 rounded-md">
+                <span className="font-semibold text-primary">{plan.name}</span>
+                {profile?.subscription_status === 'trialing' && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                    Trial
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="fullName" className="flex items-center gap-2">
