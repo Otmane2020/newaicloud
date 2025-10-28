@@ -773,66 +773,6 @@ export type Database = {
           },
         ]
       }
-      public_blog_posts: {
-        Row: {
-          author: string
-          category: string
-          content: string
-          created_at: string
-          excerpt: string
-          featured_image: string | null
-          id: string
-          keywords: string[]
-          language: string
-          meta_description: string
-          meta_title: string
-          published: boolean
-          published_at: string | null
-          slug: string
-          title: string
-          updated_at: string
-          views: number
-        }
-        Insert: {
-          author?: string
-          category: string
-          content: string
-          created_at?: string
-          excerpt: string
-          featured_image?: string | null
-          id?: string
-          keywords?: string[]
-          language?: string
-          meta_description: string
-          meta_title: string
-          published?: boolean
-          published_at?: string | null
-          slug: string
-          title: string
-          updated_at?: string
-          views?: number
-        }
-        Update: {
-          author?: string
-          category?: string
-          content?: string
-          created_at?: string
-          excerpt?: string
-          featured_image?: string | null
-          id?: string
-          keywords?: string[]
-          language?: string
-          meta_description?: string
-          meta_title?: string
-          published?: boolean
-          published_at?: string | null
-          slug?: string
-          title?: string
-          updated_at?: string
-          views?: number
-        }
-        Relationships: []
-      }
       shopify_connections: {
         Row: {
           access_token: string

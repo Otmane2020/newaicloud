@@ -41,7 +41,6 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import PerformanceMonitor from "./pages/PerformanceMonitor";
 import Documentation from "./pages/Documentation";
-import PublicBlog from "./pages/PublicBlog";
 
 const queryClient = new QueryClient();
 
@@ -55,7 +54,6 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/documentation" element={<Documentation />} />
-            <Route path="/blog" element={<PublicBlog />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
