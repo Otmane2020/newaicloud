@@ -20,6 +20,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Blog from "./pages/Blog";
+import ArticleManagement from "./pages/ArticleManagement";
 import SEO from "./pages/SEO";
 import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
@@ -86,6 +87,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Blog />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/blog/management"
+              element={
+                <ProtectedLayout>
+                  <ArticleManagement />
                 </ProtectedLayout>
               }
             />
