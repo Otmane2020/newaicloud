@@ -41,6 +41,7 @@ interface Article {
   shopify_blog_id: string | null;
   created_at: string;
   updated_at: string;
+  source: string;
 }
 
 export default function ArticleManagement() {
@@ -86,14 +87,22 @@ export default function ArticleManagement() {
       setImporting(true);
       toast.info('Import des articles Shopify en cours...');
       
-      // TODO: Implement Shopify articles import
-      // This would call a Supabase function to fetch articles from Shopify
+      const { data, error } = await supabase.functions.invoke('import-shopify-articles');
       
-      toast.success('Articles importés avec succès');
+      if (error) throw error;
+      
+      if (data?.imported > 0) {
+        toast.success(`${data.imported} article(s) importé(s) avec succès`);
+      } else if (data?.skipped > 0) {
+        toast.info(`Tous les articles sont déjà importés (${data.skipped} ignorés)`);
+      } else {
+        toast.info('Aucun article trouvé sur Shopify');
+      }
+      
       loadArticles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error importing from Shopify:', error);
-      toast.error('Erreur lors de l\'import');
+      toast.error(error.message || 'Erreur lors de l\'import');
     } finally {
       setImporting(false);
     }
@@ -346,13 +355,24 @@ export default function ArticleManagement() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 mb-3">
+                        {article.source === 'ai_generated' ? (
+                          <Badge variant="default" className="bg-blue-500">
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            IA
+                          </Badge>
+                        ) : (
+                          <Badge variant="default" className="bg-green-500">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Shopify
+                          </Badge>
+                        )}
                         <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
                           {article.status}
                         </Badge>
-                        {article.shopify_blog_id && (
+                        {article.shopify_blog_id && article.status === 'published' && (
                           <Badge variant="outline" className="bg-green-50">
                             <CheckCircle2 className="w-3 h-3 mr-1" />
-                            Shopify
+                            Sync OK
                           </Badge>
                         )}
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">

@@ -150,6 +150,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           category: formData.category,
           keywords: finalKeywords,
           productIds: selectedProducts.map(p => p.id),
+          source: 'ai_generated', // Mark as AI-generated article
         }
       });
 
