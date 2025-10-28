@@ -76,6 +76,7 @@ export function validateCreateCheckout(data: any): ValidationResult<{
   billing_period: 'monthly' | 'yearly';
   success_url?: string;
   cancel_url?: string;
+  force_immediate_payment?: boolean;
 }> {
   const errors: ValidationError[] = [];
 
@@ -130,7 +131,8 @@ export function validateCreateCheckout(data: any): ValidationResult<{
       plan_id: data.plan_id.trim(),
       billing_period: data.billing_period as 'monthly' | 'yearly',
       success_url: data.success_url,
-      cancel_url: data.cancel_url
+      cancel_url: data.cancel_url,
+      force_immediate_payment: data.force_immediate_payment || false
     }
   };
 }

@@ -103,6 +103,9 @@ serve(async (req) => {
     const canAddShopifyStore = currentUsage.shopify_stores_count < limits.max_shopify_stores;
     const canAddCampaign = currentUsage.campaigns_count < limits.max_campaigns;
 
+    const shouldForcePayment = !canUseOptimizations || !canUseArticles || !canUseChat || 
+                                !canUseShopifySearch || !canAddProducts || !canAddShopifyStore || !canAddCampaign;
+
     return new Response(
       JSON.stringify({
         canUseOptimizations,
@@ -126,6 +129,7 @@ serve(async (req) => {
         isTrialing,
         isPaid,
         planId: profile.current_plan_id,
+        shouldForcePayment,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

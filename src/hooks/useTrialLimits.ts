@@ -8,6 +8,7 @@ interface TrialStatus {
   limitReached: boolean;
   limitType?: string;
   daysLeft?: number;
+  shouldForcePayment?: boolean;
 }
 
 export function useTrialLimits() {
@@ -93,7 +94,8 @@ export function useTrialLimits() {
           trialExpired,
           limitReached,
           limitType,
-          daysLeft
+          daysLeft,
+          shouldForcePayment: limitReached || trialExpired
         };
 
         setTrialStatus(newStatus);

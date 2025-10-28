@@ -40,7 +40,7 @@ serve(async (req) => {
       );
     }
 
-    const { plan_id, billing_period, success_url, cancel_url } = validation.data;
+    const { plan_id, billing_period, success_url, cancel_url, force_immediate_payment } = validation.data;
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -158,12 +158,17 @@ serve(async (req) => {
       },
       subscription_data: {
         // Logique de trial :
-        // - Si trial actif ET mensuel (limite atteinte) : 0 jours (paiement immédiat)
+        // - Si force_immediate_payment : 0 jours (paiement immédiat, limite atteinte)
+        // - Si trial actif ET mensuel : 0 jours (paiement immédiat)
         // - Si trial actif ET annuel : conserver les jours restants
         // - Sinon : appliquer le trial du plan (14 jours)
-        trial_period_days: hasActiveTrial 
-          ? (billing_period === 'yearly' ? trialDaysRemaining : 0)
-          : (plan.trial_days || 14),
+        trial_period_days: force_immediate_payment
+          ? 0
+          : hasActiveTrial && billing_period === 'monthly'
+            ? 0
+            : hasActiveTrial && billing_period === 'yearly'
+              ? trialDaysRemaining
+              : (plan.trial_days || 14),
         ...(hasActiveTrial && billing_period === 'yearly' && profile?.trial_ends_at ? {
           trial_end: Math.floor(new Date(profile.trial_ends_at).getTime() / 1000)
         } : {}),
@@ -171,7 +176,8 @@ serve(async (req) => {
           user_id: user.id,
           plan_id: plan_id,
           billing_period: billing_period,
-          upgraded_from_trial: hasActiveTrial ? 'true' : 'false'
+          upgraded_from_trial: hasActiveTrial ? 'true' : 'false',
+          forced_payment: force_immediate_payment ? 'true' : 'false'
         }
       },
       success_url: success_url || `${origin}/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}`,

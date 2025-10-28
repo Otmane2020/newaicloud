@@ -23,7 +23,8 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
           plan_id: 'starter',
-          billing_period: 'monthly'
+          billing_period: 'monthly',
+          force_immediate_payment: true
         }
       });
 
@@ -55,8 +56,8 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
           </DialogTitle>
           <DialogDescription className="text-base">
             {reason === 'limit_reached' 
-              ? t('trialUpgrade.limit_message', { limitType })
-              : t('trialUpgrade.trial_ended_message')}
+              ? `Vous avez atteint la limite de ${limitType} du plan gratuit. Pour continuer, passez au plan Starter dès maintenant (paiement immédiat).`
+              : `Votre période d'essai gratuite est terminée. Activez le plan Starter pour continuer (paiement immédiat).`}
           </DialogDescription>
         </DialogHeader>
 
