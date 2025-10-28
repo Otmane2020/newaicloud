@@ -113,7 +113,8 @@
     "dashboard": "仪表板",
     "account": "我的账户",
     "home": "首页",
-    "benefits": "优势"
+    "benefits": "优势",
+    "blog": "博客"
   },
   "common": {
     "loading": "加载中...",

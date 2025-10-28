@@ -42,6 +42,7 @@ import Terms from "./pages/Terms";
 import PerformanceMonitor from "./pages/PerformanceMonitor";
 import Documentation from "./pages/Documentation";
 import PublicBlog from "./pages/PublicBlog";
+import BlogArticle from "./pages/BlogArticle";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/documentation" element={<Documentation />} />
             <Route path="/blog" element={<PublicBlog />} />
+            <Route path="/blog/:slug" element={<BlogArticle />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />

@@ -60,6 +60,12 @@ export const PublicHeader = () => {
             >
               {t('nav.pricing')}
             </button>
+            <button
+              onClick={() => navigate("/blog")}
+              className="font-medium text-foreground transition-colors hover:text-primary"
+            >
+              Blog
+            </button>
           </nav>
 
           {/* Desktop Auth Buttons */}
@@ -116,6 +122,12 @@ export const PublicHeader = () => {
                 className="text-left font-medium hover:text-primary transition-colors"
               >
                 {t('nav.pricing')}
+              </button>
+              <button
+                onClick={() => navigate("/blog")}
+                className="text-left font-medium hover:text-primary transition-colors"
+              >
+                Blog
               </button>
               <div className="flex flex-col gap-2 pt-4 border-t">
                 <Button

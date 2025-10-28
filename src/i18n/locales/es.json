@@ -113,7 +113,8 @@
     "dashboard": "Panel",
     "account": "Mi Cuenta",
     "home": "Inicio",
-    "benefits": "Ventajas"
+    "benefits": "Ventajas",
+    "blog": "Blog"
   },
   "common": {
     "loading": "Cargando...",

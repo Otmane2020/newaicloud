@@ -113,7 +113,8 @@
     "dashboard": "Dashboard",
     "account": "Mijn Account",
     "home": "Home",
-    "benefits": "Voordelen"
+    "benefits": "Voordelen",
+    "blog": "Blog"
   },
   "common": {
     "loading": "Laden...",

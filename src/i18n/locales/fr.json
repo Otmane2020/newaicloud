@@ -111,7 +111,10 @@
     "features": "Fonctionnalités",
     "pricing": "Tarifs",
     "dashboard": "Dashboard",
-    "account": "Mon Compte"
+    "account": "Mon Compte",
+    "home": "Accueil",
+    "benefits": "Avantages",
+    "blog": "Blog"
   },
   "account": {
     "title": "Mon Compte",
