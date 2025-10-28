@@ -52,6 +52,8 @@ export default function ArticleManagement() {
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [syncFilter, setSyncFilter] = useState<string>('all');
   const [optimizing, setOptimizing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -212,12 +214,33 @@ export default function ArticleManagement() {
     }
   };
 
-  const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.meta_description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || article.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredArticles = articles
+    .filter(article => 
+      searchQuery === "" || 
+      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.meta_description?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .filter(article => 
+      statusFilter === "all" || article.status === statusFilter
+    )
+    .filter(article => 
+      sourceFilter === "all" || article.source === sourceFilter
+    )
+    .filter(article => {
+      if (syncFilter === "all") return true;
+      if (syncFilter === "synced") return article.shopify_blog_id !== null;
+      if (syncFilter === "not_synced") return article.shopify_blog_id === null;
+      return true;
+    });
+
+  const stats = {
+    total: articles.length,
+    ai: articles.filter(a => a.source === 'ai_generated').length,
+    shopify: articles.filter(a => a.source === 'shopify_import').length,
+    published: articles.filter(a => a.status === 'published').length,
+    synced: articles.filter(a => a.shopify_blog_id !== null).length,
+    optimized: articles.filter(a => a.meta_description && a.keywords?.length > 0).length
+  };
 
   if (loading) {
     return (
@@ -235,6 +258,46 @@ export default function ArticleManagement() {
         <p className="text-muted-foreground">Importez, optimisez et synchronisez vos articles de blog</p>
       </div>
 
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">Total Articles</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-blue-500">{stats.ai}</div>
+            <p className="text-xs text-muted-foreground">Articles IA</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-green-500">{stats.shopify}</div>
+            <p className="text-xs text-muted-foreground">Articles Shopify</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-purple-500">{stats.published}</div>
+            <p className="text-xs text-muted-foreground">Publiés</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-orange-500">{stats.synced}</div>
+            <p className="text-xs text-muted-foreground">Synchronisés</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-pink-500">{stats.optimized}</div>
+            <p className="text-xs text-muted-foreground">Optimisés SEO</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Actions Bar */}
       <Card className="mb-6">
         <CardContent className="pt-6">
@@ -249,15 +312,38 @@ export default function ArticleManagement() {
                   className="pl-10"
                 />
               </div>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Origine" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes origines</SelectItem>
+                  <SelectItem value="ai_generated">IA</SelectItem>
+                  <SelectItem value="shopify_import">Shopify</SelectItem>
+                </SelectContent>
+              </Select>
+
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <Filter className="w-4 h-4 mr-2" />
+                <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Statut" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="all">Tous statuts</SelectItem>
                   <SelectItem value="draft">Brouillon</SelectItem>
                   <SelectItem value="published">Publié</SelectItem>
+                  <SelectItem value="syncing">Synchronisation</SelectItem>
+                  <SelectItem value="error">Erreur</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={syncFilter} onValueChange={setSyncFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Sync" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="synced">Synchronisés</SelectItem>
+                  <SelectItem value="not_synced">Non sync</SelectItem>
                 </SelectContent>
               </Select>
             </div>
