@@ -294,20 +294,24 @@ const Index = () => {
                   <p className="font-semibold text-lg">💰 Tarifs à la demande :</p>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                      <span className="text-sm">Optimisation SEO</span>
-                      <span className="font-bold text-primary">$0.01</span>
+                      <span className="text-sm">Optimisation SEO IA</span>
+                      <span className="font-bold text-primary">$0.05</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-background rounded-lg">
                       <span className="text-sm">Article IA</span>
                       <span className="font-bold text-primary">$2.00</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                      <span className="text-sm">Recherche IA</span>
-                      <span className="font-bold text-primary">$0.05</span>
+                      <span className="text-sm">Réponse Chat IA</span>
+                      <span className="font-bold text-primary">$0.02</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                      <span className="text-sm">Réponse Chat</span>
-                      <span className="font-bold text-primary">$0.02</span>
+                      <span className="text-sm">Campagne IA (jusqu'à 30 articles)</span>
+                      <span className="font-bold text-primary">$10.00</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">Boutique Shopify supplémentaire</span>
+                      <span className="font-bold text-primary">$15.00/mois</span>
                     </div>
                   </div>
                 </div>
@@ -453,14 +457,14 @@ const pricingPlans = [
     badge: null,
     highlight: "Profitez de la puissance de l'IA, avec des fonctionnalités essentielles et des quotas adaptés à vos débuts.",
     features: [
-      "1 000 optimisations SEO avancées / mois avec IA (SEO, ALT Image et Tag)",
-      "5 articles IA / mois",
-      "100 recherches IA Shopify / mois",
-      "200 réponses Chat IA / mois",
-      "1 boutique Shopify connectable",
-      "Automatisation complète (SEO + blog + chat)",
-      "Support prioritaire par e-mail",
-      "Intégration Shopify complète"
+      "100 produits analysés",
+      "100 optimisations SEO IA / mois (titres, meta, ALT, tags)",
+      "1 article IA / mois",
+      "20 recherches IA Shopify / mois",
+      "50 réponses Chat IA / mois",
+      "1 boutique Shopify connectée",
+      "Automation basique (SEO + blog + chat)",
+      "Support par e-mail"
     ]
   },
   {
@@ -475,17 +479,17 @@ const pricingPlans = [
     featured: true,
     badge: "Plus Populaire 🔥",
     badgeColor: "bg-primary",
-    highlight: "Le plan Pro offre toute la puissance IA sans limites inutiles. Parfait pour les boutiques qui veulent accélérer leur croissance.",
+    highlight: "L'équilibre parfait entre puissance, automation, et évolutivité.",
     features: [
-      "Produits illimités",
-      "2 000 optimisations SEO avancées / mois avec IA",
-      "10 articles IA / mois",
-      "5 campagnes automatiques / mois",
-      "500 recherches IA Shopify / mois",
-      "1 000 réponses Chat IA / mois",
-      "Jusqu'à 3 boutiques Shopify connectables",
+      "1 000 produits analysés",
+      "500 optimisations SEO IA / mois",
+      "5 articles IA / mois",
+      "3 campagnes IA automatiques / mois (jusqu'à 30 articles/campagne)",
+      "300 recherches IA Shopify / mois",
+      "500 réponses Chat IA / mois",
+      "Jusqu'à 2 boutiques Shopify connectées",
       "Google Merchant Center intégré",
-      "Automatisation complète (SEO + blog + chat)",
+      "Automation complète (SEO + blog + chat)",
       "Support prioritaire 24/7"
     ]
   },
@@ -500,17 +504,18 @@ const pricingPlans = [
     cta: "Nous contacter",
     featured: false,
     badge: null,
-    highlight: "Conçu pour les grandes enseignes et agences. Une solution IA complète, évolutive et encadrée par un support premium.",
+    highlight: "Suite IA entièrement gérée avec quotas élevés, accès API, et support personnel.",
     features: [
-      "10 000 optimisations SEO avancées / mois",
-      "100 articles IA / mois",
-      "20 campagnes automatiques / mois",
-      "5 000 recherches IA Shopify / mois",
-      "10 000 réponses Chat IA / mois",
-      "Jusqu'à 10 boutiques Shopify connectables",
-      "Multi-boutiques & API personnalisée",
+      "Produits illimités",
+      "2 000 optimisations SEO IA / mois",
+      "20 articles IA / mois",
+      "10 campagnes IA automatiques / mois (jusqu'à 30 articles/campagne)",
+      "2 000 recherches IA Shopify / mois",
+      "3 000 réponses Chat IA / mois",
+      "Jusqu'à 5 boutiques Shopify connectées",
+      "Multi-boutiques & accès API personnalisé",
       "Account manager dédié",
-      "Formation personnalisée",
+      "Sessions de formation personnalisées",
       "SLA garanti"
     ]
   }

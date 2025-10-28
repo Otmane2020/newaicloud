@@ -77,6 +77,7 @@ export type Database = {
           meta_description: string | null
           published_at: string | null
           shopify_blog_id: string | null
+          source: string | null
           status: string | null
           title: string
           updated_at: string
@@ -90,6 +91,7 @@ export type Database = {
           meta_description?: string | null
           published_at?: string | null
           shopify_blog_id?: string | null
+          source?: string | null
           status?: string | null
           title: string
           updated_at?: string
@@ -103,6 +105,7 @@ export type Database = {
           meta_description?: string | null
           published_at?: string | null
           shopify_blog_id?: string | null
+          source?: string | null
           status?: string | null
           title?: string
           updated_at?: string
@@ -772,6 +775,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      public_blog_posts: {
+        Row: {
+          author: string
+          category: string
+          content: string
+          created_at: string
+          excerpt: string
+          featured_image: string | null
+          id: string
+          keywords: string[]
+          language: string
+          meta_description: string
+          meta_title: string
+          published: boolean
+          published_at: string | null
+          slug: string
+          title: string
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          author?: string
+          category: string
+          content: string
+          created_at?: string
+          excerpt: string
+          featured_image?: string | null
+          id?: string
+          keywords?: string[]
+          language?: string
+          meta_description: string
+          meta_title: string
+          published?: boolean
+          published_at?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          author?: string
+          category?: string
+          content?: string
+          created_at?: string
+          excerpt?: string
+          featured_image?: string | null
+          id?: string
+          keywords?: string[]
+          language?: string
+          meta_description?: string
+          meta_title?: string
+          published?: boolean
+          published_at?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+          views?: number
+        }
+        Relationships: []
       }
       shopify_connections: {
         Row: {

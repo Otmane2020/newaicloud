@@ -23,6 +23,9 @@ interface Plan {
   max_optimizations_monthly: number;
   max_articles_monthly: number;
   max_chat_responses_monthly: number;
+  max_shopify_requests_monthly: number;
+  max_campaigns: number;
+  max_shopify_stores: number;
   popular?: boolean;
   best_value?: boolean;
 }
@@ -53,11 +56,12 @@ export default function Subscription() {
 
   const loadPlansAndCurrentPlan = async () => {
     try {
-      // Load all plans
+      // Load all plans (exclude Trial and Pay-as-you-go)
       const { data: plansData } = await supabase
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
+        .not('id', 'in', '("trial","pay-as-you-go")')
         .order('price_monthly', { ascending: true });
 
       setPlans(plansData || []);
@@ -164,12 +168,53 @@ export default function Subscription() {
                 const canUp = canUpgrade(plan.price_monthly);
                 const canDown = canDowngrade(plan.price_monthly);
 
-                const features = [
-                  `${plan.max_products === -1 ? 'Illimité' : plan.max_products} produits`,
-                  `${plan.max_optimizations_monthly} optimisations SEO/mois`,
-                  `${plan.max_articles_monthly} articles/mois`,
-                  `${plan.max_chat_responses_monthly} réponses chat/mois`,
-                ];
+                const getFeatures = () => {
+                  const baseFeatures = [
+                    `${plan.max_products === -1 ? 'Illimité' : plan.max_products} produits`,
+                    `${plan.max_optimizations_monthly} optimisations SEO/mois`,
+                    `${plan.max_articles_monthly} articles/mois`,
+                    `${plan.max_chat_responses_monthly} réponses chat/mois`,
+                  ];
+
+                  if (plan.id === 'starter') {
+                    return [
+                      ...baseFeatures,
+                      `${plan.max_shopify_requests_monthly || 20} recherches Shopify/mois`,
+                      '1 boutique Shopify',
+                      'Automation basique (SEO + blog + chat)',
+                      'Support email'
+                    ];
+                  }
+                  
+                  if (plan.id === 'professional') {
+                    return [
+                      ...baseFeatures,
+                      `${plan.max_shopify_requests_monthly || 300} recherches Shopify/mois`,
+                      `3 campagnes IA/mois`,
+                      'Jusqu\'à 2 boutiques Shopify',
+                      'Intégration Google Merchant Center',
+                      'Automation complète',
+                      'Support prioritaire 24/7'
+                    ];
+                  }
+                  
+                  if (plan.id === 'enterprise') {
+                    return [
+                      ...baseFeatures,
+                      `${plan.max_shopify_requests_monthly || 2000} recherches Shopify/mois`,
+                      `10 campagnes IA/mois`,
+                      'Jusqu\'à 5 boutiques Shopify',
+                      'Multi-boutique & API custom',
+                      'Account manager dédié',
+                      'Formations personnalisées',
+                      'SLA garanti'
+                    ];
+                  }
+
+                  return baseFeatures;
+                };
+
+                const features = getFeatures();
 
                 return (
                   <Card 
@@ -178,19 +223,19 @@ export default function Subscription() {
                       isCurrent ? 'border-2 border-primary shadow-primary' : ''
                     } ${plan.popular ? 'ring-2 ring-primary' : ''}`}
                   >
-                    {plan.popular && (
-                      <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
-                        ⭐ Populaire
+                    {!isCurrent && plan.id === 'professional' && (
+                      <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500">
+                        🔥 Plus populaire
                       </Badge>
                     )}
-                    {plan.best_value && (
-                      <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-success">
-                        💎 Meilleure valeur
+                    {!isCurrent && plan.id === 'enterprise' && (
+                      <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-red-500">
+                        💎 Meilleur rapport
                       </Badge>
                     )}
                     {isCurrent && (
                       <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-primary text-white">
-                        Votre plan actuel
+                        ✅ Plan actuel
                       </Badge>
                     )}
 
@@ -282,8 +327,102 @@ export default function Subscription() {
             </div>
           </div>
 
+          {/* Pay as you go Section */}
+          <Card className="border-2 border-dashed border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5">
+            <div className="p-8 md:p-12">
+              <div className="text-center mb-8">
+                <Badge className="bg-primary mb-4">
+                  💳 Flexibilité maximale
+                </Badge>
+                <h3 className="text-3xl font-bold mb-2">Pay as you go</h3>
+                <p className="text-muted-foreground text-lg">
+                  Dépassez vos limites mensuelles sans interruption
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8 mb-8">
+                {/* Tarifs à la demande */}
+                <div className="space-y-4">
+                  <p className="font-semibold text-lg">💰 Tarifs unitaires :</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">SEO AI Optimization</span>
+                      <span className="font-bold text-primary">$0.05</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">AI Article</span>
+                      <span className="font-bold text-primary">$2.00</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">AI Chat Response</span>
+                      <span className="font-bold text-primary">$0.02</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">AI Campaign (up to 30 articles)</span>
+                      <span className="font-bold text-primary">$10.00</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-background rounded-lg">
+                      <span className="text-sm">Extra Shopify Store</span>
+                      <span className="font-bold text-primary">$15.00/mois</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Avantages */}
+                <div className="space-y-4">
+                  <p className="font-semibold text-lg">✨ Avantages :</p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Pas de limite</p>
+                        <p className="text-sm text-muted-foreground">Continuez sans interruption</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Facturation automatique</p>
+                        <p className="text-sm text-muted-foreground">En fin de mois uniquement</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Transparence totale</p>
+                        <p className="text-sm text-muted-foreground">Suivi en temps réel de vos dépenses</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-6 text-center space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  💡 <strong>Le pay-as-you-go est automatiquement activé sur les plans Pro et Enterprise.</strong><br />
+                  Vous ne payez que ce que vous consommez au-delà de vos limites mensuelles.
+                </p>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      const { data, error } = await supabase.functions.invoke('customer-portal');
+                      if (error) throw error;
+                      if (data?.url) window.open(data.url, '_blank');
+                    } catch (error) {
+                      console.error('Error opening portal:', error);
+                      toast.error('Erreur lors de l\'ouverture du portail');
+                    }
+                  }}
+                  variant="outline"
+                >
+                  💳 Gérer la facturation
+                </Button>
+              </div>
+            </div>
+          </Card>
+
           {/* Usage & Billing */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 mt-8">
             <UsageLimits />
             <BillingPortal />
           </div>
