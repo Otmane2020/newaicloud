@@ -124,6 +124,7 @@ export default function Onboarding() {
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
+        .not('id', 'in', '(trial,pay-as-you-go)')
         .order('display_order');
 
       if (error) throw error;
