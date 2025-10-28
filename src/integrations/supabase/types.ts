@@ -776,11 +776,15 @@ export type Database = {
       shopify_connections: {
         Row: {
           access_token: string
+          connected_at: string | null
+          connection_type: string | null
           created_at: string
           encrypted_token: string | null
           id: string
           is_active: boolean | null
           is_encrypted: boolean | null
+          last_sync_at: string | null
+          store_name: string | null
           store_url: string
           token_iv: string | null
           updated_at: string
@@ -788,11 +792,15 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          connected_at?: string | null
+          connection_type?: string | null
           created_at?: string
           encrypted_token?: string | null
           id?: string
           is_active?: boolean | null
           is_encrypted?: boolean | null
+          last_sync_at?: string | null
+          store_name?: string | null
           store_url: string
           token_iv?: string | null
           updated_at?: string
@@ -800,11 +808,15 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          connected_at?: string | null
+          connection_type?: string | null
           created_at?: string
           encrypted_token?: string | null
           id?: string
           is_active?: boolean | null
           is_encrypted?: boolean | null
+          last_sync_at?: string | null
+          store_name?: string | null
           store_url?: string
           token_iv?: string | null
           updated_at?: string
