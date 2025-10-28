@@ -7,15 +7,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, User, Mail, Lock, Eye, EyeOff, Globe } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+
+const languages = [
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+];
 
 export function AccountSettings() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, language, changeLanguage } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name || "");
   const [email] = useState(user?.email || "");
+  const [languageLoading, setLanguageLoading] = useState(false);
 
   // Password change states
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -90,6 +104,19 @@ export function AccountSettings() {
     }
   };
 
+  const handleLanguageChange = async (lang: string) => {
+    setLanguageLoading(true);
+    try {
+      await changeLanguage(lang);
+      toast.success(t("account.language_updated"));
+    } catch (error) {
+      console.error("Error changing language:", error);
+      toast.error(t("account.language_error"));
+    } finally {
+      setLanguageLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Informations personnelles */}
@@ -128,6 +155,35 @@ export function AccountSettings() {
             {t("account.save_changes")}
           </Button>
         </form>
+      </Card>
+
+      {/* Langue et Préférences */}
+      <Card className="p-6">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <Globe className="w-6 h-6 text-primary" />
+          {t("account.language_preferences")}
+        </h2>
+
+        <div className="space-y-4">
+          <Label>{t("account.choose_language")}</Label>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {languages.map((lang) => (
+              <Button
+                key={lang.code}
+                variant={language.startsWith(lang.code) ? "default" : "outline"}
+                className="w-full justify-start gap-2"
+                onClick={() => handleLanguageChange(lang.code)}
+                disabled={languageLoading}
+              >
+                <span className="text-xl">{lang.flag}</span>
+                <span className="text-sm">{lang.name}</span>
+              </Button>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t("account.language_note")}
+          </p>
+        </div>
       </Card>
 
       {/* Sécurité - Changement de mot de passe */}

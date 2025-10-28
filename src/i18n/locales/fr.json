@@ -148,6 +148,11 @@
     "fill_all_fields": "Veuillez remplir tous les champs",
     "password_short": "Le mot de passe doit contenir au moins 6 caractères",
     "password_mismatch": "Les mots de passe ne correspondent pas",
+    "language_preferences": "Langue et Préférences",
+    "choose_language": "Choisissez votre langue",
+    "language_note": "La langue sera appliquée immédiatement à l'interface",
+    "language_updated": "Langue mise à jour avec succès",
+    "language_error": "Erreur lors de la mise à jour de la langue",
     "subscription_plan": "Plan d'abonnement",
     "expires_on": "Expire le"
   },

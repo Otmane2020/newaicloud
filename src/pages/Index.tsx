@@ -26,7 +26,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const [currency, setCurrency] = useState<'EUR' | 'USD'>('EUR');
 
 
   if (loading) {
@@ -194,29 +193,11 @@ const Index = () => {
               <Badge className="absolute -top-2 -right-2 bg-success text-xs">{t('pricing.discount')}</Badge>
             </button>
           </div>
-
-          {/* Currency Toggle */}
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <button
-              onClick={() => setCurrency('EUR')}
-              className={`px-3 py-1 rounded ${currency === 'EUR' ? 'bg-primary/10 text-primary font-medium' : ''}`}
-            >
-              💶 EUR
-            </button>
-            <span>|</span>
-            <button
-              onClick={() => setCurrency('USD')}
-              className={`px-3 py-1 rounded ${currency === 'USD' ? 'bg-primary/10 text-primary font-medium' : ''}`}
-            >
-              💵 USD
-            </button>
-          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
           {pricingPlans.map((plan, index) => {
             const price = billingCycle === 'monthly' ? plan.priceMonthly : plan.priceYearly;
-            const displayPrice = currency === 'EUR' ? `$${price}` : `$${price}`;
             
             return (
               <Card 
@@ -238,12 +219,12 @@ const Index = () => {
                   
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold">{displayPrice}</span>
+                      <span className="text-5xl font-bold">${price}</span>
                       <span className="text-muted-foreground">{t('pricing.per_month')}</span>
                     </div>
                     {billingCycle === 'yearly' && (
                       <p className="text-sm text-success mt-1">
-                        {t('pricing.billed_yearly')} {currency === 'EUR' ? `$${plan.yearlyTotal}` : `$${plan.yearlyTotal}`}{t('pricing.per_year')})
+                        {t('pricing.billed_yearly')} ${plan.yearlyTotal}{t('pricing.per_year')})
                       </p>
                     )}
                     {plan.trial && (
