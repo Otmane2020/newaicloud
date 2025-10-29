@@ -19,7 +19,10 @@ Deno.serve(async (req) => {
     if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabase = createClient(supabaseUrl!, supabaseKey!);
-    const { article_ids } = await req.json();
+    const body = await req.json();
+    console.log("📥 Received request body:", JSON.stringify(body));
+    
+    const { article_ids } = body;
 
     if (!article_ids || !Array.isArray(article_ids) || article_ids.length === 0) {
       return new Response(JSON.stringify({ error: "article_ids array is required" }), {
