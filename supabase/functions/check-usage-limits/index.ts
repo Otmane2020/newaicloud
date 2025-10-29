@@ -41,17 +41,43 @@ serve(async (req) => {
     
     console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}`);
     
-    // Get plan limits - if in trial without payment, use trial plan
-    const planId = isPaid ? (profile.current_plan_id || 'starter') : 'trial';
-    console.log(`[LIMITS] Using plan: ${planId}`);
-    
-    const { data: plan, error: planError } = await supabaseClient
-      .from('subscription_plans')
-      .select('*')
-      .eq('id', planId)
-      .single();
+    // Get plan limits
+    let plan;
+    if (isPaid && profile.current_plan_id) {
+      // User has paid plan - fetch it
+      const { data: paidPlan, error: planError } = await supabaseClient
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', profile.current_plan_id)
+        .single();
 
-    if (planError) throw planError;
+      if (planError) {
+        console.error('[LIMITS] Error fetching paid plan:', planError);
+        // Fallback to starter plan if paid plan not found
+        const { data: starterPlan } = await supabaseClient
+          .from('subscription_plans')
+          .select('*')
+          .eq('id', 'starter')
+          .single();
+        plan = starterPlan;
+      } else {
+        plan = paidPlan;
+      }
+    } else {
+      // User is in trial or no subscription - use any plan for trial limits
+      const { data: anyPlan, error: planError } = await supabaseClient
+        .from('subscription_plans')
+        .select('*')
+        .limit(1)
+        .single();
+      
+      if (planError) throw new Error('Could not fetch plan limits');
+      plan = anyPlan;
+    }
+    
+    if (!plan) throw new Error('No plan configuration found');
+    
+    console.log(`[LIMITS] Using plan: ${plan.id}`);
 
     // Get current month usage
     const currentMonth = new Date();
