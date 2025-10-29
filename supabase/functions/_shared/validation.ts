@@ -28,8 +28,8 @@ export function validateImportProducts(data: any): ValidationResult<{
       errors.push({ path: ['shopName'], message: 'Shop name must be at least 3 characters' });
     } else if (trimmed.length > 100) {
       errors.push({ path: ['shopName'], message: 'Shop name must be less than 100 characters' });
-    } else if (!/^[a-z0-9-]+$/.test(trimmed)) {
-      errors.push({ path: ['shopName'], message: 'Shop name can only contain lowercase letters, numbers, and hyphens' });
+    } else if (!/^[a-zA-Z0-9-_]+$/.test(trimmed)) {
+      errors.push({ path: ['shopName'], message: 'Shop name can only contain letters, numbers, hyphens, and underscores' });
     }
   }
 
@@ -37,7 +37,7 @@ export function validateImportProducts(data: any): ValidationResult<{
     errors.push({ path: ['apiToken'], message: 'API token is required' });
   } else {
     const trimmed = data.apiToken.trim();
-    if (trimmed.length < 32) {
+    if (trimmed.length < 20) {
       errors.push({ path: ['apiToken'], message: 'API token appears to be invalid' });
     } else if (trimmed.length > 500) {
       errors.push({ path: ['apiToken'], message: 'API token is too long' });
