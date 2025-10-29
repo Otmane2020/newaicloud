@@ -194,12 +194,28 @@ export default function Onboarding() {
     try {
       console.log('🚀 Creating checkout for plan:', planId, 'billing:', billingCycle);
       
+      // Check if user has active trial - if so, force immediate payment
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status, trial_ends_at')
+        .eq('id', user.id)
+        .single();
+      
+      const hasActiveTrial = profile?.subscription_status === 'trialing' || 
+        (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
+      
+      console.log('💳 User trial status:', { 
+        hasActiveTrial, 
+        subscriptionStatus: profile?.subscription_status 
+      });
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: planId,
           billing_period: billingCycle,
           success_url: `${window.location.origin}/onboarding?checkout=success`,
-          cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`
+          cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`,
+          force_immediate_payment: hasActiveTrial || billingCycle === 'monthly'
         }
       });
 
@@ -212,7 +228,8 @@ export default function Onboarding() {
 
       if (data?.url) {
         console.log('✅ Redirecting to:', data.url);
-        window.open(data.url, '_blank');
+        // Redirection dans le même onglet pour éviter les popups bloqués
+        window.location.href = data.url;
       } else {
         console.error('❌ No URL in response:', data);
         throw new Error('No checkout URL returned');
@@ -292,7 +309,7 @@ export default function Onboarding() {
       <div className="text-center mb-12">
         <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
           <Shield className="w-4 h-4 mr-2" />
-          💳 Essai de 14 jours • Carte bancaire requise
+          💳 Paiement immédiat • Carte bancaire requise
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold mb-4">
           Choisissez votre{' '}

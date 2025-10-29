@@ -20,6 +20,7 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
   const handleUpgrade = async () => {
     setLoading(true);
     try {
+      console.log('💳 Creating immediate payment checkout...');
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
           plan_id: 'starter',
@@ -28,16 +29,21 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Checkout error:', error);
+        throw error;
+      }
 
       if (data?.url) {
-        window.open(data.url, '_blank');
-        toast.success('Redirecting to payment...');
-        onOpenChange(false);
+        console.log('✅ Redirecting to payment:', data.url);
+        // Redirection immédiate dans le même onglet pour le paiement
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
       }
     } catch (error) {
       console.error('Upgrade error:', error);
-      toast.error('Error creating payment session');
+      toast.error('Erreur lors de la création du paiement');
     } finally {
       setLoading(false);
     }
