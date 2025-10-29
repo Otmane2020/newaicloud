@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.1';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -101,7 +102,35 @@ CRITICAL RULES:
 
     console.log(`Successfully translated ${Object.keys(translations).length} keys`);
 
-    return new Response(JSON.stringify({ translations }), {
+    // Insert translations into database
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const insertData = keys.map((item: TranslationKey) => ({
+      key: item.key,
+      language: targetLang,
+      value: translations[item.key] || item.value,
+      context: context,
+      ai_generated: true,
+      reviewed: false
+    }));
+
+    const { error: insertError } = await supabase
+      .from('translations')
+      .upsert(insertData, { 
+        onConflict: 'key,language',
+        ignoreDuplicates: false 
+      });
+
+    if (insertError) {
+      console.error('Error inserting translations:', insertError);
+    } else {
+      console.log(`Inserted ${insertData.length} translations into database`);
+    }
+
+    return new Response(JSON.stringify({ translations, inserted: !insertError }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

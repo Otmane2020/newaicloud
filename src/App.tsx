@@ -14,7 +14,7 @@ import { SuperAdminLayout } from "./components/SuperAdminLayout";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import SuperAdmin from "./pages/SuperAdmin";
-import { TranslationManager } from "./components/admin/TranslationManager";
+import { TranslationManagerDB } from "./components/admin/TranslationManagerDB";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -262,7 +262,7 @@ const App = () => (
               path="/admin/translations"
               element={
                 <AdminLayout>
-                  <TranslationManager />
+                  <TranslationManagerDB />
                 </AdminLayout>
               }
             />

@@ -1516,6 +1516,42 @@ export type Database = {
           },
         ]
       }
+      translations: {
+        Row: {
+          ai_generated: boolean | null
+          context: string | null
+          created_at: string | null
+          id: string
+          key: string
+          language: string
+          reviewed: boolean | null
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          context?: string | null
+          created_at?: string | null
+          id?: string
+          key: string
+          language: string
+          reviewed?: boolean | null
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          context?: string | null
+          created_at?: string | null
+          id?: string
+          key?: string
+          language?: string
+          reviewed?: boolean | null
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       usage_tracking: {
         Row: {
           articles_count: number | null
