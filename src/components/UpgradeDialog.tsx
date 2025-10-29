@@ -51,15 +51,37 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: U
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
             <h3 className="font-semibold mb-3 text-lg">{t('upgradeDialog.starter_plan_title')}</h3>
             <ul className="space-y-2">
-              {features.map((feature, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                  <span className="text-sm">{feature}</span>
-                </li>
-              ))}
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">{t('upgradeDialog.all_features')}</span>
+                <span className="text-sm">100 produits analysés</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                <span className="text-sm">100 optimisations SEO IA / mois</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                <span className="text-sm">1 article IA / mois</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                <span className="text-sm">20 recherches IA Shopify / mois</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                <span className="text-sm">50 réponses Chat IA / mois</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                <span className="text-sm">1 boutique Shopify connectée</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                <span className="text-sm">Automation basique</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                <span className="text-sm">Support par e-mail</span>
               </li>
             </ul>
           </div>
