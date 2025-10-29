@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb, Link, Settings } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { NetlinkingTable } from '@/components/blog/NetlinkingTable';
 import { OpportunitiesSettings } from '@/components/blog/OpportunitiesSettings';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +19,7 @@ export default function Blog() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'articles');
+  const [activeSubtab, setActiveSubtab] = useState(searchParams.get('subtab') || 'opportunities');
   const [articles, setArticles] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,8 +29,15 @@ export default function Blog() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['articles', 'campaigns', 'opportunities', 'netlinking', 'settings'].includes(tab)) {
+    const subtab = searchParams.get('subtab');
+    
+    if (tab && ['articles', 'campaigns', 'blog'].includes(tab)) {
       setActiveTab(tab);
+      
+      // Si on est sur l'onglet "blog", gérer le sous-onglet
+      if (tab === 'blog' && subtab && ['opportunities', 'netlinking', 'settings'].includes(subtab)) {
+        setActiveSubtab(subtab);
+      }
     }
   }, [searchParams]);
 
@@ -127,11 +136,46 @@ export default function Blog() {
   };
 
   const tabs = [
-    { id: 'articles', label: 'Articles', icon: PenSquare, description: 'Gérer vos articles' },
-    { id: 'campaigns', label: 'Campagnes', icon: CalendarClock, description: 'Automatiser le blog' },
-    { id: 'opportunities', label: 'Opportunités', icon: Lightbulb, description: 'Idées de contenu' },
-    { id: 'netlinking', label: 'Netlinking', icon: Link, description: 'Gestion des liens' },
-    { id: 'settings', label: 'Paramètres', icon: Settings, description: 'Configuration' }
+    { 
+      id: 'articles', 
+      label: 'Articles', 
+      icon: PenSquare, 
+      description: 'Gérer vos articles' 
+    },
+    { 
+      id: 'campaigns', 
+      label: 'Campagnes', 
+      icon: CalendarClock, 
+      description: 'Automatiser le blog' 
+    },
+    { 
+      id: 'blog', 
+      label: 'Blog SEO', 
+      icon: Sparkles, 
+      description: 'Outils SEO avancés',
+      hasSubmenu: true
+    }
+  ];
+
+  const blogSubmenu = [
+    { 
+      id: 'opportunities', 
+      label: 'Opportunités', 
+      icon: Lightbulb, 
+      description: 'Idées de contenu'
+    },
+    { 
+      id: 'netlinking', 
+      label: 'Netlinking', 
+      icon: Link, 
+      description: 'Gestion des liens'
+    },
+    { 
+      id: 'settings', 
+      label: 'Paramètres', 
+      icon: Settings, 
+      description: 'Configuration'
+    }
   ];
 
   return (
@@ -147,7 +191,7 @@ export default function Blog() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -156,7 +200,11 @@ export default function Blog() {
               key={tab.id}
               onClick={() => {
                 setActiveTab(tab.id);
-                setSearchParams({ tab: tab.id });
+                if (tab.hasSubmenu) {
+                  setSearchParams({ tab: tab.id, subtab: 'opportunities' });
+                } else {
+                  setSearchParams({ tab: tab.id });
+                }
               }}
               className={cn(
                 "p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105",
@@ -184,6 +232,36 @@ export default function Blog() {
           );
         })}
       </div>
+
+      {/* Sous-menu horizontal pour l'onglet Blog */}
+      {activeTab === 'blog' && (
+        <Card className="p-1">
+          <Tabs value={activeSubtab} onValueChange={(value) => {
+            setActiveSubtab(value);
+            setSearchParams({ tab: 'blog', subtab: value });
+          }}>
+            <TabsList className="w-full justify-start bg-transparent h-auto p-0 gap-1">
+              {blogSubmenu.map((subtab) => {
+                const Icon = subtab.icon;
+                return (
+                  <TabsTrigger
+                    key={subtab.id}
+                    value={subtab.id}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-3 rounded-md transition-all",
+                      "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+                      "data-[state=active]:shadow-md hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="font-medium">{subtab.label}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </Tabs>
+        </Card>
+      )}
 
       {/* Tab Content */}
       {activeTab === 'articles' && (
@@ -295,55 +373,63 @@ export default function Blog() {
         </div>
       )}
 
-      {activeTab === 'opportunities' && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-              <Lightbulb className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+      {/* Contenu pour l'onglet Blog avec sous-sections */}
+      {activeTab === 'blog' && (
+        <>
+          {/* Opportunités */}
+          {activeSubtab === 'opportunities' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                  <Lightbulb className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold">Opportunités de Contenu</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Idées d'articles détectées automatiquement basées sur votre catalogue
+                  </p>
+                </div>
+              </div>
+              <BlogOpportunities />
             </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold">Opportunités de Contenu</h2>
-              <p className="text-sm text-muted-foreground">
-                Idées d'articles détectées automatiquement basées sur votre catalogue
-              </p>
-            </div>
-          </div>
-          <BlogOpportunities />
-        </div>
-      )}
+          )}
 
-      {activeTab === 'netlinking' && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <Link className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          {/* Netlinking */}
+          {activeSubtab === 'netlinking' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <Link className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold">Netlinking</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Gérez vos liens internes et générez des articles optimisés
+                  </p>
+                </div>
+              </div>
+              <NetlinkingTable />
             </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold">Netlinking</h2>
-              <p className="text-sm text-muted-foreground">
-                Gérez vos liens internes et générez des articles optimisés
-              </p>
-            </div>
-          </div>
-          <NetlinkingTable />
-        </div>
-      )}
+          )}
 
-      {activeTab === 'settings' && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-100 dark:bg-gray-900 rounded-lg">
-              <Settings className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+          {/* Paramètres */}
+          {activeSubtab === 'settings' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gray-100 dark:bg-gray-900 rounded-lg">
+                  <Settings className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold">Paramètres Blog</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Configurez la génération automatique d'opportunités
+                  </p>
+                </div>
+              </div>
+              <OpportunitiesSettings />
             </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold">Paramètres Blog</h2>
-              <p className="text-sm text-muted-foreground">
-                Configurez la génération automatique d'opportunités
-              </p>
-            </div>
-          </div>
-          <OpportunitiesSettings />
-        </div>
+          )}
+        </>
       )}
 
       {activeTab === 'campaigns' && (
