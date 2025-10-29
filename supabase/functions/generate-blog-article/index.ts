@@ -201,7 +201,10 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       }
     }
     
-    // Générer un titre optimisé avec DeepSeek
+    // Générer un titre optimisé avec les mots-clés fournis
+    const mainKeyword = keywords.length > 0 ? keywords[0] : category;
+    const allKeywords = keywords.length > 0 ? keywords.join(", ") : category;
+    
     const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -213,11 +216,11 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
         messages: [
           { 
             role: "system", 
-            content: "Tu es un expert SEO qui génère des titres d'articles percutants et optimisés pour le référencement." 
+            content: "Tu es un expert SEO qui génère des titres d'articles percutants et optimisés pour le référencement. Tu dois IMPÉRATIVEMENT utiliser les mots-clés fournis par l'utilisateur dans le titre." 
           },
           { 
             role: "user", 
-            content: `Génère un titre d'article SEO captivant pour cette catégorie: ${category}. Le titre doit contenir entre 50-60 caractères, inclure des mots-clés pertinents, et inciter au clic. Retourne UNIQUEMENT le titre, sans guillemets ni explications.`
+            content: `Génère un titre d'article SEO captivant qui contient OBLIGATOIREMENT le mot-clé principal "${mainKeyword}". Le titre doit faire entre 50-70 caractères, être accrocheur et inciter au clic. Contexte supplémentaire: ${allKeywords}. Retourne UNIQUEMENT le titre, sans guillemets ni explications.`
           }
         ]
       })

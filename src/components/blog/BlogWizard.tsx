@@ -10,6 +10,16 @@ import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ChevronRight,
   ChevronLeft,
   Sparkles,
@@ -61,6 +71,8 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [generatedArticleId, setGeneratedArticleId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     category: '',
@@ -157,27 +169,14 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
       toast.success('✅ Article généré avec succès !', { id: 'generating' });
 
-      // Demander si l'utilisateur veut publier sur Shopify
-      const wantsToPublish = window.confirm(
-        '🚀 Votre article est prêt !\n\nVoulez-vous le publier immédiatement sur Shopify ?'
-      );
-
-      if (wantsToPublish && response.data?.article_id) {
-        toast.loading('📤 Publication sur Shopify...', { id: 'publishing' });
-        
-        const syncResponse = await supabase.functions.invoke('sync-blog-to-shopify', {
-          body: { articleId: response.data.article_id }
-        });
-
-        if (syncResponse.error) {
-          toast.error('Erreur de publication Shopify', { id: 'publishing' });
-          console.error(syncResponse.error);
-        } else {
-          toast.success('✅ Article publié sur Shopify !', { id: 'publishing' });
-        }
+      // Afficher le dialogue de publication Shopify personnalisé
+      if (response.data?.article_id) {
+        setGeneratedArticleId(response.data.article_id);
+        setShowPublishDialog(true);
+      } else {
+        onClose();
       }
 
-      onClose();
     } catch (error: any) {
       console.error('Error:', error);
       if (error.message?.includes('trial_limit_reached')) {
@@ -189,6 +188,36 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handlePublishToShopify = async () => {
+    if (!generatedArticleId) return;
+    
+    try {
+      toast.loading('📤 Publication sur Shopify...', { id: 'publishing' });
+      
+      const syncResponse = await supabase.functions.invoke('sync-blog-to-shopify', {
+        body: { articleId: generatedArticleId }
+      });
+
+      if (syncResponse.error) {
+        toast.error('Erreur de publication Shopify', { id: 'publishing' });
+        console.error(syncResponse.error);
+      } else {
+        toast.success('✅ Article publié sur Shopify !', { id: 'publishing' });
+      }
+    } catch (error) {
+      console.error('Error publishing to Shopify:', error);
+      toast.error('Erreur lors de la publication', { id: 'publishing' });
+    } finally {
+      setShowPublishDialog(false);
+      onClose();
+    }
+  };
+
+  const handleSkipPublish = () => {
+    setShowPublishDialog(false);
+    onClose();
   };
 
   return (
@@ -398,6 +427,27 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         usage={limits?.usage.articles_count}
         limit={limits?.limits.max_articles}
       />
+
+      <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              🚀 Votre article est prêt !
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Voulez-vous le publier immédiatement sur Shopify ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleSkipPublish}>
+              Plus tard
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handlePublishToShopify}>
+              Publier sur Shopify
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
