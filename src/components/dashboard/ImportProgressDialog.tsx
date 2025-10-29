@@ -73,11 +73,12 @@ export function ImportProgressDialog({
     return "Import en cours...";
   };
 
+  // Calculate smooth overall progress (0-100%)
   const overallProgress = phase === 'products' 
-    ? progress.percentage / 2 
+    ? Math.min(progress.percentage * 0.5, 50) // Products: 0-50%
     : phase === 'pages' 
-    ? 50 + (progress.percentage / 2)
-    : 100;
+    ? 50 + Math.min((progress.percentage || 50) * 0.5, 50) // Pages: 50-100%
+    : 100; // Complete: 100%
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -99,7 +100,10 @@ export function ImportProgressDialog({
                 <span className="text-muted-foreground">Progression globale</span>
                 <span className="font-bold">{Math.round(overallProgress)}%</span>
               </div>
-              <Progress value={overallProgress} className="h-2 sm:h-3" />
+              <Progress 
+                value={overallProgress} 
+                className="h-2 sm:h-3 transition-all duration-300 ease-linear [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-primary/80" 
+              />
             </div>
             
             {/* Liste des éléments importés */}

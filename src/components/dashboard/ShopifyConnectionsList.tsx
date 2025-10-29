@@ -73,15 +73,16 @@ export function ShopifyConnectionsList() {
         .single();
 
       if (job) {
-        const percentage = job.total_pages > 0 
-          ? Math.round((job.current_page / job.total_pages) * 100)
+        // Calculate smooth progression based on current page and total pages
+        const pageProgress = job.total_pages > 0 
+          ? (job.current_page / job.total_pages) * 100
           : 0;
 
         setProgress({
           currentPage: job.current_page,
           totalPages: job.total_pages,
           productsProcessed: job.products_processed,
-          percentage
+          percentage: Math.min(pageProgress, 100)
         });
 
         if (job.status === 'completed') {
@@ -184,7 +185,9 @@ export function ShopifyConnectionsList() {
 
       if (error) throw error;
 
-      toast.success('Connexion Shopify enregistrée avec succès');
+      toast.success('Boutique connectée avec succès ! 🎉', {
+        description: 'Vous pouvez maintenant importer vos produits et pages Shopify.'
+      });
       setStoreName('');
       setApiToken('');
       setShowAddForm(false);
@@ -243,9 +246,18 @@ export function ShopifyConnectionsList() {
         setTimeout(() => {
           setImporting(false);
           setImportDialogOpen(false);
-          toast.warning('Import des pages ignoré', {
-            description: `${productsImported} produits importés avec succès. ${data.message || 'Permissions insuffisantes pour les pages.'}`
-          });
+          
+          // Show appropriate message based on products imported
+          if (productsImported > 0) {
+            toast.success(`${productsImported} produit${productsImported > 1 ? 's' : ''} importé${productsImported > 1 ? 's' : ''} ! 🎉`, {
+              description: 'Import des pages ignoré : permissions insuffisantes (read_content et write_content requises).'
+            });
+          } else {
+            toast.warning('Aucun produit importé', {
+              description: data.message || 'Permissions insuffisantes pour importer les pages.'
+            });
+          }
+          
           setTimeout(() => navigate('/products'), 1500);
         }, 2000);
         return;
