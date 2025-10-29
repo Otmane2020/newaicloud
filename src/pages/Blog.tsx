@@ -18,8 +18,7 @@ import { cn } from '@/lib/utils';
 export default function Blog() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'articles');
-  const [activeSubtab, setActiveSubtab] = useState(searchParams.get('subtab') || 'opportunities');
+  const [activeSubtab, setActiveSubtab] = useState(searchParams.get('subtab') || 'articles');
   const [articles, setArticles] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,16 +27,10 @@ export default function Blog() {
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    const tab = searchParams.get('tab');
     const subtab = searchParams.get('subtab');
     
-    if (tab && ['articles', 'campaigns', 'blog'].includes(tab)) {
-      setActiveTab(tab);
-      
-      // Si on est sur l'onglet "blog", gérer le sous-onglet
-      if (tab === 'blog' && subtab && ['opportunities', 'netlinking', 'settings'].includes(subtab)) {
-        setActiveSubtab(subtab);
-      }
+    if (subtab && ['articles', 'campaigns', 'opportunities', 'netlinking', 'settings'].includes(subtab)) {
+      setActiveSubtab(subtab);
     }
   }, [searchParams]);
 
@@ -135,29 +128,19 @@ export default function Blog() {
     }
   };
 
-  const tabs = [
+  const blogSubmenu = [
     { 
       id: 'articles', 
-      label: 'Articles', 
+      label: 'Gestion d\'article', 
       icon: PenSquare, 
       description: 'Gérer vos articles' 
     },
     { 
       id: 'campaigns', 
-      label: 'Campagnes', 
-      icon: CalendarClock, 
-      description: 'Automatiser le blog' 
-    },
-    { 
-      id: 'blog', 
-      label: 'Blog SEO', 
+      label: 'Article IA', 
       icon: Sparkles, 
-      description: 'Outils SEO avancés',
-      hasSubmenu: true
-    }
-  ];
-
-  const blogSubmenu = [
+      description: 'Campagnes automatiques' 
+    },
     { 
       id: 'opportunities', 
       label: 'Opportunités', 
@@ -190,81 +173,36 @@ export default function Blog() {
         </p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <Card
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                if (tab.hasSubmenu) {
-                  setSearchParams({ tab: tab.id, subtab: 'opportunities' });
-                } else {
-                  setSearchParams({ tab: tab.id });
-                }
-              }}
-              className={cn(
-                "p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-lg border-primary ring-2 ring-primary"
-                  : "hover:bg-muted border-2 border-transparent hover:border-primary/20"
-              )}
-            >
-              <div className="flex flex-col items-center text-center gap-2">
-                <Icon className={cn(
-                  "w-6 h-6 md:w-7 md:h-7 transition-transform",
-                  isActive && "animate-scale-in"
-                )} />
-                <div>
-                  <div className="font-semibold text-sm md:text-base">{tab.label}</div>
-                  <div className={cn(
-                    "text-xs mt-1",
-                    isActive ? "text-primary-foreground/80" : "text-muted-foreground"
-                  )}>
-                    {tab.description}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Sous-menu horizontal pour l'onglet Blog */}
-      {activeTab === 'blog' && (
-        <Card className="p-1">
-          <Tabs value={activeSubtab} onValueChange={(value) => {
-            setActiveSubtab(value);
-            setSearchParams({ tab: 'blog', subtab: value });
-          }}>
-            <TabsList className="w-full justify-start bg-transparent h-auto p-0 gap-1">
-              {blogSubmenu.map((subtab) => {
-                const Icon = subtab.icon;
-                return (
-                  <TabsTrigger
-                    key={subtab.id}
-                    value={subtab.id}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-3 rounded-md transition-all",
-                      "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
-                      "data-[state=active]:shadow-md hover:bg-muted"
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="font-medium">{subtab.label}</span>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </Tabs>
-        </Card>
-      )}
+      {/* Sous-menu horizontal Blog SEO */}
+      <Card className="p-1">
+        <Tabs value={activeSubtab} onValueChange={(value) => {
+          setActiveSubtab(value);
+          setSearchParams({ subtab: value });
+        }}>
+          <TabsList className="w-full justify-start bg-transparent h-auto p-0 gap-1 flex-wrap">
+            {blogSubmenu.map((subtab) => {
+              const Icon = subtab.icon;
+              return (
+                <TabsTrigger
+                  key={subtab.id}
+                  value={subtab.id}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-3 rounded-md transition-all",
+                    "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+                    "data-[state=active]:shadow-md hover:bg-muted"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="font-medium">{subtab.label}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
+      </Card>
 
       {/* Tab Content */}
-      {activeTab === 'articles' && (
+      {activeSubtab === 'articles' && (
         <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-cyan-100 dark:bg-cyan-900 rounded-lg">
@@ -373,11 +311,8 @@ export default function Blog() {
         </div>
       )}
 
-      {/* Contenu pour l'onglet Blog avec sous-sections */}
-      {activeTab === 'blog' && (
-        <>
-          {/* Opportunités */}
-          {activeSubtab === 'opportunities' && (
+      {/* Opportunités */}
+      {activeSubtab === 'opportunities' && (
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
@@ -394,8 +329,8 @@ export default function Blog() {
             </div>
           )}
 
-          {/* Netlinking */}
-          {activeSubtab === 'netlinking' && (
+      {/* Netlinking */}
+      {activeSubtab === 'netlinking' && (
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -412,8 +347,8 @@ export default function Blog() {
             </div>
           )}
 
-          {/* Paramètres */}
-          {activeSubtab === 'settings' && (
+      {/* Paramètres */}
+      {activeSubtab === 'settings' && (
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gray-100 dark:bg-gray-900 rounded-lg">
@@ -429,10 +364,8 @@ export default function Blog() {
               <OpportunitiesSettings />
             </div>
           )}
-        </>
-      )}
 
-      {activeTab === 'campaigns' && (
+      {activeSubtab === 'campaigns' && (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
