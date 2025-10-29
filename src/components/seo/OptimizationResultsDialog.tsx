@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { CheckCircle, Upload, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 
 interface OptimizedItem {
   id: string;
@@ -86,7 +87,16 @@ export function OptimizationResultsDialog({
                     />
                   )}
                   <div className="flex-1 min-w-0 space-y-2">
-                    <h4 className="font-medium truncate">{item.title}</h4>
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-medium truncate">{item.title}</h4>
+                      {type === 'seo' && (
+                        <SeoConfidenceBadge 
+                          seoTitle={item.seo_title} 
+                          seoDescription={item.seo_description}
+                          showLabel={false}
+                        />
+                      )}
+                    </div>
                     
                     {type === 'seo' && (
                       <div className="space-y-2">

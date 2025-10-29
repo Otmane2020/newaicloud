@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { calculateSeoConfidence } from '@/lib/seoQuality';
 import { 
   Target,
   CheckCircle2,
@@ -160,17 +161,28 @@ export function SeoKPIs() {
         .or('handle.eq.index,handle.eq.home,handle.eq.homepage')
         .maybeSingle();
 
-      // Analyse SEO Title Quality
+      // Analyse SEO Title Quality + Confidence Index
       const titleAnalyses = products?.map(p => analyzeTitleQuality(p.seo_title, p.title)) || [];
+      const confidenceScores = products?.map(p => calculateSeoConfidence(p.seo_title, p.seo_description)) || [];
+      
+      // Weighted average: 60% quality analysis + 40% confidence index
       const avgTitleScore = titleAnalyses.length > 0
-        ? Math.round(titleAnalyses.reduce((sum, a) => sum + a.score, 0) / titleAnalyses.length)
+        ? Math.round(
+            (titleAnalyses.reduce((sum, a) => sum + a.score, 0) * 0.6 / titleAnalyses.length) +
+            (confidenceScores.reduce((sum, c) => sum + c, 0) * 0.4 / confidenceScores.length)
+          )
         : 0;
       const titleIssuesCount = titleAnalyses.filter(a => a.issues.length > 0).length;
 
-      // Analyse Meta Description Quality
+      // Analyse Meta Description Quality + Confidence Index
       const descAnalyses = products?.map(p => analyzeDescriptionQuality(p.seo_description)) || [];
+      
+      // Weighted average: 60% quality analysis + 40% confidence index (already calculated above)
       const avgDescScore = descAnalyses.length > 0
-        ? Math.round(descAnalyses.reduce((sum, a) => sum + a.score, 0) / descAnalyses.length)
+        ? Math.round(
+            (descAnalyses.reduce((sum, a) => sum + a.score, 0) * 0.6 / descAnalyses.length) +
+            (confidenceScores.reduce((sum, c) => sum + c, 0) * 0.4 / confidenceScores.length)
+          )
         : 0;
       const descIssuesCount = descAnalyses.filter(a => a.issues.length > 0).length;
 
@@ -202,9 +214,15 @@ export function SeoKPIs() {
         ? Math.round(((syncedProducts / products.length) * 50) + ((imagesWithAlt / images.length) * 50))
         : 0;
 
-      // Score Global
+      // Score Global (avec indice de confiance intégré)
+      // Moyenne pondérée de toutes les catégories incluant l'indice de confiance
+      const avgConfidenceScore = confidenceScores.length > 0
+        ? Math.round(confidenceScores.reduce((sum, c) => sum + c, 0) / confidenceScores.length)
+        : 0;
+      
       const globalScore = Math.round(
-        (avgTitleScore + avgDescScore + avgAltScore + homepageScore + contentScore + technicalScore) / 6
+        (avgTitleScore * 0.2 + avgDescScore * 0.2 + avgAltScore * 0.15 + 
+         homepageScore * 0.15 + contentScore * 0.15 + technicalScore * 0.15)
       );
 
       return {

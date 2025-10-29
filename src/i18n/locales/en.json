@@ -492,6 +492,14 @@
   "seo": {
     "title": "SEO Optimization",
     "description": "Manage SEO optimization for your products",
+    "confidence": {
+      "title": "Confidence Score",
+      "excellent": "Excellent",
+      "good": "Good",
+      "medium": "Medium",
+      "low": "Low",
+      "description": "SEO quality rated at {score}%"
+    },
     "homepage": {
       "title": "Homepage SEO",
       "description": "Optimize the SEO of your Shopify homepage",

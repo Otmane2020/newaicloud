@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTrialLimits } from '@/hooks/useTrialLimits';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
+import { calculateSeoConfidence } from '@/lib/seoQuality';
 import { 
   ShoppingBag, 
   Zap, 
@@ -17,7 +19,8 @@ import {
   Clock,
   DollarSign,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  Target
 } from 'lucide-react';
 
 interface Stats {
@@ -26,6 +29,7 @@ interface Stats {
   pendingOptimization: number;
   totalArticles: number;
   totalValue: number;
+  seoScore: number;
 }
 
 export default function Dashboard() {
@@ -38,7 +42,8 @@ export default function Dashboard() {
     optimizedProducts: 0,
     pendingOptimization: 0,
     totalArticles: 0,
-    totalValue: 0
+    totalValue: 0,
+    seoScore: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -104,6 +109,17 @@ export default function Dashboard() {
       const optimizedProducts = products?.filter(p => p.seo_title && p.seo_description).length || 0;
       const totalValue = products?.reduce((sum, p) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
 
+      // Calculate SEO score based on confidence
+      let totalConfidence = 0;
+      let validProducts = 0;
+      products?.forEach(p => {
+        if (p.seo_title || p.seo_description) {
+          totalConfidence += calculateSeoConfidence(p.seo_title, p.seo_description);
+          validProducts++;
+        }
+      });
+      const seoScore = validProducts > 0 ? Math.round(totalConfidence / validProducts) : 0;
+
       // Load blog articles count
       const { count: articlesCount } = await supabase
         .from('blog_articles')
@@ -115,7 +131,8 @@ export default function Dashboard() {
         optimizedProducts,
         pendingOptimization: totalProducts - optimizedProducts,
         totalArticles: articlesCount || 0,
-        totalValue
+        totalValue,
+        seoScore
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -172,6 +189,15 @@ export default function Dashboard() {
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100',
       target: 'Objectif: 100%'
+    },
+    {
+      title: 'Score SEO Global',
+      value: stats.seoScore,
+      icon: Target,
+      color: stats.seoScore >= 80 ? 'text-green-600' : stats.seoScore >= 60 ? 'text-yellow-600' : 'text-red-600',
+      bgColor: stats.seoScore >= 80 ? 'bg-green-100' : stats.seoScore >= 60 ? 'bg-yellow-100' : 'bg-red-100',
+      percentage: `${stats.seoScore}%`,
+      subtitle: stats.seoScore >= 80 ? 'Excellent' : stats.seoScore >= 60 ? 'Bon' : 'À améliorer'
     }
   ];
 
@@ -231,6 +257,11 @@ export default function Dashboard() {
                     <Badge variant="outline" className="mt-1.5 sm:mt-2 text-xs">
                       {stat.percentage}
                     </Badge>
+                  )}
+                  {stat.subtitle && (
+                    <p className="text-xs font-medium text-muted-foreground mt-1.5 sm:mt-2">
+                      {stat.subtitle}
+                    </p>
                   )}
                   {stat.trend && (
                     <p className="text-xs text-muted-foreground mt-1.5 sm:mt-2">

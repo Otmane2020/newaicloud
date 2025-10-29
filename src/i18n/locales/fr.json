@@ -494,6 +494,14 @@
   "seo": {
     "title": "Optimisation SEO",
     "description": "Gérez l'optimisation SEO de vos produits",
+    "confidence": {
+      "title": "Indice de Confiance",
+      "excellent": "Excellent",
+      "good": "Bon",
+      "medium": "Moyen",
+      "low": "Faible",
+      "description": "Qualité SEO évaluée à {score}%"
+    },
     "homepage": {
       "title": "SEO Page d'accueil",
       "description": "Optimisez le référencement de votre page d'accueil Shopify",

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Sparkles, Upload, Home, AlertCircle } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 
 export function HomePageSeo() {
   const { t } = useTranslation();
@@ -188,10 +189,16 @@ export function HomePageSeo() {
 
         {/* Preview */}
         {(seoTitle || seoDescription) && (
-          <div className="mt-6 p-4 border rounded-lg space-y-2 bg-muted/50">
-            <p className="text-xs font-medium text-muted-foreground">
-              {t('seo.homepage.preview')}
-            </p>
+          <div className="mt-6 p-4 border rounded-lg space-y-3 bg-muted/50">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                {t('seo.homepage.preview')}
+              </p>
+              <SeoConfidenceBadge 
+                seoTitle={seoTitle} 
+                seoDescription={seoDescription}
+              />
+            </div>
             {seoTitle && (
               <h3 className="text-lg font-semibold text-primary">
                 {seoTitle}
