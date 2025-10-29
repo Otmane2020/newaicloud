@@ -3,10 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Store, Trash2, RefreshCw, CheckCircle, XCircle } from "lucide-react";
+import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { ImportProgressDialog } from './ImportProgressDialog';
+import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
+import { useNavigate } from 'react-router-dom';
 
 interface ShopifyConnection {
   id: string;
@@ -19,13 +22,46 @@ interface ShopifyConnection {
 }
 
 export function ShopifyConnectionsList() {
+  const navigate = useNavigate();
   const [connections, setConnections] = useState<ShopifyConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [importingStoreId, setImportingStoreId] = useState<string | null>(null);
+  
+  // Progress dialog state
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [importJobId, setImportJobId] = useState<string | null>(null);
+  const [importPhase, setImportPhase] = useState<'products' | 'pages' | 'complete'>('products');
+  const [importProgress, setImportProgress] = useState({
+    percentage: 0,
+    currentPage: 0,
+    totalPages: 0,
+    productsProcessed: 0,
+  });
+  const [productsImported, setProductsImported] = useState(0);
+  const [pagesImported, setPagesImported] = useState(0);
+  const [importedItems, setImportedItems] = useState<any[]>([]);
+  const [limitReached, setLimitReached] = useState(false);
+  const [maxProducts, setMaxProducts] = useState(0);
+  
+  // Upgrade dialog state
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [usageLimits, setUsageLimits] = useState<any>(null);
 
   useEffect(() => {
     loadConnections();
+    checkUsageLimits();
   }, []);
+
+  const checkUsageLimits = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-usage-limits');
+      if (!error && data) {
+        setUsageLimits(data);
+      }
+    } catch (error) {
+      console.error('Error checking usage limits:', error);
+    }
+  };
 
   const loadConnections = async () => {
     try {
@@ -62,13 +98,87 @@ export function ShopifyConnectionsList() {
     }
   };
 
+  // Poll import job status
+  useEffect(() => {
+    if (!importJobId || !showProgressDialog) return;
+    
+    const pollInterval = setInterval(async () => {
+      const { data: job } = await supabase
+        .from('import_jobs')
+        .select('*')
+        .eq('id', importJobId)
+        .single();
+      
+      if (job) {
+        const progress = Math.min(
+          ((job.current_page || 0) / Math.max(job.total_pages || 1, 1)) * 100,
+          100
+        );
+        
+        setImportProgress({
+          percentage: progress,
+          currentPage: job.current_page || 0,
+          totalPages: job.total_pages || 0,
+          productsProcessed: job.products_processed || 0,
+        });
+        
+        setProductsImported(job.products_processed || 0);
+        
+        // Check if completed or quota reached
+        if (job.status === 'completed') {
+          setImportPhase('complete');
+          clearInterval(pollInterval);
+          toast.success('Import terminé !');
+          loadConnections();
+        } else if (job.status === 'quota_reached') {
+          setLimitReached(true);
+          setImportPhase('complete');
+          clearInterval(pollInterval);
+        } else if (job.status === 'failed') {
+          clearInterval(pollInterval);
+          setShowProgressDialog(false);
+          toast.error(job.error_message || 'Erreur lors de l\'import');
+        }
+      }
+    }, 500);
+    
+    return () => clearInterval(pollInterval);
+  }, [importJobId, showProgressDialog]);
+
   const importProducts = async (store: ShopifyConnection) => {
     try {
       setImportingStoreId(store.id);
-      toast.loading('Import en cours...', { id: 'import' });
+      
+      // Check usage limits first
+      const { data: limitsData, error: limitsError } = await supabase.functions.invoke(
+        'check-usage-limits'
+      );
+      
+      if (limitsError) {
+        toast.error('Erreur lors de la vérification des limites');
+        return;
+      }
+      
+      setUsageLimits(limitsData);
+      const currentProducts = limitsData?.usage?.products_count || 0;
+      const maxProductsAllowed = limitsData?.limits?.max_products || 10;
+      const availableSlots = Math.max(0, maxProductsAllowed - currentProducts);
+      
+      setMaxProducts(maxProductsAllowed);
+      
+      // If no slots available, show upgrade dialog
+      if (availableSlots === 0) {
+        setShowUpgradeDialog(true);
+        setImportingStoreId(null);
+        return;
+      }
+      
+      // Show warning if close to limit
+      if (availableSlots <= 10) {
+        toast.warning(`Il ne vous reste que ${availableSlots} produits à importer`);
+      }
 
       // 🔄 Load full store data including credentials
-      console.log('🔄 Loading store credentials before import...');
       const { data: fullStore, error: loadError } = await supabase
         .from('shopify_connections')
         .select('*')
@@ -79,17 +189,11 @@ export function ShopifyConnectionsList() {
         throw new Error('Impossible de charger les credentials de la boutique');
       }
 
-      console.log('📦 Store data loaded:', {
-        hasApiKey: !!fullStore.api_key,
-        hasAccessToken: !!fullStore.access_token,
-        connectionType: fullStore.connection_type
-      });
-
-      // Clean the shop name by removing protocol, domain suffix, and trailing slashes
+      // Clean the shop name
       let cleanShopName = (fullStore.store_url || '')
-        .replace(/^https?:\/\//, '') // Remove http:// or https://
-        .replace(/\.myshopify\.com.*$/, '') // Remove .myshopify.com and anything after
-        .replace(/\/$/, ''); // Remove trailing slash
+        .replace(/^https?:\/\//, '')
+        .replace(/\.myshopify\.com.*$/, '')
+        .replace(/\/$/, '');
 
       // Prepare request body with credentials
       const requestBody: any = {
@@ -103,25 +207,30 @@ export function ShopifyConnectionsList() {
         requestBody.apiKey = fullStore.api_key;
       }
 
-      console.log('📤 Sending to import-products:', {
-        shopName: requestBody.shopName,
-        hasApiKey: !!requestBody.apiKey,
-        hasApiSecret: !!requestBody.apiSecret,
-        apiSecretLength: requestBody.apiSecret?.length,
-        storeId: requestBody.storeId
-      });
+      // Reset progress state
+      setImportProgress({ percentage: 0, currentPage: 0, totalPages: 0, productsProcessed: 0 });
+      setProductsImported(0);
+      setPagesImported(0);
+      setImportedItems([]);
+      setImportPhase('products');
+      setLimitReached(false);
+      setShowProgressDialog(true);
 
-      const { error } = await supabase.functions.invoke('import-products', {
+      const { data: importData, error } = await supabase.functions.invoke('import-products', {
         body: requestBody
       });
 
       if (error) throw error;
       
-      toast.success('Import terminé !', { id: 'import' });
-      loadConnections();
+      // Set job ID to start polling
+      if (importData?.jobId) {
+        setImportJobId(importData.jobId);
+      }
+      
     } catch (error: any) {
       console.error('Error importing products:', error);
-      toast.error(error.message || 'Erreur lors de l\'import', { id: 'import' });
+      toast.error(error.message || 'Erreur lors de l\'import');
+      setShowProgressDialog(false);
     } finally {
       setImportingStoreId(null);
     }
@@ -150,85 +259,111 @@ export function ShopifyConnectionsList() {
   }
 
   return (
-    <div className="space-y-4">
-      {connections.map((store) => (
-        <Card key={store.id}>
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-4 flex-1">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                  <Store className="w-6 h-6 text-white" />
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold text-lg truncate">
-                      {store.store_name || 'Boutique Shopify'}
-                    </h3>
-                    <Badge variant={store.is_active ? 'default' : 'secondary'}>
-                      {store.is_active ? (
-                        <>
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Active
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Inactive
-                        </>
-                      )}
-                    </Badge>
+    <>
+      <div className="space-y-4">
+        {connections.map((store) => (
+          <Card key={store.id}>
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                    <Store className="w-6 h-6 text-white" />
                   </div>
                   
-                  <p className="text-sm text-muted-foreground mb-1 truncate">
-                    {store.store_url}
-                  </p>
-                  
-                  {store.last_sync_at && (
-                    <p className="text-xs text-muted-foreground">
-                      Dernière synchro : {format(new Date(store.last_sync_at), 'PPp', { locale: fr })}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold text-lg truncate">
+                        {store.store_name || 'Boutique Shopify'}
+                      </h3>
+                      <Badge variant={store.is_active ? 'default' : 'secondary'}>
+                        {store.is_active ? (
+                          <>
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Active
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Inactive
+                          </>
+                        )}
+                      </Badge>
+                      {usageLimits && (
+                        <Badge variant="outline" className="text-xs">
+                          {usageLimits.usage?.products_count || 0}/{usageLimits.limits?.max_products || 0} produits
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground mb-1 truncate">
+                      {store.store_url}
                     </p>
-                  )}
-                  
-                  {store.connected_at && (
-                    <p className="text-xs text-muted-foreground">
-                      Connectée le : {format(new Date(store.connected_at), 'PP', { locale: fr })}
-                    </p>
-                  )}
+                    
+                    {store.last_sync_at && (
+                      <p className="text-xs text-muted-foreground">
+                        Dernière synchro : {format(new Date(store.last_sync_at), 'PPp', { locale: fr })}
+                      </p>
+                    )}
+                    
+                    {store.connected_at && (
+                      <p className="text-xs text-muted-foreground">
+                        Connectée le : {format(new Date(store.connected_at), 'PP', { locale: fr })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 ml-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => importProducts(store)}
+                    disabled={importingStoreId === store.id}
+                  >
+                    {importingStoreId === store.id ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Import...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Importer
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => deleteConnection(store.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2 ml-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => importProducts(store)}
-                  disabled={importingStoreId === store.id}
-                >
-                  {importingStoreId === store.id ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Import...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Importer
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => deleteConnection(store.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <ImportProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        phase={importPhase}
+        progress={importProgress}
+        productsImported={productsImported}
+        pagesImported={pagesImported}
+        importedItems={importedItems}
+        limitReached={limitReached}
+        maxProducts={maxProducts}
+      />
+
+      <TrialUpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        reason="limit_reached"
+        limitType="products"
+      />
+    </>
   );
 }
