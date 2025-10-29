@@ -38,7 +38,8 @@ export function ShopifyConnection() {
   const { limits } = useUsageLimits();
   const [store, setStore] = useState<any>(null);
   const [storeName, setStoreName] = useState('');
-  const [apiToken, setApiToken] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [apiSecret, setApiSecret] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
@@ -166,18 +167,15 @@ export function ShopifyConnection() {
     setSaving(true);
 
     try {
-      const validationResult = shopifyConnectionSchema.safeParse({
-        storeName,
-        apiToken
-      });
+      // Simple validation
+      if (!storeName || !apiKey || !apiSecret) {
+        toast.error('Tous les champs sont requis');
+        setSaving(false);
+        return;
+      }
 
-      if (!validationResult.success) {
-        const validationErrors: { [key: string]: string } = {};
-        validationResult.error.errors.forEach((err) => {
-          validationErrors[err.path[0]] = err.message;
-        });
-        setErrors(validationErrors);
-        toast.error('Veuillez corriger les erreurs dans le formulaire');
+      if (!apiSecret.startsWith('shpss_') && !apiSecret.startsWith('shpat_')) {
+        toast.error('La clé secrète doit commencer par shpss_ ou shpat_');
         setSaving(false);
         return;
       }
@@ -189,7 +187,9 @@ export function ShopifyConnection() {
           .from('shopify_connections')
           .update({
             store_url: storeUrl,
-            access_token: apiToken,
+            api_key: apiKey,
+            access_token: apiSecret,
+            connection_type: 'manual',
             updated_at: new Date().toISOString()
           })
           .eq('id', store.id);
@@ -200,7 +200,9 @@ export function ShopifyConnection() {
           .from('shopify_connections')
           .insert({
             store_url: storeUrl,
-            access_token: apiToken,
+            api_key: apiKey,
+            access_token: apiSecret,
+            connection_type: 'manual',
             user_id: user?.id,
             is_active: true
           })
@@ -221,7 +223,8 @@ export function ShopifyConnection() {
       toast.error('Erreur lors de l\'enregistrement de la connexion');
     } finally {
       setSaving(false);
-      setApiToken('');
+      setApiKey('');
+      setApiSecret('');
     }
   };
 
@@ -244,7 +247,8 @@ export function ShopifyConnection() {
       toast.success('Connexion supprimée avec succès');
       setStore(null);
       setStoreName('');
-      setApiToken('');
+      setApiKey('');
+      setApiSecret('');
     } catch (error: any) {
       console.error('Error deleting connection:', error);
       toast.error(error.message || 'Erreur lors de la suppression');
@@ -402,26 +406,38 @@ export function ShopifyConnection() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="apiToken" className="flex items-center gap-2">
+            <Label htmlFor="apiKey" className="flex items-center gap-2">
               <LinkIcon className="w-4 h-4" />
-              Token API (Storefront Access Token)
+              Clé API (API Key)
             </Label>
             <Input
-              id="apiToken"
-              type="password"
-              value={apiToken}
-              onChange={(e) => {
-                setApiToken(e.target.value);
-                if (errors.apiToken) setErrors({ ...errors, apiToken: '' });
-              }}
-              placeholder="Entrez votre token API"
-              className={errors.apiToken ? 'border-destructive' : ''}
+              id="apiKey"
+              type="text"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="da237524e4e1252a740b204af962acdf"
+              className="font-mono text-sm"
             />
-            {errors.apiToken && (
-              <p className="text-sm text-destructive">{errors.apiToken}</p>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Vous pouvez obtenir votre token dans les paramètres de votre boutique Shopify
+            <p className="text-xs text-muted-foreground">
+              32 caractères hexadécimaux
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="apiSecret" className="flex items-center gap-2">
+              <LinkIcon className="w-4 h-4" />
+              Clé secrète d'API (API Secret)
+            </Label>
+            <Input
+              id="apiSecret"
+              type="password"
+              value={apiSecret}
+              onChange={(e) => setApiSecret(e.target.value)}
+              placeholder="shpss_xxxxxxxxxxxxxxxx"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Commence par shpss_ ou shpat_
             </p>
           </div>
 
