@@ -181,5 +181,83 @@
     "custom_training": "Aangepaste training",
     "sla": "Gegarandeerde SLA",
     "unlimited": "Onbeperkt"
+  },
+  "sidebar": {
+    "products": "Producten",
+    "seo": "SEO",
+    "seo_optimization": "SEO-optimalisatie",
+    "tag_optimization": "Tag-optimalisatie",
+    "page_optimization": "Pagina-optimalisatie",
+    "alt_image": "Alt & Afbeelding",
+    "seo_automation": "SEO-automatisering",
+    "seo_kpis": "SEO-KPI's",
+    "blog": "SEO-blog",
+    "articles_management": "Artikelbeheer",
+    "ai_articles": "AI-artikelen",
+    "ai_campaigns": "AI-campagnes",
+    "opportunities": "Kansen",
+    "netlinking": "Netlinking",
+    "settings": "Instellingen",
+    "google_merchant": "Google Merchant",
+    "google_shopping": "Google Shopping",
+    "chat": "AI-chat",
+    "chat_robot": "Spraakassistent",
+    "chat_history": "Chatgeschiedenis",
+    "chat_settings": "Chatinstellingen",
+    "integrations": "Integraties",
+    "documentation": "Documentatie",
+    "logout": "Uitloggen",
+    "account": "Account"
+  },
+  "trial": {
+    "banner_title": "Proefperiode - Limiet Bereikt",
+    "banner_description": "{resourceType}: {usage}/{limit} gebruikt - Ontgrendel alle functies door je abonnement te activeren",
+    "activate_subscription": "Mijn abonnement activeren",
+    "warning_title": "Proefperiode - Beperkte Versie",
+    "warning_description": "Je proefperiode eindigt over {daysLeft} dagen. Activeer om door te gaan na de proefperiode.",
+    "days_left": "{count} dagen over"
+  },
+  "shopify": {
+    "connection_title": "Shopify-verbinding",
+    "connection_description": "Verbind je winkel in enkele seconden",
+    "add_store": "Winkel toevoegen",
+    "no_connections": "Klik op \"Winkel toevoegen\" om te beginnen",
+    "delete_confirm": "Weet je zeker dat je deze verbinding wilt verwijderen? Je moet deze opnieuw maken om producten te importeren.",
+    "delete_success": "Verbinding succesvol verwijderd",
+    "save_success": "Shopify-verbinding succesvol opgeslagen",
+    "save_error": "Fout bij opslaan verbinding",
+    "load_error": "Kan verbindingsgegevens niet laden",
+    "api_missing_title": "API-referenties ontbreken",
+    "api_missing_description": "Je Shopify-verbinding bevat niet de benodigde API-referenties.",
+    "api_missing_solution": "Oplossing: Verwijder deze verbinding en maak deze opnieuw met je volledige API-referenties.",
+    "delete_button": "Verwijderen"
+  },
+  "seo": {
+    "title": "SEO-optimalisatie",
+    "description": "Beheer de SEO-optimalisatie van je producten"
+  },
+  "blog": {
+    "opportunities_none": "Geen kansen gedetecteerd. Importeer meer producten om suggesties te zien.",
+    "keyword_tip": "💡 Tip: Typ een zoekwoord en druk op Enter om het toe te voegen. Herhaal om meerdere zoekwoorden toe te voegen.",
+    "keyword_placeholder": "Voeg een zoekwoord toe en druk op Enter...",
+    "keyword_add": "Toevoegen",
+    "keyword_instruction": "Druk op Enter of klik op Toevoegen",
+    "opportunities_settings_title": "Kansen-instellingen",
+    "netlinking_include": "Netlinking-suggesties opnemen",
+    "save_settings": "Instellingen opslaan",
+    "keywords_label": "Zoekwoorden",
+    "keywords_seo_label": "SEO-zoekwoorden"
+  },
+  "dashboard": {
+    "activate_full_plan": "Volledig plan activeren",
+    "activate_my_plan": "Mijn plan activeren",
+    "no_stores": "Geen winkel verbonden",
+    "modify_plan": "Je plan wijzigen",
+    "choose_plan": "Kies je plan"
+  },
+  "buttons": {
+    "activate_full_plan": "Volledig plan activeren",
+    "activate_my_plan": "Mijn plan activeren",
+    "modify": "Wijzigen"
   }
 }

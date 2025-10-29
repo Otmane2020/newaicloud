@@ -181,5 +181,83 @@
     "custom_training": "定制培训",
     "sla": "保证的SLA",
     "unlimited": "无限"
+  },
+  "sidebar": {
+    "products": "产品",
+    "seo": "SEO",
+    "seo_optimization": "SEO优化",
+    "tag_optimization": "标签优化",
+    "page_optimization": "页面优化",
+    "alt_image": "Alt和图片",
+    "seo_automation": "SEO自动化",
+    "seo_kpis": "SEO KPI",
+    "blog": "SEO博客",
+    "articles_management": "文章管理",
+    "ai_articles": "AI文章",
+    "ai_campaigns": "AI活动",
+    "opportunities": "机会",
+    "netlinking": "网络链接",
+    "settings": "设置",
+    "google_merchant": "Google Merchant",
+    "google_shopping": "Google购物",
+    "chat": "AI聊天",
+    "chat_robot": "语音助手",
+    "chat_history": "聊天历史",
+    "chat_settings": "聊天设置",
+    "integrations": "集成",
+    "documentation": "文档",
+    "logout": "登出",
+    "account": "账户"
+  },
+  "trial": {
+    "banner_title": "试用期 - 已达限制",
+    "banner_description": "{resourceType}：{usage}/{limit}已使用 - 通过激活订阅解锁所有功能",
+    "activate_subscription": "激活我的订阅",
+    "warning_title": "试用期 - 限制版本",
+    "warning_description": "您的试用将在{daysLeft}天后结束。激活以在试用期后继续。",
+    "days_left": "剩余{count}天"
+  },
+  "shopify": {
+    "connection_title": "Shopify连接",
+    "connection_description": "在几秒钟内连接您的商店",
+    "add_store": "添加商店",
+    "no_connections": "点击 \"添加商店\" 开始",
+    "delete_confirm": "您确定要删除此连接吗？您需要重新创建它才能导入产品。",
+    "delete_success": "连接已成功删除",
+    "save_success": "Shopify连接已成功保存",
+    "save_error": "保存连接时出错",
+    "load_error": "无法加载连接数据",
+    "api_missing_title": "API凭据缺失",
+    "api_missing_description": "您的Shopify连接不包含必要的API凭据。",
+    "api_missing_solution": "解决方案：删除此连接并使用完整的API凭据重新创建。",
+    "delete_button": "删除"
+  },
+  "seo": {
+    "title": "SEO优化",
+    "description": "管理您产品的SEO优化"
+  },
+  "blog": {
+    "opportunities_none": "未检测到机会。导入更多产品以查看建议。",
+    "keyword_tip": "💡 提示：输入关键词然后按Enter添加。重复添加多个关键词。",
+    "keyword_placeholder": "添加关键词然后按Enter...",
+    "keyword_add": "添加",
+    "keyword_instruction": "按Enter或点击添加",
+    "opportunities_settings_title": "机会设置",
+    "netlinking_include": "包括网络链接建议",
+    "save_settings": "保存设置",
+    "keywords_label": "关键词",
+    "keywords_seo_label": "SEO关键词"
+  },
+  "dashboard": {
+    "activate_full_plan": "激活完整计划",
+    "activate_my_plan": "激活我的计划",
+    "no_stores": "未连接商店",
+    "modify_plan": "修改您的计划",
+    "choose_plan": "选择您的计划"
+  },
+  "buttons": {
+    "activate_full_plan": "激活完整计划",
+    "activate_my_plan": "激活我的计划",
+    "modify": "修改"
   }
 }

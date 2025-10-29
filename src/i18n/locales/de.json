@@ -178,8 +178,86 @@
     "support_email": "Prioritäts-E-Mail",
     "support_247": "24/7 Priorität",
     "support_manager": "Dedizierter Account Manager",
-    "custom_training": "Individuelle Schulung",
-    "sla": "Garantiertes SLA",
+    "custom_training": "Benutzerdefiniertes Training",
+    "sla": "Garantierte SLA",
     "unlimited": "Unbegrenzt"
+  },
+  "sidebar": {
+    "products": "Produkte",
+    "seo": "SEO",
+    "seo_optimization": "SEO-Optimierung",
+    "tag_optimization": "Tag-Optimierung",
+    "page_optimization": "Seiten-Optimierung",
+    "alt_image": "Alt & Bild",
+    "seo_automation": "SEO-Automatisierung",
+    "seo_kpis": "SEO-KPIs",
+    "blog": "SEO-Blog",
+    "articles_management": "Artikelverwaltung",
+    "ai_articles": "KI-Artikel",
+    "ai_campaigns": "KI-Kampagnen",
+    "opportunities": "Chancen",
+    "netlinking": "Netlinking",
+    "settings": "Einstellungen",
+    "google_merchant": "Google Merchant",
+    "google_shopping": "Google Shopping",
+    "chat": "KI-Chat",
+    "chat_robot": "Sprachassistent",
+    "chat_history": "Chat-Verlauf",
+    "chat_settings": "Chat-Einstellungen",
+    "integrations": "Integrationen",
+    "documentation": "Dokumentation",
+    "logout": "Abmelden",
+    "account": "Konto"
+  },
+  "trial": {
+    "banner_title": "Testzeitraum - Limit Erreicht",
+    "banner_description": "{resourceType}: {usage}/{limit} verwendet - Schalten Sie alle Funktionen frei, indem Sie Ihr Abonnement aktivieren",
+    "activate_subscription": "Mein Abonnement aktivieren",
+    "warning_title": "Testzeitraum - Eingeschränkte Version",
+    "warning_description": "Ihre Testversion endet in {daysLeft} Tagen. Aktivieren Sie, um nach dem Testzeitraum fortzufahren.",
+    "days_left": "{count} Tage übrig"
+  },
+  "shopify": {
+    "connection_title": "Shopify-Verbindung",
+    "connection_description": "Verbinden Sie Ihren Shop in Sekunden",
+    "add_store": "Shop hinzufügen",
+    "no_connections": "Klicken Sie auf \"Shop hinzufügen\", um zu beginnen",
+    "delete_confirm": "Sind Sie sicher, dass Sie diese Verbindung löschen möchten? Sie müssen sie neu erstellen, um Produkte zu importieren.",
+    "delete_success": "Verbindung erfolgreich gelöscht",
+    "save_success": "Shopify-Verbindung erfolgreich gespeichert",
+    "save_error": "Fehler beim Speichern der Verbindung",
+    "load_error": "Verbindungsdaten können nicht geladen werden",
+    "api_missing_title": "API-Anmeldedaten fehlen",
+    "api_missing_description": "Ihre Shopify-Verbindung enthält nicht die erforderlichen API-Anmeldedaten.",
+    "api_missing_solution": "Lösung: Löschen Sie diese Verbindung und erstellen Sie sie mit Ihren vollständigen API-Anmeldedaten neu.",
+    "delete_button": "Löschen"
+  },
+  "seo": {
+    "title": "SEO-Optimierung",
+    "description": "Verwalten Sie die SEO-Optimierung Ihrer Produkte"
+  },
+  "blog": {
+    "opportunities_none": "Keine Chancen erkannt. Importieren Sie mehr Produkte, um Vorschläge zu sehen.",
+    "keyword_tip": "💡 Tipp: Geben Sie ein Schlüsselwort ein und drücken Sie Enter, um es hinzuzufügen. Wiederholen Sie dies, um mehrere Schlüsselwörter hinzuzufügen.",
+    "keyword_placeholder": "Fügen Sie ein Schlüsselwort hinzu und drücken Sie Enter...",
+    "keyword_add": "Hinzufügen",
+    "keyword_instruction": "Drücken Sie Enter oder klicken Sie auf Hinzufügen",
+    "opportunities_settings_title": "Chancen-Einstellungen",
+    "netlinking_include": "Netlinking-Vorschläge einbeziehen",
+    "save_settings": "Einstellungen speichern",
+    "keywords_label": "Schlüsselwörter",
+    "keywords_seo_label": "SEO-Schlüsselwörter"
+  },
+  "dashboard": {
+    "activate_full_plan": "Vollständigen Plan aktivieren",
+    "activate_my_plan": "Meinen Plan aktivieren",
+    "no_stores": "Kein Shop verbunden",
+    "modify_plan": "Ihren Plan ändern",
+    "choose_plan": "Wählen Sie Ihren Plan"
+  },
+  "buttons": {
+    "activate_full_plan": "Vollständigen Plan aktivieren",
+    "activate_my_plan": "Meinen Plan aktivieren",
+    "modify": "Ändern"
   }
 }

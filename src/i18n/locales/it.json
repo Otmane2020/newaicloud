@@ -181,5 +181,83 @@
     "custom_training": "Formazione personalizzata",
     "sla": "SLA garantito",
     "unlimited": "Illimitato"
+  },
+  "sidebar": {
+    "products": "Prodotti",
+    "seo": "SEO",
+    "seo_optimization": "Ottimizzazione SEO",
+    "tag_optimization": "Ottimizzazione Tag",
+    "page_optimization": "Ottimizzazione Pagine",
+    "alt_image": "Alt e Immagine",
+    "seo_automation": "Automazione SEO",
+    "seo_kpis": "KPI SEO",
+    "blog": "Blog SEO",
+    "articles_management": "Gestione Articoli",
+    "ai_articles": "Articoli IA",
+    "ai_campaigns": "Campagne IA",
+    "opportunities": "Opportunità",
+    "netlinking": "Netlinking",
+    "settings": "Impostazioni",
+    "google_merchant": "Google Merchant",
+    "google_shopping": "Google Shopping",
+    "chat": "Chat IA",
+    "chat_robot": "Assistente Vocale",
+    "chat_history": "Cronologia Chat",
+    "chat_settings": "Impostazioni Chat",
+    "integrations": "Integrazioni",
+    "documentation": "Documentazione",
+    "logout": "Disconnetti",
+    "account": "Account"
+  },
+  "trial": {
+    "banner_title": "Periodo di Prova - Limite Raggiunto",
+    "banner_description": "{resourceType}: {usage}/{limit} utilizzati - Sblocca tutte le funzionalità attivando il tuo abbonamento",
+    "activate_subscription": "Attiva il mio abbonamento",
+    "warning_title": "Periodo di Prova - Versione Limitata",
+    "warning_description": "La tua prova termina tra {daysLeft} giorni. Attiva per continuare dopo il periodo di prova.",
+    "days_left": "{count} giorni rimanenti"
+  },
+  "shopify": {
+    "connection_title": "Connessione Shopify",
+    "connection_description": "Connetti il tuo negozio in pochi secondi",
+    "add_store": "Aggiungi un negozio",
+    "no_connections": "Clicca su \"Aggiungi un negozio\" per iniziare",
+    "delete_confirm": "Sei sicuro di voler eliminare questa connessione? Dovrai ricrearla per importare prodotti.",
+    "delete_success": "Connessione eliminata con successo",
+    "save_success": "Connessione Shopify salvata con successo",
+    "save_error": "Errore nel salvataggio della connessione",
+    "load_error": "Impossibile caricare i dati di connessione",
+    "api_missing_title": "Credenziali API mancanti",
+    "api_missing_description": "La tua connessione Shopify non contiene le credenziali API necessarie.",
+    "api_missing_solution": "Soluzione: Elimina questa connessione e ricreala con le tue credenziali API complete.",
+    "delete_button": "Elimina"
+  },
+  "seo": {
+    "title": "Ottimizzazione SEO",
+    "description": "Gestisci l'ottimizzazione SEO dei tuoi prodotti"
+  },
+  "blog": {
+    "opportunities_none": "Nessuna opportunità rilevata. Importa più prodotti per vedere suggerimenti.",
+    "keyword_tip": "💡 Suggerimento: Digita una parola chiave e premi Invio per aggiungerla. Ripeti per aggiungere più parole chiave.",
+    "keyword_placeholder": "Aggiungi una parola chiave e premi Invio...",
+    "keyword_add": "Aggiungi",
+    "keyword_instruction": "Premi Invio o clicca su Aggiungi",
+    "opportunities_settings_title": "Impostazioni Opportunità",
+    "netlinking_include": "Includi suggerimenti di netlinking",
+    "save_settings": "Salva impostazioni",
+    "keywords_label": "Parole chiave",
+    "keywords_seo_label": "Parole chiave SEO"
+  },
+  "dashboard": {
+    "activate_full_plan": "Attiva piano completo",
+    "activate_my_plan": "Attiva il mio piano",
+    "no_stores": "Nessun negozio connesso",
+    "modify_plan": "Modifica il tuo piano",
+    "choose_plan": "Scegli il tuo piano"
+  },
+  "buttons": {
+    "activate_full_plan": "Attiva piano completo",
+    "activate_my_plan": "Attiva il mio piano",
+    "modify": "Modifica"
   }
 }
