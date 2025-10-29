@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Sidebar,
   SidebarContent,

@@ -4,15 +4,18 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Settings, Save } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export function OpportunitiesSettings() {
+  const { t } = useTranslation();
+  
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            Paramètres des Opportunités
+            {t('blog.opportunities_settings_title')}
           </CardTitle>
           <CardDescription>Configurez la génération automatique d'opportunités de contenu</CardDescription>
         </CardHeader>
@@ -64,7 +67,7 @@ export function OpportunitiesSettings() {
 
           <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="netlinking">Inclure suggestions de netlinking</Label>
+              <Label htmlFor="netlinking">{t('blog.netlinking_include')}</Label>
               <p className="text-sm text-muted-foreground">Proposer des opportunités de liens internes</p>
             </div>
             <Switch id="netlinking" defaultChecked />
@@ -73,7 +76,7 @@ export function OpportunitiesSettings() {
           <div className="pt-4">
             <Button className="w-full" size="lg">
               <Save className="w-5 h-5 mr-2" />
-              Sauvegarder les paramètres
+              {t('blog.save_settings')}
             </Button>
           </div>
         </CardContent>

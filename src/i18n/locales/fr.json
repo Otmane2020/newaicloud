@@ -46,17 +46,28 @@
   },
   "blog": {
     "opportunities_none": "Aucune opportunité détectée. Importez plus de produits pour voir des suggestions.",
-    "keyword_tip": "💡 Astuce : Tapez un mot-clé puis appuyez sur Entrée pour l'ajouter.",
+    "keyword_tip": "💡 Astuce : Tapez un mot-clé puis appuyez sur Entrée pour l'ajouter. Répétez pour ajouter plusieurs mots-clés.",
     "keyword_placeholder": "Ajouter un mot-clé puis Entrée...",
     "keyword_add": "Ajouter",
+    "keyword_instruction": "Appuyez sur Entrée ou cliquez sur Ajouter",
     "opportunities_settings_title": "Paramètres des Opportunités",
     "netlinking_include": "Inclure suggestions de netlinking",
-    "save_settings": "Sauvegarder les paramètres"
+    "save_settings": "Sauvegarder les paramètres",
+    "keywords_label": "Mots-clés",
+    "keywords_seo_label": "Mots-clés SEO"
+  },
+  "dashboard": {
+    "activate_full_plan": "Activer le plan complet",
+    "activate_my_plan": "Activer mon plan",
+    "no_stores": "Aucune boutique connectée",
+    "modify_plan": "Modifier votre plan",
+    "choose_plan": "Choisissez votre plan"
   },
   "common": {
     "loading": "Chargement...",
     "save": "Enregistrer",
     "delete": "Supprimer",
-    "modify": "Modifier"
+    "modify": "Modifier",
+    "add": "Ajouter"
   }
 }

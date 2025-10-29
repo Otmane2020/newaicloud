@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Lightbulb, TrendingUp, FileText, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Opportunity {
   id: string;
@@ -28,6 +29,7 @@ export function BlogOpportunities() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
+  const { t } = useTranslation();
   const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
@@ -305,7 +307,7 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         <CardContent className="py-12 text-center">
           <Lightbulb className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-muted-foreground">
-            Aucune opportunité détectée. Importez plus de produits pour voir des suggestions.
+            {t('blog.opportunities_none')}
           </p>
         </CardContent>
       </Card>

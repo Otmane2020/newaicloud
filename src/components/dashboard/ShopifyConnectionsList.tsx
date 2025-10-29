@@ -10,6 +10,7 @@ import { fr } from "date-fns/locale";
 import { ImportProgressDialog } from './ImportProgressDialog';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ShopifyConnection {
   id: string;
@@ -23,6 +24,7 @@ interface ShopifyConnection {
 
 export function ShopifyConnectionsList() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [connections, setConnections] = useState<ShopifyConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [importingStoreId, setImportingStoreId] = useState<string | null>(null);
@@ -261,9 +263,9 @@ export function ShopifyConnectionsList() {
       <Card>
         <CardContent className="py-12 text-center">
           <Store className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Aucune boutique connectée</p>
+          <p className="text-muted-foreground">{t('dashboard.no_stores')}</p>
           <p className="text-sm text-muted-foreground mt-2">
-            Cliquez sur "Ajouter une boutique" pour commencer
+            {t('shopify.no_connections')}
           </p>
         </CardContent>
       </Card>

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,6 +65,7 @@ interface Product {
 
 export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -434,19 +436,19 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             {currentStep === 3 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Mots-clés</label>
+                  <label className="block text-sm font-medium mb-2">{t('blog.keywords_label')}</label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    💡 Astuce : Tapez un mot-clé puis appuyez sur Entrée pour l'ajouter. Répétez pour ajouter plusieurs mots-clés.
+                    {t('blog.keyword_tip')}
                   </p>
                   <div className="flex gap-2">
                     <Input
                       type="text"
-                      placeholder="Ajouter un mot-clé puis Entrée..."
+                      placeholder={t('blog.keyword_placeholder')}
                       value={keywordInput}
                       onChange={(e) => setKeywordInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
                     />
-                    <Button onClick={addKeyword} type="button">Ajouter</Button>
+                    <Button onClick={addKeyword} type="button">{t('blog.keyword_add')}</Button>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">

@@ -416,7 +416,16 @@
     "keyword_instruction": "Press Enter or click Add",
     "opportunities_settings_title": "Opportunities Settings",
     "netlinking_include": "Include netlinking suggestions",
-    "save_settings": "Save settings"
+    "save_settings": "Save settings",
+    "keywords_label": "Keywords",
+    "keywords_seo_label": "SEO Keywords"
+  },
+  "dashboard": {
+    "activate_full_plan": "Activate full plan",
+    "activate_my_plan": "Activate my plan",
+    "no_stores": "No store connected",
+    "modify_plan": "Modify your plan",
+    "choose_plan": "Choose your plan"
   },
   "buttons": {
     "activate_full_plan": "Activate full plan",

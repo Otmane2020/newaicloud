@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sparkles, Calendar, Target, Users, Clock, ArrowRight, ArrowLeft, X } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CampaignWizardProps {
   open: boolean;
@@ -21,6 +22,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [keywordInput, setKeywordInput] = useState('');
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -190,17 +192,17 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
             </div>
 
             <div>
-              <Label htmlFor="keywords">Mots-clés SEO</Label>
+              <Label htmlFor="keywords">{t('blog.keywords_seo_label')}</Label>
               <div className="flex gap-2 mt-1.5">
                 <Input
                   id="keywords"
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
-                  placeholder="Ajouter un mot-clé..."
+                  placeholder={t('blog.keyword_placeholder')}
                 />
                 <Button type="button" onClick={addKeyword} variant="secondary">
-                  Ajouter
+                  {t('blog.keyword_add')}
                 </Button>
               </div>
               
@@ -219,7 +221,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               )}
               
               <p className="text-xs text-muted-foreground mt-1.5">
-                Appuyez sur Entrée ou cliquez sur Ajouter
+                {t('blog.keyword_instruction')}
               </p>
             </div>
           </div>

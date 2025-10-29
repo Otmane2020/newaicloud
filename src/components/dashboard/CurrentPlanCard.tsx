@@ -128,7 +128,7 @@ export function CurrentPlanCard() {
               className="w-full"
             >
               <CreditCard className="mr-2 h-4 w-4" />
-              Activer le plan complet
+              {t('dashboard.activate_full_plan')}
             </Button>
           )}
 
