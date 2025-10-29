@@ -181,46 +181,79 @@ Deno.serve(async (req: Request) => {
 
     // Sync image ALT text
     if (imageId) {
-      console.log(`Syncing ALT text for image: ${imageId}`);
+      console.log(`[SYNC-IMAGE] Starting ALT text sync for image: ${imageId}, user: ${user.id}`);
       
-      // First get the image with a join to ensure user owns the product
-      const { data: image, error: imageError } = await supabaseClient
+      // First, get the image details
+      const { data: imageData, error: imageError } = await supabaseClient
         .from("product_images")
-        .select(`
-          id,
-          shopify_image_id,
-          alt_text,
-          product_id,
-          shopify_products!inner(
-            shopify_id,
-            store_id,
-            seller_id
-          )
-        `)
+        .select("id, shopify_image_id, alt_text, product_id")
         .eq("id", imageId)
-        .single();
+        .maybeSingle();
+
+      console.log(`[SYNC-IMAGE] Image query result:`, { 
+        found: !!imageData, 
+        imageId: imageData?.id,
+        shopifyImageId: imageData?.shopify_image_id,
+        hasAltText: !!imageData?.alt_text,
+        error: imageError 
+      });
 
       if (imageError) {
-        console.error('Image fetch error:', imageError);
-        throw new Error(`Image not found: ${imageError.message}`);
+        console.error('[SYNC-IMAGE] Image fetch error:', imageError);
+        throw new Error(`Database error fetching image: ${imageError.message}`);
       }
 
-      if (!image) {
-        throw new Error("Image not found in database");
+      if (!imageData) {
+        console.error('[SYNC-IMAGE] Image not found in database:', { imageId });
+        throw new Error(`Image with ID ${imageId} not found in database`);
+      }
+
+      if (!imageData.shopify_image_id) {
+        console.error('[SYNC-IMAGE] Image has no Shopify ID:', { imageId });
+        throw new Error("Cette image n'a pas d'ID Shopify - elle ne peut pas être synchronisée");
+      }
+
+      if (!imageData.alt_text) {
+        console.error('[SYNC-IMAGE] Image has no ALT text to sync:', { imageId });
+        throw new Error("Cette image n'a pas de texte ALT à synchroniser");
+      }
+
+      // Now get the product to verify ownership and get store info
+      const { data: product, error: productError } = await supabaseClient
+        .from("shopify_products")
+        .select("shopify_id, store_id, seller_id")
+        .eq("id", imageData.product_id)
+        .maybeSingle();
+
+      console.log(`[SYNC-IMAGE] Product query result:`, { 
+        found: !!product, 
+        productId: imageData.product_id,
+        shopifyProductId: product?.shopify_id,
+        sellerId: product?.seller_id,
+        error: productError 
+      });
+
+      if (productError) {
+        console.error('[SYNC-IMAGE] Product fetch error:', productError);
+        throw new Error(`Database error fetching product: ${productError.message}`);
+      }
+
+      if (!product) {
+        console.error('[SYNC-IMAGE] Product not found:', { productId: imageData.product_id });
+        throw new Error("Le produit associé à cette image n'existe pas");
       }
 
       // Check if user owns the product
-      const product = (image as any).shopify_products;
-      if (!product || product.seller_id !== user.id) {
-        console.error('Unauthorized access attempt:', { imageId, userId: user.id });
-        throw new Error("Unauthorized: Image does not belong to your products");
+      if (product.seller_id !== user.id) {
+        console.error('[SYNC-IMAGE] Unauthorized access attempt:', { 
+          imageId, 
+          userId: user.id, 
+          productSellerId: product.seller_id 
+        });
+        throw new Error("Vous n'avez pas l'autorisation d'accéder à cette image");
       }
 
-      if (!image.shopify_image_id) {
-        throw new Error("Image has no Shopify ID - cannot sync");
-      }
-
-      console.log(`Image found - Shopify Image ID: ${image.shopify_image_id}, Product ID: ${product.shopify_id}`);
+      console.log(`[SYNC-IMAGE] Authorization successful - proceeding with sync`);
 
       // Get Shopify connection
       const { data: storeConnection, error: storeError } = await supabaseClient
@@ -239,10 +272,15 @@ Deno.serve(async (req: Request) => {
       const shopUrl = storeConnection.store_url;
       const shopifyAccessToken = storeConnection.access_token;
       
-      console.log(`Syncing to Shopify: Product ${product.shopify_id}, Image ${image.shopify_image_id}`);
+      console.log(`[SYNC-IMAGE] Syncing to Shopify:`, {
+        shopUrl,
+        productId: product.shopify_id,
+        imageId: imageData.shopify_image_id,
+        altText: imageData.alt_text?.substring(0, 50) + '...'
+      });
       
       const shopifyResponse = await fetch(
-        `https://${shopUrl}/admin/api/2024-01/products/${product.shopify_id}/images/${image.shopify_image_id}.json`,
+        `https://${shopUrl}/admin/api/2024-01/products/${product.shopify_id}/images/${imageData.shopify_image_id}.json`,
         {
           method: "PUT",
           headers: {
@@ -251,8 +289,8 @@ Deno.serve(async (req: Request) => {
           },
           body: JSON.stringify({
             image: {
-              id: image.shopify_image_id,
-              alt: image.alt_text,
+              id: imageData.shopify_image_id,
+              alt: imageData.alt_text,
             },
           }),
         }
@@ -260,11 +298,15 @@ Deno.serve(async (req: Request) => {
 
       if (!shopifyResponse.ok) {
         const errorText = await shopifyResponse.text();
-        console.error(`Shopify API error for image ${image.shopify_image_id}:`, errorText);
-        throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
+        console.error(`[SYNC-IMAGE] Shopify API error:`, {
+          status: shopifyResponse.status,
+          imageId: imageData.shopify_image_id,
+          error: errorText
+        });
+        throw new Error(`Erreur Shopify API (${shopifyResponse.status}): ${errorText}`);
       }
 
-      console.log(`Successfully synced ALT text for image ${image.shopify_image_id}`);
+      console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text for image ${imageData.shopify_image_id}`);
 
       return new Response(
         JSON.stringify({
