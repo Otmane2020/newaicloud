@@ -275,6 +275,9 @@ export function ShopifyConnection() {
           hasAccessToken: !!reloadedStore?.access_token,
           hasApiKey: !!reloadedStore?.api_key
         });
+        toast.error('Import automatique impossible', {
+          description: 'Les credentials n\'ont pas pu être rechargés. Veuillez réessayer dans quelques secondes.'
+        });
       }
       
     } catch (error) {
