@@ -308,45 +308,60 @@ export function ShopifyConnection() {
       return;
     }
 
+    // 🔄 CRITICAL: Force reload store data to get latest credentials
+    console.log('🔄 Reloading store data before import...');
+    const freshStore = await supabase
+      .from('shopify_connections')
+      .select('*')
+      .eq('id', store.id)
+      .maybeSingle();
+
+    if (!freshStore.data) {
+      toast.error('Impossible de charger les données de connexion');
+      return;
+    }
+
+    const storeData = freshStore.data;
+
     // ✅ Vérifier que les credentials existent
     console.log('🔍 Checking credentials:', {
-      storeId: store.id,
-      connectionType: store.connection_type,
-      hasApiKey: !!store.api_key,
-      hasAccessToken: !!store.access_token,
-      apiKeyValue: store.api_key ? `${store.api_key.substring(0, 10)}...` : 'NULL',
-      accessTokenValue: store.access_token ? `${store.access_token.substring(0, 10)}...` : 'NULL'
+      storeId: storeData.id,
+      connectionType: storeData.connection_type,
+      hasApiKey: !!storeData.api_key,
+      hasAccessToken: !!storeData.access_token,
+      apiKeyValue: storeData.api_key ? `${storeData.api_key.substring(0, 10)}...` : 'NULL',
+      accessTokenValue: storeData.access_token ? `${storeData.access_token.substring(0, 10)}...` : 'NULL'
     });
 
-    if (!store.access_token || store.access_token.trim() === '') {
+    if (!storeData.access_token || storeData.access_token.trim() === '') {
       toast.error('Credentials manquants', {
         description: 'Votre connexion Shopify doit être mise à jour. Veuillez supprimer cette connexion et la recréer avec vos identifiants API.'
       });
       console.error('❌ Access token is missing. Store needs to be reconnected:', { 
-        storeId: store?.id,
-        connectionType: store?.connection_type,
-        hasAccessToken: !!store?.access_token,
-        hasApiKey: !!store?.api_key
+        storeId: storeData?.id,
+        connectionType: storeData?.connection_type,
+        hasAccessToken: !!storeData?.access_token,
+        hasApiKey: !!storeData?.api_key
       });
       return;
     }
 
     // Pour les connexions manuelles, vérifier que l'API Key existe aussi
-    if (store.connection_type === 'manual' && (!store.api_key || store.api_key.trim() === '')) {
+    if (storeData.connection_type === 'manual' && (!storeData.api_key || storeData.api_key.trim() === '')) {
       toast.error('API Key manquante', {
         description: 'Votre connexion doit être mise à jour. Veuillez la recréer avec vos identifiants API complets.'
       });
       console.error('❌ API Key is missing for manual connection:', { 
-        storeId: store?.id,
-        hasApiKey: !!store?.api_key
+        storeId: storeData?.id,
+        hasApiKey: !!storeData?.api_key
       });
       return;
     }
 
     console.log('✅ Starting import with valid credentials:', {
-      storeId: store.id,
-      storeName: store.store_url,
-      connectionType: store.connection_type,
+      storeId: storeData.id,
+      storeName: storeData.store_url,
+      connectionType: storeData.connection_type,
       credentialsPresent: true
     });
 
@@ -365,18 +380,18 @@ export function ShopifyConnection() {
       setPagesImported(0);
       setImportedItems([]);
       
-      const shopName = store.store_url?.replace('.myshopify.com', '') || '';
+      const shopName = storeData.store_url?.replace('.myshopify.com', '') || '';
       
       // Préparer le body selon le type de connexion
       const requestBody: any = {
         shopName: shopName,
-        apiSecret: store.access_token, // Toujours requis (OAuth token ou API Secret)
-        storeId: store.id
+        apiSecret: storeData.access_token, // Toujours requis (OAuth token ou API Secret)
+        storeId: storeData.id
       };
 
       // Ajouter apiKey seulement si c'est une connexion manuelle
-      if (store.connection_type === 'manual' && store.api_key) {
-        requestBody.apiKey = store.api_key;
+      if (storeData.connection_type === 'manual' && storeData.api_key) {
+        requestBody.apiKey = storeData.api_key;
       }
 
       console.log('📤 Sending to Edge Function:', {
