@@ -11,28 +11,40 @@
     "subtitle": "Herramientas potentes para vendedores de Shopify que quieren crecer más rápido",
     "products": {
       "title": "Gestión de Productos",
-      "description": "Gestiona productos con variantes, generación de GTIN e integración con Google Shopping"
+      "description": "Gestiona productos con variantes, generación de GTIN e integración con Google Shopping",
+      "tags": ["Multi-vendedor", "Variantes", "Google"]
     },
     "merchant": {
       "title": "Google Merchant Center",
-      "description": "Generación automática de feeds XML y sincronización con Google Shopping"
+      "description": "Generación automática de feeds XML y sincronización con Google Shopping",
+      "tags": ["Feed XML", "Auto-sync"]
     },
     "blog": {
       "title": "Blog SEO con IA",
-      "description": "Creación automática de artículos SEO optimizados con enlaces de productos"
+      "description": "Creación automática de artículos SEO optimizados con enlaces de productos",
+      "tags": ["Contenido IA", "Auto-post"]
     },
     "seo": {
       "title": "Optimización SEO",
-      "description": "Optimización IA de meta tags, descripciones y palabras clave"
+      "description": "Optimización IA de meta tags, descripciones y palabras clave",
+      "tags": ["Meta Tags", "Palabras clave"]
     },
     "chat": {
       "title": "Chat Inteligente",
-      "description": "Asistente IA para recomendaciones de productos y soporte al cliente"
+      "description": "Asistente IA para recomendaciones de productos y soporte al cliente",
+      "tags": ["Chat IA", "Soporte"]
     },
     "automation": {
       "title": "Automatización de Campañas",
-      "description": "Planifica y automatiza la creación de contenido"
+      "description": "Planifica y automatiza la creación de contenido",
+      "tags": ["Automatización", "Planificación"]
     }
+  },
+  "stats": {
+    "products": "Productos Optimizados",
+    "sellers": "Vendedores Activos",
+    "satisfaction": "Tasa Satisfacción",
+    "support": "Soporte IA"
   },
   "benefits": {
     "title": "Resultados probados para tiendas Shopify",
@@ -68,26 +80,89 @@
     "comparison_subtitle": "Compara todas las funciones en detalle"
   },
   "plans": {
+    "included": "Incluido en el plan:",
     "starter": {
       "name": "Starter",
       "description": "Para pequeñas tiendas que quieren descubrir el poder de la IA",
       "trial": "prueba gratuita de 14 días",
       "cta": "Comenzar Prueba Gratuita",
-      "highlight": "Disfruta del poder de la IA con funciones esenciales y cuotas adaptadas a tus inicios."
+      "highlight": "Disfruta del poder de la IA con funciones esenciales y cuotas adaptadas a tus inicios.",
+      "features": [
+        "100 productos analizados",
+        "100 optimizaciones SEO IA / mes (títulos, meta, ALT, tags)",
+        "1 artículo IA / mes",
+        "20 búsquedas IA Shopify / mes",
+        "50 respuestas Chat IA / mes",
+        "1 tienda Shopify conectada",
+        "Automatización básica (SEO + blog + chat)",
+        "Soporte por email"
+      ]
     },
     "pro": {
       "name": "Pro",
       "description": "Para tiendas en crecimiento",
       "badge": "Más Popular 🔥",
       "cta": "Probar gratis",
-      "highlight": "El plan Pro ofrece todo el poder de la IA sin límites innecesarios. Perfecto para tiendas que quieren acelerar su crecimiento."
+      "highlight": "El equilibrio perfecto entre potencia, automatización y escalabilidad.",
+      "features": [
+        "1.000 productos analizados",
+        "500 optimizaciones SEO IA / mes",
+        "5 artículos IA / mes",
+        "3 campañas IA automáticas / mes (hasta 30 artículos/campaña)",
+        "300 búsquedas IA Shopify / mes",
+        "500 respuestas Chat IA / mes",
+        "Hasta 2 tiendas Shopify conectadas",
+        "Google Merchant Center integrado",
+        "Automatización completa (SEO + blog + chat)",
+        "Soporte prioritario 24/7"
+      ]
     },
     "enterprise": {
       "name": "Enterprise",
       "description": "Para grandes tiendas y multi-tiendas",
       "cta": "Contactar Ventas",
-      "highlight": "El plan Enterprise está diseñado para vendedores serios que gestionan múltiples tiendas o tienen necesidades avanzadas."
+      "highlight": "Suite IA totalmente gestionada con cuotas altas, acceso API y soporte personal.",
+      "features": [
+        "Productos ilimitados",
+        "2.000 optimizaciones SEO IA / mes",
+        "20 artículos IA / mes",
+        "10 campañas IA automáticas / mes (hasta 30 artículos/campaña)",
+        "2.000 búsquedas IA Shopify / mes",
+        "3.000 respuestas Chat IA / mes",
+        "Hasta 5 tiendas Shopify conectadas",
+        "Multi-tiendas y acceso API personalizado",
+        "Account manager dedicado",
+        "Sesiones de formación personalizadas",
+        "SLA garantizado"
+      ]
     }
+  },
+  "payAsYouGo": {
+    "badge": "Flexibilidad máxima",
+    "title": "Pago por uso",
+    "subtitle": "Supera tus límites mensuales sin cambiar de plan",
+    "pricing_title": "💰 Precios bajo demanda:",
+    "seo_optimization": "Optimización SEO IA",
+    "ai_article": "Artículo IA",
+    "chat_response": "Respuesta Chat IA",
+    "ai_campaign": "Campaña IA (hasta 30 artículos)",
+    "additional_store": "Tienda Shopify adicional",
+    "per_month": "/mes",
+    "benefits_title": "✨ Ventajas:",
+    "no_limit": {
+      "title": "Sin límites",
+      "description": "Continúa sin interrupción"
+    },
+    "auto_billing": {
+      "title": "Facturación automática",
+      "description": "Solo a fin de mes"
+    },
+    "volume_discounts": {
+      "title": "Descuentos por volumen",
+      "description": "A partir de 10.000 créditos"
+    },
+    "info": "💡 El pago por uso está activado automáticamente en todos los planes.",
+    "info_detail": "Solo pagas por lo que consumes más allá de tus límites mensuales."
   },
   "cta": {
     "title": "¿Listo para transformar tu tienda?",
