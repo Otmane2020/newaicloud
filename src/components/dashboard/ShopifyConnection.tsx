@@ -408,6 +408,23 @@ export function ShopifyConnection() {
         requestBody.apiKey = storeData.api_key;
       }
 
+      console.log('📤 REQUEST BODY GOING TO EDGE FUNCTION:', {
+        requestBody: requestBody,
+        shopName: requestBody.shopName,
+        shopNameType: typeof requestBody.shopName,
+        shopNameLength: requestBody.shopName?.length,
+        apiKey: requestBody.apiKey,
+        apiKeyType: typeof requestBody.apiKey,
+        apiKeyLength: requestBody.apiKey?.length,
+        apiSecret: requestBody.apiSecret,
+        apiSecretType: typeof requestBody.apiSecret,
+        apiSecretLength: requestBody.apiSecret?.length,
+        apiSecretIsEmpty: requestBody.apiSecret === '',
+        apiSecretIsNull: requestBody.apiSecret === null,
+        apiSecretIsUndefined: requestBody.apiSecret === undefined,
+        storeId: requestBody.storeId
+      });
+
       console.log('📤 Sending to Edge Function:', {
         shopName: requestBody.shopName,
         hasApiKey: !!requestBody.apiKey,
