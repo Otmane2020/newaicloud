@@ -1,4 +1,4 @@
-import { useState } from 'react';
+ import { useState } from 'react';
 import { Store, Download, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,20 +13,6 @@ export function ShopifyImporter({ onImportComplete }: ShopifyImporterProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const cleanShopName = (input: string): string => {
-    return input
-      .trim()
-      .toLowerCase()
-      .replace(/^https?:\/\//, '') // Remove http:// or https://
-      .replace(/\.myshopify\.com.*$/, '') // Remove .myshopify.com and anything after
-      .replace(/\.shopify\.com.*$/, '') // Remove .shopify.com and anything after
-      .replace(/\/.*$/, '') // Remove any paths
-      .replace(/[^a-z0-9\-_]/g, '') // Remove any characters that aren't letters, numbers, hyphens, or underscores
-      .replace(/^-+|-+$/g, '') // Remove leading and trailing hyphens
-      .replace(/_{2,}/g, '_') // Replace multiple underscores with single
-      .replace(/-{2,}/g, '-'); // Replace multiple hyphens with single
-  };
-
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -34,14 +20,13 @@ export function ShopifyImporter({ onImportComplete }: ShopifyImporterProps) {
     setSuccess('');
 
     try {
-      // Clean the shop name according to Shopify's requirements
-      const cleanName = cleanShopName(shopName);
-      
-      if (!cleanName) {
-        throw new Error('Please enter a valid Shopify store name');
-      }
+      // Nettoyer le nom de la boutique
+      const cleanShopName = shopName.trim()
+        .replace(/^https?:\/\//, '') // Enlever http:// ou https://
+        .replace(/\.myshopify\.com.*$/, '') // Enlever .myshopify.com et ce qui suit
+        .replace(/\/$/, ''); // Enlever le slash final si présent
 
-      console.log('Starting import from:', cleanName);
+      console.log('Starting import from:', cleanShopName);
 
       // Get the user's session token
       const { data: { session } } = await supabase.auth.getSession();
@@ -52,7 +37,7 @@ export function ShopifyImporter({ onImportComplete }: ShopifyImporterProps) {
 
       const { data, error: functionError } = await supabase.functions.invoke('import-products', {
         body: {
-          shopName: cleanName,
+          shopName: cleanShopName,
           apiToken: apiToken.trim(),
         },
       });
@@ -108,7 +93,7 @@ export function ShopifyImporter({ onImportComplete }: ShopifyImporterProps) {
             disabled={loading}
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            Enter your Shopify store name (e.g., "mystore" or "my-store-123")
+            Enter your Shopify store name (without https://)
           </p>
         </div>
 
@@ -165,4 +150,15 @@ export function ShopifyImporter({ onImportComplete }: ShopifyImporterProps) {
       </form>
     </div>
   );
+}
+Edge function returned 400: Error, {"error":"Validation failed","details":[{"path":["shopName"],"message":"Shop name can only contain letters, numbers, hyphens, and underscores"}]}
+
+{
+  "timestamp": 1761734357976,
+  "error_type": "RUNTIME_ERROR",
+  "filename": "supabase/functions/import-products/index.ts",
+  "lineno": 0,
+  "colno": 0,
+  "stack": "not_applicable",
+  "has_blank_screen": true
 }
