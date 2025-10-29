@@ -200,6 +200,8 @@ export function ShopifyConnection() {
         apiSecretPreview: `${apiSecret.substring(0, 10)}...`
       });
       
+      let savedStoreId: string | undefined;
+      
       if (store) {
         const { error } = await supabase
           .from('shopify_connections')
@@ -214,6 +216,7 @@ export function ShopifyConnection() {
           .eq('id', store.id);
 
         if (error) throw error;
+        savedStoreId = store.id;
       } else {
         const { data, error } = await supabase
           .from('shopify_connections')
@@ -232,13 +235,11 @@ export function ShopifyConnection() {
         if (error) throw error;
         
         if (data) {
+          savedStoreId = data.id;
           setStore(data);
         }
       }
 
-      console.log('✅ Connection saved, setting auto-import flag');
-      localStorage.setItem('shopify_just_connected', 'true');
-      
       toast.success('Connexion Shopify enregistrée avec succès');
       
       // Wait for DB sync then reload
@@ -248,8 +249,65 @@ export function ShopifyConnection() {
       console.log('🔄 Store reloaded after save:', {
         hasStore: !!reloadedStore,
         hasApiKey: !!reloadedStore?.api_key,
-        hasAccessToken: !!reloadedStore?.access_token
+        hasAccessToken: !!reloadedStore?.access_token,
+        apiKeyPreview: reloadedStore?.api_key ? `${reloadedStore.api_key.substring(0, 10)}...` : 'NULL',
+        accessTokenPreview: reloadedStore?.access_token ? `${reloadedStore.access_token.substring(0, 10)}...` : 'NULL'
       });
+      
+      // Trigger import directly with reloaded data
+      if (reloadedStore && reloadedStore.access_token && reloadedStore.api_key) {
+        console.log('🚀 Triggering auto-import with fresh credentials');
+        
+        // Set states for import UI
+        setImporting(true);
+        setImportDialogOpen(true);
+        setImportPhase('products');
+        setLimitReached(false);
+        setProgress({
+          currentPage: 0,
+          totalPages: 0,
+          productsProcessed: 0,
+          percentage: 0
+        });
+        setProductsImported(0);
+        setPagesImported(0);
+        setImportedItems([]);
+        
+        const shopName = reloadedStore.store_url?.replace('.myshopify.com', '') || '';
+        
+        const requestBody = {
+          shopName: shopName,
+          apiSecret: reloadedStore.access_token,
+          apiKey: reloadedStore.api_key,
+          storeId: reloadedStore.id
+        };
+
+        console.log('📤 Sending to Edge Function:', {
+          shopName: requestBody.shopName,
+          hasApiKey: !!requestBody.apiKey,
+          hasApiSecret: !!requestBody.apiSecret,
+          apiKeyPreview: requestBody.apiKey ? `${requestBody.apiKey.substring(0, 10)}...` : 'NULL',
+          apiSecretPreview: requestBody.apiSecret ? `${requestBody.apiSecret.substring(0, 10)}...` : 'NULL',
+          storeId: requestBody.storeId
+        });
+
+        try {
+          const { data, error } = await supabase.functions.invoke('import-products', {
+            body: requestBody
+          });
+
+          if (error) throw error;
+
+          if (data?.jobId) {
+            setImportJobId(data.jobId);
+          }
+        } catch (importError: any) {
+          console.error('Auto-import error:', importError);
+          setImporting(false);
+          setImportDialogOpen(false);
+          toast.error(importError.message || 'Erreur lors de l\'import automatique');
+        }
+      }
       
     } catch (error) {
       console.error('Error saving connection:', error);
