@@ -94,8 +94,9 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       }
 
       // Créer la connexion avec les clés API
-      const storeUrl = `https://${cleanStoreName}.myshopify.com`;
-      const combinedToken = `${manualApiKey.trim()}:${manualApiSecret.trim()}`;
+      // Note: Pour l'Admin API Shopify, seul l'access token (API Secret) est nécessaire
+      const storeUrl = `${cleanStoreName}.myshopify.com`;
+      const accessToken = manualApiSecret.trim();
 
       const { error: insertError } = await supabase
         .from('shopify_connections')
@@ -103,7 +104,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
           user_id: user.id,
           store_name: cleanStoreName,
           store_url: storeUrl,
-          access_token: combinedToken,
+          access_token: accessToken,
           connection_type: 'manual',
           is_active: true,
           connected_at: new Date().toISOString()
