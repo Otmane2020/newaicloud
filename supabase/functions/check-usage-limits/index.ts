@@ -19,12 +19,18 @@ serve(async (req) => {
     );
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
+    if (!authHeader) {
+      console.error('[LIMITS] No authorization header');
+      throw new Error('No authorization header');
+    }
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
-    if (userError || !user) throw new Error('Unauthorized');
+    if (userError || !user) {
+      console.error('[LIMITS] Auth error:', userError);
+      throw new Error('Unauthorized');
+    }
 
     // Get user profile
     const { data: profile, error: profileError } = await supabaseClient

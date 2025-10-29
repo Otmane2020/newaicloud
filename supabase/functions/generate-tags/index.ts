@@ -81,6 +81,7 @@ Deno.serve(async (req: Request) => {
         headers: {
           Authorization: authHeader,
         },
+        body: {}
       }
     );
 
