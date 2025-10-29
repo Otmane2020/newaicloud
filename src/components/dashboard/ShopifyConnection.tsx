@@ -21,13 +21,17 @@ export function ShopifyConnection() {
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importJobId, setImportJobId] = useState<string | null>(null);
+  const [importPhase, setImportPhase] = useState<'products' | 'pages' | 'complete'>('products');
+  const [productsImported, setProductsImported] = useState(0);
+  const [pagesImported, setPagesImported] = useState(0);
+  const [importedItems, setImportedItems] = useState<Array<{type: 'product' | 'page'; title: string; image?: string; handle?: string}>>([]);
   const [progress, setProgress] = useState({
     currentPage: 0,
     totalPages: 0,
     productsProcessed: 0,
-    percentage: 0,
-    limitReached: false
+    percentage: 0
   });
+  const [limitReached, setLimitReached] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const { limits } = useUsageLimits();
   const [store, setStore] = useState<any>(null);
@@ -59,14 +63,14 @@ export function ShopifyConnection() {
           currentPage: job.current_page,
           totalPages: job.total_pages,
           productsProcessed: job.products_processed,
-          percentage,
-          limitReached: job.status === 'quota_reached'
+          percentage
         });
 
         if (job.status === 'completed') {
           clearInterval(interval);
           setImporting(false);
           setImportDialogOpen(false);
+          setProductsImported(job.products_processed);
           toast.success(`${job.products_processed} produits importés avec succès !`);
           setTimeout(() => {
             navigate('/products');
@@ -76,6 +80,8 @@ export function ShopifyConnection() {
         if (job.status === 'quota_reached') {
           clearInterval(interval);
           setImporting(false);
+          setLimitReached(true);
+          setProductsImported(job.products_processed);
           // Keep dialog open to show upgrade message
         }
 
@@ -185,13 +191,17 @@ export function ShopifyConnection() {
     try {
       setImporting(true);
       setImportDialogOpen(true);
+      setImportPhase('products');
+      setLimitReached(false);
       setProgress({
         currentPage: 0,
         totalPages: 0,
         productsProcessed: 0,
-        percentage: 0,
-        limitReached: false
+        percentage: 0
       });
+      setProductsImported(0);
+      setPagesImported(0);
+      setImportedItems([]);
       
       const shopName = store.store_url?.replace('.myshopify.com', '') || '';
       
@@ -359,8 +369,12 @@ export function ShopifyConnection() {
       <ImportProgressDialog
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
+        phase={importPhase}
         progress={progress}
-        limitReached={progress.limitReached}
+        productsImported={productsImported}
+        pagesImported={pagesImported}
+        importedItems={importedItems}
+        limitReached={limitReached}
         maxProducts={limits?.limits?.max_products || 50}
       />
     </div>

@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ShoppingBag, Link as LinkIcon, Download, Package, FileText, Trash2, Plus } from 'lucide-react';
+import { Loader2, ShoppingBag, Link as LinkIcon, Download, Trash2, Plus } from 'lucide-react';
 import { shopifyConnectionSchema } from '@/lib/validationSchemas';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { ImportProgressDialog } from './ImportProgressDialog';
 
 interface Store {
   id: string;
@@ -20,6 +20,13 @@ interface Store {
   is_active: boolean;
   created_at: string;
   access_token: string;
+}
+
+interface ImportedItem {
+  type: 'product' | 'page';
+  title: string;
+  image?: string;
+  handle?: string;
 }
 
 export function ShopifyConnectionsList() {
@@ -30,13 +37,19 @@ export function ShopifyConnectionsList() {
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importJobId, setImportJobId] = useState<string | null>(null);
-  const [importingPages, setImportingPages] = useState(false);
+  const [currentStoreId, setCurrentStoreId] = useState<string | null>(null);
+  const [importPhase, setImportPhase] = useState<'products' | 'pages' | 'complete'>('products');
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [progress, setProgress] = useState({
     currentPage: 0,
     totalPages: 0,
     productsProcessed: 0,
     percentage: 0
   });
+  const [productsImported, setProductsImported] = useState(0);
+  const [pagesImported, setPagesImported] = useState(0);
+  const [importedItems, setImportedItems] = useState<ImportedItem[]>([]);
+  const [limitReached, setLimitReached] = useState(false);
   const [stores, setStores] = useState<Store[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [storeName, setStoreName] = useState('');
@@ -73,16 +86,21 @@ export function ShopifyConnectionsList() {
 
         if (job.status === 'completed') {
           clearInterval(interval);
-          setImporting(false);
-          toast.success(`${job.products_processed} produits importés avec succès !`);
-          setTimeout(() => {
-            navigate('/products');
-          }, 1500);
+          setProductsImported(job.products_processed);
+          // Start pages import automatically after products
+          handlePagesImportInternal();
+        }
+
+        if (job.status === 'quota_reached') {
+          clearInterval(interval);
+          setLimitReached(true);
+          setProductsImported(job.products_processed);
         }
 
         if (job.status === 'failed') {
           clearInterval(interval);
           setImporting(false);
+          setImportDialogOpen(false);
           toast.error(job.error_message || 'Erreur lors de l\'import');
         }
       }
@@ -201,18 +219,74 @@ export function ShopifyConnectionsList() {
     }
   };
 
-  const handleImportProducts = async (store: Store) => {
+  // Internal function to import pages (called after products)
+  const handlePagesImportInternal = async () => {
     try {
+      setImportPhase('pages');
+      
+      if (!currentStoreId) return;
+
+      const { data, error } = await supabase.functions.invoke('import-shopify-pages', {
+        body: {
+          storeId: currentStoreId
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.pages && Array.isArray(data.pages)) {
+        const pageItems: ImportedItem[] = data.pages.map((page: any) => ({
+          type: 'page' as const,
+          title: page.title,
+          handle: page.handle
+        }));
+        setImportedItems(prev => [...prev, ...pageItems]);
+      }
+
+      setPagesImported(data?.count || 0);
+      setImportPhase('complete');
+      
+      setTimeout(() => {
+        setImporting(false);
+        setImportDialogOpen(false);
+        toast.success(`Import terminé : ${productsImported} produits et ${data?.count || 0} pages !`);
+        setTimeout(() => navigate('/products'), 1500);
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Pages import error:', error);
+      setImportPhase('complete');
+      setTimeout(() => {
+        setImporting(false);
+        setImportDialogOpen(false);
+        toast.warning(`${productsImported} produits importés. Erreur lors de l'import des pages: ${error.message}`);
+        setTimeout(() => navigate('/products'), 1500);
+      }, 2000);
+    }
+  };
+
+  // Unified import function (products + pages)
+  const handleImportAll = async (store: Store) => {
+    try {
+      // Reset state
       setImporting(true);
+      setImportDialogOpen(true);
+      setImportPhase('products');
+      setLimitReached(false);
+      setCurrentStoreId(store.id);
       setProgress({
         currentPage: 0,
         totalPages: 0,
         productsProcessed: 0,
         percentage: 0
       });
+      setProductsImported(0);
+      setPagesImported(0);
+      setImportedItems([]);
       
       const shopName = store.store_url?.replace('.myshopify.com', '') || '';
       
+      // Start products import
       const { data, error } = await supabase.functions.invoke('import-products', {
         body: {
           shopName: shopName,
@@ -226,51 +300,23 @@ export function ShopifyConnectionsList() {
       if (data?.jobId) {
         setImportJobId(data.jobId);
       }
+
+      // Monitor products as they import
+      if (data?.products && Array.isArray(data.products)) {
+        const productItems: ImportedItem[] = data.products.slice(0, 10).map((product: any) => ({
+          type: 'product' as const,
+          title: product.title,
+          image: product.images?.[0]?.src,
+          handle: product.handle
+        }));
+        setImportedItems(productItems);
+      }
+
     } catch (error: any) {
       console.error('Import error:', error);
       setImporting(false);
-      toast.error(error.message || 'Erreur lors de l\'import des produits');
-    }
-  };
-
-  const handleImportPages = async (store: Store) => {
-    try {
-      setImportingPages(true);
-      toast.info('Import des pages en cours...');
-      
-      const { data, error } = await supabase.functions.invoke('import-shopify-pages', {
-        body: {
-          storeId: store.id
-        }
-      });
-
-      if (error) {
-        console.error('Pages import error:', error);
-        throw new Error(error.message || 'Erreur lors de l\'import des pages');
-      }
-
-      if (data?.count === 0) {
-        toast.warning(data?.message || 'Aucune page trouvée dans cette boutique');
-      } else {
-        toast.success(`${data?.count || 0} pages importées avec succès !`);
-      }
-      
-    } catch (error: any) {
-      console.error('Pages import error:', error);
-      
-      // Check if it's a permission error
-      if (error.message?.includes('Permission refusée') || error.message?.includes('read_content')) {
-        toast.error(
-          'Permission refusée',
-          { 
-            description: 'Votre token Shopify doit avoir les permissions "read_content" et "write_content"'
-          }
-        );
-      } else {
-        toast.error(error.message || 'Erreur lors de l\'import des pages');
-      }
-    } finally {
-      setImportingPages(false);
+      setImportDialogOpen(false);
+      toast.error(error.message || 'Erreur lors de l\'import');
     }
   };
 
@@ -409,71 +455,22 @@ export function ShopifyConnectionsList() {
                 </div>
               </div>
 
-              {importing && (
-                <div className="mt-6 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-primary" />
-                    <span className="text-xs sm:text-sm font-medium">Import en cours...</span>
-                  </div>
-
-                  <Progress value={progress.percentage} className="h-2 sm:h-3" />
-
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
-                      <div className="text-lg sm:text-2xl font-bold">{progress.percentage}%</div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground mt-1">Progression</div>
-                    </div>
-                    <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
-                      <div className="text-lg sm:text-2xl font-bold flex items-center justify-center gap-1">
-                        <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                        {progress.currentPage}/{progress.totalPages || '?'}
-                      </div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground mt-1">Pages</div>
-                    </div>
-                    <div className="text-center p-2 sm:p-3 bg-muted/50 rounded-lg">
-                      <div className="text-lg sm:text-2xl font-bold flex items-center justify-center gap-1">
-                        <Package className="w-4 h-4 sm:w-5 sm:h-5" />
-                        {progress.productsProcessed}
-                      </div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground mt-1">Produits</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+              <div className="mt-6">
                 <Button 
-                  onClick={() => handleImportProducts(store)}
-                  disabled={importing || importingPages}
+                  onClick={() => handleImportAll(store)}
+                  disabled={importing}
                   className="w-full"
+                  size="lg"
                 >
                   {importing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Import...
+                      Import en cours...
                     </>
                   ) : (
                     <>
-                      <Package className="mr-2 h-4 w-4" />
-                      Importer produits
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  onClick={() => handleImportPages(store)}
-                  disabled={importing || importingPages}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {importingPages ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Import...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Importer pages
+                      <Download className="mr-2 h-4 w-4" />
+                      Importer les données
                     </>
                   )}
                 </Button>
@@ -482,6 +479,19 @@ export function ShopifyConnectionsList() {
           ))}
         </div>
       )}
+
+      {/* Import Progress Dialog */}
+      <ImportProgressDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        phase={importPhase}
+        progress={progress}
+        productsImported={productsImported}
+        pagesImported={pagesImported}
+        importedItems={importedItems}
+        limitReached={limitReached}
+        maxProducts={limits?.limits?.max_products || 10}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteStore} onOpenChange={(open) => !open && setDeleteStore(null)}>

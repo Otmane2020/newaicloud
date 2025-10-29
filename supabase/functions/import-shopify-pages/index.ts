@@ -49,6 +49,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { storeId } = await req.json();
+    console.log('🔍 Import pages request:', { storeId, userId: user.id });
 
     // Get store connection
     const { data: store, error: storeError } = await supabaseClient
@@ -58,8 +59,15 @@ Deno.serve(async (req: Request) => {
       .eq('user_id', user.id)
       .single();
 
+    console.log('🔍 Store lookup result:', { 
+      found: !!store, 
+      storeUrl: store?.store_url,
+      error: storeError 
+    });
+
     if (storeError || !store) {
-      throw new Error('Store not found');
+      console.error('❌ Store not found:', { storeId, userId: user.id, error: storeError });
+      throw new Error(`Store not found for user ${user.id} and store ${storeId}`);
     }
 
     // Fetch pages from Shopify
@@ -139,6 +147,7 @@ Deno.serve(async (req: Request) => {
         success: true,
         count: pages.length,
         message: `Successfully imported ${pages.length} pages`,
+        pages: pages.map((p: ShopifyPage) => ({ title: p.title, handle: p.handle }))
       }),
       {
         status: 200,
