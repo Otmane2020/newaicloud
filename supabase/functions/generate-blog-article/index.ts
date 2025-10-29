@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
 async function generateSingleArticle(requestData: any, supabaseClient: any, apiKey: string, authHeader?: string) {
   try {
-    const { user_id, category = "Guide", keywords = [], title } = requestData;
+    const { user_id, category = "Guide", keywords = [], title, articleLength = "2000" } = requestData;
     
     if (!user_id) {
       throw new Error("user_id is required");
@@ -281,7 +281,8 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       </div>
     `).join('') : '';
 
-    const prompt = `Tu es un rédacteur expert en e-commerce. Rédige ${hasProducts ? 'un article professionnel' : 'un guide d\'achat complet et professionnel'} en français.
+    const wordCountTarget = parseInt(articleLength);
+    const prompt = `Tu es un rédacteur expert en e-commerce. Rédige ${hasProducts ? 'un article professionnel' : 'un guide d\'achat complet et professionnel'} en français de ${wordCountTarget} mots environ.
 
 ${hasProducts ? `📦 PRODUITS SÉLECTIONNÉS :
 ${productDetails}` : `🎯 SUJET DE L'ARTICLE :
@@ -456,7 +457,7 @@ ${hasProducts ? `- Utilise UNIQUEMENT les ${products.length} produits fournis
 - Structure HTML complète avec balises H1, H2, H3
 - Table des matières avec ancres cliquables (#section-X)
 - Mots-clés naturellement intégrés : ${targetKeywords.join(", ")}
-- Longueur totale : 2000-2500 mots
+- Longueur totale : environ ${wordCountTarget} mots
 - Ton : professionnel, informatif, engageant
 - Retourne le HTML complet prêt à l'emploi`;
 

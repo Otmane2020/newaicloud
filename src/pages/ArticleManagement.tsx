@@ -169,22 +169,26 @@ export default function ArticleManagement() {
   };
 
   const syncToShopify = async (articleIds: string[]) => {
-    try {
-      toast.info('Synchronisation sur Shopify en cours...');
-      
-      const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
-        body: { article_ids: articleIds }
-      });
+    for (const articleId of articleIds) {
+      try {
+        toast.loading(`📤 Synchronisation article ${articleId.substring(0, 8)}...`, { id: `sync-${articleId}` });
+        
+        const { error } = await supabase.functions.invoke('sync-blog-to-shopify', {
+          body: { articleId }
+        });
 
-      if (error) throw error;
-      
-      toast.success(`${data.success_count || articleIds.length} article(s) synchronisé(s) !`);
-      loadArticles();
-      setSelectedArticles([]);
-    } catch (error) {
-      console.error('Error syncing:', error);
-      toast.error('Erreur lors de la synchronisation');
+        if (error) {
+          toast.error(`Erreur sync ${articleId.substring(0, 8)}`, { id: `sync-${articleId}` });
+        } else {
+          toast.success(`✅ Article synchronisé !`, { id: `sync-${articleId}` });
+        }
+      } catch (error) {
+        console.error('Error syncing:', error);
+        toast.error(`Erreur sync ${articleId.substring(0, 8)}`, { id: `sync-${articleId}` });
+      }
     }
+    loadArticles();
+    setSelectedArticles([]);
   };
 
   const bulkDelete = async () => {

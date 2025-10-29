@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       article: {
         title: article.title,
         body_html: article.content || "",
-        author: "AI Writer",
+        author: "Newsai.sale",
         tags: Array.isArray(article.keywords) ? article.keywords.join(", ") : "",
         published: true,
       },

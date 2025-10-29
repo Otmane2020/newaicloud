@@ -78,24 +78,38 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     category: '',
     keywords: '',
     productCount: 3,
+    articleLength: '700' as '700' | '2000' | '4000',
   });
 
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (user?.id) {
+      fetchProducts();
+    }
+  }, [user?.id]);
 
   const fetchProducts = async () => {
+    if (!user?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('shopify_products')
-        .select('*')
-        .limit(50);
+        .select('id, title, description, category, image_url, price, product_type')
+        .eq('seller_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (error) throw error;
       setProducts(data || []);
+      
+      // Extraire les catégories uniques
+      const uniqueCategories = Array.from(
+        new Set(data?.map(p => p.category).filter(Boolean))
+      ) as string[];
+      
+      console.log('📦 Catégories trouvées:', uniqueCategories);
     } catch (err) {
       console.error('Error fetching products:', err);
       toast.error('Erreur lors du chargement des produits');
@@ -162,6 +176,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           category: formData.category,
           keywords: finalKeywords,
           productIds: selectedProducts.map(p => p.id),
+          articleLength: formData.articleLength,
         }
       });
 
@@ -295,6 +310,48 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                     ))}
                   </select>
                 </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Longueur de l'article</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, articleLength: '700' })}
+                      className={`px-4 py-3 border rounded-lg text-center transition-all ${
+                        formData.articleLength === '700' 
+                          ? 'bg-primary text-white border-primary' 
+                          : 'bg-white border-gray-300 hover:border-primary'
+                      }`}
+                    >
+                      <div className="font-semibold">Court</div>
+                      <div className="text-sm opacity-80">~700 mots</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, articleLength: '2000' })}
+                      className={`px-4 py-3 border rounded-lg text-center transition-all ${
+                        formData.articleLength === '2000' 
+                          ? 'bg-primary text-white border-primary' 
+                          : 'bg-white border-gray-300 hover:border-primary'
+                      }`}
+                    >
+                      <div className="font-semibold">Long</div>
+                      <div className="text-sm opacity-80">~2000 mots</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, articleLength: '4000' })}
+                      className={`px-4 py-3 border rounded-lg text-center transition-all ${
+                        formData.articleLength === '4000' 
+                          ? 'bg-primary text-white border-primary' 
+                          : 'bg-white border-gray-300 hover:border-primary'
+                      }`}
+                    >
+                      <div className="font-semibold">Large</div>
+                      <div className="text-sm opacity-80">~4000 mots</div>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -310,36 +367,67 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                     className="pl-10"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                  {filteredProducts.slice(0, formData.productCount).map((product) => (
-                    <Card key={product.id} className="p-4 cursor-pointer hover:bg-gray-50"
-                      onClick={() => {
-                        if (selectedProducts.find(p => p.id === product.id)) {
-                          setSelectedProducts(selectedProducts.filter(p => p.id !== product.id));
-                        } else if (selectedProducts.length < formData.productCount) {
-                          setSelectedProducts([...selectedProducts, product]);
-                        }
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={!!selectedProducts.find(p => p.id === product.id)}
-                          readOnly
-                          className="rounded"
-                        />
-                        <img src={product.image_url} alt={product.title} className="w-16 h-16 object-cover rounded" />
-                        <div className="flex-1">
-                          <p className="font-medium text-sm line-clamp-2">{product.title}</p>
-                          <p className="text-xs text-gray-500">{product.price}€</p>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+                  <p className="text-sm">
+                    <strong>{selectedProducts.length}</strong> produit(s) sélectionné(s)
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600">
-                  {selectedProducts.length} / {formData.productCount} produits sélectionnés
-                </p>
+
+                <div className="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto border rounded-lg p-4">
+                  {filteredProducts.map((product) => {
+                    const isSelected = !!selectedProducts.find(p => p.id === product.id);
+                    
+                    return (
+                      <Card 
+                        key={product.id} 
+                        className={`p-4 cursor-pointer transition-all ${
+                          isSelected ? 'bg-blue-50 border-blue-500' : 'hover:bg-gray-50'
+                        }`}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedProducts(selectedProducts.filter(p => p.id !== product.id));
+                          } else {
+                            setSelectedProducts([...selectedProducts, product]);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            className="w-5 h-5 rounded"
+                          />
+                          <img 
+                            src={product.image_url || '/placeholder.svg'} 
+                            alt={product.title} 
+                            className="w-20 h-20 object-cover rounded" 
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium line-clamp-2">{product.title}</p>
+                            <p className="text-sm text-gray-600 line-clamp-1">{product.description}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-sm font-semibold text-blue-600">{product.price}€</p>
+                              {product.category && (
+                                <Badge variant="outline" className="text-xs">
+                                  {product.category}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                  
+                  {filteredProducts.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Aucun produit trouvé</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -380,6 +468,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   <h3 className="font-semibold mb-4">Résumé</h3>
                   <div className="space-y-2 text-sm">
                     <p><strong>Catégorie:</strong> {formData.category}</p>
+                    <p><strong>Longueur:</strong> {formData.articleLength === '700' ? 'Court (~700 mots)' : formData.articleLength === '2000' ? 'Long (~2000 mots)' : 'Large (~4000 mots)'}</p>
                     <p><strong>Produits:</strong> {selectedProducts.length}</p>
                     <p><strong>Mots-clés:</strong> {keywords.join(', ')}</p>
                   </div>
