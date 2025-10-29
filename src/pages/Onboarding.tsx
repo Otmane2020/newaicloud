@@ -215,7 +215,7 @@ export default function Onboarding() {
           billing_period: billingCycle,
           success_url: `${window.location.origin}/onboarding?checkout=success`,
           cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`,
-          force_immediate_payment: hasActiveTrial || billingCycle === 'monthly'
+          force_immediate_payment: hasActiveTrial
         }
       });
 
@@ -309,7 +309,7 @@ export default function Onboarding() {
       <div className="text-center mb-12">
         <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
           <Shield className="w-4 h-4 mr-2" />
-          💳 Paiement immédiat • Carte bancaire requise
+          💳 Essai de 14 jours • Carte bancaire requise
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold mb-4">
           Choisissez votre{' '}
