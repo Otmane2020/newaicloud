@@ -34,9 +34,15 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
     try {
       setOauthLoading(true);
 
+      // Nettoyer le nom de la boutique
+      let cleanShopName = oauthShopName.trim()
+        .replace(/^https?:\/\//, '') // Enlever http:// ou https://
+        .replace(/\.myshopify\.com.*$/, '') // Enlever .myshopify.com et ce qui suit
+        .replace(/\/$/, ''); // Enlever le slash final si présent
+
       const { data, error } = await supabase.functions.invoke("shopify-oauth", {
         body: {
-          shopName: oauthShopName.trim(),
+          shopName: cleanShopName,
         },
       });
 
@@ -66,12 +72,20 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
 
+      // Nettoyer le nom de la boutique (enlever .myshopify.com, https://, etc.)
+      let cleanStoreName = manualStoreName.trim()
+        .replace(/^https?:\/\//, '') // Enlever http:// ou https://
+        .replace(/\.myshopify\.com.*$/, '') // Enlever .myshopify.com et ce qui suit
+        .replace(/\/$/, ''); // Enlever le slash final si présent
+
+      console.log('Cleaned store name:', cleanStoreName);
+
       // Vérifier si une connexion existe déjà
       const { data: existing } = await supabase
         .from('shopify_connections')
         .select('id')
         .eq('user_id', user.id)
-        .eq('store_name', manualStoreName.trim())
+        .eq('store_name', cleanStoreName)
         .single();
 
       if (existing) {
@@ -80,14 +94,14 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       }
 
       // Créer la connexion avec les clés API
-      const storeUrl = `https://${manualStoreName.trim()}.myshopify.com`;
+      const storeUrl = `https://${cleanStoreName}.myshopify.com`;
       const combinedToken = `${manualApiKey.trim()}:${manualApiSecret.trim()}`;
 
       const { error: insertError } = await supabase
         .from('shopify_connections')
         .insert({
           user_id: user.id,
-          store_name: manualStoreName.trim(),
+          store_name: cleanStoreName,
           store_url: storeUrl,
           access_token: combinedToken,
           connection_type: 'manual',

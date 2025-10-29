@@ -20,7 +20,13 @@ export function ShopifyImporter({ onImportComplete }: ShopifyImporterProps) {
     setSuccess('');
 
     try {
-      console.log('Starting import from:', shopName);
+      // Nettoyer le nom de la boutique
+      const cleanShopName = shopName.trim()
+        .replace(/^https?:\/\//, '') // Enlever http:// ou https://
+        .replace(/\.myshopify\.com.*$/, '') // Enlever .myshopify.com et ce qui suit
+        .replace(/\/$/, ''); // Enlever le slash final si présent
+
+      console.log('Starting import from:', cleanShopName);
 
       // Get the user's session token
       const { data: { session } } = await supabase.auth.getSession();
@@ -31,7 +37,7 @@ export function ShopifyImporter({ onImportComplete }: ShopifyImporterProps) {
 
       const { data, error: functionError } = await supabase.functions.invoke('import-products', {
         body: {
-          shopName: shopName.trim().replace('.myshopify.com', ''),
+          shopName: cleanShopName,
           apiToken: apiToken.trim(),
         },
       });
