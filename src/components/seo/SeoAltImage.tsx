@@ -181,15 +181,31 @@ export function SeoAltImage() {
 
     const functionName = useVision ? 'generate-alt-texts-vision' : 'generate-alt-texts';
 
+    let successCount = 0;
+    let errorCount = 0;
+
     for (let i = 0; i < finalImagesToGenerate.length; i++) {
       try {
-        await supabase.functions.invoke(functionName, {
+        const { error } = await supabase.functions.invoke(functionName, {
           body: { imageId: finalImagesToGenerate[i].id }
         });
+        
+        if (error) {
+          console.error('Error generating ALT text:', error);
+          errorCount++;
+        } else {
+          successCount++;
+        }
+        
         setProgress({ current: i + 1, total: finalImagesToGenerate.length });
       } catch (error) {
         console.error('Error generating ALT text:', error);
+        errorCount++;
       }
+    }
+
+    if (errorCount > 0) {
+      toast.warning(`${successCount} textes ALT générés, ${errorCount} erreurs. Certaines images ont un produit supprimé.`);
     }
 
     setGenerating(false);
