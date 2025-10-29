@@ -51,8 +51,14 @@ Deno.serve(async (req: Request) => {
     const { storeId } = await req.json();
     console.log('🔍 Import pages request:', { storeId, userId: user.id });
 
+    // Use service role for store lookup to bypass RLS
+    const supabaseServiceClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
     // Get store connection
-    const { data: store, error: storeError } = await supabaseClient
+    const { data: store, error: storeError } = await supabaseServiceClient
       .from('shopify_connections')
       .select('*')
       .eq('id', storeId)
@@ -107,12 +113,6 @@ Deno.serve(async (req: Request) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Use service role for upsert
-    const supabaseServiceClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
 
     // Prepare pages for insert
     const pagesToInsert = pages.map((page: ShopifyPage) => ({
