@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { BlogWizard } from '@/components/blog/BlogWizard';
+import { OptimizationResultsDialog } from '@/components/seo/OptimizationResultsDialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Article {
@@ -44,6 +45,8 @@ export default function ArticleManagement() {
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
   const [showWizard, setShowWizard] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [showOptimizationResults, setShowOptimizationResults] = useState(false);
+  const [optimizedArticles, setOptimizedArticles] = useState<any[]>([]);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,9 +148,20 @@ export default function ArticleManagement() {
 
       if (error) throw error;
       
+      // Récupérer les articles optimisés depuis la base de données
+      const { data: articles, error: articlesError } = await supabase
+        .from('blog_articles')
+        .select('id, title, meta_description')
+        .in('id', articleIds);
+
+      if (articlesError) throw articlesError;
+
+      // Afficher le dialog avec les résultats
+      setOptimizedArticles(articles || []);
+      setShowOptimizationResults(true);
+      
       toast.success(`${data.success_count || articleIds.length} article(s) optimisé(s) !`);
       loadArticles();
-      setSelectedArticles([]);
     } catch (error) {
       console.error('Error optimizing:', error);
       toast.error('Erreur lors de l\'optimisation');
@@ -524,6 +538,28 @@ export default function ArticleManagement() {
           categories={categories}
         />
       )}
+
+      {/* Optimization Results Dialog */}
+      <OptimizationResultsDialog
+        open={showOptimizationResults}
+        onOpenChange={setShowOptimizationResults}
+        type="seo"
+        items={optimizedArticles.map(article => ({
+          id: article.id,
+          title: article.title,
+          seo_title: article.title,
+          seo_description: article.meta_description
+        }))}
+        onSyncClick={() => {
+          const articleIds = optimizedArticles.map(a => a.id);
+          setShowOptimizationResults(false);
+          syncToShopify(articleIds);
+        }}
+        onClose={() => {
+          setShowOptimizationResults(false);
+          setSelectedArticles([]);
+        }}
+      />
     </div>
   );
 }
