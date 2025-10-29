@@ -188,6 +188,7 @@ export function ShopifyConnectionsList() {
       toast.success('Boutique connectée avec succès ! 🎉', {
         description: 'Vous pouvez maintenant importer vos produits et pages Shopify.'
       });
+      
       setStoreName('');
       setApiToken('');
       setShowAddForm(false);

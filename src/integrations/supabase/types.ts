@@ -461,6 +461,39 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_feed_settings: {
+        Row: {
+          auto_update_enabled: boolean | null
+          created_at: string | null
+          gtin_country_code: string | null
+          id: string
+          last_feed_generated_at: string | null
+          store_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_update_enabled?: boolean | null
+          created_at?: string | null
+          gtin_country_code?: string | null
+          id?: string
+          last_feed_generated_at?: string | null
+          store_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_update_enabled?: boolean | null
+          created_at?: string | null
+          gtin_country_code?: string | null
+          id?: string
+          last_feed_generated_at?: string | null
+          store_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       oauth_states: {
         Row: {
           created_at: string | null
@@ -1013,6 +1046,8 @@ export type Database = {
           length: number | null
           length_unit: string | null
           optimization_count: number | null
+          optimized_description: string | null
+          optimized_title: string | null
           other_dimensions: Json | null
           price: number | null
           product_type: string | null
@@ -1113,6 +1148,8 @@ export type Database = {
           length?: number | null
           length_unit?: string | null
           optimization_count?: number | null
+          optimized_description?: string | null
+          optimized_title?: string | null
           other_dimensions?: Json | null
           price?: number | null
           product_type?: string | null
@@ -1213,6 +1250,8 @@ export type Database = {
           length?: number | null
           length_unit?: string | null
           optimization_count?: number | null
+          optimized_description?: string | null
+          optimized_title?: string | null
           other_dimensions?: Json | null
           price?: number | null
           product_type?: string | null

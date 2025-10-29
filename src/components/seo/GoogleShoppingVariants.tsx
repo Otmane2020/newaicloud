@@ -1,0 +1,526 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { 
+  ShoppingBag, 
+  TrendingUp, 
+  Package, 
+  AlertCircle,
+  Search,
+  Loader2,
+  Upload,
+  Sparkles,
+  RefreshCw,
+  Zap,
+  CheckCircle
+} from 'lucide-react';
+
+interface ProductVariant {
+  id: string;
+  product_id: string;
+  product_title: string;
+  variant_title: string;
+  option1: string | null;
+  option2: string | null;
+  option3: string | null;
+  image_url: string | null;
+  product_image_url: string | null;
+  optimized_title: string | null;
+  optimized_description: string | null;
+  google_product_category: string | null;
+  google_mpn: string | null;
+  google_condition: string | null;
+  google_gtin: string | null;
+  google_brand: string | null;
+  seo_synced_to_shopify: boolean;
+}
+
+export function GoogleShoppingVariants() {
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [selectedVariants, setSelectedVariants] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [syncing, setSyncing] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+
+  const fetchVariants = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch products with their variants
+      const { data: products, error: productsError } = await supabase
+        .from('shopify_products')
+        .select(`
+          id,
+          title,
+          image_url,
+          vendor,
+          optimized_title,
+          optimized_description,
+          google_product_category,
+          google_mpn,
+          google_condition,
+          google_gtin,
+          google_brand,
+          seo_synced_to_shopify
+        `)
+        .order('title', { ascending: true });
+
+      if (productsError) throw productsError;
+
+      const { data: variantsData, error: variantsError } = await supabase
+        .from('product_variants')
+        .select('*');
+
+      if (variantsError) throw variantsError;
+
+      // Create variant entries
+      const variantsList: ProductVariant[] = [];
+      
+      for (const product of products || []) {
+        const productVariants = variantsData?.filter(v => v.product_id === product.id) || [];
+        
+        if (productVariants.length > 0) {
+          // Add each variant as a separate entry
+          for (const variant of productVariants) {
+            const variantTitle = `${variant.option1 || ''}${variant.option2 ? ' - ' + variant.option2 : ''}${variant.option3 ? ' - ' + variant.option3 : ''}`.trim();
+            
+            variantsList.push({
+              id: variant.id,
+              product_id: product.id,
+              product_title: product.title,
+              variant_title: variantTitle,
+              option1: variant.option1,
+              option2: variant.option2,
+              option3: variant.option3,
+              image_url: variant.image_url,
+              product_image_url: product.image_url,
+              optimized_title: product.optimized_title,
+              optimized_description: product.optimized_description,
+              google_product_category: product.google_product_category,
+              google_mpn: product.google_mpn,
+              google_condition: product.google_condition,
+              google_gtin: product.google_gtin,
+              google_brand: product.google_brand,
+              seo_synced_to_shopify: product.seo_synced_to_shopify,
+            });
+          }
+        } else {
+          // Product without variants - single entry
+          variantsList.push({
+            id: product.id,
+            product_id: product.id,
+            product_title: product.title,
+            variant_title: '',
+            option1: null,
+            option2: null,
+            option3: null,
+            image_url: null,
+            product_image_url: product.image_url,
+            optimized_title: product.optimized_title,
+            optimized_description: product.optimized_description,
+            google_product_category: product.google_product_category,
+            google_mpn: product.google_mpn,
+            google_condition: product.google_condition,
+            google_gtin: product.google_gtin,
+            google_brand: product.google_brand,
+            seo_synced_to_shopify: product.seo_synced_to_shopify,
+          });
+        }
+      }
+
+      setVariants(variantsList);
+    } catch (error) {
+      console.error('Error fetching variants:', error);
+      toast.error('Erreur lors du chargement des produits');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVariants();
+  }, []);
+
+  const filteredVariants = variants.filter((variant) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      variant.product_title.toLowerCase().includes(term) ||
+      variant.variant_title.toLowerCase().includes(term)
+    );
+  });
+
+  const handleSelectAll = () => {
+    if (selectedVariants.size === filteredVariants.length) {
+      setSelectedVariants(new Set());
+    } else {
+      setSelectedVariants(new Set(filteredVariants.map(v => v.product_id)));
+    }
+  };
+
+  const handleSelectVariant = (productId: string) => {
+    const newSelected = new Set(selectedVariants);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedVariants(newSelected);
+  };
+
+  const handleOptimizeFeed = async () => {
+    const productIds = Array.from(selectedVariants);
+    
+    if (productIds.length === 0) {
+      toast.info('Sélectionnez au moins un produit');
+      return;
+    }
+
+    try {
+      setOptimizing(true);
+      toast.info(`Optimisation de ${productIds.length} produit(s)...`);
+      
+      const { data, error } = await supabase.functions.invoke('optimize-shopping-feed', {
+        body: { productIds }
+      });
+
+      if (error) throw error;
+
+      const successCount = data.results.filter((r: any) => r.status === 'success').length;
+      const errorCount = data.results.filter((r: any) => r.status === 'error').length;
+
+      toast.success(`Optimisation terminée ! ${successCount} succès, ${errorCount} erreurs`);
+      setSelectedVariants(new Set());
+      await fetchVariants();
+    } catch (error) {
+      console.error('Error optimizing feed:', error);
+      toast.error('Erreur lors de l\'optimisation');
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  const handleGenerateGTIN = async () => {
+    const productIds = Array.from(selectedVariants);
+    
+    if (productIds.length === 0) {
+      toast.info('Sélectionnez au moins un produit');
+      return;
+    }
+
+    try {
+      toast.info(`Génération des GTIN pour ${productIds.length} produit(s)...`);
+      
+      const { data, error } = await supabase.functions.invoke('generate-gtin', {
+        body: { productIds, countryCode: 'FR' }
+      });
+
+      if (error) throw error;
+
+      const generatedCount = data.results.filter((r: any) => r.status === 'generated').length;
+      const existingCount = data.results.filter((r: any) => r.status === 'existing').length;
+
+      toast.success(`GTIN générés ! ${generatedCount} nouveaux, ${existingCount} existants`);
+      await fetchVariants();
+    } catch (error) {
+      console.error('Error generating GTIN:', error);
+      toast.error('Erreur lors de la génération des GTIN');
+    }
+  };
+
+  const handleSyncSelected = async () => {
+    const productIds = Array.from(selectedVariants);
+    
+    if (productIds.length === 0) {
+      toast.info('Sélectionnez au moins un produit');
+      return;
+    }
+
+    setSyncing(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const productId of productIds) {
+      try {
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-seo-to-shopify`;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            productId, 
+            syncGoogleShopping: true
+          }),
+        });
+
+        if (response.ok) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch (error) {
+        console.error('Error syncing:', error);
+        errorCount++;
+      }
+    }
+
+    setSyncing(false);
+    setSelectedVariants(new Set());
+    
+    toast.success(`Synchronisation terminée: ${successCount} succès, ${errorCount} erreurs`);
+    await fetchVariants();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const uniqueProducts = new Set(variants.map(v => v.product_id)).size;
+  const optimizedProducts = new Set(
+    variants.filter(v => v.google_product_category).map(v => v.product_id)
+  ).size;
+  const toSyncProducts = new Set(
+    variants.filter(v => v.google_product_category && !v.seo_synced_to_shopify).map(v => v.product_id)
+  ).size;
+  const completionRate = uniqueProducts > 0 ? Math.round((optimizedProducts / uniqueProducts) * 100) : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
+          <ShoppingBag className="w-8 h-8 text-primary" />
+          Google Shopping
+        </h2>
+        <p className="text-muted-foreground">
+          Optimisez vos produits et variantes pour Google Shopping
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground">Produits</h3>
+            <Package className="w-5 h-5 text-blue-600" />
+          </div>
+          <p className="text-3xl font-bold">{uniqueProducts}</p>
+          <p className="text-sm text-muted-foreground mt-1">{variants.length} variantes</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-green-900 dark:text-green-100">Optimisés</h3>
+            <TrendingUp className="w-5 h-5 text-green-600" />
+          </div>
+          <p className="text-3xl font-bold text-green-900 dark:text-green-100">{optimizedProducts}</p>
+          <p className="text-sm text-green-700 dark:text-green-300 mt-1">{completionRate}% complétés</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-orange-900 dark:text-orange-100">À synchroniser</h3>
+            <AlertCircle className="w-5 h-5 text-orange-600" />
+          </div>
+          <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">{toSyncProducts}</p>
+          <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">Prêts pour Shopify</p>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950 border-purple-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-purple-900 dark:text-purple-100">Variantes</h3>
+            <CheckCircle className="w-5 h-5 text-purple-600" />
+          </div>
+          <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{variants.length}</p>
+          <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">Total dans le catalogue</p>
+        </Card>
+      </div>
+
+      {/* Search & Actions */}
+      <Card className="p-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex-1 w-full sm:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Rechercher un produit..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={fetchVariants}
+              disabled={loading}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={handleOptimizeFeed}
+              disabled={optimizing || selectedVariants.size === 0}
+              className="gap-2"
+            >
+              {optimizing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Optimisation...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Optimiser le Feed ({selectedVariants.size})
+                </>
+              )}
+            </Button>
+            
+            <Button
+              onClick={handleGenerateGTIN}
+              disabled={selectedVariants.size === 0}
+              variant="outline"
+              className="gap-2"
+            >
+              <Zap className="w-4 h-4" />
+              Générer GTIN ({selectedVariants.size})
+            </Button>
+            
+            <Button
+              onClick={handleSyncSelected}
+              disabled={syncing || selectedVariants.size === 0}
+              variant="secondary"
+              className="gap-2"
+            >
+              {syncing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Synchronisation...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Synchroniser ({selectedVariants.size})
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Variants Table */}
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedVariants.size === new Set(filteredVariants.map(v => v.product_id)).size && filteredVariants.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+                <TableHead>Image</TableHead>
+                <TableHead>Titre Optimisé</TableHead>
+                <TableHead>Catégorie</TableHead>
+                <TableHead>Brand</TableHead>
+                <TableHead>GTIN</TableHead>
+                <TableHead>Statut</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredVariants.map((variant) => {
+                const displayTitle = variant.optimized_title || 
+                  `${variant.product_title}${variant.variant_title ? ' - ' + variant.variant_title : ''}`;
+                const imageUrl = variant.image_url || variant.product_image_url;
+                
+                return (
+                  <TableRow key={variant.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedVariants.has(variant.product_id)}
+                        onCheckedChange={() => handleSelectVariant(variant.product_id)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={displayTitle} className="w-12 h-12 object-cover rounded" />
+                      ) : (
+                        <div className="w-12 h-12 bg-secondary rounded flex items-center justify-center">
+                          <Package className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-xs">
+                      <div className="font-medium truncate">{displayTitle}</div>
+                      {variant.variant_title && (
+                        <div className="text-xs text-muted-foreground">{variant.variant_title}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{variant.google_product_category || '-'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{variant.google_brand || '-'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-mono">{variant.google_gtin || '-'}</span>
+                    </TableCell>
+                    <TableCell>
+                      {variant.seo_synced_to_shopify ? (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Sync
+                        </Badge>
+                      ) : variant.google_product_category ? (
+                        <Badge variant="outline" className="border-orange-300 text-orange-700">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          À sync
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">
+                          Non optimisé
+                        </Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+    </div>
+  );
+}

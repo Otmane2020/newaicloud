@@ -24,6 +24,21 @@ interface Product {
   google_mpn?: string | null;
   google_condition?: string | null;
   google_gtin?: string | null;
+  optimized_title?: string | null;
+  optimized_description?: string | null;
+  google_brand?: string | null;
+  shopify_id?: string | null;
+  store_id?: string | null;
+}
+
+interface Variant {
+  id: string;
+  title: string;
+  price: string;
+  option1: string | null;
+  option2: string | null;
+  option3: string | null;
+  image_url: string | null;
 }
 
 function getSupabaseClient() {
@@ -42,8 +57,13 @@ function escapeXml(unsafe: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function generateGoogleShoppingFeed(products: Product[], sellerId: string): string {
-  const baseUrl = "https://newai.sale";
+async function generateGoogleShoppingFeed(
+  products: Product[], 
+  variants: { [key: string]: Variant[] },
+  sellerId: string,
+  storeDomain: string | null
+): Promise<string> {
+  const baseUrl = storeDomain || "https://newai.sale";
   const date = new Date().toISOString();
   
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -56,46 +76,93 @@ function generateGoogleShoppingFeed(products: Product[], sellerId: string): stri
 `;
 
   for (const product of products) {
-    const productUrl = `${baseUrl}/product/${product.handle}`;
-    const imageUrl = product.image_url || `${baseUrl}/placeholder.svg`;
-    const price = parseFloat(product.price);
-    const currency = product.currency || 'EUR';
-    const availability = product.status === 'active' ? 'in stock' : 'out of stock';
-    const condition = product.google_condition || 'new';
-    const mpn = product.google_mpn || product.vendor || 'N/A';
+    const productVariants = variants[product.id] || [];
     
-    xml += `
+    // If product has variants, create an entry for each variant
+    if (productVariants.length > 0) {
+      for (const variant of productVariants) {
+        const variantTitle = product.optimized_title || 
+          `${product.title}${variant.option1 ? ' - ' + variant.option1 : ''}${variant.option2 ? ' - ' + variant.option2 : ''}${variant.option3 ? ' - ' + variant.option3 : ''}`;
+        
+        // Use Shopify product link if available
+        const productUrl = product.shopify_id && storeDomain
+          ? `${storeDomain}/products/${product.handle}`
+          : `https://newai.sale/product/${product.handle}`;
+          
+        const imageUrl = variant.image_url || product.image_url || `${baseUrl}/placeholder.svg`;
+        const price = parseFloat(variant.price);
+        const currency = product.currency || 'EUR';
+        const availability = product.status === 'active' ? 'in stock' : 'out of stock';
+        const condition = product.google_condition || 'new';
+        const brand = product.google_brand || product.vendor || 'N/A';
+        const mpn = product.google_mpn || product.vendor || 'N/A';
+        
+        xml += `
     <item>
-      <g:id>${escapeXml(product.id)}</g:id>
-      <g:title>${escapeXml(product.title)}</g:title>
-      <g:description>${escapeXml(product.description || product.title)}</g:description>
+      <g:id>${escapeXml(variant.id)}</g:id>
+      <g:title>${escapeXml(variantTitle)}</g:title>
+      <g:description>${escapeXml(product.optimized_description || product.description || product.title)}</g:description>
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>
       <g:availability>${escapeXml(availability)}</g:availability>
       <g:price>${price.toFixed(2)} ${currency}</g:price>
       <g:condition>${escapeXml(condition)}</g:condition>
+      <g:brand>${escapeXml(brand)}</g:brand>
       <g:mpn>${escapeXml(mpn)}</g:mpn>`;
-    
-    if (product.compare_at_price) {
-      const comparePrice = parseFloat(product.compare_at_price);
-      if (comparePrice > price) {
-        xml += `
-      <g:sale_price>${price.toFixed(2)} ${currency}</g:sale_price>`;
-      }
-    }
-    
-    if (product.google_product_category) {
-      xml += `
+        
+        if (product.google_product_category) {
+          xml += `
       <g:google_product_category>${escapeXml(product.google_product_category)}</g:google_product_category>`;
-    }
-    
-    if (product.google_gtin) {
-      xml += `
+        }
+        
+        if (product.google_gtin) {
+          xml += `
       <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
-    }
-    
-    xml += `
+        }
+        
+        xml += `
     </item>`;
+      }
+    } else {
+      // Product without variants - single entry
+      const productUrl = product.shopify_id && storeDomain
+        ? `${storeDomain}/products/${product.handle}`
+        : `https://newai.sale/product/${product.handle}`;
+        
+      const imageUrl = product.image_url || `${baseUrl}/placeholder.svg`;
+      const price = parseFloat(product.price);
+      const currency = product.currency || 'EUR';
+      const availability = product.status === 'active' ? 'in stock' : 'out of stock';
+      const condition = product.google_condition || 'new';
+      const brand = product.google_brand || product.vendor || 'N/A';
+      const mpn = product.google_mpn || product.vendor || 'N/A';
+      
+      xml += `
+    <item>
+      <g:id>${escapeXml(product.id)}</g:id>
+      <g:title>${escapeXml(product.optimized_title || product.title)}</g:title>
+      <g:description>${escapeXml(product.optimized_description || product.description || product.title)}</g:description>
+      <g:link>${escapeXml(productUrl)}</g:link>
+      <g:image_link>${escapeXml(imageUrl)}</g:image_link>
+      <g:availability>${escapeXml(availability)}</g:availability>
+      <g:price>${price.toFixed(2)} ${currency}</g:price>
+      <g:condition>${escapeXml(condition)}</g:condition>
+      <g:brand>${escapeXml(brand)}</g:brand>
+      <g:mpn>${escapeXml(mpn)}</g:mpn>`;
+      
+      if (product.google_product_category) {
+        xml += `
+      <g:google_product_category>${escapeXml(product.google_product_category)}</g:google_product_category>`;
+      }
+      
+      if (product.google_gtin) {
+        xml += `
+      <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
+      }
+      
+      xml += `
+    </item>`;
+    }
   }
 
   xml += `
@@ -114,12 +181,14 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/');
     
-    // Expected path: /shoppingfeed/{seller_id}/xml
-    const sellerId = pathParts[pathParts.length - 2];
+    // Support two URL formats:
+    // 1. /shoppingfeed/{store_name}/xml (new format)
+    // 2. /shoppingfeed/{seller_id}/xml (legacy format)
+    const identifier = pathParts[pathParts.length - 2];
     
-    if (!sellerId || sellerId === 'xml') {
+    if (!identifier || identifier === 'xml') {
       return new Response(
-        JSON.stringify({ error: "Seller ID is required in the path: /shoppingfeed/{seller_id}/xml" }),
+        JSON.stringify({ error: "Store name or Seller ID is required in the path" }),
         { 
           status: 400, 
           headers: { ...corsHeaders, "Content-Type": "application/json" } 
@@ -128,6 +197,44 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabase = getSupabaseClient();
+    
+    // Try to find feed settings by store_name first (new format)
+    let sellerId: string | null = null;
+    let storeDomain: string | null = null;
+    
+    const { data: feedSettings } = await supabase
+      .from('merchant_feed_settings')
+      .select('user_id')
+      .eq('store_name', identifier)
+      .single();
+    
+    if (feedSettings) {
+      sellerId = feedSettings.user_id;
+      
+      // Get store domain from shopify_connections
+      const { data: connection } = await supabase
+        .from('shopify_connections')
+        .select('store_url')
+        .eq('user_id', sellerId)
+        .single();
+      
+      if (connection) {
+        storeDomain = connection.store_url;
+      }
+    } else {
+      // Fallback to legacy format (seller_id directly)
+      sellerId = identifier;
+    }
+    
+    if (!sellerId) {
+      return new Response(
+        JSON.stringify({ error: "Invalid store name or seller ID" }),
+        { 
+          status: 404, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
     
     // Fetch active products for this seller
     const { data: products, error } = await supabase
@@ -151,7 +258,25 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const xmlFeed = generateGoogleShoppingFeed(products, sellerId);
+    // Fetch all variants for these products
+    const productIds = products.map(p => p.id);
+    const { data: allVariants } = await supabase
+      .from('product_variants')
+      .select('*')
+      .in('product_id', productIds);
+    
+    // Group variants by product_id
+    const variantsByProduct: { [key: string]: Variant[] } = {};
+    if (allVariants) {
+      for (const variant of allVariants) {
+        if (!variantsByProduct[variant.product_id]) {
+          variantsByProduct[variant.product_id] = [];
+        }
+        variantsByProduct[variant.product_id].push(variant);
+      }
+    }
+
+    const xmlFeed = await generateGoogleShoppingFeed(products, variantsByProduct, sellerId, storeDomain);
 
     return new Response(xmlFeed, {
       headers: {

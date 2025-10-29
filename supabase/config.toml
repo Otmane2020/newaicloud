@@ -68,3 +68,9 @@ verify_jwt = false
 
 [functions.force-payment]
 verify_jwt = true
+
+[functions.generate-gtin]
+verify_jwt = true
+
+[functions.optimize-shopping-feed]
+verify_jwt = true
