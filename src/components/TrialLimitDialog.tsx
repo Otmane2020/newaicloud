@@ -63,35 +63,44 @@ export function TrialLimitDialog({
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
               <Zap className="w-6 h-6 text-primary" />
             </div>
-            <DialogTitle className="text-xl">✨ Libérez toutes les fonctionnalités</DialogTitle>
+            <DialogTitle className="text-xl">🚀 Activez votre abonnement Starter</DialogTitle>
           </div>
           <DialogDescription className="text-base pt-2">
-            Profitez de l'ensemble des fonctionnalités de NewAI sans limite en activant votre abonnement maintenant.
+            Vous avez atteint votre limite d'essai gratuit :
+            {limitType && (
+              <div className="mt-2 font-semibold">
+                {limitType} : {currentUsage}/{trialMaxUsage || maxUsage} utilisés
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Zap className="w-5 h-5 text-primary" />
-              <span>Avec le plan Starter à 9,99€/mois :</span>
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold">Plan Starter</div>
+              <div className="text-2xl font-bold">9,99€<span className="text-sm font-normal text-muted-foreground">/mois</span></div>
             </div>
             <ul className="text-sm space-y-2">
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✓</span>
-                <span>Optimisations SEO illimitées</span>
+                <span className="text-primary font-bold">✅</span>
+                <span>1 000 optimisations SEO avec IA / mois</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✓</span>
-                <span>Génération d'articles IA</span>
+                <span className="text-primary font-bold">✅</span>
+                <span>5 articles de blog IA / mois</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✓</span>
-                <span>Chat assistant avancé</span>
+                <span className="text-primary font-bold">✅</span>
+                <span>200 réponses de chat IA / mois</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✓</span>
-                <span>Automatisations complètes</span>
+                <span className="text-primary font-bold">✅</span>
+                <span>100 requêtes Shopify IA / mois</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✅</span>
+                <span>Toutes les fonctionnalités débloquées</span>
               </li>
             </ul>
           </div>
@@ -101,14 +110,14 @@ export function TrialLimitDialog({
               size="lg"
               onClick={handlePayNow}
               disabled={loading}
-              className="w-full"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
               ) : (
                 <>
                   <CreditCard className="w-5 h-5 mr-2" />
-                  Payer maintenant
+                  Activer mon abonnement
                 </>
               )}
             </Button>
@@ -124,7 +133,7 @@ export function TrialLimitDialog({
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            🚀 Activez votre abonnement en quelques clics et continuez à faire croître votre business
+            Libérez toutes les fonctionnalités en activant votre abonnement
           </p>
         </div>
       </DialogContent>

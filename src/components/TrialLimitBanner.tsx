@@ -21,19 +21,24 @@ export function TrialLimitBanner({ resourceType, usage, limit, onActivate }: Tri
   };
 
   return (
-    <div className="bg-orange-50 dark:bg-orange-950/20 border-b border-orange-200 dark:border-orange-800 p-4">
+    <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20 border-b border-orange-200 dark:border-orange-800 p-4">
       <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-500 flex-shrink-0" />
-          <p className="font-medium text-orange-900 dark:text-orange-100">
-            🚨 Limite d'essai gratuit atteinte : Vous avez utilisé {usage}/{limit} {resourceType}
-          </p>
+          <div>
+            <p className="font-medium text-orange-900 dark:text-orange-100">
+              Période d'essai - Limite atteinte
+            </p>
+            <p className="text-sm text-orange-700 dark:text-orange-300">
+              {resourceType}: {usage}/{limit} utilisés - Libérez toutes les fonctionnalités en activant votre abonnement
+            </p>
+          </div>
         </div>
         <Button 
           onClick={handleActivate}
           className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white whitespace-nowrap"
         >
-          💳 Activer mon abonnement
+          Activer mon abonnement
         </Button>
       </div>
     </div>
