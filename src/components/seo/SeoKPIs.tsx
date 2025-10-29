@@ -281,10 +281,10 @@ export function SeoKPIs() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Audit SEO Professionnel</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-xl sm:text-2xl font-bold mb-2">Audit SEO Professionnel</h2>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Analyse détaillée de votre optimisation SEO selon les standards Yoast
         </p>
       </div>
@@ -301,19 +301,19 @@ export function SeoKPIs() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-6">
-            <div className="flex-1">
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className="text-6xl font-bold text-primary">{globalScore}</span>
-                <span className="text-3xl text-muted-foreground">/100</span>
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+            <div className="flex-1 w-full">
+              <div className="flex items-baseline gap-2 mb-3 justify-center sm:justify-start">
+                <span className="text-4xl sm:text-6xl font-bold text-primary">{globalScore}</span>
+                <span className="text-2xl sm:text-3xl text-muted-foreground">/100</span>
               </div>
               <ScoreProgress score={globalScore} />
             </div>
-            <div className="text-right">
-              <Badge variant={scoreBadge.variant} className="text-lg px-4 py-2">
+            <div className="text-center sm:text-right">
+              <Badge variant={scoreBadge.variant} className="text-base sm:text-lg px-3 sm:px-4 py-1.5 sm:py-2">
                 {scoreBadge.label}
               </Badge>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                 {globalScore >= 90 ? 'Excellent travail !' :
                  globalScore >= 70 ? 'Bon niveau SEO' :
                  globalScore >= 40 ? 'Améliorations nécessaires' :
@@ -332,29 +332,29 @@ export function SeoKPIs() {
             Analyse approfondie de chaque aspect SEO
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2 sm:space-y-3">
           {/* SEO Title Quality */}
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-            <div className="flex items-center gap-3 flex-1">
-              <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 w-full">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold">Qualité des titres SEO</p>
-                <p className="text-sm text-muted-foreground">
-                  {categories?.titleQuality.issuesCount} produits avec problèmes sur {categories?.titleQuality.total}
+                <p className="text-sm sm:text-base font-semibold">Qualité des titres SEO</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  {categories?.titleQuality.issuesCount} problèmes / {categories?.titleQuality.total}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-32">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="w-20 sm:w-32">
                 <ScoreProgress score={categories?.titleQuality.score || 0} />
               </div>
-              <div className="text-right min-w-[80px]">
-                <span className={`text-2xl font-bold ${getScoreBadge(categories?.titleQuality.score || 0).color}`}>
+              <div className="text-right min-w-[60px] sm:min-w-[80px]">
+                <span className={`text-xl sm:text-2xl font-bold ${getScoreBadge(categories?.titleQuality.score || 0).color}`}>
                   {categories?.titleQuality.score}
                 </span>
-                <span className="text-sm text-muted-foreground">/100</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">/100</span>
               </div>
-              <Badge variant={getScoreBadge(categories?.titleQuality.score || 0).variant}>
+              <Badge variant={getScoreBadge(categories?.titleQuality.score || 0).variant} className="text-xs sm:text-sm">
                 {getScoreBadge(categories?.titleQuality.score || 0).label}
               </Badge>
             </div>

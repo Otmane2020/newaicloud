@@ -20,6 +20,7 @@ interface ShopifyPage {
 export function PageOptimization() {
   const [pages, setPages] = useState<ShopifyPage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [optimizing, setOptimizing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
 
@@ -79,6 +80,40 @@ export function PageOptimization() {
       newSelected.add(pageId);
     }
     setSelectedPages(newSelected);
+  };
+
+  const handleOptimizePages = async () => {
+    if (selectedPages.size === 0) return;
+    
+    setOptimizing(true);
+    const pageIds = Array.from(selectedPages);
+    let successCount = 0;
+    
+    for (let i = 0; i < pageIds.length; i++) {
+      try {
+        const { error } = await supabase.functions.invoke('generate-page-seo', {
+          body: { pageId: pageIds[i] }
+        });
+        
+        if (error) throw error;
+        
+        successCount++;
+        toast.success(`Page ${i + 1}/${pageIds.length} optimisée`);
+      } catch (error) {
+        console.error('Error optimizing page:', error);
+        toast.error(`Erreur pour la page ${i + 1}`);
+      }
+    }
+    
+    setOptimizing(false);
+    setSelectedPages(new Set());
+    fetchPages();
+    
+    if (successCount === pageIds.length) {
+      toast.success('🎉 Toutes les pages ont été optimisées !');
+    } else {
+      toast.warning(`${successCount}/${pageIds.length} pages optimisées`);
+    }
   };
 
   if (loading) {
@@ -163,9 +198,14 @@ export function PageOptimization() {
             </Button>
             <Button
               size="sm"
-              disabled={selectedPages.size === 0}
+              disabled={selectedPages.size === 0 || optimizing}
+              onClick={handleOptimizePages}
             >
-              <Sparkles className="mr-2 h-4 w-4" />
+              {optimizing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
               Optimiser ({selectedPages.size})
             </Button>
           </div>
