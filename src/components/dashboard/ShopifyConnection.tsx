@@ -188,6 +188,25 @@ export function ShopifyConnection() {
       return;
     }
 
+    // ✅ Vérifier que le token existe
+    if (!store.access_token || store.access_token.trim() === '') {
+      toast.error('Token API manquant. Veuillez reconnecter votre boutique.');
+      console.error('❌ Access token is missing or empty:', { 
+        hasStore: !!store,
+        storeId: store?.id,
+        hasAccessToken: !!store?.access_token,
+        tokenLength: store?.access_token?.length || 0
+      });
+      return;
+    }
+
+    console.log('✅ Starting import with valid token:', {
+      storeId: store.id,
+      storeName: store.store_url,
+      tokenPresent: !!store.access_token,
+      tokenLength: store.access_token.length
+    });
+
     try {
       setImporting(true);
       setImportDialogOpen(true);
@@ -221,7 +240,15 @@ export function ShopifyConnection() {
     } catch (error: any) {
       console.error('Import error:', error);
       setImporting(false);
-      toast.error(error.message || 'Erreur lors de l\'import des produits');
+      setImportDialogOpen(false);
+      
+      if (error.message?.includes('API token') || error.message?.includes('apiToken')) {
+        toast.error('Token API invalide ou manquant. Veuillez reconnecter votre boutique Shopify.');
+      } else if (error.message?.includes('Unauthorized') || error.message?.includes('401')) {
+        toast.error('Erreur d\'authentification. Veuillez vérifier votre token API.');
+      } else {
+        toast.error(error.message || 'Erreur lors de l\'import des produits');
+      }
     }
   };
 

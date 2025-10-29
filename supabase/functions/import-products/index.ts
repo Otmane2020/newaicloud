@@ -109,10 +109,24 @@ Deno.serve(async (req: Request) => {
 
     const requestBody = await req.json();
 
+    // 📥 Log detailed request information
+    console.log('📥 Request body received:', {
+      shopName: requestBody.shopName ? `✅ Present (${requestBody.shopName})` : '❌ Missing',
+      apiToken: requestBody.apiToken ? `✅ Present (length: ${requestBody.apiToken.length}, starts with: ${requestBody.apiToken.substring(0, 10)}...)` : '❌ Missing or empty',
+      storeId: requestBody.storeId ? `✅ Present (${requestBody.storeId})` : '⚠️  Not provided',
+      allKeys: Object.keys(requestBody)
+    });
+
     // Validate input
     const validation = validateImportProducts(requestBody);
     if (!validation.success || !validation.data) {
-      console.error('Validation errors:', validation.errors);
+      console.error('❌ Validation errors:', validation.errors);
+      console.error('📋 Failed validation for:', {
+        shopName: requestBody.shopName,
+        apiTokenPresent: !!requestBody.apiToken,
+        apiTokenType: typeof requestBody.apiToken,
+        storeId: requestBody.storeId
+      });
       return new Response(
         JSON.stringify({ 
           error: 'Validation failed', 
