@@ -99,20 +99,63 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     console.log(`🎯 Génération article : ${articleTitle} pour user ${user_id}`);
 
-    // Filtrer produits par catégorie si spécifiée
-    let productsQuery = supabaseClient
-      .from("shopify_products")
-      .select("id, title, handle, price, category, description, product_type, vendor")
-      .eq("seller_id", user_id);
+    // Recherche flexible des produits
+    let products: any[] = [];
     
+    // Étape 1: Essayer avec la catégorie complète
     if (category && category !== "Guide" && category !== "Tous produits") {
-      productsQuery = productsQuery.or(`category.ilike.%${category}%,product_type.ilike.%${category}%,vendor.ilike.%${category}%`);
+      console.log(`🔍 Recherche avec catégorie: ${category}`);
+      const { data } = await supabaseClient
+        .from("shopify_products")
+        .select("id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id")
+        .eq("seller_id", user_id)
+        .or(`category.ilike.%${category}%,product_type.ilike.%${category}%,vendor.ilike.%${category}%,title.ilike.%${category}%,description.ilike.%${category}%,tags.ilike.%${category}%`)
+        .limit(8);
+      
+      if (data && data.length > 0) {
+        products = data;
+        console.log(`✅ ${products.length} produits trouvés avec recherche complète`);
+      }
     }
     
-    const { data: products } = await productsQuery.limit(8);
+    // Étape 2: Si aucun résultat, essayer avec des mots-clés séparés
+    if (products.length === 0 && category && category !== "Guide" && category !== "Tous produits") {
+      const keywords = category.toLowerCase().split(/\s+/).filter((k: string) => k.length > 2);
+      console.log(`🔍 Recherche avec mots-clés séparés: ${keywords.join(', ')}`);
+      
+      for (const keyword of keywords) {
+        const { data } = await supabaseClient
+          .from("shopify_products")
+          .select("id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id")
+          .eq("seller_id", user_id)
+          .or(`category.ilike.%${keyword}%,product_type.ilike.%${keyword}%,vendor.ilike.%${keyword}%,title.ilike.%${keyword}%,description.ilike.%${keyword}%,tags.ilike.%${keyword}%`)
+          .limit(8);
+        
+        if (data && data.length > 0) {
+          products = data;
+          console.log(`✅ ${products.length} produits trouvés avec mot-clé: ${keyword}`);
+          break;
+        }
+      }
+    }
+    
+    // Étape 3: Si toujours aucun résultat, prendre tous les produits disponibles
+    if (products.length === 0) {
+      console.log(`⚠️ Aucun produit trouvé pour "${category}", utilisation de tous les produits`);
+      const { data } = await supabaseClient
+        .from("shopify_products")
+        .select("id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id")
+        .eq("seller_id", user_id)
+        .limit(8);
+      
+      if (data) {
+        products = data;
+        console.log(`✅ ${products.length} produits génériques sélectionnés`);
+      }
+    }
 
     if (!products || products.length === 0) {
-      throw new Error("Aucun produit trouvé pour cette catégorie");
+      throw new Error("Aucun produit disponible dans votre catalogue. Veuillez importer des produits depuis Shopify.");
     }
 
     const productDetails = products.map((p: any) => 
