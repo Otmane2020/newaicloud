@@ -84,23 +84,35 @@ export function TrialLimitDialog({
             <ul className="text-sm space-y-2">
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">✅</span>
-                <span>1 000 optimisations SEO avec IA / mois</span>
+                <span>100 produits analysés</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">✅</span>
-                <span>5 articles de blog IA / mois</span>
+                <span>100 optimisations SEO IA / mois</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">✅</span>
-                <span>200 réponses de chat IA / mois</span>
+                <span>1 article IA / mois</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">✅</span>
-                <span>100 requêtes Shopify IA / mois</span>
+                <span>20 recherches IA Shopify / mois</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">✅</span>
-                <span>Toutes les fonctionnalités débloquées</span>
+                <span>50 réponses Chat IA / mois</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✅</span>
+                <span>1 boutique Shopify connectée</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✅</span>
+                <span>Automation basique</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✅</span>
+                <span>Support par e-mail</span>
               </li>
             </ul>
           </div>

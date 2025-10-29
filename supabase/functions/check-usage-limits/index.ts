@@ -39,8 +39,12 @@ serve(async (req) => {
     const isTrialing = profile.subscription_status === 'trialing';
     const isPaid = profile.subscription_status === 'active';
     
+    console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}`);
+    
     // Get plan limits - if in trial without payment, use trial plan
     const planId = isPaid ? (profile.current_plan_id || 'starter') : 'trial';
+    console.log(`[LIMITS] Using plan: ${planId}`);
+    
     const { data: plan, error: planError } = await supabaseClient
       .from('subscription_plans')
       .select('*')
@@ -70,6 +74,8 @@ serve(async (req) => {
       shopify_stores_count: 0,
       campaigns_count: 0,
     };
+    
+    console.log(`[LIMITS] Current usage:`, currentUsage);
 
     // Determine limits based on subscription status
     let limits;
@@ -94,6 +100,8 @@ serve(async (req) => {
         max_campaigns: plan.max_campaigns || 0,
       };
     }
+    
+    console.log(`[LIMITS] Applied limits:`, limits);
 
     // Check if limits are reached
     const canUseOptimizations = currentUsage.optimizations_count < limits.max_optimizations;
@@ -103,6 +111,8 @@ serve(async (req) => {
     const canAddProducts = currentUsage.products_count < limits.max_products;
     const canAddShopifyStore = currentUsage.shopify_stores_count < limits.max_shopify_stores;
     const canAddCampaign = currentUsage.campaigns_count < limits.max_campaigns;
+    
+    console.log(`[LIMITS] Can use - optimizations: ${canUseOptimizations}, articles: ${canUseArticles}, chat: ${canUseChat}`);
 
     const shouldForcePayment = !canUseOptimizations || !canUseArticles || !canUseChat || 
                                 !canUseShopifySearch || !canAddProducts || !canAddShopifyStore || !canAddCampaign;
