@@ -29,7 +29,7 @@ export default function Blog() {
   useEffect(() => {
     const subtab = searchParams.get('subtab');
     
-    if (subtab && ['articles', 'campaigns', 'opportunities', 'netlinking', 'settings'].includes(subtab)) {
+    if (subtab && ['articles', 'create-article', 'campaigns', 'opportunities', 'netlinking', 'settings'].includes(subtab)) {
       setActiveSubtab(subtab);
     }
   }, [searchParams]);
@@ -131,15 +131,21 @@ export default function Blog() {
   const blogSubmenu = [
     { 
       id: 'articles', 
-      label: 'Gestion d\'article', 
-      icon: PenSquare, 
-      description: 'Gérer vos articles' 
+      label: 'Gestion Articles', 
+      icon: FileText, 
+      description: 'Liste de vos articles' 
+    },
+    { 
+      id: 'create-article', 
+      label: 'Articles IA', 
+      icon: Sparkles, 
+      description: 'Créer un article avec l\'IA' 
     },
     { 
       id: 'campaigns', 
-      label: 'Article IA', 
-      icon: Sparkles, 
-      description: 'Campagnes automatiques' 
+      label: 'Campagnes IA', 
+      icon: CalendarClock, 
+      description: 'Automatisation programmée' 
     },
     { 
       id: 'opportunities', 
@@ -206,29 +212,24 @@ export default function Blog() {
         <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-cyan-100 dark:bg-cyan-900 rounded-lg">
-            <PenSquare className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+            <FileText className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
           </div>
           <div className="flex-1">
-            <h2 className="text-2xl font-bold">Articles de Blog</h2>
+            <h2 className="text-2xl font-bold">Gestion Articles</h2>
             <p className="text-sm text-muted-foreground">
-              Gérez et publiez vos articles de blog avec SEO optimisé
+              Consultez et gérez tous vos articles de blog
             </p>
           </div>
-          <Button size="lg" onClick={() => setShowWizard(true)} disabled={loading}>
-            <Sparkles className="w-5 h-5 mr-2" />
-            Créer Article IA
-          </Button>
         </div>
 
         <Card className="p-6">
           {articles.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">Aucun article</p>
-              <Button onClick={() => setShowWizard(true)} disabled={loading}>
-                <Plus className="w-5 h-5 mr-2" />
-                Créer votre premier article
-              </Button>
+              <p className="text-muted-foreground mb-4">Aucun article créé</p>
+              <p className="text-sm text-muted-foreground">
+                Utilisez "Articles IA" pour créer votre premier article
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -311,6 +312,75 @@ export default function Blog() {
         </div>
       )}
 
+      {/* Articles IA - Création manuelle */}
+      {activeSubtab === 'create-article' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Sparkles className="w-6 h-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold">Créer un Article IA</h2>
+              <p className="text-sm text-muted-foreground">
+                Générez un article optimisé SEO en quelques clics avec l'intelligence artificielle
+              </p>
+            </div>
+          </div>
+
+          <Card className="p-8">
+            <div className="max-w-2xl mx-auto text-center space-y-6">
+              <div className="p-4 bg-primary/5 rounded-lg inline-block">
+                <Sparkles className="w-16 h-16 text-primary mx-auto" />
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold mb-2">
+                  Assistant de Création d'Articles
+                </h3>
+                <p className="text-muted-foreground">
+                  Notre IA vous guide pour créer un article optimisé en 3 étapes : 
+                  choix du sujet, génération du contenu, et optimisation SEO
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                <div className="p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary mb-2">1</div>
+                  <div className="font-medium mb-1">Sujet & Mots-clés</div>
+                  <div className="text-xs text-muted-foreground">
+                    Définissez votre thématique
+                  </div>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary mb-2">2</div>
+                  <div className="font-medium mb-1">Génération IA</div>
+                  <div className="text-xs text-muted-foreground">
+                    L'IA rédige votre article
+                  </div>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary mb-2">3</div>
+                  <div className="font-medium mb-1">Publication</div>
+                  <div className="text-xs text-muted-foreground">
+                    Publiez sur Shopify
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                size="lg" 
+                onClick={() => setShowWizard(true)} 
+                disabled={loading}
+                className="mt-6"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                Lancer l'Assistant de Création
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Opportunités */}
       {activeSubtab === 'opportunities' && (
             <div className="space-y-6">
@@ -372,9 +442,9 @@ export default function Blog() {
               <CalendarClock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold">Campagnes Automatiques</h2>
+              <h2 className="text-2xl font-bold">Campagnes IA Automatiques</h2>
               <p className="text-sm text-muted-foreground">
-                Automatisez la création d'articles selon un calendrier défini
+                Programmez la création automatique d'articles selon un calendrier défini
               </p>
             </div>
             <Button size="lg" onClick={() => setShowCampaignWizard(true)}>
