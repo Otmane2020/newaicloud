@@ -188,48 +188,46 @@ export function ShopifyConnection() {
       return;
     }
 
-    // ✅ Vérifier les credentials selon le type de connexion
-    if (store.connection_type === 'manual') {
-      if (!store.api_key || store.api_key.trim() === '') {
-        toast.error('API Key manquante. Veuillez reconnecter votre boutique.');
-        console.error('❌ API Key is missing or empty:', { 
-          hasStore: !!store,
-          storeId: store?.id,
-          hasApiKey: !!store?.api_key,
-          apiKeyLength: store?.api_key?.length || 0
-        });
-        return;
-      }
-      if (!store.access_token || store.access_token.trim() === '') {
-        toast.error('API Secret manquant. Veuillez reconnecter votre boutique.');
-        console.error('❌ API Secret is missing or empty:', { 
-          hasStore: !!store,
-          storeId: store?.id,
-          hasAccessToken: !!store?.access_token,
-          tokenLength: store?.access_token?.length || 0
-        });
-        return;
-      }
-    } else {
-      // OAuth connection
-      if (!store.access_token || store.access_token.trim() === '') {
-        toast.error('Token OAuth manquant. Veuillez reconnecter votre boutique.');
-        console.error('❌ OAuth token is missing or empty:', { 
-          hasStore: !!store,
-          storeId: store?.id,
-          hasAccessToken: !!store?.access_token,
-          tokenLength: store?.access_token?.length || 0
-        });
-        return;
-      }
+    // ✅ Vérifier que les credentials existent
+    console.log('🔍 Checking credentials:', {
+      storeId: store.id,
+      connectionType: store.connection_type,
+      hasApiKey: !!store.api_key,
+      hasAccessToken: !!store.access_token,
+      apiKeyValue: store.api_key ? `${store.api_key.substring(0, 10)}...` : 'NULL',
+      accessTokenValue: store.access_token ? `${store.access_token.substring(0, 10)}...` : 'NULL'
+    });
+
+    if (!store.access_token || store.access_token.trim() === '') {
+      toast.error('Credentials manquants', {
+        description: 'Votre connexion Shopify doit être mise à jour. Veuillez supprimer cette connexion et la recréer avec vos identifiants API.'
+      });
+      console.error('❌ Access token is missing. Store needs to be reconnected:', { 
+        storeId: store?.id,
+        connectionType: store?.connection_type,
+        hasAccessToken: !!store?.access_token,
+        hasApiKey: !!store?.api_key
+      });
+      return;
+    }
+
+    // Pour les connexions manuelles, vérifier que l'API Key existe aussi
+    if (store.connection_type === 'manual' && (!store.api_key || store.api_key.trim() === '')) {
+      toast.error('API Key manquante', {
+        description: 'Votre connexion doit être mise à jour. Veuillez la recréer avec vos identifiants API complets.'
+      });
+      console.error('❌ API Key is missing for manual connection:', { 
+        storeId: store?.id,
+        hasApiKey: !!store?.api_key
+      });
+      return;
     }
 
     console.log('✅ Starting import with valid credentials:', {
       storeId: store.id,
       storeName: store.store_url,
       connectionType: store.connection_type,
-      hasApiKey: !!store.api_key,
-      hasAccessToken: !!store.access_token
+      credentialsPresent: true
     });
 
     try {
@@ -249,13 +247,27 @@ export function ShopifyConnection() {
       
       const shopName = store.store_url?.replace('.myshopify.com', '') || '';
       
+      // Préparer le body selon le type de connexion
+      const requestBody: any = {
+        shopName: shopName,
+        apiSecret: store.access_token, // Toujours requis (OAuth token ou API Secret)
+        storeId: store.id
+      };
+
+      // Ajouter apiKey seulement si c'est une connexion manuelle
+      if (store.connection_type === 'manual' && store.api_key) {
+        requestBody.apiKey = store.api_key;
+      }
+
+      console.log('📤 Sending to Edge Function:', {
+        shopName: requestBody.shopName,
+        hasApiKey: !!requestBody.apiKey,
+        hasApiSecret: !!requestBody.apiSecret,
+        storeId: requestBody.storeId
+      });
+
       const { data, error } = await supabase.functions.invoke('import-products', {
-        body: {
-          shopName: shopName,
-          apiKey: store.api_key,
-          apiSecret: store.access_token,
-          storeId: store.id
-        }
+        body: requestBody
       });
 
       if (error) throw error;
