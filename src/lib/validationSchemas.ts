@@ -25,14 +25,14 @@ export const shopifyConnectionSchema = z.object({
     .trim()
     .min(3, { message: "Le nom de la boutique doit contenir au moins 3 caractères" })
     .max(100, { message: "Le nom de la boutique doit contenir moins de 100 caractères" })
-    .regex(/^[a-z0-9-]+$/, { message: "Le nom de la boutique ne peut contenir que des lettres minuscules, chiffres et tirets" }),
+    .regex(/^[a-zA-Z0-9-_]+$/, { message: "Le nom de la boutique ne peut contenir que des lettres, chiffres, tirets et underscores" }),
   apiKey: z.string()
     .trim()
-    .min(32, { message: "La clé API semble invalide (trop courte)" })
+    .min(20, { message: "La clé API semble invalide (trop courte)" })
     .max(500, { message: "La clé API est trop longue" }),
   apiSecret: z.string()
     .trim()
-    .min(32, { message: "La clé secrète semble invalide (trop courte)" })
+    .min(20, { message: "La clé secrète semble invalide (trop courte)" })
     .max(500, { message: "La clé secrète est trop longue" })
 });
 
@@ -42,12 +42,12 @@ export const importProductsSchema = z.object({
     .trim()
     .min(3, { message: "Shop name must be at least 3 characters" })
     .max(100, { message: "Shop name must be less than 100 characters" })
-    .regex(/^[a-z0-9-]+$/, { message: "Shop name can only contain lowercase letters, numbers, and hyphens" }),
+    .regex(/^[a-zA-Z0-9-_]+$/, { message: "Shop name can only contain letters, numbers, hyphens, and underscores" }),
   apiKey: z.string()
-    .min(32, { message: "API key appears to be invalid" })
+    .min(20, { message: "API key appears to be invalid" })
     .max(500, { message: "API key is too long" }),
   apiSecret: z.string()
-    .min(32, { message: "API secret appears to be invalid" })
+    .min(20, { message: "API secret appears to be invalid" })
     .max(500, { message: "API secret is too long" }),
   storeId: z.string()
     .uuid({ message: "Store ID must be a valid UUID" })
