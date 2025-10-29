@@ -371,6 +371,7 @@ export default function ArticleManagement() {
                     </th>
                     <th className="p-4 text-left">Image</th>
                     <th className="p-4 text-left">Titre</th>
+                    <th className="p-4 text-left">Titre SEO</th>
                     <th className="p-4 text-left">Meta Description</th>
                     <th className="p-4 text-left">Origine</th>
                     <th className="p-4 text-left">Statut</th>
@@ -394,16 +395,38 @@ export default function ArticleManagement() {
                         />
                       </td>
                       <td className="p-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
+                        <div 
+                          className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
+                        >
                           <FileText className="w-6 h-6 text-primary" />
                         </div>
                       </td>
                       <td className="p-4">
                         <div className="max-w-xs">
-                          <p className="font-medium line-clamp-2">{article.title}</p>
+                          <p 
+                            className="font-medium line-clamp-2 cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
+                          >
+                            {article.title}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(article.created_at), 'PP', { locale: fr })}
                           </p>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="max-w-xs">
+                          {article.meta_description ? (
+                            <p className="text-sm line-clamp-2 font-medium">
+                              {article.title}
+                            </p>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              <X className="w-3 h-3 mr-1" />
+                              Non défini
+                            </Badge>
+                          )}
                         </div>
                       </td>
                       <td className="p-4">

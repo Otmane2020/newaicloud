@@ -151,14 +151,3 @@ export function ShopifyImporter({ onImportComplete }: ShopifyImporterProps) {
     </div>
   );
 }
-Edge function returned 400: Error, {"error":"Validation failed","details":[{"path":["shopName"],"message":"Shop name can only contain letters, numbers, hyphens, and underscores"}]}
-
-{
-  "timestamp": 1761734357976,
-  "error_type": "RUNTIME_ERROR",
-  "filename": "supabase/functions/import-products/index.ts",
-  "lineno": 0,
-  "colno": 0,
-  "stack": "not_applicable",
-  "has_blank_screen": true
-}
