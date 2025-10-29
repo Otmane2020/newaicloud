@@ -326,19 +326,37 @@ export function ShopifyConnection() {
     }
 
     // 🔄 CRITICAL: Force reload store data to get latest credentials
-    console.log('🔄 Reloading store data before import...');
+    console.log('🔄 Reloading store data before import...', {
+      currentStoreId: store.id
+    });
     const freshStore = await supabase
       .from('shopify_connections')
       .select('*')
       .eq('id', store.id)
       .maybeSingle();
 
+    console.log('📦 Raw response from Supabase:', {
+      data: freshStore.data,
+      error: freshStore.error,
+      dataKeys: freshStore.data ? Object.keys(freshStore.data) : 'NO DATA',
+      fullData: JSON.stringify(freshStore.data)
+    });
+
     if (!freshStore.data) {
       toast.error('Impossible de charger les données de connexion');
+      console.error('❌ No data returned from supabase');
       return;
     }
 
     const storeData = freshStore.data;
+
+    console.log('🔍 StoreData extracted:', {
+      storeData: storeData,
+      api_key: storeData.api_key,
+      access_token: storeData.access_token,
+      api_key_type: typeof storeData.api_key,
+      access_token_type: typeof storeData.access_token
+    });
 
     // ✅ Vérifier que les credentials existent
     console.log('🔍 Checking credentials:', {
