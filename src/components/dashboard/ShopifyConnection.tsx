@@ -136,6 +136,24 @@ export function ShopifyConnection() {
   useEffect(() => {
     if (shouldAutoImport && store) {
       setShouldAutoImport(false);
+      
+      // ✅ Validation BEFORE auto-import
+      const hasValidCredentials = store.access_token && 
+        store.access_token.trim() !== '' && 
+        (store.connection_type === 'oauth' || store.api_key);
+      
+      if (!hasValidCredentials) {
+        console.error('❌ Cannot auto-import: Missing credentials', {
+          hasAccessToken: !!store.access_token,
+          hasApiKey: !!store.api_key,
+          connectionType: store.connection_type
+        });
+        toast.error('Credentials manquants', {
+          description: 'Votre connexion doit être recréée avec vos identifiants API. Utilisez le bouton "Supprimer" puis reconnectez votre boutique.'
+        });
+        return;
+      }
+      
       setTimeout(() => {
         handleImportProducts();
       }, 500);
