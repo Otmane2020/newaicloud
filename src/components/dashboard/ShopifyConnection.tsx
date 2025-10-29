@@ -200,12 +200,17 @@ export function ShopifyConnection() {
       await new Promise(resolve => setTimeout(resolve, 500));
       const reloadedStore = await loadStore();
       
-      console.log('🔄 Store reloaded after save:', {
+      console.log('🔄 Store reloaded after save - FULL DATA:', {
+        reloadedStore: reloadedStore,
         hasStore: !!reloadedStore,
         hasApiKey: !!reloadedStore?.api_key,
         hasAccessToken: !!reloadedStore?.access_token,
-        apiKeyPreview: reloadedStore?.api_key ? `${reloadedStore.api_key.substring(0, 10)}...` : 'NULL',
-        accessTokenPreview: reloadedStore?.access_token ? `${reloadedStore.access_token.substring(0, 10)}...` : 'NULL'
+        apiKeyType: typeof reloadedStore?.api_key,
+        accessTokenType: typeof reloadedStore?.access_token,
+        apiKeyLength: reloadedStore?.api_key?.length,
+        accessTokenLength: reloadedStore?.access_token?.length,
+        apiKeyValue: reloadedStore?.api_key,
+        accessTokenValue: reloadedStore?.access_token
       });
       
       // Trigger import directly with reloaded data
@@ -236,12 +241,15 @@ export function ShopifyConnection() {
           storeId: reloadedStore.id
         };
 
-        console.log('📤 Sending to Edge Function:', {
+        console.log('📤 REQUEST BODY SENT TO EDGE FUNCTION - RAW VALUES:', {
+          requestBody: requestBody,
           shopName: requestBody.shopName,
-          hasApiKey: !!requestBody.apiKey,
-          hasApiSecret: !!requestBody.apiSecret,
-          apiKeyPreview: requestBody.apiKey ? `${requestBody.apiKey.substring(0, 10)}...` : 'NULL',
-          apiSecretPreview: requestBody.apiSecret ? `${requestBody.apiSecret.substring(0, 10)}...` : 'NULL',
+          apiKey: requestBody.apiKey,
+          apiSecret: requestBody.apiSecret,
+          apiKeyType: typeof requestBody.apiKey,
+          apiSecretType: typeof requestBody.apiSecret,
+          apiKeyLength: requestBody.apiKey?.length,
+          apiSecretLength: requestBody.apiSecret?.length,
           storeId: requestBody.storeId
         });
 
@@ -261,6 +269,12 @@ export function ShopifyConnection() {
           setImportDialogOpen(false);
           toast.error(importError.message || 'Erreur lors de l\'import automatique');
         }
+      } else {
+        console.error('❌ Cannot trigger auto-import - missing data:', {
+          hasReloadedStore: !!reloadedStore,
+          hasAccessToken: !!reloadedStore?.access_token,
+          hasApiKey: !!reloadedStore?.api_key
+        });
       }
       
     } catch (error) {
