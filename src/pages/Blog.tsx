@@ -295,7 +295,7 @@ export default function Blog() {
       )}
 
       {activeTab === 'opportunities' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
               <Lightbulb className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
@@ -306,39 +306,6 @@ export default function Blog() {
                 Idées d'articles détectées automatiquement basées sur votre catalogue
               </p>
             </div>
-          </div>
-
-          {/* Sub-navigation for Opportunities */}
-          <div className="flex gap-2">
-            <Button
-              variant={activeView === 'main' ? 'default' : 'outline'}
-              onClick={() => {
-                setActiveView('main');
-                setSearchParams({ tab: 'opportunities', view: 'main' });
-              }}
-            >
-              Vue principale
-            </Button>
-            <Button
-              variant={activeView === 'netlinking' ? 'default' : 'outline'}
-              onClick={() => {
-                setActiveView('netlinking');
-                setSearchParams({ tab: 'opportunities', view: 'netlinking' });
-              }}
-            >
-              <Link className="w-4 h-4 mr-2" />
-              Netlinking
-            </Button>
-            <Button
-              variant={activeView === 'settings' ? 'default' : 'outline'}
-              onClick={() => {
-                setActiveView('settings');
-                setSearchParams({ tab: 'opportunities', view: 'settings' });
-              }}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Paramètres
-            </Button>
           </div>
 
           {/* Content based on view */}
@@ -399,32 +366,6 @@ export default function Blog() {
               </div>
             )}
           </Card>
-        </div>
-      )}
-
-      {/* Opportunités Tab */}
-      {activeTab === 'opportunities' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <p className="text-muted-foreground">Opportunités de contenu SEO</p>
-            <Button
-              onClick={async () => {
-                try {
-                  toast.info('Génération...');
-                  const { data, error } = await supabase.functions.invoke('generate-daily-opportunities');
-                  if (error) throw error;
-                  toast.success('Opportunités générées !');
-                  loadData();
-                } catch (error: any) {
-                  toast.error(error.message || 'Erreur');
-                }
-              }}
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Générer
-            </Button>
-          </div>
-          <BlogOpportunities />
         </div>
       )}
 

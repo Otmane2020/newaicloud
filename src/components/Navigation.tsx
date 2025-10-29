@@ -19,7 +19,9 @@ import {
   CalendarClock,
   BarChart3,
   Clock,
-  Shield
+  Shield,
+  Lightbulb,
+  Link as LinkIcon
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,6 +50,9 @@ const menuItems = [
     subItems: [
       { path: '/blog?tab=articles', label: 'Articles', icon: PenSquare },
       { path: '/blog?tab=campaigns', label: 'Campagnes', icon: CalendarClock },
+      { path: '/blog?tab=opportunities', label: 'Opportunités', icon: Lightbulb },
+      { path: '/blog?tab=opportunities&view=netlinking', label: 'Netlinking', icon: LinkIcon },
+      { path: '/blog?tab=opportunities&view=settings', label: 'Paramètres', icon: Settings }
     ]
   },
   { 

@@ -21,6 +21,7 @@ export function PageOptimization() {
   const [pages, setPages] = useState<ShopifyPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
+  const [importingPages, setImportingPages] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
 
@@ -90,6 +91,64 @@ export function PageOptimization() {
       newSelected.add(pageId);
     }
     setSelectedPages(newSelected);
+  };
+
+  const handleImportPages = async () => {
+    try {
+      setImportingPages(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Utilisateur non connecté');
+        return;
+      }
+      
+      // Get user's Shopify connections
+      const { data: connections, error: connError } = await supabase
+        .from('shopify_connections')
+        .select('id, store_name')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      
+      if (connError) throw connError;
+      
+      if (!connections || connections.length === 0) {
+        toast.error('Aucune boutique Shopify connectée');
+        setImportingPages(false);
+        return;
+      }
+      
+      // Import pages for all connected stores
+      let totalImported = 0;
+      for (const store of connections) {
+        toast.loading(`Import des pages de ${store.store_name || 'votre boutique'}...`, { id: store.id });
+        
+        const { data, error } = await supabase.functions.invoke('import-shopify-pages', {
+          body: { storeId: store.id }
+        });
+        
+        if (error) {
+          toast.error(`Erreur: ${error.message}`, { id: store.id });
+        } else if (data.permissionError) {
+          toast.warning(data.message, { id: store.id });
+        } else {
+          toast.success(`✅ ${data.count} pages importées`, { id: store.id });
+          totalImported += data.count;
+        }
+      }
+      
+      // Refresh pages list
+      await fetchPages();
+      
+      if (totalImported > 0) {
+        toast.success(`🎉 ${totalImported} pages importées au total !`);
+      }
+    } catch (error) {
+      console.error('Error importing pages:', error);
+      toast.error('Erreur lors de l\'import des pages');
+    } finally {
+      setImportingPages(false);
+    }
   };
 
   const handleOptimizePages = async () => {
@@ -228,8 +287,25 @@ export function PageOptimization() {
           <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-xl font-semibold mb-2">Aucune page trouvée</h3>
           <p className="text-muted-foreground mb-6">
-            Connectez votre boutique Shopify pour importer vos pages
+            Importez vos pages Shopify pour commencer l'optimisation SEO
           </p>
+          <Button 
+            onClick={handleImportPages}
+            disabled={importingPages}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600"
+          >
+            {importingPages ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Import en cours...
+              </>
+            ) : (
+              <>
+                <FileText className="mr-2 h-4 w-4" />
+                Importer les pages Shopify
+              </>
+            )}
+          </Button>
         </Card>
       ) : (
         <div className="space-y-3">
