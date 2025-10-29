@@ -96,8 +96,19 @@ Deno.serve(async (req: Request) => {
         error: errorText
       });
       
+      // Handle permission errors gracefully
       if (shopifyResponse.status === 401 || shopifyResponse.status === 403) {
-        throw new Error(`Permission refusée. Vérifiez que votre token Shopify a les permissions 'read_content' et 'write_content'. Erreur: ${errorText}`);
+        console.log('⚠️ Permission denied for pages import - continuing without pages');
+        return new Response(
+          JSON.stringify({
+            success: true,
+            count: 0,
+            permissionError: true,
+            message: 'Permissions insuffisantes pour importer les pages. Votre token Shopify nécessite les permissions read_content et write_content.',
+            pages: []
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
       
       throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);

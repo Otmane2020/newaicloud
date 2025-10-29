@@ -234,6 +234,23 @@ export function ShopifyConnectionsList() {
 
       if (error) throw error;
 
+      // Handle permission errors gracefully
+      if (data?.permissionError) {
+        console.log('⚠️ Pages import skipped due to permissions');
+        setPagesImported(0);
+        setImportPhase('complete');
+        
+        setTimeout(() => {
+          setImporting(false);
+          setImportDialogOpen(false);
+          toast.warning('Import des pages ignoré', {
+            description: `${productsImported} produits importés avec succès. ${data.message || 'Permissions insuffisantes pour les pages.'}`
+          });
+          setTimeout(() => navigate('/products'), 1500);
+        }, 2000);
+        return;
+      }
+
       if (data?.pages && Array.isArray(data.pages)) {
         const pageItems: ImportedItem[] = data.pages.map((page: any) => ({
           type: 'page' as const,
