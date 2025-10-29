@@ -225,6 +225,73 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                     Utilisez vos clés API Shopify pour une connexion directe avec tous les accès
                   </p>
 
+                  {/* Guide étape par étape */}
+                  <div className="space-y-2 p-3 bg-muted/50 rounded-md">
+                    <h4 className="font-medium text-xs sm:text-sm mb-2">Guide rapide :</h4>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-start gap-2">
+                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="text-muted-foreground">
+                          <strong>1.</strong> Allez dans Shopify Admin → <strong>Apps</strong> → <strong>Develop apps</strong>
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="text-muted-foreground">
+                          <strong>2.</strong> Créez une nouvelle app ou sélectionnez une app existante
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="text-muted-foreground">
+                          <strong>3.</strong> Dans <strong>Configuration</strong>, configurez les scopes nécessaires (Products, Content, etc.)
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="text-muted-foreground">
+                          <strong>4.</strong> Dans <strong>API credentials</strong>, révélez votre <strong>Admin API access token</strong> (commence par <code className="bg-background px-1 py-0.5 rounded">shpat_</code>)
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="text-muted-foreground">
+                          <strong>5.</strong> Copiez aussi votre <strong>API key</strong> (32 caractères hexadécimaux)
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="text-muted-foreground">
+                          <strong>6.</strong> Collez les informations ci-dessous et connectez votre boutique
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <Label htmlFor="manual-store-name" className="text-sm">Nom de la boutique</Label>
