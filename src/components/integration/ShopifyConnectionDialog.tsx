@@ -214,152 +214,104 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
               </TabsContent>
 
               {/* Manual API Keys Tab */}
-              <TabsContent value="manual" className="space-y-4 mt-4">
-                <div className="space-y-4 p-4 border rounded-lg bg-card">
-                  <div className="flex items-center gap-2">
-                    <Key className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold text-sm sm:text-base">Connexion avec Clés API</h3>
-                  </div>
+              <TabsContent value="manual" className="space-y-6">
+                <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <AlertDescription className="text-xs text-blue-900 dark:text-blue-200">
+                    <strong>Nouveau sur Shopify ?</strong> Consultez le guide détaillé ci-dessous pour créer vos clés API en quelques minutes.
+                  </AlertDescription>
+                </Alert>
 
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Utilisez vos clés API Shopify pour une connexion directe avec tous les accès
-                  </p>
-
-                  {/* Guide étape par étape */}
-                  <div className="space-y-2 p-3 bg-muted/50 rounded-md">
-                    <h4 className="font-medium text-xs sm:text-sm mb-2">Guide rapide :</h4>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-start gap-2">
-                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <p className="text-muted-foreground">
-                          <strong>1.</strong> Allez dans Shopify Admin → <strong>Apps</strong> → <strong>Develop apps</strong>
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <p className="text-muted-foreground">
-                          <strong>2.</strong> Créez une nouvelle app ou sélectionnez une app existante
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <p className="text-muted-foreground">
-                          <strong>3.</strong> Dans <strong>Configuration</strong>, configurez les scopes nécessaires (Products, Content, etc.)
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <p className="text-muted-foreground">
-                          <strong>4.</strong> Dans <strong>API credentials</strong>, révélez votre <strong>Admin API access token</strong> (commence par <code className="bg-background px-1 py-0.5 rounded">shpat_</code>)
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <p className="text-muted-foreground">
-                          <strong>5.</strong> Copiez aussi votre <strong>API key</strong> (32 caractères hexadécimaux)
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <p className="text-muted-foreground">
-                          <strong>6.</strong> Collez les informations ci-dessous et connectez votre boutique
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="manual-store-name" className="text-sm">Nom de la boutique</Label>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <Input
-                          id="manual-store-name"
-                          placeholder="qnxv91-2w"
-                          value={manualStoreName}
-                          onChange={(e) => setManualStoreName(e.target.value)}
-                          className="flex-1 text-sm"
-                        />
-                        <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap text-center sm:text-left">
-                          .myshopify.com
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="manual-api-key" className="text-sm">Clé API (API Key)</Label>
-                      <Input
-                        id="manual-api-key"
-                        type="password"
-                        placeholder="da237524e4e1252a740b204af962acdf"
-                        value={manualApiKey}
-                        onChange={(e) => setManualApiKey(e.target.value)}
-                        className="text-sm font-mono"
-                      />
-                      <p className="text-xs text-muted-foreground">32 caractères hexadécimaux</p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="manual-api-secret" className="text-sm">Admin API Access Token</Label>
-                      <Input
-                        id="manual-api-secret"
-                        type="password"
-                        placeholder="shpat_xxxxxxxxxxxxxxxx"
-                        value={manualApiSecret}
-                        onChange={(e) => setManualApiSecret(e.target.value)}
-                        className="text-sm font-mono"
-                      />
-                      <p className="text-xs text-muted-foreground">Commence par shpat_ (trouvé dans Shopify Admin → Apps → Develop apps)</p>
-                    </div>
-
-                    <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-                      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      <AlertDescription className="text-xs text-blue-900 dark:text-blue-200">
-                        <strong>Avantage :</strong> Cette méthode donne un accès complet à toutes les fonctionnalités (tags, scripts, contenus, etc.)
-                      </AlertDescription>
-                    </Alert>
-
-                    <Button onClick={handleManualConnect} disabled={manualLoading} className="w-full text-sm">
-                      {manualLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Connexion...
-                        </>
-                      ) : (
-                        <>
-                          <Key className="mr-2 h-4 w-4" />
-                          Connecter avec les clés API
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Guide détaillé */}
                 <ShopifyTokenGuide />
+
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-px bg-border flex-1" />
+                    <span className="text-xs text-muted-foreground font-medium">Formulaire de connexion</span>
+                    <div className="h-px bg-border flex-1" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="manual-shop-name" className="text-sm font-medium">
+                      Nom de la boutique
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="manual-shop-name"
+                        placeholder="votre-boutique"
+                        value={manualStoreName}
+                        onChange={(e) => setManualStoreName(e.target.value)}
+                        disabled={manualLoading}
+                        className="flex-1"
+                      />
+                      <div className="flex items-center text-sm text-muted-foreground whitespace-nowrap">
+                        .myshopify.com
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="manual-api-key" className="text-sm font-medium flex items-center gap-2">
+                      <Key className="w-3.5 h-3.5" />
+                      API Key (32 caractères)
+                    </Label>
+                    <Input
+                      id="manual-api-key"
+                      type="text"
+                      placeholder="da237524e4e1252a740b204af962acdf"
+                      value={manualApiKey}
+                      onChange={(e) => setManualApiKey(e.target.value)}
+                      disabled={manualLoading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      32 caractères hexadécimaux trouvés dans l'onglet "API credentials"
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="manual-api-secret" className="text-sm font-medium flex items-center gap-2">
+                      <Shield className="w-3.5 h-3.5" />
+                      Admin API Access Token (shpat_)
+                    </Label>
+                    <Input
+                      id="manual-api-secret"
+                      type="password"
+                      placeholder="shpat_a1b2c3d4e5f6g7h8i9j0"
+                      value={manualApiSecret}
+                      onChange={(e) => setManualApiSecret(e.target.value)}
+                      disabled={manualLoading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Commence par <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-xs">shpat_</code> - Token révélé une seule fois dans "API credentials"
+                    </p>
+                  </div>
+
+                  <Alert className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+                    <Info className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <AlertDescription className="text-xs text-green-900 dark:text-green-200">
+                      <strong>✓ Avantage :</strong> Accès complet à toutes les fonctionnalités (tags, scripts, contenus, etc.)
+                    </AlertDescription>
+                  </Alert>
+
+                  <Button
+                    onClick={handleManualConnect}
+                    disabled={manualLoading || !manualStoreName || !manualApiKey || !manualApiSecret}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {manualLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Connexion en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Key className="mr-2 h-4 w-4" />
+                        Connecter avec les clés API
+                      </>
+                    )}
+                  </Button>
+                </div>
               </TabsContent>
             </Tabs>
           </div>
