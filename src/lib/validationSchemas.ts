@@ -26,10 +26,14 @@ export const shopifyConnectionSchema = z.object({
     .min(3, { message: "Le nom de la boutique doit contenir au moins 3 caractères" })
     .max(100, { message: "Le nom de la boutique doit contenir moins de 100 caractères" })
     .regex(/^[a-z0-9-]+$/, { message: "Le nom de la boutique ne peut contenir que des lettres minuscules, chiffres et tirets" }),
-  apiToken: z.string()
+  apiKey: z.string()
     .trim()
-    .min(32, { message: "Le token API semble invalide (trop court)" })
-    .max(500, { message: "Le token API est trop long" })
+    .min(32, { message: "La clé API semble invalide (trop courte)" })
+    .max(500, { message: "La clé API est trop longue" }),
+  apiSecret: z.string()
+    .trim()
+    .min(32, { message: "La clé secrète semble invalide (trop courte)" })
+    .max(500, { message: "La clé secrète est trop longue" })
 });
 
 // Edge function input schemas
@@ -39,9 +43,12 @@ export const importProductsSchema = z.object({
     .min(3, { message: "Shop name must be at least 3 characters" })
     .max(100, { message: "Shop name must be less than 100 characters" })
     .regex(/^[a-z0-9-]+$/, { message: "Shop name can only contain lowercase letters, numbers, and hyphens" }),
-  apiToken: z.string()
-    .min(32, { message: "API token appears to be invalid" })
-    .max(500, { message: "API token is too long" }),
+  apiKey: z.string()
+    .min(32, { message: "API key appears to be invalid" })
+    .max(500, { message: "API key is too long" }),
+  apiSecret: z.string()
+    .min(32, { message: "API secret appears to be invalid" })
+    .max(500, { message: "API secret is too long" }),
   storeId: z.string()
     .uuid({ message: "Store ID must be a valid UUID" })
     .optional()
