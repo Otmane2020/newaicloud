@@ -50,47 +50,47 @@ import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const mainMenuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Produits", url: "/products", icon: ShoppingBag },
+  { titleKey: "sidebar.dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { titleKey: "sidebar.products", url: "/products", icon: ShoppingBag },
 ];
 
 const seoSubItems = [
-  { title: "SEO Optimisation", url: "/seo?tab=optimization", icon: Sparkles },
-  { title: "Tag Optimisation", url: "/seo?tab=tags", icon: Tags },
-  { title: "Pages", url: "/seo?tab=pages", icon: FileText },
-  { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
-  { title: "Automatisation", url: "/seo?tab=automation", icon: Settings },
-  { title: "KPIs & Audit", url: "/seo?tab=kpis", icon: BarChart3 },
+  { titleKey: "sidebar.seo_optimization", url: "/seo?tab=optimization", icon: Sparkles },
+  { titleKey: "sidebar.tag_optimization", url: "/seo?tab=tags", icon: Tags },
+  { titleKey: "sidebar.pages", url: "/seo?tab=pages", icon: FileText },
+  { titleKey: "sidebar.alt_image", url: "/seo?tab=alt", icon: Image },
+  { titleKey: "sidebar.automation", url: "/seo?tab=automation", icon: Settings },
+  { titleKey: "sidebar.kpis_audit", url: "/seo?tab=kpis", icon: BarChart3 },
 ];
 
 const blogSubItems = [
-  { title: "Gestion Articles", url: "/blog?subtab=articles", icon: FileText },
-  { title: "Articles IA", url: "/blog?subtab=create-article", icon: Sparkles },
-  { title: "Campagnes IA", url: "/blog?subtab=campaigns", icon: CalendarClock },
-  { title: "Opportunités", url: "/blog?subtab=opportunities", icon: Lightbulb },
-  { title: "Netlinking", url: "/blog?subtab=netlinking", icon: Link },
-  { title: "Paramètres", url: "/blog?subtab=settings", icon: Settings },
+  { titleKey: "sidebar.articles_management", url: "/blog?subtab=articles", icon: FileText },
+  { titleKey: "sidebar.ai_articles", url: "/blog?subtab=create-article", icon: Sparkles },
+  { titleKey: "sidebar.ai_campaigns", url: "/blog?subtab=campaigns", icon: CalendarClock },
+  { titleKey: "sidebar.opportunities", url: "/blog?subtab=opportunities", icon: Lightbulb },
+  { titleKey: "sidebar.netlinking", url: "/blog?subtab=netlinking", icon: Link },
+  { titleKey: "sidebar.settings", url: "/blog?subtab=settings", icon: Settings },
 ];
 
 const bottomMenuItems = [
-  { title: "Recherche IA", url: "/search", icon: Search },
-  { title: "Google Shopping", url: "/shopping", icon: ShoppingCart },
-  { title: "Google Merchant", url: "/merchant", icon: Package },
+  { titleKey: "sidebar.ai_search", url: "/search", icon: Search },
+  { titleKey: "sidebar.google_shopping", url: "/shopping", icon: ShoppingCart },
+  { titleKey: "sidebar.google_merchant", url: "/merchant", icon: Package },
 ];
 
 const chatSubItems = [
-  { title: "Chat Assistant", url: "/chat", icon: MessageSquare },
-  { title: "Robot AI", url: "/chat-robot", icon: Bot },
-  { title: "Historique", url: "/chat-history", icon: History },
-  { title: "Source Produits", url: "/product-source", icon: Database },
-  { title: "Paramètres", url: "/chat-settings", icon: Settings },
+  { titleKey: "sidebar.chat_assistant", url: "/chat", icon: MessageSquare },
+  { titleKey: "sidebar.ai_robot", url: "/chat-robot", icon: Bot },
+  { titleKey: "sidebar.history", url: "/chat-history", icon: History },
+  { titleKey: "sidebar.product_source", url: "/product-source", icon: Database },
+  { titleKey: "sidebar.chat_settings", url: "/chat-settings", icon: Settings },
 ];
 
 const accountSubItems = [
-  { title: "Mon Profil", url: "/account?tab=profile", icon: User },
-  { title: "Intégrations", url: "/account?tab=integrations", icon: Package },
-  { title: "Abonnement", url: "/account?tab=subscription", icon: CreditCard },
-  { title: "Facturation", url: "/account?tab=billing", icon: Receipt },
+  { titleKey: "sidebar.my_profile", url: "/account?tab=profile", icon: User },
+  { titleKey: "sidebar.integrations", url: "/account?tab=integrations", icon: Package },
+  { titleKey: "sidebar.subscription", url: "/account?tab=subscription", icon: CreditCard },
+  { titleKey: "sidebar.billing", url: "/account?tab=billing", icon: Receipt },
 ];
 
 export function AppSidebar() {
@@ -181,15 +181,15 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.navigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                 <SidebarMenuButton asChild isActive={isActive(item.url)}>
                   <NavLink to={item.url}>
                     <item.icon className="h-4 w-4" />
-                    <span>{item.url === '/products' ? t('sidebar.products') : item.title}</span>
+                    <span>{t(item.titleKey)}</span>
                   </NavLink>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -208,11 +208,11 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {seoSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubItem key={subItem.titleKey}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
+                              <span>{t(subItem.titleKey)}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -235,11 +235,11 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {blogSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubItem key={subItem.titleKey}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
+                              <span>{t(subItem.titleKey)}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -251,11 +251,11 @@ export function AppSidebar() {
 
               {/* Bottom Menu Items */}
               {bottomMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -267,18 +267,18 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isChatActive}>
                       <MessageSquare className="h-4 w-4" />
-                      <span>Chat</span>
+                      <span>{t('sidebar.chat')}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {chatSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubItem key={subItem.titleKey}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
+                              <span>{t(subItem.titleKey)}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -294,18 +294,18 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isAccountActive}>
                       <User className="h-4 w-4" />
-                      <span>Compte</span>
+                      <span>{t('sidebar.account')}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {accountSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubItem key={subItem.titleKey}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
+                              <span>{t(subItem.titleKey)}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -331,7 +331,7 @@ export function AppSidebar() {
                       <span className="text-xs sm:text-sm truncate">{user?.email}</span>
                     </div>
                     <Badge variant="default" className="w-fit text-xs font-semibold">
-                      {userPlan || "Chargement..."}
+                      {userPlan || t('sidebar.loading')}
                     </Badge>
                   </>
                 ) : (
