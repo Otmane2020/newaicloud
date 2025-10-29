@@ -309,10 +309,12 @@ export default function Onboarding() {
       <div className="container mx-auto max-w-7xl">
       {/* Header */}
       <div className="text-center mb-12">
-        <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
-          <Shield className="w-4 h-4 mr-2" />
-          💳 Essai de 14 jours • Carte bancaire requise
-        </Badge>
+        {plans.some(p => p.trial_days > 0) && (
+          <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
+            <Shield className="w-4 h-4 mr-2" />
+            💳 Essai gratuit disponible sur le plan Starter
+          </Badge>
+        )}
         <h1 className="text-4xl md:text-6xl font-bold mb-4">
           Choisissez votre{' '}
           <span className="bg-gradient-primary bg-clip-text text-transparent">
@@ -320,7 +322,7 @@ export default function Onboarding() {
           </span>
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Démarrez avec un essai de 14 jours • Accès complet dès maintenant • Premier paiement dans 14 jours
+          Choisissez le forfait adapté à vos besoins • Accès immédiat à toutes les fonctionnalités
         </p>
       </div>
 
@@ -377,6 +379,11 @@ export default function Onboarding() {
                 </div>
 
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                {plan.trial_days > 0 && (
+                  <Badge variant="outline" className="mb-3 bg-success/10 text-success border-success/30">
+                    🎁 Essai gratuit de {plan.trial_days} jours
+                  </Badge>
+                )}
                 <p className="text-muted-foreground mb-6">{plan.description}</p>
 
                 <div className="mb-6">
@@ -462,15 +469,21 @@ export default function Onboarding() {
                   ) : (
                     <>
                       <Shield className="w-5 h-5 mr-2" />
-                      Commencer l'essai gratuit
+                      {plan.trial_days > 0 ? "Commencer l'essai gratuit" : "S'abonner maintenant"}
                     </>
                   )}
                 </Button>
                 
-                <p className="text-xs text-muted-foreground text-center mt-3">
-                  💳 Carte requise • Premier paiement le{' '}
-                  {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}
-                </p>
+                {plan.trial_days > 0 ? (
+                  <p className="text-xs text-muted-foreground text-center mt-3">
+                    💳 Carte requise • Premier paiement le{' '}
+                    {new Date(Date.now() + plan.trial_days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center mt-3">
+                    💳 Paiement immédiat • Accès instantané
+                  </p>
+                )}
               </Card>
             );
           })}
@@ -479,10 +492,13 @@ export default function Onboarding() {
         {/* Info footer */}
         <div className="text-center mt-8 space-y-2">
           <p className="text-sm text-muted-foreground">
-            ✨ Profitez de 14 jours d'essai complet avec limites réduites
+            ✨ <strong>Plan Starter uniquement</strong> : 14 jours d'essai gratuit avec limites réduites
           </p>
           <p className="text-xs text-muted-foreground">
-            💡 Si vous atteignez les limites pendant l'essai, vous devrez payer immédiatement pour continuer
+            💳 Carte bancaire requise • Annulez à tout moment sans frais pendant l'essai
+          </p>
+          <p className="text-xs text-muted-foreground">
+            💡 Plans Pro et Enterprise : paiement immédiat, pas d'essai gratuit
           </p>
           <p className="text-xs text-muted-foreground">
             🔒 Annulation à tout moment avant la fin de l'essai
