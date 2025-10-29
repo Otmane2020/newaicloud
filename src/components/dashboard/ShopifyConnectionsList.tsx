@@ -314,12 +314,16 @@ export function ShopifyConnectionsList() {
       setPagesImported(0);
       setImportedItems([]);
       
-      const shopName = store.store_url?.replace('.myshopify.com', '') || '';
+      // Clean the shop name by removing protocol, domain suffix, and trailing slashes
+      let cleanShopName = (store.store_url || '')
+        .replace(/^https?:\/\//, '') // Remove http:// or https://
+        .replace(/\.myshopify\.com.*$/, '') // Remove .myshopify.com and anything after
+        .replace(/\/$/, ''); // Remove trailing slash
       
       // Start products import
       const { data, error } = await supabase.functions.invoke('import-products', {
         body: {
-          shopName: shopName,
+          shopName: cleanShopName,
           apiToken: store.access_token,
           storeId: store.id
         }
