@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Shield, Users, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { Shield, Users, TrendingUp, TrendingDown, RefreshCw, Languages } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -24,6 +25,7 @@ interface SubscriptionPlan {
 }
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,10 +141,16 @@ export default function Admin() {
               Gestion des utilisateurs et des abonnements
             </p>
           </div>
-          <Button onClick={loadData} variant="outline">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/admin/translations')} variant="outline">
+              <Languages className="w-4 h-4 mr-2" />
+              Traductions
+            </Button>
+            <Button onClick={loadData} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Actualiser
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}

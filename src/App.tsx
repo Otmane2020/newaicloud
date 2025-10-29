@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AIAssistant } from "@/components/AIAssistant";
+import { useRTL } from "@/hooks/useRTL";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
@@ -13,6 +14,7 @@ import { SuperAdminLayout } from "./components/SuperAdminLayout";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import SuperAdmin from "./pages/SuperAdmin";
+import { TranslationManager } from "./components/admin/TranslationManager";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -45,12 +47,18 @@ import Documentation from "./pages/Documentation";
 
 const queryClient = new QueryClient();
 
+const RTLWrapper = ({ children }: { children: React.ReactNode }) => {
+  useRTL(); // Apply RTL automatically based on language
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <RTLWrapper>
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
@@ -251,6 +259,14 @@ const App = () => (
               }
             />
             <Route
+              path="/admin/translations"
+              element={
+                <AdminLayout>
+                  <TranslationManager />
+                </AdminLayout>
+              }
+            />
+            <Route
               path="/superadmin"
               element={
                 <SuperAdminLayout>
@@ -261,10 +277,11 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <Toaster />
+          <Sonner />
+          <AIAssistant />
+          </RTLWrapper>
         </AuthProvider>
-        <Toaster />
-        <Sonner />
-        <AIAssistant />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
