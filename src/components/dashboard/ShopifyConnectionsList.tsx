@@ -244,13 +244,31 @@ export function ShopifyConnectionsList() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Pages import error:', error);
+        throw new Error(error.message || 'Erreur lors de l\'import des pages');
+      }
 
-      toast.success(`${data?.count || 0} pages importées avec succès !`);
+      if (data?.count === 0) {
+        toast.warning(data?.message || 'Aucune page trouvée dans cette boutique');
+      } else {
+        toast.success(`${data?.count || 0} pages importées avec succès !`);
+      }
       
     } catch (error: any) {
       console.error('Pages import error:', error);
-      toast.error(error.message || 'Erreur lors de l\'import des pages');
+      
+      // Check if it's a permission error
+      if (error.message?.includes('Permission refusée') || error.message?.includes('read_content')) {
+        toast.error(
+          'Permission refusée',
+          { 
+            description: 'Votre token Shopify doit avoir les permissions "read_content" et "write_content"'
+          }
+        );
+      } else {
+        toast.error(error.message || 'Erreur lors de l\'import des pages');
+      }
     } finally {
       setImportingPages(false);
     }

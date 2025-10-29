@@ -63,8 +63,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // Fetch pages from Shopify
+    console.log(`📄 Fetching pages from ${store.store_url}...`);
     const shopifyResponse = await fetch(
-      `https://${store.store_url}/admin/api/2024-01/pages.json?limit=250`,
+      `https://${store.store_url}/admin/api/2025-01/pages.json?limit=250`,
       {
         headers: {
           "X-Shopify-Access-Token": store.access_token,
@@ -75,14 +76,26 @@ Deno.serve(async (req: Request) => {
 
     if (!shopifyResponse.ok) {
       const errorText = await shopifyResponse.text();
+      console.error('❌ Shopify API Error:', {
+        status: shopifyResponse.status,
+        store: store.store_url,
+        error: errorText
+      });
+      
+      if (shopifyResponse.status === 401 || shopifyResponse.status === 403) {
+        throw new Error(`Permission refusée. Vérifiez que votre token Shopify a les permissions 'read_content' et 'write_content'. Erreur: ${errorText}`);
+      }
+      
       throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
     }
 
     const { pages } = await shopifyResponse.json();
+    console.log(`✅ Found ${pages?.length || 0} pages for store ${store.store_url}`);
 
     if (!pages || pages.length === 0) {
+      console.log('⚠️ No pages found in Shopify store');
       return new Response(
-        JSON.stringify({ success: true, count: 0, message: 'No pages found' }),
+        JSON.stringify({ success: true, count: 0, message: 'Aucune page trouvée dans cette boutique Shopify' }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -115,9 +128,11 @@ Deno.serve(async (req: Request) => {
       });
 
     if (upsertError) {
-      console.error('Page upsert error:', upsertError);
-      throw new Error(`Failed to save pages: ${upsertError.message}`);
+      console.error('❌ Page upsert error:', upsertError);
+      throw new Error(`Échec de l'enregistrement des pages: ${upsertError.message}`);
     }
+    
+    console.log(`✅ Successfully imported ${pages.length} pages to database`);
 
     return new Response(
       JSON.stringify({
