@@ -15,7 +15,8 @@ interface ValidationResult<T> {
 // Simple validation for import-products
 export function validateImportProducts(data: any): ValidationResult<{
   shopName: string;
-  apiToken: string;
+  apiKey?: string;
+  apiSecret?: string;
   storeId?: string;
 }> {
   const errors: ValidationError[] = [];
@@ -33,14 +34,28 @@ export function validateImportProducts(data: any): ValidationResult<{
     }
   }
 
-  if (!data.apiToken || typeof data.apiToken !== 'string') {
-    errors.push({ path: ['apiToken'], message: 'API token is required' });
+  // Check for either apiKey+apiSecret (manual) or apiSecret alone (OAuth)
+  const hasApiKey = data.apiKey && typeof data.apiKey === 'string' && data.apiKey.trim().length > 0;
+  const hasApiSecret = data.apiSecret && typeof data.apiSecret === 'string' && data.apiSecret.trim().length > 0;
+
+  if (!hasApiSecret) {
+    errors.push({ path: ['apiSecret'], message: 'API Secret or OAuth token is required' });
   } else {
-    const trimmed = data.apiToken.trim();
+    const trimmed = data.apiSecret.trim();
     if (trimmed.length < 20) {
-      errors.push({ path: ['apiToken'], message: 'API token appears to be invalid' });
+      errors.push({ path: ['apiSecret'], message: 'API Secret appears to be invalid' });
     } else if (trimmed.length > 500) {
-      errors.push({ path: ['apiToken'], message: 'API token is too long' });
+      errors.push({ path: ['apiSecret'], message: 'API Secret is too long' });
+    }
+  }
+
+  // Validate apiKey if present
+  if (hasApiKey) {
+    const trimmed = data.apiKey.trim();
+    if (trimmed.length < 20) {
+      errors.push({ path: ['apiKey'], message: 'API Key appears to be invalid' });
+    } else if (trimmed.length > 100) {
+      errors.push({ path: ['apiKey'], message: 'API Key is too long' });
     }
   }
 
@@ -64,7 +79,8 @@ export function validateImportProducts(data: any): ValidationResult<{
     success: true,
     data: {
       shopName: data.shopName.trim(),
-      apiToken: data.apiToken.trim(),
+      apiKey: hasApiKey ? data.apiKey.trim() : undefined,
+      apiSecret: data.apiSecret.trim(),
       storeId: data.storeId
     }
   };

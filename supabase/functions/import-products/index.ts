@@ -45,7 +45,8 @@ interface ShopifyProduct {
 
 interface RequestBody {
   shopName: string;
-  apiToken: string;
+  apiKey?: string;
+  apiSecret?: string;
   storeId?: string;
 }
 
@@ -112,7 +113,8 @@ Deno.serve(async (req: Request) => {
     // 📥 Log detailed request information
     console.log('📥 Request body received:', {
       shopName: requestBody.shopName ? `✅ Present (${requestBody.shopName})` : '❌ Missing',
-      apiToken: requestBody.apiToken ? `✅ Present (length: ${requestBody.apiToken.length}, starts with: ${requestBody.apiToken.substring(0, 10)}...)` : '❌ Missing or empty',
+      apiKey: requestBody.apiKey ? `✅ Present (length: ${requestBody.apiKey.length})` : '⚠️  Not provided (OAuth)',
+      apiSecret: requestBody.apiSecret ? `✅ Present (length: ${requestBody.apiSecret.length}, starts with: ${requestBody.apiSecret.substring(0, 10)}...)` : '❌ Missing or empty',
       storeId: requestBody.storeId ? `✅ Present (${requestBody.storeId})` : '⚠️  Not provided',
       allKeys: Object.keys(requestBody)
     });
@@ -123,8 +125,9 @@ Deno.serve(async (req: Request) => {
       console.error('❌ Validation errors:', validation.errors);
       console.error('📋 Failed validation for:', {
         shopName: requestBody.shopName,
-        apiTokenPresent: !!requestBody.apiToken,
-        apiTokenType: typeof requestBody.apiToken,
+        apiKeyPresent: !!requestBody.apiKey,
+        apiSecretPresent: !!requestBody.apiSecret,
+        apiSecretType: typeof requestBody.apiSecret,
         storeId: requestBody.storeId
       });
       return new Response(
@@ -139,7 +142,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { shopName, apiToken, storeId } = validation.data;
+    const { shopName, apiKey, apiSecret, storeId } = validation.data;
+    
+    // Determine authentication method
+    const isManualAuth = !!apiKey;
+    const authToken = apiSecret!; // apiSecret is always present (validated above)
+    
+    console.log('🔐 Authentication method:', {
+      type: isManualAuth ? 'Manual (API Key + Secret)' : 'OAuth',
+      hasApiKey: !!apiKey,
+      hasApiSecret: !!apiSecret
+    });
 
     // Create service role client for database operations
     const supabaseServiceClient = createClient(
@@ -222,7 +235,7 @@ Deno.serve(async (req: Request) => {
         `https://${cleanShopName}.myshopify.com/admin/api/2024-01/shop.json`,
         {
           headers: {
-            "X-Shopify-Access-Token": apiToken,
+            "X-Shopify-Access-Token": authToken,
             "Content-Type": "application/json",
           },
         }
@@ -271,7 +284,7 @@ Deno.serve(async (req: Request) => {
 
       const shopifyResponse = await fetch(nextPageUrl, {
         headers: {
-          "X-Shopify-Access-Token": apiToken,
+          "X-Shopify-Access-Token": authToken,
           "Content-Type": "application/json",
         },
       });
@@ -537,7 +550,7 @@ Deno.serve(async (req: Request) => {
         `https://${cleanShopName}.myshopify.com/admin/api/2024-01/pages.json?limit=250`,
         {
           headers: {
-            "X-Shopify-Access-Token": apiToken,
+            "X-Shopify-Access-Token": authToken,
             "Content-Type": "application/json",
           },
         }

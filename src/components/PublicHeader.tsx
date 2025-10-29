@@ -26,12 +26,19 @@ export const PublicHeader = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollToSection("hero")}>
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-foreground leading-tight">
+                  NewAI
+                </span>
+                <span className="text-[10px] text-muted-foreground leading-tight">
+                  Smarter AI Sales
+                </span>
+              </div>
             </div>
-            <span className="text-xl font-bold text-foreground">
-              NewAI
-            </span>
           </div>
 
           {/* Desktop Navigation */}
