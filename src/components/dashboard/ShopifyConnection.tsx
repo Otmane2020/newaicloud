@@ -33,6 +33,7 @@ export function ShopifyConnection() {
   });
   const [limitReached, setLimitReached] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [shouldAutoImport, setShouldAutoImport] = useState(false);
   const { limits } = useUsageLimits();
   const [store, setStore] = useState<any>(null);
   const [storeName, setStoreName] = useState('');
@@ -109,6 +110,19 @@ export function ShopifyConnection() {
         setStore(data);
         const storeName = data.store_url?.replace('.myshopify.com', '') || '';
         setStoreName(storeName);
+        
+        // Auto-trigger import for newly connected stores
+        const justConnected = localStorage.getItem('shopify_just_connected');
+        if (justConnected === 'true' && data.connected_at) {
+          const connectedTime = new Date(data.connected_at).getTime();
+          const now = Date.now();
+          // If connected less than 10 seconds ago, set flag for auto-import
+          if (now - connectedTime < 10000) {
+            console.log('🚀 Setting auto-import flag for newly connected store');
+            localStorage.removeItem('shopify_just_connected');
+            setShouldAutoImport(true);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading store:', error);
@@ -116,6 +130,16 @@ export function ShopifyConnection() {
       setLoading(false);
     }
   };
+
+  // Auto-trigger import when flag is set
+  useEffect(() => {
+    if (shouldAutoImport && store) {
+      setShouldAutoImport(false);
+      setTimeout(() => {
+        handleImportProducts();
+      }, 500);
+    }
+  }, [shouldAutoImport, store]);
 
   const handleSaveConnection = async (e: React.FormEvent) => {
     e.preventDefault();

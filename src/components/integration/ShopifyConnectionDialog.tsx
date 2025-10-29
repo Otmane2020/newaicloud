@@ -119,7 +119,10 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       setManualApiKey("");
       setManualApiSecret("");
 
-      // Refresh page to show new connection
+      // Set flag for auto-import
+      localStorage.setItem('shopify_just_connected', 'true');
+      
+      // Refresh page to show new connection and trigger auto-import
       setTimeout(() => window.location.reload(), 1000);
     } catch (error: any) {
       console.error("Manual connection error:", error);
