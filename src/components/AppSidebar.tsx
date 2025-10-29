@@ -63,14 +63,12 @@ const seoSubItems = [
 ];
 
 const blogSubItems = [
-  { title: "Gestion Articles", url: "/blog/management", icon: FileText },
-  { title: "Articles IA", url: "/blog?tab=articles", icon: Sparkles },
-  { title: "Campagnes IA", url: "/blog?tab=campaigns", icon: CalendarClock },
-];
-
-const blogOpportunitiesSubItems = [
-  { title: "Netlinking", url: "/blog?tab=opportunities&view=netlinking", icon: Link },
-  { title: "Paramètres", url: "/blog?tab=opportunities&view=settings", icon: Settings },
+  { title: "Gestion Articles", url: "/blog?subtab=articles", icon: FileText },
+  { title: "Articles IA", url: "/blog?subtab=create-article", icon: Sparkles },
+  { title: "Campagnes IA", url: "/blog?subtab=campaigns", icon: CalendarClock },
+  { title: "Opportunités", url: "/blog?subtab=opportunities", icon: Lightbulb },
+  { title: "Netlinking", url: "/blog?subtab=netlinking", icon: Link },
+  { title: "Paramètres", url: "/blog?subtab=settings", icon: Settings },
 ];
 
 const bottomMenuItems = [
@@ -162,7 +160,6 @@ export function AppSidebar() {
   const isSeoActive = currentPath === "/seo" || seoSubItems.some((item) => isActive(item.url));
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
   const isAccountActive = currentPath === "/account" || accountSubItems.some((item) => isActive(item.url));
-  const isOpportunitiesActive = currentSearch.includes("tab=opportunities");
 
   return (
     <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
@@ -223,7 +220,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Blog Menu with Nested Submenu */}
+              {/* Blog Menu with Submenu */}
               <Collapsible defaultOpen={isBlogActive} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -245,36 +242,6 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
-
-                      {/* Opportunités with nested sub-menu */}
-                      <Collapsible defaultOpen={isOpportunitiesActive} className="group/collapsible-nested">
-                        <SidebarMenuSubItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuSubButton isActive={isActive("/blog?tab=opportunities")}>
-                              <Lightbulb className="h-4 w-4" />
-                              <span>Opportunités</span>
-                              <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible-nested:rotate-90" />
-                            </SidebarMenuSubButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="ml-4 border-l border-border pl-2 space-y-1 mt-1">
-                              {blogOpportunitiesSubItems.map((item) => (
-                                <SidebarMenuSubButton
-                                  key={item.title}
-                                  asChild
-                                  isActive={isActive(item.url)}
-                                  className="text-xs"
-                                >
-                                  <NavLink to={item.url}>
-                                    <item.icon className="h-3 w-3" />
-                                    <span>{item.title}</span>
-                                  </NavLink>
-                                </SidebarMenuSubButton>
-                              ))}
-                            </div>
-                          </CollapsibleContent>
-                        </SidebarMenuSubItem>
-                      </Collapsible>
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
