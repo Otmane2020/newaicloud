@@ -99,10 +99,10 @@ const Index = () => {
               <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4 shadow-glow">
                 <feature.icon className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground mb-4">{feature.description}</p>
+              <h3 className="text-xl font-bold mb-2">{t(feature.titleKey)}</h3>
+              <p className="text-muted-foreground mb-4">{t(feature.descriptionKey)}</p>
               <div className="flex flex-wrap gap-2">
-                {feature.tags.map((tag, i) => (
+                {(t(feature.tagsKey, { returnObjects: true }) as string[]).map((tag: string, i: number) => (
                   <Badge key={i} variant="secondary" className="text-xs">
                     {tag}
                   </Badge>
@@ -130,8 +130,8 @@ const Index = () => {
                 <div key={index} className="flex items-start gap-3">
                   <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0 mt-1" />
                   <div>
-                    <p className="font-semibold">{benefit.title}</p>
-                    <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                    <p className="font-semibold">{t(benefit.titleKey)}</p>
+                    <p className="text-sm text-muted-foreground">{t(benefit.descriptionKey)}</p>
                   </div>
                 </div>
               ))}
@@ -152,7 +152,7 @@ const Index = () => {
                     <p className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                       {stat.value}
                     </p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p className="text-sm text-muted-foreground">{t(stat.labelKey)}</p>
                   </div>
                 ))}
               </div>
@@ -204,17 +204,17 @@ const Index = () => {
                 key={index}
                 className={`p-8 relative ${plan.featured ? 'border-2 border-primary shadow-primary scale-105' : 'border-2 border-transparent'}`}
               >
-                {plan.badge && (
+                {plan.badgeKey && (
                   <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 ${plan.badgeColor || 'bg-gradient-primary'}`}>
-                    {plan.badge}
+                    {t(plan.badgeKey)}
                   </Badge>
                 )}
                 <div className="space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-2xl font-bold">{plan.icon} {plan.name}</h3>
+                      <h3 className="text-2xl font-bold">{plan.icon} {t(plan.nameKey)}</h3>
                     </div>
-                    <p className="text-muted-foreground text-sm">{plan.description}</p>
+                    <p className="text-muted-foreground text-sm">{t(plan.descriptionKey)}</p>
                   </div>
                   
                   <div>
@@ -227,9 +227,9 @@ const Index = () => {
                         {t('pricing.billed_yearly')} ${plan.yearlyTotal}{t('pricing.per_year')})
                       </p>
                     )}
-                    {plan.trial && (
+                    {plan.trialKey && (
                       <p className="text-sm text-muted-foreground mt-1">
-                        {plan.trial}
+                        {t(plan.trialKey)}
                       </p>
                     )}
                   </div>
@@ -240,19 +240,19 @@ const Index = () => {
                     size="lg"
                     onClick={() => navigate('/auth?mode=signup')}
                   >
-                    {plan.cta}
+                    {t(plan.ctaKey)}
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
 
-                  {plan.highlight && (
+                  {plan.highlightKey && (
                     <p className="text-sm text-muted-foreground italic">
-                      💡 {plan.highlight}
+                      💡 {t(plan.highlightKey)}
                     </p>
                   )}
 
                   <div className="space-y-3 pt-6 border-t">
-                    <p className="font-semibold text-sm">Inclus dans le plan :</p>
-                    {plan.features.map((feature, i) => (
+                    <p className="font-semibold text-sm">{t('plans.included')}</p>
+                    {(t(plan.featuresKey, { returnObjects: true }) as string[]).map((feature: string, i: number) => (
                       <div key={i} className="flex items-start gap-2">
                         <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
                         <span className="text-sm">{feature}</span>
@@ -281,63 +281,63 @@ const Index = () => {
               <div className="text-center mb-8">
                 <Badge className="bg-primary mb-4">
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Flexibilité maximale
+                  {t('payAsYouGo.badge')}
                 </Badge>
-                <h3 className="text-3xl font-bold mb-2">Pay as you go</h3>
+                <h3 className="text-3xl font-bold mb-2">{t('payAsYouGo.title')}</h3>
                 <p className="text-muted-foreground text-lg">
-                  Dépassez vos limites mensuelles sans changer de plan
+                  {t('payAsYouGo.subtitle')}
                 </p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-8 mb-8">
                 <div className="space-y-4">
-                  <p className="font-semibold text-lg">💰 Tarifs à la demande :</p>
+                  <p className="font-semibold text-lg">{t('payAsYouGo.pricing_title')}</p>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                      <span className="text-sm">Optimisation SEO IA</span>
+                      <span className="text-sm">{t('payAsYouGo.seo_optimization')}</span>
                       <span className="font-bold text-primary">$0.05</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                      <span className="text-sm">Article IA</span>
+                      <span className="text-sm">{t('payAsYouGo.ai_article')}</span>
                       <span className="font-bold text-primary">$2.00</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                      <span className="text-sm">Réponse Chat IA</span>
+                      <span className="text-sm">{t('payAsYouGo.chat_response')}</span>
                       <span className="font-bold text-primary">$0.02</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                      <span className="text-sm">Campagne IA (jusqu'à 30 articles)</span>
+                      <span className="text-sm">{t('payAsYouGo.ai_campaign')}</span>
                       <span className="font-bold text-primary">$10.00</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-background rounded-lg">
-                      <span className="text-sm">Boutique Shopify supplémentaire</span>
-                      <span className="font-bold text-primary">$15.00/mois</span>
+                      <span className="text-sm">{t('payAsYouGo.additional_store')}</span>
+                      <span className="font-bold text-primary">$15.00{t('payAsYouGo.per_month')}</span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
-                  <p className="font-semibold text-lg">✨ Avantages :</p>
+                  <p className="font-semibold text-lg">{t('payAsYouGo.benefits_title')}</p>
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium">Pas de limite</p>
-                        <p className="text-sm text-muted-foreground">Continuez sans interruption</p>
+                        <p className="font-medium">{t('payAsYouGo.no_limit.title')}</p>
+                        <p className="text-sm text-muted-foreground">{t('payAsYouGo.no_limit.description')}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium">Facturation automatique</p>
-                        <p className="text-sm text-muted-foreground">En fin de mois uniquement</p>
+                        <p className="font-medium">{t('payAsYouGo.auto_billing.title')}</p>
+                        <p className="text-sm text-muted-foreground">{t('payAsYouGo.auto_billing.description')}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium">Tarifs dégressifs</p>
-                        <p className="text-sm text-muted-foreground">À partir de 10 000 crédits</p>
+                        <p className="font-medium">{t('payAsYouGo.volume_discounts.title')}</p>
+                        <p className="text-sm text-muted-foreground">{t('payAsYouGo.volume_discounts.description')}</p>
                       </div>
                     </div>
                   </div>
@@ -346,8 +346,8 @@ const Index = () => {
 
               <div className="bg-muted/50 rounded-lg p-6 text-center">
                 <p className="text-sm text-muted-foreground">
-                  💡 <strong>Le pay-as-you-go est automatiquement activé sur tous les plans.</strong><br />
-                  Vous ne payez que ce que vous consommez au-delà de vos limites mensuelles.
+                  <strong>{t('payAsYouGo.info')}</strong><br />
+                  {t('payAsYouGo.info_detail')}
                 </p>
               </div>
             </div>
@@ -381,143 +381,111 @@ const Index = () => {
 const features = [
   {
     icon: ShoppingBag,
-    title: "Gestion Produits",
-    description: "Gérez produits avec variantes, génération GTIN et intégration Google Shopping",
-    tags: ["Multi-vendeur", "Variantes", "Google"]
+    titleKey: "features.products.title",
+    descriptionKey: "features.products.description",
+    tagsKey: "features.products.tags"
   },
   {
     icon: BarChart3,
-    title: "Google Merchant Center",
-    description: "Génération automatique de flux XML et synchronisation Google Shopping",
-    tags: ["Flux XML", "Auto-sync"]
+    titleKey: "features.merchant.title",
+    descriptionKey: "features.merchant.description",
+    tagsKey: "features.merchant.tags"
   },
   {
     icon: FileText,
-    title: "Blog SEO AI",
-    description: "Création automatique d'articles SEO optimisés avec liens produits",
-    tags: ["Contenu AI", "Auto-post"]
+    titleKey: "features.blog.title",
+    descriptionKey: "features.blog.description",
+    tagsKey: "features.blog.tags"
   },
   {
     icon: Zap,
-    title: "Optimisation SEO",
-    description: "Optimisation IA des meta tags, descriptions et mots-clés",
-    tags: ["Meta Tags", "Mots-clés"]
+    titleKey: "features.seo.title",
+    descriptionKey: "features.seo.description",
+    tagsKey: "features.seo.tags"
   },
   {
     icon: MessageSquare,
-    title: "Chat Intelligent",
-    description: "Assistant IA pour recommandations produits et support client",
-    tags: ["Chat IA", "Support"]
+    titleKey: "features.chat.title",
+    descriptionKey: "features.chat.description",
+    tagsKey: "features.chat.tags"
   },
   {
     icon: Sparkles,
-    title: "Automatisation Campagnes",
-    description: "Planification et automatisation de création de contenu",
-    tags: ["Automatisation", "Planning"]
+    titleKey: "features.automation.title",
+    descriptionKey: "features.automation.description",
+    tagsKey: "features.automation.tags"
   }
 ];
 
 const benefits = [
   {
-    title: "3x Plus rapide",
-    description: "Automatisez la saisie et l'optimisation produits"
+    titleKey: "benefits.speed.title",
+    descriptionKey: "benefits.speed.description"
   },
   {
-    title: "50% Plus de trafic",
-    description: "SEO optimisé IA attire des visiteurs qualifiés"
+    titleKey: "benefits.traffic.title",
+    descriptionKey: "benefits.traffic.description"
   },
   {
-    title: "10h+ économisées",
-    description: "Création et gestion de contenu automatisées"
+    titleKey: "benefits.time.title",
+    descriptionKey: "benefits.time.description"
   },
   {
-    title: "Meilleur classement Google",
-    description: "Données structurées et flux optimisés"
+    titleKey: "benefits.ranking.title",
+    descriptionKey: "benefits.ranking.description"
   }
 ];
 
 const stats = [
-  { value: "10K+", label: "Produits Optimisés" },
-  { value: "500+", label: "Vendeurs Actifs" },
-  { value: "95%", label: "Taux Satisfaction" },
-  { value: "24/7", label: "Support IA" }
+  { value: "10K+", labelKey: "stats.products" },
+  { value: "500+", labelKey: "stats.sellers" },
+  { value: "95%", labelKey: "stats.satisfaction" },
+  { value: "24/7", labelKey: "stats.support" }
 ];
 
 const pricingPlans = [
   {
-    name: "Starter",
+    nameKey: "plans.starter.name",
     icon: "🟢",
-    description: "Pour les petites boutiques qui veulent découvrir la puissance de l'IA",
+    descriptionKey: "plans.starter.description",
     priceMonthly: 9.99,
     priceYearly: 7.99,
     yearlyTotal: 95.88,
-    trial: "essai gratuit de 14 jours",
-    cta: "Commencer l'essai gratuit",
+    trialKey: "plans.starter.trial",
+    ctaKey: "plans.starter.cta",
     featured: false,
     badge: null,
-    highlight: "Profitez de la puissance de l'IA, avec des fonctionnalités essentielles et des quotas adaptés à vos débuts.",
-    features: [
-      "100 produits analysés",
-      "100 optimisations SEO IA / mois (titres, meta, ALT, tags)",
-      "1 article IA / mois",
-      "20 recherches IA Shopify / mois",
-      "50 réponses Chat IA / mois",
-      "1 boutique Shopify connectée",
-      "Automation basique (SEO + blog + chat)",
-      "Support par e-mail"
-    ]
+    highlightKey: "plans.starter.highlight",
+    featuresKey: "plans.starter.features"
   },
   {
-    name: "Pro",
+    nameKey: "plans.pro.name",
     icon: "🟠",
-    description: "Pour les boutiques en croissance",
+    descriptionKey: "plans.pro.description",
     priceMonthly: 49,
     priceYearly: 39,
     yearlyTotal: 468,
-    trial: null,
-    cta: "Essayer gratuitement",
+    trialKey: null,
+    ctaKey: "plans.pro.cta",
     featured: true,
-    badge: "Plus Populaire 🔥",
+    badgeKey: "plans.pro.badge",
     badgeColor: "bg-primary",
-    highlight: "L'équilibre parfait entre puissance, automation, et évolutivité.",
-    features: [
-      "1 000 produits analysés",
-      "500 optimisations SEO IA / mois",
-      "5 articles IA / mois",
-      "3 campagnes IA automatiques / mois (jusqu'à 30 articles/campagne)",
-      "300 recherches IA Shopify / mois",
-      "500 réponses Chat IA / mois",
-      "Jusqu'à 2 boutiques Shopify connectées",
-      "Google Merchant Center intégré",
-      "Automation complète (SEO + blog + chat)",
-      "Support prioritaire 24/7"
-    ]
+    highlightKey: "plans.pro.highlight",
+    featuresKey: "plans.pro.features"
   },
   {
-    name: "Enterprise",
+    nameKey: "plans.enterprise.name",
     icon: "🔵",
-    description: "Pour les grandes boutiques et agences",
+    descriptionKey: "plans.enterprise.description",
     priceMonthly: 199,
     priceYearly: 159,
     yearlyTotal: 1908,
-    trial: null,
-    cta: "Nous contacter",
+    trialKey: null,
+    ctaKey: "plans.enterprise.cta",
     featured: false,
     badge: null,
-    highlight: "Suite IA entièrement gérée avec quotas élevés, accès API, et support personnel.",
-    features: [
-      "Produits illimités",
-      "2 000 optimisations SEO IA / mois",
-      "20 articles IA / mois",
-      "10 campagnes IA automatiques / mois (jusqu'à 30 articles/campagne)",
-      "2 000 recherches IA Shopify / mois",
-      "3 000 réponses Chat IA / mois",
-      "Jusqu'à 5 boutiques Shopify connectées",
-      "Multi-boutiques & accès API personnalisé",
-      "Account manager dédié",
-      "Sessions de formation personnalisées",
-      "SLA garanti"
-    ]
+    highlightKey: "plans.enterprise.highlight",
+    featuresKey: "plans.enterprise.features"
   }
 ];
 

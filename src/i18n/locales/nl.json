@@ -267,5 +267,27 @@
     "activate_full_plan": "Volledig plan activeren",
     "activate_my_plan": "Mijn plan activeren",
     "modify": "Wijzigen"
+  },
+  "footer": {
+    "description": "Optimaliseer je Shopify-winkel met kunstmatige intelligentie",
+    "product": {
+      "title": "Product",
+      "features": "Functies",
+      "pricing": "Prijzen",
+      "demo": "Demo"
+    },
+    "resources": {
+      "title": "Bronnen",
+      "documentation": "Documentatie",
+      "blog": "Blog",
+      "support": "Ondersteuning"
+    },
+    "legal": {
+      "title": "Juridisch",
+      "privacy": "Privacy",
+      "terms": "Voorwaarden",
+      "cookies": "Cookies"
+    },
+    "copyright": "© 2025 NewAI. Alle rechten voorbehouden."
   }
 }

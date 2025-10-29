@@ -267,5 +267,27 @@
     "activate_full_plan": "激活完整计划",
     "activate_my_plan": "激活我的计划",
     "modify": "修改"
+  },
+  "footer": {
+    "description": "用人工智能优化您的Shopify商店",
+    "product": {
+      "title": "产品",
+      "features": "功能",
+      "pricing": "价格",
+      "demo": "演示"
+    },
+    "resources": {
+      "title": "资源",
+      "documentation": "文档",
+      "blog": "博客",
+      "support": "支持"
+    },
+    "legal": {
+      "title": "法律",
+      "privacy": "隐私",
+      "terms": "条款",
+      "cookies": "Cookies"
+    },
+    "copyright": "© 2025 NewAI. 保留所有权利。"
   }
 }

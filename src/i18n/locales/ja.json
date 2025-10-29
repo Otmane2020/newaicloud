@@ -267,5 +267,27 @@
     "activate_full_plan": "完全プランを有効化",
     "activate_my_plan": "マイプランを有効化",
     "modify": "変更"
+  },
+  "footer": {
+    "description": "AIでShopifyストアを最適化",
+    "product": {
+      "title": "製品",
+      "features": "機能",
+      "pricing": "価格",
+      "demo": "デモ"
+    },
+    "resources": {
+      "title": "リソース",
+      "documentation": "ドキュメント",
+      "blog": "ブログ",
+      "support": "サポート"
+    },
+    "legal": {
+      "title": "法的情報",
+      "privacy": "プライバシー",
+      "terms": "利用規約",
+      "cookies": "クッキー"
+    },
+    "copyright": "© 2025 NewAI. All rights reserved."
   }
 }

@@ -267,5 +267,27 @@
     "activate_full_plan": "Attiva piano completo",
     "activate_my_plan": "Attiva il mio piano",
     "modify": "Modifica"
+  },
+  "footer": {
+    "description": "Ottimizza il tuo negozio Shopify con l'intelligenza artificiale",
+    "product": {
+      "title": "Prodotto",
+      "features": "Funzionalità",
+      "pricing": "Prezzi",
+      "demo": "Demo"
+    },
+    "resources": {
+      "title": "Risorse",
+      "documentation": "Documentazione",
+      "blog": "Blog",
+      "support": "Supporto"
+    },
+    "legal": {
+      "title": "Legale",
+      "privacy": "Privacy",
+      "terms": "Termini",
+      "cookies": "Cookie"
+    },
+    "copyright": "© 2025 NewAI. Tutti i diritti riservati."
   }
 }

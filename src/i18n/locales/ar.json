@@ -267,5 +267,27 @@
     "activate_full_plan": "تفعيل الخطة الكاملة",
     "activate_my_plan": "تفعيل خطتي",
     "modify": "تعديل"
+  },
+  "footer": {
+    "description": "حسّن متجر Shopify الخاص بك بالذكاء الاصطناعي",
+    "product": {
+      "title": "المنتج",
+      "features": "الميزات",
+      "pricing": "الأسعار",
+      "demo": "عرض توضيحي"
+    },
+    "resources": {
+      "title": "الموارد",
+      "documentation": "التوثيق",
+      "blog": "المدونة",
+      "support": "الدعم"
+    },
+    "legal": {
+      "title": "قانوني",
+      "privacy": "الخصوصية",
+      "terms": "الشروط",
+      "cookies": "ملفات تعريف الارتباط"
+    },
+    "copyright": "© 2025 NewAI. جميع الحقوق محفوظة."
   }
 }

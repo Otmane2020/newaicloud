@@ -28,15 +28,16 @@ i18n
       zh: { translation: translationZH },
       ar: { translation: translationAR },
     },
-    fallbackLng: ['en', 'fr', 'es'],
+    fallbackLng: 'en',
+    debug: false,
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ['querystring', 'navigator', 'localStorage', 'htmlTag'],
+      order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],
-      lookupQuerystring: 'lng',
     },
+    saveMissing: false,
   });
 
 export default i18n;
