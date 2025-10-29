@@ -34,7 +34,6 @@ export function ShopifyConnection() {
   });
   const [limitReached, setLimitReached] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [shouldAutoImport, setShouldAutoImport] = useState(false);
   const { limits } = useUsageLimits();
   const [store, setStore] = useState<any>(null);
   const [storeName, setStoreName] = useState('');
@@ -121,19 +120,6 @@ export function ShopifyConnection() {
         const storeName = data.store_url?.replace('.myshopify.com', '') || '';
         setStoreName(storeName);
         
-        // Auto-trigger import for newly connected stores
-        const justConnected = localStorage.getItem('shopify_just_connected');
-        if (justConnected === 'true' && data.connected_at) {
-          const connectedTime = new Date(data.connected_at).getTime();
-          const now = Date.now();
-          // If connected less than 10 seconds ago, set flag for auto-import
-          if (now - connectedTime < 10000) {
-            console.log('🚀 Setting auto-import flag for newly connected store');
-            localStorage.removeItem('shopify_just_connected');
-            setShouldAutoImport(true);
-          }
-        }
-        
         return data; // Return the loaded data
       }
       return null;
@@ -144,34 +130,6 @@ export function ShopifyConnection() {
       setLoading(false);
     }
   };
-
-  // Auto-trigger import when flag is set
-  useEffect(() => {
-    if (shouldAutoImport && store) {
-      setShouldAutoImport(false);
-      
-      // ✅ Validation BEFORE auto-import
-      const hasValidCredentials = store.access_token && 
-        store.access_token.trim() !== '' && 
-        (store.connection_type === 'oauth' || store.api_key);
-      
-      if (!hasValidCredentials) {
-        console.error('❌ Cannot auto-import: Missing credentials', {
-          hasAccessToken: !!store.access_token,
-          hasApiKey: !!store.api_key,
-          connectionType: store.connection_type
-        });
-        toast.error('Credentials manquants', {
-          description: 'Votre connexion doit être recréée avec vos identifiants API. Utilisez le bouton "Supprimer" puis reconnectez votre boutique.'
-        });
-        return;
-      }
-      
-      setTimeout(() => {
-        handleImportProducts();
-      }, 500);
-    }
-  }, [shouldAutoImport, store]);
 
   const handleSaveConnection = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,8 +158,6 @@ export function ShopifyConnection() {
         apiSecretPreview: `${apiSecret.substring(0, 10)}...`
       });
       
-      let savedStoreId: string | undefined;
-      
       if (store) {
         const { error } = await supabase
           .from('shopify_connections')
@@ -216,7 +172,6 @@ export function ShopifyConnection() {
           .eq('id', store.id);
 
         if (error) throw error;
-        savedStoreId = store.id;
       } else {
         const { data, error } = await supabase
           .from('shopify_connections')
@@ -235,7 +190,6 @@ export function ShopifyConnection() {
         if (error) throw error;
         
         if (data) {
-          savedStoreId = data.id;
           setStore(data);
         }
       }
