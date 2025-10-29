@@ -256,16 +256,16 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="manual-api-secret" className="text-sm">Clé secrète d'API (API Secret)</Label>
+                      <Label htmlFor="manual-api-secret" className="text-sm">Admin API Access Token</Label>
                       <Input
                         id="manual-api-secret"
                         type="password"
-                        placeholder="shpss_xxxxxxxxxxxxxxxx"
+                        placeholder="shpat_xxxxxxxxxxxxxxxx"
                         value={manualApiSecret}
                         onChange={(e) => setManualApiSecret(e.target.value)}
                         className="text-sm font-mono"
                       />
-                      <p className="text-xs text-muted-foreground">Commence par shpss_ ou shpat_</p>
+                      <p className="text-xs text-muted-foreground">Commence par shpat_ (trouvé dans Shopify Admin → Apps → Develop apps)</p>
                     </div>
 
                     <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
