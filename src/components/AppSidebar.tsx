@@ -23,6 +23,7 @@ import {
   CalendarClock,
   ChevronRight,
   BarChart3,
+  Home,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -58,6 +59,7 @@ const seoSubItems = [
   { titleKey: "sidebar.seo_optimization", url: "/seo?tab=optimization", icon: Sparkles },
   { titleKey: "sidebar.tag_optimization", url: "/seo?tab=tags", icon: Tags },
   { titleKey: "sidebar.pages", url: "/seo?tab=pages", icon: FileText },
+  { titleKey: "sidebar.homepage", url: "/seo?tab=homepage", icon: Home },
   { titleKey: "sidebar.alt_image", url: "/seo?tab=alt", icon: Image },
   { titleKey: "sidebar.automation", url: "/seo?tab=automation", icon: Settings },
   { titleKey: "sidebar.kpis_audit", url: "/seo?tab=kpis", icon: BarChart3 },

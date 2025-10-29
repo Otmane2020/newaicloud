@@ -440,6 +440,7 @@
     "pages": "Pages",
     "alt_image": "ALT Image",
     "automation": "Automation",
+    "homepage": "Homepage",
     "kpis_audit": "KPIs & Audit",
     "blog": "SEO Blog",
     "articles_management": "Articles Management",
@@ -490,7 +491,30 @@
   },
   "seo": {
     "title": "SEO Optimization",
-    "description": "Manage SEO optimization for your products"
+    "description": "Manage SEO optimization for your products",
+    "homepage": {
+      "title": "Homepage SEO",
+      "description": "Optimize the SEO of your Shopify homepage",
+      "info": "Homepage SEO changes are applied directly to your Shopify store metafields.",
+      "noConnection": "Please connect a Shopify store to use this feature.",
+      "seoTitle": "SEO Title",
+      "seoTitlePlaceholder": "Search engine optimized title (max 60 characters)",
+      "seoDescription": "Meta Description",
+      "seoDescriptionPlaceholder": "Search engine optimized description (max 160 characters)",
+      "characters": "characters",
+      "generate": "Generate with AI",
+      "generating": "Generating...",
+      "sync": "Sync to Shopify",
+      "syncing": "Syncing...",
+      "preview": "Google Preview",
+      "fillFields": "Please fill in title and description",
+      "generated": "SEO generated successfully",
+      "generateError": "Error generating SEO",
+      "synced": "SEO synced to Shopify successfully",
+      "syncError": "Error syncing to Shopify",
+      "permissionError": "Permission denied",
+      "permissionHelp": "Your Shopify token needs read_content and write_content permissions. Regenerate your token with these permissions."
+    }
   },
   "blog": {
     "opportunities_none": "No opportunities detected. Import more products to see suggestions.",

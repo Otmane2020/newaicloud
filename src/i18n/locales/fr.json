@@ -442,6 +442,7 @@
     "pages": "Pages",
     "alt_image": "ALT Image",
     "automation": "Automatisation",
+    "homepage": "Page d'accueil",
     "kpis_audit": "KPIs & Audit",
     "blog": "Blog SEO",
     "articles_management": "Gestion Articles",
@@ -492,7 +493,30 @@
   },
   "seo": {
     "title": "Optimisation SEO",
-    "description": "Gérez l'optimisation SEO de vos produits"
+    "description": "Gérez l'optimisation SEO de vos produits",
+    "homepage": {
+      "title": "SEO Page d'accueil",
+      "description": "Optimisez le référencement de votre page d'accueil Shopify",
+      "info": "Les modifications du SEO de la page d'accueil sont appliquées directement aux metafields de votre boutique Shopify.",
+      "noConnection": "Veuillez connecter une boutique Shopify pour utiliser cette fonctionnalité.",
+      "seoTitle": "Titre SEO",
+      "seoTitlePlaceholder": "Titre optimisé pour les moteurs de recherche (max 60 caractères)",
+      "seoDescription": "Meta Description",
+      "seoDescriptionPlaceholder": "Description optimisée pour les moteurs de recherche (max 160 caractères)",
+      "characters": "caractères",
+      "generate": "Générer avec IA",
+      "generating": "Génération...",
+      "sync": "Synchroniser vers Shopify",
+      "syncing": "Synchronisation...",
+      "preview": "Aperçu Google",
+      "fillFields": "Veuillez remplir le titre et la description",
+      "generated": "SEO généré avec succès",
+      "generateError": "Erreur lors de la génération du SEO",
+      "synced": "SEO synchronisé avec Shopify avec succès",
+      "syncError": "Erreur lors de la synchronisation",
+      "permissionError": "Permission refusée",
+      "permissionHelp": "Votre token Shopify doit avoir les permissions read_content et write_content. Régénérez votre token avec ces permissions."
+    }
   },
   "blog": {
     "opportunities_none": "Aucune opportunité détectée. Importez plus de produits pour voir des suggestions.",

@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { pageId } = await req.json();
+    const { pageId, isHomepage } = await req.json();
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -27,25 +27,45 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error('Unauthorized');
 
-    // Récupérer la page
-    const { data: page, error: pageError } = await supabaseClient
-      .from('shopify_pages')
-      .select('*')
-      .eq('id', pageId)
-      .eq('user_id', user.id)
-      .single();
+    let pageTitle = '';
+    let textContent = '';
 
-    if (pageError) throw pageError;
+    if (isHomepage) {
+      // Pour la page d'accueil, récupérer les infos de la boutique
+      const { data: connection } = await supabaseClient
+        .from('shopify_connections')
+        .select('store_name, store_url')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
 
-    console.log(`Generating SEO for page: ${page.title}`);
+      if (connection) {
+        pageTitle = connection.store_name || 'My Store';
+        textContent = `E-commerce store: ${connection.store_name}. Homepage of the Shopify store.`;
+      }
+      
+      console.log(`Generating SEO for homepage of: ${pageTitle}`);
+    } else {
+      // Récupérer la page depuis la base de données
+      const { data: page, error: pageError } = await supabaseClient
+        .from('shopify_pages')
+        .select('*')
+        .eq('id', pageId)
+        .eq('user_id', user.id)
+        .single();
 
-    // Extraire du texte du HTML (simplifié)
-    const textContent = page.body_html?.replace(/<[^>]*>/g, ' ').substring(0, 1000) || '';
+      if (pageError) throw pageError;
+
+      pageTitle = page.title;
+      textContent = page.body_html?.replace(/<[^>]*>/g, ' ').substring(0, 1000) || '';
+      
+      console.log(`Generating SEO for page: ${pageTitle}`);
+    }
 
     // Générer le SEO avec Lovable AI
-    const prompt = `Génère un titre SEO optimisé (max 60 caractères) et une meta description (max 160 caractères) pour cette page Shopify:
+    const prompt = `Génère un titre SEO optimisé (max 60 caractères) et une meta description (max 160 caractères) pour cette page ${isHomepage ? 'home page' : 'Shopify'}:
 
-Titre: ${page.title}
+Titre: ${pageTitle}
 Contenu: ${textContent}
 
 Réponds uniquement en JSON:
@@ -84,18 +104,20 @@ Réponds uniquement en JSON:
 
     console.log('Generated SEO:', seoData);
 
-    // Mettre à jour la page
-    const { error: updateError } = await supabaseClient
-      .from('shopify_pages')
-      .update({
-        seo_title: seoData.seo_title,
-        seo_description: seoData.seo_description,
-        optimized: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', pageId);
+    // Mettre à jour la page seulement si ce n'est pas la homepage
+    if (!isHomepage) {
+      const { error: updateError } = await supabaseClient
+        .from('shopify_pages')
+        .update({
+          seo_title: seoData.seo_title,
+          seo_description: seoData.seo_description,
+          optimized: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', pageId);
 
-    if (updateError) throw updateError;
+      if (updateError) throw updateError;
+    }
 
     return new Response(
       JSON.stringify({ 

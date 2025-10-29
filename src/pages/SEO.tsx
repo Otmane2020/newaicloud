@@ -5,6 +5,7 @@ import { TagOptimization } from '@/components/seo/TagOptimization';
 import { SeoAltImage } from '@/components/seo/SeoAltImage';
 import { SeoAutomation } from '@/components/seo/SeoAutomation';
 import { PageOptimization } from '@/components/seo/PageOptimization';
+import { HomePageSeo } from '@/components/seo/HomePageSeo';
 import { SeoKPIs } from '@/components/seo/SeoKPIs';
 import { Sparkles, Tags, Image, Settings, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -18,7 +19,7 @@ export default function SEO() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['optimization', 'tags', 'pages', 'alt', 'automation', 'kpis'].includes(tab)) {
+    if (tab && ['optimization', 'tags', 'pages', 'homepage', 'alt', 'automation', 'kpis'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -39,6 +40,7 @@ export default function SEO() {
         {activeTab === 'optimization' && <SeoOptimization />}
         {activeTab === 'tags' && <TagOptimization />}
         {activeTab === 'pages' && <PageOptimization />}
+        {activeTab === 'homepage' && <HomePageSeo />}
         {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'automation' && <SeoAutomation />}
         {activeTab === 'kpis' && <SeoKPIs />}
