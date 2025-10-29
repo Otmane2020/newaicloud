@@ -111,33 +111,44 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Generating SEO with DeepSeek for product: ${product.title}`);
     
-    // Check usage limits before proceeding
+    // Check usage limits BEFORE generating (cette fonction incrémente +2)
     const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      console.log('🔍 Checking usage limits for user:', product.seller_id);
-      const limitResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/check-usage-limits`, {
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Non autorisé" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { data: limitsData, error: limitsError } = await supabaseClient.functions.invoke(
+      'check-usage-limits',
+      {
         headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (limitResponse.ok) {
-        const limitCheck = await limitResponse.json();
-        if (!limitCheck?.canUseOptimizations) {
-          console.log('⚠️ User has reached optimization limit');
-          return new Response(
-            JSON.stringify({ 
-              error: 'trial_limit_reached',
-              message: 'Limite d\'essai atteinte. Activez votre abonnement pour continuer.',
-              usage: limitCheck.usage,
-              limits: limitCheck.limits
-            }),
-            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        console.log('✅ Usage limits OK, proceeding with optimization');
+          Authorization: authHeader,
+        },
       }
+    );
+
+    if (limitsError || !limitsData) {
+      console.error('Error checking limits:', limitsError);
+      return new Response(
+        JSON.stringify({ error: "Impossible de vérifier les limites" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Cette fonction incrémente de +2, vérifier qu'il reste au moins 2 optimisations
+    if (!limitsData.canUseOptimizations || limitsData.usage.optimizations_count >= limitsData.limits.max_optimizations - 1) {
+      return new Response(
+        JSON.stringify({
+          error: "Limite d'optimisations atteinte",
+          limitReached: true,
+          usage: limitsData.usage,
+          limits: limitsData.limits,
+          shouldForcePayment: limitsData.shouldForcePayment
+        }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const seoPrompt = `Generate optimized SEO title and meta description for this e-commerce product:

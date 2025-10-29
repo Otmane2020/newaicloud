@@ -66,6 +66,45 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Check usage limits BEFORE generating
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Non autorisé" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { data: limitsData, error: limitsError } = await supabaseClient.functions.invoke(
+      'check-usage-limits',
+      {
+        headers: {
+          Authorization: authHeader,
+        },
+      }
+    );
+
+    if (limitsError || !limitsData) {
+      console.error('Error checking limits:', limitsError);
+      return new Response(
+        JSON.stringify({ error: "Impossible de vérifier les limites" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!limitsData.canUseOptimizations) {
+      return new Response(
+        JSON.stringify({
+          error: "Limite d'optimisations atteinte",
+          limitReached: true,
+          usage: limitsData.usage,
+          limits: limitsData.limits,
+          shouldForcePayment: limitsData.shouldForcePayment
+        }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
       .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags, seller_id")

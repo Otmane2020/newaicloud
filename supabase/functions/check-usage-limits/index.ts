@@ -85,7 +85,7 @@ serve(async (req) => {
         max_articles: plan.trial_max_articles || 1,
         max_chat_responses: plan.trial_max_chat_responses || 50,
         max_shopify_requests: plan.trial_max_shopify_requests || 20,
-        max_products: plan.trial_max_products || 50,
+        max_products: plan.trial_max_products || 10,
         max_shopify_stores: 1,
         max_campaigns: 0, // No campaigns in trial
       };
