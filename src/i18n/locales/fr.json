@@ -502,6 +502,16 @@
       "low": "Faible",
       "description": "Qualité SEO évaluée à {score}%"
     },
+    "score": {
+      "global": "Score SEO Global",
+      "globalPages": "Score SEO Global des Pages",
+      "perProduct": "Score par produit",
+      "perPage": "Score par page",
+      "productsAnalyzed": "produits analysés",
+      "pagesAnalyzed": "pages analysées",
+      "averageScore": "Score moyen de tous les produits",
+      "averagePageScore": "Score moyen de toutes les pages"
+    },
     "homepage": {
       "title": "SEO Page d'accueil",
       "description": "Optimisez le référencement de votre page d'accueil Shopify",

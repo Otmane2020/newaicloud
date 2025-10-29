@@ -12,6 +12,8 @@ import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { SeoConfidenceBadge } from './SeoConfidenceBadge';
+import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import {
   Search,
   RefreshCw,
@@ -314,6 +316,21 @@ export function SeoOptimization() {
   const syncedCount = products.filter(p => p.seo_synced_to_shopify).length;
   const optimizationRate = products.length > 0 ? Math.round((enrichedCount / products.length) * 100) : 0;
 
+  // Calculate global SEO score
+  const globalSeoScore = products.length > 0 
+    ? Math.round(
+        products.reduce((sum, p) => {
+          const score = calculateDetailedSeoScore(
+            p.seo_title,
+            p.seo_description,
+            !!p.image_url,
+            true
+          );
+          return sum + score.score;
+        }, 0) / products.length
+      )
+    : 0;
+
   const tabs = [
     { id: 'all' as QuickFilterTab, label: 'Tous', count: products.length },
     { id: 'not-enriched' as QuickFilterTab, label: 'Non enrichis', count: notEnrichedCount },
@@ -340,6 +357,31 @@ export function SeoOptimization() {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Global SEO Score Card */}
+      <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 dark:border-green-800 p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-muted-foreground">Score SEO Global</h3>
+            <div className="flex items-center gap-3">
+              <div className="text-5xl font-bold">{globalSeoScore}</div>
+              <div className="text-muted-foreground">/100</div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {products.length} produits analysés
+            </p>
+          </div>
+          <div className="text-right space-y-2">
+            <SeoConfidenceBadge 
+              seoTitle={products.length > 0 ? "Global" : null}
+              seoDescription={products.length > 0 ? "Score moyen de tous les produits" : null}
+              showLabel={false}
+              className="text-lg px-4 py-2"
+            />
+            <Progress value={globalSeoScore} className="w-32 h-2" />
+          </div>
+        </div>
+      </Card>
 
       {/* Hero Banner with CTA */}
       <Card className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950 dark:via-purple-950 dark:to-pink-950 border-2 border-primary/20 p-8">
@@ -478,8 +520,15 @@ export function SeoOptimization() {
                   className="w-16 h-16 object-cover rounded"
                 />
               )}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold truncate">{product.title}</h3>
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold truncate">{product.title}</h3>
+                  <SeoConfidenceBadge 
+                    seoTitle={product.seo_title}
+                    seoDescription={product.seo_description}
+                    showLabel={false}
+                  />
+                </div>
                 <p className="text-sm text-muted-foreground">{product.vendor}</p>
                 {product.seo_title && (
                   <p className="text-xs text-green-600 mt-1">✓ SEO optimisé</p>

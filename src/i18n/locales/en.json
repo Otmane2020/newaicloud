@@ -500,6 +500,16 @@
       "low": "Low",
       "description": "SEO quality rated at {score}%"
     },
+    "score": {
+      "global": "Global SEO Score",
+      "globalPages": "Global Pages SEO Score",
+      "perProduct": "Score per product",
+      "perPage": "Score per page",
+      "productsAnalyzed": "products analyzed",
+      "pagesAnalyzed": "pages analyzed",
+      "averageScore": "Average score of all products",
+      "averagePageScore": "Average score of all pages"
+    },
     "homepage": {
       "title": "Homepage SEO",
       "description": "Optimize the SEO of your Shopify homepage",

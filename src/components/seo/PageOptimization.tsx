@@ -8,6 +8,9 @@ import { toast } from 'sonner';
 import { Search, Loader2, FileText, Sparkles, CheckCircle, Upload, Clock } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { SeoConfidenceBadge } from './SeoConfidenceBadge';
+import { calculateDetailedSeoScore } from '@/lib/seoQuality';
+import { Progress } from '@/components/ui/progress';
 
 interface ShopifyPage {
   id: string;
@@ -314,8 +317,48 @@ export function PageOptimization() {
     );
   }
 
+  // Calculate global SEO score for pages
+  const globalPageSeoScore = pages.length > 0 
+    ? Math.round(
+        pages.reduce((sum, p) => {
+          const score = calculateDetailedSeoScore(
+            p.seo_title,
+            p.seo_description,
+            false,
+            true
+          );
+          return sum + score.score;
+        }, 0) / pages.length
+      )
+    : 0;
+
   return (
     <div className="space-y-6">
+      {/* Global SEO Score Card */}
+      <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 dark:border-green-800 p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-muted-foreground">Score SEO Global des Pages</h3>
+            <div className="flex items-center gap-3">
+              <div className="text-5xl font-bold">{globalPageSeoScore}</div>
+              <div className="text-muted-foreground">/100</div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {pages.length} pages analysées
+            </p>
+          </div>
+          <div className="text-right space-y-2">
+            <SeoConfidenceBadge 
+              seoTitle={pages.length > 0 ? "Global" : null}
+              seoDescription={pages.length > 0 ? "Score moyen de toutes les pages" : null}
+              showLabel={false}
+              className="text-lg px-4 py-2"
+            />
+            <Progress value={globalPageSeoScore} className="w-32 h-2" />
+          </div>
+        </div>
+      </Card>
+
       {/* Hero Banner */}
       <Card className="bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-950 dark:via-blue-950 dark:to-cyan-950 border-2 border-indigo-200 p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -445,6 +488,7 @@ export function PageOptimization() {
                   <TableHead>Titre</TableHead>
                   <TableHead>SEO Title</TableHead>
                   <TableHead>Méta Description</TableHead>
+                  <TableHead className="text-center">Score SEO</TableHead>
                   <TableHead className="text-center">Optimisé</TableHead>
                   <TableHead className="text-center">Synchronisé</TableHead>
                   <TableHead>Actions</TableHead>
@@ -465,6 +509,13 @@ export function PageOptimization() {
                     </TableCell>
                     <TableCell className="max-w-sm truncate text-sm text-muted-foreground">
                       {page.seo_description || '-'}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <SeoConfidenceBadge 
+                        seoTitle={page.seo_title}
+                        seoDescription={page.seo_description}
+                        showLabel={false}
+                      />
                     </TableCell>
                     <TableCell className="text-center">
                       {page.optimized ? (
