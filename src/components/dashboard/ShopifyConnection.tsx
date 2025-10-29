@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ShoppingBag, Link as LinkIcon, Download, Package, FileText } from 'lucide-react';
+import { Loader2, ShoppingBag, Link as LinkIcon, Download, Package, FileText, AlertCircle, Trash2 } from 'lucide-react';
 import { shopifyConnectionSchema } from '@/lib/validationSchemas';
 import { ImportProgressDialog } from './ImportProgressDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -206,6 +207,34 @@ export function ShopifyConnection() {
     }
   };
 
+  const handleDeleteConnection = async () => {
+    if (!store) return;
+    
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette connexion ? Vous devrez la recréer pour importer des produits.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('shopify_connections')
+        .delete()
+        .eq('id', store.id);
+
+      if (error) throw error;
+
+      toast.success('Connexion supprimée avec succès');
+      setStore(null);
+      setStoreName('');
+      setApiToken('');
+    } catch (error: any) {
+      console.error('Error deleting connection:', error);
+      toast.error(error.message || 'Erreur lors de la suppression');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleImportProducts = async () => {
     if (!store || !store.id) {
       toast.error('Veuillez d\'abord connecter votre boutique');
@@ -389,14 +418,53 @@ export function ShopifyConnection() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold">Boutique connectée</h3>
-            <Badge variant={store.is_active ? "success" : "destructive"}>
-              {store.is_active ? 'Active' : 'Inactive'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={store.is_active ? "success" : "destructive"}>
+                {store.is_active ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
           </div>
+
+          {/* Alert for missing credentials */}
+          {(!store.access_token || (store.connection_type === 'manual' && !store.api_key)) && (
+            <Alert className="mb-4 border-orange-500 bg-orange-50 dark:bg-orange-950/20">
+              <AlertCircle className="h-4 w-4 text-orange-600" />
+              <AlertTitle className="text-orange-900 dark:text-orange-100">
+                Credentials manquants
+              </AlertTitle>
+              <AlertDescription className="text-orange-800 dark:text-orange-200">
+                <p className="mb-2">
+                  Votre connexion Shopify ne contient pas les identifiants API nécessaires. 
+                  Cela se produit car elle a été créée avant notre mise à jour.
+                </p>
+                <p className="font-semibold">
+                  Solution : Supprimez cette connexion et recréez-la avec vos identifiants API complets.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="space-y-2 mb-6">
             <p className="text-sm">
               <span className="font-medium">Boutique:</span> {store.store_url}
+            </p>
+            <p className="text-sm">
+              <span className="font-medium">Type:</span>{' '}
+              <Badge variant="outline">
+                {store.connection_type === 'oauth' ? 'OAuth' : 'API Key'}
+              </Badge>
+            </p>
+            <p className="text-sm">
+              <span className="font-medium">API Key:</span>{' '}
+              <Badge variant={store.api_key ? "success" : "destructive"}>
+                {store.api_key ? '✓ Présente' : '✗ Manquante'}
+              </Badge>
+            </p>
+            <p className="text-sm">
+              <span className="font-medium">API Secret:</span>{' '}
+              <Badge variant={store.access_token ? "success" : "destructive"}>
+                {store.access_token ? '✓ Présente' : '✗ Manquante'}
+              </Badge>
             </p>
             <p className="text-sm text-muted-foreground">
               Connectée le: {new Date(store.created_at).toLocaleDateString('fr-FR')}
@@ -435,23 +503,35 @@ export function ShopifyConnection() {
             </div>
           )}
 
-          <Button 
-            onClick={handleImportProducts}
-            disabled={importing}
-            className="w-full mt-6"
-          >
-            {importing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Import en cours...
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                Importer les produits
-              </>
-            )}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 mt-6">
+            <Button 
+              onClick={handleImportProducts}
+              disabled={importing || !store.access_token || (store.connection_type === 'manual' && !store.api_key)}
+              className="flex-1"
+            >
+              {importing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Import en cours...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Importer les produits
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={handleDeleteConnection}
+              disabled={importing}
+              variant="destructive"
+              className="sm:w-auto"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Supprimer
+            </Button>
+          </div>
         </Card>
       )}
 
