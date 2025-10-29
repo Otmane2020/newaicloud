@@ -252,12 +252,15 @@ const Index = () => {
 
                   <div className="space-y-3 pt-6 border-t">
                     <p className="font-semibold text-sm">{t('plans.included')}</p>
-                    {(t(plan.featuresKey, { returnObjects: true }) as string[]).map((feature: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </div>
-                    ))}
+                    {Array.isArray(t(plan.featuresKey, { returnObjects: true })) 
+                      ? (t(plan.featuresKey, { returnObjects: true }) as string[]).map((feature: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                          <span className="text-sm">{feature}</span>
+                        </div>
+                      ))
+                      : null
+                    }
                   </div>
                 </div>
               </Card>

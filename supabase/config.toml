@@ -80,3 +80,9 @@ verify_jwt = true
 
 [functions.optimize-shopping-feed]
 verify_jwt = true
+
+[functions.translate-content]
+verify_jwt = false
+
+[functions.get-translations]
+verify_jwt = false
