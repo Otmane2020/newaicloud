@@ -188,32 +188,27 @@ function generateAltPrompt(
     seo_optimized: "Balance description with SEO keywords (10-15 words)"
   };
 
-  return `Generate an ${style.toUpperCase()} ALT text for a product image in ${language}.
+  return `Génère un texte ALT optimisé pour cette image produit en COMBINANT les informations produit ET les analyses visuelles disponibles :
 
-Product Information:
-- Title: ${product.title}
-- Description: ${product.description || "Not provided"}
-- Category: ${product.category || "Not specified"}
-- Color: ${product.ai_color || "Not specified"}
-- Material: ${product.ai_material || "Not specified"}
+Produit : ${product.title}
+Description : ${product.description?.substring(0, 200) || "Non fournie"}
+Catégorie : ${product.category || "Non spécifiée"}
 
-Generate a descriptive ALT text that:
-1. Describes what the image shows
-2. Includes the product name
-3. Mentions key characteristics (color, material, style)
-4. ${styleInstructions[style as keyof typeof styleInstructions]}
-5. Is SEO-friendly and accessible
-6. Written in ${language}
+Analyses visuelles disponibles :
+- Couleur : ${product.ai_color || 'non disponible'}
+- Matériau : ${product.ai_material || 'non disponible'}
 
-Provide response as JSON only:
-{
-  "alt_text": "Your ALT text here"
-}
+RÈGLES :
+1. Intègre le titre du produit
+2. Incorpore les couleurs, matériaux détectés
+3. Décris visuellement le produit de manière naturelle
+4. 10-20 mots
+5. SEO-friendly et accessible
+6. En français
 
-Example for ${language}:
-{
-  "alt_text": "Table basse en bois naturel style scandinave pour salon moderne"
-}`;
+Exemple : "Table basse ronde en bois massif naturel, style scandinave épuré avec plateau lisse"
+
+Réponds avec UN SEUL texte ALT, pas de JSON, pas d'explication.`;
 }
 
 function parseAltTextResponse(content: string, fallback: string): string {

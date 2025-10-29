@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Search, Loader2, FileText, Sparkles, CheckCircle } from 'lucide-react';
+import { Search, Loader2, FileText, Sparkles, CheckCircle, Upload, Clock } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ShopifyPage {
   id: string;
@@ -15,12 +17,14 @@ interface ShopifyPage {
   seo_title: string | null;
   seo_description: string | null;
   optimized: boolean;
+  last_synced_at?: string | null;
 }
 
 export function PageOptimization() {
   const [pages, setPages] = useState<ShopifyPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [importingPages, setImportingPages] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
@@ -57,7 +61,8 @@ export function PageOptimization() {
         body_html: page.body_html || '',
         seo_title: page.seo_title,
         seo_description: page.seo_description,
-        optimized: !!(page.seo_title && page.seo_description)
+        optimized: !!(page.seo_title && page.seo_description),
+        last_synced_at: page.last_synced_at
       }));
       
       setPages(mappedPages);
@@ -185,6 +190,122 @@ export function PageOptimization() {
     }
   };
 
+  const handleOptimizeAll = async () => {
+    const pagesToOptimize = pages.filter(p => !p.optimized);
+    if (pagesToOptimize.length === 0) {
+      toast.info('Toutes les pages sont déjà optimisées');
+      return;
+    }
+    
+    setOptimizing(true);
+    let successCount = 0;
+    
+    for (let i = 0; i < pagesToOptimize.length; i++) {
+      try {
+        const { error } = await supabase.functions.invoke('generate-page-seo', {
+          body: { pageId: pagesToOptimize[i].id }
+        });
+        
+        if (error) throw error;
+        successCount++;
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+    
+    setOptimizing(false);
+    toast.success(`${successCount}/${pagesToOptimize.length} pages optimisées !`);
+    fetchPages();
+  };
+
+  const handleSyncAll = async () => {
+    const pagesToSync = pages.filter(p => p.optimized);
+    if (pagesToSync.length === 0) {
+      toast.info('Aucune page optimisée à synchroniser');
+      return;
+    }
+    
+    setSyncing(true);
+    let successCount = 0;
+    
+    for (const page of pagesToSync) {
+      try {
+        const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
+          body: { pageId: page.id }
+        });
+        
+        if (error) throw error;
+        successCount++;
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+    
+    setSyncing(false);
+    toast.success(`${successCount}/${pagesToSync.length} pages synchronisées !`);
+    fetchPages();
+  };
+
+  const handleSyncSelected = async () => {
+    if (selectedPages.size === 0) return;
+    
+    const pageIds = Array.from(selectedPages);
+    setSyncing(true);
+    let successCount = 0;
+    
+    for (const pageId of pageIds) {
+      try {
+        const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
+          body: { pageId }
+        });
+        
+        if (error) throw error;
+        successCount++;
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+    
+    setSyncing(false);
+    setSelectedPages(new Set());
+    toast.success(`${successCount}/${pageIds.length} pages synchronisées !`);
+    fetchPages();
+  };
+
+  const handleOptimizePage = async (pageId: string) => {
+    try {
+      setOptimizing(true);
+      const { error } = await supabase.functions.invoke('generate-page-seo', {
+        body: { pageId }
+      });
+      
+      if (error) throw error;
+      toast.success('Page optimisée !');
+      fetchPages();
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur');
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  const handleSyncPage = async (pageId: string) => {
+    try {
+      setSyncing(true);
+      const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
+        body: { pageId }
+      });
+      
+      if (error) throw error;
+      toast.success('Page synchronisée !');
+      fetchPages();
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -243,45 +364,7 @@ export function PageOptimization() {
         </Card>
       </div>
 
-      {/* Search & Actions */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Rechercher une page..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSelectAll}
-              disabled={pages.length === 0}
-            >
-              {selectedPages.size === filteredPages.length ? 'Désélectionner' : 'Tout sélectionner'}
-            </Button>
-            <Button
-              size="sm"
-              disabled={selectedPages.size === 0 || optimizing}
-              onClick={handleOptimizePages}
-            >
-              {optimizing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Optimiser ({selectedPages.size})
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Pages List */}
+      {/* Pages Table */}
       {pages.length === 0 ? (
         <Card className="p-12 text-center">
           <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
@@ -308,32 +391,123 @@ export function PageOptimization() {
           </Button>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {filteredPages.map((page) => (
-            <Card key={page.id} className="p-4 hover:shadow-md transition">
-              <div className="flex items-center gap-4">
-                <input
-                  type="checkbox"
-                  checked={selectedPages.has(page.id)}
-                  onChange={() => handleSelectPage(page.id)}
-                  className="w-5 h-5"
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold truncate">{page.title}</h3>
-                  <p className="text-sm text-muted-foreground">/{page.handle}</p>
-                  {page.seo_title && (
-                    <p className="text-xs text-green-600 mt-1">✓ SEO optimisé</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={page.optimized ? 'default' : 'secondary'}>
-                    {page.optimized ? 'Optimisé' : 'En attente'}
-                  </Badge>
-                </div>
+        <Card>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold">Pages Shopify</h3>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleOptimizeAll}
+                  disabled={optimizing || pages.filter(p => !p.optimized).length === 0}
+                  variant="default"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Optimiser tout ({pages.filter(p => !p.optimized).length})
+                </Button>
+                <Button
+                  onClick={handleSyncAll}
+                  disabled={syncing || pages.filter(p => p.optimized).length === 0}
+                  variant="outline"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Synchroniser tout
+                </Button>
+                <Button
+                  onClick={handleSyncSelected}
+                  disabled={syncing || selectedPages.size === 0}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Synchroniser ({selectedPages.size})
+                </Button>
               </div>
-            </Card>
-          ))}
-        </div>
+            </div>
+
+            <div className="relative flex-1 mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Rechercher une page..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedPages.size === filteredPages.length && filteredPages.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead>Titre</TableHead>
+                  <TableHead>SEO Title</TableHead>
+                  <TableHead>Méta Description</TableHead>
+                  <TableHead className="text-center">Optimisé</TableHead>
+                  <TableHead className="text-center">Synchronisé</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPages.map((page) => (
+                  <TableRow key={page.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedPages.has(page.id)}
+                        onCheckedChange={() => handleSelectPage(page.id)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{page.title}</TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {page.seo_title || '-'}
+                    </TableCell>
+                    <TableCell className="max-w-sm truncate text-sm text-muted-foreground">
+                      {page.seo_description || '-'}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {page.optimized ? (
+                        <CheckCircle className="w-5 h-5 text-green-600 mx-auto" />
+                      ) : (
+                        <Clock className="w-5 h-5 text-orange-600 mx-auto" />
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={page.last_synced_at ? 'default' : 'secondary'}>
+                        {page.last_synced_at ? 'Oui' : 'Non'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {!page.optimized && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleOptimizePage(page.id)}
+                            disabled={optimizing}
+                          >
+                            <Sparkles className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {page.optimized && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSyncPage(page.id)}
+                            disabled={syncing}
+                          >
+                            <Upload className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       )}
     </div>
   );

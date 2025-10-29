@@ -18,7 +18,6 @@ export default function Blog() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'articles');
-  const [activeView, setActiveView] = useState(searchParams.get('view') || 'main');
   const [articles, setArticles] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +27,7 @@ export default function Blog() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['articles', 'campaigns', 'opportunities'].includes(tab)) {
+    if (tab && ['articles', 'campaigns', 'opportunities', 'netlinking', 'settings'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -130,7 +129,9 @@ export default function Blog() {
   const tabs = [
     { id: 'articles', label: 'Articles', icon: PenSquare, description: 'Gérer vos articles' },
     { id: 'campaigns', label: 'Campagnes', icon: CalendarClock, description: 'Automatiser le blog' },
-    { id: 'opportunities', label: 'Opportunités', icon: Lightbulb, description: 'Idées de contenu' }
+    { id: 'opportunities', label: 'Opportunités', icon: Lightbulb, description: 'Idées de contenu' },
+    { id: 'netlinking', label: 'Netlinking', icon: Link, description: 'Gestion des liens' },
+    { id: 'settings', label: 'Paramètres', icon: Settings, description: 'Configuration' }
   ];
 
   return (
@@ -146,7 +147,7 @@ export default function Blog() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -307,11 +308,41 @@ export default function Blog() {
               </p>
             </div>
           </div>
+          <BlogOpportunities />
+        </div>
+      )}
 
-          {/* Content based on view */}
-          {activeView === 'main' && <BlogOpportunities />}
-          {activeView === 'netlinking' && <NetlinkingTable />}
-          {activeView === 'settings' && <OpportunitiesSettings />}
+      {activeTab === 'netlinking' && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <Link className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold">Netlinking</h2>
+              <p className="text-sm text-muted-foreground">
+                Gérez vos liens internes et générez des articles optimisés
+              </p>
+            </div>
+          </div>
+          <NetlinkingTable />
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gray-100 dark:bg-gray-900 rounded-lg">
+              <Settings className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold">Paramètres Blog</h2>
+              <p className="text-sm text-muted-foreground">
+                Configurez la génération automatique d'opportunités
+              </p>
+            </div>
+          </div>
+          <OpportunitiesSettings />
         </div>
       )}
 

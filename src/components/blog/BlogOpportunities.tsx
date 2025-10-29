@@ -320,24 +320,28 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <p className="text-sm text-muted-foreground">
-          {opportunities.length} opportunités détectées
-        </p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h3 className="text-xl font-semibold">Opportunités de Contenu IA</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {opportunities.length} opportunités détectées basées sur votre catalogue
+          </p>
+        </div>
         <Button
           onClick={handleRegenerate}
           disabled={regenerating}
-          variant="outline"
+          size="lg"
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
         >
           {regenerating ? (
             <>
-              <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-              Régénération...
+              <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+              Analyse en cours...
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4 mr-2" />
-              Nouvelles opportunités
+              <Sparkles className="w-5 h-5 mr-2" />
+              Générer opportunités IA
             </>
           )}
         </Button>

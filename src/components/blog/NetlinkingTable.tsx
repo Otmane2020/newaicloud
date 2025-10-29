@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Link, ExternalLink, Download, TrendingUp } from 'lucide-react';
+import { Sparkles, FileText, Link, Download, ExternalLink, TrendingUp } from 'lucide-react';
 
 interface NetlinkingEntry {
   id: string;
@@ -149,76 +149,133 @@ export function NetlinkingTable() {
               </CardTitle>
               <CardDescription>Tous vos liens créés dans les articles</CardDescription>
             </div>
-            <Button onClick={exportToCSV} variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Exporter CSV
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Chargement...</div>
-          ) : entries.length === 0 ? (
-            <div className="text-center py-12">
-              <Link className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-2">Aucun lien détecté</p>
-              <p className="text-sm text-muted-foreground">Les liens seront automatiquement détectés lors de la génération d'articles</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Article d'origine</TableHead>
-                    <TableHead>URL cible</TableHead>
-                    <TableHead>Texte d'ancrage</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Clics</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {entries.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-medium max-w-xs truncate">
-                        {entry.article_title}
-                      </TableCell>
-                      <TableCell>
-                        <a
-                          href={entry.target_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
-                        >
-                          {entry.target_url.substring(0, 40)}...
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {entry.anchor_text}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={entry.link_type === 'internal' ? 'default' : 'secondary'}>
-                          {entry.link_type === 'internal' ? 'Interne' : 'Externe'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                          {entry.click_count}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(entry.created_at).toLocaleDateString('fr-FR')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <Button onClick={exportToCSV} variant="outline" size="sm">
+        <Download className="w-4 h-4 mr-2" />
+        Exporter CSV
+      </Button>
+    </div>
+  </CardHeader>
+  <CardContent>
+    {loading ? (
+      <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+    ) : entries.length === 0 ? (
+      <div className="text-center py-12">
+        <Link className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+        <p className="text-muted-foreground mb-2">Aucun lien détecté</p>
+        <p className="text-sm text-muted-foreground">Les liens seront automatiquement détectés lors de la génération d'articles</p>
+      </div>
+    ) : (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Article d'origine</TableHead>
+              <TableHead>URL cible</TableHead>
+              <TableHead>Texte d'ancrage</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-right">Clics</TableHead>
+              <TableHead>Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {entries.map((entry) => (
+              <TableRow key={entry.id}>
+                <TableCell className="font-medium max-w-xs truncate">
+                  {entry.article_title}
+                </TableCell>
+                <TableCell>
+                  <a
+                    href={entry.target_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
+                  >
+                    {entry.target_url.substring(0, 40)}...
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </TableCell>
+                <TableCell className="max-w-xs truncate">
+                  {entry.anchor_text}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={entry.link_type === 'internal' ? 'default' : 'secondary'}>
+                    {entry.link_type === 'internal' ? 'Interne' : 'Externe'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                    {entry.click_count}
+                  </div>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {new Date(entry.created_at).toLocaleDateString('fr-FR')}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
+{/* Section Génération Articles */}
+<Card className="mt-6">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <Sparkles className="w-5 h-5" />
+      Générer Articles avec Netlinking
+    </CardTitle>
+    <CardDescription>
+      Créez automatiquement des articles optimisés avec liens internes basés sur votre catalogue
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="space-y-4">
+      <div className="flex gap-4">
+        <Button
+          onClick={async () => {
+            try {
+              toast.info('Analyse du catalogue en cours...');
+              const { data, error } = await supabase.functions.invoke('generate-daily-opportunities');
+              if (error) throw error;
+              toast.success('Articles générés avec netlinking automatique !');
+              loadNetlinking();
+            } catch (error: any) {
+              toast.error(error.message || 'Erreur lors de la génération');
+            }
+          }}
+          className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600"
+        >
+          <Sparkles className="w-4 h-4 mr-2" />
+          Générer article pour produits connexes
+        </Button>
+        <Button
+          onClick={async () => {
+            try {
+              toast.info('Analyse des pages Shopify...');
+              const { data, error } = await supabase.functions.invoke('generate-daily-opportunities');
+              if (error) throw error;
+              toast.success('Articles générés pour les pages !');
+              loadNetlinking();
+            } catch (error: any) {
+              toast.error(error.message || 'Erreur');
+            }
+          }}
+          variant="outline"
+          className="flex-1"
+        >
+          <FileText className="w-4 h-4 mr-2" />
+          Générer article pour pages Shopify
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        L'IA analysera votre catalogue et créera des articles avec liens internes automatiques
+      </p>
+    </div>
+  </CardContent>
+</Card>
     </div>
   );
 }

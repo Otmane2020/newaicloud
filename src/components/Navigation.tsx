@@ -51,8 +51,8 @@ const menuItems = [
       { path: '/blog?tab=articles', label: 'Articles', icon: PenSquare },
       { path: '/blog?tab=campaigns', label: 'Campagnes', icon: CalendarClock },
       { path: '/blog?tab=opportunities', label: 'Opportunités', icon: Lightbulb },
-      { path: '/blog?tab=opportunities&view=netlinking', label: 'Netlinking', icon: LinkIcon },
-      { path: '/blog?tab=opportunities&view=settings', label: 'Paramètres', icon: Settings }
+      { path: '/blog?tab=netlinking', label: 'Netlinking', icon: LinkIcon },
+      { path: '/blog?tab=settings', label: 'Paramètres', icon: Settings }
     ]
   },
   { 

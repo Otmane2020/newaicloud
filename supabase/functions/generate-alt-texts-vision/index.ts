@@ -35,23 +35,27 @@ async function callDeepSeekVision(imageUrl: string, productContext: string) {
           content: [
             {
               type: "text",
-              text: `Analyze this product image and generate an SEO-optimized ALT text.
+              text: `Analyse cette image de produit et génère un texte ALT optimisé SEO qui COMBINE :
+1. Les informations produit fournies (titre, description, variations)
+2. L'analyse visuelle de l'image (couleurs, matériaux, formes, textures, style)
 
-Context:
+Context produit :
 ${productContext}
 
-Instructions:
-1. Describe what you see in the image (colors, materials, shapes, textures, style)
-2. Incorporate product title and variation details
-3. Make it natural, descriptive and SEO-friendly
-4. Keep it between 10-20 words
-5. Write in French
-6. Focus on visual characteristics that complement the product information
+RÈGLES STRICTES :
+- Le texte ALT DOIT inclure à la fois les infos produit ET l'analyse visuelle
+- Décris ce que tu VOIS dans l'image : couleurs dominantes, matériaux visibles, formes, textures, style
+- Intègre naturellement le titre du produit
+- 10-20 mots maximum
+- En français
+- Naturel et SEO-friendly
 
-Respond ONLY with valid JSON:
+Exemple : "Canapé scandinave 3 places en tissu beige clair avec pieds bois naturel, design minimaliste et coussins moelleux"
+
+Réponds UNIQUEMENT avec ce JSON valide :
 {
-  "alt_text": "Your descriptive ALT text here",
-  "visual_analysis": "Brief description of what you see in the image"
+  "alt_text": "Ton texte ALT ici (combine produit + analyse visuelle)",
+  "visual_analysis": "Description détaillée de ce que tu vois dans l'image"
 }`
             },
             {
@@ -208,10 +212,28 @@ Deno.serve(async (req: Request) => {
       const parsed = JSON.parse(visionContent);
       altText = parsed.alt_text || "";
       visualAnalysis = parsed.visual_analysis || "";
+      
+      // ✅ Vérifier que l'altText contient bien du contenu visuel
+      if (!altText || altText.length < 15) {
+        throw new Error('ALT text trop court');
+      }
     } catch (e) {
-      console.error("Failed to parse Vision JSON:", visionContent);
-      // Fallback
-      altText = `${product.title}${variants && variants.length > 0 ? ' - ' + variants[0].title : ''}`;
+      console.error("Failed to parse or validate Vision JSON:", visionContent);
+      
+      // ✅ Fallback qui tente d'extraire l'analyse du texte brut
+      const match = visionContent.match(/"alt_text":\s*"([^"]+)"/);
+      if (match) {
+        altText = match[1];
+      } else {
+        // ❌ Dernier recours (mais avertir l'utilisateur)
+        altText = `${product.title}${variants && variants.length > 0 ? ' - ' + variants[0].title : ''} (analyse visuelle échouée)`;
+        console.error('❌ Vision AI failed to provide visual analysis');
+      }
+    }
+
+    // ✅ Valider que l'ALT contient plus que juste le titre
+    if (altText === product.title || altText.length < 20) {
+      console.warn('⚠️ ALT text seems to lack visual description');
     }
 
     // Update image with ALT text and analysis
@@ -226,7 +248,10 @@ Deno.serve(async (req: Request) => {
       throw updateError;
     }
 
-    console.log(`Vision ALT text generated for image ${imageId}: ${altText}`);
+    console.log(`✅ Vision ALT text generated for image ${imageId}:`);
+    console.log(`   - ALT Text: ${altText}`);
+    console.log(`   - Visual Analysis: ${visualAnalysis}`);
+    console.log(`   - Character count: ${altText.length}`);
 
     // Track usage
     if (product?.seller_id) {
