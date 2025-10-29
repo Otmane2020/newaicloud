@@ -544,10 +544,11 @@ Deno.serve(async (req: Request) => {
     });
 
     // Import pages from Shopify
+    let pagesImported = 0;
     try {
-      console.log('Importing Shopify pages...');
+      console.log('📄 Importing Shopify pages...');
       const pagesResponse = await fetch(
-        `https://${cleanShopName}.myshopify.com/admin/api/2024-01/pages.json?limit=250`,
+        `https://${cleanShopName}.myshopify.com/admin/api/2025-01/pages.json?limit=250`,
         {
           headers: {
             "X-Shopify-Access-Token": authToken,
@@ -569,20 +570,33 @@ Deno.serve(async (req: Request) => {
             handle: page.handle,
             published_at: page.published_at,
             template_suffix: page.template_suffix,
+            updated_at: page.updated_at,
           }));
 
-          await supabaseServiceClient
+          const { error: pagesError } = await supabaseServiceClient
             .from('shopify_pages')
             .upsert(pagesToInsert, {
               onConflict: 'shopify_page_id',
               ignoreDuplicates: false,
             });
           
-          console.log(`Successfully imported ${pages.length} pages`);
+          if (pagesError) {
+            console.error('❌ Error inserting pages:', pagesError);
+            throw pagesError;
+          }
+          
+          pagesImported = pages.length;
+          console.log(`✅ Successfully imported ${pagesImported} pages`);
+        } else {
+          console.log('⚠️ No pages found in Shopify');
         }
+      } else {
+        const errorText = await pagesResponse.text();
+        console.error(`❌ Shopify pages API error: ${pagesResponse.status}`, errorText);
       }
     } catch (error) {
-      console.error('Error importing pages (non-critical):', error);
+      console.error('❌ Error importing pages:', error);
+      // Ne pas bloquer l'import si les pages échouent
     }
 
     return new Response(
@@ -591,9 +605,10 @@ Deno.serve(async (req: Request) => {
         count: products.length,
         variantsCount: totalVariants,
         imagesCount: totalImages,
+        pagesImported: pagesImported,
         pagesProcessed: pageCount,
         jobId: importJob.id,
-        message: `Successfully imported ${products.length} products, ${totalVariants} variants, and ${totalImages} images across ${pageCount} pages`,
+        message: `Successfully imported ${products.length} products, ${totalVariants} variants, ${totalImages} images, and ${pagesImported} pages`,
       }),
       {
         status: 200,

@@ -124,6 +124,18 @@ export function ShopifyConnectionsList() {
         
         setProductsImported(job.products_processed || 0);
         
+        // ✅ Récupérer le nombre de pages importées depuis la DB
+        if (job.store_id) {
+          const { count } = await supabase
+            .from('shopify_pages')
+            .select('*', { count: 'exact', head: true })
+            .eq('store_id', job.store_id);
+          
+          if (count !== null) {
+            setPagesImported(count);
+          }
+        }
+        
         // Check if completed or quota reached
         if (job.status === 'completed') {
           setImportPhase('complete');
