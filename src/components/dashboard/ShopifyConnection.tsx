@@ -109,6 +109,14 @@ export function ShopifyConnection() {
         .maybeSingle();
 
       if (data) {
+        console.log('📥 Store data loaded:', {
+          storeId: data.id,
+          hasApiKey: !!data.api_key,
+          hasAccessToken: !!data.access_token,
+          apiKeyPreview: data.api_key ? `${data.api_key.substring(0, 10)}...` : 'NULL',
+          accessTokenPreview: data.access_token ? `${data.access_token.substring(0, 10)}...` : 'NULL'
+        });
+        
         setStore(data);
         const storeName = data.store_url?.replace('.myshopify.com', '') || '';
         setStoreName(storeName);
@@ -125,9 +133,13 @@ export function ShopifyConnection() {
             setShouldAutoImport(true);
           }
         }
+        
+        return data; // Return the loaded data
       }
+      return null;
     } catch (error) {
       console.error('Error loading store:', error);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -181,6 +193,12 @@ export function ShopifyConnection() {
       }
 
       const storeUrl = `${storeName}.myshopify.com`;
+      const now = new Date().toISOString();
+      
+      console.log('💾 Saving connection with credentials:', {
+        apiKeyPreview: `${apiKey.substring(0, 10)}...`,
+        apiSecretPreview: `${apiSecret.substring(0, 10)}...`
+      });
       
       if (store) {
         const { error } = await supabase
@@ -190,7 +208,8 @@ export function ShopifyConnection() {
             api_key: apiKey,
             access_token: apiSecret,
             connection_type: 'manual',
-            updated_at: new Date().toISOString()
+            connected_at: now,
+            updated_at: now
           })
           .eq('id', store.id);
 
@@ -204,7 +223,8 @@ export function ShopifyConnection() {
             access_token: apiSecret,
             connection_type: 'manual',
             user_id: user?.id,
-            is_active: true
+            is_active: true,
+            connected_at: now
           })
           .select()
           .single();
@@ -216,8 +236,21 @@ export function ShopifyConnection() {
         }
       }
 
+      console.log('✅ Connection saved, setting auto-import flag');
+      localStorage.setItem('shopify_just_connected', 'true');
+      
       toast.success('Connexion Shopify enregistrée avec succès');
-      await loadStore();
+      
+      // Wait for DB sync then reload
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const reloadedStore = await loadStore();
+      
+      console.log('🔄 Store reloaded after save:', {
+        hasStore: !!reloadedStore,
+        hasApiKey: !!reloadedStore?.api_key,
+        hasAccessToken: !!reloadedStore?.access_token
+      });
+      
     } catch (error) {
       console.error('Error saving connection:', error);
       toast.error('Erreur lors de l\'enregistrement de la connexion');
