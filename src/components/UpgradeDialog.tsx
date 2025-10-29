@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { CreditCard } from 'lucide-react';
 
 interface UpgradeDialogProps {
   open: boolean;
@@ -13,7 +16,7 @@ interface UpgradeDialogProps {
 }
 
 export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: UpgradeDialogProps) {
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
 
   const limitData = t(`upgradeDialog.limit_types.${limitType}`, { returnObjects: true }) as {
@@ -23,11 +26,30 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: U
     paid: string;
   };
 
-  const features = t('upgradeDialog.features', { returnObjects: true }) as string[];
+  const handleActivate = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('force-payment', {
+        body: {
+          success_url: `${window.location.origin}/dashboard?payment=success`,
+          cancel_url: `${window.location.origin}/dashboard?payment=cancelled`,
+        },
+      });
 
-  const handleActivate = () => {
-    onOpenChange(false);
-    navigate('/subscription');
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        onOpenChange(false);
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      toast.error('Erreur lors de la création du paiement');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,8 +112,14 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: U
             onClick={handleActivate} 
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             size="lg"
+            disabled={loading}
           >
-            💳 {t('upgradeDialog.activate_button')}
+            {loading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+            ) : (
+              <CreditCard className="w-5 h-5 mr-2" />
+            )}
+            {loading ? 'Chargement...' : t('upgradeDialog.activate_button')}
           </Button>
           
           <Button 
