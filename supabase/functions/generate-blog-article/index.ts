@@ -154,15 +154,18 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       }
     }
 
-    if (!products || products.length === 0) {
-      throw new Error("Aucun produit disponible dans votre catalogue. Veuillez importer des produits depuis Shopify.");
+    // Si aucun produit trouvé, on génère un article générique sans recommandations produits
+    const hasProducts = products && products.length > 0;
+    
+    if (!hasProducts) {
+      console.log("⚠️ Aucun produit trouvé, génération d'un article générique");
     }
 
-    const productDetails = products.map((p: any) => 
+    const productDetails = hasProducts ? products.map((p: any) => 
       `- ${p.title} (${p.price}€) : ${p.description?.substring(0, 100) || 'Pas de description'}`
-    ).join("\n");
+    ).join("\n") : "Aucun produit spécifique disponible";
     
-    console.log(`📦 ${products.length} produits sélectionnés`);
+    console.log(`📦 ${products?.length || 0} produits sélectionnés`);
 
     // Générer l'image de couverture avec OpenAI
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
@@ -225,9 +228,9 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     
     console.log(`📝 Titre optimisé: ${optimizedTitle}`);
 
-    // Get store URL for product links
+    // Get store URL for product links (only if products exist)
     let storeUrl = '';
-    if (products[0]?.store_id) {
+    if (hasProducts && products[0]?.store_id) {
       const { data: storeData } = await supabaseClient
         .from('shopify_connections')
         .select('store_url')
@@ -240,13 +243,13 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       }
     }
 
-    const productLinks = products.map((p: any) => 
+    const productLinks = hasProducts ? products.map((p: any) => 
       storeUrl ? 
         `<a href="${storeUrl}/products/${p.handle}" class="product-link" target="_blank">${p.title}</a>` :
         `<a href="/product-landing/${p.id}" class="product-link">${p.title}</a>`
-    ).join(', ');
+    ).join(', ') : '';
 
-    const productCards = products.map((p: any) => `
+    const productCards = hasProducts ? products.map((p: any) => `
       <div class="product-card">
         ${p.image_url ? `<a href="${storeUrl ? `${storeUrl}/products/${p.handle}` : `/product-landing/${p.id}`}" target="${storeUrl ? '_blank' : '_self'}">
           <img src="${p.image_url}" alt="${p.title}" class="product-image" />
@@ -270,15 +273,19 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
            class="product-link" 
            target="${storeUrl ? '_blank' : '_self'}" 
            rel="${storeUrl ? 'noopener' : ''}">
-          Voir le produit →
+           Voir le produit →
         </a>
       </div>
-    `).join('');
+    `).join('') : '';
 
-    const prompt = `Tu es un rédacteur expert en e-commerce. Rédige un article professionnel en français.
+    const prompt = `Tu es un rédacteur expert en e-commerce. Rédige ${hasProducts ? 'un article professionnel' : 'un guide d\'achat complet et professionnel'} en français.
 
-📦 PRODUITS SÉLECTIONNÉS :
-${productDetails}
+${hasProducts ? `📦 PRODUITS SÉLECTIONNÉS :
+${productDetails}` : `🎯 SUJET DE L'ARTICLE :
+Mots-clés principaux : ${targetKeywords.join(", ")}
+Catégorie : ${category || "Guide général"}
+
+⚠️ NOTE IMPORTANTE : Aucun produit spécifique n'est disponible pour le moment. Tu dois créer un guide générique et informatif qui aide les lecteurs à comprendre les critères de choix et les meilleures pratiques d'achat pour cette catégorie.`}
 
 📝 STRUCTURE HTML STRICTE À RESPECTER :
 
@@ -368,18 +375,27 @@ ${productDetails}
   </section>
 
   <section id="section-3" class="article-section">
-    <h2>3. ⭐ Notre sélection de produits</h2>
+    ${hasProducts ? `<h2>3. ⭐ Notre sélection de produits</h2>
     <p>Voici notre sélection de ${products.length} produits soigneusement choisis pour vous : ${productLinks}.</p>
     
     <div class="product-grid">
       ${productCards}
     </div>
     
-    <p>[Pour chaque produit ci-dessus, rédige un paragraphe de 100-150 mots décrivant ses caractéristiques uniques, avantages, et pour quel type d'utilisateur il est idéal.]</p>
+    <p>[Pour chaque produit ci-dessus, rédige un paragraphe de 100-150 mots décrivant ses caractéristiques uniques, avantages, et pour quel type d'utilisateur il est idéal.]</p>` : 
+    `<h2>3. 💰 Les différentes gammes de prix</h2>
+    <h3>3.1. Entrée de gamme (Budget limité)</h3>
+    <p>[Décris les options abordables, leurs caractéristiques typiques, avantages et limites - 200 mots]</p>
+    
+    <h3>3.2. Milieu de gamme (Meilleur rapport qualité-prix)</h3>
+    <p>[Présente les options intermédiaires, leur valeur ajoutée et pourquoi elles sont populaires - 200 mots]</p>
+    
+    <h3>3.3. Haut de gamme (Qualité premium)</h3>
+    <p>[Explique les caractéristiques premium, les matériaux nobles et la durabilité - 200 mots]</p>`}
   </section>
 
   <section id="section-4" class="article-section">
-    <h2>4. 📊 Comparatif détaillé</h2>
+    ${hasProducts ? `<h2>4. 📊 Comparatif détaillé</h2>
     <table class="comparison-table">
       <thead>
         <tr>
@@ -393,7 +409,13 @@ ${productDetails}
       <tbody>
         [Crée une ligne par produit avec des données réalistes basées sur les produits fournis]
       </tbody>
-    </table>
+    </table>` : 
+    `<h2>4. 🔍 Les marques et fabricants recommandés</h2>
+    <h3>4.1. Les marques incontournables</h3>
+    <p>[Liste et décris les marques leaders du marché, leur réputation et spécialités - 250 mots]</p>
+    
+    <h3>4.2. Les marques émergentes à suivre</h3>
+    <p>[Présente les nouvelles marques innovantes qui offrent un bon rapport qualité-prix - 200 mots]</p>`}
   </section>
 
   <section id="section-5" class="article-section">
@@ -423,10 +445,13 @@ ${productDetails}
 </html>
 
 ⚠️ RÈGLES STRICTES :
-- Utilise UNIQUEMENT les ${products.length} produits fournis
+${hasProducts ? `- Utilise UNIQUEMENT les ${products.length} produits fournis
+- Intègre les produits avec liens cliquables` : 
+`- Crée un guide générique et informatif sans références à des produits spécifiques
+- Fournis des conseils d'achat pratiques et objectifs
+- Mentionne des fourchettes de prix réalistes pour le marché`}
 - Structure HTML complète avec balises H1, H2, H3
 - Table des matières avec ancres cliquables (#section-X)
-- Intègre les produits avec liens cliquables vers /product-landing/{id}
 - Mots-clés naturellement intégrés : ${targetKeywords.join(", ")}
 - Longueur totale : 2000-2500 mots
 - Ton : professionnel, informatif, engageant
