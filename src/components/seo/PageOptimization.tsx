@@ -31,9 +31,19 @@ export function PageOptimization() {
   const fetchPages = async () => {
     try {
       setLoading(true);
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Utilisateur non connecté');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('shopify_pages')
         .select('*')
+        .eq('user_id', user.id)
         .order('published_at', { ascending: false });
 
       if (error) throw error;
