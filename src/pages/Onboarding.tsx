@@ -201,8 +201,10 @@ export default function Onboarding() {
         .eq('id', user.id)
         .single();
       
-      const hasActiveTrial = profile?.subscription_status === 'trialing' || 
-        (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
+      const hasActiveTrial = Boolean(
+        profile?.subscription_status === 'trialing' || 
+        (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date())
+      );
       
       console.log('💳 User trial status:', { 
         hasActiveTrial, 
