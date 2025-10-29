@@ -67,17 +67,52 @@ export function ShopifyConnectionsList() {
       setImportingStoreId(store.id);
       toast.loading('Import en cours...', { id: 'import' });
 
+      // 🔄 Load full store data including credentials
+      console.log('🔄 Loading store credentials before import...');
+      const { data: fullStore, error: loadError } = await supabase
+        .from('shopify_connections')
+        .select('*')
+        .eq('id', store.id)
+        .single();
+
+      if (loadError || !fullStore) {
+        throw new Error('Impossible de charger les credentials de la boutique');
+      }
+
+      console.log('📦 Store data loaded:', {
+        hasApiKey: !!fullStore.api_key,
+        hasAccessToken: !!fullStore.access_token,
+        connectionType: fullStore.connection_type
+      });
+
       // Clean the shop name by removing protocol, domain suffix, and trailing slashes
-      let cleanShopName = (store.store_url || '')
+      let cleanShopName = (fullStore.store_url || '')
         .replace(/^https?:\/\//, '') // Remove http:// or https://
         .replace(/\.myshopify\.com.*$/, '') // Remove .myshopify.com and anything after
         .replace(/\/$/, ''); // Remove trailing slash
 
+      // Prepare request body with credentials
+      const requestBody: any = {
+        storeId: fullStore.id,
+        shopName: cleanShopName,
+        apiSecret: fullStore.access_token,
+      };
+
+      // Add API key for manual connections
+      if (fullStore.connection_type === 'manual' && fullStore.api_key) {
+        requestBody.apiKey = fullStore.api_key;
+      }
+
+      console.log('📤 Sending to import-products:', {
+        shopName: requestBody.shopName,
+        hasApiKey: !!requestBody.apiKey,
+        hasApiSecret: !!requestBody.apiSecret,
+        apiSecretLength: requestBody.apiSecret?.length,
+        storeId: requestBody.storeId
+      });
+
       const { error } = await supabase.functions.invoke('import-products', {
-        body: {
-          storeId: store.id,
-          shopName: cleanShopName,
-        }
+        body: requestBody
       });
 
       if (error) throw error;
