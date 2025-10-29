@@ -50,9 +50,15 @@ const menuItems = [
     subItems: [
       { path: '/blog?tab=articles', label: 'Articles', icon: PenSquare },
       { path: '/blog?tab=campaigns', label: 'Campagnes', icon: CalendarClock },
-      { path: '/blog?tab=opportunities', label: 'Opportunités', icon: Lightbulb },
-      { path: '/blog?tab=netlinking', label: 'Netlinking', icon: LinkIcon },
-      { path: '/blog?tab=settings', label: 'Paramètres', icon: Settings }
+      { 
+        path: '/blog?tab=opportunities', 
+        label: 'Opportunités', 
+        icon: Lightbulb,
+        subItems: [
+          { path: '/blog?tab=netlinking', label: 'Netlinking', icon: LinkIcon },
+          { path: '/blog?tab=settings', label: 'Paramètres', icon: Settings }
+        ]
+      }
     ]
   },
   { 
@@ -78,7 +84,7 @@ export function Navigation() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog', '/blog?tab=opportunities']);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userPlan, setUserPlan] = useState<string | null>(null);
 
@@ -197,9 +203,53 @@ export function Navigation() {
                       </button>
                       {!collapsed && isExpanded && item.subItems && (
                         <div className="ml-4 mt-1 space-y-1 border-l-2 border-blue-200 pl-2">
-                          {item.subItems.map((subItem) => {
+                          {item.subItems.map((subItem: any) => {
                             const SubIcon = subItem.icon;
                             const isSubActive = location.pathname === item.path && location.search.includes(subItem.path.split('?')[1]);
+                            const hasSubSubItems = 'subItems' in subItem && subItem.subItems;
+                            const isSubExpanded = expandedMenus.includes(subItem.path);
+                            
+                            if (hasSubSubItems) {
+                              return (
+                                <div key={subItem.path}>
+                                  <button
+                                    onClick={() => toggleMenu(subItem.path)}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                                      isSubActive
+                                        ? 'bg-blue-100 text-blue-700 font-medium'
+                                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                                    }`}
+                                  >
+                                    <SubIcon className="w-4 h-4 flex-shrink-0" />
+                                    <span className="flex-1 text-left">{subItem.label}</span>
+                                    <ChevronDown className={`w-3 h-3 transition-transform ${isSubExpanded ? 'rotate-180' : ''}`} />
+                                  </button>
+                                  {isSubExpanded && (
+                                    <div className="ml-4 mt-1 space-y-1 border-l-2 border-blue-100 pl-2">
+                                      {subItem.subItems.map((subSubItem: any) => {
+                                        const SubSubIcon = subSubItem.icon;
+                                        const isSubSubActive = location.pathname === item.path && location.search.includes(subSubItem.path.split('?')[1]);
+                                        
+                                        return (
+                                          <Link
+                                            key={subSubItem.path}
+                                            to={subSubItem.path}
+                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs ${
+                                              isSubSubActive
+                                                ? 'bg-blue-100 text-blue-700 font-medium'
+                                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                                            }`}
+                                          >
+                                            <SubSubIcon className="w-3 h-3 flex-shrink-0" />
+                                            <span>{subSubItem.label}</span>
+                                          </Link>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
                             
                             return (
                               <Link
