@@ -158,7 +158,7 @@ async function callDeepSeek(
       throw error;
     }
     
-    if (error.name === 'AbortError') {
+    if (error instanceof Error && error.name === 'AbortError') {
       throw new AppError('DeepSeek API request timeout', 408, 'TIMEOUT');
     }
     
@@ -168,8 +168,9 @@ async function callDeepSeek(
       return callDeepSeek(messages, maxTokens, retryCount + 1);
     }
     
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     throw new AppError(
-      `DeepSeek API call failed after ${CONFIG.MAX_RETRIES} retries: ${error.message}`,
+      `DeepSeek API call failed after ${CONFIG.MAX_RETRIES} retries: ${errorMessage}`,
       500,
       'API_CALL_FAILED'
     );
