@@ -2,8 +2,59 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Helper to detect mixed language content
+const detectMixedLanguages = (text: string, expectedLang: string): boolean => {
+  if (!text || typeof text !== 'string') return false;
+  
+  // Arabic/RTL detection
+  const arabicPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/;
+  const latinPattern = /[a-zA-Z]/;
+  const hasArabic = arabicPattern.test(text);
+  const hasLatin = latinPattern.test(text);
+  
+  // Detect if we have mixed scripts
+  if (hasArabic && hasLatin && expectedLang === 'ar') {
+    console.warn('🚨 Mixed Arabic-Latin content detected:', text.substring(0, 50));
+    return true;
+  }
+  
+  return false;
+};
+
+// Fix Arabic numbers (prevent reversal)
+const fixArabicNumbers = (text: string): string => {
+  if (!text || typeof text !== 'string') return text;
+  
+  // Wrap numbers in LTR marks to prevent reversal
+  return text.replace(/(\d+)/g, '\u202D$1\u202C');
+};
+
 export const useTranslation = () => {
-  const { t, i18n } = useI18nTranslation();
+  const { t: originalT, i18n } = useI18nTranslation();
+  
+  // Wrapped translation function with logging and fixes
+  const t = (key: string, options?: any): any => {
+    const translated = originalT(key, options);
+    const currentLang = i18n.language;
+    const translatedStr = String(translated);
+    
+    // Log if translation key is missing
+    if (translatedStr === key) {
+      console.warn(`⚠️ Missing translation for key: "${key}" in language: ${currentLang}`);
+    }
+    
+    // Detect mixed language content
+    if (detectMixedLanguages(translatedStr, currentLang)) {
+      console.error(`❌ Mixed language detected in key: "${key}"`);
+    }
+    
+    // Fix Arabic text
+    if (currentLang.startsWith('ar') && typeof translated === 'string') {
+      return fixArabicNumbers(translated);
+    }
+    
+    return translated;
+  };
 
   // Load preferred language from user profile (only if authenticated)
   useEffect(() => {
