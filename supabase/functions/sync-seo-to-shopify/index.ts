@@ -181,26 +181,46 @@ Deno.serve(async (req: Request) => {
 
     // Sync image ALT text
     if (imageId) {
+      console.log(`Syncing ALT text for image: ${imageId}`);
+      
+      // First get the image with a join to ensure user owns the product
       const { data: image, error: imageError } = await supabaseClient
         .from("product_images")
-        .select("shopify_image_id, alt_text, product_id")
+        .select(`
+          id,
+          shopify_image_id,
+          alt_text,
+          product_id,
+          shopify_products!inner(
+            shopify_id,
+            store_id,
+            seller_id
+          )
+        `)
         .eq("id", imageId)
-        .maybeSingle();
+        .single();
 
-      if (imageError || !image) {
-        throw new Error("Image not found");
+      if (imageError) {
+        console.error('Image fetch error:', imageError);
+        throw new Error(`Image not found: ${imageError.message}`);
       }
 
-      const { data: product } = await supabaseClient
-        .from("shopify_products")
-        .select("shopify_id, store_id, seller_id")
-        .eq("id", image.product_id)
-        .eq("seller_id", user.id)
-        .maybeSingle();
-
-      if (!product) {
-        throw new Error("Product not found for image");
+      if (!image) {
+        throw new Error("Image not found in database");
       }
+
+      // Check if user owns the product
+      const product = (image as any).shopify_products;
+      if (!product || product.seller_id !== user.id) {
+        console.error('Unauthorized access attempt:', { imageId, userId: user.id });
+        throw new Error("Unauthorized: Image does not belong to your products");
+      }
+
+      if (!image.shopify_image_id) {
+        throw new Error("Image has no Shopify ID - cannot sync");
+      }
+
+      console.log(`Image found - Shopify Image ID: ${image.shopify_image_id}, Product ID: ${product.shopify_id}`);
 
       // Get Shopify connection
       const { data: storeConnection, error: storeError } = await supabaseClient
@@ -208,14 +228,19 @@ Deno.serve(async (req: Request) => {
         .select("store_url, access_token")
         .eq("id", product.store_id)
         .eq("user_id", user.id)
+        .eq("is_active", true)
         .maybeSingle();
 
       if (storeError || !storeConnection) {
-        throw new Error("Store connection not found");
+        console.error('Store connection error:', storeError);
+        throw new Error("Store connection not found or inactive");
       }
 
       const shopUrl = storeConnection.store_url;
       const shopifyAccessToken = storeConnection.access_token;
+      
+      console.log(`Syncing to Shopify: Product ${product.shopify_id}, Image ${image.shopify_image_id}`);
+      
       const shopifyResponse = await fetch(
         `https://${shopUrl}/admin/api/2024-01/products/${product.shopify_id}/images/${image.shopify_image_id}.json`,
         {
@@ -238,6 +263,8 @@ Deno.serve(async (req: Request) => {
         console.error(`Shopify API error for image ${image.shopify_image_id}:`, errorText);
         throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
       }
+
+      console.log(`Successfully synced ALT text for image ${image.shopify_image_id}`);
 
       return new Response(
         JSON.stringify({
