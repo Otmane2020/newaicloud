@@ -96,6 +96,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { t } = useTranslation();
   const currentPath = location.pathname;
   const currentSearch = location.search;
   const [userPlan, setUserPlan] = useState<string | null>(null);
@@ -184,12 +185,12 @@ export function AppSidebar() {
             <SidebarMenu>
               {mainMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
+                <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                  <NavLink to={item.url}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.url === '/products' ? t('sidebar.products') : item.title}</span>
+                  </NavLink>
+                </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
 
@@ -199,7 +200,7 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isSeoActive}>
                       <Sparkles className="h-4 w-4" />
-                      <span>SEO</span>
+                      <span>{t('sidebar.seo')}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -226,7 +227,7 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isBlogActive}>
                       <FileText className="h-4 w-4" />
-                      <span>Blog SEO</span>
+                      <span>{t('sidebar.blog')}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -344,7 +345,7 @@ export function AppSidebar() {
             <SidebarMenuButton asChild>
               <Button variant="ghost" className="w-full justify-start text-xs sm:text-sm" onClick={signOut}>
                 <LogOut className="h-4 w-4" />
-                {state === "expanded" && <span>Déconnexion</span>}
+                {state === "expanded" && <span>{t('sidebar.logout')}</span>}
               </Button>
             </SidebarMenuButton>
           </SidebarMenuItem>

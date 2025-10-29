@@ -9,10 +9,12 @@ import { SeoKPIs } from '@/components/seo/SeoKPIs';
 import { Sparkles, Tags, Image, Settings, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SEO() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'optimization');
+  const { t } = useTranslation();
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -25,10 +27,10 @@ export default function SEO() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          Optimisation SEO
+          {t('seo.title')}
         </h1>
         <p className="text-muted-foreground text-base md:text-lg">
-          Gérez l'optimisation SEO de vos produits
+          {t('seo.description')}
         </p>
       </div>
 

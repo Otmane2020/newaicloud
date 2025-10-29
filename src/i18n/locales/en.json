@@ -354,5 +354,73 @@
     "open_button": "Open billing portal",
     "opening": "Opening...",
     "footer_note": "You will be redirected to the Stripe portal to manage your payment information and download your invoices."
+  },
+  "sidebar": {
+    "products": "Products",
+    "seo": "SEO",
+    "seo_optimization": "SEO Optimization",
+    "tag_optimization": "Tag Optimization",
+    "page_optimization": "Page Optimization",
+    "alt_image": "Alt & Image",
+    "seo_automation": "SEO Automation",
+    "seo_kpis": "SEO KPIs",
+    "blog": "Blog SEO",
+    "articles_management": "Articles Management",
+    "ai_articles": "AI Articles",
+    "ai_campaigns": "AI Campaigns",
+    "opportunities": "Opportunities",
+    "netlinking": "Netlinking",
+    "settings": "Settings",
+    "google_merchant": "Google Merchant",
+    "google_shopping": "Google Shopping",
+    "chat": "AI Chat",
+    "chat_robot": "Voice Assistant",
+    "chat_history": "Chat History",
+    "chat_settings": "Chat Settings",
+    "integrations": "Integrations",
+    "documentation": "Documentation",
+    "logout": "Logout"
+  },
+  "trial": {
+    "banner_title": "Trial Period - Limit Reached",
+    "banner_description": "{resourceType}: {usage}/{limit} used - Unlock all features by activating your subscription",
+    "activate_subscription": "Activate my subscription",
+    "warning_title": "Trial Period - Limited Version",
+    "warning_description": "Your trial ends in {daysLeft} days. Activate to continue after trial period.",
+    "days_left": "{count} days left"
+  },
+  "shopify": {
+    "connection_title": "Shopify Connection",
+    "connection_description": "Connect your store in seconds",
+    "add_store": "Add a store",
+    "no_connections": "Click \"Add a store\" to get started",
+    "delete_confirm": "Are you sure you want to delete this connection? You'll need to recreate it to import products.",
+    "delete_success": "Connection deleted successfully",
+    "save_success": "Shopify connection saved successfully",
+    "save_error": "Error saving connection",
+    "load_error": "Unable to load connection data",
+    "api_missing_title": "API credentials missing",
+    "api_missing_description": "Your Shopify connection doesn't contain the necessary API credentials.",
+    "api_missing_solution": "Solution: Delete this connection and recreate it with your complete API credentials.",
+    "delete_button": "Delete"
+  },
+  "seo": {
+    "title": "SEO Optimization",
+    "description": "Manage SEO optimization for your products"
+  },
+  "blog": {
+    "opportunities_none": "No opportunities detected. Import more products to see suggestions.",
+    "keyword_tip": "💡 Tip: Type a keyword then press Enter to add it. Repeat to add multiple keywords.",
+    "keyword_placeholder": "Add a keyword then Enter...",
+    "keyword_add": "Add",
+    "keyword_instruction": "Press Enter or click Add",
+    "opportunities_settings_title": "Opportunities Settings",
+    "netlinking_include": "Include netlinking suggestions",
+    "save_settings": "Save settings"
+  },
+  "buttons": {
+    "activate_full_plan": "Activate full plan",
+    "activate_my_plan": "Activate my plan",
+    "modify": "Modify"
   }
 }
