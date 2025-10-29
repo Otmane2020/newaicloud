@@ -538,18 +538,18 @@ export function ShopifyConnection() {
           <div className="space-y-2">
             <Label htmlFor="apiSecret" className="flex items-center gap-2">
               <LinkIcon className="w-4 h-4" />
-              Clé secrète d'API (API Secret)
+              Admin API Access Token
             </Label>
             <Input
               id="apiSecret"
               type="password"
               value={apiSecret}
               onChange={(e) => setApiSecret(e.target.value)}
-              placeholder="shpss_xxxxxxxxxxxxxxxx"
+              placeholder="shpat_xxxxxxxxxxxxxxxx"
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Commence par shpss_ ou shpat_
+              Commence par shpat_ (trouvé dans Shopify Admin → Apps → Develop apps)
             </p>
           </div>
 
