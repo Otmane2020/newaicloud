@@ -167,9 +167,30 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("Error importing pages:", error);
+    
+    // Handle permission errors gracefully even in global catch
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Permission refusée') || 
+        errorMessage.includes('read_content') ||
+        errorMessage.includes('merchant approval')) {
+      
+      console.log('⚠️ Permission error caught in global handler - returning graceful response');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          count: 0,
+          permissionError: true,
+          message: 'Permissions insuffisantes pour importer les pages. Votre token Shopify nécessite les permissions read_content et write_content.',
+          pages: []
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // For other errors, return 500
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "An unknown error occurred",
+        error: errorMessage,
       }),
       {
         status: 500,
