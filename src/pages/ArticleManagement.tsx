@@ -233,8 +233,8 @@ export default function ArticleManagement() {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Article Management</h1>
-            <p className="text-muted-foreground mt-1">Manage, edit and publish your blog articles</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Articles SEO Management</h1>
+            <p className="text-muted-foreground mt-1">Optimize SEO title and meta description for your articles</p>
           </div>
           <Button onClick={() => setShowWizard(true)} size="lg" className="w-full sm:w-auto">
             <Plus className="w-5 h-5 mr-2" />
@@ -394,12 +394,12 @@ export default function ArticleManagement() {
                       />
                     </th>
                     <th className="p-3 text-left hidden sm:table-cell">Image</th>
-                    <th className="p-3 text-left">Title</th>
+                    <th className="p-3 text-left">Article Title</th>
                     <th className="p-3 text-left hidden lg:table-cell">SEO Title</th>
-                    <th className="p-3 text-left hidden md:table-cell">Meta Description</th>
+                    <th className="p-3 text-left hidden md:table-cell">SEO Meta Description</th>
+                    <th className="p-3 text-left hidden xl:table-cell">SEO Score</th>
                     <th className="p-3 text-left hidden sm:table-cell">Source</th>
-                    <th className="p-3 text-left">Status</th>
-                    <th className="p-3 text-left hidden sm:table-cell">Synced</th>
+                    <th className="p-3 text-left hidden md:table-cell">Published on Shopify</th>
                     <th className="p-3 text-left">Actions</th>
                   </tr>
                 </thead>
@@ -467,6 +467,18 @@ export default function ArticleManagement() {
                           )}
                         </div>
                       </td>
+                      <td className="p-3 hidden xl:table-cell">
+                        {article.meta_description ? (
+                          <Badge variant="default" className="text-xs">
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            {Math.min(Math.round((article.meta_description.length / 160) * 100), 100)}%
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            0%
+                          </Badge>
+                        )}
+                      </td>
                       <td className="p-3 hidden sm:table-cell">
                         <Badge 
                           variant={article.source === 'ai_generated' ? 'default' : 'secondary'}
@@ -475,12 +487,7 @@ export default function ArticleManagement() {
                           {article.source === 'ai_generated' ? 'AI NewAI' : 'Shopify'}
                         </Badge>
                       </td>
-                      <td className="p-3">
-                        <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
-                          {article.status}
-                        </Badge>
-                      </td>
-                      <td className="p-3 hidden sm:table-cell">
+                      <td className="p-3 hidden md:table-cell">
                         {article.shopify_blog_id ? (
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                             <Check className="w-3 h-3 mr-1" />

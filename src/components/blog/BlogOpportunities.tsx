@@ -33,7 +33,15 @@ export function BlogOpportunities() {
   const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
-    loadOpportunities();
+    const initOpportunities = async () => {
+      try {
+        await loadOpportunities();
+      } catch (error) {
+        console.error("Error initializing opportunities:", error);
+        toast.error("Erreur lors du chargement initial des opportunités");
+      }
+    };
+    initOpportunities();
   }, []);
 
   const analyzeAndGenerateOpportunities = async (products: any[], userId: string) => {

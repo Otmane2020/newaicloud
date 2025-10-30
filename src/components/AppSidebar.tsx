@@ -58,6 +58,7 @@ const seoSubItems = [
   { title: "SEO Optimization", url: "/seo?tab=optimization", icon: Sparkles },
   { title: "Tag Optimization", url: "/seo?tab=tags", icon: Tags },
   { title: "Pages", url: "/seo?tab=pages", icon: FileText },
+  { title: "Articles SEO", url: "/seo?tab=articles", icon: FileText },
   { title: "Homepage", url: "/seo?tab=homepage", icon: Home },
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
   { title: "Automation", url: "/seo?tab=automation", icon: Settings },
@@ -65,7 +66,6 @@ const seoSubItems = [
 ];
 
 const blogSubItems = [
-  { title: "Articles Management", url: "/blog?subtab=articles", icon: FileText },
   { title: "AI Articles", url: "/blog?subtab=create-article", icon: Sparkles },
   { title: "AI Campaigns", url: "/blog?subtab=campaigns", icon: CalendarClock },
   { title: "Opportunities", url: "/blog?subtab=opportunities", icon: Lightbulb },
