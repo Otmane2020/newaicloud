@@ -189,14 +189,6 @@ export function SubscriptionPlans() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  {starterPlan.max_products} {t('common.products')} • 
-                  {starterPlan.max_optimizations_monthly} {t('common.optimizations')} • 
-                  {starterPlan.max_articles_monthly} {t('common.articles')}
-                </p>
-              </div>
-
               <Button
                 className="w-full"
                 variant="outline"
@@ -205,6 +197,9 @@ export function SubscriptionPlans() {
               >
                 {isCurrentPlan(starterPlan.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.starter.cta')}
               </Button>
+              <p className="text-sm text-center text-muted-foreground">
+                {starterPlan.max_optimizations_monthly} optimisations / mois
+              </p>
             </CardContent>
           </Card>
         )}
@@ -247,21 +242,16 @@ export function SubscriptionPlans() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  {selectedPro.max_products.toLocaleString()} {t('common.products')} • 
-                  {selectedPro.max_optimizations_monthly.toLocaleString()} {t('common.optimizations')} • 
-                  {selectedPro.max_articles_monthly} {t('common.articles')}
-                </p>
-              </div>
-
               <Button
                 className="w-full"
                 onClick={() => handleSelectPlan(selectedPro.id)}
                 disabled={isCurrentPlan(selectedPro.id) || loading}
               >
-                {isCurrentPlan(selectedPro.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.pro.cta')}
+                {isCurrentPlan(selectedPro.id) ? t('subscriptionPlans.current_plan') : 'S\'abonner maintenant'}
               </Button>
+              <p className="text-sm text-center text-muted-foreground">
+                {selectedPro.max_optimizations_monthly.toLocaleString()} optimisations / mois
+              </p>
             </CardContent>
           </Card>
         )}
@@ -304,22 +294,17 @@ export function SubscriptionPlans() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  {selectedEnterprise.max_products === -1 ? t('common.unlimited') : selectedEnterprise.max_products.toLocaleString()} {t('common.products')} • 
-                  {selectedEnterprise.max_optimizations_monthly.toLocaleString()} {t('common.optimizations')} • 
-                  {selectedEnterprise.max_articles_monthly} {t('common.articles')}
-                </p>
-              </div>
-
               <Button
                 className="w-full"
                 variant="outline"
                 onClick={() => handleSelectPlan(selectedEnterprise.id)}
                 disabled={isCurrentPlan(selectedEnterprise.id) || loading}
               >
-                {isCurrentPlan(selectedEnterprise.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.enterprise.cta')}
+                {isCurrentPlan(selectedEnterprise.id) ? t('subscriptionPlans.current_plan') : 'Upgrade to Enterprise'}
               </Button>
+              <p className="text-sm text-center text-muted-foreground">
+                {selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations / mois
+              </p>
             </CardContent>
           </Card>
         )}
