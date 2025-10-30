@@ -6,9 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { OptimizationProgressDialog } from './OptimizationProgressDialog';
-import { OptimizationResultsDialog } from './OptimizationResultsDialog';
-import { SeoSyncDialog } from './SeoSyncDialog';
+import { 
+  ProgressDialog, 
+  ResultsDialog, 
+  SyncConfirmationDialog, 
+  SuccessDialog,
+  WorkflowItem 
+} from './SeoWorkflowDialogs';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';

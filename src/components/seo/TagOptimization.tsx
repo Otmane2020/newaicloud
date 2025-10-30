@@ -7,9 +7,13 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { OptimizationProgressDialog } from './OptimizationProgressDialog';
-import { OptimizationResultsDialog } from './OptimizationResultsDialog';
-import { TagSyncDialog } from './TagSyncDialog';
+import { 
+  ProgressDialog, 
+  ResultsDialog, 
+  SyncConfirmationDialog, 
+  SuccessDialog,
+  WorkflowItem 
+} from './SeoWorkflowDialogs';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -58,17 +62,19 @@ export function TagOptimization() {
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [filter, setFilter] = useState<FilterType>('all');
-  const [generating, setGenerating] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [showProgressDialog, setShowProgressDialog] = useState(false);
-  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [showResultsDialog, setShowResultsDialog] = useState(false);
-  const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  
+  // Workflow states
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
-  const [selectedProductsForSync, setSelectedProductsForSync] = useState<Array<{id: string; title: string; seo_title: string; seo_description: string; image_url: string}>>([]);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [currentOperation, setCurrentOperation] = useState<'optimizing' | 'syncing'>('optimizing');
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [optimizedItems, setOptimizedItems] = useState<WorkflowItem[]>([]);
+  const [productsToSync, setProductsToSync] = useState<Product[]>([]);
+  
   const { limits, loading: limitsLoading } = useUsageLimits();
 
   const fetchProducts = async () => {
@@ -118,7 +124,7 @@ export function TagOptimization() {
   // Statistics
   const productsWithTags = products.filter(p => p.tags).length;
   const productsWithoutTags = products.length - productsWithTags;
-  const productsToSync = products.filter(p => p.tags && p.tags.length > 0 && !p.seo_synced_to_shopify).length;
+  const productsToSyncCount = products.filter(p => p.tags && p.tags.length > 0 && !p.seo_synced_to_shopify).length;
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   
   // Calculate tag SEO score
@@ -134,7 +140,7 @@ export function TagOptimization() {
     { id: 'all' as FilterType, label: 'All Products', count: products.length },
     { id: 'to_optimize' as FilterType, label: 'To Tag', count: productsWithoutTags },
     { id: 'tagged' as FilterType, label: 'Tagged', count: productsWithTags },
-    { id: 'to_sync' as FilterType, label: 'To Synchronize', count: productsToSync },
+    { id: 'to_sync' as FilterType, label: 'To Synchronize', count: productsToSyncCount },
     { id: 'synced' as FilterType, label: 'Synchronized', count: productsSynced },
   ];
 
@@ -151,7 +157,7 @@ export function TagOptimization() {
 
   const handleToSyncClick = () => {
     setFilter('to_sync');
-    toast.info(`Showing ${productsToSync} products to synchronize`);
+    toast.info(`Showing ${productsToSyncCount} products to synchronize`);
   };
 
   const handleSyncedClick = () => {
