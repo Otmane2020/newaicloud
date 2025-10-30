@@ -39,6 +39,9 @@ import {
   ArrowRight,
   Eye,
   ExternalLink,
+  Filter,
+  Grid3x3,
+  List
 } from 'lucide-react';
 
 interface Product {
@@ -62,7 +65,6 @@ export function SeoOptimization() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -75,9 +77,9 @@ export function SeoOptimization() {
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [productsToSync, setProductsToSync] = useState<Product[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
-
-  const ITEMS_PER_PAGE = 50;
 
   const fetchProducts = async () => {
     try {
@@ -91,7 +93,7 @@ export function SeoOptimization() {
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Erreur lors du chargement des produits');
+      toast.error('Failed to load products');
     } finally {
       setLoading(false);
     }
@@ -100,6 +102,28 @@ export function SeoOptimization() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Statistics
+  const notEnrichedCount = products.filter(p => p.enrichment_status !== 'enriched').length;
+  const enrichedCount = products.filter(p => p.enrichment_status === 'enriched').length;
+  const pendingSyncCount = products.filter(p => p.enrichment_status === 'enriched' && !p.seo_synced_to_shopify).length;
+  const syncedCount = products.filter(p => p.seo_synced_to_shopify).length;
+  const optimizationRate = products.length > 0 ? Math.round((enrichedCount / products.length) * 100) : 0;
+
+  // Calculate global SEO score
+  const globalSeoScore = products.length > 0 
+    ? Math.round(
+        products.reduce((sum, p) => {
+          const score = calculateDetailedSeoScore(
+            p.seo_title,
+            p.seo_description,
+            !!p.image_url,
+            true
+          );
+          return sum + score.score;
+        }, 0) / products.length
+      )
+    : 0;
 
   const filteredProducts = products.filter((product) => {
     if (activeTab === 'not-enriched' && product.enrichment_status === 'enriched') return false;
@@ -115,9 +139,40 @@ export function SeoOptimization() {
     return true;
   });
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const tabs = [
+    { id: 'all' as QuickFilterTab, label: 'All Products', count: products.length },
+    { id: 'not-enriched' as QuickFilterTab, label: 'Not Optimized', count: notEnrichedCount },
+    { id: 'enriched' as QuickFilterTab, label: 'Optimized', count: enrichedCount },
+    { id: 'pending-sync' as QuickFilterTab, label: 'To Sync', count: pendingSyncCount },
+    { id: 'synced' as QuickFilterTab, label: 'Synced', count: syncedCount }
+  ];
+
+  // Clickable stats handlers
+  const handleNotOptimizedClick = () => {
+    setActiveTab('not-enriched');
+    toast.info(`Showing ${notEnrichedCount} products to optimize`);
+  };
+
+  const handleOptimizedClick = () => {
+    setActiveTab('enriched');
+    toast.info(`Showing ${enrichedCount} optimized products`);
+  };
+
+  const handleToSyncClick = () => {
+    setActiveTab('pending-sync');
+    toast.info(`Showing ${pendingSyncCount} products ready to sync`);
+  };
+
+  const handleGenerateAll = () => {
+    if (notEnrichedCount === 0) {
+      toast.info('All products are already optimized');
+      return;
+    }
+    setActiveTab('not-enriched');
+    setTimeout(() => {
+      handleGenerateAllSeo();
+    }, 100);
+  };
 
   const handleSelectAll = () => {
     if (selectedProducts.size === filteredProducts.length) {
@@ -140,29 +195,29 @@ export function SeoOptimization() {
   const handleGenerateForSelected = async () => {
     // Check usage limits first
     if (!limits?.canUseOptimizations || limits?.shouldForcePayment || limits?.limitReached.optimizations) {
-      toast.error('Limite d\'essai atteinte pour les optimisations SEO');
+      toast.error('Trial limit reached for SEO optimizations');
       setShowUpgradeDialog(true);
       return;
     }
 
-    // Filtrer les produits éligibles
+    // Filter eligible products
     const productsToGenerate = products.filter(p => {
       if (!selectedProducts.has(p.id)) return false;
       
-      // Si en trial, exclure les produits déjà optimisés
+      // If in trial, exclude already optimized products
       if (limits?.isTrialing && (p.optimization_count || 0) >= 1) {
         return false;
       }
       
-      // Sinon, seulement les produits sans SEO
+      // Otherwise, only products without SEO
       return !p.seo_title || !p.seo_description;
     });
 
     if (productsToGenerate.length === 0) {
       if (limits?.isTrialing) {
-        toast.info('Les produits sélectionnés ont déjà été optimisés pendant votre trial. Activez votre abonnement pour ré-optimiser.');
+        toast.info('Selected products have already been optimized during your trial. Activate your subscription to re-optimize.');
       } else {
-        toast.info('Aucun produit à optimiser');
+        toast.info('No products to optimize');
       }
       return;
     }
@@ -182,13 +237,13 @@ export function SeoOptimization() {
         console.error('Error generating SEO:', error);
         
         if (error.message?.includes('trial_product_already_optimized')) {
-          toast.warning('Certains produits ont déjà été optimisés pendant votre trial.');
+          toast.warning('Some products have already been optimized during your trial.');
         } else if (error.message?.includes('trial_limit_reached')) {
-          toast.error('Limite d\'essai atteinte.');
+          toast.error('Trial limit reached.');
           setShowUpgradeDialog(true);
           break;
         } else {
-          toast.error('Erreur lors de l\'optimisation');
+          toast.error('Error during optimization');
         }
       }
     }
@@ -215,10 +270,10 @@ export function SeoOptimization() {
     setShowResultsDialog(true);
   };
 
-  const handleGenerateAll = async () => {
+  const handleGenerateAllSeo = async () => {
     // Check usage limits first
     if (!limits?.canUseOptimizations || limits?.shouldForcePayment || limits?.limitReached.optimizations) {
-      toast.error('Limite d\'essai atteinte pour les optimisations SEO');
+      toast.error('Trial limit reached for SEO optimizations');
       setShowUpgradeDialog(true);
       return;
     }
@@ -226,7 +281,7 @@ export function SeoOptimization() {
     const productsToGenerate = products.filter(p => !p.seo_title || !p.seo_description);
 
     if (productsToGenerate.length === 0) {
-      toast.info('Tous les produits sont déjà optimisés');
+      toast.info('All products are already optimized');
       return;
     }
 
@@ -247,7 +302,7 @@ export function SeoOptimization() {
         } catch (error: any) {
           console.error('Error generating SEO:', error);
           if (error.message?.includes('trial_limit_reached')) {
-            toast.error('Limite d\'essai atteinte.');
+            toast.error('Trial limit reached.');
             setShowUpgradeDialog(true);
             return;
           }
@@ -269,7 +324,7 @@ export function SeoOptimization() {
     );
 
     if (productsToSync.length === 0) {
-      toast.info('Aucun produit à synchroniser');
+      toast.info('No products to synchronize');
       return;
     }
 
@@ -295,13 +350,13 @@ export function SeoOptimization() {
     setSyncing(false);
     setProgress({ current: 0, total: 0 });
     setSelectedProducts(new Set());
-    toast.success('Synchronisation terminée');
+    toast.success('Synchronization completed');
     await fetchProducts();
   };
 
   const handleSyncProducts = async (productIds: string[]) => {
     if (productIds.length === 0) {
-      toast.info('Aucun produit à synchroniser');
+      toast.info('No products to synchronize');
       return;
     }
 
@@ -360,72 +415,133 @@ export function SeoOptimization() {
     );
   }
 
-  const notEnrichedCount = products.filter(p => p.enrichment_status !== 'enriched').length;
-  const enrichedCount = products.filter(p => p.enrichment_status === 'enriched').length;
-  const pendingSyncCount = products.filter(p => p.enrichment_status === 'enriched' && !p.seo_synced_to_shopify).length;
-  const syncedCount = products.filter(p => p.seo_synced_to_shopify).length;
-  const optimizationRate = products.length > 0 ? Math.round((enrichedCount / products.length) * 100) : 0;
-
-  // Calculate global SEO score
-  const globalSeoScore = products.length > 0 
-    ? Math.round(
-        products.reduce((sum, p) => {
-          const score = calculateDetailedSeoScore(
-            p.seo_title,
-            p.seo_description,
-            !!p.image_url,
-            true
-          );
-          return sum + score.score;
-        }, 0) / products.length
-      )
-    : 0;
-
-  const tabs = [
-    { id: 'all' as QuickFilterTab, label: 'Tous', count: products.length },
-    { id: 'not-enriched' as QuickFilterTab, label: 'Non enrichis', count: notEnrichedCount },
-    { id: 'enriched' as QuickFilterTab, label: 'Enrichis', count: enrichedCount },
-    { id: 'pending-sync' as QuickFilterTab, label: 'À synchroniser', count: pendingSyncCount },
-    { id: 'synced' as QuickFilterTab, label: 'Synchronisés', count: syncedCount }
-  ];
-
   return (
     <div className="space-y-6">
       {/* Hero Banner */}
-      <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-8">
+      <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-6 md:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-blue-600" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Optimisation SEO Produits
-              </h2>
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <Sparkles className="w-6 h-6 text-blue-600" />
+              </div>
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                SEO Optimization
+              </h1>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              Générez automatiquement des titres et descriptions optimisés pour améliorer votre référencement et augmenter vos conversions de 40%.
+              Generate optimized titles and descriptions automatically to improve your SEO and increase conversions by 40%.
             </p>
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="flex flex-wrap gap-4 pt-2">
               <div className="flex items-center gap-2 text-sm">
                 <Target className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">SEO intelligent</span>
+                <span className="font-medium">Smart SEO</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="font-medium">+40% visibilité</span>
+                <span className="font-medium">+40% visibility</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Zap className="w-4 h-4 text-purple-600" />
-                <span className="font-medium">Génération rapide</span>
+                <span className="font-medium">Fast generation</span>
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-3 items-center">
+          <div className="flex flex-col gap-4 items-center">
             <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600">
-                {optimizationRate}%
-              </div>
-              <div className="text-sm text-muted-foreground">Produits optimisés</div>
+              <div className="text-3xl md:text-4xl font-bold text-blue-600">{optimizationRate}%</div>
+              <div className="text-sm text-muted-foreground">Products optimized</div>
             </div>
+            <Button
+              size="lg"
+              onClick={handleGenerateAll}
+              disabled={generating || notEnrichedCount === 0}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2 shadow-lg"
+            >
+              <Sparkles className="w-5 h-5" />
+              Start Optimization
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Clickable Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Products</p>
+              <p className="text-2xl font-bold">{products.length}</p>
+            </div>
+            <Package className="w-8 h-8 text-muted-foreground" />
+          </div>
+        </Card>
+        
+        <Card 
+          className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={handleNotOptimizedClick}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Not Optimized</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{notEnrichedCount}</p>
+            </div>
+            <Clock className="w-8 h-8 text-orange-600" />
+          </div>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={handleOptimizedClick}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">Optimized</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{enrichedCount}</p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={handleToSyncClick}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">To Sync</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{pendingSyncCount}</p>
+            </div>
+            <Upload className="w-8 h-8 text-blue-600" />
+          </div>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
+        </Card>
+      </div>
+
+      {/* Global SEO Score Card */}
+      <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 dark:border-green-800 p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-muted-foreground">Global SEO Score</h3>
+            <div className="flex items-center gap-3">
+              <div className="text-5xl font-bold">{globalSeoScore}</div>
+              <div className="text-muted-foreground">/100</div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {products.length} products analyzed
+            </p>
+          </div>
+          <div className="text-right space-y-2">
+            <SeoConfidenceBadge 
+              seoTitle={products.length > 0 ? "Global" : null}
+              seoDescription={products.length > 0 ? "Average score of all products" : null}
+              showLabel={false}
+              className="text-lg px-4 py-2"
+            />
+            <Progress value={globalSeoScore} className="w-32 h-2" />
           </div>
         </div>
       </Card>
@@ -436,180 +552,82 @@ export function SeoOptimization() {
           <AlertDescription className="text-sm">
             {limits.limitReached.optimizations ? (
               <span className="text-orange-900 dark:text-orange-100 font-medium">
-                ⚠️ Limite d'essai atteinte : {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimisations utilisées
+                ⚠️ Trial limit reached: {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimizations used
               </span>
             ) : (
               <span>
-                📊 Essai gratuit : {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimisations utilisées
+                📊 Free trial: {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimizations used
               </span>
             )}
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Global SEO Score Card */}
-      <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 dark:border-green-800 p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-muted-foreground">Score SEO Global</h3>
-            <div className="flex items-center gap-3">
-              <div className="text-5xl font-bold">{globalSeoScore}</div>
-              <div className="text-muted-foreground">/100</div>
+      {/* Controls Section */}
+      <Card className="p-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          {/* Search and View Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <p className="text-sm text-muted-foreground">
-              {products.length} produits analysés
-            </p>
-          </div>
-          <div className="text-right space-y-2">
-            <SeoConfidenceBadge 
-              seoTitle={products.length > 0 ? "Global" : null}
-              seoDescription={products.length > 0 ? "Score moyen de tous les produits" : null}
-              showLabel={false}
-              className="text-lg px-4 py-2"
-            />
-            <Progress value={globalSeoScore} className="w-32 h-2" />
-          </div>
-        </div>
-      </Card>
-
-      {/* Hero Banner with CTA */}
-      <Card className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950 dark:via-purple-950 dark:to-pink-950 border-2 border-primary/20 p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-3">
+            
             <div className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-primary" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                Optimisation SEO Intelligente
-              </h2>
-            </div>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              Boostez votre visibilité avec des meta tags optimisés par IA. Augmentez votre trafic organique jusqu'à 50% en quelques clics.
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="font-medium">+50% de trafic organique</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Target className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">SEO optimisé</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Zap className="w-4 h-4 text-yellow-600" />
-                <span className="font-medium">Automation complète</span>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className="flex items-center gap-2"
+              >
+                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
+                <span className="hidden sm:inline">{viewMode === 'grid' ? 'List' : 'Grid'}</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className="lg:hidden flex items-center gap-2"
+              >
+                <Filter className="w-4 h-4" />
+                <span>Filters</span>
+              </Button>
             </div>
           </div>
-          <div className="flex flex-col gap-3">
-            <Button
-              size="lg"
-              onClick={handleGenerateAll}
-              disabled={generating || notEnrichedCount === 0}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2 shadow-lg"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Optimisation en cours...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5" />
-                  Optimiser Tout ({notEnrichedCount})
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              {notEnrichedCount} produits à optimiser
-            </p>
-          </div>
-        </div>
-      </Card>
 
-      {/* Filters & Stats */}
-      <Card className="p-6">
-        <div className="flex flex-wrap gap-3 mb-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setCurrentPage(1);
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
-                activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              {tab.label}
-              <Badge variant={activeTab === tab.id ? 'secondary' : 'outline'}>
-                {tab.count}
-              </Badge>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Rechercher un produit..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
+          {/* Bulk Actions */}
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={handleSelectAll}
+              onClick={handleGenerateAll}
+              disabled={generating || notEnrichedCount === 0}
+              className="flex items-center gap-2"
             >
-              {selectedProducts.size === filteredProducts.length ? 'Désélectionner' : 'Tout sélectionner'}
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Optimize All</span>
             </Button>
+            
             <Button
+              variant="outline"
               size="sm"
               onClick={handleGenerateForSelected}
               disabled={generating || selectedProducts.size === 0}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              className="flex items-center gap-2"
             >
-              {generating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Optimizing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Optimize Selection ({selectedProducts.size})
-                </>
-              )}
+              <Zap className="w-4 h-4" />
+              <span className="hidden sm:inline">Optimize ({selectedProducts.size})</span>
             </Button>
+            
             <Button
-              size="sm"
-              onClick={handleGenerateAll}
-              disabled={generating || notEnrichedCount === 0}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Optimizing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Optimize All ({notEnrichedCount})
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
               variant="outline"
+              size="sm"
               onClick={() => {
                 const toSync = products.filter(p => 
                   selectedProducts.has(p.id) && 
@@ -624,112 +642,255 @@ export function SeoOptimization() {
                 setShowSyncDialog(true);
               }}
               disabled={syncing || selectedProducts.size === 0}
+              className="flex items-center gap-2"
             >
-              {syncing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Sync Selection ({selectedProducts.size})
-                </>
-              )}
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Sync ({selectedProducts.size})</span>
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const toSync = products.filter(p => 
-                  p.seo_title && 
-                  p.seo_description && 
-                  !p.seo_synced_to_shopify
-                );
-                if (toSync.length === 0) {
-                  toast.error('No products to sync');
-                  return;
-                }
-                setProductsToSync(toSync);
-                setShowSyncDialog(true);
-              }}
-              disabled={syncing || pendingSyncCount === 0}
-            >
-              {syncing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Sync All ({pendingSyncCount})
-                </>
-              )}
+            
+            <Button variant="outline" size="icon" onClick={fetchProducts}>
+              <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
         </div>
+
+        {/* Mobile Filters */}
+        {showMobileFilters && (
+          <div className="lg:hidden mt-4 p-4 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-2 gap-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center justify-between p-3 rounded-md text-sm font-medium transition ${
+                    activeTab === tab.id
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-background text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {tab.label}
+                  <Badge variant={activeTab === tab.id ? 'secondary' : 'outline'}>
+                    {tab.count}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
 
+      {/* Desktop Filters */}
+      <div className="hidden lg:flex bg-background border rounded-lg p-1 gap-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition flex-1 justify-center ${
+              activeTab === tab.id
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            {tab.label}
+            <Badge variant={activeTab === tab.id ? 'secondary' : 'outline'}>
+              {tab.count}
+            </Badge>
+          </button>
+        ))}
+      </div>
+
+      {/* Progress Indicator */}
+      {(generating || syncing) && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium">
+              {generating ? 'Generating SEO...' : 'Synchronizing...'}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {progress.current} / {progress.total}
+            </span>
+          </div>
+          <Progress value={(progress.current / progress.total) * 100} className="h-2" />
+        </Card>
+      )}
+
       {/* Products Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-              </TableHead>
-              <TableHead className="w-20">Image</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead className="min-w-[200px]">SEO Title</TableHead>
-              <TableHead className="min-w-[250px]">SEO Meta Description</TableHead>
-              <TableHead className="w-32">SEO Score</TableHead>
-              <TableHead className="w-32">Status</TableHead>
-              <TableHead className="w-32">Synced</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedProducts.map((product) => {
-              const seoScore = calculateDetailedSeoScore(
-                product.seo_title,
-                product.seo_description,
-                !!product.image_url,
-                true
-              );
-              
-              return (
-                <TableRow key={product.id} className="hover:bg-muted/50">
-                  <TableCell>
+      {viewMode === 'list' ? (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+                <TableHead className="w-20">Image</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead className="min-w-[200px]">SEO Title</TableHead>
+                <TableHead className="min-w-[250px]">SEO Description</TableHead>
+                <TableHead className="w-32">SEO Score</TableHead>
+                <TableHead className="w-32">Status</TableHead>
+                <TableHead className="w-32">Synced</TableHead>
+                <TableHead className="w-24">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.map((product) => {
+                const seoScore = calculateDetailedSeoScore(
+                  product.seo_title,
+                  product.seo_description,
+                  !!product.image_url,
+                  true
+                );
+                
+                return (
+                  <TableRow key={product.id} className="hover:bg-muted/50">
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedProducts.has(product.id)}
+                        onCheckedChange={() => handleSelectProduct(product.id)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.title}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                          <Package className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[200px]">
+                        <p className="font-medium line-clamp-2">{product.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{product.vendor}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[200px]">
+                        {product.seo_title ? (
+                          <p className="text-sm line-clamp-2">{product.seo_title}</p>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Not optimized
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[250px]">
+                        {product.seo_description ? (
+                          <p className="text-xs text-muted-foreground line-clamp-3">
+                            {product.seo_description}
+                          </p>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Not optimized
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="text-2xl font-bold">{seoScore.score}</div>
+                        <SeoConfidenceBadge
+                          seoTitle={product.seo_title}
+                          seoDescription={product.seo_description}
+                          showLabel={false}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
+                        {product.enrichment_status === 'enriched' ? 'Optimized' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {product.seo_synced_to_shopify ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Yes
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">
+                          <Clock className="w-3 h-3 mr-1" />
+                          No
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setProductsToSync([product]);
+                            setShowSyncDialog(true);
+                          }}
+                          disabled={!product.seo_title || !product.seo_description}
+                          title="View & Sync"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      ) : (
+        // Grid View
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredProducts.map((product) => {
+            const seoScore = calculateDetailedSeoScore(
+              product.seo_title,
+              product.seo_description,
+              !!product.image_url,
+              true
+            );
+            
+            return (
+              <Card key={product.id} className="overflow-hidden hover:shadow-md transition">
+                <div className="aspect-square bg-muted relative">
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="w-12 h-12 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 left-2">
                     <Checkbox
                       checked={selectedProducts.has(product.id)}
                       onCheckedChange={() => handleSelectProduct(product.id)}
+                      className="bg-background shadow-lg"
                     />
-                  </TableCell>
-                  <TableCell>
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.title}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
-                        <Package className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[200px]">
-                      <p className="font-medium line-clamp-2">{product.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{product.vendor}</p>
+                  </div>
+                </div>
+                
+                <div className="p-4 space-y-3">
+                  <div>
+                    <h3 className="font-semibold line-clamp-2 mb-1">{product.title}</h3>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {product.vendor && <span>{product.vendor}</span>}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[200px]">
+                  </div>
+
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">SEO Title</p>
                       {product.seo_title ? (
                         <p className="text-sm line-clamp-2">{product.seo_title}</p>
                       ) : (
@@ -738,11 +899,11 @@ export function SeoOptimization() {
                         </Badge>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[250px]">
+                    
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">SEO Description</p>
                       {product.seo_description ? (
-                        <p className="text-xs text-muted-foreground line-clamp-3">
+                        <p className="text-xs text-muted-foreground line-clamp-2">
                           {product.seo_description}
                         </p>
                       ) : (
@@ -751,87 +912,51 @@ export function SeoOptimization() {
                         </Badge>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell>
+                  </div>
+
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="text-2xl font-bold">{seoScore.score}</div>
+                      <div className="text-lg font-bold">{seoScore.score}</div>
                       <SeoConfidenceBadge
                         seoTitle={product.seo_title}
                         seoDescription={product.seo_description}
                         showLabel={false}
                       />
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
-                      {product.enrichment_status === 'enriched' ? 'Optimized' : 'Pending'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {product.seo_synced_to_shopify ? (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Yes
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">
-                        <Clock className="w-3 h-3 mr-1" />
-                        No
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setProductsToSync([product]);
-                          setShowSyncDialog(true);
-                        }}
-                        disabled={!product.seo_title || !product.seo_description}
-                        title="View & Sync"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Précédent
-          </Button>
-          <span className="text-sm">
-            Page {currentPage} sur {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Suivant
-          </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setProductsToSync([product]);
+                        setShowSyncDialog(true);
+                      }}
+                      disabled={!product.seo_title || !product.seo_description}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
-      
+
+      {/* Empty State */}
+      {filteredProducts.length === 0 && (
+        <div className="text-center py-12 bg-muted/30 rounded-lg">
+          <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">No products found</p>
+        </div>
+      )}
+
+      {/* Dialogs */}
       <OptimizationProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        title="Optimisation SEO en cours"
+        title={generating ? "Optimizing SEO" : "Syncing to Shopify"}
         current={progress.current}
         total={progress.total}
         isComplete={isOptimizationComplete}
@@ -839,7 +964,6 @@ export function SeoOptimization() {
         onClose={handleCloseProgressDialog}
       />
 
-      {/* Results Dialog */}
       <OptimizationResultsDialog
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
