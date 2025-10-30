@@ -42,7 +42,7 @@ interface Product {
   seo_synced_to_shopify: boolean;
 }
 
-type FilterType = 'all' | 'with-tags' | 'without-tags' | 'to-sync';
+type FilterType = 'all' | 'to_optimize' | 'tagged' | 'synced';
 
 export function TagOptimization() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -89,9 +89,9 @@ export function TagOptimization() {
 
   // Filtered products logic
   const filteredProducts = products.filter((product) => {
-    if (filter === 'with-tags' && !product.tags) return false;
-    if (filter === 'without-tags' && product.tags) return false;
-    if (filter === 'to-sync' && (product.seo_synced_to_shopify || !product.tags)) return false;
+    if (filter === 'to_optimize' && product.tags) return false;
+    if (filter === 'tagged' && !product.tags) return false;
+    if (filter === 'synced' && !product.seo_synced_to_shopify) return false;
 
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
@@ -106,29 +106,30 @@ export function TagOptimization() {
   const productsWithTags = products.filter(p => p.tags).length;
   const productsWithoutTags = products.length - productsWithTags;
   const productsToSync = products.filter(p => p.tags && !p.seo_synced_to_shopify).length;
+  const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   const tagCompletionRate = products.length > 0 ? Math.round((productsWithTags / products.length) * 100) : 0;
 
   const filters = [
     { id: 'all' as FilterType, label: 'All Products', count: products.length },
-    { id: 'with-tags' as FilterType, label: 'With Tags', count: productsWithTags },
-    { id: 'without-tags' as FilterType, label: 'Without Tags', count: productsWithoutTags },
-    { id: 'to-sync' as FilterType, label: 'To Sync', count: productsToSync },
+    { id: 'to_optimize' as FilterType, label: 'To Optimize', count: productsWithoutTags },
+    { id: 'tagged' as FilterType, label: 'Tagged', count: productsWithTags },
+    { id: 'synced' as FilterType, label: 'Synced', count: productsSynced },
   ];
 
   // Clickable stats handlers
-  const handleWithTagsClick = () => {
-    setFilter('with-tags');
-    toast.info(`Showing ${productsWithTags} products with tags`);
+  const handleToOptimizeClick = () => {
+    setFilter('to_optimize');
+    toast.info(`Showing ${productsWithoutTags} products to optimize`);
   };
 
-  const handleWithoutTagsClick = () => {
-    setFilter('without-tags');
-    toast.info(`Showing ${productsWithoutTags} products without tags`);
+  const handleTaggedClick = () => {
+    setFilter('tagged');
+    toast.info(`Showing ${productsWithTags} tagged products`);
   };
 
-  const handleToSyncClick = () => {
-    setFilter('to-sync');
-    toast.info(`Showing ${productsToSync} products ready to sync`);
+  const handleSyncedClick = () => {
+    setFilter('synced');
+    toast.info(`Showing ${productsSynced} synced products`);
   };
 
   const handleGenerateAll = () => {
@@ -136,7 +137,7 @@ export function TagOptimization() {
       toast.info('All products already have tags');
       return;
     }
-    setFilter('without-tags');
+    setFilter('to_optimize');
     setTimeout(() => {
       handleGenerateAllTags();
     }, 100);
@@ -465,56 +466,71 @@ export function TagOptimization() {
       </Card>
 
       {/* Clickable Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Card 
-          className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleWithTagsClick}
+          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={handleTaggedClick}
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
-                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
               </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100">With Tags</h3>
+              <h3 className="text-sm font-semibold text-green-900 dark:text-green-100">Tagged</h3>
             </div>
-            <Badge className="bg-green-600 text-white hover:bg-green-700">
+            <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs">
               {tagCompletionRate}%
             </Badge>
           </div>
-          <p className="text-4xl font-bold text-green-900 dark:text-green-100 mb-1">{productsWithTags}</p>
-          <p className="text-sm text-green-700 dark:text-green-300">Organized products • Click to view</p>
+          <p className="text-3xl font-bold text-green-900 dark:text-green-100">{productsWithTags}</p>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-1">Click to view</p>
         </Card>
 
         <Card 
-          className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleWithoutTagsClick}
+          className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={handleToOptimizeClick}
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
-                <Plus className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                <Plus className="w-4 h-4 text-orange-600 dark:text-orange-400" />
               </div>
-              <h3 className="font-semibold text-orange-900 dark:text-orange-100">Without Tags</h3>
+              <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-100">To Optimize</h3>
             </div>
           </div>
-          <p className="text-4xl font-bold text-orange-900 dark:text-orange-100 mb-1">{productsWithoutTags}</p>
-          <p className="text-sm text-orange-700 dark:text-orange-300">To optimize • Click to view</p>
+          <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">{productsWithoutTags}</p>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">Click to view</p>
         </Card>
 
         <Card 
-          className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleToSyncClick}
+          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={handleSyncedClick}
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-xl">
-                <Upload className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100">To Sync</h3>
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Synced</h3>
             </div>
           </div>
-          <p className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-1">{productsToSync}</p>
-          <p className="text-sm text-blue-700 dark:text-blue-300">Ready for Shopify • Click to view</p>
+          <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{productsSynced}</p>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Click to view</p>
+        </Card>
+
+        <Card 
+          className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                <Hash className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">To Sync</h3>
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{productsToSync}</p>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">Ready for Shopify</p>
         </Card>
       </div>
 
@@ -589,6 +605,17 @@ export function TagOptimization() {
             >
               <Upload className="w-4 h-4" />
               <span className="hidden sm:inline">Sync ({selectedProducts.size})</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncAll}
+              disabled={syncing || productsToSync === 0}
+              className="flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Sync All</span>
             </Button>
             
             <Button variant="outline" size="icon" onClick={fetchProducts}>
