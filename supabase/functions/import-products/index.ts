@@ -402,6 +402,7 @@ Deno.serve(async (req: Request) => {
         currency: shopCurrency,
         raw_data: product,
         shop_name: cleanShopName,
+        optimization_count: 0, // Reset optimization counter on import
       };
     });
 
