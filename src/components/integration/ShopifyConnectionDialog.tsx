@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ShopifyTokenGuide } from "./ShopifyTokenGuide";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
 
 interface ShopifyConnectionDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface ShopifyConnectionDialogProps {
 }
 
 export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectionDialogProps) {
+  const { limits, refresh: refreshLimits } = useUsageLimits();
   const [oauthShopName, setOauthShopName] = useState("");
   const [oauthLoading, setOauthLoading] = useState(false);
   
@@ -28,6 +30,14 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
   const handleOAuthConnect = async () => {
     if (!oauthShopName.trim()) {
       toast.error("Veuillez entrer le nom de votre boutique");
+      return;
+    }
+
+    // ✅ Check store limit
+    if (!limits?.canAddShopifyStore) {
+      toast.error('Store limit reached', {
+        description: `You have reached the maximum number of stores (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Upgrade your plan to add more stores.`,
+      });
       return;
     }
 
@@ -63,6 +73,14 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
   const handleManualConnect = async () => {
     if (!manualStoreName.trim() || !manualApiKey.trim() || !manualApiSecret.trim()) {
       toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    // ✅ Check store limit
+    if (!limits?.canAddShopifyStore) {
+      toast.error('Store limit reached', {
+        description: `You have reached the maximum number of stores (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Upgrade your plan to add more stores.`,
+      });
       return;
     }
 
@@ -111,7 +129,18 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
       if (insertError) throw insertError;
 
+      // ✅ Increment shopify_stores_count
+      await supabase.rpc('increment_usage', {
+        p_seller_id: user.id,
+        p_field: 'shopify_stores_count',
+        p_increment: 1
+      });
+
       toast.success("Store connected successfully! 🎉");
+      
+      // Refresh limits
+      await refreshLimits();
+      
       onOpenChange(false);
       
       // Reset form

@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { MessageSquare, Send, Bot, User, ShoppingCart, Sparkles, Code, Copy, Check, Settings as SettingsIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -19,6 +21,7 @@ interface Message {
 
 export default function Chat() {
   const { user } = useAuth();
+  const { limits, refresh: refreshLimits } = useUsageLimits();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -31,6 +34,7 @@ export default function Chat() {
   const [showEmbed, setShowEmbed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Chat embed configuration
@@ -91,6 +95,12 @@ export default function Chat() {
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
+
+    // ✅ Check chat limit
+    if (!limits?.canUseChat) {
+      setShowUpgradeDialog(true);
+      return;
+    }
 
     const userMessageText = input.trim();
     const userMessage: Message = {
@@ -203,6 +213,16 @@ export default function Chat() {
             message_count: messages.length + 2
           })
           .eq('id', sessionId);
+
+        // ✅ Increment chat_responses_count
+        await supabase.rpc('increment_usage', {
+          p_seller_id: user!.id,
+          p_field: 'chat_responses_count',
+          p_increment: 1
+        });
+
+        // Refresh limits
+        await refreshLimits();
       }
     } catch (error: any) {
       console.error('Error sending message:', error);
@@ -614,6 +634,14 @@ export default function Chat() {
           </div>
         </Card>
       </div>
+
+      <UpgradeDialog 
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="chat"
+        usage={limits?.usage.chat_responses_count}
+        limit={limits?.limits.max_chat_responses}
+      />
     </div>
   );
 }
