@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatNumber } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -314,7 +315,7 @@ export default function Products() {
                               product.inventory_quantity > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                             }`}
                           >
-                            Stock: {product.inventory_quantity}
+                            Stock: {formatNumber(product.inventory_quantity)}
                           </span>
                         </div>
                       </CardContent>
@@ -392,7 +393,7 @@ export default function Products() {
                                   : "bg-red-100 text-red-800"
                               }`}
                             >
-                              Stock: {product.inventory_quantity}
+                              Stock: {formatNumber(product.inventory_quantity)}
                             </span>
                           </div>
                         </div>

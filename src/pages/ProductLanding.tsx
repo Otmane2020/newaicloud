@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatNumber } from '@/lib/utils';
 
 const formatPrice = (price: number, currency: string = 'EUR') => {
   return new Intl.NumberFormat('fr-FR', {

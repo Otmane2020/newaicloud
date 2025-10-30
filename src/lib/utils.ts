@@ -28,3 +28,18 @@ export function formatCurrency(value: number, currency: string = '€'): string 
     return `${sign}${absValue.toFixed(2)}${currency}`;
   }
 }
+
+/**
+ * Format a number with K/M notation
+ * @param num - The numeric value to format
+ * @returns Formatted string (e.g., "1.2K", "5.3M")
+ */
+export function formatNumber(num: number): string {
+  if (num >= 1_000_000) {
+    return (num / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  }
+  if (num >= 1_000) {
+    return (num / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  }
+  return num.toString();
+}

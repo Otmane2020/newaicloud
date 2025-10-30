@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { formatNumber } from '@/lib/utils';
 import {
   Carousel,
   CarouselContent,
@@ -230,7 +231,7 @@ export default function ProductDetail() {
               <div className="flex items-center gap-2 text-green-600">
                 <div className="w-2 h-2 bg-green-600 rounded-full"></div>
                 <span className="font-medium">
-                  En stock ({product.inventory_quantity} disponible{product.inventory_quantity > 1 ? 's' : ''})
+                  En stock ({formatNumber(product.inventory_quantity)} disponible{product.inventory_quantity > 1 ? 's' : ''})
                 </span>
               </div>
             ) : (

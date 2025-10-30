@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatNumber } from '@/lib/utils';
 
 interface ProductCardProps {
   id: string;
@@ -111,7 +112,7 @@ export function ProductCard({
 
           {/* Stock badge */}
           <Badge variant={inventory_quantity > 0 ? 'success' : 'destructive'}>
-            {inventory_quantity > 0 ? `Stock: ${inventory_quantity}` : 'Rupture'}
+            {inventory_quantity > 0 ? `Stock: ${formatNumber(inventory_quantity)}` : 'Rupture'}
           </Badge>
         </div>
       </CardContent>
