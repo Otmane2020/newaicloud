@@ -179,6 +179,45 @@ export default function Blog() {
         </p>
       </div>
 
+      {/* Hero Banner */}
+      <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 dark:border-purple-800 p-6 sm:p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2">
+              <PenSquare className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                AI-Powered Content Creation
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
+              Generate SEO-optimized blog articles automatically to boost your visibility and engage your audience with quality content.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
+                <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span className="font-medium">AI-Generated</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
+                <FileText className="w-4 h-4 text-pink-600 dark:text-pink-400" />
+                <span className="font-medium">SEO Optimized</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
+                <CalendarClock className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                <span className="font-medium">Automated Campaigns</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 items-center">
+            <div className="text-center">
+              <div className="text-3xl sm:text-4xl font-bold text-purple-600 dark:text-purple-400">
+                {articles.length}
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Articles Created</div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* Horizontal submenu */}
       <Card className="p-1">
         <Tabs value={activeSubtab} onValueChange={(value) => {
