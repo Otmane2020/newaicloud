@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check usage limits BEFORE generating
+    // Get user from JWT token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -75,35 +75,61 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: limitsData, error: limitsError } = await supabaseClient.functions.invoke(
-      'check-usage-limits',
-      {
-        headers: {
-          Authorization: authHeader,
-        },
-        body: {}
-      }
-    );
-
-    if (limitsError || !limitsData) {
-      console.error('Error checking limits:', limitsError);
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('[TAGS] Auth error:', userError);
       return new Response(
-        JSON.stringify({ error: "Impossible de vérifier les limites" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Non autorisé" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!limitsData.canUseOptimizations) {
-      return new Response(
-        JSON.stringify({
-          error: "Limite d'optimisations atteinte",
-          limitReached: true,
-          usage: limitsData.usage,
-          limits: limitsData.limits,
-          shouldForcePayment: limitsData.shouldForcePayment
-        }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Check usage limits directly
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('subscription_status, current_plan_id, trial_ends_at')
+      .eq('id', user.id)
+      .single();
+
+    const isTrialing = profile?.subscription_status === 'trialing';
+    
+    // Get current month usage
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+
+    const { data: usage } = await supabaseClient
+      .from('usage_tracking')
+      .select('*')
+      .eq('seller_id', user.id)
+      .gte('month', currentMonth.toISOString().split('T')[0])
+      .single();
+
+    const currentUsage = usage || { optimizations_count: 0 };
+
+    // For non-trial users, check optimization limits
+    if (!isTrialing) {
+      const { data: plan } = await supabaseClient
+        .from('subscription_plans')
+        .select('max_optimizations_monthly')
+        .eq('id', profile?.current_plan_id || 'starter')
+        .single();
+
+      const maxOptimizations = plan?.max_optimizations_monthly || 999999;
+      
+      if (currentUsage.optimizations_count >= maxOptimizations) {
+        return new Response(
+          JSON.stringify({
+            error: "Limite d'optimisations atteinte",
+            limitReached: true,
+            usage: currentUsage,
+            shouldForcePayment: true
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const { data: product, error: productError } = await supabaseClient
@@ -122,14 +148,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check if product already optimized for trial users
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('subscription_status')
-      .eq('id', product.seller_id)
-      .single();
+    // Verify product belongs to user
+    if (product.seller_id !== user.id) {
+      return new Response(
+        JSON.stringify({ error: "Non autorisé" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    if (profile?.subscription_status === 'trialing' && (product.optimization_count || 0) >= 1 && !force) {
+    // Check if product already optimized for trial users
+    if (isTrialing && (product.optimization_count || 0) >= 1 && !force) {
       return new Response(
         JSON.stringify({ 
           error: 'trial_product_already_optimized',
