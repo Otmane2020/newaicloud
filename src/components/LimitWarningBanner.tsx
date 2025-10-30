@@ -2,6 +2,7 @@ import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { formatLimit } from '@/lib/formatUtils';
 
 export function LimitWarningBanner() {
   const navigate = useNavigate();
@@ -75,9 +76,9 @@ export function LimitWarningBanner() {
                 ? 'text-red-700 dark:text-red-300' 
                 : 'text-orange-700 dark:text-orange-300'
             }`}>
-              Optimisations: {limits.usage.optimizations_count}/{limits.limits.max_optimizations} • 
-              Articles: {limits.usage.articles_count}/{limits.limits.max_articles} • 
-              Chat: {limits.usage.chat_responses_count}/{limits.limits.max_chat_responses}
+              Optimisations: {limits.usage.optimizations_count}/{formatLimit(limits.limits.max_optimizations)} • 
+              Articles: {limits.usage.articles_count}/{formatLimit(limits.limits.max_articles)} • 
+              Chat: {limits.usage.chat_responses_count}/{formatLimit(limits.limits.max_chat_responses)}
             </p>
           </div>
         </div>

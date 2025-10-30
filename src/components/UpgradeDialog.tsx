@@ -79,7 +79,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: U
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">100 optimisations SEO IA / mois</span>
+                <span className="text-sm">1 000 optimisations SEO IA / mois</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>

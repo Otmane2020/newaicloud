@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Package, FileText, Zap, MessageSquare } from "lucide-react";
+import { formatLimit } from "@/lib/formatUtils";
 
 interface UsageLimit {
   label: string;
@@ -172,7 +173,7 @@ export function UsageLimits() {
                 <span className="text-sm font-medium">{item.label}</span>
               </div>
               <span className="text-sm text-muted-foreground">
-                {item.current} / {item.limit === 0 ? '∞' : item.limit}
+                {item.current.toLocaleString('fr-FR')} / {formatLimit(item.limit)}
               </span>
             </div>
             <Progress 
