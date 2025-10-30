@@ -219,8 +219,8 @@ export function SeoOptimization() {
         return false;
       }
       
-      // Otherwise, only products without SEO
-      return !p.seo_title || !p.seo_description;
+      // Otherwise, only products not yet enriched
+      return p.enrichment_status !== 'enriched';
     });
 
     if (productsToGenerate.length === 0) {
