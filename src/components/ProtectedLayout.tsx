@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
-import { TrialWarningBanner } from "@/components/TrialWarningBanner";
+import { LimitWarningBanner } from "@/components/LimitWarningBanner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Sparkles } from "lucide-react";
 
@@ -37,7 +37,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
             </div>
-            <TrialWarningBanner />
+            <LimitWarningBanner />
             <div className="p-8">
               {children}
             </div>

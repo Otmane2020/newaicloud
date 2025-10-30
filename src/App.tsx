@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AIAssistant } from "@/components/AIAssistant";
-import { LimitWarningBanner } from "@/components/LimitWarningBanner";
 import { useRTL } from "@/hooks/useRTL";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
@@ -59,7 +58,6 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <RTLWrapper>
-            <LimitWarningBanner />
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/privacy" element={<Privacy />} />
