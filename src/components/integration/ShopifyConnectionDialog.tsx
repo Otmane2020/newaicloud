@@ -111,7 +111,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
       if (insertError) throw insertError;
 
-      toast.success("Boutique connectée avec succès ! 🎉");
+      toast.success("Store connected successfully! 🎉");
       onOpenChange(false);
       
       // Reset form
@@ -119,10 +119,11 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       setManualApiKey("");
       setManualApiSecret("");
 
-      // Set flag for auto-import
+      // Set flags for import confirmation dialog
       localStorage.setItem('shopify_just_connected', 'true');
+      localStorage.setItem('shopify_store_name', cleanStoreName);
       
-      // Refresh page to show new connection and trigger auto-import
+      // Refresh page to show new connection and trigger import dialog
       setTimeout(() => window.location.reload(), 1000);
     } catch (error: any) {
       console.error("Manual connection error:", error);

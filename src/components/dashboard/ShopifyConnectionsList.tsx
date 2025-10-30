@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ImportProgressDialog } from './ImportProgressDialog';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
+import { ImportConfirmDialog } from '@/components/integration/ImportConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -61,11 +62,34 @@ export function ShopifyConnectionsList() {
   // Delete confirmation dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [storeToDelete, setStoreToDelete] = useState<string | null>(null);
+  
+  // Import confirmation dialog state
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [storeToImport, setStoreToImport] = useState<ShopifyConnection | null>(null);
 
   useEffect(() => {
     loadConnections();
     checkUsageLimits();
   }, []);
+  
+  // Check if just connected a store and show import dialog
+  useEffect(() => {
+    const justConnected = localStorage.getItem('shopify_just_connected');
+    const storeName = localStorage.getItem('shopify_store_name');
+    
+    if (justConnected === 'true' && storeName && connections.length > 0) {
+      // Find the newly connected store
+      const newStore = connections.find(c => c.store_name === storeName);
+      if (newStore) {
+        setStoreToImport(newStore);
+        setShowImportConfirm(true);
+        
+        // Clear flags
+        localStorage.removeItem('shopify_just_connected');
+        localStorage.removeItem('shopify_store_name');
+      }
+    }
+  }, [connections]);
 
   const checkUsageLimits = async () => {
     try {
@@ -428,6 +452,18 @@ export function ShopifyConnectionsList() {
           </Card>
         ))}
       </div>
+
+      <ImportConfirmDialog
+        open={showImportConfirm}
+        onOpenChange={setShowImportConfirm}
+        onConfirm={() => {
+          if (storeToImport) {
+            importProducts(storeToImport);
+          }
+          setShowImportConfirm(false);
+        }}
+        storeName={storeToImport?.store_name || ''}
+      />
 
       <ImportProgressDialog
         open={showProgressDialog}
