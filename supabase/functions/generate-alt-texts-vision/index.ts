@@ -10,21 +10,21 @@ interface AltTextVisionRequest {
   imageId: string;
 }
 
-async function callDeepSeekVision(imageUrl: string, productContext: string) {
-  const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+async function callVisionAI(imageUrl: string, productContext: string) {
+  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-  if (!deepseekApiKey) {
-    throw new Error('DeepSeek API key not configured');
+  if (!lovableApiKey) {
+    throw new Error('Lovable API key not configured');
   }
 
-  const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${deepseekApiKey}`,
+      'Authorization': `Bearer ${lovableApiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'google/gemini-2.5-flash',
       messages: [
         {
           role: "system",
@@ -80,14 +80,12 @@ Réponds UNIQUEMENT avec ce JSON valide :
           ]
         }
       ],
-      temperature: 0.7,
-      max_tokens: 500,
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`DeepSeek Vision API error: ${response.status} - ${errorText}`);
+    throw new Error(`Vision AI API error: ${response.status} - ${errorText}`);
   }
 
   return await response.json();
@@ -189,9 +187,9 @@ Deno.serve(async (req: Request) => {
       if (product.ai_material) productContext += `Material: ${product.ai_material}\n`;
     }
 
-    console.log(`Analyzing image with DeepSeek Vision: ${image.id}`);
+    console.log(`Analyzing image with Vision AI: ${image.id}`);
 
-    const visionResponse = await callDeepSeekVision(image.src, productContext);
+    const visionResponse = await callVisionAI(image.src, productContext);
     const visionContent = visionResponse.choices[0].message.content;
 
     let altText = "";
