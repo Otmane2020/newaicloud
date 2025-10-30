@@ -135,8 +135,8 @@ export function AppSidebar() {
           console.log("❌ Plan error:", planError);
           console.log("✅ Setting userPlan to:", plan?.name);
 
-          // Fallback pour Trial si le plan n'est pas trouvé
-          const displayName = plan?.name || (profile.current_plan_id === 'trial' ? 'Trial' : 'Gratuit');
+          // Fallback for Trial if plan not found
+          const displayName = plan?.name || (profile.current_plan_id === 'trial' ? 'Trial' : 'Free');
           setUserPlan(displayName);
         } else {
           console.log("⚠️ No current_plan_id in profile");
