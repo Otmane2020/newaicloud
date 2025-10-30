@@ -11,6 +11,16 @@ import { ImportProgressDialog } from './ImportProgressDialog';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ShopifyConnection {
   id: string;
@@ -48,6 +58,10 @@ export function ShopifyConnectionsList() {
   // Upgrade dialog state
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [usageLimits, setUsageLimits] = useState<any>(null);
+  
+  // Delete confirmation dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [storeToDelete, setStoreToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     loadConnections();
@@ -82,18 +96,25 @@ export function ShopifyConnectionsList() {
     }
   };
 
-  const deleteConnection = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette connexion ?')) return;
+  const openDeleteDialog = (id: string) => {
+    setStoreToDelete(id);
+    setShowDeleteDialog(true);
+  };
+
+  const deleteConnection = async () => {
+    if (!storeToDelete) return;
 
     try {
       const { error } = await supabase
         .from('shopify_connections')
         .delete()
-        .eq('id', id);
+        .eq('id', storeToDelete);
 
       if (error) throw error;
       toast.success('Connexion supprimée');
       loadConnections();
+      setShowDeleteDialog(false);
+      setStoreToDelete(null);
     } catch (error) {
       console.error('Error deleting connection:', error);
       toast.error('Erreur lors de la suppression');
@@ -349,7 +370,7 @@ export function ShopifyConnectionsList() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => deleteConnection(store.id)}
+                    onClick={() => openDeleteDialog(store.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -378,6 +399,23 @@ export function ShopifyConnectionsList() {
         reason="limit_reached"
         limitType="products"
       />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette connexion ? Tous les produits, pages et données associés seront également supprimés. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteConnection} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
