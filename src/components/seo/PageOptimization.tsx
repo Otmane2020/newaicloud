@@ -444,7 +444,8 @@ export function PageOptimization() {
           </Button>
         </Card>
       ) : (
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="max-h-[600px] overflow-y-auto">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold">Shopify Pages</h3>
@@ -571,6 +572,7 @@ export function PageOptimization() {
                 ))}
               </TableBody>
             </Table>
+          </div>
           </div>
         </Card>
       )}

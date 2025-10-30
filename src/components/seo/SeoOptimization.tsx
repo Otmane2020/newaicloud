@@ -539,8 +539,8 @@ export function SeoOptimization() {
             <div className="flex flex-col gap-4 items-center">
               <div className="text-center">
                 <div className={`text-3xl md:text-4xl font-bold ${
-                  globalSeoScore >= 70 ? 'text-green-600' : 
-                  globalSeoScore >= 40 ? 'text-orange-600' : 
+                  globalSeoScore >= 80 ? 'text-green-600' : 
+                  globalSeoScore >= 70 ? 'text-orange-600' : 
                   'text-red-600'
                 }`}>
                   {globalSeoScore}/100
@@ -841,9 +841,10 @@ export function SeoOptimization() {
 
       {/* Products Table */}
       {viewMode === 'list' ? (
-        <Card>
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
+        <Card className="overflow-hidden">
+          <div className="max-h-[600px] overflow-y-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
@@ -925,14 +926,12 @@ export function SeoOptimization() {
                        <div className="flex flex-col gap-1">
                          {product.enrichment_status === 'enriched' ? (
                            <>
-                             <div className="flex items-center gap-2">
-                               <div className={`text-lg font-bold ${
-                                 seoScore.score >= 70 ? 'text-green-600' : 
-                                 seoScore.score >= 40 ? 'text-orange-600' : 
-                                 'text-red-600'
-                               }`}>
-                                 {seoScore.score}/100
-                               </div>
+                             <div className={`text-2xl font-bold ${
+                               seoScore.score >= 80 ? 'text-green-600' : 
+                               seoScore.score >= 70 ? 'text-orange-600' : 
+                               'text-red-600'
+                             }`}>
+                               {seoScore.score}
                              </div>
                              <span className="text-xs text-muted-foreground">AI-optimized</span>
                            </>
@@ -948,14 +947,12 @@ export function SeoOptimization() {
                                );
                                return (
                                  <>
-                                   <div className="flex items-center gap-2">
-                                     <div className={`text-lg font-bold ${
-                                       initialScore.score >= 70 ? 'text-green-600' : 
-                                       initialScore.score >= 40 ? 'text-orange-600' : 
-                                       'text-red-600'
-                                     }`}>
-                                       {initialScore.score}/100
-                                     </div>
+                                   <div className={`text-2xl font-bold ${
+                                     initialScore.score >= 80 ? 'text-green-600' : 
+                                     initialScore.score >= 70 ? 'text-orange-600' : 
+                                     'text-red-600'
+                                   }`}>
+                                     {initialScore.score}
                                    </div>
                                    <span className="text-xs text-muted-foreground">Initial score</span>
                                  </>
@@ -1004,6 +1001,7 @@ export function SeoOptimization() {
               })}
             </TableBody>
           </Table>
+          </div>
         </Card>
       ) : (
         // Grid View
@@ -1077,14 +1075,12 @@ export function SeoOptimization() {
                     <div className="flex flex-col gap-1">
                       {product.enrichment_status === 'enriched' ? (
                         <>
-                          <div className="flex items-center gap-2">
-                            <div className={`text-lg font-bold ${
-                              seoScore.score >= 70 ? 'text-green-600' : 
-                              seoScore.score >= 40 ? 'text-orange-600' : 
-                              'text-red-600'
-                            }`}>
-                              {seoScore.score}/100
-                            </div>
+                          <div className={`text-2xl font-bold ${
+                            seoScore.score >= 80 ? 'text-green-600' : 
+                            seoScore.score >= 70 ? 'text-orange-600' : 
+                            'text-red-600'
+                          }`}>
+                            {seoScore.score}
                           </div>
                           <span className="text-xs text-muted-foreground">AI-optimized</span>
                         </>
@@ -1100,14 +1096,12 @@ export function SeoOptimization() {
                             );
                             return (
                               <>
-                                <div className="flex items-center gap-2">
-                                  <div className={`text-lg font-bold ${
-                                    initialScore.score >= 70 ? 'text-green-600' : 
-                                    initialScore.score >= 40 ? 'text-orange-600' : 
-                                    'text-red-600'
-                                  }`}>
-                                    {initialScore.score}/100
-                                  </div>
+                                <div className={`text-2xl font-bold ${
+                                  initialScore.score >= 80 ? 'text-green-600' : 
+                                  initialScore.score >= 70 ? 'text-orange-600' : 
+                                  'text-red-600'
+                                }`}>
+                                  {initialScore.score}
                                 </div>
                                 <span className="text-xs text-muted-foreground">Initial score</span>
                               </>

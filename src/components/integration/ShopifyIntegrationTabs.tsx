@@ -1,7 +1,7 @@
 import { useState, Suspense, lazy, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Plus } from "lucide-react";
+import { ShoppingBag, Plus, RefreshCw } from "lucide-react";
 import { ShopifyConnectionDialog } from "./ShopifyConnectionDialog";
 import { SkeletonLoader } from "./SkeletonLoader";
 import { toast } from "sonner";
@@ -90,10 +90,16 @@ export function ShopifyIntegrationTabs() {
                 Connect and manage your Shopify stores
               </CardDescription>
             </div>
-            <Button onClick={() => setShowDialog(true)} size="lg" className="w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Store
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setRefreshKey(prev => prev + 1)} variant="outline" size="lg">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh Data
+              </Button>
+              <Button onClick={() => setShowDialog(true)} size="lg" className="w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Store
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>

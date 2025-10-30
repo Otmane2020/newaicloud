@@ -472,8 +472,8 @@ export function TagOptimization() {
           <div className="flex flex-col gap-4 items-center">
             <div className="text-center">
               <div className={`text-3xl md:text-4xl font-bold ${
-                tagSeoScore >= 70 ? 'text-green-600' : 
-                tagSeoScore >= 40 ? 'text-orange-600' : 
+                tagSeoScore >= 80 ? 'text-green-600' : 
+                tagSeoScore >= 70 ? 'text-orange-600' : 
                 'text-red-600'
               }`}>
                 {tagSeoScore}/100
@@ -721,7 +721,7 @@ export function TagOptimization() {
 
       {/* Products Display */}
       {viewMode === 'list' ? (
-        <div className="space-y-2">
+        <div className="max-h-[600px] overflow-y-auto space-y-2">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="p-4">
               <div className="flex items-center gap-4">

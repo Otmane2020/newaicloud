@@ -293,7 +293,8 @@ export function ArticleManagement() {
           </p>
         </Card>
       ) : viewMode === 'list' ? (
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="max-h-[600px] overflow-y-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
@@ -384,6 +385,7 @@ export function ArticleManagement() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
