@@ -38,7 +38,7 @@ export function SubscriptionPlans() {
       featured: false
     },
     {
-      id: "pro",
+      id: "professional",
       price_monthly: 49,
       price_yearly: 468,
       icon: Zap,
@@ -46,7 +46,7 @@ export function SubscriptionPlans() {
       featured: true
     },
     {
-      id: "enterprise",
+      id: "enterprise-199",
       price_monthly: 199,
       price_yearly: 1908,
       icon: Crown,
@@ -102,6 +102,13 @@ export function SubscriptionPlans() {
 
   const isCurrentPlan = (planId: string) => currentPlanId === planId;
 
+  // Map database plan IDs to translation keys
+  const getTranslationKey = (planId: string): string => {
+    if (planId === 'professional') return 'pro';
+    if (planId.startsWith('enterprise-')) return 'enterprise';
+    return planId;
+  };
+
   const getPrice = (plan: Plan) => {
     return billingPeriod === 'yearly' ? plan.price_yearly : plan.price_monthly;
   };
@@ -140,7 +147,8 @@ export function SubscriptionPlans() {
         {plans.map((plan) => {
           const Icon = plan.icon;
           const isCurrent = isCurrentPlan(plan.id);
-          const planKey = `subscriptionPlans.${plan.id}`;
+          const translationKey = getTranslationKey(plan.id);
+          const planKey = `subscriptionPlans.${translationKey}`;
           const name = t(`${planKey}.name`);
           const description = t(`${planKey}.description`);
           const badge = t(`${planKey}.badge`);
