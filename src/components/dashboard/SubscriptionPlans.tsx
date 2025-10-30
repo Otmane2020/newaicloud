@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Sparkles, Zap, Crown, CreditCard, TrendingUp } from "lucide-react";
+import { CheckCircle2, Sparkles, Zap, Crown, CreditCard, TrendingUp, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ interface Plan {
   max_shopify_stores: number;
   trial_days: number;
   features: any;
+  display_order: number;
 }
 
 export function SubscriptionPlans() {
@@ -36,6 +37,7 @@ export function SubscriptionPlans() {
   const { limits } = useUsageLimits();
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedProPlan, setSelectedProPlan] = useState<string>('');
@@ -85,13 +87,13 @@ export function SubscriptionPlans() {
   }, [user?.id]);
 
   const handleSelectPlan = async (planId: string) => {
+    setCheckoutLoading(planId);
     try {
-      setLoading(true);
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
           plan_id: planId,
           billing_period: billingPeriod,
-          success_url: `${window.location.origin}/dashboard?checkout=success`,
+          success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
           cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
         }
       });
@@ -99,7 +101,7 @@ export function SubscriptionPlans() {
       if (error) throw error;
       
       if (data?.url) {
-        window.location.href = data.url;
+        window.open(data.url, '_blank');
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
@@ -109,7 +111,7 @@ export function SubscriptionPlans() {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setCheckoutLoading(null);
     }
   };
 
@@ -124,6 +126,24 @@ export function SubscriptionPlans() {
     const yearlyCost = plan.price_yearly;
     const savings = ((monthlyCost - yearlyCost) / monthlyCost * 100).toFixed(0);
     return savings;
+  };
+  
+  const getPlanLevel = (planId: string) => {
+    if (planId === 'trial' || planId === 'starter') return 1;
+    if (planId === 'professional' || planId.startsWith('pro-')) return 2;
+    if (planId.startsWith('enterprise-')) return 3;
+    return 0;
+  };
+  
+  const getButtonText = (planId: string) => {
+    if (isCurrentPlan(planId)) return 'Plan actuel';
+    
+    const currentLevel = getPlanLevel(currentPlanId || '');
+    const targetLevel = getPlanLevel(planId);
+    
+    if (targetLevel > currentLevel) return 'Upgrade';
+    if (targetLevel < currentLevel) return 'Downgrade';
+    return 'Changer de plan';
   };
 
   // Group plans by category
@@ -167,84 +187,80 @@ export function SubscriptionPlans() {
       <div className="grid md:grid-cols-3 gap-6">
         {/* Starter Plan */}
         {starterPlan && (
-          <Card className={`relative ${isCurrentPlan(starterPlan.id) ? 'border-2 border-success' : ''}`}>
-            {starterPlan.trial_days > 0 && (
-              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-500">
-                🎁 {t('subscriptionPlans.starter.badge')}
-              </Badge>
-            )}
+          <Card className={`p-8 relative flex flex-col ${isCurrentPlan(starterPlan.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
             {isCurrentPlan(starterPlan.id) && (
-              <Badge className="absolute -top-3 right-4 bg-success">
-                ✓ {t('subscriptionPlans.current_plan')}
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
+                Plan actuel
               </Badge>
             )}
             
-            <CardHeader>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-6 h-6 text-primary" />
-                <CardTitle className="text-2xl">{t('subscriptionPlans.starter.name')}</CardTitle>
+            <div className="space-y-6 flex-1">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                  <h3 className="text-2xl font-bold">{starterPlan.name}</h3>
+                </div>
+                <p className="text-muted-foreground text-sm">{starterPlan.description}</p>
               </div>
-              <CardDescription>{t('subscriptionPlans.starter.description')}</CardDescription>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-bold">${getPrice(starterPlan).toFixed(2)}</span>
-                <span className="text-muted-foreground">{t('subscriptionPlans.per_month')}</span>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={() => handleSelectPlan(starterPlan.id)}
-                disabled={isCurrentPlan(starterPlan.id) || loading}
-              >
-                {isCurrentPlan(starterPlan.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.starter.cta')}
-              </Button>
               
-              <div className="space-y-3 pt-6 border-t">
-                <p className="font-semibold text-sm">Limites & Utilisation</p>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.products_count : 0}</strong> / {starterPlan.max_products} produits
-                  </span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {starterPlan.max_optimizations_monthly} optimisations SEO
-                  </span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.articles_count : 0}</strong> / {starterPlan.max_articles_monthly} articles blog
-                  </span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {starterPlan.max_chat_responses_monthly} réponses chat
-                  </span>
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold">${getPrice(starterPlan).toFixed(2)}</span>
+                  <span className="text-muted-foreground">/mois</span>
                 </div>
               </div>
-            </CardContent>
+
+              <div className="space-y-3 pt-6 border-t">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.products_count : 0}</strong> / {starterPlan.max_products} produits</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {starterPlan.max_optimizations_monthly} optimisations SEO</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.articles_count : 0}</strong> / {starterPlan.max_articles_monthly} articles blog</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {starterPlan.max_chat_responses_monthly} réponses chat</span>
+                </div>
+              </div>
+            </div>
+
+            <Button
+              className="w-full mt-6"
+              variant={isCurrentPlan(starterPlan.id) ? "outline" : "default"}
+              onClick={() => handleSelectPlan(starterPlan.id)}
+              disabled={isCurrentPlan(starterPlan.id) || checkoutLoading === starterPlan.id}
+            >
+              {checkoutLoading === starterPlan.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                getButtonText(starterPlan.id)
+              )}
+            </Button>
           </Card>
         )}
 
         {/* Pro Plans */}
         {selectedPro && (
-          <Card className={`relative border-2 border-primary shadow-primary ${isCurrentPlan(selectedPro.id) ? 'border-success' : ''}`}>
+          <Card className={`p-8 relative flex flex-col ${isCurrentPlan(selectedPro.id) ? 'border-2 border-primary shadow-primary' : 'border-2 border-primary/20'}`}>
             {isCurrentPlan(selectedPro.id) && (
-              <Badge className="absolute -top-3 right-4 bg-success">
-                ✓ {t('subscriptionPlans.current_plan')}
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
+                Plan actuel
               </Badge>
             )}
             
-            <CardHeader>
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-6 h-6 text-primary" />
-                <CardTitle className="text-2xl">{t('subscriptionPlans.pro.name')}</CardTitle>
+            <div className="space-y-6 flex-1">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="w-6 h-6 text-primary" />
+                  <h3 className="text-2xl font-bold">Pro</h3>
+                </div>
+                <p className="text-muted-foreground text-sm">Pour les boutiques en croissance</p>
               </div>
               
               {proPlans.length > 1 && (
@@ -255,79 +271,75 @@ export function SubscriptionPlans() {
                   <SelectContent className="bg-background z-50">
                     {proPlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly.toLocaleString()} optimisations / mois
+                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - ${plan.price_monthly}/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
               
-              <CardDescription>{t('subscriptionPlans.pro.description')}</CardDescription>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-bold">${getPrice(selectedPro).toFixed(2)}</span>
-                <span className="text-muted-foreground">{t('subscriptionPlans.per_month')}</span>
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold">${getPrice(selectedPro).toFixed(2)}</span>
+                  <span className="text-muted-foreground">/mois</span>
+                </div>
               </div>
-            </CardHeader>
 
-            <CardContent className="space-y-4">
-              <Button
-                className="w-full"
-                onClick={() => handleSelectPlan(selectedPro.id)}
-                disabled={isCurrentPlan(selectedPro.id) || loading}
-              >
-                {isCurrentPlan(selectedPro.id) ? t('subscriptionPlans.current_plan') : 'S\'abonner maintenant'}
-              </Button>
-              
               <div className="space-y-3 pt-6 border-t">
-                <p className="font-semibold text-sm">Limites & Utilisation</p>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.products_count : 0}</strong> / {selectedPro.max_products.toLocaleString()} produits
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.products_count : 0}</strong> / {selectedPro.max_products.toLocaleString()} produits</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {selectedPro.max_optimizations_monthly.toLocaleString()} optimisations SEO
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {selectedPro.max_optimizations_monthly.toLocaleString()} optimisations SEO</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.articles_count : 0}</strong> / {selectedPro.max_articles_monthly} articles blog
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.articles_count : 0}</strong> / {selectedPro.max_articles_monthly} articles blog</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {selectedPro.max_chat_responses_monthly.toLocaleString()} réponses chat
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {selectedPro.max_chat_responses_monthly.toLocaleString()} réponses chat</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.shopify_stores_count : 0}</strong> / {selectedPro.max_shopify_stores || 1} boutiques Shopify
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.shopify_stores_count : 0}</strong> / {selectedPro.max_shopify_stores || 1} boutiques Shopify</span>
                 </div>
               </div>
-            </CardContent>
+            </div>
+
+            <Button
+              className="w-full mt-6"
+              variant={isCurrentPlan(selectedPro.id) ? "outline" : "default"}
+              onClick={() => handleSelectPlan(selectedPro.id)}
+              disabled={isCurrentPlan(selectedPro.id) || checkoutLoading === selectedPro.id}
+            >
+              {checkoutLoading === selectedPro.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                getButtonText(selectedPro.id)
+              )}
+            </Button>
           </Card>
         )}
 
         {/* Enterprise Plans */}
         {selectedEnterprise && (
-          <Card className={`relative ${isCurrentPlan(selectedEnterprise.id) ? 'border-2 border-success' : ''}`}>
+          <Card className={`p-8 relative flex flex-col ${isCurrentPlan(selectedEnterprise.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
             {isCurrentPlan(selectedEnterprise.id) && (
-              <Badge className="absolute -top-3 right-4 bg-success">
-                ✓ {t('subscriptionPlans.current_plan')}
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
+                Plan actuel
               </Badge>
             )}
             
-            <CardHeader>
-              <div className="flex items-center gap-2 mb-2">
-                <Crown className="w-6 h-6 text-primary" />
-                <CardTitle className="text-2xl">{t('subscriptionPlans.enterprise.name')}</CardTitle>
+            <div className="space-y-6 flex-1">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Crown className="w-6 h-6 text-primary" />
+                  <h3 className="text-2xl font-bold">Enterprise</h3>
+                </div>
+                <p className="text-muted-foreground text-sm">Pour les grandes opérations</p>
               </div>
               
               {enterprisePlans.length > 1 && (
@@ -338,64 +350,56 @@ export function SubscriptionPlans() {
                   <SelectContent className="bg-background z-50">
                     {enterprisePlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly.toLocaleString()} optimisations / mois
+                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - ${plan.price_monthly.toLocaleString()}/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
               
-              <CardDescription>{t('subscriptionPlans.enterprise.description')}</CardDescription>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-bold">${getPrice(selectedEnterprise).toFixed(2)}</span>
-                <span className="text-muted-foreground">{t('subscriptionPlans.per_month')}</span>
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold">${getPrice(selectedEnterprise).toFixed(2)}</span>
+                  <span className="text-muted-foreground">/mois</span>
+                </div>
               </div>
-            </CardHeader>
 
-            <CardContent className="space-y-4">
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={() => handleSelectPlan(selectedEnterprise.id)}
-                disabled={isCurrentPlan(selectedEnterprise.id) || loading}
-              >
-                {isCurrentPlan(selectedEnterprise.id) ? t('subscriptionPlans.current_plan') : 'Upgrade to Enterprise'}
-              </Button>
-              
               <div className="space-y-3 pt-6 border-t">
-                <p className="font-semibold text-sm">Limites & Utilisation</p>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.products_count : 0}</strong> / ∞ produits
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.products_count : 0}</strong> / ∞ produits</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations SEO
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations SEO</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.articles_count : 0}</strong> / {selectedEnterprise.max_articles_monthly} articles blog
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.articles_count : 0}</strong> / {selectedEnterprise.max_articles_monthly} articles blog</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {selectedEnterprise.max_chat_responses_monthly.toLocaleString()} réponses chat
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {selectedEnterprise.max_chat_responses_monthly.toLocaleString()} réponses chat</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    <strong>{limits ? limits.usage.shopify_stores_count : 0}</strong> / {selectedEnterprise.max_shopify_stores || 10} boutiques Shopify
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                  <span><strong>{limits ? limits.usage.shopify_stores_count : 0}</strong> / {selectedEnterprise.max_shopify_stores || 10} boutiques Shopify</span>
                 </div>
               </div>
-            </CardContent>
+            </div>
+
+            <Button
+              className="w-full mt-6"
+              variant={isCurrentPlan(selectedEnterprise.id) ? "outline" : "default"}
+              onClick={() => handleSelectPlan(selectedEnterprise.id)}
+              disabled={isCurrentPlan(selectedEnterprise.id) || checkoutLoading === selectedEnterprise.id}
+            >
+              {checkoutLoading === selectedEnterprise.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                getButtonText(selectedEnterprise.id)
+              )}
+            </Button>
           </Card>
         )}
       </div>
