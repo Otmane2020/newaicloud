@@ -44,68 +44,88 @@ export function calculateTitleScore(
   // 1. PRÉSENCE (20 points)
   breakdown.presence = 20;
 
-  // 2. LONGUEUR 40-70 caractères (30 points)
+  // 2. LONGUEUR 40-70 caractères (30 points) - STRICT
   const titleLength = title.length;
   if (titleLength >= 40 && titleLength <= 70) {
     breakdown.length = 30; // Perfect
-  } else if (titleLength >= 30 && titleLength < 40) {
-    breakdown.length = 20; // Too short
-  } else if (titleLength > 70 && titleLength <= 85) {
-    breakdown.length = 20; // Slightly long
-  } else if (titleLength >= 20 && titleLength < 30) {
-    breakdown.length = 10; // Very short
-  } else if (titleLength > 85) {
+  } else if (titleLength >= 35 && titleLength < 40) {
+    breakdown.length = 15; // Too short
+  } else if (titleLength > 70 && titleLength <= 80) {
+    breakdown.length = 15; // Slightly long
+  } else if (titleLength >= 25 && titleLength < 35) {
+    breakdown.length = 8; // Very short
+  } else if (titleLength > 80) {
     breakdown.length = 5; // Too long
+  } else {
+    breakdown.length = 0; // Way too short
   }
 
-  // 3. CONTIENT MOTS-CLÉS (30 points)
+  // 3. CONTIENT MOTS-CLÉS (30 points) - STRICT
   const titleLower = title.toLowerCase();
   let keywordScore = 0;
+  let keywordsFound = 0;
 
   // Check for category keywords
   if (category && titleLower.includes(category.toLowerCase())) {
     keywordScore += 10;
+    keywordsFound++;
   }
 
   // Check for style keywords
   if (style && titleLower.includes(style.toLowerCase())) {
     keywordScore += 10;
+    keywordsFound++;
   }
 
   // Check for color keywords
   if (color && titleLower.includes(color.toLowerCase())) {
     keywordScore += 10;
+    keywordsFound++;
   }
 
-  // If no context provided, check for meaningful keywords
+  // If no context provided, check for meaningful keywords (MORE STRICT)
   if (!category && !style && !color) {
     const meaningfulWords = title.split(/\s+/).filter(w => w.length > 3);
-    if (meaningfulWords.length >= 3) {
-      keywordScore = 30; // Has multiple descriptive words
-    } else if (meaningfulWords.length >= 2) {
+    // Need at least 4 meaningful words for full score
+    if (meaningfulWords.length >= 5) {
+      keywordScore = 30;
+    } else if (meaningfulWords.length >= 4) {
       keywordScore = 20;
-    } else if (meaningfulWords.length >= 1) {
+    } else if (meaningfulWords.length >= 3) {
       keywordScore = 10;
+    } else if (meaningfulWords.length >= 2) {
+      keywordScore = 5;
     }
+  } else if (keywordsFound < 2) {
+    // Penalty if less than 2 keywords when context is provided
+    keywordScore = Math.min(keywordScore, 15);
   }
 
   breakdown.keywords = keywordScore;
 
-  // 4. LISIBILITÉ (20 points)
-  let readabilityScore = 20;
+  // 4. LISIBILITÉ (20 points) - MORE STRICT
+  let readabilityScore = 0;
 
-  // Penalize excessive capitalization
+  // Start with base score only if text looks natural
   const upperCaseCount = (title.match(/[A-Z]/g) || []).length;
   const upperCaseRatio = upperCaseCount / title.length;
-  if (upperCaseRatio > 0.5) {
-    readabilityScore -= 10; // Too many capitals
+  
+  // Natural capitalization (first letter + proper nouns)
+  if (upperCaseRatio <= 0.15) {
+    readabilityScore += 10;
+  } else if (upperCaseRatio <= 0.3) {
+    readabilityScore += 5;
   }
 
-  // Penalize repetition
+  // Check for repetition
   const words = title.toLowerCase().split(/\s+/);
   const uniqueWords = new Set(words);
-  if (words.length > uniqueWords.size * 1.5) {
-    readabilityScore -= 10; // Too much repetition
+  const repetitionRatio = words.length / uniqueWords.size;
+  
+  if (repetitionRatio <= 1.2) {
+    readabilityScore += 10; // Very low repetition
+  } else if (repetitionRatio <= 1.4) {
+    readabilityScore += 5; // Some repetition
   }
 
   breakdown.readability = Math.max(0, readabilityScore);
@@ -143,70 +163,87 @@ export function calculateDescriptionScore(
   // 1. PRÉSENCE (20 points)
   breakdown.presence = 20;
 
-  // 2. LONGUEUR 120-160 caractères (30 points)
+  // 2. LONGUEUR 120-160 caractères (30 points) - STRICT
   const descLength = description.length;
   if (descLength >= 120 && descLength <= 160) {
     breakdown.length = 30; // Perfect
-  } else if (descLength >= 100 && descLength < 120) {
-    breakdown.length = 20; // Slightly short
-  } else if (descLength > 160 && descLength <= 180) {
-    breakdown.length = 20; // Slightly long
-  } else if (descLength >= 80 && descLength < 100) {
-    breakdown.length = 10; // Too short
-  } else if (descLength > 180) {
+  } else if (descLength >= 110 && descLength < 120) {
+    breakdown.length = 15; // Slightly short
+  } else if (descLength > 160 && descLength <= 175) {
+    breakdown.length = 15; // Slightly long
+  } else if (descLength >= 90 && descLength < 110) {
+    breakdown.length = 8; // Too short
+  } else if (descLength > 175) {
     breakdown.length = 5; // Too long
+  } else {
+    breakdown.length = 0; // Way too short
   }
 
-  // 3. CONTIENT MOTS-CLÉS (30 points)
+  // 3. CONTIENT MOTS-CLÉS (30 points) - STRICT
   const descLower = description.toLowerCase();
   let keywordScore = 0;
+  let keywordsFound = 0;
 
   // Check for category/product keywords
   if (category && descLower.includes(category.toLowerCase())) {
     keywordScore += 10;
+    keywordsFound++;
   }
 
   // Check for style keywords
   if (style && descLower.includes(style.toLowerCase())) {
     keywordScore += 10;
+    keywordsFound++;
   }
 
   // Check for product name
   if (productName && descLower.includes(productName.toLowerCase())) {
     keywordScore += 10;
+    keywordsFound++;
   }
 
-  // If no context, check for descriptive content
+  // If no context, check for descriptive content (MORE STRICT)
   if (!category && !style && !productName) {
     const meaningfulWords = description.split(/\s+/).filter(w => w.length > 3);
-    if (meaningfulWords.length >= 15) {
-      keywordScore = 30; // Rich content
-    } else if (meaningfulWords.length >= 10) {
+    // Need rich, descriptive content for full score
+    if (meaningfulWords.length >= 20) {
+      keywordScore = 30;
+    } else if (meaningfulWords.length >= 15) {
       keywordScore = 20;
-    } else if (meaningfulWords.length >= 5) {
+    } else if (meaningfulWords.length >= 10) {
       keywordScore = 10;
+    } else if (meaningfulWords.length >= 5) {
+      keywordScore = 5;
     }
+  } else if (keywordsFound < 2) {
+    // Penalty if less than 2 keywords when context is provided
+    keywordScore = Math.min(keywordScore, 15);
   }
 
   breakdown.keywords = keywordScore;
 
-  // 4. LISIBILITÉ - Texte fluide, sans répétition, phrase complète (20 points)
+  // 4. LISIBILITÉ - Texte fluide, sans répétition, phrase complète (20 points) - MORE STRICT
   let readabilityScore = 0;
 
-  // Check for proper sentence structure
-  if (description.includes('.') || description.includes('!') || description.includes('?')) {
-    readabilityScore += 10;
+  // Check for proper sentence structure (complete sentences)
+  const hasPunctuation = description.includes('.') || description.includes('!') || description.includes('?');
+  const sentences = description.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  
+  if (hasPunctuation && sentences.length >= 2) {
+    readabilityScore += 10; // Multiple complete sentences
+  } else if (hasPunctuation && sentences.length >= 1) {
+    readabilityScore += 5; // At least one sentence
   }
 
-  // Check for repetition
+  // Check for repetition (STRICTER)
   const words = description.toLowerCase().split(/\s+/);
   const uniqueWords = new Set(words);
   const repetitionRatio = words.length / uniqueWords.size;
   
-  if (repetitionRatio <= 1.3) {
-    readabilityScore += 10; // Low repetition
-  } else if (repetitionRatio <= 1.5) {
-    readabilityScore += 5; // Some repetition
+  if (repetitionRatio <= 1.2) {
+    readabilityScore += 10; // Very low repetition
+  } else if (repetitionRatio <= 1.3) {
+    readabilityScore += 5; // Low repetition
   }
 
   breakdown.readability = readabilityScore;
