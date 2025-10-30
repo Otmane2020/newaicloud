@@ -9,16 +9,9 @@ import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { OptimizationProgressDialog } from '@/components/seo/OptimizationProgressDialog';
+import { OptimizationResultsDialog } from '@/components/seo/OptimizationResultsDialog';
+import { ArticleSyncDialog } from './ArticleSyncDialog';
 import {
   ChevronRight,
   ChevronLeft,
@@ -71,7 +64,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
-  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  
+  // Dialog states
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
+  const [generatedArticle, setGeneratedArticle] = useState<any>(null);
   const [generatedArticleId, setGeneratedArticleId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -186,10 +185,18 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
       toast.success('✅ Article généré avec succès !', { id: 'generating' });
 
-      // Afficher le dialogue de publication Shopify personnalisé
-      if (response.data?.article_id) {
-        setGeneratedArticleId(response.data.article_id);
-        setShowPublishDialog(true);
+      // Stocker l'article généré et afficher le dialog de résultats
+      if (response.data?.article) {
+        setGeneratedArticle({
+          id: response.data.article.id,
+          title: response.data.article.title,
+          seo_title: response.data.article.seo_title,
+          seo_description: response.data.article.seo_description,
+          content: response.data.article.content
+        });
+        setGeneratedArticleId(response.data.article.id);
+        setGenerating(false);
+        setShowResultsDialog(true);
       } else {
         onClose();
       }
@@ -210,30 +217,32 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const handlePublishToShopify = async () => {
     if (!generatedArticleId) return;
     
+    setShowSyncDialog(false);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
+    
     try {
-      toast.loading('📤 Publication sur Shopify...', { id: 'publishing' });
-      
       const syncResponse = await supabase.functions.invoke('sync-blog-to-shopify', {
         body: { articleId: generatedArticleId }
       });
 
       if (syncResponse.error) {
-        toast.error('Erreur de publication Shopify', { id: 'publishing' });
+        toast.error('Erreur de publication Shopify');
         console.error(syncResponse.error);
       } else {
-        toast.success('✅ Article publié sur Shopify !', { id: 'publishing' });
+        setIsOptimizationComplete(true);
+        toast.success('Synchronisation terminée !', {
+          description: '1 article synchronisé avec succès sur Shopify'
+        });
       }
     } catch (error) {
       console.error('Error publishing to Shopify:', error);
-      toast.error('Erreur lors de la publication', { id: 'publishing' });
-    } finally {
-      setShowPublishDialog(false);
-      onClose();
+      toast.error('Erreur lors de la publication');
     }
   };
 
   const handleSkipPublish = () => {
-    setShowPublishDialog(false);
+    setShowResultsDialog(false);
     onClose();
   };
 
@@ -522,26 +531,45 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         limit={limits?.limits.max_articles}
       />
 
-      <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              🚀 Votre article est prêt !
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Voulez-vous le publier immédiatement sur Shopify ?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleSkipPublish}>
-              Plus tard
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handlePublishToShopify}>
-              Publier sur Shopify
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Dialogs */}
+      <OptimizationResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="article"
+        items={generatedArticle ? [{
+          id: generatedArticle.id,
+          title: generatedArticle.title,
+          seo_title: generatedArticle.seo_title,
+          seo_description: generatedArticle.seo_description
+        }] : []}
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          setShowSyncDialog(true);
+        }}
+        onClose={handleSkipPublish}
+      />
+
+      <ArticleSyncDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        article={generatedArticle || { title: '' }}
+        onConfirm={handlePublishToShopify}
+        loading={false}
+      />
+
+      <OptimizationProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        title="📤 Publication sur Shopify..."
+        current={1}
+        total={1}
+        isComplete={isOptimizationComplete}
+        operationType="synchronization"
+        onClose={() => {
+          setShowProgressDialog(false);
+          onClose();
+        }}
+      />
     </div>
   );
 }

@@ -11,6 +11,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { Progress } from '@/components/ui/progress';
+import { OptimizationProgressDialog } from './OptimizationProgressDialog';
+import { OptimizationResultsDialog } from './OptimizationResultsDialog';
+import { PageSyncDialog } from './PageSyncDialog';
 
 interface ShopifyPage {
   id: string;
@@ -31,6 +34,15 @@ export function PageOptimization() {
   const [importingPages, setImportingPages] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
+  
+  // Dialog states
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
+  const [optimizedPages, setOptimizedPages] = useState<ShopifyPage[]>([]);
+  const [pagesToSync, setPagesToSync] = useState<ShopifyPage[]>([]);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     fetchPages();
@@ -163,8 +175,12 @@ export function PageOptimization() {
     if (selectedPages.size === 0) return;
     
     setOptimizing(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     const pageIds = Array.from(selectedPages);
-    let successCount = 0;
+    setProgress({ current: 0, total: pageIds.length });
+    
+    const optimizedPagesData: ShopifyPage[] = [];
     
     for (let i = 0; i < pageIds.length; i++) {
       try {
@@ -174,23 +190,42 @@ export function PageOptimization() {
         
         if (error) throw error;
         
-        successCount++;
-        toast.success(`Page ${i + 1}/${pageIds.length} optimized`);
+        setProgress({ current: i + 1, total: pageIds.length });
       } catch (error) {
         console.error('Error optimizing page:', error);
-        toast.error(`Error for page ${i + 1}`);
       }
     }
     
     setOptimizing(false);
-    setSelectedPages(new Set());
-    fetchPages();
+    setIsOptimizationComplete(true);
+    await fetchPages();
     
-    if (successCount === pageIds.length) {
-      toast.success('🎉 All pages optimized!');
-    } else {
-      toast.warning(`${successCount}/${pageIds.length} pages optimized`);
-    }
+    // Récupérer les pages optimisées
+    const updatedPages = await Promise.all(
+      pageIds.map(async (id) => {
+        const { data } = await supabase
+          .from('shopify_pages')
+          .select('*')
+          .eq('id', id)
+          .single();
+        return data;
+      })
+    );
+    
+    const validPages = updatedPages.filter(p => p !== null).map(p => ({
+      id: p!.id,
+      title: p!.title,
+      handle: p!.handle,
+      body_html: p!.body_html || '',
+      seo_title: p!.seo_title,
+      seo_description: p!.seo_description,
+      optimized: !!(p!.seo_title && p!.seo_description),
+      last_synced_at: p!.last_synced_at
+    }));
+    
+    setOptimizedPages(validPages);
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
   };
 
   const handleOptimizeAll = async () => {
@@ -249,30 +284,49 @@ export function PageOptimization() {
     fetchPages();
   };
 
-  const handleSyncSelected = async () => {
-    if (selectedPages.size === 0) return;
+  const handleSyncPages = async (pageIds: string[]) => {
+    if (pageIds.length === 0) return;
     
-    const pageIds = Array.from(selectedPages);
     setSyncing(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
+    setProgress({ current: 0, total: pageIds.length });
+    
     let successCount = 0;
     
-    for (const pageId of pageIds) {
+    for (let i = 0; i < pageIds.length; i++) {
       try {
         const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
-          body: { pageId }
+          body: { pageId: pageIds[i] }
         });
         
         if (error) throw error;
         successCount++;
+        setProgress({ current: i + 1, total: pageIds.length });
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error syncing page:', error);
       }
     }
     
     setSyncing(false);
+    setIsOptimizationComplete(true);
     setSelectedPages(new Set());
-    toast.success(`${successCount}/${pageIds.length} pages synchronized!`);
-    fetchPages();
+    await fetchPages();
+    
+    if (successCount > 0) {
+      toast.success('Synchronisation terminée !', {
+        description: `${successCount} page${successCount > 1 ? 's' : ''} synchronisée${successCount > 1 ? 's' : ''} avec succès sur Shopify`
+      });
+    }
+  };
+
+  const handleSyncSelected = async () => {
+    if (selectedPages.size === 0) return;
+    
+    const pageIds = Array.from(selectedPages);
+    const pagesToSyncData = pages.filter(p => pageIds.includes(p.id));
+    setPagesToSync(pagesToSyncData);
+    setShowSyncDialog(true);
   };
 
   const handleOptimizePage = async (pageId: string) => {
@@ -576,6 +630,55 @@ export function PageOptimization() {
           </div>
         </Card>
       )}
+      
+      {/* Dialogs */}
+      <OptimizationProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        title={optimizing ? "🔄 Optimisation des pages..." : "🔄 Synchronisation avec Shopify..."}
+        current={progress.current}
+        total={progress.total}
+        isComplete={isOptimizationComplete}
+        operationType={syncing ? 'synchronization' : 'optimization'}
+        onSyncClick={() => {
+          setShowProgressDialog(false);
+          setPagesToSync(optimizedPages);
+          setShowSyncDialog(true);
+        }}
+        onClose={() => {
+          setShowProgressDialog(false);
+          setIsOptimizationComplete(false);
+        }}
+      />
+
+      <OptimizationResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="seo"
+        items={optimizedPages.map(p => ({
+          id: p.id,
+          title: p.title,
+          seo_title: p.seo_title || undefined,
+          seo_description: p.seo_description || undefined
+        }))}
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          setPagesToSync(optimizedPages);
+          setShowSyncDialog(true);
+        }}
+        onClose={() => setShowResultsDialog(false)}
+      />
+
+      <PageSyncDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        pages={pagesToSync}
+        onConfirm={() => {
+          setShowSyncDialog(false);
+          handleSyncPages(pagesToSync.map(p => p.id));
+        }}
+        loading={syncing}
+      />
     </div>
   );
 }

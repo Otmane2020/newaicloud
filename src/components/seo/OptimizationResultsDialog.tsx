@@ -19,7 +19,7 @@ interface OptimizedItem {
 interface OptimizationResultsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type: 'seo' | 'tags' | 'alt';
+  type: 'seo' | 'tags' | 'alt' | 'article';
   items: OptimizedItem[];
   onSyncClick: () => void;
   onClose: () => void;
@@ -41,6 +41,8 @@ export function OptimizationResultsDialog({
         return 'Tags générés avec succès';
       case 'alt':
         return 'Textes ALT générés';
+      case 'article':
+        return 'Article créé avec succès';
       default:
         return 'Optimisation terminée';
     }
