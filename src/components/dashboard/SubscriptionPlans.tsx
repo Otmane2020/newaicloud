@@ -18,6 +18,8 @@ interface Plan {
   description: string;
   price_monthly: number;
   price_yearly: number;
+  stripe_price_id_monthly: string | null;
+  stripe_price_id_yearly: string | null;
   max_products: number;
   max_optimizations_monthly: number;
   max_articles_monthly: number;
@@ -89,6 +91,24 @@ export function SubscriptionPlans() {
   const handleSelectPlan = async (planId: string) => {
     setCheckoutLoading(planId);
     try {
+      // Get the selected plan to validate Stripe price ID
+      const selectedPlan = plans.find(p => p.id === planId);
+      
+      // Check if plan has valid Stripe price IDs
+      const stripePriceId = billingPeriod === 'yearly' 
+        ? selectedPlan?.stripe_price_id_yearly 
+        : selectedPlan?.stripe_price_id_monthly;
+      
+      if (!stripePriceId || !stripePriceId.startsWith('price_')) {
+        toast({
+          title: "Configuration manquante",
+          description: `Le plan "${selectedPlan?.name}" doit être configuré dans Stripe. Veuillez créer les prix dans votre tableau de bord Stripe.`,
+          variant: "destructive"
+        });
+        setCheckoutLoading(null);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
           plan_id: planId,
