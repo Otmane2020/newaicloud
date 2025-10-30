@@ -117,7 +117,100 @@ serve(async (req) => {
 
     let customerId = profile?.stripe_customer_id;
 
-    if (!customerId) {
+    // Récupérer les détails du prix pour vérifier la devise
+    const priceDetails = await stripe.prices.retrieve(stripePriceId);
+    const targetCurrency = priceDetails.currency; // 'eur' pour vos plans
+    
+    console.log(`🎯 Target currency for new checkout: ${targetCurrency}`);
+
+    // Si customer existe, vérifier les conflits de devise
+    if (customerId) {
+      console.log('🔍 Checking existing customer for currency conflicts...');
+      
+      try {
+        // Vérifier s'il y a des éléments en devise différente
+        const [subscriptions, invoiceItems, schedules] = await Promise.all([
+          stripe.subscriptions.list({ customer: customerId, limit: 100 }),
+          stripe.invoiceItems.list({ customer: customerId, limit: 100 }),
+          stripe.subscriptionSchedules.list({ customer: customerId, limit: 100 })
+        ]);
+
+        let hasCurrencyConflict = false;
+
+        // Vérifier les abonnements
+        for (const sub of subscriptions.data) {
+          const subPrice = sub.items.data[0]?.price;
+          if (subPrice && subPrice.currency !== targetCurrency) {
+            console.log(`⚠️ Currency conflict found in subscription ${sub.id}: ${subPrice.currency} vs ${targetCurrency}`);
+            hasCurrencyConflict = true;
+            break;
+          }
+        }
+
+        // Vérifier les invoice items
+        if (!hasCurrencyConflict) {
+          for (const item of invoiceItems.data) {
+            if (item.currency !== targetCurrency) {
+              console.log(`⚠️ Currency conflict found in invoice item ${item.id}: ${item.currency} vs ${targetCurrency}`);
+              hasCurrencyConflict = true;
+              break;
+            }
+          }
+        }
+
+        // Si conflit détecté, créer un nouveau customer
+        if (hasCurrencyConflict) {
+          console.log('🔄 Creating new Stripe customer to resolve currency conflict...');
+          const newCustomer = await stripe.customers.create({
+            email: user.email,
+            name: profile?.full_name || user.user_metadata?.full_name,
+            metadata: {
+              user_id: user.id,
+              replaced_customer: customerId,
+              reason: 'currency_conflict'
+            }
+          });
+          
+          customerId = newCustomer.id;
+          console.log(`✅ New customer created: ${customerId}`);
+
+          // Mettre à jour le profil avec le nouveau customer_id
+          await supabase
+            .from('profiles')
+            .update({ 
+              stripe_customer_id: customerId,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+        } else {
+          console.log('✅ No currency conflict detected');
+        }
+
+      } catch (checkError) {
+        console.error('⚠️ Error checking currency conflicts:', checkError);
+        // En cas d'erreur, créer un nouveau customer par sécurité
+        console.log('🔄 Creating new customer as fallback...');
+        const newCustomer = await stripe.customers.create({
+          email: user.email,
+          name: profile?.full_name || user.user_metadata?.full_name,
+          metadata: {
+            user_id: user.id,
+            replaced_customer: customerId,
+            reason: 'check_error'
+          }
+        });
+        customerId = newCustomer.id;
+        
+        await supabase
+          .from('profiles')
+          .update({ 
+            stripe_customer_id: customerId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+      }
+    } else {
+      // Pas de customer existant, en créer un nouveau
       console.log('👥 Creating new Stripe customer...');
       const customer = await stripe.customers.create({
         email: user.email,
@@ -135,49 +228,6 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
-    }
-
-    // Vérifier et nettoyer les abonnements en conflits de devise
-    console.log('🔍 Checking for currency conflicts...');
-    
-    try {
-      const activeSubscriptions = await stripe.subscriptions.list({
-        customer: customerId,
-        status: 'active',
-        limit: 10
-      });
-
-      // Récupérer les détails du prix pour vérifier la devise
-      const priceDetails = await stripe.prices.retrieve(stripePriceId);
-      const targetCurrency = priceDetails.currency; // 'eur' pour vos plans
-      
-      console.log(`🎯 Target currency: ${targetCurrency}`);
-
-      // Annuler les abonnements avec une devise différente
-      for (const sub of activeSubscriptions.data) {
-        const subPrice = sub.items.data[0]?.price;
-        if (subPrice && subPrice.currency !== targetCurrency) {
-          console.log(`⚠️ Found subscription in ${subPrice.currency}, canceling: ${sub.id}`);
-          await stripe.subscriptions.cancel(sub.id);
-        }
-      }
-
-      // Vérifier aussi les subscription schedules
-      const schedules = await stripe.subscriptionSchedules.list({
-        customer: customerId,
-        limit: 10
-      });
-
-      for (const schedule of schedules.data) {
-        if (schedule.status === 'active' || schedule.status === 'not_started') {
-          console.log(`⚠️ Found active schedule, releasing: ${schedule.id}`);
-          await stripe.subscriptionSchedules.release(schedule.id);
-        }
-      }
-
-    } catch (cleanupError) {
-      console.error('⚠️ Cleanup error (non-blocking):', cleanupError);
-      // Continue même si le nettoyage échoue
     }
 
     console.log('🎫 Creating Stripe checkout session...');
