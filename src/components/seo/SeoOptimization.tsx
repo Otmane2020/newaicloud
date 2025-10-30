@@ -342,6 +342,8 @@ export function SeoOptimization() {
     setSyncing(true);
     setProgress({ current: 0, total: productsToSync.length });
 
+    let successCount = 0;
+
     for (let i = 0; i < productsToSync.length; i++) {
       try {
         await supabase.functions.invoke('sync-seo-to-shopify', {
@@ -351,16 +353,51 @@ export function SeoOptimization() {
             syncGoogleShopping: true
           }
         });
+        
+        // Get store info and show success toast with link
+        const product = productsToSync[i];
+        const { data: productData } = await supabase
+          .from('shopify_products')
+          .select('shopify_id, shop_name, store_id')
+          .eq('id', product.id)
+          .single();
+
+        if (productData?.shopify_id && productData?.shop_name) {
+          const shopifyUrl = `https://admin.shopify.com/store/${productData.shop_name}/products/${productData.shopify_id}`;
+          toast.success('Product synced to Shopify', {
+            description: (
+              <>
+                <span className="font-medium">{product.title}</span>
+                <br />
+                <a 
+                  href={shopifyUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                >
+                  View in Shopify <ExternalLink className="w-3 h-3" />
+                </a>
+              </>
+            ),
+          });
+          successCount++;
+        }
+
         setProgress({ current: i + 1, total: productsToSync.length });
       } catch (error) {
         console.error('Error syncing:', error);
+        toast.error(`Failed to sync ${productsToSync[i].title}`);
       }
     }
 
     setSyncing(false);
     setProgress({ current: 0, total: 0 });
     setSelectedProducts(new Set());
-    toast.success('Synchronization completed');
+    
+    if (successCount > 0) {
+      toast.success(`${successCount} product${successCount > 1 ? 's' : ''} synchronized successfully`);
+    }
+    
     await fetchProducts();
   };
 
@@ -385,6 +422,34 @@ export function SeoOptimization() {
             syncGoogleShopping: true
           }
         });
+        
+        // Get product and store info
+        const { data: productData } = await supabase
+          .from('shopify_products')
+          .select('title, shopify_id, shop_name, store_id')
+          .eq('id', productIds[i])
+          .single();
+
+        if (productData?.shopify_id && productData?.shop_name) {
+          const shopifyUrl = `https://admin.shopify.com/store/${productData.shop_name}/products/${productData.shopify_id}`;
+          toast.success('Product synced to Shopify', {
+            description: (
+              <>
+                <span className="font-medium">{productData.title}</span>
+                <br />
+                <a 
+                  href={shopifyUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                >
+                  View in Shopify <ExternalLink className="w-3 h-3" />
+                </a>
+              </>
+            ),
+          });
+        }
+        
         successCount++;
         setProgress({ current: i + 1, total: productIds.length });
       } catch (error) {
