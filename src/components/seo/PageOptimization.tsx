@@ -365,9 +365,9 @@ export function PageOptimization() {
           <div className="flex flex-col gap-3 items-center">
             <div className="text-center">
               <div className="text-4xl font-bold text-purple-600">
-                {pages.length}
+                {globalPageSeoScore}
               </div>
-              <div className="text-sm text-muted-foreground">Pages totales</div>
+              <div className="text-sm text-muted-foreground">SEO Score</div>
             </div>
           </div>
         </div>

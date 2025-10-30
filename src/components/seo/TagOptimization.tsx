@@ -448,8 +448,8 @@ export function TagOptimization() {
           </div>
           <div className="flex flex-col gap-4 items-center">
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-orange-600">{tagCompletionRate}%</div>
-              <div className="text-sm text-muted-foreground">Products tagged</div>
+              <div className="text-3xl md:text-4xl font-bold text-orange-600">{tagCompletionRate}</div>
+              <div className="text-sm text-muted-foreground">SEO Score</div>
             </div>
             <Button
               size="lg"

@@ -324,8 +324,8 @@ export function SeoAltImage() {
           </div>
           <div className="flex flex-col gap-3 items-center">
             <div className="text-center">
-              <div className="text-4xl font-bold text-green-600">{altCompletionRate}%</div>
-              <div className="text-sm text-muted-foreground">Images optimisées</div>
+              <div className="text-4xl font-bold text-green-600">{altCompletionRate}</div>
+              <div className="text-sm text-muted-foreground">SEO Score</div>
             </div>
             <Button
               size="lg"
