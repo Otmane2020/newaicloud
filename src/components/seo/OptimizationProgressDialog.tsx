@@ -47,10 +47,10 @@ export function OptimizationProgressDialog({
     }
     if (operationType === 'synchronization') {
       return isComplete 
-        ? `${current} produits synchronisés avec succès sur Shopify`
-        : `${current} / ${total} produits synchronisés`;
+        ? `${total} ${total > 1 ? 'éléments synchronisés' : 'élément synchronisé'} avec succès sur Shopify`
+        : `${current} / ${total} ${total > 1 ? 'éléments' : 'élément'} en cours de synchronisation`;
     }
-    return `${current} / ${total} produits traités`;
+    return `${current} / ${total} ${total > 1 ? 'éléments traités' : 'élément traité'}`;
   };
 
   return (
@@ -94,14 +94,22 @@ export function OptimizationProgressDialog({
                   "text-xl font-semibold",
                   alreadySynced ? "text-blue-600 dark:text-blue-400" : "text-green-600 dark:text-green-400"
                 )}>
-                  {alreadySynced ? 'Déjà synchronisé !' : operationType === 'synchronization' ? 'Synchronisation terminée !' : 'Optimisation terminée !'}
+                  {alreadySynced ? 'Déjà synchronisé !' : operationType === 'synchronization' ? 'Synchronisation réussie !' : 'Optimisation terminée !'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {alreadySynced 
                     ? `${total} élément${total > 1 ? 's sont' : ' est'} déjà à jour sur Shopify`
-                    : `${total} ${operationType === 'synchronization' ? 'produits synchronisés' : 'produits optimisés'} avec succès`
+                    : operationType === 'synchronization' 
+                      ? `Vos modifications ont été synchronisées avec succès sur votre boutique Shopify`
+                      : `${total} ${total > 1 ? 'éléments optimisés' : 'élément optimisé'} avec succès`
                   }
                 </p>
+                {operationType === 'synchronization' && !alreadySynced && (
+                  <div className="pt-2 text-xs text-muted-foreground">
+                    <p>✓ {total} {total > 1 ? 'produits mis à jour' : 'produit mis à jour'}</p>
+                    <p className="mt-1">Les changements sont maintenant visibles sur Shopify</p>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-2 w-full pt-4">
                 {operationType === 'optimization' && onSyncClick && !alreadySynced && (
