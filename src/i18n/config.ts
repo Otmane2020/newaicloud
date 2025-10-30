@@ -89,26 +89,14 @@ const fallbackResources = {
 
 i18n
   .use(Backend)
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources: fallbackResources, // Fallback to static files
-    backend: {
-      loadPath: `${SUPABASE_URL}/functions/v1/get-translations?lng={{lng}}`,
-      customHeaders: {
-        apikey: SUPABASE_KEY,
-      },
-      allowMultiLoading: false,
-      crossDomain: true,
-    },
+    resources: fallbackResources,
+    lng: 'en', // Force English
     fallbackLng: 'en',
     debug: false,
     interpolation: {
       escapeValue: false,
-    },
-    detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
     },
     react: {
       useSuspense: false,

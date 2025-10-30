@@ -12,8 +12,6 @@ import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
 import { SuperAdminLayout } from "./components/SuperAdminLayout";
 import Index from "./pages/Index";
-import HomeEN from "./pages/HomeEN";
-import HomeFR from "./pages/HomeFR";
 import Admin from "./pages/Admin";
 import SuperAdmin from "./pages/SuperAdmin";
 import { TranslationManagerDB } from "./components/admin/TranslationManagerDB";
@@ -62,8 +60,6 @@ const App = () => (
           <RTLWrapper>
             <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/en" element={<HomeEN />} />
-            <Route path="/fr" element={<HomeFR />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/documentation" element={<Documentation />} />

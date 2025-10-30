@@ -2,13 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Menu, X, Sparkles } from "lucide-react";
-import { LanguageSelector } from "./LanguageSelector";
-import { useTranslation } from "@/hooks/useTranslation";
 
 export const PublicHeader = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -47,39 +44,38 @@ export const PublicHeader = () => {
               onClick={() => scrollToSection("hero")}
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
-              {t('nav.home')}
+              Home
             </button>
             <button
               onClick={() => scrollToSection("features")}
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
-              {t('nav.features')}
+              Features
             </button>
             <button
               onClick={() => scrollToSection("benefits")}
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
-              {t('nav.benefits')}
+              Benefits
             </button>
             <button
               onClick={() => scrollToSection("pricing")}
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
-              {t('nav.pricing')}
+              Pricing
             </button>
           </nav>
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <LanguageSelector />
             <Button
               variant="ghost"
               onClick={() => navigate("/auth?mode=login")}
             >
-              {t('auth.login')}
+              Login
             </Button>
             <Button onClick={() => navigate("/auth?mode=signup")}>
-              {t('auth.signup')}
+              Sign Up
             </Button>
           </div>
 
@@ -104,25 +100,25 @@ export const PublicHeader = () => {
                 onClick={() => scrollToSection("hero")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                {t('nav.home')}
+                Home
               </button>
               <button
                 onClick={() => scrollToSection("features")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                {t('nav.features')}
+                Features
               </button>
               <button
                 onClick={() => scrollToSection("benefits")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                {t('nav.benefits')}
+                Benefits
               </button>
               <button
                 onClick={() => scrollToSection("pricing")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                {t('nav.pricing')}
+                Pricing
               </button>
               <div className="flex flex-col gap-2 pt-4 border-t">
                 <Button
@@ -130,10 +126,10 @@ export const PublicHeader = () => {
                   onClick={() => navigate("/auth?mode=login")}
                   className="w-full"
                 >
-                  {t('auth.login')}
+                  Login
                 </Button>
                 <Button onClick={() => navigate("/auth?mode=signup")} className="w-full">
-                  {t('auth.signup')}
+                  Sign Up
                 </Button>
               </div>
             </nav>
