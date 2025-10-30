@@ -53,8 +53,15 @@ export function SubscriptionPlans() {
         setPlans(plansData);
         
         // Set default selections
-        const proPlans = plansData.filter(p => p.id.startsWith('professional') || p.id === 'pro');
-        const enterprisePlans = plansData.filter(p => p.id.startsWith('enterprise'));
+        const proPlans = plansData.filter(p => 
+          p.id === 'professional' || 
+          p.id === 'pro' || 
+          p.id.startsWith('pro-')
+        );
+        const enterprisePlans = plansData.filter(p => 
+          p.id === 'enterprise' || 
+          p.id.startsWith('enterprise-')
+        );
         
         if (proPlans.length > 0) setSelectedProPlan(proPlans[0].id);
         if (enterprisePlans.length > 0) setSelectedEnterprisePlan(enterprisePlans[0].id);
@@ -118,8 +125,15 @@ export function SubscriptionPlans() {
 
   // Group plans by category
   const starterPlan = plans.find(p => p.id === 'starter');
-  const proPlans = plans.filter(p => p.id.startsWith('professional') || p.id === 'pro');
-  const enterprisePlans = plans.filter(p => p.id.startsWith('enterprise'));
+  const proPlans = plans.filter(p => 
+    p.id === 'professional' || 
+    p.id === 'pro' || 
+    p.id.startsWith('pro-')
+  );
+  const enterprisePlans = plans.filter(p => 
+    p.id === 'enterprise' || 
+    p.id.startsWith('enterprise-')
+  );
   
   const selectedPro = proPlans.find(p => p.id === selectedProPlan);
   const selectedEnterprise = enterprisePlans.find(p => p.id === selectedEnterprisePlan);
