@@ -124,14 +124,9 @@ export function SeoOptimization() {
   };
 
   const handleGenerateForSelected = async () => {
-    // Check usage limits - show trial limit dialog if shouldForcePayment
-    if (limits?.shouldForcePayment) {
-      setShowUpgradeDialog(true);
-      return;
-    }
-    
-    if (!limits?.canUseOptimizations) {
-      toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+    // Check usage limits first
+    if (!limits?.canUseOptimizations || limits?.shouldForcePayment || limits?.limitReached.optimizations) {
+      toast.error('Limite d\'essai atteinte pour les optimisations SEO');
       setShowUpgradeDialog(true);
       return;
     }
@@ -207,9 +202,9 @@ export function SeoOptimization() {
   };
 
   const handleGenerateAll = async () => {
-    // Check usage limits
-    if (!limits?.canUseOptimizations) {
-      toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+    // Check usage limits first
+    if (!limits?.canUseOptimizations || limits?.shouldForcePayment || limits?.limitReached.optimizations) {
+      toast.error('Limite d\'essai atteinte pour les optimisations SEO');
       setShowUpgradeDialog(true);
       return;
     }

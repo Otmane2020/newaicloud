@@ -153,9 +153,9 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   };
 
   const handleGenerate = async () => {
-    // Check usage limits
-    if (!limits?.canUseArticles) {
-      toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+    // Check usage limits first
+    if (!limits?.canUseArticles || limits?.shouldForcePayment || limits?.limitReached.articles) {
+      toast.error('Limite d\'essai atteinte pour la création d\'articles');
       setShowUpgradeDialog(true);
       return;
     }
