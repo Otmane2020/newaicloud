@@ -110,13 +110,51 @@ export function ShopifyConnectionsList() {
         .eq('id', storeToDelete);
 
       if (error) throw error;
-      toast.success('Connexion supprimée');
+      
+      // Also delete all associated products and update usage tracking
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Count products being deleted
+        const { count } = await supabase
+          .from('shopify_products')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', storeToDelete);
+        
+        // Delete products
+        await supabase
+          .from('shopify_products')
+          .delete()
+          .eq('store_id', storeToDelete);
+        
+        // Update usage tracking
+        if (count && count > 0) {
+          const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
+          const { data: usage } = await supabase
+            .from('usage_tracking')
+            .select('*')
+            .eq('seller_id', user.id)
+            .eq('month', currentMonth)
+            .single();
+          
+          if (usage) {
+            await supabase
+              .from('usage_tracking')
+              .update({ 
+                products_count: Math.max(0, (usage.products_count || 0) - count),
+                shopify_stores_count: Math.max(0, (usage.shopify_stores_count || 0) - 1)
+              })
+              .eq('id', usage.id);
+          }
+        }
+      }
+      
+      toast.success('Connection deleted');
       loadConnections();
       setShowDeleteDialog(false);
       setStoreToDelete(null);
     } catch (error) {
       console.error('Error deleting connection:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error('Error deleting connection');
     }
   };
 
@@ -162,7 +200,7 @@ export function ShopifyConnectionsList() {
         if (job.status === 'completed') {
           setImportPhase('complete');
           clearInterval(pollInterval);
-          toast.success('Import terminé !');
+          toast.success('Import completed!');
           loadConnections();
         } else if (job.status === 'quota_reached') {
           setLimitReached(true);
@@ -171,7 +209,7 @@ export function ShopifyConnectionsList() {
         } else if (job.status === 'failed') {
           clearInterval(pollInterval);
           setShowProgressDialog(false);
-          toast.error(job.error_message || 'Erreur lors de l\'import');
+          toast.error(job.error_message || 'Error during import');
         }
       }
     }, 500);
@@ -189,7 +227,7 @@ export function ShopifyConnectionsList() {
       );
       
       if (limitsError) {
-        toast.error('Erreur lors de la vérification des limites');
+        toast.error('Error checking usage limits');
         return;
       }
       
@@ -209,7 +247,7 @@ export function ShopifyConnectionsList() {
       
       // Show warning if close to limit
       if (availableSlots <= 10) {
-        toast.warning(`Il ne vous reste que ${availableSlots} produits à importer`);
+        toast.warning(`Only ${availableSlots} products left to import`);
       }
 
       // 🔄 Load full store data including credentials
@@ -220,7 +258,7 @@ export function ShopifyConnectionsList() {
         .single();
 
       if (loadError || !fullStore) {
-        throw new Error('Impossible de charger les credentials de la boutique');
+        throw new Error('Unable to load store credentials');
       }
 
       // Clean the shop name
@@ -261,9 +299,19 @@ export function ShopifyConnectionsList() {
         setImportJobId(importData.jobId);
       }
       
+      // Import articles in parallel
+      try {
+        await supabase.functions.invoke('import-shopify-articles', {
+          body: { storeId: fullStore.id }
+        });
+      } catch (articleError) {
+        console.error('Error importing articles:', articleError);
+        // Don't fail the whole import if articles fail
+      }
+      
     } catch (error: any) {
       console.error('Error importing products:', error);
-      toast.error(error.message || 'Erreur lors de l\'import');
+      toast.error(error.message || 'Error during import');
       setShowProgressDialog(false);
     } finally {
       setImportingStoreId(null);
@@ -307,7 +355,7 @@ export function ShopifyConnectionsList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="font-semibold text-lg truncate">
-                        {store.store_name || 'Boutique Shopify'}
+                        {store.store_name || 'Shopify Store'}
                       </h3>
                       <Badge variant={store.is_active ? 'default' : 'secondary'}>
                         {store.is_active ? (
@@ -324,26 +372,26 @@ export function ShopifyConnectionsList() {
                       </Badge>
                       {usageLimits && (
                         <Badge variant="outline" className="text-xs">
-                          {usageLimits.usage?.products_count || 0}/{usageLimits.limits?.max_products || 0} produits
+                          {usageLimits.usage?.products_count || 0}/{usageLimits.limits?.max_products || 0} products
                         </Badge>
                       )}
                     </div>
                     
-                    <p className="text-sm text-muted-foreground mb-1 truncate">
-                      {store.store_url}
-                    </p>
-                    
-                    {store.last_sync_at && (
-                      <p className="text-xs text-muted-foreground">
-                        Dernière synchro : {format(new Date(store.last_sync_at), 'PPp', { locale: fr })}
-                      </p>
-                    )}
-                    
-                    {store.connected_at && (
-                      <p className="text-xs text-muted-foreground">
-                        Connectée le : {format(new Date(store.connected_at), 'PP', { locale: fr })}
-                      </p>
-                    )}
+              <p className="text-sm text-muted-foreground mb-1 truncate">
+                {store.store_url}
+              </p>
+              
+              {store.last_sync_at && (
+                <p className="text-xs text-muted-foreground">
+                  Last sync: {format(new Date(store.last_sync_at), 'PPp', { locale: fr })}
+                </p>
+              )}
+              
+              {store.connected_at && (
+                <p className="text-xs text-muted-foreground">
+                  Connected: {format(new Date(store.connected_at), 'PP', { locale: fr })}
+                </p>
+              )}
                   </div>
                 </div>
                 
@@ -353,16 +401,17 @@ export function ShopifyConnectionsList() {
                     variant="outline"
                     onClick={() => importProducts(store)}
                     disabled={importingStoreId === store.id}
+                    className="gap-2"
                   >
                     {importingStoreId === store.id ? (
                       <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Import...
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Importing...
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Importer
+                        <RefreshCw className="w-4 h-4" />
+                        Import Products & Pages & Articles
                       </>
                     )}
                   </Button>
@@ -406,27 +455,27 @@ export function ShopifyConnectionsList() {
               <div className="p-2 bg-destructive/10 rounded-lg">
                 <AlertTriangle className="w-6 h-6 text-destructive" />
               </div>
-              <AlertDialogTitle className="text-xl">Supprimer la connexion</AlertDialogTitle>
+              <AlertDialogTitle className="text-xl">Delete Connection</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="space-y-4 pt-2">
               <p className="text-base">
-                Êtes-vous sûr de vouloir supprimer cette connexion Shopify ?
+                Are you sure you want to delete this Shopify connection?
               </p>
               
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <p className="font-medium text-foreground text-sm">Les éléments suivants seront supprimés :</p>
+                <p className="font-medium text-foreground text-sm">The following will be deleted:</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Package className="w-4 h-4 text-muted-foreground" />
-                    <span>Tous les produits importés</span>
+                    <span>All imported products</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span>Toutes les pages Shopify</span>
+                    <span>All Shopify pages</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                    <span>Toutes les données associées</span>
+                    <span>All associated data</span>
                   </div>
                 </div>
               </div>
@@ -434,19 +483,19 @@ export function ShopifyConnectionsList() {
               <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
                 <p className="text-sm font-medium text-destructive flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" />
-                  Cette action est irréversible
+                  This action is irreversible
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel className="flex-1">Annuler</AlertDialogCancel>
+            <AlertDialogCancel className="flex-1">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={deleteConnection} 
               className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Supprimer
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

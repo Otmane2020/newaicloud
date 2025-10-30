@@ -43,7 +43,7 @@ export function PageOptimization() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('Utilisateur non connecté');
+        toast.error('User not connected');
         setLoading(false);
         return;
       }
@@ -71,7 +71,7 @@ export function PageOptimization() {
       setPages(mappedPages);
     } catch (error) {
       console.error('Error fetching pages:', error);
-      toast.error('Erreur lors du chargement des pages');
+      toast.error('Error loading pages');
     } finally {
       setLoading(false);
     }
@@ -107,7 +107,7 @@ export function PageOptimization() {
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('Utilisateur non connecté');
+        toast.error('User not connected');
         return;
       }
       
@@ -121,7 +121,7 @@ export function PageOptimization() {
       if (connError) throw connError;
       
       if (!connections || connections.length === 0) {
-        toast.error('Aucune boutique Shopify connectée');
+        toast.error('No Shopify store connected');
         setImportingPages(false);
         return;
       }
@@ -129,18 +129,18 @@ export function PageOptimization() {
       // Import pages for all connected stores
       let totalImported = 0;
       for (const store of connections) {
-        toast.loading(`Import des pages de ${store.store_name || 'votre boutique'}...`, { id: store.id });
+        toast.loading(`Importing pages from ${store.store_name || 'your store'}...`, { id: store.id });
         
         const { data, error } = await supabase.functions.invoke('import-shopify-pages', {
           body: { storeId: store.id }
         });
         
         if (error) {
-          toast.error(`Erreur: ${error.message}`, { id: store.id });
+          toast.error(`Error: ${error.message}`, { id: store.id });
         } else if (data.permissionError) {
           toast.warning(data.message, { id: store.id });
         } else {
-          toast.success(`✅ ${data.count} pages importées`, { id: store.id });
+          toast.success(`✅ ${data.count} pages imported`, { id: store.id });
           totalImported += data.count;
         }
       }
@@ -149,11 +149,11 @@ export function PageOptimization() {
       await fetchPages();
       
       if (totalImported > 0) {
-        toast.success(`🎉 ${totalImported} pages importées au total !`);
+        toast.success(`🎉 ${totalImported} pages imported in total!`);
       }
     } catch (error) {
       console.error('Error importing pages:', error);
-      toast.error('Erreur lors de l\'import des pages');
+      toast.error('Error importing pages');
     } finally {
       setImportingPages(false);
     }
@@ -175,10 +175,10 @@ export function PageOptimization() {
         if (error) throw error;
         
         successCount++;
-        toast.success(`Page ${i + 1}/${pageIds.length} optimisée`);
+        toast.success(`Page ${i + 1}/${pageIds.length} optimized`);
       } catch (error) {
         console.error('Error optimizing page:', error);
-        toast.error(`Erreur pour la page ${i + 1}`);
+        toast.error(`Error for page ${i + 1}`);
       }
     }
     
@@ -187,16 +187,16 @@ export function PageOptimization() {
     fetchPages();
     
     if (successCount === pageIds.length) {
-      toast.success('🎉 Toutes les pages ont été optimisées !');
+      toast.success('🎉 All pages optimized!');
     } else {
-      toast.warning(`${successCount}/${pageIds.length} pages optimisées`);
+      toast.warning(`${successCount}/${pageIds.length} pages optimized`);
     }
   };
 
   const handleOptimizeAll = async () => {
     const pagesToOptimize = pages.filter(p => !p.optimized);
     if (pagesToOptimize.length === 0) {
-      toast.info('Toutes les pages sont déjà optimisées');
+      toast.info('All pages are already optimized');
       return;
     }
     
@@ -217,14 +217,14 @@ export function PageOptimization() {
     }
     
     setOptimizing(false);
-    toast.success(`${successCount}/${pagesToOptimize.length} pages optimisées !`);
+    toast.success(`${successCount}/${pagesToOptimize.length} pages optimized!`);
     fetchPages();
   };
 
   const handleSyncAll = async () => {
     const pagesToSync = pages.filter(p => p.optimized);
     if (pagesToSync.length === 0) {
-      toast.info('Aucune page optimisée à synchroniser');
+      toast.info('No optimized pages to sync');
       return;
     }
     
@@ -245,7 +245,7 @@ export function PageOptimization() {
     }
     
     setSyncing(false);
-    toast.success(`${successCount}/${pagesToSync.length} pages synchronisées !`);
+    toast.success(`${successCount}/${pagesToSync.length} pages synchronized!`);
     fetchPages();
   };
 
@@ -271,7 +271,7 @@ export function PageOptimization() {
     
     setSyncing(false);
     setSelectedPages(new Set());
-    toast.success(`${successCount}/${pageIds.length} pages synchronisées !`);
+    toast.success(`${successCount}/${pageIds.length} pages synchronized!`);
     fetchPages();
   };
 
@@ -283,10 +283,10 @@ export function PageOptimization() {
       });
       
       if (error) throw error;
-      toast.success('Page optimisée !');
+      toast.success('Page optimized!');
       fetchPages();
     } catch (error: any) {
-      toast.error(error.message || 'Erreur');
+      toast.error(error.message || 'Error');
     } finally {
       setOptimizing(false);
     }
@@ -300,10 +300,10 @@ export function PageOptimization() {
       });
       
       if (error) throw error;
-      toast.success('Page synchronisée !');
+      toast.success('Page synchronized!');
       fetchPages();
     } catch (error: any) {
-      toast.error(error.message || 'Erreur');
+      toast.error(error.message || 'Error');
     } finally {
       setSyncing(false);
     }
@@ -334,31 +334,31 @@ export function PageOptimization() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner */}
+      {/* Hero Banner with Stats */}
       <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-2">
               <FileText className="w-6 h-6 text-purple-600" />
               <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Optimisation Pages
+                Page Optimization
               </h2>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              Optimisez le SEO de toutes vos pages Shopify. Générez des meta titres et descriptions performants pour maximiser votre trafic.
+              Optimize the SEO of all your Shopify pages. Generate effective meta titles and descriptions to maximize your traffic.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <div className="flex items-center gap-2 text-sm">
                 <Sparkles className="w-4 h-4 text-purple-600" />
-                <span className="font-medium">SEO automatisé</span>
+                <span className="font-medium">Automated SEO</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle className="w-4 h-4 text-pink-600" />
-                <span className="font-medium">Pages complètes</span>
+                <span className="font-medium">Complete pages</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Upload className="w-4 h-4 text-rose-600" />
-                <span className="font-medium">Sync Shopify</span>
+                <span className="font-medium">Shopify Sync</span>
               </div>
             </div>
           </div>
@@ -373,55 +373,22 @@ export function PageOptimization() {
               </div>
               <div className="text-sm text-muted-foreground">SEO Score</div>
             </div>
+            <Button
+              size="lg"
+              onClick={handleOptimizeAll}
+              disabled={optimizing || pages.filter(p => !p.optimized).length === 0}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
+            >
+              <Sparkles className="w-5 h-5" />
+              Optimize All
+            </Button>
           </div>
         </div>
       </Card>
 
-      {/* Global SEO Score Card */}
-      <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 dark:border-green-800 p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-muted-foreground">Score SEO Global des Pages</h3>
-            <div className="flex items-center gap-3">
-              <div className="text-5xl font-bold">{globalPageSeoScore}</div>
-              <div className="text-muted-foreground">/100</div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {pages.length} pages analysées
-            </p>
-          </div>
-          <div className="text-right space-y-2">
-            <SeoConfidenceBadge 
-              seoTitle={pages.length > 0 ? "Global" : null}
-              seoDescription={pages.length > 0 ? "Score moyen de toutes les pages" : null}
-              showLabel={false}
-              className="text-lg px-4 py-2"
-            />
-            <Progress value={globalPageSeoScore} className="w-32 h-2" />
-          </div>
-        </div>
-      </Card>
-
-      {/* Hero Banner */}
-      <Card className="bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-950 dark:via-blue-950 dark:to-cyan-950 border-2 border-indigo-200 p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2">
-              <FileText className="w-6 h-6 text-indigo-600" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-                Optimisation des Pages
-              </h2>
-            </div>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              Optimisez le référencement de vos pages Shopify avec des meta tags générés par IA
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Stats */}
+      {/* Clickable Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6">
+        <Card className="p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-center gap-3">
             <FileText className="w-8 h-8 text-muted-foreground" />
             <div>
@@ -430,21 +397,21 @@ export function PageOptimization() {
             </div>
           </div>
         </Card>
-        <Card className="p-6 border-success">
+        <Card className="p-6 border-2 border-success hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200">
           <div className="flex items-center gap-3">
             <CheckCircle className="w-8 h-8 text-success" />
             <div>
               <p className="text-2xl font-bold">{pages.filter(p => p.optimized).length}</p>
-              <p className="text-sm text-muted-foreground">Optimisées</p>
+              <p className="text-sm text-muted-foreground">Optimized</p>
             </div>
           </div>
         </Card>
-        <Card className="p-6 border-warning">
+        <Card className="p-6 border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200">
           <div className="flex items-center gap-3">
-            <Sparkles className="w-8 h-8 text-warning" />
+            <Clock className="w-8 h-8 text-orange-600" />
             <div>
-              <p className="text-2xl font-bold">{pages.filter(p => !p.optimized).length}</p>
-              <p className="text-sm text-muted-foreground">À optimiser</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{pages.filter(p => !p.optimized).length}</p>
+              <p className="text-sm text-muted-foreground">To Optimize</p>
             </div>
           </div>
         </Card>
@@ -454,9 +421,9 @@ export function PageOptimization() {
       {pages.length === 0 ? (
         <Card className="p-12 text-center">
           <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold mb-2">Aucune page trouvée</h3>
+          <h3 className="text-xl font-semibold mb-2">No pages found</h3>
           <p className="text-muted-foreground mb-6">
-            Importez vos pages Shopify pour commencer l'optimisation SEO
+            Import your Shopify pages to start SEO optimization
           </p>
           <Button 
             onClick={handleImportPages}
@@ -466,12 +433,12 @@ export function PageOptimization() {
             {importingPages ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Import en cours...
+                Importing...
               </>
             ) : (
               <>
                 <FileText className="mr-2 h-4 w-4" />
-                Importer les pages Shopify
+                Import Shopify Pages
               </>
             )}
           </Button>
@@ -480,30 +447,34 @@ export function PageOptimization() {
         <Card>
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold">Pages Shopify</h3>
+              <h3 className="text-xl font-semibold">Shopify Pages</h3>
               <div className="flex gap-2">
                 <Button
-                  onClick={handleOptimizeAll}
-                  disabled={optimizing || pages.filter(p => !p.optimized).length === 0}
-                  variant="default"
+                  onClick={handleImportPages}
+                  disabled={importingPages}
+                  variant="outline"
+                  size="sm"
                 >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Optimiser tout ({pages.filter(p => !p.optimized).length})
+                  <FileText className="w-4 h-4 mr-2" />
+                  {importingPages ? 'Importing...' : 'Import Pages'}
                 </Button>
                 <Button
-                  onClick={handleSyncAll}
-                  disabled={syncing || pages.filter(p => p.optimized).length === 0}
-                  variant="outline"
+                  onClick={handleOptimizeSelected}
+                  disabled={optimizing || selectedPages.size === 0}
+                  variant="default"
+                  size="sm"
                 >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Synchroniser tout
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Optimize Selected ({selectedPages.size})
                 </Button>
                 <Button
                   onClick={handleSyncSelected}
                   disabled={syncing || selectedPages.size === 0}
+                  variant="outline"
+                  size="sm"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  Synchroniser ({selectedPages.size})
+                  Sync Selected
                 </Button>
               </div>
             </div>
@@ -512,7 +483,7 @@ export function PageOptimization() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Rechercher une page..."
+                placeholder="Search for a page..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -528,12 +499,12 @@ export function PageOptimization() {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead>Titre</TableHead>
+                  <TableHead>Title</TableHead>
                   <TableHead>SEO Title</TableHead>
-                  <TableHead>Méta Description</TableHead>
-                  <TableHead className="text-center">Score SEO</TableHead>
-                  <TableHead className="text-center">Optimisé</TableHead>
-                  <TableHead className="text-center">Synchronisé</TableHead>
+                  <TableHead>Meta Description</TableHead>
+                  <TableHead className="text-center">SEO Score</TableHead>
+                  <TableHead className="text-center">Optimized</TableHead>
+                  <TableHead className="text-center">Synchronized</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -569,7 +540,7 @@ export function PageOptimization() {
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant={page.last_synced_at ? 'default' : 'secondary'}>
-                        {page.last_synced_at ? 'Oui' : 'Non'}
+                        {page.last_synced_at ? 'Yes' : 'No'}
                       </Badge>
                     </TableCell>
                     <TableCell>

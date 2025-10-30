@@ -8,45 +8,45 @@ const PricingComparison = () => {
 
   const features = [
     {
-      category: "Produits",
+      category: "Products",
       items: [
-        { name: "Produits maximum", starter: "1 000", pro: "5 000 - 320 000", enterprise: "100 000 - 12 800 000" },
-        { name: "Import Shopify", starter: true, pro: true, enterprise: true },
-        { name: "Gestion multi-boutiques", starter: "1", pro: "2 - 128", enterprise: "10 - 1 280" },
+        { name: "Maximum products", starter: "1,000", pro: "5,000 - 320,000", enterprise: "100,000 - 12,800,000" },
+        { name: "Shopify Import", starter: true, pro: true, enterprise: true },
+        { name: "Multi-store management", starter: "1", pro: "2 - 128", enterprise: "10 - 1,280" },
       ]
     },
     {
-      category: "Optimisations SEO",
+      category: "SEO Optimizations",
       items: [
-        { name: "Optimisations mensuelles", starter: "250", pro: "500 - 32 000", enterprise: "5 000 - 640 000" },
-        { name: "Optimisation automatique", starter: true, pro: true, enterprise: true },
-        { name: "Sync vers Shopify", starter: true, pro: true, enterprise: true },
-        { name: "Analyse de qualité SEO", starter: true, pro: true, enterprise: true },
+        { name: "Monthly optimizations", starter: "250", pro: "500 - 32,000", enterprise: "5,000 - 640,000" },
+        { name: "Automatic optimization", starter: true, pro: true, enterprise: true },
+        { name: "Sync to Shopify", starter: true, pro: true, enterprise: true },
+        { name: "SEO quality analysis", starter: true, pro: true, enterprise: true },
       ]
     },
     {
-      category: "IA",
+      category: "AI",
       items: [
-        { name: "Articles IA par mois", starter: "5", pro: "10 - 640", enterprise: "100 - 12 800" },
-        { name: "Chat IA par mois", starter: "500", pro: "1 000 - 64 000", enterprise: "10 000 - 1 280 000" },
-        { name: "Campagnes éditoriales", starter: "2", pro: "5 - 320", enterprise: "50 - 6 400" },
-        { name: "Vision IA (images)", starter: true, pro: true, enterprise: true },
+        { name: "AI articles per month", starter: "5", pro: "10 - 640", enterprise: "100 - 12,800" },
+        { name: "AI chat per month", starter: "500", pro: "1,000 - 64,000", enterprise: "10,000 - 1,280,000" },
+        { name: "Editorial campaigns", starter: "2", pro: "5 - 320", enterprise: "50 - 6,400" },
+        { name: "AI Vision (images)", starter: true, pro: true, enterprise: true },
       ]
     },
     {
       category: "Netlinking & Blog",
       items: [
-        { name: "Opportunités SEO", starter: true, pro: true, enterprise: true },
-        { name: "Sync blog vers Shopify", starter: true, pro: true, enterprise: true },
-        { name: "Analyse de netlinking", starter: true, pro: true, enterprise: true },
+        { name: "SEO opportunities", starter: true, pro: true, enterprise: true },
+        { name: "Blog sync to Shopify", starter: true, pro: true, enterprise: true },
+        { name: "Netlinking analysis", starter: true, pro: true, enterprise: true },
       ]
     },
     {
       category: "Support & Performance",
       items: [
-        { name: "Support par email", starter: true, pro: true, enterprise: true },
-        { name: "Support prioritaire", starter: false, pro: true, enterprise: true },
-        { name: "Account manager dédié", starter: false, pro: false, enterprise: true },
+        { name: "Email support", starter: true, pro: true, enterprise: true },
+        { name: "Priority support", starter: false, pro: true, enterprise: true },
+        { name: "Dedicated account manager", starter: false, pro: false, enterprise: true },
         { name: "API Access", starter: false, pro: false, enterprise: true },
       ]
     }
@@ -115,26 +115,26 @@ const PricingComparison = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="p-4 text-left font-semibold">Fonctionnalités</th>
+              <th className="p-4 text-left font-semibold">Features</th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge variant="outline">Starter</Badge>
                   <span className="text-2xl font-bold">$9.99</span>
-                  <span className="text-xs text-muted-foreground">/mois</span>
+                  <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge className="bg-primary">Pro</Badge>
                   <span className="text-2xl font-bold">$98 - $4,900</span>
-                  <span className="text-xs text-muted-foreground">/mois</span>
+                  <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge className="bg-success">Enterprise</Badge>
                   <span className="text-2xl font-bold">$199 - $19,900</span>
-                  <span className="text-xs text-muted-foreground">/mois</span>
+                  <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
             </tr>

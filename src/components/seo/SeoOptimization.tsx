@@ -619,14 +619,14 @@ export function SeoOptimization() {
             {/* Bulk Actions */}
             <div className="flex flex-wrap gap-2">
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={handleGenerateForSelected}
               disabled={generating || selectedProducts.size === 0}
               className="flex items-center gap-2"
             >
               <Zap className="w-4 h-4" />
-              <span className="hidden sm:inline">Optimize Selected ({selectedProducts.size})</span>
+              Optimize Selected ({selectedProducts.size})
             </Button>
             
             <Button
@@ -637,7 +637,7 @@ export function SeoOptimization() {
               className="flex items-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Optimize All</span>
+              Optimize All
             </Button>
             
             <Button
@@ -660,7 +660,7 @@ export function SeoOptimization() {
               className="flex items-center gap-2"
             >
               <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Sync Selection ({selectedProducts.size})</span>
+              Sync Selection ({selectedProducts.size})
             </Button>
             
             <Button
