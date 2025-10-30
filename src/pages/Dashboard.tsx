@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTrialLimits } from '@/hooks/useTrialLimits';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { calculateSeoConfidence } from '@/lib/seoQuality';
+import { formatCurrency } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { 
   ShoppingBag, 
@@ -170,7 +171,7 @@ export default function Dashboard() {
     },
     {
       title: t('dashboard.catalog_value'),
-      value: `${stats.totalValue.toFixed(2)}€`,
+      value: formatCurrency(stats.totalValue),
       icon: DollarSign,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
