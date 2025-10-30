@@ -137,6 +137,49 @@ serve(async (req) => {
         .eq('id', user.id);
     }
 
+    // Vérifier et nettoyer les abonnements en conflits de devise
+    console.log('🔍 Checking for currency conflicts...');
+    
+    try {
+      const activeSubscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'active',
+        limit: 10
+      });
+
+      // Récupérer les détails du prix pour vérifier la devise
+      const priceDetails = await stripe.prices.retrieve(stripePriceId);
+      const targetCurrency = priceDetails.currency; // 'eur' pour vos plans
+      
+      console.log(`🎯 Target currency: ${targetCurrency}`);
+
+      // Annuler les abonnements avec une devise différente
+      for (const sub of activeSubscriptions.data) {
+        const subPrice = sub.items.data[0]?.price;
+        if (subPrice && subPrice.currency !== targetCurrency) {
+          console.log(`⚠️ Found subscription in ${subPrice.currency}, canceling: ${sub.id}`);
+          await stripe.subscriptions.cancel(sub.id);
+        }
+      }
+
+      // Vérifier aussi les subscription schedules
+      const schedules = await stripe.subscriptionSchedules.list({
+        customer: customerId,
+        limit: 10
+      });
+
+      for (const schedule of schedules.data) {
+        if (schedule.status === 'active' || schedule.status === 'not_started') {
+          console.log(`⚠️ Found active schedule, releasing: ${schedule.id}`);
+          await stripe.subscriptionSchedules.release(schedule.id);
+        }
+      }
+
+    } catch (cleanupError) {
+      console.error('⚠️ Cleanup error (non-blocking):', cleanupError);
+      // Continue même si le nettoyage échoue
+    }
+
     console.log('🎫 Creating Stripe checkout session...');
 
     const origin = req.headers.get('origin') || 'http://localhost:8080';
