@@ -90,7 +90,15 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
       console.log('Cleaned store name:', cleanStoreName);
 
-      // ✅ Check if store already exists FIRST (before checking limits)
+      // ✅ 1. FIRST: Check store limit (before checking if store exists)
+      if (!limits?.canAddShopifyStore) {
+        toast.error('Store limit reached', {
+          description: `You have reached the maximum number of stores (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Upgrade your plan to add more stores.`,
+        });
+        return;
+      }
+
+      // ✅ 2. SECOND: Check if this specific store already exists
       const { data: existing } = await supabase
         .from('shopify_connections')
         .select('id')
@@ -100,14 +108,6 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
       if (existing) {
         toast.error("This store is already connected");
-        return;
-      }
-
-      // ✅ Check store limit AFTER checking if store exists
-      if (!limits?.canAddShopifyStore) {
-        toast.error('Store limit reached', {
-          description: `You have reached the maximum number of stores (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Upgrade your plan to add more stores.`,
-        });
         return;
       }
 

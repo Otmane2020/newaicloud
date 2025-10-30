@@ -109,12 +109,23 @@ serve(async (req) => {
       }
 
       const shopInfo = await shopInfoResponse.json();
+      const userId = oauthState.user_id;
 
-      // ✅ Check if store already exists
+      // ✅ 1. FIRST: Check usage limits
+      const { data: usageLimits } = await supabaseClient.rpc('check_usage_limits', {
+        p_user_id: userId
+      });
+
+      if (usageLimits && !usageLimits.can_add_shopify_store) {
+        const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
+        return Response.redirect(`${appUrl}/integration?error=store_limit_reached`);
+      }
+
+      // ✅ 2. SECOND: Check if this specific store already exists
       const { data: existingConnection } = await supabaseClient
         .from("shopify_connections")
         .select("id")
-        .eq("user_id", oauthState.user_id)
+        .eq("user_id", userId)
         .eq("store_url", shop)
         .single();
 
@@ -123,21 +134,11 @@ serve(async (req) => {
         return Response.redirect(`${appUrl}/integration?error=store_already_connected`);
       }
 
-      // ✅ Check usage limits before creating connection
-      const { data: usageLimits } = await supabaseClient.rpc('check_usage_limits', {
-        p_user_id: oauthState.user_id
-      });
-
-      if (usageLimits && !usageLimits.can_add_shopify_store) {
-        const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
-        return Response.redirect(`${appUrl}/integration?error=store_limit_reached`);
-      }
-
       // Save connection
       const { error: connectionError } = await supabaseClient
         .from("shopify_connections")
         .insert({
-          user_id: oauthState.user_id,
+          user_id: userId,
           store_url: shop,
           store_name: shopInfo.shop?.name || oauthState.shop_name,
           access_token: accessToken,
@@ -158,7 +159,7 @@ serve(async (req) => {
 
       // ✅ Increment shopify_stores_count after successful connection
       await supabaseClient.rpc('increment_usage', {
-        p_seller_id: oauthState.user_id,
+        p_seller_id: userId,
         p_field: 'shopify_stores_count',
         p_increment: 1
       });
