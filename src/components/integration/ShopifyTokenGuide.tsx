@@ -42,6 +42,22 @@ export function ShopifyTokenGuide() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Info boutique */}
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-xs space-y-2">
+            <p>
+              <strong>Nom de votre boutique :</strong> <code className="bg-muted px-1.5 py-0.5 rounded text-xs">qnxv91-2w</code>.myshopify.com
+            </p>
+            <p>
+              Trouvez le nom dans l'URL :{" "}
+              <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
+                admin.shopify.com/store/<strong>qnxv91-2w</strong>
+              </code>
+            </p>
+          </AlertDescription>
+        </Alert>
+
         {/* Étape 1 */}
         <div className="flex items-start gap-3">
           <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-1">
