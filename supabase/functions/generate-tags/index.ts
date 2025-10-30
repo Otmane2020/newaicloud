@@ -231,10 +231,20 @@ Example for a wooden coffee table:
 
     let tags = "";
     try {
-      const parsed = JSON.parse(tagContent);
+      // Clean markdown code blocks if present
+      let cleanedContent = tagContent.trim();
+      if (cleanedContent.startsWith('```json')) {
+        cleanedContent = cleanedContent.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '');
+      } else if (cleanedContent.startsWith('```')) {
+        cleanedContent = cleanedContent.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '');
+      }
+      
+      const parsed = JSON.parse(cleanedContent);
       tags = parsed.tags || "";
+      console.log(`Successfully parsed tags: ${tags}`);
     } catch (e) {
       console.error("Failed to parse tag JSON:", tagContent);
+      console.error("Parse error:", e);
       tags = product.product_type || product.category || "";
     }
 
