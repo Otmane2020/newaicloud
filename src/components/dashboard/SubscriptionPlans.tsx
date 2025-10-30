@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, Sparkles, Zap, Crown, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -12,11 +13,17 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 interface Plan {
   id: string;
-  icon: any;
-  badgeColor?: string;
+  name: string;
+  description: string;
   price_monthly: number;
   price_yearly: number;
-  featured?: boolean;
+  max_products: number;
+  max_optimizations_monthly: number;
+  max_articles_monthly: number;
+  max_campaigns: number;
+  max_chat_responses_monthly: number;
+  trial_days: number;
+  features: any;
 }
 
 export function SubscriptionPlans() {
@@ -27,37 +34,33 @@ export function SubscriptionPlans() {
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
-
-  const plans: Plan[] = [
-    {
-      id: "starter",
-      price_monthly: 9.99,
-      price_yearly: 95.88,
-      icon: Sparkles,
-      badgeColor: "bg-green-500",
-      featured: false
-    },
-    {
-      id: "professional",
-      price_monthly: 49,
-      price_yearly: 468,
-      icon: Zap,
-      badgeColor: "bg-primary",
-      featured: true
-    },
-    {
-      id: "enterprise-199",
-      price_monthly: 199,
-      price_yearly: 1908,
-      icon: Crown,
-      featured: false
-    }
-  ];
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selectedProPlan, setSelectedProPlan] = useState<string>('');
+  const [selectedEnterprisePlan, setSelectedEnterprisePlan] = useState<string>('');
 
   useEffect(() => {
-    const loadCurrentPlan = async () => {
+    const loadData = async () => {
       if (!user?.id) return;
       
+      // Load plans
+      const { data: plansData } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price_monthly', { ascending: true });
+      
+      if (plansData) {
+        setPlans(plansData);
+        
+        // Set default selections
+        const proPlans = plansData.filter(p => p.id.startsWith('professional') || p.id === 'pro');
+        const enterprisePlans = plansData.filter(p => p.id.startsWith('enterprise'));
+        
+        if (proPlans.length > 0) setSelectedProPlan(proPlans[0].id);
+        if (enterprisePlans.length > 0) setSelectedEnterprisePlan(enterprisePlans[0].id);
+      }
+      
+      // Load current plan
       const { data: profile } = await supabase
         .from('profiles')
         .select('current_plan_id')
@@ -68,7 +71,7 @@ export function SubscriptionPlans() {
       setLoading(false);
     };
 
-    loadCurrentPlan();
+    loadData();
   }, [user?.id]);
 
   const handleSelectPlan = async (planId: string) => {
@@ -102,13 +105,6 @@ export function SubscriptionPlans() {
 
   const isCurrentPlan = (planId: string) => currentPlanId === planId;
 
-  // Map database plan IDs to translation keys
-  const getTranslationKey = (planId: string): string => {
-    if (planId === 'professional') return 'pro';
-    if (planId.startsWith('enterprise-')) return 'enterprise';
-    return planId;
-  };
-
   const getPrice = (plan: Plan) => {
     return billingPeriod === 'yearly' ? plan.price_yearly : plan.price_monthly;
   };
@@ -119,6 +115,14 @@ export function SubscriptionPlans() {
     const savings = ((monthlyCost - yearlyCost) / monthlyCost * 100).toFixed(0);
     return savings;
   };
+
+  // Group plans by category
+  const starterPlan = plans.find(p => p.id === 'starter');
+  const proPlans = plans.filter(p => p.id.startsWith('professional') || p.id === 'pro');
+  const enterprisePlans = plans.filter(p => p.id.startsWith('enterprise'));
+  
+  const selectedPro = proPlans.find(p => p.id === selectedProPlan);
+  const selectedEnterprise = enterprisePlans.find(p => p.id === selectedEnterprisePlan);
 
   return (
     <div className="space-y-8">
@@ -144,86 +148,175 @@ export function SubscriptionPlans() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {plans.map((plan) => {
-          const Icon = plan.icon;
-          const isCurrent = isCurrentPlan(plan.id);
-          const translationKey = getTranslationKey(plan.id);
-          const planKey = `subscriptionPlans.${translationKey}`;
-          const name = t(`${planKey}.name`);
-          const description = t(`${planKey}.description`);
-          const badge = t(`${planKey}.badge`);
-          const cta = t(`${planKey}.cta`);
-          const benefits = t(`${planKey}.benefits`, { returnObjects: true }) as string[];
-          const features = t(`${planKey}.features`, { returnObjects: true }) as string[];
-          
-          return (
-            <Card 
-              key={plan.id}
-              className={`relative ${plan.featured ? 'border-2 border-primary shadow-primary' : ''} ${isCurrent ? 'border-2 border-success' : ''}`}
-            >
-              {badge && (
-                <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 ${plan.badgeColor || 'bg-primary'}`}>
-                  {badge}
-                </Badge>
-              )}
-              {isCurrent && (
-                <Badge className="absolute -top-3 right-4 bg-success">
-                  ✓ {t('subscriptionPlans.current_plan')}
-                </Badge>
+        {/* Starter Plan */}
+        {starterPlan && (
+          <Card className={`relative ${isCurrentPlan(starterPlan.id) ? 'border-2 border-success' : ''}`}>
+            {starterPlan.trial_days > 0 && (
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-500">
+                🎁 {t('subscriptionPlans.starter.badge')}
+              </Badge>
+            )}
+            {isCurrentPlan(starterPlan.id) && (
+              <Badge className="absolute -top-3 right-4 bg-success">
+                ✓ {t('subscriptionPlans.current_plan')}
+              </Badge>
+            )}
+            
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-6 h-6 text-primary" />
+                <CardTitle className="text-2xl">{t('subscriptionPlans.starter.name')}</CardTitle>
+              </div>
+              <CardDescription>{t('subscriptionPlans.starter.description')}</CardDescription>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-4xl font-bold">${getPrice(starterPlan).toFixed(2)}</span>
+                <span className="text-muted-foreground">{t('subscriptionPlans.per_month')}</span>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  {starterPlan.max_products} {t('common.products')} • 
+                  {starterPlan.max_optimizations_monthly} {t('common.optimizations')} • 
+                  {starterPlan.max_articles_monthly} {t('common.articles')}
+                </p>
+              </div>
+
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => handleSelectPlan(starterPlan.id)}
+                disabled={isCurrentPlan(starterPlan.id) || loading}
+              >
+                {isCurrentPlan(starterPlan.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.starter.cta')}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pro Plans */}
+        {selectedPro && (
+          <Card className={`relative border-2 border-primary shadow-primary ${isCurrentPlan(selectedPro.id) ? 'border-success' : ''}`}>
+            <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
+              {t('subscriptionPlans.pro.badge')}
+            </Badge>
+            {isCurrentPlan(selectedPro.id) && (
+              <Badge className="absolute -top-3 right-4 bg-success">
+                ✓ {t('subscriptionPlans.current_plan')}
+              </Badge>
+            )}
+            
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="w-6 h-6 text-primary" />
+                <CardTitle className="text-2xl">{t('subscriptionPlans.pro.name')}</CardTitle>
+              </div>
+              
+              {proPlans.length > 1 && (
+                <Select value={selectedProPlan} onValueChange={setSelectedProPlan}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {proPlans.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id}>
+                        {plan.max_products.toLocaleString()} {t('common.products')} • 
+                        {plan.max_optimizations_monthly.toLocaleString()} {t('common.optimizations')} / {t('common.month')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
               
-              <CardHeader>
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-2xl">{name}</CardTitle>
-                </div>
-                <CardDescription>{description}</CardDescription>
-                <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">{getPrice(plan)}€</span>
-                  <span className="text-muted-foreground">
-                    {billingPeriod === 'monthly' ? t('subscriptionPlans.per_month') : t('subscriptionPlans.per_year')}
-                  </span>
-                  {billingPeriod === 'yearly' && (
-                    <Badge variant="secondary" className="bg-success/20 text-success text-xs">
-                      {t('subscriptionPlans.savings')} {getSavings(plan)}%
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
+              <CardDescription>{t('subscriptionPlans.pro.description')}</CardDescription>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-4xl font-bold">${getPrice(selectedPro).toFixed(2)}</span>
+                <span className="text-muted-foreground">{t('subscriptionPlans.per_month')}</span>
+              </div>
+            </CardHeader>
 
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <p className="font-semibold text-sm text-primary">✨ {t('subscriptionPlans.why_choose')}</p>
-                  {benefits.map((benefit, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-medium text-primary">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  {selectedPro.max_products.toLocaleString()} {t('common.products')} • 
+                  {selectedPro.max_optimizations_monthly.toLocaleString()} {t('common.optimizations')} • 
+                  {selectedPro.max_articles_monthly} {t('common.articles')}
+                </p>
+              </div>
 
-                <div className="space-y-2 pt-4 border-t">
-                  <p className="font-semibold text-sm">{t('subscriptionPlans.included')}</p>
-                  {features.map((feature, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-muted-foreground">{feature}</span>
-                    </div>
-                  ))}
-                </div>
+              <Button
+                className="w-full"
+                onClick={() => handleSelectPlan(selectedPro.id)}
+                disabled={isCurrentPlan(selectedPro.id) || loading}
+              >
+                {isCurrentPlan(selectedPro.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.pro.cta')}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-                <Button
-                  className="w-full"
-                  variant={plan.featured ? "default" : "outline"}
-                  onClick={() => handleSelectPlan(plan.id)}
-                  disabled={isCurrent || loading}
-                >
-                  {isCurrent ? t('subscriptionPlans.current_plan') : cta}
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {/* Enterprise Plans */}
+        {selectedEnterprise && (
+          <Card className={`relative ${isCurrentPlan(selectedEnterprise.id) ? 'border-2 border-success' : ''}`}>
+            <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-orange-500">
+              {t('subscriptionPlans.enterprise.badge')}
+            </Badge>
+            {isCurrentPlan(selectedEnterprise.id) && (
+              <Badge className="absolute -top-3 right-4 bg-success">
+                ✓ {t('subscriptionPlans.current_plan')}
+              </Badge>
+            )}
+            
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="w-6 h-6 text-primary" />
+                <CardTitle className="text-2xl">{t('subscriptionPlans.enterprise.name')}</CardTitle>
+              </div>
+              
+              {enterprisePlans.length > 1 && (
+                <Select value={selectedEnterprisePlan} onValueChange={setSelectedEnterprisePlan}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {enterprisePlans.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id}>
+                        {plan.max_products === -1 ? t('common.unlimited') : plan.max_products.toLocaleString()} {t('common.products')} • 
+                        {plan.max_optimizations_monthly.toLocaleString()} {t('common.optimizations')} / {t('common.month')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              <CardDescription>{t('subscriptionPlans.enterprise.description')}</CardDescription>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-4xl font-bold">${getPrice(selectedEnterprise).toFixed(2)}</span>
+                <span className="text-muted-foreground">{t('subscriptionPlans.per_month')}</span>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  {selectedEnterprise.max_products === -1 ? t('common.unlimited') : selectedEnterprise.max_products.toLocaleString()} {t('common.products')} • 
+                  {selectedEnterprise.max_optimizations_monthly.toLocaleString()} {t('common.optimizations')} • 
+                  {selectedEnterprise.max_articles_monthly} {t('common.articles')}
+                </p>
+              </div>
+
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => handleSelectPlan(selectedEnterprise.id)}
+                disabled={isCurrentPlan(selectedEnterprise.id) || loading}
+              >
+                {isCurrentPlan(selectedEnterprise.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.enterprise.cta')}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Card className="border-2 border-dashed border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5">
