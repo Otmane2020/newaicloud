@@ -170,7 +170,6 @@ export function SeoAltImageList() {
     }
 
     setGenerating(false);
-    setIsOptimizationComplete(true);
     setSelectedImages(new Set());
     await fetchImages();
     
