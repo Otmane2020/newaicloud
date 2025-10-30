@@ -3,13 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Sparkles, Zap, Crown, CreditCard } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { CheckCircle2, Sparkles, Zap, Crown, CreditCard, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
 
 interface Plan {
   id: string;
@@ -22,6 +24,7 @@ interface Plan {
   max_articles_monthly: number;
   max_campaigns: number;
   max_chat_responses_monthly: number;
+  max_shopify_stores: number;
   trial_days: number;
   features: any;
 }
@@ -31,6 +34,7 @@ export function SubscriptionPlans() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { limits } = useUsageLimits();
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
@@ -188,7 +192,7 @@ export function SubscriptionPlans() {
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <Button
                 className="w-full"
                 variant="outline"
@@ -197,9 +201,45 @@ export function SubscriptionPlans() {
               >
                 {isCurrentPlan(starterPlan.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.starter.cta')}
               </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                {starterPlan.max_products} produits • {starterPlan.max_optimizations_monthly} optimisations / mois
-              </p>
+              
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="limits" className="border-none">
+                  <AccordionTrigger className="text-sm hover:no-underline py-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Voir les limites & utilisation
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-2 pt-2">
+                    <div className="bg-muted/50 p-3 rounded-lg space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Produits:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.products_count} / ${starterPlan.max_products}` : `0 / ${starterPlan.max_products}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Optimisations SEO:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.optimizations_count} / ${starterPlan.max_optimizations_monthly}` : `0 / ${starterPlan.max_optimizations_monthly}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Articles blog:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.articles_count} / ${starterPlan.max_articles_monthly}` : `0 / ${starterPlan.max_articles_monthly}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Réponses chat:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.chat_responses_count} / ${starterPlan.max_chat_responses_monthly}` : `0 / ${starterPlan.max_chat_responses_monthly}`}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           </Card>
         )}
@@ -241,7 +281,7 @@ export function SubscriptionPlans() {
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <Button
                 className="w-full"
                 onClick={() => handleSelectPlan(selectedPro.id)}
@@ -249,9 +289,51 @@ export function SubscriptionPlans() {
               >
                 {isCurrentPlan(selectedPro.id) ? t('subscriptionPlans.current_plan') : 'S\'abonner maintenant'}
               </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                {selectedPro.max_products.toLocaleString()} produits • {selectedPro.max_optimizations_monthly.toLocaleString()} optimisations / mois
-              </p>
+              
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="limits" className="border-none">
+                  <AccordionTrigger className="text-sm hover:no-underline py-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Voir les limites & utilisation
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-2 pt-2">
+                    <div className="bg-muted/50 p-3 rounded-lg space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Produits:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.products_count} / ${selectedPro.max_products.toLocaleString()}` : `0 / ${selectedPro.max_products.toLocaleString()}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Optimisations SEO:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.optimizations_count} / ${selectedPro.max_optimizations_monthly.toLocaleString()}` : `0 / ${selectedPro.max_optimizations_monthly.toLocaleString()}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Articles blog:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.articles_count} / ${selectedPro.max_articles_monthly}` : `0 / ${selectedPro.max_articles_monthly}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Réponses chat:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.chat_responses_count} / ${selectedPro.max_chat_responses_monthly.toLocaleString()}` : `0 / ${selectedPro.max_chat_responses_monthly.toLocaleString()}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Boutiques Shopify:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.shopify_stores_count} / ${selectedPro.max_shopify_stores || 1}` : `0 / ${selectedPro.max_shopify_stores || 1}`}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           </Card>
         )}
@@ -293,7 +375,7 @@ export function SubscriptionPlans() {
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <Button
                 className="w-full"
                 variant="outline"
@@ -302,9 +384,51 @@ export function SubscriptionPlans() {
               >
                 {isCurrentPlan(selectedEnterprise.id) ? t('subscriptionPlans.current_plan') : 'Upgrade to Enterprise'}
               </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                Produits illimités • {selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations / mois
-              </p>
+              
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="limits" className="border-none">
+                  <AccordionTrigger className="text-sm hover:no-underline py-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Voir les limites & utilisation
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-2 pt-2">
+                    <div className="bg-muted/50 p-3 rounded-lg space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Produits:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.products_count} / ∞` : `0 / ∞`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Optimisations SEO:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.optimizations_count} / ${selectedEnterprise.max_optimizations_monthly.toLocaleString()}` : `0 / ${selectedEnterprise.max_optimizations_monthly.toLocaleString()}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Articles blog:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.articles_count} / ${selectedEnterprise.max_articles_monthly}` : `0 / ${selectedEnterprise.max_articles_monthly}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Réponses chat:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.chat_responses_count} / ${selectedEnterprise.max_chat_responses_monthly.toLocaleString()}` : `0 / ${selectedEnterprise.max_chat_responses_monthly.toLocaleString()}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Boutiques Shopify:</span>
+                        <span className="font-medium">
+                          {limits ? `${limits.usage.shopify_stores_count} / ${selectedEnterprise.max_shopify_stores || 10}` : `0 / ${selectedEnterprise.max_shopify_stores || 10}`}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           </Card>
         )}
