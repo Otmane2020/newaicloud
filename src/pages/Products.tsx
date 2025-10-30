@@ -152,7 +152,7 @@ export default function Products() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pb-20">
+    <div className="min-h-screen bg-gradient-subtle">
       {/* Sticky header for mobile */}
       <div className="sticky top-0 bg-background border-b z-10 p-4">
         <div className="flex items-center justify-between mb-3">
@@ -163,7 +163,8 @@ export default function Products() {
             </p>
           </div>
           <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 mr-2" />
+            Add Product
           </Button>
         </div>
 
@@ -244,7 +245,7 @@ export default function Products() {
                 <p className="text-muted-foreground mb-6 text-sm">Import your products from Shopify to get started</p>
                 <Button onClick={() => navigate("/integration")} size="sm">
                   <Plus className="w-4 h-4 mr-2" />
-                  Import
+                  Add Product
                 </Button>
               </div>
             </div>
@@ -403,17 +404,6 @@ export default function Products() {
             )}
           </>
         )}
-      </div>
-
-      {/* Floating button for mobile */}
-      <div className="fixed bottom-6 right-6 z-20">
-        <Button
-          size="lg"
-          onClick={() => navigate("/integration")}
-          className="rounded-full w-14 h-14 shadow-lg bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="w-6 h-6" />
-        </Button>
       </div>
     </div>
   );
