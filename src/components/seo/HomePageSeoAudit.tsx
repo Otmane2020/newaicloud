@@ -69,14 +69,14 @@ export function HomePageSeoAudit() {
 
       setResult(data);
       toast({
-        title: t('seo.audit.success'),
-        description: t('seo.audit.analysisComplete'),
+        title: 'Success',
+        description: 'Analysis completed successfully',
       });
     } catch (error: any) {
       console.error('Error analyzing homepage:', error);
       toast({
-        title: t('seo.audit.error'),
-        description: error.message || t('seo.audit.analysisError'),
+        title: 'Error',
+        description: error.message || 'Error analyzing homepage',
         variant: 'destructive',
       });
     } finally {
@@ -97,10 +97,10 @@ export function HomePageSeoAudit() {
   };
 
   const getScoreLabel = (score: number) => {
-    if (score >= 80) return t('seo.audit.excellent');
-    if (score >= 60) return t('seo.audit.good');
-    if (score >= 40) return t('seo.audit.average');
-    return t('seo.audit.poor');
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    if (score >= 40) return 'Average';
+    return 'Needs Improvement';
   };
 
   const getPriorityIcon = (index: number) => {
@@ -119,24 +119,24 @@ export function HomePageSeoAudit() {
               <div className="flex items-center gap-2">
                 <Search className="w-6 h-6 text-purple-600" />
                 <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  {t('seo.audit.title')}
+                  SEO Audit
                 </CardTitle>
               </div>
               <CardDescription className="text-base">
-                {t('seo.audit.description')}
+                Analyze your homepage SEO performance and get actionable recommendations
               </CardDescription>
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-2 text-sm">
                   <FileText className="w-4 h-4 text-purple-600" />
-                  <span className="font-medium">{t('seo.audit.feature1')}</span>
+                  <span className="font-medium">Complete analysis</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-green-600" />
-                  <span className="font-medium">{t('seo.audit.feature2')}</span>
+                  <span className="font-medium">Score breakdown</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Sparkles className="w-4 h-4 text-pink-600" />
-                  <span className="font-medium">{t('seo.audit.feature3')}</span>
+                  <span className="font-medium">AI recommendations</span>
                 </div>
               </div>
             </div>
@@ -149,12 +149,12 @@ export function HomePageSeoAudit() {
               {isAnalyzing ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  {t('seo.audit.analyzing')}
+                  Analyzing...
                 </>
               ) : (
                 <>
                   <Search className="w-5 h-5" />
-                  {t('seo.audit.analyzeButton')}
+                  Analyze Homepage
                 </>
               )}
             </Button>
@@ -170,7 +170,7 @@ export function HomePageSeoAudit() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
-                {t('seo.audit.globalScore')}
+                Overall Score
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -189,28 +189,28 @@ export function HomePageSeoAudit() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>{t('seo.audit.structure')}</span>
+                      <span>Structure</span>
                       <span className="font-medium">{result.breakdown.structure}/30</span>
                     </div>
                     <Progress value={(result.breakdown.structure / 30) * 100} className="h-2" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>{t('seo.audit.content')}</span>
+                      <span>Content</span>
                       <span className="font-medium">{result.breakdown.content}/30</span>
                     </div>
                     <Progress value={(result.breakdown.content / 30) * 100} className="h-2" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>{t('seo.audit.technical')}</span>
+                      <span>Technical</span>
                       <span className="font-medium">{result.breakdown.technical}/25</span>
                     </div>
                     <Progress value={(result.breakdown.technical / 25) * 100} className="h-2" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>{t('seo.audit.bonus')}</span>
+                      <span>Bonus</span>
                       <span className="font-medium">{result.breakdown.bonus}/15</span>
                     </div>
                     <Progress value={(result.breakdown.bonus / 15) * 100} className="h-2" />
@@ -225,7 +225,7 @@ export function HomePageSeoAudit() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                {t('seo.audit.detailedAnalysis')}
+                Detailed Analysis
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -233,9 +233,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.title ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.titleTag')}</div>
+                    <div className="font-medium">Title Tag</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.title ? `"${result.elements.title}" (${result.elements.title.length} ${t('seo.audit.characters')})` : t('seo.audit.absent')}
+                      {result.elements.title ? `"${result.elements.title}" (${result.elements.title.length} characters)` : 'Missing'}
                     </div>
                   </div>
                 </div>
@@ -243,9 +243,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.metaDescription ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.metaDescription')}</div>
+                    <div className="font-medium">Meta Description</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.metaDescription ? `${result.elements.metaDescription.length} ${t('seo.audit.characters')}` : t('seo.audit.absent')}
+                      {result.elements.metaDescription ? `${result.elements.metaDescription.length} characters` : 'Missing'}
                     </div>
                   </div>
                 </div>
@@ -253,9 +253,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.h1 ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.h1Tag')}</div>
+                    <div className="font-medium">H1 Tag</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.h1 ? `"${result.elements.h1}"` : t('seo.audit.absent')}
+                      {result.elements.h1 ? `"${result.elements.h1}"` : 'Missing'}
                     </div>
                   </div>
                 </div>
@@ -263,9 +263,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.h2s.length > 0 ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.h2Tags')}</div>
+                    <div className="font-medium">H2 Tags</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.h2s.length} {t('seo.audit.found')}
+                      {result.elements.h2s.length} found
                     </div>
                   </div>
                 </div>
@@ -273,9 +273,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   <ImageIcon className="w-5 h-5 text-blue-500 mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.imageAlts')}</div>
+                    <div className="font-medium">Image Alt Texts</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.altsCount}/{result.elements.totalImages} {t('seo.audit.imagesWithAlt')}
+                      {result.elements.altsCount}/{result.elements.totalImages} images with alt text
                     </div>
                   </div>
                 </div>
@@ -283,9 +283,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.canonical ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.canonical')}</div>
+                    <div className="font-medium">Canonical Tag</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.canonical ? t('seo.audit.present') : t('seo.audit.absent')}
+                      {result.elements.canonical ? 'Present' : 'Missing'}
                     </div>
                   </div>
                 </div>
@@ -293,9 +293,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.hasSchema ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.schemaOrg')}</div>
+                    <div className="font-medium">Schema.org Markup</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.hasSchema ? t('seo.audit.detected') : t('seo.audit.absent')}
+                      {result.elements.hasSchema ? 'Detected' : 'Missing'}
                     </div>
                   </div>
                 </div>
@@ -303,9 +303,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.hasOpenGraph ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.openGraph')}</div>
+                    <div className="font-medium">Open Graph Tags</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.hasOpenGraph ? t('seo.audit.present') : t('seo.audit.absent')}
+                      {result.elements.hasOpenGraph ? 'Present' : 'Missing'}
                     </div>
                   </div>
                 </div>
@@ -313,9 +313,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.hasTwitterCard ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.twitterCard')}</div>
+                    <div className="font-medium">Twitter Card</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.hasTwitterCard ? t('seo.audit.present') : t('seo.audit.absent')}
+                      {result.elements.hasTwitterCard ? 'Present' : 'Missing'}
                     </div>
                   </div>
                 </div>
@@ -323,9 +323,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   <LinkIcon className="w-5 h-5 text-blue-500 mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.internalLinks')}</div>
+                    <div className="font-medium">Internal Links</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.internalLinks} {t('seo.audit.found')}
+                      {result.elements.internalLinks} found
                     </div>
                   </div>
                 </div>
@@ -333,9 +333,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   <Code className="w-5 h-5 text-blue-500 mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium">{t('seo.audit.contentLength')}</div>
+                    <div className="font-medium">Content Length</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.contentLength} {t('seo.audit.characters')}
+                      {result.elements.contentLength} characters
                     </div>
                   </div>
                 </div>
@@ -345,7 +345,7 @@ export function HomePageSeoAudit() {
                   <div className="flex-1">
                     <div className="font-medium">HTTPS</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.httpsEnabled ? t('seo.audit.enabled') : t('seo.audit.disabled')}
+                      {result.elements.httpsEnabled ? 'Enabled' : 'Disabled'}
                     </div>
                   </div>
                 </div>
@@ -359,10 +359,10 @@ export function HomePageSeoAudit() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
-                  {t('seo.audit.aiRecommendations')}
+                  AI Recommendations
                 </CardTitle>
                 <CardDescription>
-                  {t('seo.audit.aiRecommendationsDescription')}
+                  Personalized suggestions to improve your SEO score
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -384,7 +384,7 @@ export function HomePageSeoAudit() {
 
           {/* Analysis Info */}
           <div className="text-xs text-muted-foreground text-center">
-            {t('seo.audit.analyzedOn')} {new Date(result.analyzedAt).toLocaleString()} • {result.analyzedUrl}
+            Analyzed on {new Date(result.analyzedAt).toLocaleString()} • {result.analyzedUrl}
           </div>
         </div>
       )}

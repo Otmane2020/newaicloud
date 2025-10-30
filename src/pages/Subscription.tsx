@@ -12,7 +12,6 @@ import { UsageLimits } from "@/components/dashboard/UsageLimits";
 import { BillingPortal } from "@/components/dashboard/BillingPortal";
 import { CurrentPlanCard } from "@/components/dashboard/CurrentPlanCard";
 import PricingComparison from "@/components/PricingComparison";
-import { useTranslation } from '@/hooks/useTranslation';
 
 interface Plan {
   id: string;
@@ -198,9 +197,9 @@ const Subscription = () => {
   return (
     <div className="container mx-auto p-8 space-y-12">
       <div className="space-y-4">
-        <h1 className="text-4xl font-bold">{t('subscription.title')}</h1>
+        <h1 className="text-4xl font-bold">Subscription Plans</h1>
         <p className="text-muted-foreground text-lg">
-          Choisissez le plan qui correspond à vos besoins et évoluez à votre rythme
+          Choose the plan that fits your needs and scale at your own pace
         </p>
       </div>
 
@@ -233,19 +232,19 @@ const Subscription = () => {
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_optimizations_monthly} {t('subscription.optimizations')}</span>
+                  <span>{starterPlan.max_optimizations_monthly} optimizations/month</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_articles_monthly} {t('subscription.articles')}</span>
+                  <span>{starterPlan.max_articles_monthly} articles/month</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_chat_responses_monthly} {t('subscription.chat_responses')}</span>
+                  <span>{starterPlan.max_chat_responses_monthly} chat responses/month</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_shopify_stores} {t('subscription.stores')}</span>
+                  <span>{starterPlan.max_shopify_stores} Shopify store(s)</span>
                 </div>
               </div>
             </div>
@@ -259,9 +258,9 @@ const Subscription = () => {
               {checkoutLoading === starterPlan.id ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isCurrentPlan(starterPlan.id) ? (
-                'Plan actuel'
+                'Current Plan'
               ) : (
-                t('subscription.upgrade')
+                'Select Plan'
               )}
             </Button>
           </Card>
@@ -310,23 +309,23 @@ const Subscription = () => {
                   <div className="space-y-3 pt-6 border-t">
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_optimizations_monthly} {t('subscription.optimizations')}</span>
+                      <span>{selectedProPlan.max_optimizations_monthly} optimizations/month</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_articles_monthly} {t('subscription.articles')}</span>
+                      <span>{selectedProPlan.max_articles_monthly} articles/month</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_chat_responses_monthly} {t('subscription.chat_responses')}</span>
+                      <span>{selectedProPlan.max_chat_responses_monthly} chat responses/month</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_shopify_stores} {t('subscription.stores')}</span>
+                      <span>{selectedProPlan.max_shopify_stores} Shopify store(s)</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_products.toLocaleString()} {t('subscription.products')}</span>
+                      <span>{selectedProPlan.max_products.toLocaleString()} products</span>
                     </div>
                   </div>
                 </>
@@ -342,9 +341,9 @@ const Subscription = () => {
               {checkoutLoading === selectedProTier ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isCurrentPlan(selectedProTier) ? (
-                'Plan actuel'
+                'Current Plan'
               ) : (
-                t('subscription.upgrade_now')
+                'Upgrade Now'
               )}
             </Button>
           </Card>
@@ -398,23 +397,23 @@ const Subscription = () => {
                   <div className="space-y-3 pt-6 border-t">
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_optimizations_monthly.toLocaleString()} {t('subscription.optimizations')}</span>
+                      <span>{selectedEnterprisePlan.max_optimizations_monthly.toLocaleString()} optimizations/month</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_articles_monthly} {t('subscription.articles')}</span>
+                      <span>{selectedEnterprisePlan.max_articles_monthly} articles/month</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_chat_responses_monthly.toLocaleString()} {t('subscription.chat_responses')}</span>
+                      <span>{selectedEnterprisePlan.max_chat_responses_monthly.toLocaleString()} chat responses/month</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_shopify_stores} {t('subscription.stores')}</span>
+                      <span>{selectedEnterprisePlan.max_shopify_stores} Shopify store(s)</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_products.toLocaleString()} {t('subscription.products')}</span>
+                      <span>{selectedEnterprisePlan.max_products.toLocaleString()} products</span>
                     </div>
                   </div>
                 </>
@@ -430,9 +429,9 @@ const Subscription = () => {
               {checkoutLoading === selectedEnterpriseTier ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isCurrentPlan(selectedEnterpriseTier) ? (
-                'Plan actuel'
+                'Current Plan'
               ) : (
-                t('subscription.upgrade_now')
+                'Upgrade Now'
               )}
             </Button>
           </Card>

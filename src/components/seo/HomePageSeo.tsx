@@ -52,11 +52,11 @@ export function HomePageSeo() {
       if (data.seo_title && data.seo_description) {
         setSeoTitle(data.seo_title);
         setSeoDescription(data.seo_description);
-        toast.success(t('seo.homepage.generated'));
+        toast.success('SEO content generated successfully');
       }
     } catch (error: any) {
       console.error('Error generating SEO:', error);
-      toast.error(error.message || t('seo.homepage.generateError'));
+      toast.error(error.message || 'Error generating SEO content');
     } finally {
       setGenerating(false);
     }
@@ -64,7 +64,7 @@ export function HomePageSeo() {
 
   const syncToShopify = async () => {
     if (!seoTitle || !seoDescription) {
-      toast.error(t('seo.homepage.fillFields'));
+      toast.error('Please fill in all fields');
       return;
     }
 
@@ -79,17 +79,17 @@ export function HomePageSeo() {
 
       if (error) throw error;
 
-      toast.success(t('seo.homepage.synced'));
+      toast.success('Successfully synced to Shopify');
     } catch (error: any) {
       console.error('Error syncing to Shopify:', error);
       
       if (error.message?.includes('Permission denied')) {
-        toast.error(t('seo.homepage.permissionError'), {
-          description: t('seo.homepage.permissionHelp'),
+        toast.error('Permission denied', {
+          description: 'Make sure your Shopify token has the required permissions',
           duration: 8000
         });
       } else {
-        toast.error(error.message || t('seo.homepage.syncError'));
+        toast.error(error.message || 'Error syncing to Shopify');
       }
     } finally {
       setSyncing(false);
@@ -102,15 +102,15 @@ export function HomePageSeo() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Home className="h-5 w-5" />
-            {t('seo.homepage.title')}
+            Homepage SEO
           </CardTitle>
-          <CardDescription>{t('seo.homepage.description')}</CardDescription>
+          <CardDescription>Optimize your Shopify homepage for search engines</CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              {t('seo.homepage.noConnection')}
+              Please connect your Shopify store first to use this feature
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -127,24 +127,24 @@ export function HomePageSeo() {
             <div className="flex items-center gap-2">
               <Home className="w-6 h-6 text-cyan-600" />
               <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                SEO Page d'Accueil
+                Homepage SEO
               </h2>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              Optimisez le SEO de votre page d'accueil Shopify. Créez une première impression inoubliable et boostez votre taux de conversion.
+              Optimize your Shopify homepage SEO. Create an unforgettable first impression and boost your conversion rate.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <div className="flex items-center gap-2 text-sm">
                 <Sparkles className="w-4 h-4 text-cyan-600" />
-                <span className="font-medium">IA intelligente</span>
+                <span className="font-medium">Smart AI</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Home className="w-4 h-4 text-sky-600" />
-                <span className="font-medium">Page vitrine</span>
+                <span className="font-medium">Showcase page</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Upload className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">Sync instantané</span>
+                <span className="font-medium">Instant sync</span>
               </div>
             </div>
           </div>
@@ -155,9 +155,9 @@ export function HomePageSeo() {
               disabled={generating}
             >
               {generating ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Génération...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
               ) : (
-                <><Sparkles className="mr-2 h-4 w-4" /> Générer avec IA</>
+                <><Sparkles className="mr-2 h-4 w-4" /> Generate with AI</>
               )}
             </Button>
           </div>
@@ -169,37 +169,37 @@ export function HomePageSeo() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {t('seo.homepage.info')}
+            Optimize your homepage meta tags to improve search engine visibility
           </AlertDescription>
         </Alert>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="seo-title">{t('seo.homepage.seoTitle')}</Label>
+            <Label htmlFor="seo-title">SEO Title</Label>
             <Input
               id="seo-title"
               value={seoTitle}
               onChange={(e) => setSeoTitle(e.target.value)}
-              placeholder={t('seo.homepage.seoTitlePlaceholder')}
+              placeholder="Enter your homepage title..."
               maxLength={60}
             />
             <p className="text-xs text-muted-foreground">
-              {seoTitle.length}/60 {t('seo.homepage.characters')}
+              {seoTitle.length}/60 characters
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="seo-description">{t('seo.homepage.seoDescription')}</Label>
+            <Label htmlFor="seo-description">SEO Description</Label>
             <Textarea
               id="seo-description"
               value={seoDescription}
               onChange={(e) => setSeoDescription(e.target.value)}
-              placeholder={t('seo.homepage.seoDescriptionPlaceholder')}
+              placeholder="Enter your homepage description..."
               rows={4}
               maxLength={160}
             />
             <p className="text-xs text-muted-foreground">
-              {seoDescription.length}/160 {t('seo.homepage.characters')}
+              {seoDescription.length}/160 characters
             </p>
           </div>
         </div>
@@ -211,7 +211,7 @@ export function HomePageSeo() {
             variant="outline"
           >
             <Sparkles className="h-4 w-4 mr-2" />
-            {generating ? t('seo.homepage.generating') : t('seo.homepage.generate')}
+            {generating ? 'Generating...' : 'Generate with AI'}
           </Button>
 
           <Button
@@ -219,7 +219,7 @@ export function HomePageSeo() {
             disabled={syncing || !seoTitle || !seoDescription}
           >
             <Upload className="h-4 w-4 mr-2" />
-            {syncing ? t('seo.homepage.syncing') : t('seo.homepage.sync')}
+            {syncing ? 'Syncing...' : 'Sync to Shopify'}
           </Button>
         </div>
 
@@ -228,7 +228,7 @@ export function HomePageSeo() {
           <div className="mt-6 p-4 border rounded-lg space-y-3 bg-muted/50">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-muted-foreground">
-                {t('seo.homepage.preview')}
+                Search Result Preview
               </p>
               <SeoConfidenceBadge 
                 seoTitle={seoTitle} 
