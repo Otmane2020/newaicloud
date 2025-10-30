@@ -184,7 +184,115 @@ export function TagOptimization() {
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productIds.length });
 
-    // ... rest of bulk generate logic
+    const results = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < productIds.length; i++) {
+      const productId = productIds[i];
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-tags', {
+          body: { productId, force }
+        });
+
+        if (error) throw error;
+        
+        if (data.tags) {
+          successCount++;
+          results.push({ productId, success: true, tags: data.tags });
+        }
+      } catch (error) {
+        console.error(`Error generating tags for product ${productId}:`, error);
+        errorCount++;
+        results.push({ productId, success: false, error: error.message });
+      }
+
+      setProgress({ current: i + 1, total: productIds.length });
+    }
+
+    setGenerating(false);
+    setIsOptimizationComplete(true);
+    
+    const optimizedProds = products.filter(p => 
+      results.some(r => r.success && r.productId === p.id)
+    );
+    setOptimizedProducts(optimizedProds);
+    setShowResultsDialog(true);
+    
+    await fetchProducts();
+    
+    if (successCount > 0) {
+      toast.success(`${successCount} product(s) optimized successfully`);
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} product(s) failed to optimize`);
+    }
+  };
+
+  const handleGenerateSelected = async (force = false) => {
+    const productIds = Array.from(selectedProducts);
+    if (productIds.length === 0) {
+      toast.info('Please select products to optimize');
+      return;
+    }
+
+    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
+    
+    if (productIds.length > remainingLimit) {
+      if (limits?.isTrialing) {
+        setShowUpgradeDialog(true);
+        return;
+      } else {
+        toast.warning(`Limit reached. Only ${remainingLimit} products will be optimized.`);
+        await handleBulkGenerate(productIds.slice(0, remainingLimit), force);
+        return;
+      }
+    }
+
+    await handleBulkGenerate(productIds, force);
+  };
+
+  const handleSyncSelected = async () => {
+    const productIds = Array.from(selectedProducts);
+    const productsToSync = products.filter(p => 
+      productIds.includes(p.id) && p.tags && !p.seo_synced_to_shopify
+    );
+
+    if (productsToSync.length === 0) {
+      toast.info('No products to sync. Make sure selected products have tags.');
+      return;
+    }
+
+    setSyncing(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const product of productsToSync) {
+      try {
+        const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+          body: { 
+            productId: product.id,
+            syncTags: true 
+          }
+        });
+
+        if (error) throw error;
+        successCount++;
+      } catch (error) {
+        console.error(`Error syncing product ${product.id}:`, error);
+        errorCount++;
+      }
+    }
+
+    setSyncing(false);
+    await fetchProducts();
+    
+    if (successCount > 0) {
+      toast.success(`${successCount} product(s) synced to Shopify`);
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} product(s) failed to sync`);
+    }
   };
 
   if (loading) {
