@@ -216,6 +216,23 @@
     "edit": "Edit",
     "close": "Close"
   },
+  "subscription": {
+    "title": "Subscriptions",
+    "manage": "Manage subscription",
+    "current": "Current subscription",
+    "upgrade": "Upgrade",
+    "cancel": "Cancel",
+    "renews": "Renews on",
+    "ends": "Ends on",
+    "select_tier": "Select your tier",
+    "upgrade_now": "Upgrade now",
+    "optimizations": "optimizations/month",
+    "articles": "articles/month",
+    "chat_responses": "chat responses/month",
+    "stores": "Shopify stores",
+    "campaigns": "campaigns",
+    "products": "products"
+  },
   "account": {
     "title": "My Account",
     "subtitle": "Manage your personal information",

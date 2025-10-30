@@ -218,6 +218,23 @@
     "add": "Ajouter",
     "modify": "Modifier"
   },
+  "subscription": {
+    "title": "Abonnements",
+    "manage": "Gérer mon abonnement",
+    "current": "Abonnement actuel",
+    "upgrade": "Mettre à niveau",
+    "cancel": "Annuler",
+    "renews": "Se renouvelle le",
+    "ends": "Se termine le",
+    "select_tier": "Sélectionnez votre palier",
+    "upgrade_now": "Mettre à niveau maintenant",
+    "optimizations": "optimisations/mois",
+    "articles": "articles/mois",
+    "chat_responses": "réponses chat/mois",
+    "stores": "boutiques Shopify",
+    "campaigns": "campagnes",
+    "products": "produits"
+  },
   "account": {
     "title": "Mon Compte",
     "subtitle": "Gérez vos informations personnelles",
