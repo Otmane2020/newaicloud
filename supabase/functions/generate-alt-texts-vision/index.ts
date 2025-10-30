@@ -119,23 +119,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get image and product info
+    // Get image info first
     const { data: image, error: imageError } = await supabaseClient
       .from("product_images")
-      .select(`
-        id, 
-        src, 
-        alt_text, 
-        product_id,
-        product:shopify_products(
-          title, 
-          description, 
-          category, 
-          ai_color, 
-          ai_material,
-          seller_id
-        )
-      `)
+      .select("id, src, alt_text, product_id")
       .eq("id", imageId)
       .maybeSingle();
 
@@ -150,28 +137,21 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!image.product) {
-      console.error('Product not found for image:', imageId, 'product_id:', image.product_id);
+    // Get associated product info
+    const { data: product, error: productError } = await supabaseClient
+      .from("shopify_products")
+      .select("title, description, category, ai_color, ai_material, seller_id")
+      .eq("id", image.product_id)
+      .maybeSingle();
+
+    if (productError || !product) {
+      console.error('Product not found for image:', imageId, 'product_id:', image.product_id, 'error:', productError);
       return new Response(
         JSON.stringify({ 
           error: "Product not found for this image. The product may have been deleted.",
           imageId: imageId,
           productId: image.product_id
         }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Type assertion: product is a single object, not an array
-    const product = Array.isArray(image.product) ? image.product[0] : image.product;
-    
-    if (!product) {
-      console.error('Product data is invalid for image:', imageId);
-      return new Response(
-        JSON.stringify({ error: "Invalid product data" }),
         {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
