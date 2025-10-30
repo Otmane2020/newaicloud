@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb, Link, Settings } from 'lucide-react';
+import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb, Link, Settings, Zap } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { NetlinkingTable } from '@/components/blog/NetlinkingTable';
 import { OpportunitiesSettings } from '@/components/blog/OpportunitiesSettings';
@@ -179,44 +179,204 @@ export default function Blog() {
         </p>
       </div>
 
-      {/* Hero Banner */}
-      <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 dark:border-purple-800 p-6 sm:p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2">
-              <PenSquare className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                AI-Powered Content Creation
-              </h2>
+      {/* Dynamic Hero Banner based on active subtab */}
+      {activeSubtab === 'articles' && (
+        <Card className="bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 dark:from-cyan-950 dark:via-blue-950 dark:to-indigo-950 border-2 border-cyan-200 dark:border-cyan-800 p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <FileText className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                  Article Management
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
+                View, edit, and manage all your blog articles. Track their status and publish them to your Shopify store.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <FileText className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <span className="font-medium">{articles.length} Articles</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium">SEO Ready</span>
+                </div>
+              </div>
             </div>
-            <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
-              Generate SEO-optimized blog articles automatically to boost your visibility and engage your audience with quality content.
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                <span className="font-medium">AI-Generated</span>
+            <div className="flex flex-col gap-3">
+              <Button size="lg" onClick={() => setActiveSubtab('create-article')} className="w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Article
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {activeSubtab === 'create-article' && (
+        <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 dark:border-purple-800 p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  AI Article Generator
+                </h2>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <FileText className="w-4 h-4 text-pink-600 dark:text-pink-400" />
-                <span className="font-medium">SEO Optimized</span>
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
+                Let our AI create SEO-optimized articles in minutes. Just choose your topic and keywords, and watch the magic happen.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="font-medium">AI-Powered</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <FileText className="w-4 h-4 text-pink-600 dark:text-pink-400" />
+                  <span className="font-medium">SEO Optimized</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <CalendarClock className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                <span className="font-medium">Automated Campaigns</span>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button size="lg" onClick={() => setShowWizard(true)} className="w-full sm:w-auto">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Start Creating
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {activeSubtab === 'campaigns' && (
+        <Card className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-950 dark:via-purple-950 dark:to-fuchsia-950 border-2 border-violet-200 dark:border-violet-800 p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                  Automated Content Campaigns
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
+                Schedule and automate your content creation. Set up campaigns to publish articles regularly and maintain a consistent presence.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <CalendarClock className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  <span className="font-medium">{campaigns.length} Campaigns</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Zap className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-400" />
+                  <span className="font-medium">Automated</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button size="lg" onClick={() => setShowCampaignWizard(true)} className="w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                New Campaign
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {activeSubtab === 'opportunities' && (
+        <Card className="bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-950 dark:via-amber-950 dark:to-orange-950 border-2 border-yellow-200 dark:border-yellow-800 p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
+                  Content Opportunities
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
+                Discover trending topics and content ideas based on your product catalog. AI analyzes your store to suggest the best articles to write.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Lightbulb className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                  <span className="font-medium">Smart Suggestions</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Sparkles className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  <span className="font-medium">AI-Driven</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button size="lg" onClick={() => setActiveSubtab('settings')} variant="outline" className="w-full sm:w-auto">
+                <Settings className="w-4 h-4 mr-2" />
+                Configure
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {activeSubtab === 'netlinking' && (
+        <Card className="bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50 dark:from-blue-950 dark:via-sky-950 dark:to-cyan-950 border-2 border-blue-200 dark:border-blue-800 p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <Link className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  Internal Linking Strategy
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
+                Boost your SEO with smart internal linking. Manage product links within articles and create content optimized for link building.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Link className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium">Link Management</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <span className="font-medium">SEO Boost</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button size="lg" onClick={() => setActiveSubtab('create-article')} className="w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Linking Article
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {activeSubtab === 'settings' && (
+        <Card className="bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 dark:from-slate-950 dark:via-gray-950 dark:to-zinc-950 border-2 border-slate-200 dark:border-slate-800 p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <Settings className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+                <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-600 to-zinc-600 bg-clip-text text-transparent">
+                  Blog Configuration
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
+                Configure automatic content opportunity generation, set preferences, and customize how AI creates articles for your store.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Settings className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <span className="font-medium">Automation Settings</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <Zap className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
+                  <span className="font-medium">Optimize Performance</span>
+                </div>
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-3 items-center">
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-purple-600 dark:text-purple-400">
-                {articles.length}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Articles Created</div>
-            </div>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Horizontal submenu */}
       <Card className="p-1">
