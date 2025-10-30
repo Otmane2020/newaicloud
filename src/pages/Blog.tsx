@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb, Link, Settings } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
 import { NetlinkingTable } from '@/components/blog/NetlinkingTable';
 import { OpportunitiesSettings } from '@/components/blog/OpportunitiesSettings';
 import { supabase } from '@/integrations/supabase/client';
@@ -179,35 +179,7 @@ export default function Blog() {
         </p>
       </div>
 
-      {/* Sous-menu horizontal Blog SEO */}
-      <Card className="p-1">
-        <Tabs value={activeSubtab} onValueChange={(value) => {
-          setActiveSubtab(value);
-          setSearchParams({ subtab: value });
-        }}>
-          <TabsList className="w-full justify-start bg-transparent h-auto p-0 gap-1 flex-wrap">
-            {blogSubmenu.map((subtab) => {
-              const Icon = subtab.icon;
-              return (
-                <TabsTrigger
-                  key={subtab.id}
-                  value={subtab.id}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-3 rounded-md transition-all",
-                    "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
-                    "data-[state=active]:shadow-md hover:bg-muted"
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="font-medium">{subtab.label}</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-        </Tabs>
-      </Card>
-
-      {/* Tab Content */}
+      {/* Content */}
       {activeSubtab === 'articles' && (
         <div className="space-y-4">
         <div className="flex items-center gap-3">
