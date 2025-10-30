@@ -164,7 +164,7 @@ export default function Products() {
           </div>
           <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
             <Plus className="w-4 h-4 mr-2" />
-            Add Product
+            Import Products
           </Button>
         </div>
 
