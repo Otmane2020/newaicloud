@@ -57,15 +57,36 @@ export function SubscriptionPlans() {
         .order('price_monthly', { ascending: true });
       
       if (plansData) {
-        setPlans(plansData);
+        // Filter only plans with valid Stripe price IDs
+        // Valid Stripe price IDs start with "price_" followed by random alphanumeric characters
+        // Exclude placeholder IDs like "price_pro_98_monthly" 
+        const validPlans = plansData.filter(plan => {
+          const monthlyId = plan.stripe_price_id_monthly || '';
+          const yearlyId = plan.stripe_price_id_yearly || '';
+          
+          // Check if at least one price ID is valid (doesn't contain keywords like "monthly", "yearly", "pro", "enterprise")
+          const hasValidMonthly = monthlyId.startsWith('price_') && 
+            !monthlyId.includes('monthly') && 
+            !monthlyId.includes('pro_') && 
+            !monthlyId.includes('enterprise_');
+          
+          const hasValidYearly = yearlyId.startsWith('price_') && 
+            !yearlyId.includes('yearly') && 
+            !yearlyId.includes('pro_') && 
+            !yearlyId.includes('enterprise_');
+          
+          return hasValidMonthly || hasValidYearly;
+        });
+        
+        setPlans(validPlans);
         
         // Set default selections
-        const proPlans = plansData.filter(p => 
+        const proPlans = validPlans.filter(p => 
           p.id === 'professional' || 
           p.id === 'pro' || 
           p.id.startsWith('pro-')
         );
-        const enterprisePlans = plansData.filter(p => 
+        const enterprisePlans = validPlans.filter(p => 
           p.id === 'enterprise' || 
           p.id.startsWith('enterprise-')
         );

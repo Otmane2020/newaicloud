@@ -72,18 +72,37 @@ const Subscription = () => {
         .order('display_order', { ascending: true });
 
       if (plansError) throw plansError;
-      setPlans(plansData || []);
+      
+      // Filter only plans with valid Stripe price IDs
+      const validPlans = plansData?.filter(plan => {
+        const monthlyId = plan.stripe_price_id_monthly || '';
+        const yearlyId = plan.stripe_price_id_yearly || '';
+        
+        const hasValidMonthly = monthlyId.startsWith('price_') && 
+          !monthlyId.includes('monthly') && 
+          !monthlyId.includes('pro_') && 
+          !monthlyId.includes('enterprise_');
+        
+        const hasValidYearly = yearlyId.startsWith('price_') && 
+          !yearlyId.includes('yearly') && 
+          !yearlyId.includes('pro_') && 
+          !yearlyId.includes('enterprise_');
+        
+        return hasValidMonthly || hasValidYearly;
+      }) || [];
+      
+      setPlans(validPlans);
 
       // Initialize default selections for Pro and Enterprise
-      const proPlans = plansData?.filter(p => 
+      const proPlans = validPlans.filter(p => 
         p.id === 'professional' || 
         p.id === 'pro' || 
         p.id.startsWith('pro-') || 
         p.id.startsWith('professional')
-      ) || [];
-      const enterprisePlans = plansData?.filter(p => 
+      );
+      const enterprisePlans = validPlans.filter(p => 
         p.id.startsWith('enterprise')
-      ) || [];
+      );
 
       if (proPlans.length > 0 && !selectedProTier) {
         setSelectedProTier(proPlans[0].id);
@@ -100,7 +119,7 @@ const Subscription = () => {
         .maybeSingle();
 
       if (subscription?.plan_id) {
-        const currentPlanData = plansData?.find((p: Plan) => p.id === subscription.plan_id);
+        const currentPlanData = validPlans.find((p: Plan) => p.id === subscription.plan_id);
         setCurrentPlan(currentPlanData || null);
         
         if (subscription.plan_id === 'professional' || subscription.plan_id.startsWith('pro')) {
