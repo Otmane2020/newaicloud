@@ -72,15 +72,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
   const handleManualConnect = async () => {
     if (!manualStoreName.trim() || !manualApiKey.trim() || !manualApiSecret.trim()) {
-      toast.error("Veuillez remplir tous les champs");
-      return;
-    }
-
-    // ✅ Check store limit
-    if (!limits?.canAddShopifyStore) {
-      toast.error('Store limit reached', {
-        description: `You have reached the maximum number of stores (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Upgrade your plan to add more stores.`,
-      });
+      toast.error("Please fill in all fields");
       return;
     }
 
@@ -88,17 +80,17 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       setManualLoading(true);
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      if (!user) throw new Error("Not authenticated");
 
-      // Nettoyer le nom de la boutique (enlever .myshopify.com, https://, etc.)
+      // Clean store name (remove .myshopify.com, https://, etc.)
       let cleanStoreName = manualStoreName.trim()
-        .replace(/^https?:\/\//, '') // Enlever http:// ou https://
-        .replace(/\.myshopify\.com.*$/, '') // Enlever .myshopify.com et ce qui suit
-        .replace(/\/$/, ''); // Enlever le slash final si présent
+        .replace(/^https?:\/\//, '') // Remove http:// or https://
+        .replace(/\.myshopify\.com.*$/, '') // Remove .myshopify.com and everything after
+        .replace(/\/$/, ''); // Remove trailing slash
 
       console.log('Cleaned store name:', cleanStoreName);
 
-      // Vérifier si une connexion existe déjà
+      // ✅ Check if store already exists FIRST (before checking limits)
       const { data: existing } = await supabase
         .from('shopify_connections')
         .select('id')
@@ -107,7 +99,15 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
         .single();
 
       if (existing) {
-        toast.error("Cette boutique est déjà connectée");
+        toast.error("This store is already connected");
+        return;
+      }
+
+      // ✅ Check store limit AFTER checking if store exists
+      if (!limits?.canAddShopifyStore) {
+        toast.error('Store limit reached', {
+          description: `You have reached the maximum number of stores (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Upgrade your plan to add more stores.`,
+        });
         return;
       }
 

@@ -110,24 +110,42 @@ serve(async (req) => {
 
       const shopInfo = await shopInfoResponse.json();
 
-      // Sauvegarder la connexion
+      // ✅ Check if store already exists
+      const { data: existingConnection } = await supabaseClient
+        .from("shopify_connections")
+        .select("id")
+        .eq("user_id", oauthState.user_id)
+        .eq("store_url", shop)
+        .single();
+
+      if (existingConnection) {
+        const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
+        return Response.redirect(`${appUrl}/integration?error=store_already_connected`);
+      }
+
+      // ✅ Check usage limits before creating connection
+      const { data: usageLimits } = await supabaseClient.rpc('check_usage_limits', {
+        p_user_id: oauthState.user_id
+      });
+
+      if (usageLimits && !usageLimits.can_add_shopify_store) {
+        const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
+        return Response.redirect(`${appUrl}/integration?error=store_limit_reached`);
+      }
+
+      // Save connection
       const { error: connectionError } = await supabaseClient
         .from("shopify_connections")
-        .upsert(
-          {
-            user_id: oauthState.user_id,
-            store_url: shop,
-            store_name: shopInfo.shop?.name || oauthState.shop_name,
-            access_token: accessToken,
-            is_active: true,
-            connection_type: "oauth",
-            connected_at: new Date().toISOString(),
-            last_sync_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "user_id,store_url",
-          }
-        );
+        .insert({
+          user_id: oauthState.user_id,
+          store_url: shop,
+          store_name: shopInfo.shop?.name || oauthState.shop_name,
+          access_token: accessToken,
+          is_active: true,
+          connection_type: "oauth",
+          connected_at: new Date().toISOString(),
+          last_sync_at: new Date().toISOString(),
+        });
 
       // Nettoyer le state
       await supabaseClient.from("oauth_states").delete().eq("state_token", state);
@@ -138,7 +156,14 @@ serve(async (req) => {
         return Response.redirect(`${appUrl}/integration?error=connection_failed`);
       }
 
-      // Rediriger vers la page de succès
+      // ✅ Increment shopify_stores_count after successful connection
+      await supabaseClient.rpc('increment_usage', {
+        p_seller_id: oauthState.user_id,
+        p_field: 'shopify_stores_count',
+        p_increment: 1
+      });
+
+      // Redirect to success page
       const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
       return Response.redirect(`${appUrl}/integration?success=true&shop=${encodeURIComponent(shopInfo.shop?.name || shop)}`);
     }
