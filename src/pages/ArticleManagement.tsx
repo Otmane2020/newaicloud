@@ -23,6 +23,7 @@ import { fr } from 'date-fns/locale';
 import { BlogWizard } from '@/components/blog/BlogWizard';
 import { OptimizationResultsDialog } from '@/components/seo/OptimizationResultsDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { calculateDetailedSeoScore, getConfidenceBadgeColor } from '@/lib/seoQuality';
 
 interface Article {
   id: string;
@@ -468,16 +469,22 @@ export default function ArticleManagement() {
                         </div>
                       </td>
                       <td className="p-3 hidden xl:table-cell">
-                        {article.meta_description ? (
-                          <Badge variant="default" className="text-xs">
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            {Math.min(Math.round((article.meta_description.length / 160) * 100), 100)}%
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs">
-                            0%
-                          </Badge>
-                        )}
+                        {(() => {
+                          const seoScore = article.meta_description 
+                            ? calculateDetailedSeoScore(article.title, article.meta_description).score
+                            : 0;
+                          const badgeColor = getConfidenceBadgeColor(seoScore);
+                          
+                          return (
+                            <Badge 
+                              variant="outline" 
+                              className={`${badgeColor} text-xs border`}
+                            >
+                              <Sparkles className="w-3 h-3 mr-1" />
+                              {seoScore}/100
+                            </Badge>
+                          );
+                        })()}
                       </td>
                       <td className="p-3 hidden sm:table-cell">
                         <Badge 

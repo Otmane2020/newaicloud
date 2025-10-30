@@ -24,6 +24,9 @@ verify_jwt = true
 [functions.import-products]
 verify_jwt = true
 
+[functions.import-shopify-articles]
+verify_jwt = true
+
 [functions.create-checkout]
 verify_jwt = true
 

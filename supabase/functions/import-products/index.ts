@@ -389,8 +389,10 @@ Deno.serve(async (req: Request) => {
         handle: product.handle || "",
         status: product.status || "active",
         tags: product.tags || "",
-        seo_title: product.metafields_global_title_tag || "",
-        seo_description: product.metafields_global_description_tag || "",
+        seo_title: product.metafields_global_title_tag || product.title,
+        seo_description: product.metafields_global_description_tag || 
+                         product.body_html?.replace(/<[^>]*>/g, '').substring(0, 160) || 
+                         `Découvrez ${product.title}`,
         image_url: firstImage?.src || "",
         price: parseFloat(firstVariant.price || "0"),
         compare_at_price: firstVariant.compare_at_price
@@ -570,6 +572,8 @@ Deno.serve(async (req: Request) => {
             handle: page.handle,
             published_at: page.published_at,
             template_suffix: page.template_suffix,
+            seo_title: page.title,
+            seo_description: page.body_html?.replace(/<[^>]*>/g, '').substring(0, 160) || `En savoir plus sur ${page.title}`,
             updated_at: page.updated_at,
           }));
 
@@ -599,6 +603,29 @@ Deno.serve(async (req: Request) => {
       // Ne pas bloquer l'import si les pages échouent
     }
 
+    // Import blog articles from Shopify
+    let articlesImported = 0;
+    try {
+      console.log('📰 Importing Shopify blog articles...');
+      const articlesResult = await supabaseServiceClient.functions.invoke('import-shopify-articles', {
+        body: { 
+          shopName: cleanShopName,
+          authToken: authToken,
+          storeId: storeId
+        }
+      });
+
+      if (articlesResult.data && articlesResult.data.success) {
+        articlesImported = articlesResult.data.count || 0;
+        console.log(`✅ Successfully imported ${articlesImported} blog articles`);
+      } else if (articlesResult.error) {
+        console.error('❌ Error importing articles:', articlesResult.error);
+      }
+    } catch (error) {
+      console.error('❌ Error importing articles:', error);
+      // Ne pas bloquer l'import si les articles échouent
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -606,9 +633,10 @@ Deno.serve(async (req: Request) => {
         variantsCount: totalVariants,
         imagesCount: totalImages,
         pagesImported: pagesImported,
+        articlesImported: articlesImported,
         pagesProcessed: pageCount,
         jobId: importJob.id,
-        message: `Successfully imported ${products.length} products, ${totalVariants} variants, ${totalImages} images, and ${pagesImported} pages`,
+        message: `Successfully imported ${products.length} products, ${totalVariants} variants, ${totalImages} images, ${pagesImported} pages, and ${articlesImported} articles`,
       }),
       {
         status: 200,

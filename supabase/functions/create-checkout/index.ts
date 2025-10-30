@@ -254,7 +254,8 @@ serve(async (req) => {
       success_url: success_url || `${origin}/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancel_url || `${origin}/onboarding?checkout=cancelled&plan_id=${plan_id}`,
       allow_promotion_codes: true,
-      billing_address_collection: 'required'
+      billing_address_collection: 'required',
+      statement_descriptor: 'NEWAI'
     };
 
     // Déterminer la configuration du trial
