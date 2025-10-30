@@ -23,13 +23,30 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Authenticate user first
+    // Authenticate user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
-    // Create Supabase client with the auth token
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Create admin client to verify user
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Verify the JWT token
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Authentication failed:', authError);
+      throw new Error('User not authenticated');
+    }
+
+    console.log(`[SYNC] User authenticated: ${user.id}`);
+
+    // Create client with user context for RLS-protected queries
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -39,12 +56,6 @@ Deno.serve(async (req: Request) => {
         }
       }
     );
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
 
     const { productId, imageId, syncTags, syncAltText, syncGoogleShopping }: SyncRequest = await req.json();
 
