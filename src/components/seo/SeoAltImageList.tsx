@@ -307,52 +307,82 @@ export function SeoAltImageList() {
 
       {/* Actions - Sticky */}
       <Card className="sticky top-0 z-10 bg-background">
-        <div className="p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            {selectedImages.size} image(s) sélectionnée(s)
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleGenerateForSelected}
-              disabled={generating || selectedImages.size === 0}
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Génération...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Optimiser ALT ({selectedImages.size})
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={() => {
-                const allImages = products.flatMap(p => p.images);
-                const imagesWithAlt = allImages.filter(img => 
-                  selectedImages.has(img.id) && img.alt_text
-                ).map(img => {
-                  const product = products.find(p => p.id === img.product_id);
-                  return { ...img, product_title: product?.title };
-                });
-                
-                if (imagesWithAlt.length === 0) {
-                  toast.info('Aucune image avec ALT text sélectionnée');
-                  return;
-                }
-                
-                setImagesToSync(imagesWithAlt);
-                setShowSyncDialog(true);
-              }}
-              disabled={selectedImages.size === 0}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Synchroniser ({selectedImages.size})
-            </Button>
+        <div className="p-4 space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-muted-foreground">
+                {selectedImages.size} image(s) sélectionnée(s)
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (expandedProducts.size === filteredProducts.length) {
+                    setExpandedProducts(new Set());
+                  } else {
+                    setExpandedProducts(new Set(filteredProducts.map(p => p.id)));
+                  }
+                }}
+              >
+                {expandedProducts.size === filteredProducts.length ? (
+                  <>
+                    <ChevronDown className="mr-2 h-4 w-4" />
+                    Tout replier
+                  </>
+                ) : (
+                  <>
+                    <ChevronRight className="mr-2 h-4 w-4" />
+                    Tout déplier
+                  </>
+                )}
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleGenerateForSelected}
+                disabled={generating || selectedImages.size === 0}
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Optimiser ALT ({selectedImages.size})
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => {
+                  const allImages = products.flatMap(p => p.images);
+                  const imagesWithAlt = allImages.filter(img => 
+                    selectedImages.has(img.id) && img.alt_text
+                  ).map(img => {
+                    const product = products.find(p => p.id === img.product_id);
+                    return { ...img, product_title: product?.title };
+                  });
+                  
+                  if (imagesWithAlt.length === 0) {
+                    toast.info('Aucune image avec ALT text sélectionnée');
+                    return;
+                  }
+                  
+                  setImagesToSync(imagesWithAlt);
+                  setShowSyncDialog(true);
+                }}
+                disabled={selectedImages.size === 0}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Synchroniser ({selectedImages.size})
+              </Button>
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            💡 Cliquez sur un produit pour déplier et voir ses images
+          </p>
         </div>
       </Card>
 
