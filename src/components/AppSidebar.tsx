@@ -24,6 +24,7 @@ import {
   ChevronRight,
   BarChart3,
   Home,
+  Crown,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -326,17 +327,21 @@ export function AppSidebar() {
               <div className="flex flex-col gap-2 px-2 py-2 sm:py-3">
                 {state === "expanded" ? (
                   <>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 shrink-0" />
-                      <span className="text-xs sm:text-sm truncate">{user?.email}</span>
+                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg">
+                      <Crown className="h-3.5 w-3.5 text-white shrink-0" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wide">
+                        {userPlan || "Loading..."}
+                      </span>
                     </div>
-                    <Badge variant="default" className="w-fit text-xs font-semibold">
-                      {userPlan || "Loading..."}
-                    </Badge>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <User className="h-3.5 w-3.5 shrink-0" />
+                      <span className="text-xs truncate">{user?.email}</span>
+                    </div>
                   </>
                 ) : (
-                  <div className="flex items-center justify-center">
-                    <User className="h-4 w-4" />
+                  <div className="flex items-center justify-center relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-sm opacity-50" />
+                    <User className="h-4 w-4 relative z-10" />
                   </div>
                 )}
               </div>
