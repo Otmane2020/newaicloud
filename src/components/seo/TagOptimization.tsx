@@ -244,16 +244,35 @@ export function TagOptimization() {
   };
 
   const handleGenerateSelected = async (force = false) => {
-    const productsToGenerate = force 
-      ? Array.from(selectedProducts)
-      : Array.from(selectedProducts).filter(id =>
-          !products.find(p => p.id === id)?.tags
-        );
-    if (productsToGenerate.length === 0) {
-      toast.info('No products selected');
+    if (selectedProducts.size === 0) {
+      toast.info('Aucun produit sélectionné');
       return;
     }
 
+    const allSelectedProducts = Array.from(selectedProducts);
+    const productsWithTags = allSelectedProducts.filter(id => 
+      products.find(p => p.id === id)?.tags
+    );
+    const productsWithoutTags = allSelectedProducts.filter(id => 
+      !products.find(p => p.id === id)?.tags
+    );
+
+    // Si force n'est pas activé et que tous les produits ont déjà des tags
+    if (!force && productsWithTags.length > 0 && productsWithoutTags.length === 0) {
+      toast.info(
+        `${productsWithTags.length} produit${productsWithTags.length > 1 ? 's ont' : ' a'} déjà des tags`,
+        {
+          description: 'Voulez-vous les régénérer ?',
+          action: {
+            label: 'Régénérer',
+            onClick: () => handleGenerateSelected(true)
+          }
+        }
+      );
+      return;
+    }
+
+    const productsToGenerate = force ? allSelectedProducts : productsWithoutTags;
     const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
     
     if (productsToGenerate.length > remainingLimit) {
@@ -261,7 +280,7 @@ export function TagOptimization() {
         setShowUpgradeDialog(true);
         return;
       } else {
-        toast.warning(`Limit reached. Only ${remainingLimit} products will be optimized.`);
+        toast.warning(`Limite atteinte. Seulement ${remainingLimit} produit${remainingLimit > 1 ? 's seront optimisés' : ' sera optimisé'}.`);
         await handleBulkGenerate(productsToGenerate.slice(0, remainingLimit), force);
         return;
       }
