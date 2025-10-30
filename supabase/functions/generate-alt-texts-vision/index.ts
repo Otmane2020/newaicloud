@@ -133,7 +133,6 @@ Deno.serve(async (req: Request) => {
           category, 
           ai_color, 
           ai_material,
-          ai_style,
           seller_id
         )
       `)
