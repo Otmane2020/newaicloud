@@ -87,6 +87,21 @@ export function TagOptimization() {
     fetchProducts();
   }, []);
 
+  // Filtered products logic
+  const filteredProducts = products.filter((product) => {
+    if (filter === 'with-tags' && !product.tags) return false;
+    if (filter === 'without-tags' && product.tags) return false;
+    if (filter === 'to-sync' && (product.seo_synced_to_shopify || !product.tags)) return false;
+
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      product.title.toLowerCase().includes(term) ||
+      product.tags?.toLowerCase().includes(term) ||
+      product.category?.toLowerCase().includes(term)
+    );
+  });
+
   // Statistics
   const productsWithTags = products.filter(p => p.tags).length;
   const productsWithoutTags = products.length - productsWithTags;
@@ -150,7 +165,6 @@ export function TagOptimization() {
     await handleBulkGenerate(productsToGenerate.map(p => p.id));
   };
 
-  // Rest of the functions remain the same as previous version...
   const handleEditTags = (productId: string, currentTags: string) => {
     setEditingProduct(productId);
     setEditTags(currentTags || '');
@@ -178,121 +192,211 @@ export function TagOptimization() {
     }
   };
 
+  const handleCancelEdit = () => {
+    setEditingProduct(null);
+    setEditTags('');
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
+    }
+  };
+
+  const handleSelectProduct = (productId: string) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  const handleGenerateSelected = async (force = false) => {
+    const productsToGenerate = force 
+      ? Array.from(selectedProducts)
+      : Array.from(selectedProducts).filter(id =>
+          !products.find(p => p.id === id)?.tags
+        );
+    if (productsToGenerate.length === 0) {
+      toast.info('No products selected');
+      return;
+    }
+
+    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
+    
+    if (productsToGenerate.length > remainingLimit) {
+      if (limits?.isTrialing) {
+        setShowUpgradeDialog(true);
+        return;
+      } else {
+        toast.warning(`Limit reached. Only ${remainingLimit} products will be optimized.`);
+        await handleBulkGenerate(productsToGenerate.slice(0, remainingLimit), force);
+        return;
+      }
+    }
+
+    await handleBulkGenerate(productsToGenerate, force);
+  };
+
   const handleBulkGenerate = async (productIds: string[], force = false) => {
     setGenerating(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productIds.length });
 
-    const results = [];
     let successCount = 0;
+    let skipCount = 0;
     let errorCount = 0;
+    const generatedProducts: Product[] = [];
 
     for (let i = 0; i < productIds.length; i++) {
-      const productId = productIds[i];
       try {
-        const { data, error } = await supabase.functions.invoke('generate-tags', {
-          body: { productId, force }
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-tags`;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ productId: productIds[i], force }),
         });
 
-        if (error) throw error;
+        const result = await response.json();
         
-        if (data.tags) {
-          successCount++;
-          results.push({ productId, success: true, tags: data.tags });
+        if (response.ok && result.success) {
+          if (result.skipped) {
+            skipCount++;
+          } else {
+            successCount++;
+            const product = products.find(p => p.id === productIds[i]);
+            if (product) {
+              generatedProducts.push(product);
+            }
+          }
+        } else {
+          errorCount++;
         }
       } catch (error) {
-        console.error(`Error generating tags for product ${productId}:`, error);
+        console.error('Error generating tags:', error);
         errorCount++;
-        results.push({ productId, success: false, error: error.message });
       }
-
       setProgress({ current: i + 1, total: productIds.length });
     }
 
     setGenerating(false);
     setIsOptimizationComplete(true);
-    
-    const optimizedProds = products.filter(p => 
-      results.some(r => r.success && r.productId === p.id)
-    );
-    setOptimizedProducts(optimizedProds);
-    setShowResultsDialog(true);
-    
     await fetchProducts();
     
-    if (successCount > 0) {
-      toast.success(`${successCount} product(s) optimized successfully`);
-    }
-    if (errorCount > 0) {
-      toast.error(`${errorCount} product(s) failed to optimize`);
-    }
+    const updatedProducts = await Promise.all(
+      productIds.map(async (id) => {
+        const { data } = await supabase
+          .from('shopify_products')
+          .select('id, title, tags, image_url')
+          .eq('id', id)
+          .single();
+        return data;
+      })
+    );
+
+    setOptimizedProducts(updatedProducts.filter(Boolean) as Product[]);
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
   };
 
-  const handleGenerateSelected = async (force = false) => {
-    const productIds = Array.from(selectedProducts);
-    if (productIds.length === 0) {
-      toast.info('Please select products to optimize');
+  const handleSyncAll = async () => {
+    const productsToSync = products.filter(p => p.tags && !p.seo_synced_to_shopify);
+    if (productsToSync.length === 0) {
+      toast.info('All products are synchronized');
       return;
     }
-
-    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
-    
-    if (productIds.length > remainingLimit) {
-      if (limits?.isTrialing) {
-        setShowUpgradeDialog(true);
-        return;
-      } else {
-        toast.warning(`Limit reached. Only ${remainingLimit} products will be optimized.`);
-        await handleBulkGenerate(productIds.slice(0, remainingLimit), force);
-        return;
-      }
-    }
-
-    await handleBulkGenerate(productIds, force);
+    await handleBulkSync(productsToSync.map(p => p.id));
   };
 
   const handleSyncSelected = async () => {
-    const productIds = Array.from(selectedProducts);
-    const productsToSync = products.filter(p => 
-      productIds.includes(p.id) && p.tags && !p.seo_synced_to_shopify
-    );
-
+    const productsToSync = Array.from(selectedProducts).filter(id => {
+      const product = products.find(p => p.id === id);
+      return product && product.tags && !product.seo_synced_to_shopify;
+    });
     if (productsToSync.length === 0) {
-      toast.info('No products to sync. Make sure selected products have tags.');
+      toast.info('No products to synchronize');
       return;
     }
+    await handleBulkSync(productsToSync);
+  };
 
+  const handleBulkSync = async (productIds: string[]) => {
+    setShowProgressDialog(false);
+    setShowResultsDialog(false);
     setSyncing(true);
+    setProgress({ current: 0, total: productIds.length });
+
     let successCount = 0;
     let errorCount = 0;
+    const errors: string[] = [];
 
-    for (const product of productsToSync) {
+    for (let i = 0; i < productIds.length; i++) {
       try {
-        const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: { 
-            productId: product.id,
-            syncTags: true 
+        const { data: authData } = await supabase.auth.getSession();
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-seo-to-shopify`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${authData.session?.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              productId: productIds[i], 
+              syncTags: true,
+              syncGoogleShopping: true
+            }),
           }
-        });
+        );
 
-        if (error) throw error;
-        successCount++;
+        if (response.ok) {
+          successCount++;
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          errorCount++;
+          errors.push(`Product ${i + 1}: ${errorData.error || 'Unknown error'}`);
+          console.error(`Sync error for product ${productIds[i]}:`, errorData);
+        }
       } catch (error) {
-        console.error(`Error syncing product ${product.id}:`, error);
+        console.error('Error syncing:', error);
         errorCount++;
+        errors.push(`Product ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
+      setProgress({ current: i + 1, total: productIds.length });
     }
 
     setSyncing(false);
-    await fetchProducts();
+    setProgress({ current: 0, total: 0 });
+    setSelectedProducts(new Set());
     
-    if (successCount > 0) {
-      toast.success(`${successCount} product(s) synced to Shopify`);
-    }
     if (errorCount > 0) {
-      toast.error(`${errorCount} product(s) failed to sync`);
+      console.error('Sync errors:', errors);
+      toast.error(`Sync completed: ${successCount} successful, ${errorCount} errors. Check your Shopify credentials.`);
+    } else {
+      toast.success(`Sync successful: ${successCount} products synchronized`);
     }
+    
+    await fetchProducts();
+  };
+
+  const handleCloseProgressDialog = () => {
+    setShowProgressDialog(false);
+    setIsOptimizationComplete(false);
+    setSelectedProducts(new Set());
+  };
+
+  const handleCloseResultsDialog = () => {
+    setShowResultsDialog(false);
+    setOptimizedProducts([]);
+    setSelectedProducts(new Set());
   };
 
   if (loading) {
@@ -408,7 +512,7 @@ export function TagOptimization() {
         </Card>
       </div>
 
-      {/* Rest of the component remains the same... */}
+      {/* Controls Section */}
       <Card className="p-4">
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
           {/* Search and View Controls */}
@@ -532,7 +636,254 @@ export function TagOptimization() {
         ))}
       </div>
 
-      {/* ... Rest of the component (products list, dialogs, etc.) */}
+      {/* Progress Indicator */}
+      {(generating || syncing) && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium">
+              {generating ? 'Generating tags...' : 'Synchronizing...'}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {progress.current} / {progress.total}
+            </span>
+          </div>
+          <Progress value={(progress.current / progress.total) * 100} className="h-2" />
+        </Card>
+      )}
+
+      {/* Products List */}
+      {viewMode === 'list' ? (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left w-12">
+                    <Checkbox
+                      checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-sm">Product</th>
+                  <th className="px-4 py-3 text-left font-semibold text-sm">Tags</th>
+                  <th className="px-4 py-3 text-left font-semibold text-sm">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.map((product) => (
+                  <tr key={product.id} className="border-b hover:bg-muted/30 transition">
+                    <td className="px-4 py-3">
+                      <Checkbox
+                        checked={selectedProducts.has(product.id)}
+                        onCheckedChange={() => handleSelectProduct(product.id)}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt={product.title}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                            <Tags className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium line-clamp-1">{product.title}</div>
+                          <div className="text-xs text-muted-foreground">{product.vendor}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {product.tags ? (
+                        <div className="flex flex-wrap gap-1">
+                          {product.tags.split(',').slice(0, 3).map((tag, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {tag.trim()}
+                            </Badge>
+                          ))}
+                          {product.tags.split(',').length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{product.tags.split(',').length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">No tags</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {product.tags ? (
+                        <Badge variant="outline" className="gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Tagged
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1">
+                          <Plus className="w-3 h-3" />
+                          To Optimize
+                        </Badge>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      ) : (
+        // Grid View
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredProducts.map((product) => (
+            <Card key={product.id} className="overflow-hidden hover:shadow-md transition">
+              <div className="aspect-square bg-muted relative">
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    alt={product.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Tags className="w-12 h-12 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="absolute top-2 left-2">
+                  <Checkbox
+                    checked={selectedProducts.has(product.id)}
+                    onCheckedChange={() => handleSelectProduct(product.id)}
+                    className="bg-background shadow-lg"
+                  />
+                </div>
+              </div>
+              
+              <div className="p-4 space-y-3">
+                <div>
+                  <h3 className="font-semibold line-clamp-2 mb-1">{product.title}</h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {product.vendor && <span>{product.vendor}</span>}
+                    {product.category && (
+                      <>
+                        <span>•</span>
+                        <span>{product.category}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {editingProduct === product.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editTags}
+                      onChange={(e) => setEditTags(e.target.value)}
+                      placeholder="Enter tags separated by commas"
+                      disabled={saving}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveTags(product.id)}
+                        disabled={saving}
+                        className="flex-1"
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save'
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                        disabled={saving}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex flex-wrap gap-1 mb-2 min-h-[32px]">
+                      {product.tags ? (
+                        product.tags.split(',').map((tag, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {tag.trim()}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">No tags</span>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditTags(product.id, product.tags || '')}
+                      className="w-full gap-2"
+                    >
+                      <Plus className="w-3 h-3" />
+                      {product.tags ? 'Edit Tags' : 'Add Tags'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {filteredProducts.length === 0 && (
+        <div className="text-center py-12 bg-muted/30 rounded-lg">
+          <Tags className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">No products found</p>
+        </div>
+      )}
+
+      {/* Dialogs */}
+      <OptimizationProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        title={generating ? "Optimizing Tags" : "Syncing to Shopify"}
+        current={progress.current}
+        total={progress.total}
+        isComplete={isOptimizationComplete}
+        onSyncClick={handleSyncSelected}
+        onClose={handleCloseProgressDialog}
+      />
+
+      <OptimizationResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="tags"
+        items={optimizedProducts}
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          handleSyncSelected();
+        }}
+        onClose={handleCloseResultsDialog}
+      />
+
+      <TrialLimitDialog
+        open={showUpgradeDialog && limits?.shouldForcePayment === true}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+        currentUsage={limits?.usage.optimizations_count || 0}
+        maxUsage={limits?.limits.max_optimizations || 100}
+        trialMaxUsage={limits?.isTrialing ? limits?.limits.max_optimizations : undefined}
+      />
+      
+      <UpgradeDialog
+        open={showUpgradeDialog && limits?.shouldForcePayment !== true}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+      />
     </div>
   );
 }
