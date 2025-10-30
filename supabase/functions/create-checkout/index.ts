@@ -209,18 +209,35 @@ serve(async (req) => {
       };
     } else {
       // Nouveau user sans trial actif = appliquer le trial du plan
-      const trialDays = plan.trial_days || 14;
-      console.log(`🎁 New subscription - apply ${trialDays} days trial`);
-      sessionConfig.subscription_data = {
-        trial_period_days: trialDays,
-        metadata: {
-          user_id: user.id,
-          plan_id: plan_id,
-          billing_period: billing_period,
-          upgraded_from_trial: 'false',
-          forced_payment: 'false'
-        }
-      };
+      const trialDays = plan.trial_days ?? 14; // Use nullish coalescing to handle 0 correctly
+      
+      if (trialDays === 0) {
+        // Pas de trial pour ce plan - paiement immédiat
+        console.log(`💳 No trial for plan "${plan.name}" - immediate payment`);
+        sessionConfig.subscription_data = {
+          metadata: {
+            user_id: user.id,
+            plan_id: plan_id,
+            billing_period: billing_period,
+            upgraded_from_trial: 'false',
+            forced_payment: 'false'
+          }
+          // trial_period_days omis = paiement immédiat
+        };
+      } else {
+        // Appliquer le trial du plan
+        console.log(`🎁 New subscription - apply ${trialDays} days trial`);
+        sessionConfig.subscription_data = {
+          trial_period_days: trialDays,
+          metadata: {
+            user_id: user.id,
+            plan_id: plan_id,
+            billing_period: billing_period,
+            upgraded_from_trial: 'false',
+            forced_payment: 'false'
+          }
+        };
+      }
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
