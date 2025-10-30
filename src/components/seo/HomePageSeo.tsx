@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sparkles, Upload, Home, AlertCircle } from 'lucide-react';
+import { Sparkles, Upload, Home, AlertCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
@@ -121,15 +121,53 @@ export function HomePageSeo() {
   }
 
   return (
+    <div className="space-y-6">
+      {/* Hero Banner */}
+      <Card className="bg-gradient-to-br from-cyan-50 via-sky-50 to-blue-50 dark:from-cyan-950 dark:via-sky-950 dark:to-blue-950 border-2 border-cyan-200 p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2">
+              <Home className="w-6 h-6 text-cyan-600" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                SEO Page d'Accueil
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Optimisez le SEO de votre page d'accueil Shopify. Créez une première impression inoubliable et boostez votre taux de conversion.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Sparkles className="w-4 h-4 text-cyan-600" />
+                <span className="font-medium">IA intelligente</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Home className="w-4 h-4 text-sky-600" />
+                <span className="font-medium">Page vitrine</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Upload className="w-4 h-4 text-blue-600" />
+                <span className="font-medium">Sync instantané</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 items-center">
+            <Button
+              size="lg"
+              onClick={generateSeoWithAI}
+              disabled={generating}
+            >
+              {generating ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Génération...</>
+              ) : (
+                <><Sparkles className="mr-2 h-4 w-4" /> Générer avec IA</>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Home className="h-5 w-5" />
-          {t('seo.homepage.title')}
-        </CardTitle>
-        <CardDescription>{t('seo.homepage.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-6">
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -213,5 +251,6 @@ export function HomePageSeo() {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }

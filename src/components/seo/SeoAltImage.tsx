@@ -294,37 +294,37 @@ export function SeoAltImage() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner with CTA */}
-      <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-8">
+      {/* Hero Banner */}
+      <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-2">
-              <ImageIcon className="w-6 h-6 text-purple-600" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Analyse d'Images avec Vision IA
+              <ImageIcon className="w-6 h-6 text-green-600" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                Optimisation ALT Images
               </h2>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              Génération intelligente de textes ALT grâce à l'analyse visuelle par IA. Descriptions précises et contextualisées pour un meilleur référencement.
+              Générez automatiquement des descriptions ALT optimisées pour vos images. Améliorez l'accessibilité et le référencement de 35%.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <div className="flex items-center gap-2 text-sm">
-                <Eye className="w-4 h-4 text-purple-600" />
-                <span className="font-medium">Accessibilité optimale</span>
+                <Eye className="w-4 h-4 text-green-600" />
+                <span className="font-medium">Accessibilité maximale</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="font-medium">+40% référencement images</span>
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <span className="font-medium">+35% SEO images</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Zap className="w-4 h-4 text-yellow-600" />
-                <span className="font-medium">IA performante</span>
+                <Zap className="w-4 h-4 text-teal-600" />
+                <span className="font-medium">IA Vision avancée</span>
               </div>
             </div>
           </div>
           <div className="flex flex-col gap-3 items-center">
             <div className="text-center">
-              <div className="text-4xl font-bold text-purple-600">{altCompletionRate}%</div>
+              <div className="text-4xl font-bold text-green-600">{altCompletionRate}%</div>
               <div className="text-sm text-muted-foreground">Images optimisées</div>
             </div>
             <Button

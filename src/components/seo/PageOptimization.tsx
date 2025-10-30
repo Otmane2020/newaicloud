@@ -334,6 +334,45 @@ export function PageOptimization() {
 
   return (
     <div className="space-y-6">
+      {/* Hero Banner */}
+      <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2">
+              <FileText className="w-6 h-6 text-purple-600" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Optimisation Pages
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Optimisez le SEO de toutes vos pages Shopify. Générez des meta titres et descriptions performants pour maximiser votre trafic.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                <span className="font-medium">SEO automatisé</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle className="w-4 h-4 text-pink-600" />
+                <span className="font-medium">Pages complètes</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Upload className="w-4 h-4 text-rose-600" />
+                <span className="font-medium">Sync Shopify</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 items-center">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-purple-600">
+                {pages.length}
+              </div>
+              <div className="text-sm text-muted-foreground">Pages totales</div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* Global SEO Score Card */}
       <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 dark:border-green-800 p-6">
         <div className="flex items-center justify-between">

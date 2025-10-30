@@ -336,6 +336,45 @@ export function SeoOptimization() {
 
   return (
     <div className="space-y-6">
+      {/* Hero Banner */}
+      <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-blue-600" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Optimisation SEO Produits
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Générez automatiquement des titres et descriptions optimisés pour améliorer votre référencement et augmenter vos conversions de 40%.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Target className="w-4 h-4 text-blue-600" />
+                <span className="font-medium">SEO intelligent</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span className="font-medium">+40% visibilité</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Zap className="w-4 h-4 text-purple-600" />
+                <span className="font-medium">Génération rapide</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 items-center">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-blue-600">
+                {optimizationRate}%
+              </div>
+              <div className="text-sm text-muted-foreground">Produits optimisés</div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* Usage limits alert */}
       {limits && limits.isTrialing && (
         <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
