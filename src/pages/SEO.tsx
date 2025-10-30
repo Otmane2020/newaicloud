@@ -13,12 +13,10 @@ import { Sparkles, Tags, Image, Settings, FileText, PenSquare, TrendingUp } from
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SEO() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'optimization');
-  const { t } = useTranslation();
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -31,10 +29,10 @@ export default function SEO() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          {t('seo.title')}
+          SEO Optimization
         </h1>
         <p className="text-muted-foreground text-base md:text-lg">
-          {t('seo.description')}
+          Optimize your store for search engines with AI-powered tools
         </p>
       </div>
 

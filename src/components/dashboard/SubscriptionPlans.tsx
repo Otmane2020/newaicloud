@@ -35,7 +35,6 @@ export function SubscriptionPlans() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useTranslation();
   const { limits } = useUsageLimits();
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -147,7 +146,7 @@ export function SubscriptionPlans() {
     } catch (error) {
       console.error('Error creating checkout:', error);
       toast({
-        title: t('common.error'),
+        title: "Error",
         description: "Unable to create payment session",
         variant: "destructive"
       });
@@ -208,19 +207,19 @@ export function SubscriptionPlans() {
   return (
     <div className="space-y-8">
       <div className="text-center space-y-4">
-        <h2 className="text-3xl font-bold">{t('subscriptionPlans.title')}</h2>
+        <h2 className="text-3xl font-bold">Choose Your Plan</h2>
         <p className="text-muted-foreground">
-          {t('subscriptionPlans.subtitle')}
+          Select the perfect plan for your business needs
         </p>
         
         <div className="flex justify-center">
           <Tabs value={billingPeriod} onValueChange={(value) => setBillingPeriod(value as 'monthly' | 'yearly')}>
             <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="monthly">{t('subscriptionPlans.monthly')}</TabsTrigger>
+              <TabsTrigger value="monthly">Monthly</TabsTrigger>
               <TabsTrigger value="yearly">
-                {t('subscriptionPlans.yearly')}
+                Yearly
                 <Badge variant="secondary" className="ml-2 bg-success/20 text-success">
-                  {t('subscriptionPlans.savings')}
+                  Save 20%
                 </Badge>
               </TabsTrigger>
             </TabsList>

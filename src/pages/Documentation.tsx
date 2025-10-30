@@ -28,7 +28,6 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const Documentation = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (

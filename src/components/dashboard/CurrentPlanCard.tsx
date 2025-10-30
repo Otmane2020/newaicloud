@@ -97,7 +97,7 @@ export function CurrentPlanCard() {
     <Card className="p-6">
       <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
         <Package className="w-6 h-6 text-primary" />
-        {t('account.subscription')}
+        Current Subscription
       </h2>
       
       {currentPlan ? (
@@ -105,17 +105,17 @@ export function CurrentPlanCard() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold">{currentPlan.name}</h3>
-              <p className="text-sm text-muted-foreground">{t('account.current_plan')}</p>
+              <p className="text-sm text-muted-foreground">Current Plan</p>
             </div>
             <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-              {t('account.active')}
+              Active
             </Badge>
           </div>
 
           {subscriptionEnd && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="w-4 h-4" />
-              {currentPlan.name.includes('Trial') ? t('account.expires_on') : t('account.renewal_date')}: {new Date(subscriptionEnd).toLocaleDateString()}
+              {currentPlan.name.includes('Trial') ? 'Expires on' : 'Renewal date'}: {new Date(subscriptionEnd).toLocaleDateString()}
             </div>
           )}
 
@@ -126,7 +126,7 @@ export function CurrentPlanCard() {
               className="w-full"
             >
               <CreditCard className="mr-2 h-4 w-4" />
-              {t('dashboard.activate_full_plan')}
+              Upgrade to Full Plan
             </Button>
           )}
 
@@ -139,12 +139,12 @@ export function CurrentPlanCard() {
             {portalLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('account.loading')}
+                Loading...
               </>
             ) : (
               <>
                 <CreditCard className="mr-2 h-4 w-4" />
-                {t('account.manage_subscription')}
+                Manage Subscription
               </>
             )}
           </Button>
@@ -152,10 +152,10 @@ export function CurrentPlanCard() {
       ) : (
         <div className="text-center py-4">
           <p className="text-muted-foreground mb-4">
-            {t('account.no_subscription')}
+            No active subscription
           </p>
           <Button onClick={() => window.location.href = '/onboarding'}>
-            {t('account.choose_plan')}
+            Choose a Plan
           </Button>
         </div>
       )}

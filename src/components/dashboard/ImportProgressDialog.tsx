@@ -287,7 +287,7 @@ export function ImportProgressDialog({
               size="lg"
             >
               <CreditCard className="w-4 h-4 mr-2" />
-              {t('dashboard.activate_my_plan')}
+              Activate My Plan
             </Button>
           </div>
         )}

@@ -11,13 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Account() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'profile';
   const { user } = useAuth();
-  const { t } = useTranslation();
   const [planName, setPlanName] = useState<string | null>(null);
   const [isTrialing, setIsTrialing] = useState(false);
 
@@ -58,7 +56,7 @@ export default function Account() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">{t('account.title')}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">Account Settings</h1>
         {planName && (
           <Badge variant="secondary" className="mt-2">
             <Sparkles className="w-3 h-3 mr-1" />

@@ -7,12 +7,10 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sparkles, Upload, Home, AlertCircle, Loader2 } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 
 export function HomePageSeo() {
-  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);

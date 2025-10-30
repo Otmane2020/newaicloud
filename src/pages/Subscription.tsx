@@ -35,7 +35,6 @@ interface Plan {
 }
 
 const Subscription = () => {
-  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();

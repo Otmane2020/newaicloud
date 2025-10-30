@@ -313,7 +313,7 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         <CardContent className="py-12 text-center">
           <Lightbulb className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-muted-foreground">
-            {t('blog.opportunities_none')}
+            No opportunities found. Import products first.
           </p>
         </CardContent>
       </Card>

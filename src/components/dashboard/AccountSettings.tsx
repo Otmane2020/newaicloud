@@ -7,26 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, User, Mail, Lock, Eye, EyeOff, Globe } from "lucide-react";
-
-const languages = [
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-];
+import { Loader2, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export function AccountSettings() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name || "");
   const [email] = useState(user?.email || "");
-  const [languageLoading, setLanguageLoading] = useState(false);
 
   // Password change states
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -43,10 +35,10 @@ export function AccountSettings() {
 
       await supabase.from("profiles").update({ full_name: fullName }).eq("id", user?.id);
 
-      toast.success(t("account.profile_updated"));
+      toast.success("Profile updated successfully");
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error(t("account.profile_error"));
+      toast.error("Error updating profile");
     } finally {
       setLoading(false);
     }
@@ -57,17 +49,17 @@ export function AccountSettings() {
 
     // Validation
     if (!newPassword || !confirmPassword) {
-      toast.error(t("account.fill_all_fields"));
+      toast.error("Please fill in all fields");
       return;
     }
 
     if (newPassword.length < 6) {
-      toast.error(t("account.password_short"));
+      toast.error("Password must be at least 6 characters");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error(t("account.password_mismatch"));
+      toast.error("Passwords do not match");
       return;
     }
 
@@ -81,113 +73,70 @@ export function AccountSettings() {
       if (error) throw error;
 
       // Clear password fields
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
 
-      toast.success(t("account.password_updated"));
+      toast.success("Password updated successfully");
     } catch (error: any) {
       console.error("Error changing password:", error);
-      toast.error(error.message || t("account.password_error"));
+      toast.error(error.message || "Error changing password");
     } finally {
       setPasswordLoading(false);
     }
   };
 
-  const handleLanguageChange = async (lang: string) => {
-    setLanguageLoading(true);
-    try {
-      await changeLanguage(lang);
-      toast.success(t("account.language_updated"));
-    } catch (error) {
-      console.error("Error changing language:", error);
-      toast.error(t("account.language_error"));
-    } finally {
-      setLanguageLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Informations personnelles */}
+      {/* Personal Information */}
       <Card className="p-6">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <User className="w-6 h-6 text-primary" />
-          {t("account.personal_info")}
+          Personal Information
         </h2>
 
         <form onSubmit={handleUpdateProfile} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="email" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
-              {t("account.email")}
+              Email
             </Label>
             <Input id="email" type="email" value={email} disabled className="bg-muted" />
-            <p className="text-sm text-muted-foreground">{t("account.email_note")}</p>
+            <p className="text-sm text-muted-foreground">Email address cannot be changed</p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="fullName" className="flex items-center gap-2">
               <User className="w-4 h-4" />
-              {t("account.full_name")}
+              Full Name
             </Label>
             <Input
               id="fullName"
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder={t("account.full_name_placeholder")}
+              placeholder="Enter your full name"
             />
           </div>
 
           <Button type="submit" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t("account.save_changes")}
+            Save Changes
           </Button>
         </form>
       </Card>
 
-      {/* Langue et Préférences */}
-      <Card className="p-6">
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <Globe className="w-6 h-6 text-primary" />
-          {t("account.language_preferences")}
-        </h2>
-
-        <div className="space-y-4">
-          <Label>{t("account.choose_language")}</Label>
-          <div className="grid grid-cols-2 gap-3">
-            {languages.map((lang) => (
-              <Button
-                key={lang.code}
-                variant={language.startsWith(lang.code) ? "default" : "outline"}
-                className="w-full justify-start gap-2"
-                onClick={() => handleLanguageChange(lang.code)}
-                disabled={languageLoading}
-              >
-                <span className="text-xl">{lang.flag}</span>
-                <span className="text-sm">{lang.name}</span>
-              </Button>
-            ))}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {t("account.language_note")}
-          </p>
-        </div>
-      </Card>
-
-      {/* Sécurité - Changement de mot de passe */}
+      {/* Security - Change Password */}
       <Card className="p-6">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <Lock className="w-6 h-6 text-primary" />
-          {t("account.security")}
+          Security
         </h2>
 
         <form onSubmit={handleChangePassword} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="newPassword" className="flex items-center gap-2">
               <Lock className="w-4 h-4" />
-              {t("account.new_password")}
+              New Password
             </Label>
             <div className="relative">
               <Input
@@ -195,7 +144,7 @@ export function AccountSettings() {
                 type={showNewPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={t("account.new_password_placeholder")}
+                placeholder="Enter new password"
               />
               <Button
                 type="button"
@@ -212,7 +161,7 @@ export function AccountSettings() {
           <div className="space-y-2">
             <Label htmlFor="confirmPassword" className="flex items-center gap-2">
               <Lock className="w-4 h-4" />
-              {t("account.confirm_password")}
+              Confirm Password
             </Label>
             <div className="relative">
               <Input
@@ -220,7 +169,7 @@ export function AccountSettings() {
                 type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder={t("account.confirm_password_placeholder")}
+                placeholder="Confirm new password"
               />
               <Button
                 type="button"
@@ -236,19 +185,19 @@ export function AccountSettings() {
 
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>{t("account.security_tips")}</strong>
+              <strong>Security Tips</strong>
             </p>
             <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1 ml-4 list-disc">
-              <li>{t("account.tip_length")}</li>
-              <li>{t("account.tip_case")}</li>
-              <li>{t("account.tip_special")}</li>
-              <li>{t("account.tip_personal")}</li>
+              <li>Use at least 8 characters</li>
+              <li>Mix uppercase and lowercase letters</li>
+              <li>Include numbers and special characters</li>
+              <li>Avoid personal information</li>
             </ul>
           </div>
 
           <Button type="submit" disabled={passwordLoading || !newPassword || !confirmPassword}>
             {passwordLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t("account.change_password")}
+            Change Password
           </Button>
         </form>
       </Card>

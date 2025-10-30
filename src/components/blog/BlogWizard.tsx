@@ -434,19 +434,19 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             {currentStep === 3 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('blog.keywords_label')}</label>
+                  <label className="block text-sm font-medium mb-2">Keywords</label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    {t('blog.keyword_tip')}
+                    Add relevant keywords to optimize your article for SEO
                   </p>
                   <div className="flex gap-2">
                     <Input
                       type="text"
-                      placeholder={t('blog.keyword_placeholder')}
+                      placeholder="Enter a keyword..."
                       value={keywordInput}
                       onChange={(e) => setKeywordInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
                     />
-                    <Button onClick={addKeyword} type="button">{t('blog.keyword_add')}</Button>
+                    <Button onClick={addKeyword} type="button">Add</Button>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">

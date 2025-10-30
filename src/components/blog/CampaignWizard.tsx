@@ -190,17 +190,17 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
             </div>
 
             <div>
-              <Label htmlFor="keywords">{t('blog.keywords_seo_label')}</Label>
+              <Label htmlFor="keywords">SEO Keywords</Label>
               <div className="flex gap-2 mt-1.5">
                 <Input
                   id="keywords"
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
-                  placeholder={t('blog.keyword_placeholder')}
+                  placeholder="Enter a keyword..."
                 />
                 <Button type="button" onClick={addKeyword} variant="secondary">
-                  {t('blog.keyword_add')}
+                  Add
                 </Button>
               </div>
               
@@ -219,7 +219,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               )}
               
               <p className="text-xs text-muted-foreground mt-1.5">
-                {t('blog.keyword_instruction')}
+                Add keywords relevant to your campaign for better SEO optimization
               </p>
             </div>
           </div>

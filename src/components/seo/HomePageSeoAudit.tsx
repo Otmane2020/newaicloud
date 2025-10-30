@@ -20,7 +20,6 @@ import {
   Share2,
   Loader2
 } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
 
 interface SeoElements {
   title: string;
@@ -60,7 +59,6 @@ export function HomePageSeoAudit() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const { toast } = useToast();
-  const { t } = useTranslation();
 
   const analyzeHomepage = async () => {
     setIsAnalyzing(true);

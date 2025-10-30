@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, CreditCard, Calendar, Package, Check, Zap, Crown } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+
 
 interface Plan {
   id: string;
@@ -26,7 +26,6 @@ interface Plan {
 
 export function SubscriptionManagement() {
   const { user } = useAuth();
-  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
@@ -191,7 +190,7 @@ export function SubscriptionManagement() {
       {/* Plans Comparison */}
       <div>
         <h2 className="text-2xl font-bold mb-6">
-          {currentPlan ? t('dashboard.modify_plan') : t('dashboard.choose_plan')}
+          {currentPlan ? 'Change Your Plan' : 'Choose Your Plan'}
         </h2>
         
         <div className="grid md:grid-cols-3 gap-6">
