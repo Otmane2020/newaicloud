@@ -151,9 +151,11 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   };
 
   const handleGenerate = async () => {
-    // Check usage limits first
-    if (!limits?.canUseArticles || limits?.shouldForcePayment || limits?.limitReached.articles) {
-      toast.error('Limite d\'essai atteinte pour la création d\'articles');
+    // Check usage limits - only check articles limit specifically
+    if (!limits?.canUseArticles) {
+      toast.error('Article limit reached', {
+        description: `You have used ${limits?.usage.articles_count}/${limits?.limits.max_articles} articles. Upgrade to create more.`
+      });
       setShowUpgradeDialog(true);
       return;
     }

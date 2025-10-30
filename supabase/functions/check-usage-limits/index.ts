@@ -152,8 +152,8 @@ serve(async (req) => {
     
     console.log(`[LIMITS] Can use - optimizations: ${canUseOptimizations}, articles: ${canUseArticles}, chat: ${canUseChat}`);
 
-    const shouldForcePayment = !canUseOptimizations || !canUseArticles || !canUseChat || 
-                                !canUseShopifySearch || !canAddProducts || !canAddShopifyStore || !canAddCampaign;
+    // Only force payment if ALL primary features are blocked (not just one)
+    const shouldForcePayment = isTrialing && (!canUseOptimizations && !canUseArticles && !canUseChat);
 
     return new Response(
       JSON.stringify({

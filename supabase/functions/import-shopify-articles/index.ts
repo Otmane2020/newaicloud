@@ -233,12 +233,8 @@ Deno.serve(async (req: Request) => {
 
     console.log(`✅ Successfully imported ${insertedArticles?.length || 0} articles`);
 
-    // Step 5: Increment usage tracking
-    await supabaseServiceClient.rpc('increment_usage', {
-      p_seller_id: user.id,
-      p_field: 'articles_count',
-      p_increment: insertedArticles?.length || 0
-    });
+    // NOTE: Imported articles from Shopify don't count towards usage limits
+    // Only AI-generated articles count towards the limit
 
     return new Response(
       JSON.stringify({

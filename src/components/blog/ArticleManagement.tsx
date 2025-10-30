@@ -1,0 +1,407 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Search,
+  RefreshCw,
+  Sparkles,
+  Upload,
+  Loader2,
+  FileText,
+  Eye,
+  ExternalLink,
+  Filter,
+  Grid3x3,
+  List,
+  CheckCircle,
+  Clock,
+  AlertCircle
+} from 'lucide-react';
+
+interface Article {
+  id: string;
+  title: string;
+  content: string;
+  meta_description: string;
+  keywords: string[];
+  status: string;
+  published_at: string | null;
+  shopify_blog_id: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+}
+
+type QuickFilterTab = 'all' | 'draft' | 'published' | 'shopify-synced';
+
+export function ArticleManagement() {
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [syncing, setSyncing] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('blog_articles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setArticles(data || []);
+    } catch (error) {
+      console.error('Error fetching articles:', error);
+      toast.error('Failed to load articles');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSyncArticle = async (articleId: string) => {
+    try {
+      setSyncing(true);
+      toast.info('Syncing with Shopify...');
+
+      const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
+        body: { articleId }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        const article = articles.find(a => a.id === articleId);
+        if (article) {
+          toast.success('Article published to Shopify', {
+            description: (
+              <>
+                <span className="font-medium">{article.title}</span>
+                <br />
+                <span className="text-xs text-muted-foreground">
+                  View in your Shopify admin
+                </span>
+              </>
+            ),
+          });
+        }
+        await fetchArticles();
+      } else {
+        throw new Error(data?.error || 'Sync error');
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Sync error');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedArticles.size === filteredArticles.length) {
+      setSelectedArticles(new Set());
+    } else {
+      setSelectedArticles(new Set(filteredArticles.map(a => a.id)));
+    }
+  };
+
+  const handleSelectArticle = (articleId: string) => {
+    const newSelected = new Set(selectedArticles);
+    if (newSelected.has(articleId)) {
+      newSelected.delete(articleId);
+    } else {
+      newSelected.add(articleId);
+    }
+    setSelectedArticles(newSelected);
+  };
+
+  const getFilteredArticles = () => {
+    let filtered = [...articles];
+
+    // Apply quick filter
+    switch (activeTab) {
+      case 'draft':
+        filtered = filtered.filter(a => a.status === 'draft');
+        break;
+      case 'published':
+        filtered = filtered.filter(a => a.status === 'published');
+        break;
+      case 'shopify-synced':
+        filtered = filtered.filter(a => a.shopify_blog_id);
+        break;
+    }
+
+    // Apply search
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(a => 
+        a.title?.toLowerCase().includes(term) ||
+        a.content?.toLowerCase().includes(term) ||
+        a.meta_description?.toLowerCase().includes(term)
+      );
+    }
+
+    return filtered;
+  };
+
+  const filteredArticles = getFilteredArticles();
+  const stats = {
+    total: articles.length,
+    draft: articles.filter(a => a.status === 'draft').length,
+    published: articles.filter(a => a.status === 'published').length,
+    synced: articles.filter(a => a.shopify_blog_id).length,
+  };
+
+  const quickFilters = [
+    { id: 'all' as QuickFilterTab, label: 'All', count: stats.total, icon: FileText },
+    { id: 'draft' as QuickFilterTab, label: 'Draft', count: stats.draft, icon: Clock },
+    { id: 'published' as QuickFilterTab, label: 'Published', count: stats.published, icon: CheckCircle },
+    { id: 'shopify-synced' as QuickFilterTab, label: 'Synced', count: stats.synced, icon: Upload },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Quick Filters */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {quickFilters.map((filter) => {
+          const Icon = filter.icon;
+          return (
+            <Card
+              key={filter.id}
+              className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+                activeTab === filter.id ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => setActiveTab(filter.id)}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <Icon className={`w-5 h-5 ${activeTab === filter.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                <Badge variant={activeTab === filter.id ? 'default' : 'secondary'}>
+                  {filter.count}
+                </Badge>
+              </div>
+              <div className="text-sm font-medium">{filter.label}</div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Toolbar */}
+      <Card className="p-4">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex-1 w-full md:w-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Search articles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          
+          <div className="flex gap-2 items-center w-full md:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+            >
+              {viewMode === 'list' ? <Grid3x3 className="w-4 h-4" /> : <List className="w-4 h-4" />}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchArticles}
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Articles Table/Grid */}
+      {filteredArticles.length === 0 ? (
+        <Card className="p-12 text-center">
+          <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No articles found</h3>
+          <p className="text-muted-foreground mb-4">
+            {searchTerm ? 'Try adjusting your search' : 'Create your first article with AI'}
+          </p>
+        </Card>
+      ) : viewMode === 'list' ? (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedArticles.size === filteredArticles.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Keywords</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredArticles.map((article) => (
+                <TableRow key={article.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedArticles.has(article.id)}
+                      onCheckedChange={() => handleSelectArticle(article.id)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{article.title}</div>
+                      {article.meta_description && (
+                        <div className="text-xs text-muted-foreground line-clamp-1">
+                          {article.meta_description}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                      {article.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {article.keywords && article.keywords.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {article.keywords.slice(0, 2).map((keyword, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {keyword}
+                          </Badge>
+                        ))}
+                        {article.keywords.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{article.keywords.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {article.source === 'shopify_import' ? 'Shopify' : 'AI Generated'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(article.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      {article.status === 'draft' && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSyncArticle(article.id)}
+                          disabled={syncing}
+                        >
+                          <Upload className="w-4 h-4 mr-1" />
+                          Publish
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredArticles.map((article) => (
+            <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-all">
+              <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                <FileText className="w-16 h-16 text-primary" />
+              </div>
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                    {article.status}
+                  </Badge>
+                  {article.shopify_blog_id && (
+                    <Badge variant="outline" className="text-xs">
+                      <Upload className="w-3 h-3 mr-1" />
+                      Synced
+                    </Badge>
+                  )}
+                </div>
+                <h3 className="font-semibold text-lg mb-2 line-clamp-2">{article.title}</h3>
+                {article.meta_description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                    {article.meta_description}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    View
+                  </Button>
+                  {article.status === 'draft' && (
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleSyncArticle(article.id)}
+                      disabled={syncing}
+                    >
+                      <Upload className="w-4 h-4 mr-1" />
+                      Publish
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

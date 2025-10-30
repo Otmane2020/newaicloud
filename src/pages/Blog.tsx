@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { BlogWizard } from '@/components/blog/BlogWizard';
 import { BlogOpportunities } from '@/components/blog/BlogOpportunities';
 import { CampaignWizard } from '@/components/blog/CampaignWizard';
+import { ArticleManagement } from '@/components/blog/ArticleManagement';
 import { cn } from '@/lib/utils';
 
 export default function Blog() {
@@ -407,109 +408,7 @@ export default function Blog() {
       </Card>
 
       {/* Tab Content */}
-      {activeSubtab === 'articles' && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-cyan-100 dark:bg-cyan-900 rounded-lg">
-              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-600 dark:text-cyan-400" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl sm:text-2xl font-bold">Article Management</h2>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                View and manage all your blog articles
-              </p>
-            </div>
-          </div>
-
-          <Card className="p-4 sm:p-6">
-            {articles.length === 0 ? (
-              <div className="text-center py-8 sm:py-12">
-                <FileText className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">No articles created</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Use "AI Articles" to create your first article
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {articles.map((article) => (
-                  <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02]">
-                    <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                      <FileText className="w-12 h-12 sm:w-16 sm:h-16 text-primary" />
-                    </div>
-                    <div className="p-3 sm:p-4">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <Badge variant={article.status === 'published' ? 'default' : 'secondary'} className="text-xs">
-                          {article.status}
-                        </Badge>
-                        {article.meta_description && (
-                          <Badge variant="outline" className="text-xs">
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            SEO
-                          </Badge>
-                        )}
-                      </div>
-                      <h3 className="font-semibold text-sm sm:text-lg mb-2 line-clamp-2">{article.title}</h3>
-                      {article.meta_description && (
-                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-3">
-                          {article.meta_description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-                        <span>{new Date(article.created_at).toLocaleDateString('en-US')}</span>
-                        {article.keywords && article.keywords.length > 0 && (
-                          <span>{article.keywords.length} keywords</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 flex-wrap">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 min-w-[60px] text-xs"
-                          onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
-                        >
-                          View
-                        </Button>
-                        {article.status === 'draft' && (
-                          <Button
-                            size="sm"
-                            className="flex-1 min-w-[60px] text-xs"
-                            onClick={() => handleSyncArticle(article.id)}
-                          >
-                            Publish
-                          </Button>
-                        )}
-                        {!article.meta_description && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="flex-1 min-w-[60px] text-xs"
-                            onClick={async () => {
-                              try {
-                                const { error } = await supabase.functions.invoke('generate-article-seo', {
-                                  body: { article_id: article.id }
-                                });
-                                if (error) throw error;
-                                toast.success('SEO generated successfully!');
-                                loadData();
-                              } catch (error: any) {
-                                toast.error(error.message || 'Error generating SEO');
-                              }
-                            }}
-                          >
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            SEO
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </Card>
-        </div>
-      )}
+      {activeSubtab === 'articles' && <ArticleManagement />}
 
       {/* AI Articles - Manual creation */}
       {activeSubtab === 'create-article' && (
