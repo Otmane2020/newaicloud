@@ -17,6 +17,25 @@ async function callVisionAI(imageUrl: string, productContext: string) {
     throw new Error('Google Gemini API key not configured');
   }
 
+  // Convert image to base64 efficiently
+  let base64Data: string;
+  if (imageUrl.startsWith('data:')) {
+    base64Data = imageUrl.split(',')[1];
+  } else {
+    const imageResponse = await fetch(imageUrl);
+    const arrayBuffer = await imageResponse.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    
+    // Convert to base64 in chunks to avoid stack overflow
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+      binary += String.fromCharCode(...Array.from(chunk));
+    }
+    base64Data = btoa(binary);
+  }
+
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
     headers: {
@@ -66,9 +85,7 @@ Réponds UNIQUEMENT avec ce JSON valide :
             {
               inlineData: {
                 mimeType: "image/jpeg",
-                data: imageUrl.startsWith('data:') 
-                  ? imageUrl.split(',')[1]
-                  : await fetch(imageUrl).then(r => r.arrayBuffer()).then(buf => btoa(String.fromCharCode(...new Uint8Array(buf))))
+                data: base64Data
               }
             }
           ]
