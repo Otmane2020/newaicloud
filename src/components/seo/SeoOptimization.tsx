@@ -203,8 +203,8 @@ export function SeoOptimization() {
   };
 
   const handleGenerateForSelected = async () => {
-    // Check usage limits first
-    if (!limits?.canUseOptimizations || limits?.shouldForcePayment || limits?.limitReached.optimizations) {
+    // Check usage limits first (only check optimization-specific limits)
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       toast.error('Trial limit reached for SEO optimizations');
       setShowUpgradeDialog(true);
       return;
@@ -281,8 +281,8 @@ export function SeoOptimization() {
   };
 
   const handleGenerateAllSeo = async () => {
-    // Check usage limits first
-    if (!limits?.canUseOptimizations || limits?.shouldForcePayment || limits?.limitReached.optimizations) {
+    // Check usage limits first (only check optimization-specific limits)
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       toast.error('Trial limit reached for SEO optimizations');
       setShowUpgradeDialog(true);
       return;
