@@ -491,23 +491,23 @@ export function PageOptimization() {
             </div>
 
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectedPages.size === filteredPages.length && filteredPages.length > 0}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>SEO Title</TableHead>
-                  <TableHead>Meta Description</TableHead>
-                  <TableHead className="text-center">SEO Score</TableHead>
-                  <TableHead className="text-center">Optimized</TableHead>
-                  <TableHead className="text-center">Synchronized</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <TableHeader className="sticky top-0 bg-background z-10">
+              <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedPages.size === filteredPages.length && filteredPages.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>SEO Title</TableHead>
+                <TableHead>Meta Description</TableHead>
+                <TableHead className="text-center">SEO Score</TableHead>
+                <TableHead className="text-center">Optimized</TableHead>
+                <TableHead className="text-center">Synchronized</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
               <TableBody>
                 {filteredPages.map((page) => (
                   <TableRow key={page.id}>

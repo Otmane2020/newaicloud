@@ -143,16 +143,7 @@ export function OptimizationResultsDialog({
 
         <div className="flex flex-col gap-2 pt-4 border-t">
           <Button
-            onClick={onSyncClick}
-            className="w-full gap-2 bg-primary hover:bg-primary/90"
-            size="lg"
-          >
-            <Upload className="w-5 h-5" />
-            Synchroniser avec Shopify
-          </Button>
-          <Button
             onClick={onClose}
-            variant="outline"
             className="w-full"
             size="lg"
           >

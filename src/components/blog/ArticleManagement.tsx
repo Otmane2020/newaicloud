@@ -116,6 +116,31 @@ export function ArticleManagement() {
     }
   };
 
+  const handleImportArticles = async () => {
+    try {
+      setSyncing(true);
+      toast.info('Importing articles from Shopify...');
+
+      const { data, error } = await supabase.functions.invoke('import-shopify-articles', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(`${data.articlesImported || 0} articles imported from Shopify`);
+        await fetchArticles();
+      } else {
+        throw new Error(data?.error || 'Import error');
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Failed to import articles');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleSelectAll = () => {
     if (selectedArticles.size === filteredArticles.length) {
       setSelectedArticles(new Set());
@@ -229,6 +254,16 @@ export function ArticleManagement() {
           
           <div className="flex gap-2 items-center w-full md:w-auto">
             <Button
+              variant="default"
+              size="sm"
+              onClick={handleImportArticles}
+              disabled={syncing}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import from Shopify
+            </Button>
+            
+            <Button
               variant="outline"
               size="sm"
               onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
@@ -260,9 +295,9 @@ export function ArticleManagement() {
       ) : viewMode === 'list' ? (
         <Card>
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead className="w-12">
+                <TableHead>
                   <Checkbox
                     checked={selectedArticles.size === filteredArticles.length}
                     onCheckedChange={handleSelectAll}

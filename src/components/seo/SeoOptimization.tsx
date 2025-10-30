@@ -113,10 +113,11 @@ export function SeoOptimization() {
   const syncedCount = products.filter(p => p.seo_synced_to_shopify).length;
   const optimizationRate = products.length > 0 ? Math.round((enrichedCount / products.length) * 100) : 0;
 
-  // Calculate global SEO score
-  const globalSeoScore = products.length > 0 
+  // Calculate global SEO score (only for optimized products)
+  const seoOptimizedProducts = products.filter(p => p.enrichment_status === 'enriched');
+  const globalSeoScore = seoOptimizedProducts.length > 0 
     ? Math.round(
-        products.reduce((sum, p) => {
+        seoOptimizedProducts.reduce((sum, p) => {
           const score = calculateDetailedSeoScore(
             p.seo_title,
             p.seo_description,
@@ -124,7 +125,7 @@ export function SeoOptimization() {
             true
           );
           return sum + score.score;
-        }, 0) / products.length
+        }, 0) / seoOptimizedProducts.length
       )
     : 0;
 
@@ -811,7 +812,7 @@ export function SeoOptimization() {
       {viewMode === 'list' ? (
         <Card>
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
