@@ -57,6 +57,8 @@ interface Product {
   image_url: string;
   imported_at: string;
   optimization_count: number;
+  tags: string;
+  product_type: string;
 }
 
 type QuickFilterTab = 'all' | 'not-enriched' | 'enriched' | 'pending-sync' | 'synced';
@@ -133,7 +135,11 @@ export function SeoOptimization() {
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      return product.title.toLowerCase().includes(term);
+      const matchTitle = product.title?.toLowerCase().includes(term);
+      const matchCategory = product.category?.toLowerCase().includes(term);
+      const matchTag = product.tags?.toLowerCase().includes(term);
+      
+      return matchTitle || matchCategory || matchTag;
     }
 
     return true;
@@ -141,10 +147,9 @@ export function SeoOptimization() {
 
   const tabs = [
     { id: 'all' as QuickFilterTab, label: 'All Products', count: products.length },
-    { id: 'not-enriched' as QuickFilterTab, label: 'Not Optimized', count: notEnrichedCount },
+    { id: 'not-enriched' as QuickFilterTab, label: 'To Optimize', count: notEnrichedCount },
     { id: 'enriched' as QuickFilterTab, label: 'Optimized', count: enrichedCount },
-    { id: 'pending-sync' as QuickFilterTab, label: 'To Sync', count: pendingSyncCount },
-    { id: 'synced' as QuickFilterTab, label: 'Synced', count: syncedCount }
+    { id: 'synced' as QuickFilterTab, label: 'Synchronized', count: syncedCount }
   ];
 
   // Clickable stats handlers
@@ -158,9 +163,9 @@ export function SeoOptimization() {
     toast.info(`Showing ${enrichedCount} optimized products`);
   };
 
-  const handleToSyncClick = () => {
-    setActiveTab('pending-sync');
-    toast.info(`Showing ${pendingSyncCount} products ready to sync`);
+  const handleSyncedClick = () => {
+    setActiveTab('synced');
+    toast.info(`Showing ${syncedCount} synchronized products`);
   };
 
   const handleGenerateAll = () => {
@@ -473,19 +478,9 @@ export function SeoOptimization() {
       </Card>
 
       {/* Clickable Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Products</p>
-              <p className="text-2xl font-bold">{products.length}</p>
-            </div>
-            <Package className="w-8 h-8 text-muted-foreground" />
-          </div>
-        </Card>
-        
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card 
-          className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleNotOptimizedClick}
         >
           <div className="flex items-center justify-between">
@@ -499,7 +494,7 @@ export function SeoOptimization() {
         </Card>
         
         <Card 
-          className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleOptimizedClick}
         >
           <div className="flex items-center justify-between">
@@ -513,44 +508,20 @@ export function SeoOptimization() {
         </Card>
         
         <Card 
-          className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleToSyncClick}
+          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={handleSyncedClick}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">To Sync</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{pendingSyncCount}</p>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{syncedCount}</p>
             </div>
-            <Upload className="w-8 h-8 text-blue-600" />
+            <CheckCircle className="w-8 h-8 text-blue-600" />
           </div>
           <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
         </Card>
       </div>
 
-      {/* Global SEO Score Card */}
-      <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 dark:border-green-800 p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-muted-foreground">Global SEO Score</h3>
-            <div className="flex items-center gap-3">
-              <div className="text-5xl font-bold">{globalSeoScore}</div>
-              <div className="text-muted-foreground">/100</div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {products.length} products analyzed
-            </p>
-          </div>
-          <div className="text-right space-y-2">
-            <SeoConfidenceBadge 
-              seoTitle={products.length > 0 ? "Global" : null}
-              seoDescription={products.length > 0 ? "Average score of all products" : null}
-              showLabel={false}
-              className="text-lg px-4 py-2"
-            />
-            <Progress value={globalSeoScore} className="w-32 h-2" />
-          </div>
-        </div>
-      </Card>
 
       {/* Usage limits alert */}
       {limits && limits.isTrialing && (
@@ -577,7 +548,7 @@ export function SeoOptimization() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search products..."
+                placeholder="Search by title, category, or tag..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -612,23 +583,23 @@ export function SeoOptimization() {
             <Button
               variant="outline"
               size="sm"
+              onClick={handleGenerateForSelected}
+              disabled={generating || selectedProducts.size === 0}
+              className="flex items-center gap-2"
+            >
+              <Zap className="w-4 h-4" />
+              <span className="hidden sm:inline">Optimize Selected ({selectedProducts.size})</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleGenerateAll}
               disabled={generating || notEnrichedCount === 0}
               className="flex items-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Optimize All</span>
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateForSelected}
-              disabled={generating || selectedProducts.size === 0}
-              className="flex items-center gap-2"
-            >
-              <Zap className="w-4 h-4" />
-              <span className="hidden sm:inline">Optimize ({selectedProducts.size})</span>
             </Button>
             
             <Button
@@ -651,7 +622,31 @@ export function SeoOptimization() {
               className="flex items-center gap-2"
             >
               <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Sync ({selectedProducts.size})</span>
+              <span className="hidden sm:inline">Sync Selection ({selectedProducts.size})</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const toSync = products.filter(p => 
+                  p.enrichment_status === 'enriched' && 
+                  p.seo_title && 
+                  p.seo_description &&
+                  !p.seo_synced_to_shopify
+                );
+                if (toSync.length === 0) {
+                  toast.info('All optimized products are already synced');
+                  return;
+                }
+                setProductsToSync(toSync);
+                setShowSyncDialog(true);
+              }}
+              disabled={syncing || pendingSyncCount === 0}
+              className="flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Sync All ({pendingSyncCount})</span>
             </Button>
             
             <Button variant="outline" size="icon" onClick={fetchProducts}>

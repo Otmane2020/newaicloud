@@ -350,6 +350,20 @@ export function AppSidebar() {
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
+              <NavLink 
+                to="/account" 
+                className="w-full justify-start text-xs sm:text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700"
+              >
+                <Crown className="h-4 w-4" />
+                {state === "expanded" && <span>Upgrade</span>}
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          
+          <div className="h-px bg-border mx-2 my-1" />
+          
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
               <Button variant="ghost" className="w-full justify-start text-xs sm:text-sm" onClick={signOut}>
                 <LogOut className="h-4 w-4" />
                 {state === "expanded" && <span>Logout</span>}
