@@ -483,7 +483,7 @@ export function SeoOptimization() {
       </Card>
 
       {/* Clickable Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card 
           className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleNotOptimizedClick}
@@ -510,6 +510,23 @@ export function SeoOptimization() {
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setActiveTab('pending-sync');
+            toast.info(`Showing ${pendingSyncCount} products to synchronize`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pendingSyncCount}</p>
+            </div>
+            <Upload className="w-8 h-8 text-purple-600" />
+          </div>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to view</p>
         </Card>
         
         <Card 
