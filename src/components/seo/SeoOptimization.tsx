@@ -364,6 +364,8 @@ export function SeoOptimization() {
       return;
     }
 
+    setShowResultsDialog(false);
+    setShowSyncDialog(false);
     setSyncing(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
@@ -381,34 +383,7 @@ export function SeoOptimization() {
           }
         });
         
-        const product = productsToSync[i];
-        const { data: productData } = await supabase
-          .from('shopify_products')
-          .select('shopify_id, shop_name, title')
-          .eq('id', product.id)
-          .single();
-
-        if (productData?.shopify_id && productData?.shop_name) {
-          const shopifyUrl = `https://admin.shopify.com/store/${productData.shop_name}/products/${productData.shopify_id}`;
-          toast.success('Product synced to Shopify', {
-            description: (
-              <>
-                <span className="font-medium">{productData.title}</span>
-                <br />
-                <a 
-                  href={shopifyUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
-                >
-                  View in Shopify <ExternalLink className="w-3 h-3" />
-                </a>
-              </>
-            ),
-          });
-          successCount++;
-        }
-
+        successCount++;
         setProgress({ current: i + 1, total: productsToSync.length });
       } catch (error) {
         console.error('Error syncing:', error);
@@ -420,6 +395,7 @@ export function SeoOptimization() {
     setSelectedProducts(new Set());
     
     await fetchProducts();
+    await refreshLimits();
   };
 
   const handleSyncProducts = async (productIds: string[]) => {
@@ -428,6 +404,8 @@ export function SeoOptimization() {
       return;
     }
 
+    setShowResultsDialog(false);
+    setShowSyncDialog(false);
     setSyncing(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
@@ -445,33 +423,7 @@ export function SeoOptimization() {
           }
         });
         
-        const { data: productData } = await supabase
-          .from('shopify_products')
-          .select('title, shopify_id, shop_name')
-          .eq('id', productIds[i])
-          .single();
-
-        if (productData?.shopify_id && productData?.shop_name) {
-          const shopifyUrl = `https://admin.shopify.com/store/${productData.shop_name}/products/${productData.shopify_id}`;
-          toast.success('Product synced to Shopify', {
-            description: (
-              <>
-                <span className="font-medium">{productData.title}</span>
-                <br />
-                <a 
-                  href={shopifyUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
-                >
-                  View in Shopify <ExternalLink className="w-3 h-3" />
-                </a>
-              </>
-            ),
-          });
-          successCount++;
-        }
-        
+        successCount++;
         setProgress({ current: i + 1, total: productIds.length });
       } catch (error) {
         console.error('Error syncing:', error);
@@ -481,16 +433,20 @@ export function SeoOptimization() {
     setSyncing(false);
     setIsOptimizationComplete(true);
     
-    if (successCount > 0) {
-      toast.success(`Synchronisation terminée !`, {
-        description: `${successCount} produit${successCount > 1 ? 's' : ''} synchronisé${successCount > 1 ? 's' : ''} avec succès sur Shopify`
-      });
-    }
-    
     await fetchProducts();
+    await refreshLimits();
   };
 
   const handleCloseProgressDialog = () => {
+    if (isOptimizationComplete && syncing) {
+      const successCount = progress.current;
+      if (successCount > 0) {
+        toast.success('Synchronisation terminée !', {
+          description: `${successCount} produit${successCount > 1 ? 's synchronisés' : ' synchronisé'} avec succès sur Shopify`
+        });
+      }
+    }
+    
     setShowProgressDialog(false);
     setIsOptimizationComplete(false);
     setSelectedProducts(new Set());
@@ -1149,11 +1105,16 @@ export function SeoOptimization() {
       <OptimizationProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        title={generating ? "Optimizing SEO" : "Syncing to Shopify"}
+        title={generating ? "🔄 Optimisation SEO..." : "🔄 Synchronisation avec Shopify..."}
         current={progress.current}
         total={progress.total}
         isComplete={isOptimizationComplete}
-        onSyncClick={handleSyncSelected}
+        operationType={syncing ? 'synchronization' : 'optimization'}
+        onSyncClick={() => {
+          setShowProgressDialog(false);
+          setProductsToSync(optimizedProducts);
+          setShowSyncDialog(true);
+        }}
         onClose={handleCloseProgressDialog}
       />
 

@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
 import { OptimizationResultsDialog } from './OptimizationResultsDialog';
-import { SeoSyncDialog } from './SeoSyncDialog';
+import { TagSyncDialog } from './TagSyncDialog';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -381,9 +381,11 @@ export function TagOptimization() {
   };
 
   const handleBulkSync = async (productIds: string[]) => {
-    setShowProgressDialog(false);
     setShowResultsDialog(false);
+    setShowSyncDialog(false);
     setSyncing(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productIds.length });
 
     let successCount = 0;
@@ -426,24 +428,26 @@ export function TagOptimization() {
     }
 
     setSyncing(false);
-    setProgress({ current: 0, total: 0 });
+    setIsOptimizationComplete(true);
     setSelectedProducts(new Set());
     
     if (errorCount > 0) {
       console.error('Sync errors:', errors);
-      toast.error(`Synchronisation avec erreurs`, {
-        description: `${successCount} produits synchronisés, ${errorCount} erreurs. Vérifiez vos identifiants Shopify.`
-      });
-    } else if (successCount > 0) {
-      toast.success(`Synchronisation terminée !`, {
-        description: `${successCount} produit${successCount > 1 ? 's' : ''} synchronisé${successCount > 1 ? 's' : ''} avec succès sur Shopify`
-      });
     }
     
     await fetchProducts();
   };
 
   const handleCloseProgressDialog = () => {
+    if (isOptimizationComplete && syncing) {
+      const successCount = progress.current;
+      if (successCount > 0) {
+        toast.success('Synchronisation terminée !', {
+          description: `${successCount} produit${successCount > 1 ? 's synchronisés' : ' synchronisé'} avec succès sur Shopify`
+        });
+      }
+    }
+    
     setShowProgressDialog(false);
     setIsOptimizationComplete(false);
     setSelectedProducts(new Set());
@@ -912,6 +916,19 @@ export function TagOptimization() {
         current={progress.current}
         total={progress.total}
         isComplete={isOptimizationComplete}
+        operationType={syncing ? 'synchronization' : 'optimization'}
+        onSyncClick={() => {
+          setShowProgressDialog(false);
+          const productsForSync = optimizedProducts.map(p => ({
+            id: p.id,
+            title: p.title,
+            seo_title: p.tags || '',
+            seo_description: '',
+            image_url: p.image_url
+          }));
+          setSelectedProductsForSync(productsForSync);
+          setShowSyncDialog(true);
+        }}
       />
 
       <OptimizationResultsDialog
@@ -943,7 +960,7 @@ export function TagOptimization() {
       />
 
       {/* Sync Confirmation Dialog */}
-      <SeoSyncDialog
+      <TagSyncDialog
         open={showSyncDialog}
         onOpenChange={setShowSyncDialog}
         products={selectedProductsForSync}

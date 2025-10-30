@@ -5,13 +5,14 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Loader2, Image as ImageIcon, Wand2, AlertCircle, ChevronDown, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AltImageSyncDialog } from './AltImageSyncDialog';
+import { OptimizationProgressDialog } from './OptimizationProgressDialog';
+import { OptimizationResultsDialog } from './OptimizationResultsDialog';
 
 interface ProductImage {
   id: string;
@@ -19,6 +20,7 @@ interface ProductImage {
   alt_text: string | null;
   position: number;
   product_id: string;
+  product_title?: string;
 }
 
 interface ProductWithImages {
@@ -40,6 +42,10 @@ export function SeoAltImageList() {
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [imagesToSync, setImagesToSync] = useState<ProductImage[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [optimizedImages, setOptimizedImages] = useState<any[]>([]);
 
   useEffect(() => {
     fetchImages();
@@ -136,6 +142,8 @@ export function SeoAltImageList() {
     }
 
     setGenerating(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     setProgress({ current: 0, total: imagesToGenerate.length });
 
     const generatedImages: ProductImage[] = [];
@@ -147,9 +155,11 @@ export function SeoAltImageList() {
         });
         
         if (!error && data) {
+          const product = products.find(p => p.id === imagesToGenerate[i].product_id);
           generatedImages.push({
             ...imagesToGenerate[i],
-            alt_text: data.alt_text
+            alt_text: data.alt_text,
+            product_title: product?.title
           });
         }
         
@@ -160,56 +170,73 @@ export function SeoAltImageList() {
     }
 
     setGenerating(false);
+    setIsOptimizationComplete(true);
     setSelectedImages(new Set());
     await fetchImages();
     
-    // Ouvrir le dialog de synchronisation avec les images générées
-    if (generatedImages.length > 0) {
-      const imagesWithProduct = generatedImages.map(img => {
-        const product = products.find(p => p.id === img.product_id);
-        return {
-          ...img,
-          product_title: product?.title
-        };
-      });
-      setImagesToSync(imagesWithProduct);
-      setShowSyncDialog(true);
-    }
+    // Préparer les données pour OptimizationResultsDialog
+    const optimizedItems = generatedImages.map(img => ({
+      id: img.id,
+      title: img.product_title || 'Unknown Product',
+      alt_text: img.alt_text,
+      image_url: img.src
+    }));
+    
+    setOptimizedImages(optimizedItems);
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
   };
 
   const handleSyncImages = async () => {
     if (imagesToSync.length === 0) return;
 
+    setShowResultsDialog(false);
+    setShowSyncDialog(false);
     setSyncing(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
+    setProgress({ current: 0, total: imagesToSync.length });
+
     let successCount = 0;
 
-    for (const image of imagesToSync) {
+    for (let i = 0; i < imagesToSync.length; i++) {
       try {
         const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
           body: {
-            productId: image.product_id,
-            imageId: image.id,
-            altText: image.alt_text
+            productId: imagesToSync[i].product_id,
+            imageId: imagesToSync[i].id,
+            altText: imagesToSync[i].alt_text
           }
         });
 
         if (!error) {
           successCount++;
         }
+        
+        setProgress({ current: i + 1, total: imagesToSync.length });
       } catch (error) {
         console.error('Error syncing image:', error);
       }
     }
 
     setSyncing(false);
-    setShowSyncDialog(false);
+    setIsOptimizationComplete(true);
     setImagesToSync([]);
+  };
 
-    if (successCount > 0) {
-      toast.success(`Synchronisation terminée !`, {
-        description: `${successCount} image${successCount > 1 ? 's' : ''} synchronisée${successCount > 1 ? 's' : ''} avec succès sur Shopify`
-      });
+  const handleCloseProgressDialog = () => {
+    if (isOptimizationComplete && syncing) {
+      const successCount = progress.current;
+      if (successCount > 0) {
+        toast.success('Synchronisation terminée !', {
+          description: `${successCount} image${successCount > 1 ? 's synchronisées' : ' synchronisée'} avec succès sur Shopify`
+        });
+      }
     }
+    
+    setShowProgressDialog(false);
+    setIsOptimizationComplete(false);
+    setShowSyncDialog(false);
   };
 
   const filteredProducts = products.map(product => ({
@@ -329,28 +356,6 @@ export function SeoAltImageList() {
         </div>
       </Card>
 
-      {/* Progress */}
-      {generating && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Génération en cours...</span>
-            <span className="text-sm text-muted-foreground">
-              {progress.current} / {progress.total}
-            </span>
-          </div>
-          <Progress value={(progress.current / progress.total) * 100} />
-        </Card>
-      )}
-
-      {/* Sync Dialog */}
-      <AltImageSyncDialog
-        open={showSyncDialog}
-        onOpenChange={setShowSyncDialog}
-        images={imagesToSync}
-        onConfirm={handleSyncImages}
-        loading={syncing}
-      />
-
       {/* Products List with Collapsible Images */}
       <ScrollArea className="h-[600px]">
         {filteredProducts.length === 0 ? (
@@ -447,6 +452,66 @@ export function SeoAltImageList() {
           </div>
         )}
       </ScrollArea>
+
+      {/* Dialogs */}
+      <OptimizationProgressDialog
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
+        title={generating ? "🔄 Génération des textes ALT..." : "🔄 Synchronisation avec Shopify..."}
+        current={progress.current}
+        total={progress.total}
+        isComplete={isOptimizationComplete}
+        operationType={syncing ? 'synchronization' : 'optimization'}
+        onSyncClick={() => {
+          setShowProgressDialog(false);
+          const imagesWithProduct = optimizedImages.map(img => {
+            const product = products.find(p => p.images.some(i => i.id === img.id));
+            return {
+              id: img.id,
+              src: img.image_url,
+              alt_text: img.alt_text,
+              position: 0,
+              product_id: product?.id || '',
+              product_title: product?.title
+            };
+          });
+          setImagesToSync(imagesWithProduct);
+          setShowSyncDialog(true);
+        }}
+        onClose={handleCloseProgressDialog}
+      />
+
+      <OptimizationResultsDialog
+        open={showResultsDialog}
+        onOpenChange={setShowResultsDialog}
+        type="alt"
+        items={optimizedImages}
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          const imagesWithProduct = optimizedImages.map(img => {
+            const product = products.find(p => p.images.some(i => i.id === img.id));
+            return {
+              id: img.id,
+              src: img.image_url,
+              alt_text: img.alt_text,
+              position: 0,
+              product_id: product?.id || '',
+              product_title: product?.title
+            };
+          });
+          setImagesToSync(imagesWithProduct);
+          setShowSyncDialog(true);
+        }}
+        onClose={() => setShowResultsDialog(false)}
+      />
+
+      <AltImageSyncDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        images={imagesToSync}
+        onConfirm={handleSyncImages}
+        loading={syncing}
+      />
     </div>
   );
 }
