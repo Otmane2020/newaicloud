@@ -26,67 +26,69 @@ import {
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-
-const menuItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/products', label: 'Catalogue', icon: ShoppingBag },
-  { path: '/merchant', label: 'Google Merchant', icon: BarChart3 },
-  { path: '/shopping', label: 'Google Shopping', icon: ShoppingBag },
-  { path: '/search-products', label: 'Recherche IA', icon: MessageSquare },
-  { 
-    path: '/seo', 
-    label: 'SEO', 
-    icon: Zap,
-    subItems: [
-      { path: '/seo?tab=optimization', label: 'SEO Optimisation', icon: Sparkles },
-      { path: '/seo?tab=tags', label: 'Tag Optimisation', icon: Tag },
-      { path: '/seo?tab=alt', label: 'ALT Image', icon: ImageIcon },
-    ]
-  },
-  { 
-    path: '/blog', 
-    label: 'Blog SEO', 
-    icon: FileText,
-    subItems: [
-      { path: '/blog?tab=articles', label: 'Articles', icon: PenSquare },
-      { path: '/blog?tab=campaigns', label: 'Campagnes', icon: CalendarClock },
-      { 
-        path: '/blog?tab=opportunities', 
-        label: 'Opportunités', 
-        icon: Lightbulb,
-        subItems: [
-          { path: '/blog?tab=netlinking', label: 'Netlinking', icon: LinkIcon },
-          { path: '/blog?tab=settings', label: 'Paramètres', icon: Settings }
-        ]
-      }
-    ]
-  },
-  { 
-    path: '/chat', 
-    label: 'Chat Smart', 
-    icon: MessageSquare,
-    subItems: [
-      { path: '/chat', label: 'Conversation', icon: MessageSquare },
-      { path: '/chat-history', label: 'Historique', icon: CalendarClock },
-      { path: '/product-source', label: 'Source Produits', icon: ShoppingBag },
-    ]
-  },
-];
-
-const bottomMenuItems = [
-  { path: '/dashboard', label: 'Compte', icon: User },
-  { path: '/subscription', label: 'Abonnement', icon: CreditCard },
-  { path: '/integration', label: 'Shopify', icon: Settings },
-];
+import { useTranslation } from '@/hooks/useTranslation';
 
 export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog', '/blog?tab=opportunities']);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userPlan, setUserPlan] = useState<string | null>(null);
+
+  const menuItems = [
+    { path: '/', label: t('navigation.dashboard'), icon: LayoutDashboard },
+    { path: '/products', label: t('navigation.catalogue'), icon: ShoppingBag },
+    { path: '/merchant', label: t('navigation.google_merchant'), icon: BarChart3 },
+    { path: '/shopping', label: t('navigation.google_shopping'), icon: ShoppingBag },
+    { path: '/search-products', label: t('navigation.search_ai'), icon: MessageSquare },
+    { 
+      path: '/seo', 
+      label: t('navigation.seo'), 
+      icon: Zap,
+      subItems: [
+        { path: '/seo?tab=optimization', label: t('navigation.seo_optimization'), icon: Sparkles },
+        { path: '/seo?tab=tags', label: t('navigation.tag_optimization'), icon: Tag },
+        { path: '/seo?tab=alt', label: t('navigation.alt_image'), icon: ImageIcon },
+      ]
+    },
+    { 
+      path: '/blog', 
+      label: t('navigation.blog_seo'), 
+      icon: FileText,
+      subItems: [
+        { path: '/blog?tab=articles', label: t('navigation.articles'), icon: PenSquare },
+        { path: '/blog?tab=campaigns', label: t('navigation.campaigns'), icon: CalendarClock },
+        { 
+          path: '/blog?tab=opportunities', 
+          label: t('navigation.opportunities'), 
+          icon: Lightbulb,
+          subItems: [
+            { path: '/blog?tab=netlinking', label: t('navigation.netlinking'), icon: LinkIcon },
+            { path: '/blog?tab=settings', label: t('navigation.settings'), icon: Settings }
+          ]
+        }
+      ]
+    },
+    { 
+      path: '/chat', 
+      label: t('navigation.chat_smart'), 
+      icon: MessageSquare,
+      subItems: [
+        { path: '/chat', label: t('navigation.conversation'), icon: MessageSquare },
+        { path: '/chat-history', label: t('navigation.history'), icon: CalendarClock },
+        { path: '/product-source', label: t('navigation.product_source'), icon: ShoppingBag },
+      ]
+    },
+  ];
+
+  const bottomMenuItems = [
+    { path: '/dashboard', label: t('navigation.account'), icon: User },
+    { path: '/subscription', label: t('navigation.subscription'), icon: CreditCard },
+    { path: '/integration', label: t('navigation.shopify'), icon: Settings },
+  ];
 
   useEffect(() => {
     const checkAdminAndPlan = async () => {
@@ -168,10 +170,10 @@ export function Navigation() {
                     ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-300/50'
                     : 'text-orange-600 hover:bg-orange-50 hover:text-orange-700 border border-orange-200'
                 }`}
-                title={collapsed ? 'Admin Panel' : undefined}
+                title={collapsed ? t('navigation.admin_panel') : undefined}
               >
                 <Shield className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="font-bold">Admin Panel</span>}
+                {!collapsed && <span className="font-bold">{t('navigation.admin_panel')}</span>}
               </Link>
             )}
             
@@ -293,7 +295,7 @@ export function Navigation() {
         <div className="px-2 pb-2 space-y-1 border-t border-gray-200 pt-2">
           {!collapsed && userPlan && (
             <div className="px-3 py-2 mb-2 text-center">
-              <div className="text-xs text-muted-foreground mb-1">Plan actuel</div>
+              <div className="text-xs text-muted-foreground mb-1">{t('navigation.current_plan')}</div>
               <div className="px-2 py-1 bg-gradient-primary text-white rounded-md text-xs font-semibold">
                 {userPlan}
               </div>
@@ -301,7 +303,7 @@ export function Navigation() {
           )}
           {!collapsed && (
             <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Paramètres
+              {t('navigation.settings')}
             </div>
           )}
           {bottomMenuItems.map((item) => {
@@ -331,10 +333,10 @@ export function Navigation() {
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-            title={collapsed ? 'Déconnexion' : undefined}
+            title={collapsed ? t('navigation.logout') : undefined}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span className="font-medium">Déconnexion</span>}
+            {!collapsed && <span className="font-medium">{t('navigation.logout')}</span>}
           </button>
           
           <button
@@ -346,7 +348,7 @@ export function Navigation() {
             ) : (
               <>
                 <ChevronLeft className="w-5 h-5" />
-                <span className="font-medium">Réduire</span>
+                <span className="font-medium">{t('navigation.collapse')}</span>
               </>
             )}
           </button>

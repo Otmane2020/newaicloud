@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTrialLimits } from '@/hooks/useTrialLimits';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { calculateSeoConfidence } from '@/lib/seoQuality';
+import { useTranslation } from '@/hooks/useTranslation';
 import { 
   ShoppingBag, 
   Zap, 
@@ -36,6 +37,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { trialStatus, showUpgradeDialog, setShowUpgradeDialog } = useTrialLimits();
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0,
@@ -58,8 +60,8 @@ export default function Dashboard() {
         
         // Show success message
         toast({
-          title: "🎉 Abonnement activé !",
-          description: "Votre abonnement a été activé avec succès. Bienvenue !",
+          title: `🎉 ${t('dashboard.subscription_activated')}`,
+          description: t('dashboard.subscription_activated_desc'),
         });
         
         // Remove the checkout parameter from URL
@@ -73,8 +75,8 @@ export default function Dashboard() {
         }, 1500);
       } else if (checkoutStatus === 'cancelled') {
         toast({
-          title: "Paiement annulé",
-          description: "Vous avez annulé le processus de paiement.",
+          title: t('dashboard.payment_cancelled'),
+          description: t('dashboard.payment_cancelled_desc'),
           variant: "destructive"
         });
         
@@ -143,15 +145,15 @@ export default function Dashboard() {
 
   const statCards = [
     {
-      title: 'Produits Total',
+      title: t('dashboard.products_total'),
       value: stats.totalProducts,
       icon: ShoppingBag,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
-      trend: '+12% ce mois'
+      trend: t('dashboard.trend')
     },
     {
-      title: 'Produits Optimisés',
+      title: t('dashboard.products_optimized'),
       value: stats.optimizedProducts,
       icon: CheckCircle2,
       color: 'text-green-600',
@@ -159,7 +161,7 @@ export default function Dashboard() {
       percentage: stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%'
     },
     {
-      title: 'En Attente',
+      title: t('dashboard.pending'),
       value: stats.pendingOptimization,
       icon: Clock,
       color: 'text-orange-600',
@@ -167,7 +169,7 @@ export default function Dashboard() {
       percentage: stats.totalProducts > 0 ? `${Math.round((stats.pendingOptimization / stats.totalProducts) * 100)}%` : '0%'
     },
     {
-      title: 'Valeur Catalogue',
+      title: t('dashboard.catalog_value'),
       value: `${stats.totalValue.toFixed(2)}€`,
       icon: DollarSign,
       color: 'text-purple-600',
@@ -175,29 +177,29 @@ export default function Dashboard() {
       trend: '+8.2%'
     },
     {
-      title: 'Articles Blog',
+      title: t('dashboard.blog_articles'),
       value: stats.totalArticles,
       icon: FileText,
       color: 'text-cyan-600',
       bgColor: 'bg-cyan-100',
-      trend: 'Ce mois'
+      trend: t('dashboard.trend_month')
     },
     {
-      title: 'Taux Optimisation',
+      title: t('dashboard.optimization_rate'),
       value: stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%',
       icon: Zap,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100',
-      target: 'Objectif: 100%'
+      target: t('dashboard.target_100')
     },
     {
-      title: 'Score SEO Global',
+      title: t('dashboard.global_seo_score'),
       value: stats.seoScore,
       icon: Target,
       color: stats.seoScore >= 80 ? 'text-green-600' : stats.seoScore >= 60 ? 'text-yellow-600' : 'text-red-600',
       bgColor: stats.seoScore >= 80 ? 'bg-green-100' : stats.seoScore >= 60 ? 'bg-yellow-100' : 'bg-red-100',
       percentage: `${stats.seoScore}%`,
-      subtitle: stats.seoScore >= 80 ? 'Excellent' : stats.seoScore >= 60 ? 'Bon' : 'À améliorer'
+      subtitle: stats.seoScore >= 80 ? t('dashboard.excellent') : stats.seoScore >= 60 ? t('dashboard.good') : t('dashboard.to_improve')
     }
   ];
 
@@ -230,10 +232,10 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 flex items-center gap-2 sm:gap-3">
           <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-primary" />
-          Dashboard
+          {t('dashboard.title')}
         </h1>
         <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
-          Vue d'ensemble de votre activité
+          {t('dashboard.subtitle')}
         </p>
       </div>
 
@@ -282,8 +284,8 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <Card>
           <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Actions Rapides</CardTitle>
-            <CardDescription className="text-sm">Gérez votre boutique efficacement</CardDescription>
+            <CardTitle className="text-lg sm:text-xl">{t('dashboard.quick_actions')}</CardTitle>
+            <CardDescription className="text-sm">{t('dashboard.quick_actions_subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -292,8 +294,8 @@ export default function Dashboard() {
                 className="p-3 sm:p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left group"
               >
                 <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-primary mb-2 group-hover:scale-110 transition-transform" />
-                <p className="text-sm sm:text-base font-semibold">Gérer Produits</p>
-                <p className="text-xs text-muted-foreground">Catalogue complet</p>
+                <p className="text-sm sm:text-base font-semibold">{t('dashboard.manage_products')}</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.full_catalog')}</p>
               </button>
               
               <button
@@ -301,8 +303,8 @@ export default function Dashboard() {
                 className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left group"
               >
                 <Zap className="w-6 h-6 text-yellow-600 mb-2 group-hover:scale-110 transition-transform" />
-                <p className="font-semibold">Optimiser SEO</p>
-                <p className="text-xs text-muted-foreground">{stats.pendingOptimization} produits</p>
+                <p className="font-semibold">{t('dashboard.optimize_seo')}</p>
+                <p className="text-xs text-muted-foreground">{stats.pendingOptimization} {t('dashboard.products_pending')}</p>
               </button>
               
               <button
@@ -310,8 +312,8 @@ export default function Dashboard() {
                 className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left group"
               >
                 <FileText className="w-6 h-6 text-cyan-600 mb-2 group-hover:scale-110 transition-transform" />
-                <p className="font-semibold">Créer Article</p>
-                <p className="text-xs text-muted-foreground">Blog SEO AI</p>
+                <p className="font-semibold">{t('dashboard.create_article')}</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.blog_ai')}</p>
               </button>
               
               <button
@@ -319,8 +321,8 @@ export default function Dashboard() {
                 className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left group"
               >
                 <MessageSquare className="w-6 h-6 text-purple-600 mb-2 group-hover:scale-110 transition-transform" />
-                <p className="font-semibold">Chat Smart</p>
-                <p className="text-xs text-muted-foreground">Assistant IA</p>
+                <p className="font-semibold">{t('dashboard.smart_chat')}</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.ai_assistant')}</p>
               </button>
             </div>
           </CardContent>
@@ -332,7 +334,7 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-orange-600" />
-                Recommandations
+                {t('dashboard.recommendations')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -340,17 +342,17 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
                   <div>
                     <p className="font-semibold text-orange-900">
-                      {stats.pendingOptimization} produits à optimiser
+                      {stats.pendingOptimization} {t('dashboard.products_to_optimize')}
                     </p>
                     <p className="text-sm text-orange-700">
-                      Améliorez votre SEO pour augmenter la visibilité
+                      {t('dashboard.improve_visibility')}
                     </p>
                   </div>
                   <button
                     onClick={() => window.location.href = '/seo?tab=optimization'}
                     className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
                   >
-                    Optimiser
+                    {t('dashboard.optimize_button')}
                   </button>
                 </div>
               </div>
