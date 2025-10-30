@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Sparkles, Zap, Crown, CreditCard, TrendingUp, Loader2 } from "lucide-react";
+import { CheckCircle2, Sparkles, Zap, Crown, CreditCard, TrendingUp, Loader2, ShoppingBag, FileText, BarChart3, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,7 +118,10 @@ export function SubscriptionPlans() {
   const isCurrentPlan = (planId: string) => currentPlanId === planId;
 
   const getPrice = (plan: Plan) => {
-    return billingPeriod === 'yearly' ? plan.price_yearly : plan.price_monthly;
+    const price = billingPeriod === 'yearly' ? plan.price_yearly : plan.price_monthly;
+    // Format: keep 9.99 as is, but remove decimals for whole numbers like 49.00 -> 49
+    if (price === 9.99) return '9,99';
+    return Math.floor(price).toString();
   };
 
   const getSavings = (plan: Plan) => {
@@ -205,27 +208,31 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">${getPrice(starterPlan).toFixed(2)}</span>
+                  <span className="text-5xl font-bold">${getPrice(starterPlan)}</span>
                   <span className="text-muted-foreground">/mois</span>
                 </div>
               </div>
 
               <div className="space-y-3 pt-6 border-t">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.products_count : 0}</strong> / {starterPlan.max_products} produits</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{starterPlan.max_products} produits</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {starterPlan.max_optimizations_monthly} optimisations SEO</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{starterPlan.max_optimizations_monthly} optimisations/mois</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.articles_count : 0}</strong> / {starterPlan.max_articles_monthly} articles blog</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{starterPlan.max_articles_monthly} articles/mois</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {starterPlan.max_chat_responses_monthly} réponses chat</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>0 campagnes</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{starterPlan.max_chat_responses_monthly} réponses chat/mois</span>
                 </div>
               </div>
             </div>
@@ -271,7 +278,7 @@ export function SubscriptionPlans() {
                   <SelectContent className="bg-background z-50">
                     {proPlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - ${plan.price_monthly}/mois
+                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly)}€/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -280,31 +287,31 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">${getPrice(selectedPro).toFixed(2)}</span>
+                  <span className="text-5xl font-bold">${getPrice(selectedPro)}</span>
                   <span className="text-muted-foreground">/mois</span>
                 </div>
               </div>
 
               <div className="space-y-3 pt-6 border-t">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.products_count : 0}</strong> / {selectedPro.max_products.toLocaleString()} produits</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{selectedPro.max_products.toLocaleString()} produits</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {selectedPro.max_optimizations_monthly.toLocaleString()} optimisations SEO</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{selectedPro.max_optimizations_monthly.toLocaleString()} optimisations/mois</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.articles_count : 0}</strong> / {selectedPro.max_articles_monthly} articles blog</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{selectedPro.max_articles_monthly} articles/mois</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {selectedPro.max_chat_responses_monthly.toLocaleString()} réponses chat</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{selectedPro.max_campaigns} campagnes</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.shopify_stores_count : 0}</strong> / {selectedPro.max_shopify_stores || 1} boutiques Shopify</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{selectedPro.max_chat_responses_monthly.toLocaleString()} réponses chat/mois</span>
                 </div>
               </div>
             </div>
@@ -350,7 +357,7 @@ export function SubscriptionPlans() {
                   <SelectContent className="bg-background z-50">
                     {enterprisePlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - ${plan.price_monthly.toLocaleString()}/mois
+                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly).toLocaleString()}€/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -359,31 +366,31 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">${getPrice(selectedEnterprise).toFixed(2)}</span>
+                  <span className="text-5xl font-bold">${getPrice(selectedEnterprise)}</span>
                   <span className="text-muted-foreground">/mois</span>
                 </div>
               </div>
 
               <div className="space-y-3 pt-6 border-t">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.products_count : 0}</strong> / ∞ produits</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>Illimité produits</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations SEO</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations/mois</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.articles_count : 0}</strong> / {selectedEnterprise.max_articles_monthly} articles blog</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{selectedEnterprise.max_articles_monthly} articles/mois</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {selectedEnterprise.max_chat_responses_monthly.toLocaleString()} réponses chat</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{selectedEnterprise.max_campaigns} campagnes</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span><strong>{limits ? limits.usage.shopify_stores_count : 0}</strong> / {selectedEnterprise.max_shopify_stores || 10} boutiques Shopify</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{selectedEnterprise.max_chat_responses_monthly.toLocaleString()} réponses chat/mois</span>
                 </div>
               </div>
             </div>
