@@ -31,16 +31,16 @@ export function OptimizationProgressDialog({
 
   const getTitle = () => {
     if (operationType === 'synchronization') {
-      return isComplete ? '✅ Synchronization Complete!' : '🔄 Syncing to Shopify...';
+      return isComplete ? '✅ Synchronisation terminée !' : '🔄 Synchronisation avec Shopify...';
     }
-    return isComplete ? '✅ Optimization Complete!' : title;
+    return isComplete ? '✅ Optimisation terminée !' : title;
   };
 
   const getDescription = () => {
     if (operationType === 'synchronization') {
       return isComplete 
-        ? `${current} products synchronized successfully to Shopify`
-        : `${current} / ${total} products synchronized`;
+        ? `${current} produits synchronisés avec succès sur Shopify`
+        : `${current} / ${total} produits synchronisés`;
     }
     return `${current} / ${total} produits traités`;
   };
@@ -79,10 +79,10 @@ export function OptimizationProgressDialog({
               </div>
               <div className="text-center space-y-3">
                 <h3 className="text-xl font-semibold text-green-600 dark:text-green-400">
-                  {operationType === 'synchronization' ? 'Synchronization completed!' : 'Optimisation terminée !'}
+                  {operationType === 'synchronization' ? 'Synchronisation terminée !' : 'Optimisation terminée !'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {total} {operationType === 'synchronization' ? 'products synchronized' : 'produits optimisés'} avec succès
+                  {total} {operationType === 'synchronization' ? 'produits synchronisés' : 'produits optimisés'} avec succès
                 </p>
               </div>
               <div className="flex flex-col gap-2 w-full pt-4">
