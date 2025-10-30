@@ -11,11 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { User, Package, CreditCard, Receipt, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Account() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'profile';
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [planName, setPlanName] = useState<string | null>(null);
   const [isTrialing, setIsTrialing] = useState(false);
 
@@ -54,7 +56,7 @@ export default function Account() {
     <div className="min-h-screen bg-gradient-subtle p-8">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Mon Compte</h1>
+          <h1 className="text-4xl font-bold mb-2">{t('account.title')}</h1>
           {planName && (
             <Badge variant="secondary" className="mt-2">
               <Sparkles className="w-3 h-3 mr-1" />
@@ -67,19 +69,19 @@ export default function Account() {
           <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="w-4 h-4" />
-              Profil
+              {t('account.profile_tab')}
             </TabsTrigger>
             <TabsTrigger value="integrations" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
-              Intégrations
+              {t('account.integrations_tab')}
             </TabsTrigger>
             <TabsTrigger value="subscription" className="flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
-              Abonnement
+              {t('account.subscription_tab')}
             </TabsTrigger>
             <TabsTrigger value="billing" className="flex items-center gap-2">
               <Receipt className="w-4 h-4" />
-              Facturation
+              {t('account.billing_tab')}
             </TabsTrigger>
           </TabsList>
 
