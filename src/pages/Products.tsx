@@ -33,7 +33,7 @@ interface Product {
   created_at: string;
 }
 
-export default function Products() {
+function Products() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
@@ -292,3 +292,5 @@ export default function Products() {
     </div>
   );
 }
+
+export default Products;
