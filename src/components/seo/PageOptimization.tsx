@@ -159,7 +159,7 @@ export function PageOptimization() {
     }
   };
 
-  const handleOptimizePages = async () => {
+  const handleOptimizeSelected = async () => {
     if (selectedPages.size === 0) return;
     
     setOptimizing(true);
