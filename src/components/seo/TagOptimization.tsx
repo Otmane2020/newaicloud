@@ -939,9 +939,8 @@ export function TagOptimization() {
         items={optimizedProducts.map(p => ({
           id: p.id,
           title: p.title,
-          seoTitle: p.tags || '',
-          seoDescription: '',
-          imageUrl: p.image_url
+          tags: p.tags || '',
+          image_url: p.image_url
         }))}
         onSyncClick={() => {
           setShowResultsDialog(false);
