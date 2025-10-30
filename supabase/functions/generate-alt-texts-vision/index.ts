@@ -11,31 +11,23 @@ interface AltTextVisionRequest {
 }
 
 async function callVisionAI(imageUrl: string, productContext: string) {
-  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+  const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
 
-  if (!lovableApiKey) {
-    throw new Error('Lovable API key not configured');
+  if (!geminiApiKey) {
+    throw new Error('Google Gemini API key not configured');
   }
 
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${lovableApiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [
+      contents: [
         {
-          role: "system",
-          content: "You are an expert in e-commerce product image analysis. Analyze product images and generate SEO-optimized, accessible ALT text descriptions in French."
-        },
-        {
-          role: "user",
-          content: [
+          parts: [
             {
-              type: "text",
-              text: `Analyse UNIQUEMENT ce que tu VOIS dans cette image de produit e-commerce.
+              text: `Tu es un expert en analyse d'images de produits e-commerce. Analyse UNIQUEMENT ce que tu VOIS dans cette image.
 
 RÈGLES ABSOLUES - ANALYSE VISUELLE PURE :
 1. Base-toi UNIQUEMENT sur ce qui est VISIBLE dans l'image
@@ -72,23 +64,34 @@ Réponds UNIQUEMENT avec ce JSON valide :
 }`
             },
             {
-              type: "image_url",
-              image_url: {
-                url: imageUrl
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: imageUrl.startsWith('data:') 
+                  ? imageUrl.split(',')[1]
+                  : await fetch(imageUrl).then(r => r.arrayBuffer()).then(buf => btoa(String.fromCharCode(...new Uint8Array(buf))))
               }
             }
           ]
         }
       ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 500,
+      }
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Vision AI API error: ${response.status} - ${errorText}`);
+    throw new Error(`Google Gemini API error: ${response.status} - ${errorText}`);
   }
 
-  return await response.json();
+  const data = await response.json();
+  
+  // Extract text from Gemini response format
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  
+  return { text };
 }
 
 Deno.serve(async (req: Request) => {
@@ -187,10 +190,10 @@ Deno.serve(async (req: Request) => {
       if (product.ai_material) productContext += `Material: ${product.ai_material}\n`;
     }
 
-    console.log(`Analyzing image with Vision AI: ${image.id}`);
+    console.log(`Analyzing image with Google Gemini: ${image.id}`);
 
     const visionResponse = await callVisionAI(image.src, productContext);
-    const visionContent = visionResponse.choices[0].message.content;
+    const visionContent = visionResponse.text;
 
     let altText = "";
     let visualAnalysis = "";
