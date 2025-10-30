@@ -361,7 +361,6 @@ export function AppSidebar() {
                 className="w-full justify-start text-xs sm:text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700"
               >
                 <Crown className="h-4 w-4" />
-                {state === "expanded" && <span>Upgrade</span>}
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
