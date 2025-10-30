@@ -43,8 +43,8 @@ const Subscription = () => {
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [selectedProTier, setSelectedProTier] = useState<string>('professional');
-  const [selectedEnterpriseTier, setSelectedEnterpriseTier] = useState<string>('enterprise-199');
+  const [selectedProTier, setSelectedProTier] = useState<string>('');
+  const [selectedEnterpriseTier, setSelectedEnterpriseTier] = useState<string>('');
 
   useEffect(() => {
     const status = searchParams.get('checkout');
@@ -74,6 +74,24 @@ const Subscription = () => {
       if (plansError) throw plansError;
       setPlans(plansData || []);
 
+      // Initialize default selections for Pro and Enterprise
+      const proPlans = plansData?.filter(p => 
+        p.id === 'professional' || 
+        p.id === 'pro' || 
+        p.id.startsWith('pro-') || 
+        p.id.startsWith('professional')
+      ) || [];
+      const enterprisePlans = plansData?.filter(p => 
+        p.id.startsWith('enterprise')
+      ) || [];
+
+      if (proPlans.length > 0 && !selectedProTier) {
+        setSelectedProTier(proPlans[0].id);
+      }
+      if (enterprisePlans.length > 0 && !selectedEnterpriseTier) {
+        setSelectedEnterpriseTier(enterprisePlans[0].id);
+      }
+
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('plan_id')
@@ -85,9 +103,9 @@ const Subscription = () => {
         const currentPlanData = plansData?.find((p: Plan) => p.id === subscription.plan_id);
         setCurrentPlan(currentPlanData || null);
         
-        if (subscription.plan_id === 'professional' || subscription.plan_id.startsWith('pro-')) {
+        if (subscription.plan_id === 'professional' || subscription.plan_id.startsWith('pro')) {
           setSelectedProTier(subscription.plan_id);
-        } else if (subscription.plan_id.startsWith('enterprise-')) {
+        } else if (subscription.plan_id.startsWith('enterprise')) {
           setSelectedEnterpriseTier(subscription.plan_id);
         }
       }
@@ -138,8 +156,15 @@ const Subscription = () => {
   const isCurrentPlan = (planId: string) => currentPlan?.id === planId;
 
   const starterPlan = plans.find(p => p.id === 'starter');
-  const proPlans = plans.filter(p => p.id === 'professional' || p.id.startsWith('pro-')).sort((a, b) => a.display_order - b.display_order);
-  const enterprisePlans = plans.filter(p => p.id.startsWith('enterprise-')).sort((a, b) => a.display_order - b.display_order);
+  const proPlans = plans.filter(p => 
+    p.id === 'professional' || 
+    p.id === 'pro' || 
+    p.id.startsWith('pro-') || 
+    p.id.startsWith('professional')
+  ).sort((a, b) => a.display_order - b.display_order);
+  const enterprisePlans = plans.filter(p => 
+    p.id.startsWith('enterprise')
+  ).sort((a, b) => a.display_order - b.display_order);
 
   const selectedProPlan = proPlans.find(p => p.id === selectedProTier);
   const selectedEnterprisePlan = enterprisePlans.find(p => p.id === selectedEnterpriseTier);
