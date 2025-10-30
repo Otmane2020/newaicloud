@@ -162,7 +162,7 @@ export default function Products() {
               {products.length} product{products.length !== 1 ? "s" : ""} • {totalValue.toFixed(2)} €
             </p>
           </div>
-          <Button size="sm" onClick={() => navigate("/dashboard")} className="h-9 px-3">
+          <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
             <Plus className="w-4 h-4" />
           </Button>
         </div>
@@ -242,7 +242,7 @@ export default function Products() {
               <div>
                 <h3 className="text-lg font-semibold mb-2">No products</h3>
                 <p className="text-muted-foreground mb-6 text-sm">Import your products from Shopify to get started</p>
-                <Button onClick={() => navigate("/dashboard")} size="sm">
+                <Button onClick={() => navigate("/integration")} size="sm">
                   <Plus className="w-4 h-4 mr-2" />
                   Import
                 </Button>
@@ -409,13 +409,12 @@ export default function Products() {
       <div className="fixed bottom-6 right-6 z-20">
         <Button
           size="lg"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/integration")}
           className="rounded-full w-14 h-14 shadow-lg bg-blue-600 hover:bg-blue-700"
         >
           <Plus className="w-6 h-6" />
         </Button>
       </div>
-
     </div>
   );
 }
