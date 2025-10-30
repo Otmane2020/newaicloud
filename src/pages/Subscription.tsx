@@ -43,7 +43,7 @@ const Subscription = () => {
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [selectedProTier, setSelectedProTier] = useState<string>('pro-98');
+  const [selectedProTier, setSelectedProTier] = useState<string>('professional');
   const [selectedEnterpriseTier, setSelectedEnterpriseTier] = useState<string>('enterprise-199');
 
   useEffect(() => {
@@ -85,7 +85,7 @@ const Subscription = () => {
         const currentPlanData = plansData?.find((p: Plan) => p.id === subscription.plan_id);
         setCurrentPlan(currentPlanData || null);
         
-        if (subscription.plan_id.startsWith('pro-')) {
+        if (subscription.plan_id === 'professional' || subscription.plan_id.startsWith('pro-')) {
           setSelectedProTier(subscription.plan_id);
         } else if (subscription.plan_id.startsWith('enterprise-')) {
           setSelectedEnterpriseTier(subscription.plan_id);
@@ -138,7 +138,7 @@ const Subscription = () => {
   const isCurrentPlan = (planId: string) => currentPlan?.id === planId;
 
   const starterPlan = plans.find(p => p.id === 'starter');
-  const proPlans = plans.filter(p => p.id.startsWith('pro-')).sort((a, b) => a.display_order - b.display_order);
+  const proPlans = plans.filter(p => p.id === 'professional' || p.id.startsWith('pro-')).sort((a, b) => a.display_order - b.display_order);
   const enterprisePlans = plans.filter(p => p.id.startsWith('enterprise-')).sort((a, b) => a.display_order - b.display_order);
 
   const selectedProPlan = proPlans.find(p => p.id === selectedProTier);
@@ -225,8 +225,8 @@ const Subscription = () => {
         )}
 
         {proPlans.length > 0 && (
-          <Card className={`p-8 relative flex flex-col ${currentPlan?.id.startsWith('pro-') ? 'border-2 border-primary shadow-primary' : ''}`}>
-            {currentPlan?.id.startsWith('pro-') && (
+          <Card className={`p-8 relative flex flex-col ${(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) ? 'border-2 border-primary shadow-primary' : ''}`}>
+            {(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
                 Plan actuel
               </Badge>
