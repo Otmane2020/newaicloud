@@ -8,12 +8,22 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
 import { OptimizationResultsDialog } from './OptimizationResultsDialog';
+import { SeoSyncDialog } from './SeoSyncDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { calculateDetailedSeoScore } from '@/lib/seoQuality';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Search,
   RefreshCw,
@@ -27,6 +37,8 @@ import {
   Target,
   Zap,
   ArrowRight,
+  Eye,
+  ExternalLink,
 } from 'lucide-react';
 
 interface Product {
@@ -61,6 +73,8 @@ export function SeoOptimization() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [productsToSync, setProductsToSync] = useState<Product[]>([]);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   const ITEMS_PER_PAGE = 50;
@@ -285,6 +299,47 @@ export function SeoOptimization() {
     await fetchProducts();
   };
 
+  const handleSyncProducts = async (productIds: string[]) => {
+    if (productIds.length === 0) {
+      toast.info('Aucun produit à synchroniser');
+      return;
+    }
+
+    setSyncing(true);
+    setProgress({ current: 0, total: productIds.length });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < productIds.length; i++) {
+      try {
+        await supabase.functions.invoke('sync-seo-to-shopify', {
+          body: { 
+            productId: productIds[i],
+            syncTags: true,
+            syncGoogleShopping: true
+          }
+        });
+        successCount++;
+        setProgress({ current: i + 1, total: productIds.length });
+      } catch (error) {
+        console.error('Error syncing:', error);
+        errorCount++;
+      }
+    }
+
+    setSyncing(false);
+    setProgress({ current: 0, total: 0 });
+    
+    if (errorCount > 0) {
+      toast.error(`Synchronization: ${successCount} success, ${errorCount} errors`);
+    } else {
+      toast.success(`${successCount} product(s) successfully synced to Shopify!`);
+    }
+    
+    await fetchProducts();
+  };
+
   const handleCloseProgressDialog = () => {
     setShowProgressDialog(false);
     setIsOptimizationComplete(false);
@@ -496,7 +551,7 @@ export function SeoOptimization() {
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="flex flex-col gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
@@ -507,7 +562,8 @@ export function SeoOptimization() {
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
+          
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -519,16 +575,95 @@ export function SeoOptimization() {
               size="sm"
               onClick={handleGenerateForSelected}
               disabled={generating || selectedProducts.size === 0}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
               {generating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Génération...
+                  Optimizing...
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Optimiser ({selectedProducts.size})
+                  Optimize Selection ({selectedProducts.size})
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleGenerateAll}
+              disabled={generating || notEnrichedCount === 0}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Optimizing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Optimize All ({notEnrichedCount})
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const toSync = products.filter(p => 
+                  selectedProducts.has(p.id) && 
+                  p.seo_title && 
+                  p.seo_description
+                );
+                if (toSync.length === 0) {
+                  toast.error('No optimized products selected for sync');
+                  return;
+                }
+                setProductsToSync(toSync);
+                setShowSyncDialog(true);
+              }}
+              disabled={syncing || selectedProducts.size === 0}
+            >
+              {syncing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Sync Selection ({selectedProducts.size})
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const toSync = products.filter(p => 
+                  p.seo_title && 
+                  p.seo_description && 
+                  !p.seo_synced_to_shopify
+                );
+                if (toSync.length === 0) {
+                  toast.error('No products to sync');
+                  return;
+                }
+                setProductsToSync(toSync);
+                setShowSyncDialog(true);
+              }}
+              disabled={syncing || pendingSyncCount === 0}
+            >
+              {syncing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Sync All ({pendingSyncCount})
                 </>
               )}
             </Button>
@@ -536,61 +671,137 @@ export function SeoOptimization() {
         </div>
       </Card>
 
-      {/* Products List */}
-      <div className="space-y-3">
-        {paginatedProducts.map((product) => (
-          <Card key={product.id} className="p-4 hover:shadow-md transition">
-            <div className="flex items-center gap-4">
-              <input
-                type="checkbox"
-                checked={selectedProducts.has(product.id)}
-                onChange={() => handleSelectProduct(product.id)}
-                className="w-5 h-5"
-              />
-              {product.image_url && (
-                <img
-                  src={product.image_url}
-                  alt={product.title}
-                  className="w-16 h-16 object-cover rounded"
+      {/* Products Table */}
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                  onCheckedChange={handleSelectAll}
                 />
-              )}
-              <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold truncate">{product.title}</h3>
-                  <SeoConfidenceBadge 
-                    seoTitle={product.seo_title}
-                    seoDescription={product.seo_description}
-                    showLabel={false}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground">{product.vendor}</p>
-                {product.seo_title && (
-                  <p className="text-xs text-green-600 mt-1">✓ SEO optimisé</p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
-                  {product.enrichment_status === 'enriched' ? 'Enrichi' : 'En attente'}
-                </Badge>
-                
-                {/* Badge pour Trial - produit déjà optimisé */}
-                {limits?.isTrialing && (product.optimization_count || 0) >= 1 && (
-                  <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50">
-                    ⚠️ Déjà optimisé
-                  </Badge>
-                )}
-                
-                {product.seo_synced_to_shopify && (
-                  <Badge variant="outline" className="bg-green-50">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Synchro
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+              </TableHead>
+              <TableHead className="w-20">Image</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead className="min-w-[200px]">SEO Title</TableHead>
+              <TableHead className="min-w-[250px]">SEO Meta Description</TableHead>
+              <TableHead className="w-32">SEO Score</TableHead>
+              <TableHead className="w-32">Status</TableHead>
+              <TableHead className="w-32">Synced</TableHead>
+              <TableHead className="w-24">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedProducts.map((product) => {
+              const seoScore = calculateDetailedSeoScore(
+                product.seo_title,
+                product.seo_description,
+                !!product.image_url,
+                true
+              );
+              
+              return (
+                <TableRow key={product.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedProducts.has(product.id)}
+                      onCheckedChange={() => handleSelectProduct(product.id)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.title}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                        <Package className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[200px]">
+                      <p className="font-medium line-clamp-2">{product.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{product.vendor}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[200px]">
+                      {product.seo_title ? (
+                        <p className="text-sm line-clamp-2">{product.seo_title}</p>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          Not optimized
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[250px]">
+                      {product.seo_description ? (
+                        <p className="text-xs text-muted-foreground line-clamp-3">
+                          {product.seo_description}
+                        </p>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          Not optimized
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="text-2xl font-bold">{seoScore.score}</div>
+                      <SeoConfidenceBadge
+                        seoTitle={product.seo_title}
+                        seoDescription={product.seo_description}
+                        showLabel={false}
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
+                      {product.enrichment_status === 'enriched' ? 'Optimized' : 'Pending'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {product.seo_synced_to_shopify ? (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Yes
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">
+                        <Clock className="w-3 h-3 mr-1" />
+                        No
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setProductsToSync([product]);
+                          setShowSyncDialog(true);
+                        }}
+                        disabled={!product.seo_title || !product.seo_description}
+                        title="View & Sync"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -639,6 +850,22 @@ export function SeoOptimization() {
           handleSyncSelected();
         }}
         onClose={handleCloseResultsDialog}
+      />
+
+      {/* Sync Confirmation Dialog */}
+      <SeoSyncDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        products={productsToSync}
+        onConfirm={async () => {
+          setSyncing(true);
+          const productIds = productsToSync.map(p => p.id);
+          await handleSyncProducts(productIds);
+          setShowSyncDialog(false);
+          setProductsToSync([]);
+          setSyncing(false);
+        }}
+        loading={syncing}
       />
       
       {limits?.shouldForcePayment ? (
