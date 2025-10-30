@@ -4,7 +4,6 @@ import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useTranslation } from "@/hooks/useTranslation";
 
 interface TrialUpgradeDialogProps {
   open: boolean;
@@ -15,7 +14,6 @@ interface TrialUpgradeDialogProps {
 
 export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: TrialUpgradeDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { t } = useTranslation();
 
   const handleUpgrade = async () => {
     setLoading(true);
@@ -36,20 +34,28 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
 
       if (data?.url) {
         console.log('✅ Redirecting to payment:', data.url);
-        // Redirection immédiate dans le même onglet pour le paiement
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL returned');
       }
     } catch (error) {
       console.error('Upgrade error:', error);
-      toast.error('Erreur lors de la création du paiement');
+      toast.error('Error creating payment');
     } finally {
       setLoading(false);
     }
   };
 
-  const features = t('trialUpgrade.features', { returnObjects: true }) as string[];
+  const features = [
+    "100 analyzed products",
+    "100 AI SEO optimizations / month",
+    "1 AI article / month",
+    "20 Shopify AI searches / month",
+    "50 AI Chat responses / month",
+    "1 Shopify store connected",
+    "Basic automation",
+    "Email support"
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,20 +63,20 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
         <DialogHeader>
           <DialogTitle className="text-xl">
             {reason === 'limit_reached' 
-              ? `🎯 ${t('trialUpgrade.limit_reached')}` 
-              : `⏰ ${t('trialUpgrade.trial_expired')}`}
+              ? `🎯 Limit Reached` 
+              : `⏰ Trial Expired`}
           </DialogTitle>
           <DialogDescription className="text-base">
             {reason === 'limit_reached' 
-              ? `Vous avez atteint la limite de ${limitType} du plan gratuit. Pour continuer, passez au plan Starter dès maintenant (paiement immédiat).`
-              : `Votre période d'essai gratuite est terminée. Activez le plan Starter pour continuer (paiement immédiat).`}
+              ? `You've reached the ${limitType} limit of the free plan. Upgrade to the Starter plan now to continue (immediate payment).`
+              : `Your free trial period has ended. Activate the Starter plan to continue (immediate payment).`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="bg-muted/50 p-4 rounded-lg">
-            <div className="text-sm font-semibold mb-2">{t('trialUpgrade.starter_plan')}</div>
-            <div className="text-2xl font-bold">9.99€ <span className="text-sm font-normal text-muted-foreground">/ {t('subscriptionPlans.per_month').replace('/', '')}</span></div>
+            <div className="text-sm font-semibold mb-2">Starter Plan</div>
+            <div className="text-2xl font-bold">$9.99 <span className="text-sm font-normal text-muted-foreground">/ month</span></div>
           </div>
 
           <div className="space-y-2">
@@ -89,14 +95,14 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            {t('trialUpgrade.later')}
+            Later
           </Button>
           <Button
             onClick={handleUpgrade}
             disabled={loading}
             className="bg-primary"
           >
-            {loading ? t('trialUpgrade.loading') : t('trialUpgrade.activate_now')}
+            {loading ? 'Loading...' : 'Activate Now'}
           </Button>
         </DialogFooter>
       </DialogContent>

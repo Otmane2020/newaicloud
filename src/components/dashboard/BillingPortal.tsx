@@ -4,11 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useTranslation } from "@/hooks/useTranslation";
 
 export function BillingPortal() {
   const { toast } = useToast();
-  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const handleOpenPortal = async () => {
@@ -24,7 +22,7 @@ export function BillingPortal() {
     } catch (error) {
       console.error('Error opening billing portal:', error);
       toast({
-        title: t('common.error'),
+        title: "Error",
         description: "Unable to open billing portal",
         variant: "destructive"
       });
@@ -36,9 +34,9 @@ export function BillingPortal() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('billingPortal.title')}</CardTitle>
+        <CardTitle>Billing Portal</CardTitle>
         <CardDescription>
-          {t('billingPortal.description')}
+          Manage your payment methods, view invoices, and update billing information
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -50,17 +48,17 @@ export function BillingPortal() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t('billingPortal.opening')}
+              Loading...
             </>
           ) : (
             <>
               <ExternalLink className="mr-2 h-4 w-4" />
-              {t('billingPortal.open_button')}
+              Open Billing Portal
             </>
           )}
         </Button>
-        <p className="text-xs text-muted-foreground mt-4">
-          {t('billingPortal.footer_note')}
+        <p className="text-xs text-muted-foreground mt-3 text-center">
+          You will be redirected to Stripe's secure portal
         </p>
       </CardContent>
     </Card>

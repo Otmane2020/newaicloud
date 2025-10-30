@@ -13,7 +13,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Package, FileText, CreditCard, AlertCircle, Check, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useTranslation } from "@/hooks/useTranslation";
 
 type ImportPhase = 'products' | 'pages' | 'complete';
 
@@ -53,7 +52,6 @@ export function ImportProgressDialog({
   maxProducts,
 }: ImportProgressDialogProps) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
   
   // Animated counters
   const [displayedProducts, setDisplayedProducts] = useState(0);

@@ -1,11 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, X } from "lucide-react";
-import { useTranslation } from '@/hooks/useTranslation';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const PricingComparison = () => {
-  const { t } = useTranslation();
   const isMobile = useIsMobile();
 
   const features = [

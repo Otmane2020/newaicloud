@@ -1,7 +1,6 @@
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "@/hooks/useTranslation";
 
 interface TrialLimitBannerProps {
   resourceType: string;
@@ -12,7 +11,6 @@ interface TrialLimitBannerProps {
 
 export function TrialLimitBanner({ resourceType, usage, limit, onActivate }: TrialLimitBannerProps) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   const handleActivate = () => {
     if (onActivate) {
@@ -30,19 +28,20 @@ export function TrialLimitBanner({ resourceType, usage, limit, onActivate }: Tri
             <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 dark:text-orange-500 flex-shrink-0 mt-0.5 sm:mt-0" />
             <div className="flex-1 min-w-0">
               <p className="font-medium text-orange-900 dark:text-orange-100 text-sm sm:text-base">
-                {t("trial.banner_title")}
+                Trial limit reached
               </p>
               <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 mt-1 break-words">
-                {t("trial.banner_description", { resourceType, usage, limit })}
+                You've used {usage} of {limit} {resourceType}. Upgrade to continue.
               </p>
             </div>
           </div>
           <Button
             onClick={handleActivate}
+            variant="default"
             size="sm"
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white whitespace-nowrap w-full sm:w-auto text-xs sm:text-sm h-8 sm:h-9 px-3 sm:px-4"
+            className="bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 text-white shadow-lg whitespace-nowrap w-full sm:w-auto"
           >
-            {t("trial.activate_subscription")}
+            Activate My Plan
           </Button>
         </div>
       </div>

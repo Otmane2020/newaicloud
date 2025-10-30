@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2, User, Mail, Lock, Eye, EyeOff, Globe } from "lucide-react";
-import { useTranslation } from "@/hooks/useTranslation";
 
 const languages = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -17,7 +16,6 @@ const languages = [
 
 export function AccountSettings() {
   const { user } = useAuth();
-  const { t, language, changeLanguage } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name || "");
   const [email] = useState(user?.email || "");

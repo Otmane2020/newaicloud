@@ -7,7 +7,6 @@ import { useTrialLimits } from '@/hooks/useTrialLimits';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { formatCurrency } from '@/lib/utils';
-import { useTranslation } from '@/hooks/useTranslation';
 import { SeoScoreGauge } from '@/components/dashboard/SeoScoreGauge';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
@@ -49,7 +48,6 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { t } = useTranslation();
   const { trialStatus, showUpgradeDialog, setShowUpgradeDialog } = useTrialLimits();
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0,
@@ -75,8 +73,8 @@ export default function Dashboard() {
       const checkoutStatus = searchParams.get('checkout');
       if (checkoutStatus === 'success') {
         toast({
-          title: `🎉 ${t('dashboard.subscription_activated')}`,
-          description: t('dashboard.subscription_activated_desc'),
+          title: "🎉 Subscription Activated",
+          description: "Your subscription is now active. Welcome aboard!",
         });
         
         searchParams.delete('checkout');
@@ -88,8 +86,8 @@ export default function Dashboard() {
         }, 1500);
       } else if (checkoutStatus === 'cancelled') {
         toast({
-          title: t('dashboard.payment_cancelled'),
-          description: t('dashboard.payment_cancelled_desc'),
+          title: "Payment Cancelled",
+          description: "Your payment was cancelled. You can try again anytime.",
           variant: "destructive"
         });
         

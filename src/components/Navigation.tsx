@@ -27,7 +27,6 @@ import {
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useTranslation } from '@/hooks/useTranslation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -36,7 +35,6 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog', '/blog?tab=opportunities']);
@@ -45,55 +43,55 @@ export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const menuItems = [
-    { path: '/', label: t('navigation.dashboard'), icon: LayoutDashboard },
-    { path: '/products', label: t('navigation.catalogue'), icon: ShoppingBag },
-    { path: '/merchant', label: t('navigation.google_merchant'), icon: BarChart3 },
-    { path: '/shopping', label: t('navigation.google_shopping'), icon: ShoppingBag },
-    { path: '/search-products', label: t('navigation.search_ai'), icon: MessageSquare },
+    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/products', label: 'Catalog', icon: ShoppingBag },
+    { path: '/merchant', label: 'Google Merchant', icon: BarChart3 },
+    { path: '/shopping', label: 'Google Shopping', icon: ShoppingBag },
+    { path: '/search-products', label: 'AI Search', icon: MessageSquare },
     { 
       path: '/seo', 
-      label: t('navigation.seo'), 
+      label: 'SEO', 
       icon: Zap,
       subItems: [
-        { path: '/seo?tab=optimization', label: t('navigation.seo_optimization'), icon: Sparkles },
-        { path: '/seo?tab=tags', label: t('navigation.tag_optimization'), icon: Tag },
-        { path: '/seo?tab=alt', label: t('navigation.alt_image'), icon: ImageIcon },
+        { path: '/seo?tab=optimization', label: 'SEO Optimization', icon: Sparkles },
+        { path: '/seo?tab=tags', label: 'Tag Optimization', icon: Tag },
+        { path: '/seo?tab=alt', label: 'ALT Image', icon: ImageIcon },
       ]
     },
     { 
       path: '/blog', 
-      label: t('navigation.blog_seo'), 
+      label: 'SEO Blog', 
       icon: FileText,
       subItems: [
-        { path: '/blog?tab=articles', label: t('navigation.articles'), icon: PenSquare },
-        { path: '/blog?tab=campaigns', label: t('navigation.campaigns'), icon: CalendarClock },
+        { path: '/blog?tab=articles', label: 'Articles', icon: PenSquare },
+        { path: '/blog?tab=campaigns', label: 'Campaigns', icon: CalendarClock },
         { 
           path: '/blog?tab=opportunities', 
-          label: t('navigation.opportunities'), 
+          label: 'Opportunities', 
           icon: Lightbulb,
           subItems: [
-            { path: '/blog?tab=netlinking', label: t('navigation.netlinking'), icon: LinkIcon },
-            { path: '/blog?tab=settings', label: t('navigation.settings'), icon: Settings }
+            { path: '/blog?tab=netlinking', label: 'Netlinking', icon: LinkIcon },
+            { path: '/blog?tab=settings', label: 'Settings', icon: Settings }
           ]
         }
       ]
     },
     { 
       path: '/chat', 
-      label: t('navigation.chat_smart'), 
+      label: 'Smart Chat', 
       icon: MessageSquare,
       subItems: [
-        { path: '/chat', label: t('navigation.conversation'), icon: MessageSquare },
-        { path: '/chat-history', label: t('navigation.history'), icon: CalendarClock },
-        { path: '/product-source', label: t('navigation.product_source'), icon: ShoppingBag },
+        { path: '/chat', label: 'Conversation', icon: MessageSquare },
+        { path: '/chat-history', label: 'History', icon: CalendarClock },
+        { path: '/product-source', label: 'Product Source', icon: ShoppingBag },
       ]
     },
   ];
 
   const bottomMenuItems = [
-    { path: '/dashboard', label: t('navigation.account'), icon: User },
-    { path: '/subscription', label: t('navigation.subscription'), icon: CreditCard },
-    { path: '/integration', label: t('navigation.shopify'), icon: Settings },
+    { path: '/dashboard', label: 'Account', icon: User },
+    { path: '/subscription', label: 'Subscription', icon: CreditCard },
+    { path: '/integration', label: 'Shopify', icon: Settings },
   ];
 
   useEffect(() => {
@@ -174,10 +172,10 @@ export function Navigation() {
                     ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-300/50'
                     : 'text-orange-600 hover:bg-orange-50 hover:text-orange-700 border border-orange-200'
                 }`}
-                title={collapsed ? t('navigation.admin_panel') : undefined}
+                title={collapsed ? 'Admin Panel' : undefined}
               >
                 <Shield className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="font-bold">{t('navigation.admin_panel')}</span>}
+                {!collapsed && <span className="font-bold">Admin Panel</span>}
               </Link>
             )}
             
@@ -299,7 +297,7 @@ export function Navigation() {
         <div className="px-2 pb-2 space-y-1 border-t border-gray-200 pt-2">
           {!collapsed && userPlan && (
             <div className="px-3 py-2 mb-2 text-center">
-              <div className="text-xs text-muted-foreground mb-1">{t('navigation.current_plan')}</div>
+              <div className="text-xs text-muted-foreground mb-1">Current Plan</div>
               <div className="px-2 py-1 bg-gradient-primary text-white rounded-md text-xs font-semibold">
                 {userPlan}
               </div>
@@ -307,7 +305,7 @@ export function Navigation() {
           )}
           {!collapsed && (
             <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              {t('navigation.settings')}
+              Settings
             </div>
           )}
           {bottomMenuItems.map((item) => {
@@ -337,10 +335,10 @@ export function Navigation() {
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-            title={collapsed ? t('navigation.logout') : undefined}
+            title={collapsed ? 'Logout' : undefined}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span className="font-medium">{t('navigation.logout')}</span>}
+            {!collapsed && <span className="font-medium">Logout</span>}
           </button>
           
           <button
@@ -352,7 +350,7 @@ export function Navigation() {
             ) : (
               <>
                 <ChevronLeft className="w-5 h-5" />
-                <span className="font-medium">{t('navigation.collapse')}</span>
+                <span className="font-medium">Collapse</span>
               </>
             )}
           </button>

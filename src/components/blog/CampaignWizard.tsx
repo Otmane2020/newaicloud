@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sparkles, Calendar, Target, Users, Clock, ArrowRight, ArrowLeft, X } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
 
 interface CampaignWizardProps {
   open: boolean;
@@ -22,7 +21,6 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [keywordInput, setKeywordInput] = useState('');
-  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     description: '',

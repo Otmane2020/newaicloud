@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useTranslation } from '@/hooks/useTranslation';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,7 +64,6 @@ interface Product {
 
 export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const { user } = useAuth();
-  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);

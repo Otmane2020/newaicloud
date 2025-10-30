@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, CreditCard, Calendar, Package } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
 
 interface Plan {
   id: string;
@@ -19,7 +18,6 @@ interface Plan {
 
 export function CurrentPlanCard() {
   const { user } = useAuth();
-  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
