@@ -326,12 +326,18 @@ export function AppSidebar() {
             <div className="flex flex-col gap-2 px-4 py-3 w-full">
               {state === "expanded" ? (
                 <>
-                  <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 shadow-md w-fit">
-                    <Crown className="h-3 w-3 text-white shrink-0" />
+                  <NavLink 
+                    to="/account?tab=subscription"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group w-fit"
+                  >
+                    <Crown className="h-3.5 w-3.5 text-white shrink-0 group-hover:rotate-12 transition-transform" />
                     <span className="text-xs font-bold text-white uppercase tracking-wide">
                       {userPlan || "Loading..."}
                     </span>
-                  </div>
+                    <span className="text-xs text-white/90 font-medium">
+                      (Upgrade)
+                    </span>
+                  </NavLink>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <User className="h-3.5 w-3.5 shrink-0" />
                     <span className="text-xs truncate">{user?.email}</span>
