@@ -74,7 +74,7 @@ export default function SEO() {
                 </div>
                 <div className="flex flex-col gap-3 items-center">
                   <div className="text-center">
-                    <div className="text-4xl font-bold text-blue-600">85%</div>
+                    <div className="text-4xl font-bold text-blue-600">85/100</div>
                     <div className="text-sm text-muted-foreground">SEO Score</div>
                   </div>
                   <Button

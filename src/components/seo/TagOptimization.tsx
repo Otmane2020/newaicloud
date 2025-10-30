@@ -107,7 +107,16 @@ export function TagOptimization() {
   const productsWithoutTags = products.length - productsWithTags;
   const productsToSync = products.filter(p => p.tags && !p.seo_synced_to_shopify).length;
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
-  const tagCompletionRate = products.length > 0 ? Math.round((productsWithTags / products.length) * 100) : 0;
+  
+  // Calculate tag SEO score (products with tags get 80/100, without get 20/100)
+  const tagSeoScore = products.length > 0 
+    ? Math.round(
+        products.reduce((sum, p) => {
+          // Products with tags get 80 points, without tags get 20 points
+          return sum + (p.tags ? 80 : 20);
+        }, 0) / products.length
+      )
+    : 0;
 
   const filters = [
     { id: 'all' as FilterType, label: 'All Products', count: products.length },
@@ -448,7 +457,13 @@ export function TagOptimization() {
           </div>
           <div className="flex flex-col gap-4 items-center">
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-orange-600">{tagCompletionRate}</div>
+              <div className={`text-3xl md:text-4xl font-bold ${
+                tagSeoScore >= 70 ? 'text-green-600' : 
+                tagSeoScore >= 40 ? 'text-orange-600' : 
+                'text-red-600'
+              }`}>
+                {tagSeoScore}/100
+              </div>
               <div className="text-sm text-muted-foreground">SEO Score</div>
             </div>
             <Button
@@ -479,7 +494,7 @@ export function TagOptimization() {
               <h3 className="text-sm font-semibold text-green-900 dark:text-green-100">Tagged</h3>
             </div>
             <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs">
-              {tagCompletionRate}%
+              {Math.round((productsWithTags / products.length) * 100)}%
             </Badge>
           </div>
           <p className="text-3xl font-bold text-green-900 dark:text-green-100">{productsWithTags}</p>

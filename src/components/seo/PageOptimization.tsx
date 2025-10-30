@@ -364,8 +364,12 @@ export function PageOptimization() {
           </div>
           <div className="flex flex-col gap-3 items-center">
             <div className="text-center">
-              <div className="text-4xl font-bold text-purple-600">
-                {globalPageSeoScore}
+              <div className={`text-4xl font-bold ${
+                globalPageSeoScore >= 70 ? 'text-green-600' : 
+                globalPageSeoScore >= 40 ? 'text-orange-600' : 
+                'text-red-600'
+              }`}>
+                {globalPageSeoScore}/100
               </div>
               <div className="text-sm text-muted-foreground">SEO Score</div>
             </div>

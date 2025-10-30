@@ -449,7 +449,13 @@ export function SeoOptimization() {
           </div>
           <div className="flex flex-col gap-4 items-center">
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-blue-600">{globalSeoScore}</div>
+              <div className={`text-3xl md:text-4xl font-bold ${
+                globalSeoScore >= 70 ? 'text-green-600' : 
+                globalSeoScore >= 40 ? 'text-orange-600' : 
+                'text-red-600'
+              }`}>
+                {globalSeoScore}/100
+              </div>
               <div className="text-sm text-muted-foreground">SEO Score</div>
             </div>
             <Button

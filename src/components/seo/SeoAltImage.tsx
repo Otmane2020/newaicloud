@@ -284,6 +284,16 @@ export function SeoAltImage() {
   const imagesNeedingAlt = images.filter(img => !img.alt_text).length;
   const imagesWithAlt = images.filter(img => img.alt_text).length;
   const altCompletionRate = images.length > 0 ? Math.round((imagesWithAlt / images.length) * 100) : 0;
+  
+  // Calculate ALT SEO score (images with ALT get 85/100, without get 15/100)
+  const altSeoScore = images.length > 0 
+    ? Math.round(
+        images.reduce((sum, img) => {
+          // Images with ALT text get 85 points, without get 15 points
+          return sum + (img.alt_text ? 85 : 15);
+        }, 0) / images.length
+      )
+    : 0;
 
   const tabs = [
     { id: 'all' as AltImageTab, label: 'Toutes', count: images.length },
@@ -324,7 +334,13 @@ export function SeoAltImage() {
           </div>
           <div className="flex flex-col gap-3 items-center">
             <div className="text-center">
-              <div className="text-4xl font-bold text-green-600">{altCompletionRate}</div>
+              <div className={`text-4xl font-bold ${
+                altSeoScore >= 70 ? 'text-green-600' : 
+                altSeoScore >= 40 ? 'text-orange-600' : 
+                'text-red-600'
+              }`}>
+                {altSeoScore}/100
+              </div>
               <div className="text-sm text-muted-foreground">SEO Score</div>
             </div>
             <Button

@@ -6,7 +6,9 @@
     "optimize": "Optimiser",
     "optimizing": "Optimisation...",
     "success": "Optimisation réussie",
-    "error": "Erreur d'optimisation"
+    "error": "Erreur d'optimisation",
+    "score": "Score SEO",
+    "outOf100": "/100"
   },
   "tags": {
     "title": "Optimisation Tags",
