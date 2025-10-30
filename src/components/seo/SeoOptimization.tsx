@@ -113,20 +113,45 @@ export function SeoOptimization() {
   const syncedCount = products.filter(p => p.seo_synced_to_shopify).length;
   const optimizationRate = products.length > 0 ? Math.round((enrichedCount / products.length) * 100) : 0;
 
-  // Calculate global SEO score (only for optimized products)
-  const seoOptimizedProducts = products.filter(p => p.enrichment_status === 'enriched');
-  const globalSeoScore = seoOptimizedProducts.length > 0 
+  // Calculate global SEO score with 30/70 weighting
+  const productsNotOptimized = products.filter(p => p.enrichment_status !== 'enriched');
+  const productsOptimized = products.filter(p => p.enrichment_status === 'enriched');
+
+  // Score for non-optimized products (based on original Shopify data)
+  const scoreWithoutAI = productsNotOptimized.length > 0
     ? Math.round(
-        seoOptimizedProducts.reduce((sum, p) => {
+        productsNotOptimized.reduce((sum, p) => {
           const score = calculateDetailedSeoScore(
-            p.seo_title,
-            p.seo_description,
+            p.title,        // Original Shopify title
+            p.vendor,       // Using vendor as description proxy for non-enriched
             !!p.image_url,
-            true
+            true,
+            p.tags          // Shopify tags
           );
           return sum + score.score;
-        }, 0) / seoOptimizedProducts.length
+        }, 0) / productsNotOptimized.length
       )
+    : 0;
+
+  // Score for AI-optimized products
+  const scoreWithAI = productsOptimized.length > 0
+    ? Math.round(
+        productsOptimized.reduce((sum, p) => {
+          const score = calculateDetailedSeoScore(
+            p.seo_title,       // AI-generated title
+            p.seo_description, // AI-generated description
+            !!p.image_url,
+            true,
+            p.tags             // Tags
+          );
+          return sum + score.score;
+        }, 0) / productsOptimized.length
+      )
+    : 0;
+
+  // Apply 30/70 weighting
+  const globalSeoScore = products.length > 0
+    ? Math.round((0.3 * scoreWithoutAI) + (0.7 * scoreWithAI))
     : 0;
 
   // Get unique categories
@@ -511,28 +536,34 @@ export function SeoOptimization() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-4 items-center">
-            <div className="text-center">
-              <div className={`text-3xl md:text-4xl font-bold ${
-                globalSeoScore >= 70 ? 'text-green-600' : 
-                globalSeoScore >= 40 ? 'text-orange-600' : 
-                'text-red-600'
-              }`}>
-                {globalSeoScore}/100
+            <div className="flex flex-col gap-4 items-center">
+              <div className="text-center">
+                <div className={`text-3xl md:text-4xl font-bold ${
+                  globalSeoScore >= 70 ? 'text-green-600' : 
+                  globalSeoScore >= 40 ? 'text-orange-600' : 
+                  'text-red-600'
+                }`}>
+                  {globalSeoScore}/100
+                </div>
+                <div className="text-sm text-muted-foreground">Global SEO Score</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  30% non-optimized + 70% AI-optimized
+                </div>
+                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  {optimizationRate}% optimized
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">SEO Score</div>
+              <Button
+                size="lg"
+                onClick={handleGenerateAll}
+                disabled={generating || notEnrichedCount === 0}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2 shadow-lg"
+              >
+                <Sparkles className="w-5 h-5" />
+                Start Optimization
+                <ArrowRight className="w-5 h-5" />
+              </Button>
             </div>
-            <Button
-              size="lg"
-              onClick={handleGenerateAll}
-              disabled={generating || notEnrichedCount === 0}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2 shadow-lg"
-            >
-              <Sparkles className="w-5 h-5" />
-              Start Optimization
-              <ArrowRight className="w-5 h-5" />
-            </Button>
-          </div>
         </div>
       </Card>
 
@@ -890,16 +921,50 @@ export function SeoOptimization() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="text-2xl font-bold">{seoScore.score}</div>
-                        <SeoConfidenceBadge
-                          seoTitle={product.seo_title}
-                          seoDescription={product.seo_description}
-                          showLabel={false}
-                        />
-                      </div>
-                    </TableCell>
+                     <TableCell>
+                       <div className="flex flex-col gap-1">
+                         {product.enrichment_status === 'enriched' ? (
+                           <>
+                             <div className="flex items-center gap-2">
+                               <div className={`text-lg font-bold ${
+                                 seoScore.score >= 70 ? 'text-green-600' : 
+                                 seoScore.score >= 40 ? 'text-orange-600' : 
+                                 'text-red-600'
+                               }`}>
+                                 {seoScore.score}/100
+                               </div>
+                             </div>
+                             <span className="text-xs text-muted-foreground">AI-optimized</span>
+                           </>
+                         ) : (
+                           <>
+                             {(() => {
+                               const initialScore = calculateDetailedSeoScore(
+                                 product.title,
+                                 product.vendor,
+                                 !!product.image_url,
+                                 true,
+                                 product.tags
+                               );
+                               return (
+                                 <>
+                                   <div className="flex items-center gap-2">
+                                     <div className={`text-lg font-bold ${
+                                       initialScore.score >= 70 ? 'text-green-600' : 
+                                       initialScore.score >= 40 ? 'text-orange-600' : 
+                                       'text-red-600'
+                                     }`}>
+                                       {initialScore.score}/100
+                                     </div>
+                                   </div>
+                                   <span className="text-xs text-muted-foreground">Initial score</span>
+                                 </>
+                               );
+                             })()}
+                           </>
+                         )}
+                       </div>
+                     </TableCell>
                     <TableCell>
                       <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
                         {product.enrichment_status === 'enriched' ? 'Optimized' : 'Pending'}
@@ -1009,13 +1074,47 @@ export function SeoOptimization() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="text-lg font-bold">{seoScore.score}</div>
-                      <SeoConfidenceBadge
-                        seoTitle={product.seo_title}
-                        seoDescription={product.seo_description}
-                        showLabel={false}
-                      />
+                    <div className="flex flex-col gap-1">
+                      {product.enrichment_status === 'enriched' ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className={`text-lg font-bold ${
+                              seoScore.score >= 70 ? 'text-green-600' : 
+                              seoScore.score >= 40 ? 'text-orange-600' : 
+                              'text-red-600'
+                            }`}>
+                              {seoScore.score}/100
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">AI-optimized</span>
+                        </>
+                      ) : (
+                        <>
+                          {(() => {
+                            const initialScore = calculateDetailedSeoScore(
+                              product.title,
+                              product.vendor,
+                              !!product.image_url,
+                              true,
+                              product.tags
+                            );
+                            return (
+                              <>
+                                <div className="flex items-center gap-2">
+                                  <div className={`text-lg font-bold ${
+                                    initialScore.score >= 70 ? 'text-green-600' : 
+                                    initialScore.score >= 40 ? 'text-orange-600' : 
+                                    'text-red-600'
+                                  }`}>
+                                    {initialScore.score}/100
+                                  </div>
+                                </div>
+                                <span className="text-xs text-muted-foreground">Initial score</span>
+                              </>
+                            );
+                          })()}
+                        </>
+                      )}
                     </div>
                     
                     <Button

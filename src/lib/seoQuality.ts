@@ -258,22 +258,62 @@ export function calculateDescriptionScore(
 }
 
 /**
- * Calculate detailed SEO score combining title and description (legacy support)
+ * Calculate SEO score for TAGS
+ * Critères: présence (5 pts), nombre optimal (10 pts), qualité (5 pts)
+ */
+export function calculateTagsScore(tags: string | null | undefined): number {
+  if (!tags || tags.trim().length === 0) {
+    return 0; // Aucun tag = 0 points
+  }
+  
+  const tagArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+  let score = 0;
+  
+  // Présence de tags : 5 points
+  if (tagArray.length > 0) score += 5;
+  
+  // Nombre optimal de tags (3-10) : 10 points
+  if (tagArray.length >= 3 && tagArray.length <= 10) {
+    score += 10;
+  } else if (tagArray.length > 0) {
+    score += 5; // Partiellement optimal
+  }
+  
+  // Qualité des tags (longueur > 3 caractères) : 5 points
+  const qualityTags = tagArray.filter(t => t.length > 3);
+  if (qualityTags.length >= tagArray.length * 0.7) {
+    score += 5; // 70% des tags sont descriptifs
+  }
+  
+  return Math.min(score, 20); // Maximum 20 points
+}
+
+/**
+ * Calculate detailed SEO score combining title, description, and tags
+ * Pondération: Title 35% + Description 35% + Tags 20% + Image 5% + URL 5%
  */
 export function calculateDetailedSeoScore(
   title: string | null | undefined,
   description: string | null | undefined,
   hasImage: boolean = false,
-  hasUrl: boolean = false
+  hasUrl: boolean = false,
+  tags?: string | null
 ): SeoScoreDetails {
   const titleScore = calculateTitleScore(title);
   const descScore = calculateDescriptionScore(description);
-
-  // Average the two scores with equal weight
-  const avgScore = Math.round((titleScore.score + descScore.score) / 2);
+  const tagsScore = calculateTagsScore(tags);
+  
+  // Pondération : Title 35% + Description 35% + Tags 20% + Image 5% + URL 5%
+  const weightedScore = Math.round(
+    (titleScore.score * 0.35) +
+    (descScore.score * 0.35) +
+    (tagsScore * 1) + // Tags déjà sur 20 points
+    (hasImage ? 5 : 0) +
+    (hasUrl ? 5 : 0)
+  );
 
   return {
-    score: avgScore,
+    score: Math.min(100, weightedScore),
     breakdown: {
       presence: Math.round((titleScore.breakdown.presence + descScore.breakdown.presence) / 2),
       length: Math.round((titleScore.breakdown.length + descScore.breakdown.length) / 2),
