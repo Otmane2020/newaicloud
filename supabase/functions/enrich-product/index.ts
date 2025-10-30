@@ -133,6 +133,24 @@ Deno.serve(async (req: Request) => {
 
     console.log(`✅ Product fetched: ${product.title}`);
 
+    // Check if product already optimized for trial users
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_status')
+      .eq('id', product.seller_id)
+      .single();
+
+    if (profile?.subscription_status === 'trialing' && (product.optimization_count || 0) >= 1) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'trial_product_already_optimized',
+          message: 'Ce produit a déjà été optimisé pendant votre période d\'essai.'
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Build AI prompt to detect attributes (NOT SEO fields)
     const prompt = `
 Tu es un expert en analyse de produits e-commerce. Analyse ce produit et extrait UNIQUEMENT les attributs suivants (PAS de SEO).
@@ -206,6 +224,7 @@ Réponds UNIQUEMENT en JSON valide:
         ai_care_instructions: parsedData.ai_care_instructions || null,
         enrichment_status: 'enriched',
         last_enriched_at: new Date().toISOString(),
+        optimization_count: (product.optimization_count || 0) + 1
       })
       .eq('id', productId);
 

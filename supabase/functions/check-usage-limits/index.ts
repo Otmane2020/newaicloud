@@ -113,7 +113,7 @@ serve(async (req) => {
     let limits;
     if (isTrialing) {
       limits = {
-        max_optimizations: plan.trial_max_optimizations || 10,
+        max_optimizations: plan.trial_max_optimizations || 999999, // Unlimited, checked per-product
         max_articles: plan.trial_max_articles || 1,
         max_chat_responses: plan.trial_max_chat_responses || 50,
         max_shopify_requests: plan.trial_max_shopify_requests || 20,
@@ -123,7 +123,7 @@ serve(async (req) => {
       };
     } else {
       limits = {
-        max_optimizations: plan.max_optimizations_monthly || 1000,
+        max_optimizations: plan.max_optimizations_monthly || 999999,
         max_articles: plan.max_articles_monthly || 5,
         max_chat_responses: plan.max_chat_responses_monthly || 200,
         max_shopify_requests: plan.max_shopify_requests_monthly || 100,
@@ -136,7 +136,8 @@ serve(async (req) => {
     console.log(`[LIMITS] Applied limits:`, limits);
 
     // Check if limits are reached
-    const canUseOptimizations = currentUsage.optimizations_count < limits.max_optimizations;
+    // For trial users, optimizations are unlimited but checked per-product in each edge function
+    const canUseOptimizations = isTrialing ? true : currentUsage.optimizations_count < limits.max_optimizations;
     const canUseArticles = currentUsage.articles_count < limits.max_articles;
     const canUseChat = currentUsage.chat_responses_count < limits.max_chat_responses;
     const canUseShopifySearch = currentUsage.shopify_requests_count < limits.max_shopify_requests;

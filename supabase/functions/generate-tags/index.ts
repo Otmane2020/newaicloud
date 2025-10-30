@@ -108,7 +108,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags, seller_id")
+      .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags, seller_id, optimization_count")
       .eq("id", productId)
       .maybeSingle();
 
@@ -119,6 +119,23 @@ Deno.serve(async (req: Request) => {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
+      );
+    }
+
+    // Check if product already optimized for trial users
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('subscription_status')
+      .eq('id', product.seller_id)
+      .single();
+
+    if (profile?.subscription_status === 'trialing' && (product.optimization_count || 0) >= 1 && !force) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'trial_product_already_optimized',
+          message: 'Ce produit a déjà été optimisé pendant votre période d\'essai.'
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -197,7 +214,8 @@ Example for a wooden coffee table:
       .from("shopify_products")
       .update({
         tags: tags,
-        seo_synced_to_shopify: false
+        seo_synced_to_shopify: false,
+        optimization_count: (product.optimization_count || 0) + 1
       })
       .eq("id", productId);
 

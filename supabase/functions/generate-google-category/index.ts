@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("id, title, description, product_type, category, sub_category, vendor, seller_id")
+      .select("id, title, description, product_type, category, sub_category, vendor, seller_id, optimization_count")
       .eq("id", productId)
       .maybeSingle();
 
@@ -78,6 +78,23 @@ Deno.serve(async (req: Request) => {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
+      );
+    }
+
+    // Check if product already optimized for trial users
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('subscription_status')
+      .eq('id', product.seller_id)
+      .single();
+
+    if (profile?.subscription_status === 'trialing' && (product.optimization_count || 0) >= 1) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'trial_product_already_optimized',
+          message: 'Ce produit a déjà été optimisé pendant votre période d\'essai.'
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -153,6 +170,7 @@ IMPORTANT:
         google_mpn: googleData.google_mpn,
         google_condition: googleData.google_condition,
         google_brand: googleData.google_brand,
+        optimization_count: (product.optimization_count || 0) + 1
       })
       .eq("id", productId);
 

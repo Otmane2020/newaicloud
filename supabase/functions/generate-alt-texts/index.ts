@@ -366,10 +366,10 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Get product data
+    // Get product data with optimization count
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("title, description, category, ai_color, ai_material, seller_id")
+      .select("title, description, category, ai_color, ai_material, seller_id, optimization_count")
       .eq("id", image.product_id)
       .maybeSingle();
 
@@ -380,6 +380,17 @@ Deno.serve(async (req: Request) => {
 
     if (!product) {
       throw new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND');
+    }
+
+    // Check if product already optimized for trial users
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('subscription_status')
+      .eq('id', product.seller_id)
+      .single();
+
+    if (profile?.subscription_status === 'trialing' && (product.optimization_count || 0) >= 1) {
+      throw new AppError('Ce produit a déjà été optimisé pendant votre période d\'essai.', 403, 'TRIAL_PRODUCT_ALREADY_OPTIMIZED');
     }
 
     // Generate ALT text using DeepSeek
@@ -416,6 +427,12 @@ Deno.serve(async (req: Request) => {
       console.error('Database error updating ALT text:', updateError);
       throw new AppError('Failed to update ALT text', 500, 'UPDATE_ERROR');
     }
+
+    // Increment product optimization count
+    await supabaseClient
+      .from("shopify_products")
+      .update({ optimization_count: (product.optimization_count || 0) + 1 })
+      .eq("id", image.product_id);
 
     console.log(`ALT text generated successfully for image ${imageId}: ${altText}`);
 

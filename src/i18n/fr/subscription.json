@@ -147,8 +147,8 @@
     "activate_now": "Activer maintenant",
     "loading": "Chargement...",
     "features": [
-      "Jusqu'à 100 produits",
-      "100 optimisations SEO / mois",
+      "Jusqu'à 10 produits maximum",
+      "Optimisations illimitées (1x par produit)",
       "1 article de blog IA / mois",
       "20 requêtes API Shopify / mois",
       "50 réponses chat IA / mois",
@@ -168,7 +168,7 @@
       "optimizations": {
         "title": "Optimisations SEO",
         "message": "{usage}/{limit} optimisations utilisées",
-        "trial": "10 optimisations SEO",
+        "trial": "Optimisations illimitées (1x par produit)",
         "paid": "1 000 optimisations SEO / mois"
       },
       "articles": {
