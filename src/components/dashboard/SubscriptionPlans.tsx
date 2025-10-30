@@ -201,33 +201,31 @@ export function SubscriptionPlans() {
                 {isCurrentPlan(starterPlan.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.starter.cta')}
               </Button>
               
-              <div className="bg-muted/30 p-4 rounded-lg space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Limites & Utilisation</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Produits</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.products_count}` : '0'} / {starterPlan.max_products}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Optimisations SEO</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.optimizations_count}` : '0'} / {starterPlan.max_optimizations_monthly}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Articles blog</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.articles_count}` : '0'} / {starterPlan.max_articles_monthly}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Réponses chat</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.chat_responses_count}` : '0'} / {starterPlan.max_chat_responses_monthly}
-                    </span>
-                  </div>
+              <div className="space-y-3 pt-6 border-t">
+                <p className="font-semibold text-sm">Limites & Utilisation</p>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.products_count : 0}</strong> / {starterPlan.max_products} produits
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {starterPlan.max_optimizations_monthly} optimisations SEO
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.articles_count : 0}</strong> / {starterPlan.max_articles_monthly} articles blog
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {starterPlan.max_chat_responses_monthly} réponses chat
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -280,39 +278,37 @@ export function SubscriptionPlans() {
                 {isCurrentPlan(selectedPro.id) ? t('subscriptionPlans.current_plan') : 'S\'abonner maintenant'}
               </Button>
               
-              <div className="bg-muted/30 p-4 rounded-lg space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Limites & Utilisation</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Produits</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.products_count}` : '0'} / {selectedPro.max_products.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Optimisations SEO</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.optimizations_count}` : '0'} / {selectedPro.max_optimizations_monthly.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Articles blog</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.articles_count}` : '0'} / {selectedPro.max_articles_monthly}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Réponses chat</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.chat_responses_count}` : '0'} / {selectedPro.max_chat_responses_monthly.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Boutiques Shopify</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.shopify_stores_count}` : '0'} / {selectedPro.max_shopify_stores || 1}
-                    </span>
-                  </div>
+              <div className="space-y-3 pt-6 border-t">
+                <p className="font-semibold text-sm">Limites & Utilisation</p>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.products_count : 0}</strong> / {selectedPro.max_products.toLocaleString()} produits
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {selectedPro.max_optimizations_monthly.toLocaleString()} optimisations SEO
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.articles_count : 0}</strong> / {selectedPro.max_articles_monthly} articles blog
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {selectedPro.max_chat_responses_monthly.toLocaleString()} réponses chat
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.shopify_stores_count : 0}</strong> / {selectedPro.max_shopify_stores || 1} boutiques Shopify
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -366,39 +362,37 @@ export function SubscriptionPlans() {
                 {isCurrentPlan(selectedEnterprise.id) ? t('subscriptionPlans.current_plan') : 'Upgrade to Enterprise'}
               </Button>
               
-              <div className="bg-muted/30 p-4 rounded-lg space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Limites & Utilisation</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Produits</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.products_count}` : '0'} / ∞
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Optimisations SEO</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.optimizations_count}` : '0'} / {selectedEnterprise.max_optimizations_monthly.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Articles blog</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.articles_count}` : '0'} / {selectedEnterprise.max_articles_monthly}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Réponses chat</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.chat_responses_count}` : '0'} / {selectedEnterprise.max_chat_responses_monthly.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Boutiques Shopify</span>
-                    <span className="font-medium">
-                      {limits ? `${limits.usage.shopify_stores_count}` : '0'} / {selectedEnterprise.max_shopify_stores || 10}
-                    </span>
-                  </div>
+              <div className="space-y-3 pt-6 border-t">
+                <p className="font-semibold text-sm">Limites & Utilisation</p>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.products_count : 0}</strong> / ∞ produits
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.optimizations_count : 0}</strong> / {selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations SEO
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.articles_count : 0}</strong> / {selectedEnterprise.max_articles_monthly} articles blog
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.chat_responses_count : 0}</strong> / {selectedEnterprise.max_chat_responses_monthly.toLocaleString()} réponses chat
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>{limits ? limits.usage.shopify_stores_count : 0}</strong> / {selectedEnterprise.max_shopify_stores || 10} boutiques Shopify
+                  </span>
                 </div>
               </div>
             </CardContent>
