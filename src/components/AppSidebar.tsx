@@ -324,18 +324,18 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <div className="flex flex-col gap-2 px-2 py-2 sm:py-3">
+              <div className="flex flex-col gap-2 px-2 py-2 sm:py-3 w-full">
                 {state === "expanded" ? (
                   <>
-                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg">
-                      <Crown className="h-3.5 w-3.5 text-white shrink-0" />
+                    <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 shadow-md w-fit">
+                      <Crown className="h-3 w-3 text-white shrink-0" />
                       <span className="text-xs font-bold text-white uppercase tracking-wide">
                         {userPlan || "Loading..."}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-muted-foreground pl-0.5">
                       <User className="h-3.5 w-3.5 shrink-0" />
-                      <span className="text-xs truncate">{user?.email}</span>
+                      <span className="text-xs truncate max-w-full">{user?.email}</span>
                     </div>
                   </>
                 ) : (
