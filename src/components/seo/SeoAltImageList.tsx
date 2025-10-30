@@ -225,7 +225,7 @@ export function SeoAltImageList() {
   };
 
   const handleCloseProgressDialog = () => {
-    if (isOptimizationComplete && syncing) {
+    if (isOptimizationComplete) {
       const successCount = progress.current;
       if (successCount > 0) {
         toast.success('Synchronisation terminée !', {
