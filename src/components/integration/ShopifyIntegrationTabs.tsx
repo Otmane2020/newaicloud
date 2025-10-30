@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag, Plus } from "lucide-react";
 import { ShopifyConnectionDialog } from "./ShopifyConnectionDialog";
 import { SkeletonLoader } from "./SkeletonLoader";
-import { useTranslation } from '@/hooks/useTranslation';
 
 const ShopifyConnectionsList = lazy(() =>
   import("@/components/dashboard/ShopifyConnectionsList").then(module => ({
@@ -14,7 +13,6 @@ const ShopifyConnectionsList = lazy(() =>
 
 export function ShopifyIntegrationTabs() {
   const [showDialog, setShowDialog] = useState(false);
-  const { t } = useTranslation();
 
   return (
     <div className="space-y-6">
@@ -24,15 +22,15 @@ export function ShopifyIntegrationTabs() {
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <ShoppingBag className="w-5 h-5" />
-                {t('shopify.connection_title')}
+                Shopify Connections
               </CardTitle>
               <CardDescription className="text-sm">
-                {t('shopify.connection_description')}
+                Connect and manage your Shopify stores
               </CardDescription>
             </div>
             <Button onClick={() => setShowDialog(true)} size="lg" className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
-              {t('shopify.add_store')}
+              Add Store
             </Button>
           </div>
         </CardHeader>

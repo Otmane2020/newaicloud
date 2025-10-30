@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useTranslation } from "@/hooks/useTranslation";
 import {
   Sidebar,
   SidebarContent,
@@ -51,55 +50,54 @@ import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const mainMenuItems = [
-  { titleKey: "sidebar.dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { titleKey: "sidebar.products", url: "/products", icon: ShoppingBag },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Products", url: "/products", icon: ShoppingBag },
 ];
 
 const seoSubItems = [
-  { titleKey: "sidebar.seo_optimization", url: "/seo?tab=optimization", icon: Sparkles },
-  { titleKey: "sidebar.tag_optimization", url: "/seo?tab=tags", icon: Tags },
-  { titleKey: "sidebar.pages", url: "/seo?tab=pages", icon: FileText },
-  { titleKey: "sidebar.homepage", url: "/seo?tab=homepage", icon: Home },
-  { titleKey: "sidebar.alt_image", url: "/seo?tab=alt", icon: Image },
-  { titleKey: "sidebar.automation", url: "/seo?tab=automation", icon: Settings },
-  { titleKey: "sidebar.kpis_audit", url: "/seo?tab=kpis", icon: BarChart3 },
+  { title: "SEO Optimization", url: "/seo?tab=optimization", icon: Sparkles },
+  { title: "Tag Optimization", url: "/seo?tab=tags", icon: Tags },
+  { title: "Pages", url: "/seo?tab=pages", icon: FileText },
+  { title: "Homepage", url: "/seo?tab=homepage", icon: Home },
+  { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
+  { title: "Automation", url: "/seo?tab=automation", icon: Settings },
+  { title: "KPIs Audit", url: "/seo?tab=kpis", icon: BarChart3 },
 ];
 
 const blogSubItems = [
-  { titleKey: "sidebar.articles_management", url: "/blog?subtab=articles", icon: FileText },
-  { titleKey: "sidebar.ai_articles", url: "/blog?subtab=create-article", icon: Sparkles },
-  { titleKey: "sidebar.ai_campaigns", url: "/blog?subtab=campaigns", icon: CalendarClock },
-  { titleKey: "sidebar.opportunities", url: "/blog?subtab=opportunities", icon: Lightbulb },
-  { titleKey: "sidebar.netlinking", url: "/blog?subtab=netlinking", icon: Link },
-  { titleKey: "sidebar.settings", url: "/blog?subtab=settings", icon: Settings },
+  { title: "Articles Management", url: "/blog?subtab=articles", icon: FileText },
+  { title: "AI Articles", url: "/blog?subtab=create-article", icon: Sparkles },
+  { title: "AI Campaigns", url: "/blog?subtab=campaigns", icon: CalendarClock },
+  { title: "Opportunities", url: "/blog?subtab=opportunities", icon: Lightbulb },
+  { title: "Netlinking", url: "/blog?subtab=netlinking", icon: Link },
+  { title: "Settings", url: "/blog?subtab=settings", icon: Settings },
 ];
 
 const bottomMenuItems = [
-  { titleKey: "sidebar.ai_search", url: "/search", icon: Search },
-  { titleKey: "sidebar.google_shopping", url: "/shopping", icon: ShoppingCart },
-  { titleKey: "sidebar.google_merchant", url: "/merchant", icon: Package },
+  { title: "AI Search", url: "/search", icon: Search },
+  { title: "Google Shopping", url: "/shopping", icon: ShoppingCart },
+  { title: "Google Merchant", url: "/merchant", icon: Package },
 ];
 
 const chatSubItems = [
-  { titleKey: "sidebar.chat_assistant", url: "/chat", icon: MessageSquare },
-  { titleKey: "sidebar.ai_robot", url: "/chat-robot", icon: Bot },
-  { titleKey: "sidebar.history", url: "/chat-history", icon: History },
-  { titleKey: "sidebar.product_source", url: "/product-source", icon: Database },
-  { titleKey: "sidebar.chat_settings", url: "/chat-settings", icon: Settings },
+  { title: "Chat Assistant", url: "/chat", icon: MessageSquare },
+  { title: "AI Robot", url: "/chat-robot", icon: Bot },
+  { title: "History", url: "/chat-history", icon: History },
+  { title: "Product Source", url: "/product-source", icon: Database },
+  { title: "Chat Settings", url: "/chat-settings", icon: Settings },
 ];
 
 const accountSubItems = [
-  { titleKey: "sidebar.my_profile", url: "/account?tab=profile", icon: User },
-  { titleKey: "sidebar.integrations", url: "/account?tab=integrations", icon: Package },
-  { titleKey: "sidebar.subscription", url: "/account?tab=subscription", icon: CreditCard },
-  { titleKey: "sidebar.billing", url: "/account?tab=billing", icon: Receipt },
+  { title: "My Profile", url: "/account?tab=profile", icon: User },
+  { title: "Integrations", url: "/account?tab=integrations", icon: Package },
+  { title: "Subscription", url: "/account?tab=subscription", icon: CreditCard },
+  { title: "Billing", url: "/account?tab=billing", icon: Receipt },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { t } = useTranslation();
   const currentPath = location.pathname;
   const currentSearch = location.search;
   const [userPlan, setUserPlan] = useState<string | null>(null);
@@ -183,15 +181,15 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('sidebar.navigation')}</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems.map((item) => (
-                <SidebarMenuItem key={item.titleKey}>
+                <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild isActive={isActive(item.url)}>
                   <NavLink to={item.url}>
                     <item.icon className="h-4 w-4" />
-                    <span>{t(item.titleKey)}</span>
+                    <span>{item.title}</span>
                   </NavLink>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -203,18 +201,18 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isSeoActive}>
                       <Sparkles className="h-4 w-4" />
-                      <span>{t('sidebar.seo')}</span>
+                      <span>SEO</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {seoSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.titleKey}>
+                        <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{t(subItem.titleKey)}</span>
+                              <span>{subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -230,18 +228,18 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isBlogActive}>
                       <FileText className="h-4 w-4" />
-                      <span>{t('sidebar.blog')}</span>
+                      <span>Blog</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {blogSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.titleKey}>
+                        <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{t(subItem.titleKey)}</span>
+                              <span>{subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -253,11 +251,11 @@ export function AppSidebar() {
 
               {/* Bottom Menu Items */}
               {bottomMenuItems.map((item) => (
-                <SidebarMenuItem key={item.titleKey}>
+                <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -269,18 +267,18 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isChatActive}>
                       <MessageSquare className="h-4 w-4" />
-                      <span>{t('sidebar.chat')}</span>
+                      <span>Chat</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {chatSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.titleKey}>
+                        <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{t(subItem.titleKey)}</span>
+                              <span>{subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -296,18 +294,18 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isAccountActive}>
                       <User className="h-4 w-4" />
-                      <span>{t('sidebar.account')}</span>
+                      <span>Account</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {accountSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.titleKey}>
+                        <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{t(subItem.titleKey)}</span>
+                              <span>{subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -333,7 +331,7 @@ export function AppSidebar() {
                       <span className="text-xs sm:text-sm truncate">{user?.email}</span>
                     </div>
                     <Badge variant="default" className="w-fit text-xs font-semibold">
-                      {userPlan || t('sidebar.loading')}
+                      {userPlan || "Loading..."}
                     </Badge>
                   </>
                 ) : (
@@ -348,7 +346,7 @@ export function AppSidebar() {
             <SidebarMenuButton asChild>
               <Button variant="ghost" className="w-full justify-start text-xs sm:text-sm" onClick={signOut}>
                 <LogOut className="h-4 w-4" />
-                {state === "expanded" && <span>{t('sidebar.logout')}</span>}
+                {state === "expanded" && <span>Logout</span>}
               </Button>
             </SidebarMenuButton>
           </SidebarMenuItem>
