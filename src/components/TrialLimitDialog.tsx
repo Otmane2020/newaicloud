@@ -1,15 +1,9 @@
-import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, CreditCard, Zap } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, CreditCard, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface TrialLimitDialogProps {
   open: boolean;
@@ -33,7 +27,7 @@ export function TrialLimitDialog({
   const handlePayNow = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('force-payment', {
+      const { data, error } = await supabase.functions.invoke("force-payment", {
         body: {
           success_url: `${window.location.origin}/dashboard?payment=success`,
           cancel_url: `${window.location.origin}/dashboard?payment=cancelled`,
@@ -43,13 +37,13 @@ export function TrialLimitDialog({
       if (error) throw error;
 
       if (data?.url) {
-        window.open(data.url, '_blank');
+        window.open(data.url, "_blank");
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error("No checkout URL returned");
       }
     } catch (error) {
-      console.error('Error creating immediate payment:', error);
-      toast.error('Erreur lors de la création du paiement');
+      console.error("Error creating immediate payment:", error);
+      toast.error("Erreur lors de la création du paiement");
     } finally {
       setLoading(false);
     }
@@ -79,7 +73,9 @@ export function TrialLimitDialog({
           <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold">Plan Starter</div>
-              <div className="text-2xl font-bold">9,99€<span className="text-sm font-normal text-muted-foreground">/mois</span></div>
+              <div className="text-2xl font-bold">
+                9,99€<span className="text-sm font-normal text-muted-foreground">/mois</span>
+              </div>
             </div>
             <ul className="text-sm space-y-2">
               <li className="flex items-start gap-2">
