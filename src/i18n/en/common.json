@@ -47,6 +47,23 @@
     "collapse": "Collapse",
     "admin_panel": "Admin Panel"
   },
+  "sidebar": {
+    "navigation": "Navigation",
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "seo": "SEO",
+    "blog": "Blog",
+    "ai_search": "AI Search",
+    "google_shopping": "Google Shopping",
+    "google_merchant": "Google Merchant",
+    "chat": "Chat",
+    "account": "Account",
+    "my_profile": "My Profile",
+    "integrations": "Integrations",
+    "subscription": "Subscription",
+    "billing": "Billing",
+    "logout": "Logout"
+  },
   "footer": {
     "rights": "All rights reserved.",
     "privacy": "Privacy Policy",
