@@ -182,7 +182,7 @@ const Subscription = () => {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">${starterPlan.price_monthly}</span>
+                  <span className="text-5xl font-bold">{starterPlan.price_monthly}€</span>
                   <span className="text-muted-foreground">/mois</span>
                 </div>
               </div>
@@ -248,7 +248,7 @@ const Subscription = () => {
                   <SelectContent>
                     {proPlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly} optimizations - ${plan.price_monthly}/mois
+                        {plan.max_optimizations_monthly} optimizations - {plan.price_monthly}€/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -259,7 +259,7 @@ const Subscription = () => {
                 <>
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold">${selectedProPlan.price_monthly}</span>
+                      <span className="text-5xl font-bold">{selectedProPlan.price_monthly}€</span>
                       <span className="text-muted-foreground">/mois</span>
                     </div>
                   </div>
@@ -336,7 +336,7 @@ const Subscription = () => {
                   <SelectContent>
                     {enterprisePlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly.toLocaleString()} optimizations - ${plan.price_monthly}/mois
+                        {plan.max_optimizations_monthly.toLocaleString()} optimizations - {plan.price_monthly.toLocaleString()}€/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -347,7 +347,7 @@ const Subscription = () => {
                 <>
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold">${selectedEnterprisePlan.price_monthly.toLocaleString()}</span>
+                      <span className="text-5xl font-bold">{selectedEnterprisePlan.price_monthly.toLocaleString()}€</span>
                       <span className="text-muted-foreground">/mois</span>
                     </div>
                   </div>
