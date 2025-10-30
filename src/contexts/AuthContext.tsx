@@ -3,7 +3,6 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useTranslation } from '@/hooks/useTranslation';
 
 interface AuthContextType {
   user: User | null;
@@ -17,7 +16,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Failed to send welcome email:', emailError);
       }
       
-      toast.success(t('auth.success_signup'));
+      toast.success("Registration successful! Choose your plan...");
       // Ne pas rediriger, l'utilisateur restera sur la page onboarding après connexion
     }
 
@@ -85,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(t('auth.success_login'));
+      toast.success("Login successful!");
       // Ne pas rediriger automatiquement - SubscriptionGuard gèrera la redirection
     }
 
@@ -101,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(t('auth.success_logout'));
+      toast.success("Logout successful");
     }
     
     // Force a complete page reload to clear all state

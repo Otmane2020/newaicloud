@@ -8,10 +8,8 @@ import { Card } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { loginSchema, signupSchema } from '@/lib/validationSchemas';
-import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Auth() {
-  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
@@ -25,8 +23,6 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      // Always redirect to dashboard after authentication
-      // SubscriptionGuard will handle redirecting to onboarding if needed
       console.log('✅ User authenticated, redirecting to dashboard');
       navigate('/dashboard');
     }
@@ -49,7 +45,7 @@ export default function Auth() {
         validationErrors[err.path[0]] = err.message;
       });
       setErrors(validationErrors);
-      toast.error(t('auth.form_error'));
+      toast.error("Please correct the errors in the form");
       return;
     }
 
@@ -59,7 +55,6 @@ export default function Auth() {
       const result = await signUp(email, password, fullName);
       
       if (!result.error) {
-        // Délai pour permettre à l'utilisateur de voir le toast de succès
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
     } else {
@@ -86,18 +81,18 @@ export default function Auth() {
           </div>
 
           <h1 className="text-3xl font-bold text-center mb-2">
-            {t(`auth.${mode}`)}
+            {mode === 'login' ? 'Login' : 'Sign Up'}
           </h1>
           <p className="text-center text-muted-foreground mb-8">
             {mode === 'login'
-              ? t('auth.connect_to_account')
-              : t('auth.create_account_free')}
+              ? 'Log in to your account'
+              : 'Create your account for free'}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">{t('auth.fullname')}</Label>
+                <Label htmlFor="fullName">Full Name</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -107,7 +102,7 @@ export default function Auth() {
                     if (errors.fullName) setErrors({ ...errors, fullName: '' });
                   }}
                   required
-                  placeholder={t('auth.name_placeholder')}
+                  placeholder="John Doe"
                   className={errors.fullName ? 'border-destructive' : ''}
                 />
                 {errors.fullName && (
@@ -117,7 +112,7 @@ export default function Auth() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">{t('auth.email')}</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -127,7 +122,7 @@ export default function Auth() {
                   if (errors.email) setErrors({ ...errors, email: '' });
                 }}
                 required
-                placeholder={t('auth.email_placeholder')}
+                placeholder="you@example.com"
                 className={errors.email ? 'border-destructive' : ''}
               />
               {errors.email && (
@@ -137,14 +132,14 @@ export default function Auth() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="password">{t('auth.password')}</Label>
+                <Label htmlFor="password">Password</Label>
                 {mode === 'login' && (
                   <button
                     type="button"
                     onClick={() => navigate('/reset-password')}
                     className="text-xs text-primary hover:underline"
                   >
-                    {t('auth.forgot_password')}
+                    Forgot password?
                   </button>
                 )}
               </div>
@@ -157,7 +152,7 @@ export default function Auth() {
                   if (errors.password) setErrors({ ...errors, password: '' });
                 }}
                 required
-                placeholder={t('auth.password_placeholder')}
+                placeholder="••••••••"
                 minLength={6}
                 className={errors.password ? 'border-destructive' : ''}
               />
@@ -173,11 +168,11 @@ export default function Auth() {
             >
               {loading
                 ? mode === 'signup'
-                  ? t('auth.creating_account')
-                  : t('auth.connecting')
+                  ? 'Creating account...'
+                  : 'Connecting...'
                 : mode === 'login'
-                ? t('auth.sign_in')
-                : t('auth.sign_up')}
+                ? 'Sign In'
+                : 'Sign Up'}
             </Button>
           </form>
 
@@ -188,8 +183,8 @@ export default function Auth() {
               className="text-sm text-primary hover:underline"
             >
               {mode === 'login'
-                ? t('auth.no_account_signup')
-                : t('auth.have_account_login')}
+                ? "No account yet? Sign up"
+                : 'Already have an account? Log in'}
             </button>
           </div>
         </Card>
