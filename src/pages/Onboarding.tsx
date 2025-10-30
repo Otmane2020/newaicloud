@@ -525,20 +525,12 @@ export default function Onboarding() {
                     <SelectContent className="bg-background z-50">
                       {proPlans.map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.name} - ${billingCycle === 'yearly' 
-                            ? (plan.price_yearly / 12).toFixed(2) 
-                            : plan.price_monthly.toFixed(2)}/mois
+                          {plan.max_optimizations_monthly.toLocaleString()} optimisations / mois
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-
-                {selectedPlan.trial_days > 0 && (
-                  <Badge variant="outline" className="mb-3 bg-success/10 text-success border-success/30">
-                    🎁 Essai gratuit de {selectedPlan.trial_days} jours
-                  </Badge>
-                )}
 
                 <div className="mb-6">
                   <div className="flex flex-col items-center justify-center mb-2">
@@ -605,13 +597,6 @@ export default function Onboarding() {
                     </>
                   )}
                 </Button>
-                
-                {selectedPlan.trial_days > 0 && (
-                  <p className="text-xs text-muted-foreground text-center mt-3">
-                    💳 Carte requise • Premier paiement le{' '}
-                    {new Date(Date.now() + selectedPlan.trial_days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}
-                  </p>
-                )}
               </Card>
             );
           })()}
@@ -657,20 +642,12 @@ export default function Onboarding() {
                     <SelectContent className="bg-background z-50">
                       {enterprisePlans.map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.name} - ${billingCycle === 'yearly' 
-                            ? (plan.price_yearly / 12).toFixed(2) 
-                            : plan.price_monthly.toFixed(2)}/mois
+                          {plan.max_optimizations_monthly.toLocaleString()} optimisations / mois
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-
-                {selectedPlan.trial_days > 0 && (
-                  <Badge variant="outline" className="mb-3 bg-success/10 text-success border-success/30">
-                    🎁 Essai gratuit de {selectedPlan.trial_days} jours
-                  </Badge>
-                )}
 
                 <div className="mb-6">
                   <div className="flex flex-col items-center justify-center mb-2">
@@ -737,13 +714,6 @@ export default function Onboarding() {
                     </>
                   )}
                 </Button>
-                
-                {selectedPlan.trial_days > 0 && (
-                  <p className="text-xs text-muted-foreground text-center mt-3">
-                    💳 Carte requise • Premier paiement le{' '}
-                    {new Date(Date.now() + selectedPlan.trial_days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}
-                  </p>
-                )}
               </Card>
             );
           })()}

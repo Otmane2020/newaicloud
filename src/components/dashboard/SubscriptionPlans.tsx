@@ -212,9 +212,6 @@ export function SubscriptionPlans() {
         {/* Pro Plans */}
         {selectedPro && (
           <Card className={`relative border-2 border-primary shadow-primary ${isCurrentPlan(selectedPro.id) ? 'border-success' : ''}`}>
-            <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
-              {t('subscriptionPlans.pro.badge')}
-            </Badge>
             {isCurrentPlan(selectedPro.id) && (
               <Badge className="absolute -top-3 right-4 bg-success">
                 ✓ {t('subscriptionPlans.current_plan')}
@@ -235,8 +232,7 @@ export function SubscriptionPlans() {
                   <SelectContent className="bg-background z-50">
                     {proPlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_products.toLocaleString()} {t('common.products')} • 
-                        {plan.max_optimizations_monthly.toLocaleString()} {t('common.optimizations')} / {t('common.month')}
+                        {plan.max_optimizations_monthly.toLocaleString()} optimisations / mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -273,9 +269,6 @@ export function SubscriptionPlans() {
         {/* Enterprise Plans */}
         {selectedEnterprise && (
           <Card className={`relative ${isCurrentPlan(selectedEnterprise.id) ? 'border-2 border-success' : ''}`}>
-            <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-orange-500">
-              {t('subscriptionPlans.enterprise.badge')}
-            </Badge>
             {isCurrentPlan(selectedEnterprise.id) && (
               <Badge className="absolute -top-3 right-4 bg-success">
                 ✓ {t('subscriptionPlans.current_plan')}
@@ -296,8 +289,7 @@ export function SubscriptionPlans() {
                   <SelectContent className="bg-background z-50">
                     {enterprisePlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_products === -1 ? t('common.unlimited') : plan.max_products.toLocaleString()} {t('common.products')} • 
-                        {plan.max_optimizations_monthly.toLocaleString()} {t('common.optimizations')} / {t('common.month')}
+                        {plan.max_optimizations_monthly.toLocaleString()} optimisations / mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -333,54 +325,6 @@ export function SubscriptionPlans() {
         )}
       </div>
 
-      <Card className="border-2 border-dashed border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-primary" />
-            <CardTitle className="text-2xl">{t('subscriptionPlans.payg.title')}</CardTitle>
-          </div>
-          <CardDescription className="text-base">
-            {t('subscriptionPlans.payg.description')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <p className="font-semibold">💰 {t('subscriptionPlans.payg.pricing_title')}</p>
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                <li>• {t('subscriptionPlans.payg.seo_opt')}</li>
-                <li>• {t('subscriptionPlans.payg.article')}</li>
-                <li>• {t('subscriptionPlans.payg.search')}</li>
-                <li>• {t('subscriptionPlans.payg.chat')}</li>
-              </ul>
-            </div>
-            
-            <div className="space-y-2">
-              <p className="font-semibold">✨ {t('subscriptionPlans.payg.benefits_title')}</p>
-              <ul className="space-y-1">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-sm"><strong>{t('subscriptionPlans.payg.no_limit')}</strong></span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-sm"><strong>{t('subscriptionPlans.payg.auto_billing')}</strong></span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-sm"><strong>{t('subscriptionPlans.payg.volume_discount')}</strong></span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="bg-muted/50 rounded-lg p-4 mt-4">
-            <p className="text-sm text-muted-foreground text-center">
-              💡 {t('subscriptionPlans.payg.tip')}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
