@@ -145,7 +145,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
         <ScrollArea className="max-h-[calc(90vh-8rem)] px-6">
           <div className="space-y-6 pb-6">
-            <Tabs defaultValue="oauth" className="w-full">
+            <Tabs defaultValue="manual" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="oauth" className="flex items-center gap-2">
                   <Shield className="w-4 h-4" />
@@ -238,7 +238,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                     <div className="flex gap-2">
                       <Input
                         id="manual-shop-name"
-                        placeholder="votre-boutique"
+                        placeholder="qnxv91-2w"
                         value={manualStoreName}
                         onChange={(e) => setManualStoreName(e.target.value)}
                         disabled={manualLoading}
@@ -248,6 +248,15 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                         .myshopify.com
                       </div>
                     </div>
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        Trouvez le nom dans l'URL :{" "}
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
+                          admin.shopify.com/store/<strong>qnxv91-2w</strong>
+                        </code>
+                      </AlertDescription>
+                    </Alert>
                   </div>
 
                   <div className="space-y-2">
