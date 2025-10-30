@@ -5,6 +5,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 const PricingComparison = () => {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
 
   const features = [
     {

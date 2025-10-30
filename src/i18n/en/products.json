@@ -1,0 +1,16 @@
+{
+  "products": {
+    "title": "Product Catalog",
+    "subtitle": "Manage your products",
+    "search": "Search products...",
+    "filters": "Filters",
+    "all": "All",
+    "active": "Active",
+    "draft": "Draft",
+    "no_products": "No products found",
+    "loading": "Loading products...",
+    "import": "Import",
+    "export": "Export",
+    "add_product": "Add Product"
+  }
+}

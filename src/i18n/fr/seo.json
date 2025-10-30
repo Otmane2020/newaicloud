@@ -1,0 +1,18 @@
+{
+  "seo": {
+    "title": "Optimisation SEO",
+    "subtitle": "Optimisez votre contenu pour les moteurs de recherche",
+    "optimize": "Optimiser",
+    "optimizing": "Optimisation...",
+    "success": "Optimisation réussie",
+    "error": "Erreur d'optimisation"
+  },
+  "tags": {
+    "title": "Optimisation Tags",
+    "subtitle": "Gérez les tags produits"
+  },
+  "alt": {
+    "title": "Optimisation ALT Images",
+    "subtitle": "Optimisez les descriptions d'images"
+  }
+}

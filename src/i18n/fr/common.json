@@ -1,0 +1,55 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "add": "Ajouter",
+    "modify": "Modifier"
+  },
+  "nav": {
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "dashboard": "Tableau de bord",
+    "account": "Mon Compte",
+    "home": "Accueil",
+    "benefits": "Avantages"
+  },
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "catalogue": "Catalogue",
+    "google_merchant": "Google Merchant",
+    "google_shopping": "Google Shopping",
+    "search_ai": "Recherche IA",
+    "seo": "SEO",
+    "seo_optimization": "Optimisation SEO",
+    "tag_optimization": "Optimisation Tags",
+    "alt_image": "ALT Image",
+    "blog_seo": "Blog SEO",
+    "articles": "Articles",
+    "campaigns": "Campagnes",
+    "opportunities": "Opportunités",
+    "netlinking": "Netlinking",
+    "settings": "Paramètres",
+    "chat_smart": "Chat Intelligent",
+    "conversation": "Conversation",
+    "history": "Historique",
+    "product_source": "Source Produits",
+    "account": "Compte",
+    "subscription": "Abonnement",
+    "shopify": "Shopify",
+    "current_plan": "Plan Actuel",
+    "logout": "Déconnexion",
+    "collapse": "Réduire",
+    "admin_panel": "Panneau Admin"
+  },
+  "footer": {
+    "rights": "Tous droits réservés.",
+    "privacy": "Politique de Confidentialité",
+    "terms": "Conditions d'Utilisation"
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "hero": {
+    "badge": "Optimisation Shopify avec IA",
+    "title": "Optimisez votre boutique avec",
+    "subtitle": "Automatisez le SEO, gérez les produits, créez du contenu et boostez les ventes avec des outils IA intelligents pour l'e-commerce moderne.",
+    "cta_start": "Essai Gratuit",
+    "cta_demo": "Voir la Démo"
+  },
+  "features": {
+    "title": "Tout ce dont vous avez besoin",
+    "subtitle": "Des outils puissants pour les vendeurs Shopify qui veulent grandir plus vite",
+    "products": {
+      "title": "Gestion Produits",
+      "description": "Gérez les produits avec variantes, génération GTIN et intégration Google Shopping",
+      "tags": ["Multi-vendeur", "Variantes", "Google"]
+    },
+    "merchant": {
+      "title": "Google Merchant Center",
+      "description": "Génération automatique du flux XML et synchronisation Google Shopping",
+      "tags": ["Flux XML", "Auto-sync"]
+    },
+    "blog": {
+      "title": "Blog SEO IA",
+      "description": "Création automatique d'articles SEO optimisés avec liens produits",
+      "tags": ["Contenu IA", "Auto-post"]
+    },
+    "seo": {
+      "title": "Optimisation SEO",
+      "description": "Optimisation IA des balises meta, descriptions et mots-clés",
+      "tags": ["Meta Tags", "Mots-clés"]
+    },
+    "chat": {
+      "title": "Chat Intelligent",
+      "description": "Assistant IA pour recommandations produits et support client",
+      "tags": ["Chat IA", "Support"]
+    },
+    "automation": {
+      "title": "Automatisation Campagnes",
+      "description": "Planifiez et automatisez la création de contenu",
+      "tags": ["Automatisation", "Planning"]
+    }
+  },
+  "stats": {
+    "products": "Produits Optimisés",
+    "sellers": "Vendeurs Actifs",
+    "satisfaction": "Taux Satisfaction",
+    "support": "Support IA"
+  },
+  "benefits": {
+    "title": "Résultats prouvés pour les boutiques Shopify",
+    "subtitle": "Rejoignez des centaines de vendeurs qui ont transformé leur boutique avec l'optimisation IA",
+    "cta": "Commencer maintenant",
+    "speed": {
+      "title": "3x Plus rapide",
+      "description": "Automatisez la saisie et l'optimisation des produits"
+    },
+    "traffic": {
+      "title": "50% Plus de trafic",
+      "description": "Le SEO optimisé par IA attire des visiteurs qualifiés"
+    },
+    "time": {
+      "title": "10h+ économisées",
+      "description": "Création et gestion de contenu automatisées"
+    },
+    "ranking": {
+      "title": "Meilleur classement Google",
+      "description": "Données structurées et flux optimisés"
+    }
+  },
+  "pricing": {
+    "title": "Plans et Tarifs",
+    "subtitle": "Choisissez le plan adapté à la taille de votre boutique. Tous les plans incluent l'intégration Shopify et un support dédié.",
+    "monthly": "Mensuel",
+    "yearly": "Annuel",
+    "discount": "-20%",
+    "per_month": "/mois",
+    "per_year": "/an",
+    "billed_yearly": "facturé annuellement (soit",
+    "comparison_title": "Tableau Comparatif des Plans",
+    "comparison_subtitle": "Comparez toutes les fonctionnalités en détail"
+  },
+  "plans": {
+    "included": "Inclus dans le plan :",
+    "starter": {
+      "name": "Starter",
+      "description": "Pour les petites boutiques qui veulent découvrir la puissance de l'IA",
+      "trial": "essai gratuit de 14 jours",
+      "cta": "Commencer l'essai gratuit",
+      "highlight": "Profitez de la puissance de l'IA avec des fonctionnalités essentielles et des quotas adaptés à votre démarrage.",
+      "features": [
+        "100 produits analysés",
+        "100 optimisations SEO IA / mois (titres, meta, ALT, tags)",
+        "1 article IA / mois",
+        "20 recherches IA Shopify / mois",
+        "50 réponses Chat IA / mois",
+        "1 boutique Shopify connectée",
+        "Automation basique (SEO + blog + chat)",
+        "Support par e-mail"
+      ]
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Pour les boutiques en croissance",
+      "badge": "Le Plus Populaire 🔥",
+      "cta": "Essayer gratuitement",
+      "highlight": "L'équilibre parfait entre puissance, automation et évolutivité.",
+      "features": [
+        "1 000 produits analysés",
+        "500 optimisations SEO IA / mois",
+        "5 articles IA / mois",
+        "3 campagnes IA automatiques / mois (jusqu'à 30 articles/campagne)",
+        "300 recherches IA Shopify / mois",
+        "500 réponses Chat IA / mois",
+        "Jusqu'à 2 boutiques Shopify connectées",
+        "Google Merchant Center intégré",
+        "Automation complète (SEO + blog + chat)",
+        "Support prioritaire 24/7"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Pour les grandes boutiques et agences",
+      "cta": "Nous contacter",
+      "highlight": "Suite IA entièrement gérée avec quotas élevés, accès API et support personnel.",
+      "features": [
+        "Produits illimités",
+        "2 000 optimisations SEO IA / mois",
+        "20 articles IA / mois",
+        "10 campagnes IA automatiques / mois (jusqu'à 30 articles/campagne)",
+        "2 000 recherches IA Shopify / mois",
+        "3 000 réponses Chat IA / mois",
+        "Jusqu'à 5 boutiques Shopify connectées",
+        "Multi-boutiques & accès API personnalisé",
+        "Account manager dédié",
+        "Sessions de formation personnalisées",
+        "SLA garanti"
+      ]
+    }
+  },
+  "payAsYouGo": {
+    "badge": "Flexibilité maximale",
+    "title": "Pay as you go",
+    "subtitle": "Dépassez vos limites mensuelles sans changer de plan",
+    "pricing_title": "💰 Tarifs à la demande :",
+    "seo_optimization": "Optimisation SEO IA",
+    "ai_article": "Article IA",
+    "chat_response": "Réponse Chat IA",
+    "ai_campaign": "Campagne IA (jusqu'à 30 articles)",
+    "additional_store": "Boutique Shopify supplémentaire",
+    "per_month": "/mois",
+    "benefits_title": "✨ Avantages :",
+    "no_limit": {
+      "title": "Pas de limite",
+      "description": "Continuez sans interruption"
+    },
+    "auto_billing": {
+      "title": "Facturation automatique",
+      "description": "En fin de mois uniquement"
+    },
+    "volume_discounts": {
+      "title": "Tarifs dégressifs",
+      "description": "À partir de 10 000 crédits"
+    },
+    "info": "💡 Le pay-as-you-go est automatiquement activé sur tous les plans.",
+    "info_detail": "Vous ne payez que ce que vous consommez au-delà de vos limites mensuelles."
+  },
+  "cta": {
+    "title": "Prêt à transformer votre boutique ?",
+    "subtitle": "Commencez gratuitement aujourd'hui. Aucune carte de crédit requise.",
+    "button": "Essai Gratuit"
+  }
+}

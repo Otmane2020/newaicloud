@@ -5,9 +5,11 @@ import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import { LimitWarningBanner } from "@/components/LimitWarningBanner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Sparkles } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const isMobile = useIsMobile();
 
   if (loading) {
     return (
@@ -38,7 +40,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <LimitWarningBanner />
-            <div className="p-8">
+            <div className={isMobile ? "p-4" : "p-8"}>
               {children}
             </div>
           </main>

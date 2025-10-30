@@ -1,0 +1,207 @@
+{
+  "subscription": {
+    "title": "Abonnements",
+    "manage": "Gérer mon abonnement",
+    "current": "Abonnement actuel",
+    "upgrade": "Mettre à niveau",
+    "cancel": "Annuler",
+    "renews": "Se renouvelle le",
+    "ends": "Se termine le",
+    "select_tier": "Sélectionnez votre palier",
+    "upgrade_now": "Mettre à niveau maintenant",
+    "optimizations": "optimisations/mois",
+    "articles": "articles/mois",
+    "chat_responses": "réponses chat/mois",
+    "stores": "boutiques Shopify",
+    "campaigns": "campagnes",
+    "products": "produits"
+  },
+  "pricingComparison": {
+    "features": "Fonctionnalités",
+    "starter": "Starter",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "products": "Produits et Optimisations",
+    "products_count": "Produits",
+    "optimizations": "Optimisations SEO avancées / mois",
+    "articles": "Articles IA / mois",
+    "campaigns": "Campagnes automatiques / mois",
+    "ai": "Intelligence Artificielle",
+    "shopify_searches": "Recherches IA Shopify / mois",
+    "chat_responses": "Réponses Chat IA / mois",
+    "deepseek": "Optimisation IA avec DeepSeek",
+    "integrations": "Intégrations",
+    "shopify_stores": "Boutiques Shopify connectables",
+    "google_merchant": "Google Merchant Center",
+    "custom_api": "API personnalisée",
+    "multi_stores": "Multi-boutiques",
+    "automation": "Automatisation et Support",
+    "full_automation": "Automatisation complète",
+    "support": "Support",
+    "support_email": "Email prioritaire",
+    "support_247": "24/7 prioritaire",
+    "support_manager": "Account manager dédié",
+    "custom_training": "Formation personnalisée",
+    "sla": "SLA garanti",
+    "unlimited": "Illimité"
+  },
+  "subscriptionPlans": {
+    "title": "Choisissez votre plan",
+    "subtitle": "Sélectionnez le plan qui correspond le mieux à vos besoins",
+    "monthly": "Mensuel",
+    "yearly": "Annuel",
+    "savings": "-20%",
+    "per_month": "/mois",
+    "per_year": "/an",
+    "current_plan": "Plan actuel",
+    "why_choose": "Pourquoi choisir ce plan :",
+    "included": "Inclus :",
+    "payg": {
+      "title": "Paiement à l'usage",
+      "description": "Dépassez vos limites mensuelles sans changer de plan",
+      "pricing_title": "Tarification à la demande :",
+      "seo_opt": "Optimisation SEO : 0,01€ / optimisation",
+      "article": "Article IA : 2,00€ / article",
+      "search": "Recherche IA : 0,05€ / recherche",
+      "chat": "Réponse Chat : 0,02€ / réponse",
+      "benefits_title": "Avantages :",
+      "no_limit": "Sans limite - continuez sans interruption",
+      "auto_billing": "Facturation automatique en fin de mois",
+      "volume_discount": "Remises sur volume à partir de 10 000 crédits",
+      "tip": "Astuce : Le paiement à l'usage est automatiquement activé sur tous les plans. Vous ne payez que ce que vous consommez au-delà de vos limites mensuelles."
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "Pour les petites boutiques qui découvrent l'IA",
+      "badge": "Essai gratuit 14 jours",
+      "cta": "Commencer l'essai gratuit",
+      "benefits": [
+        "Automatisation SEO complète",
+        "Génération de contenu IA",
+        "Intégration Shopify rapide",
+        "Support réactif"
+      ],
+      "features": [
+        "1 000 optimisations SEO / mois",
+        "5 articles IA / mois",
+        "100 recherches IA / mois",
+        "200 réponses chat IA / mois",
+        "1 boutique Shopify",
+        "Support email prioritaire"
+      ]
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Pour les boutiques en croissance",
+      "badge": "Le Plus Populaire 🔥",
+      "cta": "Passer à Pro",
+      "benefits": [
+        "Croissance accélérée garantie",
+        "Support multi-boutiques",
+        "Campagnes automatisées",
+        "Support dédié 24/7"
+      ],
+      "features": [
+        "Produits illimités",
+        "2 000 optimisations SEO / mois",
+        "10 articles IA / mois",
+        "5 campagnes automatisées / mois",
+        "500 recherches IA / mois",
+        "1 000 réponses chat IA / mois",
+        "3 boutiques Shopify",
+        "Google Merchant intégré",
+        "Support prioritaire 24/7"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Pour grandes boutiques et agences",
+      "cta": "Contacter les ventes",
+      "benefits": [
+        "Solution sur mesure",
+        "Performance maximale",
+        "API personnalisée",
+        "Account manager dédié"
+      ],
+      "features": [
+        "Tout en illimité",
+        "10 000 optimisations SEO / mois",
+        "100 articles IA / mois",
+        "20 campagnes / mois",
+        "5 000 recherches IA / mois",
+        "10 000 réponses chat IA / mois",
+        "10 boutiques Shopify",
+        "API personnalisée",
+        "Manager dédié",
+        "SLA garanti"
+      ]
+    }
+  },
+  "trialUpgrade": {
+    "limit_reached": "Limite atteinte !",
+    "trial_expired": "Période d'essai terminée",
+    "limit_message": "Vous avez atteint votre limite d'essai gratuit pour {limitType}. Passez au plan Starter pour continuer.",
+    "trial_ended_message": "Votre essai gratuit de 14 jours est terminé. Passez au plan Starter pour continuer à profiter de toutes les fonctionnalités.",
+    "starter_plan": "Plan Starter",
+    "later": "Plus tard",
+    "activate_now": "Activer maintenant",
+    "loading": "Chargement...",
+    "features": [
+      "Jusqu'à 100 produits",
+      "100 optimisations SEO / mois",
+      "1 article de blog IA / mois",
+      "20 requêtes API Shopify / mois",
+      "50 réponses chat IA / mois",
+      "1 boutique Shopify",
+      "Support email",
+      "Intégration Shopify"
+    ]
+  },
+  "upgradeDialog": {
+    "title": "Activez votre abonnement Starter",
+    "reached_limit": "Vous avez atteint votre limite d'essai gratuit :",
+    "starter_plan_title": "Plan Starter (9,99€/mois)",
+    "activate_button": "Activer mon abonnement (9,99€/mois)",
+    "later": "Plus tard",
+    "all_features": "Toutes les fonctionnalités débloquées",
+    "limit_types": {
+      "optimizations": {
+        "title": "Optimisations SEO",
+        "message": "{usage}/{limit} optimisations utilisées",
+        "trial": "10 optimisations SEO",
+        "paid": "1 000 optimisations SEO / mois"
+      },
+      "articles": {
+        "title": "Articles de blog",
+        "message": "{usage}/{limit} articles utilisés",
+        "trial": "1 article de blog IA",
+        "paid": "5 articles de blog IA / mois"
+      },
+      "chat": {
+        "title": "Réponses chat IA",
+        "message": "{usage}/{limit} réponses utilisées",
+        "trial": "50 réponses chat",
+        "paid": "200 réponses chat / mois"
+      },
+      "shopifySearch": {
+        "title": "Recherches IA Shopify",
+        "message": "{usage}/{limit} recherches utilisées",
+        "trial": "20 requêtes IA Shopify",
+        "paid": "100 requêtes IA Shopify / mois"
+      }
+    },
+    "features": [
+      "1 000 optimisations SEO avec IA / mois",
+      "5 articles de blog IA / mois",
+      "200 réponses chat IA / mois",
+      "100 requêtes IA Shopify / mois"
+    ]
+  },
+  "billingPortal": {
+    "title": "Facturation",
+    "description": "Gérez vos moyens de paiement et consultez vos factures",
+    "open_button": "Ouvrir le portail de facturation",
+    "opening": "Ouverture...",
+    "footer_note": "Vous serez redirigé vers le portail Stripe pour gérer vos informations de paiement et télécharger vos factures."
+  }
+}

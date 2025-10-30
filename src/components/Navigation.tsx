@@ -21,22 +21,28 @@ import {
   Clock,
   Shield,
   Lightbulb,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Menu
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 
 export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog', '/blog?tab=opportunities']);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userPlan, setUserPlan] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const menuItems = [
     { path: '/', label: t('navigation.dashboard'), icon: LayoutDashboard },
@@ -139,12 +145,10 @@ export function Navigation() {
     );
   };
 
-  return (
-    <aside className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-300 z-50 ${
-      collapsed ? 'w-16' : 'w-64'
-    }`}>
-      <div className="flex flex-col h-full">
-        {/* Logo / Header */}
+  // Navigation content (shared between mobile and desktop)
+  const navigationContent = (
+    <div className="flex flex-col h-full">
+      {/* Logo / Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg shadow-blue-300/50 flex-shrink-0">
@@ -353,7 +357,31 @@ export function Navigation() {
             )}
           </button>
         </div>
-      </div>
+    </div>
+  );
+
+  // Mobile: Sheet drawer
+  if (isMobile) {
+    return (
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50 bg-white shadow-md">
+            <Menu className="w-6 h-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-0">
+          {navigationContent}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // Desktop: Fixed sidebar
+  return (
+    <aside className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-300 z-50 ${
+      collapsed ? 'w-16' : 'w-64'
+    }`}>
+      {navigationContent}
     </aside>
   );
 }

@@ -1,0 +1,31 @@
+{
+  "blog": {
+    "title": "Blog SEO",
+    "subtitle": "Gérez vos articles de blog",
+    "articles": "Articles",
+    "campaigns": "Campagnes",
+    "opportunities": "Opportunités",
+    "netlinking": "Netlinking",
+    "create_article": "Créer un Article",
+    "create_campaign": "Créer une Campagne",
+    "no_articles": "Aucun article pour le moment",
+    "loading": "Chargement..."
+  },
+  "articles": {
+    "title": "Mes Articles",
+    "new": "Nouvel Article",
+    "draft": "Brouillon",
+    "published": "Publié"
+  },
+  "campaigns": {
+    "title": "Campagnes",
+    "new": "Nouvelle Campagne",
+    "active": "Active",
+    "completed": "Terminée"
+  },
+  "opportunities": {
+    "title": "Opportunités",
+    "subtitle": "Découvrez les opportunités de netlinking",
+    "settings": "Paramètres"
+  }
+}
