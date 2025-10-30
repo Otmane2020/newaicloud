@@ -900,7 +900,7 @@ export function TagOptimization() {
           seoDescription: '',
           imageUrl: p.image_url
         }))}
-        onSyncClick={(ids) => { handleBulkSync(ids); }}
+        onSyncClick={() => { handleBulkSync(optimizedProducts.map(p => p.id)); }}
       />
 
       {limits?.isTrialing ? (
