@@ -198,7 +198,7 @@ export function SubscriptionPlans() {
                 {isCurrentPlan(starterPlan.id) ? t('subscriptionPlans.current_plan') : t('subscriptionPlans.starter.cta')}
               </Button>
               <p className="text-sm text-center text-muted-foreground">
-                {starterPlan.max_optimizations_monthly} optimisations / mois
+                {starterPlan.max_products} produits • {starterPlan.max_optimizations_monthly} optimisations / mois
               </p>
             </CardContent>
           </Card>
@@ -250,7 +250,7 @@ export function SubscriptionPlans() {
                 {isCurrentPlan(selectedPro.id) ? t('subscriptionPlans.current_plan') : 'S\'abonner maintenant'}
               </Button>
               <p className="text-sm text-center text-muted-foreground">
-                {selectedPro.max_optimizations_monthly.toLocaleString()} optimisations / mois
+                {selectedPro.max_products.toLocaleString()} produits • {selectedPro.max_optimizations_monthly.toLocaleString()} optimisations / mois
               </p>
             </CardContent>
           </Card>
@@ -303,7 +303,7 @@ export function SubscriptionPlans() {
                 {isCurrentPlan(selectedEnterprise.id) ? t('subscriptionPlans.current_plan') : 'Upgrade to Enterprise'}
               </Button>
               <p className="text-sm text-center text-muted-foreground">
-                {selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations / mois
+                Produits illimités • {selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations / mois
               </p>
             </CardContent>
           </Card>
