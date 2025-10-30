@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -401,16 +401,52 @@ export function ShopifyConnectionsList() {
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette connexion ? Tous les produits, pages et données associés seront également supprimés. Cette action est irréversible.
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-destructive/10 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-destructive" />
+              </div>
+              <AlertDialogTitle className="text-xl">Supprimer la connexion</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="space-y-4 pt-2">
+              <p className="text-base">
+                Êtes-vous sûr de vouloir supprimer cette connexion Shopify ?
+              </p>
+              
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                <p className="font-medium text-foreground text-sm">Les éléments suivants seront supprimés :</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Package className="w-4 h-4 text-muted-foreground" />
+                    <span>Tous les produits importés</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                    <span>Toutes les pages Shopify</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                    <span>Toutes les données associées</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                <p className="text-sm font-medium text-destructive flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Cette action est irréversible
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteConnection} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="flex-1">Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={deleteConnection} 
+              className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
