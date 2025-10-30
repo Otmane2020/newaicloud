@@ -289,5 +289,12 @@
       "cookies": "Cookies"
     },
     "copyright": "© 2025 NewAI. Todos os direitos reservados."
+  },
+  "pages": {
+    "integration": { "title": "Integrações Shopify", "description": "Conecte e gerencie suas lojas Shopify" },
+    "merchant": { "feed_tab": "Feed XML", "settings_tab": "Configurações" },
+    "notFound": { "title": "404", "message": "Ops! Página não encontrada", "back_home": "Voltar para Início" },
+    "resetPassword": { "title": "Esqueceu a senha", "description_request": "Digite seu e-mail para receber um link de redefinição", "description_sent": "Verifique sua caixa de correio para redefinir sua senha", "email_label": "E-mail", "email_placeholder": "voce@exemplo.com", "send_button": "Enviar link", "sending": "Enviando...", "back_to_login": "Voltar ao login", "email_sent": "E-mail de redefinição enviado!", "invalid_email": "Endereço de e-mail inválido" },
+    "updatePassword": { "title": "Nova senha", "description": "Defina sua nova senha", "password_label": "Nova senha", "password_placeholder": "Mínimo 6 caracteres", "confirm_label": "Confirmar senha", "confirm_placeholder": "Digite sua senha novamente", "update_button": "Atualizar", "updating": "Atualizando...", "password_short": "A senha deve ter pelo menos 6 caracteres", "passwords_mismatch": "As senhas não coincidem", "success": "Senha atualizada com sucesso!" }
   }
 }

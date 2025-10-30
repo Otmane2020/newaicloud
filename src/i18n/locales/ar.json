@@ -289,5 +289,12 @@
       "cookies": "ملفات تعريف الارتباط"
     },
     "copyright": "© 2025 NewAI. جميع الحقوق محفوظة."
+  },
+  "pages": {
+    "integration": { "title": "تكاملات Shopify", "description": "ربط وإدارة متاجر Shopify الخاصة بك" },
+    "merchant": { "feed_tab": "تغذية XML", "settings_tab": "الإعدادات" },
+    "notFound": { "title": "404", "message": "عذراً! الصفحة غير موجودة", "back_home": "العودة إلى الصفحة الرئيسية" },
+    "resetPassword": { "title": "نسيت كلمة المرور", "description_request": "أدخل بريدك الإلكتروني لتلقي رابط إعادة التعيين", "description_sent": "تحقق من صندوق البريد الخاص بك لإعادة تعيين كلمة المرور", "email_label": "البريد الإلكتروني", "email_placeholder": "you@example.com", "send_button": "إرسال الرابط", "sending": "جارٍ الإرسال...", "back_to_login": "العودة لتسجيل الدخول", "email_sent": "تم إرسال بريد إعادة التعيين!", "invalid_email": "عنوان بريد إلكتروني غير صالح" },
+    "updatePassword": { "title": "كلمة مرور جديدة", "description": "تعيين كلمة المرور الجديدة", "password_label": "كلمة المرور الجديدة", "password_placeholder": "6 أحرف على الأقل", "confirm_label": "تأكيد كلمة المرور", "confirm_placeholder": "أعد إدخال كلمة المرور", "update_button": "تحديث", "updating": "جارٍ التحديث...", "password_short": "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل", "passwords_mismatch": "كلمات المرور غير متطابقة", "success": "تم تحديث كلمة المرور بنجاح!" }
   }
 }

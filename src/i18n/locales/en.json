@@ -579,5 +579,102 @@
       "cookies": "Cookies"
     },
     "copyright": "© 2025 NewAI. All rights reserved."
+  },
+  "pages": {
+    "integration": {
+      "title": "Shopify Integrations",
+      "description": "Connect and manage your Shopify stores"
+    },
+    "merchant": {
+      "feed_tab": "XML Feed",
+      "settings_tab": "Settings"
+    },
+    "notFound": {
+      "title": "404",
+      "message": "Oops! Page not found",
+      "back_home": "Return to Home"
+    },
+    "resetPassword": {
+      "title": "Forgot Password",
+      "description_request": "Enter your email to receive a reset link",
+      "description_sent": "Check your mailbox to reset your password",
+      "email_label": "Email",
+      "email_placeholder": "you@example.com",
+      "send_button": "Send link",
+      "sending": "Sending...",
+      "back_to_login": "Back to login",
+      "email_sent": "Reset email sent!",
+      "invalid_email": "Invalid email address"
+    },
+    "updatePassword": {
+      "title": "New Password",
+      "description": "Set your new password",
+      "password_label": "New Password",
+      "password_placeholder": "Minimum 6 characters",
+      "confirm_label": "Confirm Password",
+      "confirm_placeholder": "Re-enter your password",
+      "update_button": "Update",
+      "updating": "Updating...",
+      "password_short": "Password must be at least 6 characters",
+      "passwords_mismatch": "Passwords do not match",
+      "success": "Password updated successfully!"
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "last_updated": "Last updated: October 27, 2025",
+      "section1_title": "Data Collection",
+      "section1_content": "We collect information that you provide directly to us when creating your account, including your name, email address, and information related to your Shopify store. We also automatically collect certain information about your use of our services.",
+      "section2_title": "Data Usage",
+      "section2_intro": "Your data is used to:",
+      "section2_item1": "Provide and improve our SEO optimization services",
+      "section2_item2": "Generate optimized content for your products",
+      "section2_item3": "Communicate with you regarding your account",
+      "section2_item4": "Ensure security and prevent fraud",
+      "section3_title": "Data Protection",
+      "section3_content": "We implement appropriate technical and organizational security measures to protect your personal data against unauthorized access, modification, disclosure, or destruction. Your data is stored on secure servers and encrypted in transit.",
+      "section4_title": "Your Rights",
+      "section4_intro": "In accordance with GDPR, you have the following rights:",
+      "section4_item1": "Right to access your personal data",
+      "section4_item2": "Right to rectify inaccurate data",
+      "section4_item3": "Right to erasure of your data",
+      "section4_item4": "Right to data portability",
+      "section4_item5": "Right to object to processing",
+      "section5_title": "Contact",
+      "section5_content": "For any questions regarding this privacy policy or to exercise your rights, you can contact us at:",
+      "footer_note": "We reserve the right to modify this policy at any time. Any changes will be published on this page with a revised update date."
+    },
+    "terms": {
+      "title": "Terms and Conditions",
+      "last_updated": "Last updated: October 27, 2025",
+      "section1_title": "Acceptance of Terms",
+      "section1_content": "By accessing and using NewAI, you agree to be bound by these terms and conditions of use. If you do not accept these terms, please do not use our services. Your continued use of the platform constitutes your acceptance of any modifications to these terms.",
+      "section2_title": "Services Provided",
+      "section2_intro": "NewAI provides an AI-powered SEO optimization platform for Shopify stores, including:",
+      "section2_item1": "Automatic generation of optimized product descriptions",
+      "section2_item2": "Optimization of meta tags and alt texts",
+      "section2_item3": "Creation of SEO-friendly blog articles",
+      "section2_item4": "Google Merchant Center integration",
+      "section2_item5": "AI assistant for e-commerce optimization",
+      "section3_title": "Pricing and Payment",
+      "section3_intro": "We offer several subscription plans with different features and usage limits:",
+      "section3_item1": "Subscription fees are billed monthly or annually",
+      "section3_item2": "Payments are processed securely via Stripe",
+      "section3_item3": "Prices may be changed with 30 days notice",
+      "section3_item4": "No refunds for partially used months",
+      "section4_title": "Prohibited Use",
+      "section4_intro": "You agree not to:",
+      "section4_item1": "Use the service for illegal or fraudulent activities",
+      "section4_item2": "Attempt unauthorized access to systems",
+      "section4_item3": "Share your account with third parties",
+      "section4_item4": "Circumvent usage limitations of your plan",
+      "section4_item5": "Reproduce, duplicate, or copy our technology",
+      "section5_title": "Limitation of Liability",
+      "section5_content": "NewAI is provided \"as is\" without warranty of any kind. We do not guarantee that the service will be uninterrupted or error-free. In no event shall we be liable for indirect, consequential, or special damages resulting from the use or inability to use our services.",
+      "section6_title": "Intellectual Property",
+      "section6_content": "All content generated by NewAI belongs to you. However, we retain all rights to our platform, algorithms, and technology. You grant us a license to use your content solely for the purpose of providing our services.",
+      "section7_title": "Termination",
+      "section7_content": "You may terminate your account at any time from your settings. We reserve the right to suspend or terminate your account in case of violation of these terms. Upon termination, you will lose access to your data after 30 days.",
+      "footer_note": "These terms are governed by French law. For any questions:"
+    }
   }
 }

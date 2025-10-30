@@ -289,5 +289,12 @@
       "cookies": "Cookies"
     },
     "copyright": "© 2025 NewAI. 保留所有权利。"
+  },
+  "pages": {
+    "integration": { "title": "Shopify集成", "description": "连接和管理您的Shopify商店" },
+    "merchant": { "feed_tab": "XML信息流", "settings_tab": "设置" },
+    "notFound": { "title": "404", "message": "哎呀！页面未找到", "back_home": "返回首页" },
+    "resetPassword": { "title": "忘记密码", "description_request": "输入您的电子邮件以接收重置链接", "description_sent": "检查您的邮箱以重置密码", "email_label": "电子邮件", "email_placeholder": "you@example.com", "send_button": "发送链接", "sending": "发送中...", "back_to_login": "返回登录", "email_sent": "重置邮件已发送！", "invalid_email": "无效的电子邮件地址" },
+    "updatePassword": { "title": "新密码", "description": "设置您的新密码", "password_label": "新密码", "password_placeholder": "最少6个字符", "confirm_label": "确认密码", "confirm_placeholder": "重新输入密码", "update_button": "更新", "updating": "更新中...", "password_short": "密码必须至少包含6个字符", "passwords_mismatch": "密码不匹配", "success": "密码更新成功！" }
   }
 }

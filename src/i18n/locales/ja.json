@@ -289,5 +289,102 @@
       "cookies": "クッキー"
     },
     "copyright": "© 2025 NewAI. All rights reserved."
+  },
+  "pages": {
+    "integration": {
+      "title": "Shopify連携",
+      "description": "Shopifyストアを接続して管理"
+    },
+    "merchant": {
+      "feed_tab": "XMLフィード",
+      "settings_tab": "設定"
+    },
+    "notFound": {
+      "title": "404",
+      "message": "ページが見つかりません",
+      "back_home": "ホームに戻る"
+    },
+    "resetPassword": {
+      "title": "パスワードを忘れた場合",
+      "description_request": "メールアドレスを入力してリセットリンクを受け取る",
+      "description_sent": "メールボックスを確認してパスワードをリセットしてください",
+      "email_label": "メール",
+      "email_placeholder": "you@example.com",
+      "send_button": "リンクを送信",
+      "sending": "送信中...",
+      "back_to_login": "ログインに戻る",
+      "email_sent": "リセットメールを送信しました！",
+      "invalid_email": "無効なメールアドレス"
+    },
+    "updatePassword": {
+      "title": "新しいパスワード",
+      "description": "新しいパスワードを設定してください",
+      "password_label": "新しいパスワード",
+      "password_placeholder": "最低6文字",
+      "confirm_label": "パスワードの確認",
+      "confirm_placeholder": "パスワードを再入力",
+      "update_button": "更新",
+      "updating": "更新中...",
+      "password_short": "パスワードは6文字以上である必要があります",
+      "passwords_mismatch": "パスワードが一致しません",
+      "success": "パスワードが正常に更新されました！"
+    },
+    "privacy": {
+      "title": "プライバシーポリシー",
+      "last_updated": "最終更新日：2025年10月27日",
+      "section1_title": "データ収集",
+      "section1_content": "アカウント作成時に直接提供される情報（名前、メールアドレス、Shopifyストアに関する情報など）を収集します。また、サービスの利用に関する特定の情報も自動的に収集します。",
+      "section2_title": "データの使用",
+      "section2_intro": "お客様のデータは以下の目的で使用されます：",
+      "section2_item1": "SEO最適化サービスの提供と改善",
+      "section2_item2": "製品の最適化されたコンテンツの生成",
+      "section2_item3": "アカウントに関する連絡",
+      "section2_item4": "セキュリティの確保と不正行為の防止",
+      "section3_title": "データ保護",
+      "section3_content": "お客様の個人データを不正アクセス、変更、開示、破壊から保護するために、適切な技術的および組織的なセキュリティ対策を実施しています。お客様のデータは安全なサーバーに保存され、転送中に暗号化されます。",
+      "section4_title": "お客様の権利",
+      "section4_intro": "GDPRに従い、お客様には以下の権利があります：",
+      "section4_item1": "個人データへのアクセス権",
+      "section4_item2": "不正確なデータの訂正権",
+      "section4_item3": "データの削除権",
+      "section4_item4": "データポータビリティの権利",
+      "section4_item5": "処理への異議申し立ての権利",
+      "section5_title": "お問い合わせ",
+      "section5_content": "このプライバシーポリシーに関するご質問や権利の行使については、以下までご連絡ください：",
+      "footer_note": "当社はこのポリシーをいつでも変更する権利を留保します。変更があった場合は、更新日とともにこのページに公開されます。"
+    },
+    "terms": {
+      "title": "利用規約",
+      "last_updated": "最終更新日：2025年10月27日",
+      "section1_title": "規約への同意",
+      "section1_content": "NewAIにアクセスして使用することにより、お客様はこれらの利用規約に拘束されることに同意します。これらの規約に同意しない場合は、サービスを使用しないでください。プラットフォームの継続的な使用は、これらの規約の変更への同意を構成します。",
+      "section2_title": "提供されるサービス",
+      "section2_intro": "NewAIは、以下を含むShopifyストア向けのAI搭載SEO最適化プラットフォームを提供します：",
+      "section2_item1": "最適化された製品説明の自動生成",
+      "section2_item2": "メタタグとaltテキストの最適化",
+      "section2_item3": "SEOフレンドリーなブログ記事の作成",
+      "section2_item4": "Google Merchant Center連携",
+      "section2_item5": "eコマース最適化のためのAIアシスタント",
+      "section3_title": "価格と支払い",
+      "section3_intro": "さまざまな機能と使用制限を持つ複数のサブスクリプションプランを提供しています：",
+      "section3_item1": "サブスクリプション料金は月次または年次で請求されます",
+      "section3_item2": "支払いはStripeを通じて安全に処理されます",
+      "section3_item3": "価格は30日前の通知で変更される場合があります",
+      "section3_item4": "部分的に使用された月の返金はありません",
+      "section4_title": "禁止事項",
+      "section4_intro": "お客様は以下を行わないことに同意します：",
+      "section4_item1": "違法または不正な活動のためにサービスを使用する",
+      "section4_item2": "システムへの不正アクセスを試みる",
+      "section4_item3": "アカウントを第三者と共有する",
+      "section4_item4": "プランの使用制限を回避する",
+      "section4_item5": "当社の技術を複製、複写、またはコピーする",
+      "section5_title": "責任の制限",
+      "section5_content": "NewAIは「現状のまま」いかなる種類の保証もなしに提供されます。サービスが中断されないこと、またはエラーがないことを保証しません。いかなる場合でも、当社のサービスの使用または使用不能から生じる間接的、結果的、または特別な損害について責任を負いません。",
+      "section6_title": "知的財産",
+      "section6_content": "NewAIによって生成されたすべてのコンテンツはお客様に帰属します。ただし、当社のプラットフォーム、アルゴリズム、技術に対するすべての権利は当社が保持します。お客様は、サービスの提供のみを目的として、コンテンツを使用するライセンスを当社に付与します。",
+      "section7_title": "解約",
+      "section7_content": "設定からいつでもアカウントを解約できます。これらの規約に違反した場合、アカウントを停止または解約する権利を留保します。解約後、30日後にデータへのアクセスを失います。",
+      "footer_note": "これらの規約はフランス法に準拠します。ご質問がある場合："
+    }
   }
 }

@@ -289,5 +289,102 @@
       "cookies": "Cookies"
     },
     "copyright": "© 2025 NewAI. Alle Rechte vorbehalten."
+  },
+  "pages": {
+    "integration": {
+      "title": "Shopify-Integrationen",
+      "description": "Verbinden und verwalten Sie Ihre Shopify-Shops"
+    },
+    "merchant": {
+      "feed_tab": "XML-Feed",
+      "settings_tab": "Einstellungen"
+    },
+    "notFound": {
+      "title": "404",
+      "message": "Hoppla! Seite nicht gefunden",
+      "back_home": "Zurück zur Startseite"
+    },
+    "resetPassword": {
+      "title": "Passwort vergessen",
+      "description_request": "Geben Sie Ihre E-Mail ein, um einen Reset-Link zu erhalten",
+      "description_sent": "Überprüfen Sie Ihr Postfach, um Ihr Passwort zurückzusetzen",
+      "email_label": "E-Mail",
+      "email_placeholder": "Sie@beispiel.com",
+      "send_button": "Link senden",
+      "sending": "Wird gesendet...",
+      "back_to_login": "Zurück zur Anmeldung",
+      "email_sent": "Reset-E-Mail gesendet!",
+      "invalid_email": "Ungültige E-Mail-Adresse"
+    },
+    "updatePassword": {
+      "title": "Neues Passwort",
+      "description": "Legen Sie Ihr neues Passwort fest",
+      "password_label": "Neues Passwort",
+      "password_placeholder": "Mindestens 6 Zeichen",
+      "confirm_label": "Passwort bestätigen",
+      "confirm_placeholder": "Passwort erneut eingeben",
+      "update_button": "Aktualisieren",
+      "updating": "Wird aktualisiert...",
+      "password_short": "Das Passwort muss mindestens 6 Zeichen lang sein",
+      "passwords_mismatch": "Passwörter stimmen nicht überein",
+      "success": "Passwort erfolgreich aktualisiert!"
+    },
+    "privacy": {
+      "title": "Datenschutzerklärung",
+      "last_updated": "Letzte Aktualisierung: 27. Oktober 2025",
+      "section1_title": "Datenerfassung",
+      "section1_content": "Wir sammeln Informationen, die Sie uns direkt bei der Erstellung Ihres Kontos zur Verfügung stellen, einschließlich Ihres Namens, Ihrer E-Mail-Adresse und Informationen zu Ihrem Shopify-Shop. Wir sammeln auch automatisch bestimmte Informationen über Ihre Nutzung unserer Dienste.",
+      "section2_title": "Datennutzung",
+      "section2_intro": "Ihre Daten werden verwendet für:",
+      "section2_item1": "Bereitstellung und Verbesserung unserer SEO-Optimierungsdienste",
+      "section2_item2": "Generierung optimierter Inhalte für Ihre Produkte",
+      "section2_item3": "Kommunikation mit Ihnen bezüglich Ihres Kontos",
+      "section2_item4": "Gewährleistung der Sicherheit und Verhinderung von Betrug",
+      "section3_title": "Datenschutz",
+      "section3_content": "Wir implementieren angemessene technische und organisatorische Sicherheitsmaßnahmen zum Schutz Ihrer personenbezogenen Daten vor unbefugtem Zugriff, Änderung, Offenlegung oder Zerstörung. Ihre Daten werden auf sicheren Servern gespeichert und während der Übertragung verschlüsselt.",
+      "section4_title": "Ihre Rechte",
+      "section4_intro": "Gemäß DSGVO haben Sie folgende Rechte:",
+      "section4_item1": "Recht auf Zugang zu Ihren personenbezogenen Daten",
+      "section4_item2": "Recht auf Berichtigung unrichtiger Daten",
+      "section4_item3": "Recht auf Löschung Ihrer Daten",
+      "section4_item4": "Recht auf Datenübertragbarkeit",
+      "section4_item5": "Recht auf Widerspruch gegen die Verarbeitung",
+      "section5_title": "Kontakt",
+      "section5_content": "Bei Fragen zu dieser Datenschutzerklärung oder zur Ausübung Ihrer Rechte können Sie uns kontaktieren unter:",
+      "footer_note": "Wir behalten uns das Recht vor, diese Richtlinie jederzeit zu ändern. Alle Änderungen werden auf dieser Seite mit einem aktualisierten Datum veröffentlicht."
+    },
+    "terms": {
+      "title": "Allgemeine Geschäftsbedingungen",
+      "last_updated": "Letzte Aktualisierung: 27. Oktober 2025",
+      "section1_title": "Akzeptanz der Bedingungen",
+      "section1_content": "Durch den Zugriff und die Nutzung von NewAI erklären Sie sich damit einverstanden, an diese Nutzungsbedingungen gebunden zu sein. Wenn Sie diese Bedingungen nicht akzeptieren, nutzen Sie bitte nicht unsere Dienste. Ihre fortgesetzte Nutzung der Plattform stellt Ihre Zustimmung zu jeglichen Änderungen dieser Bedingungen dar.",
+      "section2_title": "Bereitgestellte Dienste",
+      "section2_intro": "NewAI bietet eine KI-gestützte SEO-Optimierungsplattform für Shopify-Shops, einschließlich:",
+      "section2_item1": "Automatische Generierung optimierter Produktbeschreibungen",
+      "section2_item2": "Optimierung von Meta-Tags und Alt-Texten",
+      "section2_item3": "Erstellung SEO-freundlicher Blogartikel",
+      "section2_item4": "Google Merchant Center-Integration",
+      "section2_item5": "KI-Assistent für E-Commerce-Optimierung",
+      "section3_title": "Preise und Zahlung",
+      "section3_intro": "Wir bieten mehrere Abonnementpläne mit unterschiedlichen Funktionen und Nutzungslimits:",
+      "section3_item1": "Abonnementgebühren werden monatlich oder jährlich abgerechnet",
+      "section3_item2": "Zahlungen werden sicher über Stripe abgewickelt",
+      "section3_item3": "Preise können mit 30 Tagen Vorlaufzeit geändert werden",
+      "section3_item4": "Keine Rückerstattung für teilweise genutzte Monate",
+      "section4_title": "Verbotene Nutzung",
+      "section4_intro": "Sie verpflichten sich, nicht:",
+      "section4_item1": "Den Dienst für illegale oder betrügerische Aktivitäten zu nutzen",
+      "section4_item2": "Unbefugten Zugriff auf Systeme zu versuchen",
+      "section4_item3": "Ihr Konto mit Dritten zu teilen",
+      "section4_item4": "Nutzungsbeschränkungen Ihres Plans zu umgehen",
+      "section4_item5": "Unsere Technologie zu reproduzieren, zu duplizieren oder zu kopieren",
+      "section5_title": "Haftungsbeschränkung",
+      "section5_content": "NewAI wird \"wie besehen\" ohne jegliche Gewährleistung bereitgestellt. Wir garantieren nicht, dass der Dienst ununterbrochen oder fehlerfrei sein wird. In keinem Fall haften wir für indirekte, Folge- oder besondere Schäden, die aus der Nutzung oder Unfähigkeit zur Nutzung unserer Dienste resultieren.",
+      "section6_title": "Geistiges Eigentum",
+      "section6_content": "Alle von NewAI generierten Inhalte gehören Ihnen. Wir behalten jedoch alle Rechte an unserer Plattform, Algorithmen und Technologie. Sie gewähren uns eine Lizenz zur Nutzung Ihrer Inhalte ausschließlich zum Zweck der Bereitstellung unserer Dienste.",
+      "section7_title": "Kündigung",
+      "section7_content": "Sie können Ihr Konto jederzeit über Ihre Einstellungen kündigen. Wir behalten uns das Recht vor, Ihr Konto bei Verstoß gegen diese Bedingungen auszusetzen oder zu kündigen. Bei Kündigung verlieren Sie nach 30 Tagen den Zugriff auf Ihre Daten.",
+      "footer_note": "Diese Bedingungen unterliegen französischem Recht. Bei Fragen:"
+    }
   }
 }
