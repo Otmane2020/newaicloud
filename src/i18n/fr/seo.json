@@ -8,11 +8,27 @@
     "success": "Optimisation réussie",
     "error": "Erreur d'optimisation",
     "score": "Score SEO",
-    "outOf100": "/100"
+    "outOf100": "/100",
+    "searchPlaceholder": "Rechercher par titre...",
+    "allProducts": "Tous les Produits",
+    "toOptimize": "À Optimiser",
+    "optimized": "Optimisés",
+    "toSynchronize": "À Synchroniser",
+    "synchronized": "Synchronisés",
+    "allCategories": "Toutes Catégories",
+    "category": "Catégorie"
   },
   "tags": {
     "title": "Optimisation Tags",
-    "subtitle": "Gérez les tags produits"
+    "subtitle": "Gérez les tags produits",
+    "searchPlaceholder": "Rechercher par titre...",
+    "allProducts": "Tous les Produits",
+    "toOptimize": "À Tagger",
+    "tagged": "Taggés",
+    "toSynchronize": "À Synchroniser",
+    "synchronized": "Synchronisés",
+    "allCategories": "Toutes Catégories",
+    "category": "Catégorie"
   },
   "alt": {
     "title": "Optimisation ALT Images",

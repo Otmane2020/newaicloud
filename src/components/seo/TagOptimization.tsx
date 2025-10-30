@@ -29,7 +29,8 @@ import {
   List,
   Upload,
   Zap,
-  Filter
+  Filter,
+  Clock
 } from 'lucide-react';
 
 interface Product {
@@ -38,17 +39,19 @@ interface Product {
   tags: string | null;
   vendor: string;
   category: string;
+  product_type: string;
   image_url: string;
   seo_synced_to_shopify: boolean;
 }
 
-type FilterType = 'all' | 'to_optimize' | 'tagged' | 'synced';
+type FilterType = 'all' | 'to_optimize' | 'tagged' | 'to_sync' | 'synced';
 
 export function TagOptimization() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [editTags, setEditTags] = useState('');
   const [saving, setSaving] = useState(false);
@@ -70,7 +73,7 @@ export function TagOptimization() {
       setLoading(true);
       const { data, error } = await supabase
         .from('shopify_products')
-        .select('id, title, tags, vendor, category, image_url, seo_synced_to_shopify')
+        .select('id, title, tags, vendor, category, product_type, image_url, seo_synced_to_shopify')
         .order('title', { ascending: true });
 
       if (error) throw error;
@@ -87,32 +90,38 @@ export function TagOptimization() {
     fetchProducts();
   }, []);
 
+  // Get unique categories
+  const uniqueCategories = Array.from(new Set(products.map(p => p.product_type).filter(Boolean))).sort();
+
   // Filtered products logic
   const filteredProducts = products.filter((product) => {
     if (filter === 'to_optimize' && product.tags) return false;
     if (filter === 'tagged' && !product.tags) return false;
+    if (filter === 'to_sync' && (product.seo_synced_to_shopify || !product.tags)) return false;
     if (filter === 'synced' && !product.seo_synced_to_shopify) return false;
 
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      product.title.toLowerCase().includes(term) ||
-      product.tags?.toLowerCase().includes(term) ||
-      product.category?.toLowerCase().includes(term)
-    );
+    // Category filter
+    if (selectedCategory !== 'all' && product.product_type !== selectedCategory) return false;
+
+    // Search filter (only by title now)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      return product.title?.toLowerCase().includes(term);
+    }
+
+    return true;
   });
 
   // Statistics
   const productsWithTags = products.filter(p => p.tags).length;
   const productsWithoutTags = products.length - productsWithTags;
-  const productsToSync = products.filter(p => p.tags && !p.seo_synced_to_shopify).length;
+  const productsToSync = products.filter(p => p.tags && p.tags.length > 0 && !p.seo_synced_to_shopify).length;
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   
-  // Calculate tag SEO score (products with tags get 80/100, without get 20/100)
+  // Calculate tag SEO score
   const tagSeoScore = products.length > 0 
     ? Math.round(
         products.reduce((sum, p) => {
-          // Products with tags get 80 points, without tags get 20 points
           return sum + (p.tags ? 80 : 20);
         }, 0) / products.length
       )
@@ -120,15 +129,16 @@ export function TagOptimization() {
 
   const filters = [
     { id: 'all' as FilterType, label: 'All Products', count: products.length },
-    { id: 'to_optimize' as FilterType, label: 'To Optimize', count: productsWithoutTags },
+    { id: 'to_optimize' as FilterType, label: 'To Tag', count: productsWithoutTags },
     { id: 'tagged' as FilterType, label: 'Tagged', count: productsWithTags },
-    { id: 'synced' as FilterType, label: 'Synced', count: productsSynced },
+    { id: 'to_sync' as FilterType, label: 'To Synchronize', count: productsToSync },
+    { id: 'synced' as FilterType, label: 'Synchronized', count: productsSynced },
   ];
 
   // Clickable stats handlers
   const handleToOptimizeClick = () => {
     setFilter('to_optimize');
-    toast.info(`Showing ${productsWithoutTags} products to optimize`);
+    toast.info(`Showing ${productsWithoutTags} products to tag`);
   };
 
   const handleTaggedClick = () => {
@@ -136,9 +146,14 @@ export function TagOptimization() {
     toast.info(`Showing ${productsWithTags} tagged products`);
   };
 
+  const handleToSyncClick = () => {
+    setFilter('to_sync');
+    toast.info(`Showing ${productsToSync} products to synchronize`);
+  };
+
   const handleSyncedClick = () => {
     setFilter('synced');
-    toast.info(`Showing ${productsSynced} synced products`);
+    toast.info(`Showing ${productsSynced} synchronized products`);
   };
 
   const handleGenerateAll = () => {
@@ -265,7 +280,6 @@ export function TagOptimization() {
 
     for (let i = 0; i < productIds.length; i++) {
       try {
-        // Get user session token
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           throw new Error('No active session');
@@ -481,89 +495,95 @@ export function TagOptimization() {
       </Card>
 
       {/* Clickable Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Card 
-          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleTaggedClick}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-              </div>
-              <h3 className="text-sm font-semibold text-green-900 dark:text-green-100">Tagged</h3>
-            </div>
-            <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs">
-              {Math.round((productsWithTags / products.length) * 100)}%
-            </Badge>
-          </div>
-          <p className="text-3xl font-bold text-green-900 dark:text-green-100">{productsWithTags}</p>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-1">Click to view</p>
-        </Card>
-
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card 
           className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleToOptimizeClick}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                <Plus className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-              </div>
-              <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-100">To Optimize</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Not Tagged</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{productsWithoutTags}</p>
             </div>
+            <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">{productsWithoutTags}</p>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">Click to view</p>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Click to view</p>
         </Card>
-
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={handleTaggedClick}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">Tagged</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{productsWithTags}</p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={handleToSyncClick}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{productsToSync}</p>
+            </div>
+            <Clock className="w-8 h-8 text-purple-600" />
+          </div>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to view</p>
+        </Card>
+        
         <Card 
           className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleSyncedClick}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Synced</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{productsSynced}</p>
             </div>
+            <Upload className="w-8 h-8 text-blue-600" />
           </div>
-          <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{productsSynced}</p>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Click to view</p>
-        </Card>
-
-        <Card 
-          className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <Hash className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              </div>
-              <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">To Sync</h3>
-            </div>
-          </div>
-          <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{productsToSync}</p>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">Ready for Shopify</p>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
         </Card>
       </div>
 
       {/* Controls Section */}
       <Card className="p-4">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          {/* Search and View Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="flex flex-col gap-4">
+          {/* Large Search Bar and Category Filter */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search products, tags, categories..."
+                placeholder="Search products by title..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-12 h-12 text-lg"
               />
             </div>
             
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px]"
+            >
+              <option value="all">All Categories</option>
+              {uniqueCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Action Buttons Row */}
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -585,57 +605,57 @@ export function TagOptimization() {
                 <span>Filters</span>
               </Button>
             </div>
-          </div>
 
-          {/* Bulk Actions */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateAll}
-              disabled={generating || productsWithoutTags === 0}
-              className="flex items-center gap-2"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Optimize All</span>
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleGenerateSelected(false)}
-              disabled={generating || selectedProducts.size === 0}
-              className="flex items-center gap-2"
-            >
-              <Zap className="w-4 h-4" />
-              <span className="hidden sm:inline">Optimize ({selectedProducts.size})</span>
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSyncSelected}
-              disabled={syncing || selectedProducts.size === 0}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Sync ({selectedProducts.size})</span>
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSyncAll}
-              disabled={syncing || productsToSync === 0}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Sync All</span>
-            </Button>
-            
-            <Button variant="outline" size="icon" onClick={fetchProducts}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
+            {/* Bulk Actions */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateAll}
+                disabled={generating || productsWithoutTags === 0}
+                className="flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Optimize All</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleGenerateSelected(false)}
+                disabled={generating || selectedProducts.size === 0}
+                className="flex items-center gap-2"
+              >
+                <Zap className="w-4 h-4" />
+                <span className="hidden sm:inline">Optimize ({selectedProducts.size})</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncSelected}
+                disabled={syncing || selectedProducts.size === 0}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Sync ({selectedProducts.size})</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncAll}
+                disabled={syncing || productsToSync === 0}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Sync All</span>
+              </Button>
+              
+              <Button variant="outline" size="icon" onClick={fetchProducts}>
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -699,94 +719,80 @@ export function TagOptimization() {
         </Card>
       )}
 
-      {/* Products List */}
+      {/* Products Display */}
       {viewMode === 'list' ? (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left w-12">
-                    <Checkbox
-                      checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-sm">Product</th>
-                  <th className="px-4 py-3 text-left font-semibold text-sm">Tags</th>
-                  <th className="px-4 py-3 text-left font-semibold text-sm">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map((product) => (
-                  <tr key={product.id} className="border-b hover:bg-muted/30 transition">
-                    <td className="px-4 py-3">
-                      <Checkbox
-                        checked={selectedProducts.has(product.id)}
-                        onCheckedChange={() => handleSelectProduct(product.id)}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {product.image_url ? (
-                          <img
-                            src={product.image_url}
-                            alt={product.title}
-                            className="w-12 h-12 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                            <Tags className="w-6 h-6 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div>
-                          <div className="font-medium line-clamp-1">{product.title}</div>
-                          <div className="text-xs text-muted-foreground">{product.vendor}</div>
-                        </div>
+        <div className="space-y-2">
+          {filteredProducts.map((product) => (
+            <Card key={product.id} className="p-4">
+              <div className="flex items-center gap-4">
+                <Checkbox
+                  checked={selectedProducts.has(product.id)}
+                  onCheckedChange={() => handleSelectProduct(product.id)}
+                />
+                {product.image_url && (
+                  <img
+                    src={product.image_url}
+                    alt={product.title}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold truncate">{product.title}</h3>
+                  <p className="text-sm text-muted-foreground">{product.vendor}</p>
+                  {product.tags ? (
+                    editingProduct === product.id ? (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Input
+                          value={editTags}
+                          onChange={(e) => setEditTags(e.target.value)}
+                          className="flex-1"
+                          placeholder="Enter tags..."
+                        />
+                        <Button size="sm" onClick={() => handleSaveTags(product.id)} disabled={saving}>
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                          Cancel
+                        </Button>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {product.tags ? (
+                    ) : (
+                      <div className="flex items-center gap-2 mt-2">
                         <div className="flex flex-wrap gap-1">
-                          {product.tags.split(',').slice(0, 3).map((tag, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
+                          {product.tags.split(',').map((tag, i) => (
+                            <Badge key={i} variant="secondary">
                               {tag.trim()}
                             </Badge>
                           ))}
-                          {product.tags.split(',').length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{product.tags.split(',').length - 3}
-                            </Badge>
-                          )}
                         </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">No tags</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {product.tags ? (
-                        <Badge variant="outline" className="gap-1">
-                          <CheckCircle className="w-3 h-3" />
-                          Tagged
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="gap-1">
-                          <Plus className="w-3 h-3" />
-                          To Optimize
-                        </Badge>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditTags(product.id, product.tags || '')}
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                    )
+                  ) : (
+                    <Badge variant="outline" className="mt-2">No tags</Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {product.seo_synced_to_shopify && (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Synced
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : (
-        // Grid View
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-md transition">
+            <Card key={product.id} className="overflow-hidden">
               <div className="aspect-square bg-muted relative">
                 {product.image_url ? (
                   <img
@@ -796,7 +802,7 @@ export function TagOptimization() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Tags className="w-12 h-12 text-muted-foreground" />
+                    <Hash className="w-12 h-12 text-muted-foreground" />
                   </div>
                 )}
                 <div className="absolute top-2 left-2">
@@ -807,78 +813,55 @@ export function TagOptimization() {
                   />
                 </div>
               </div>
-              
               <div className="p-4 space-y-3">
                 <div>
-                  <h3 className="font-semibold line-clamp-2 mb-1">{product.title}</h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {product.vendor && <span>{product.vendor}</span>}
-                    {product.category && (
-                      <>
-                        <span>•</span>
-                        <span>{product.category}</span>
-                      </>
-                    )}
-                  </div>
+                  <h3 className="font-semibold line-clamp-2">{product.title}</h3>
+                  <p className="text-xs text-muted-foreground">{product.vendor}</p>
                 </div>
-
-                {editingProduct === product.id ? (
-                  <div className="space-y-2">
-                    <Input
-                      value={editTags}
-                      onChange={(e) => setEditTags(e.target.value)}
-                      placeholder="Enter tags separated by commas"
-                      disabled={saving}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleSaveTags(product.id)}
-                        disabled={saving}
-                        className="flex-1"
-                      >
-                        {saving ? (
-                          <>
-                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          'Save'
-                        )}
-                      </Button>
+                {product.tags ? (
+                  editingProduct === product.id ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={editTags}
+                        onChange={(e) => setEditTags(e.target.value)}
+                        placeholder="Enter tags..."
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleSaveTags(product.id)} disabled={saving}>
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-1">
+                        {product.tags.split(',').map((tag, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {tag.trim()}
+                          </Badge>
+                        ))}
+                      </div>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={handleCancelEdit}
-                        disabled={saving}
+                        onClick={() => handleEditTags(product.id, product.tags || '')}
+                        className="w-full"
                       >
-                        <X className="w-3 h-3" />
+                        Edit Tags
                       </Button>
                     </div>
-                  </div>
+                  )
                 ) : (
-                  <div>
-                    <div className="flex flex-wrap gap-1 mb-2 min-h-[32px]">
-                      {product.tags ? (
-                        product.tags.split(',').map((tag, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {tag.trim()}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">No tags</span>
-                      )}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEditTags(product.id, product.tags || '')}
-                      className="w-full gap-2"
-                    >
-                      <Plus className="w-3 h-3" />
-                      {product.tags ? 'Edit Tags' : 'Add Tags'}
-                    </Button>
-                  </div>
+                  <Badge variant="outline">No tags</Badge>
+                )}
+                {product.seo_synced_to_shopify && (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 w-full justify-center">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Synced
+                  </Badge>
                 )}
               </div>
             </Card>
@@ -886,52 +869,55 @@ export function TagOptimization() {
         </div>
       )}
 
-      {/* Empty State */}
       {filteredProducts.length === 0 && (
-        <div className="text-center py-12 bg-muted/30 rounded-lg">
-          <Tags className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">No products found</p>
-        </div>
+        <Card className="p-12 text-center">
+          <Hash className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No products found</h3>
+          <p className="text-muted-foreground">Try adjusting your filters or search term</p>
+        </Card>
       )}
 
       {/* Dialogs */}
       <OptimizationProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        title={generating ? "Optimizing Tags" : "Syncing to Shopify"}
+        onClose={handleCloseProgressDialog}
+        title={generating ? "Generating Tags..." : "Synchronizing..."}
         current={progress.current}
         total={progress.total}
         isComplete={isOptimizationComplete}
-        onSyncClick={handleSyncSelected}
-        onClose={handleCloseProgressDialog}
       />
 
       <OptimizationResultsDialog
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
-        type="tags"
-        items={optimizedProducts}
-        onSyncClick={() => {
-          setShowResultsDialog(false);
-          handleSyncSelected();
-        }}
         onClose={handleCloseResultsDialog}
+        type="tags"
+        items={optimizedProducts.map(p => ({
+          id: p.id,
+          title: p.title,
+          seoTitle: p.tags || '',
+          seoDescription: '',
+          imageUrl: p.image_url
+        }))}
+        onSyncClick={(ids) => { handleBulkSync(ids); }}
       />
 
-      <TrialLimitDialog
-        open={showUpgradeDialog && limits?.shouldForcePayment === true}
-        onOpenChange={setShowUpgradeDialog}
-        limitType="optimizations"
-        currentUsage={limits?.usage.optimizations_count || 0}
-        maxUsage={limits?.limits.max_optimizations || 100}
-        trialMaxUsage={limits?.isTrialing ? limits?.limits.max_optimizations : undefined}
-      />
-      
-      <UpgradeDialog
-        open={showUpgradeDialog && limits?.shouldForcePayment !== true}
-        onOpenChange={setShowUpgradeDialog}
-        limitType="optimizations"
-      />
+      {limits?.isTrialing ? (
+        <TrialLimitDialog
+          open={showUpgradeDialog}
+          onOpenChange={setShowUpgradeDialog}
+          limitType="optimizations"
+          currentUsage={limits?.usage.optimizations_count || 0}
+          maxUsage={limits?.limits.max_optimizations || 0}
+        />
+      ) : (
+        <UpgradeDialog
+          open={showUpgradeDialog}
+          onOpenChange={setShowUpgradeDialog}
+          limitType="optimizations"
+        />
+      )}
     </div>
   );
 }

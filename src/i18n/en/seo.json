@@ -8,11 +8,27 @@
     "success": "Optimization successful",
     "error": "Optimization error",
     "score": "SEO Score",
-    "outOf100": "/100"
+    "outOf100": "/100",
+    "searchPlaceholder": "Search products by title...",
+    "allProducts": "All Products",
+    "toOptimize": "To Optimize",
+    "optimized": "Optimized",
+    "toSynchronize": "To Synchronize",
+    "synchronized": "Synchronized",
+    "allCategories": "All Categories",
+    "category": "Category"
   },
   "tags": {
     "title": "Tag Optimization",
-    "subtitle": "Manage product tags"
+    "subtitle": "Manage product tags",
+    "searchPlaceholder": "Search products by title...",
+    "allProducts": "All Products",
+    "toOptimize": "To Tag",
+    "tagged": "Tagged",
+    "toSynchronize": "To Synchronize",
+    "synchronized": "Synchronized",
+    "allCategories": "All Categories",
+    "category": "Category"
   },
   "alt": {
     "title": "ALT Image Optimization",

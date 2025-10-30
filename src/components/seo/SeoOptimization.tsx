@@ -69,6 +69,7 @@ export function SeoOptimization() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -127,19 +128,22 @@ export function SeoOptimization() {
       )
     : 0;
 
+  // Get unique categories
+  const uniqueCategories = Array.from(new Set(products.map(p => p.product_type).filter(Boolean))).sort();
+
   const filteredProducts = products.filter((product) => {
     if (activeTab === 'not-enriched' && product.enrichment_status === 'enriched') return false;
     if (activeTab === 'enriched' && product.enrichment_status !== 'enriched') return false;
     if (activeTab === 'pending-sync' && (product.enrichment_status !== 'enriched' || product.seo_synced_to_shopify)) return false;
     if (activeTab === 'synced' && !product.seo_synced_to_shopify) return false;
 
+    // Category filter
+    if (selectedCategory !== 'all' && product.product_type !== selectedCategory) return false;
+
+    // Search filter (only by title now)
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      const matchTitle = product.title?.toLowerCase().includes(term);
-      const matchCategory = product.category?.toLowerCase().includes(term);
-      const matchTag = product.tags?.toLowerCase().includes(term);
-      
-      return matchTitle || matchCategory || matchTag;
+      return product.title?.toLowerCase().includes(term);
     }
 
     return true;
@@ -149,6 +153,7 @@ export function SeoOptimization() {
     { id: 'all' as QuickFilterTab, label: 'All Products', count: products.length },
     { id: 'not-enriched' as QuickFilterTab, label: 'To Optimize', count: notEnrichedCount },
     { id: 'enriched' as QuickFilterTab, label: 'Optimized', count: enrichedCount },
+    { id: 'pending-sync' as QuickFilterTab, label: 'To Synchronize', count: pendingSyncCount },
     { id: 'synced' as QuickFilterTab, label: 'Synchronized', count: syncedCount }
   ];
 
@@ -542,20 +547,37 @@ export function SeoOptimization() {
 
       {/* Controls Section */}
       <Card className="p-4">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          {/* Search and View Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="flex flex-col gap-4">
+          {/* Large Search Bar and Category Filter */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search by title, category, or tag..."
+                placeholder="Search products by title..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-12 h-12 text-lg"
               />
             </div>
             
-            <div className="flex items-center gap-2">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px]"
+            >
+              <option value="all">All Categories</option>
+              {uniqueCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Action Buttons Row */}
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex items-center gap-2"
+            >
               <Button
                 variant="outline"
                 size="sm"
@@ -576,10 +598,9 @@ export function SeoOptimization() {
                 <span>Filters</span>
               </Button>
             </div>
-          </div>
 
-          {/* Bulk Actions */}
-          <div className="flex flex-wrap gap-2">
+            {/* Bulk Actions */}
+            <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -649,9 +670,10 @@ export function SeoOptimization() {
               <span className="hidden sm:inline">Sync All ({pendingSyncCount})</span>
             </Button>
             
-            <Button variant="outline" size="icon" onClick={fetchProducts}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
+              <Button variant="outline" size="icon" onClick={fetchProducts}>
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
