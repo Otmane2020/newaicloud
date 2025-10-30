@@ -33,7 +33,7 @@ interface Product {
   created_at: string;
 }
 
-function Products() {
+export default function Products() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
@@ -119,17 +119,17 @@ function Products() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle p-8">
+      <div className="min-h-screen bg-gradient-subtle p-4 sm:p-6 lg:p-8">
         <div className="container mx-auto">
-          <Skeleton className="h-12 w-64 mb-8" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-8 sm:h-12 w-48 sm:w-64 mb-6 sm:mb-8" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="overflow-hidden">
                 <Skeleton className="aspect-[4/3]" />
-                <CardContent className="p-4 space-y-3">
-                  <Skeleton className="h-6 w-full" />
+                <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+                  <Skeleton className="h-5 sm:h-6 w-full" />
                   <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-7 sm:h-8 w-20 sm:w-24" />
                 </CardContent>
               </Card>
             ))}
@@ -145,7 +145,7 @@ function Products() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <div className="w-full sm:w-auto">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">Gestion des Produits</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2">Gestion des Produits</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
               {products.length} produit{products.length !== 1 ? 's' : ''} • {totalValue.toFixed(2)} EUR
             </p>
@@ -155,11 +155,15 @@ function Products() {
               variant="outline"
               size="icon"
               onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-              className="shrink-0"
+              className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
             >
               {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
             </Button>
-            <Button size="sm" onClick={() => navigate('/dashboard')} className="flex-1 sm:flex-none text-xs sm:text-sm">
+            <Button 
+              size="sm" 
+              onClick={() => navigate('/dashboard')} 
+              className="flex-1 sm:flex-none text-xs sm:text-sm h-9 sm:h-10"
+            >
               <Plus className="w-4 h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Importer des produits</span>
               <span className="sm:hidden">Importer</span>
@@ -168,18 +172,18 @@ function Products() {
         </div>
 
         {products.length === 0 ? (
-          <Card className="p-12 text-center">
+          <Card className="p-6 sm:p-8 lg:p-12 text-center">
             <div className="flex flex-col items-center gap-4">
-              <div className="p-4 bg-muted rounded-full">
-                <Package className="w-12 h-12 text-muted-foreground" />
+              <div className="p-3 sm:p-4 bg-muted rounded-full">
+                <Package className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-muted-foreground" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-2">Aucun produit</h3>
-                <p className="text-muted-foreground mb-6">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2">Aucun produit</h3>
+                <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base">
                   Commencez par importer vos produits depuis Shopify
                 </p>
-                <Button onClick={() => navigate('/dashboard')}>
-                  <Plus className="w-5 h-5 mr-2" />
+                <Button onClick={() => navigate('/dashboard')} size="sm" className="h-9 sm:h-10">
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Importer des produits
                 </Button>
               </div>
@@ -187,23 +191,23 @@ function Products() {
           </Card>
         ) : (
           <>
-            {/* Filters */}
+            {/* Filters - Layout adapté mobile */}
             <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {/* Search */}
-                <div className="relative">
+                <div className="relative sm:col-span-2 lg:col-span-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Rechercher..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 text-sm"
+                    className="pl-10 text-sm h-10 sm:h-11"
                   />
                 </div>
 
                 {/* Status filter */}
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="text-sm">
+                  <SelectTrigger className="text-sm h-10 sm:h-11">
                     <Filter className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Statut" />
                   </SelectTrigger>
@@ -216,7 +220,7 @@ function Products() {
 
                 {/* Sort */}
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="text-sm">
+                  <SelectTrigger className="text-sm h-10 sm:h-11">
                     <SelectValue placeholder="Trier par" />
                   </SelectTrigger>
                   <SelectContent>
@@ -232,13 +236,13 @@ function Products() {
 
             {/* Products grid/list */}
             {filteredProducts.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">
+              <Card className="p-6 sm:p-8 text-center">
+                <p className="text-muted-foreground text-sm sm:text-base">
                   Aucun produit ne correspond à vos critères de recherche
                 </p>
               </Card>
             ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredProducts.map((product) => (
                   <div
                     key={product.id}
@@ -250,36 +254,54 @@ function Products() {
                 ))}
               </div>
             ) : (
-              <div className="space-y-3">
+              // Liste view corrigée pour mobile
+              <div className="space-y-3 sm:space-y-4">
                 {filteredProducts.map((product) => (
                   <Card
                     key={product.id}
                     onClick={() => navigate(`/product-landing/${product.id}`)}
-                    className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
+                    className="p-3 sm:p-4 cursor-pointer hover:shadow-lg transition-shadow border"
                   >
-                    <div className="flex items-center gap-4">
-                      {product.image_url && (
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      {product.image_url ? (
                         <img
                           src={product.image_url}
                           alt={product.title}
-                          className="w-20 h-20 object-cover rounded-lg"
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0"
                         />
+                      ) : (
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Package className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
+                        </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg truncate">{product.title}</h3>
-                        <p className="text-sm text-muted-foreground truncate">{product.description || 'Pas de description'}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant={product.status === 'active' ? 'success' : 'outline'}>
-                            {product.status}
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 mb-2">
+                          <h3 className="font-semibold text-base sm:text-lg line-clamp-2 sm:truncate">
+                            {product.title}
+                          </h3>
+                          <div className="text-lg sm:text-xl font-bold text-right">
+                            {product.price?.toFixed(2) || '0.00'} {product.currency}
+                          </div>
+                        </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-2">
+                          {product.description || 'Pas de description'}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge 
+                            variant={product.status === 'active' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {product.status === 'active' ? 'Actif' : 'Brouillon'}
                           </Badge>
                           {product.vendor && (
-                            <Badge variant="outline">{product.vendor}</Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {product.vendor}
+                            </Badge>
                           )}
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            Stock: {product.inventory_quantity}
+                          </span>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold">{product.price?.toFixed(2) || '0.00'} {product.currency}</div>
-                        <div className="text-sm text-muted-foreground">Stock: {product.inventory_quantity}</div>
                       </div>
                     </div>
                   </Card>
@@ -292,5 +314,3 @@ function Products() {
     </div>
   );
 }
-
-export default Products;
