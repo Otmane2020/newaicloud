@@ -28,7 +28,8 @@ import {
   Grid3x3,
   List,
   Upload,
-  Zap
+  Zap,
+  Filter
 } from 'lucide-react';
 
 interface Product {
@@ -61,6 +62,7 @@ export function TagOptimization() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const { limits, loading: limitsLoading } = useUsageLimits();
 
   const fetchProducts = async () => {
@@ -75,7 +77,7 @@ export function TagOptimization() {
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Erreur lors du chargement des produits');
+      toast.error('Failed to load products');
     } finally {
       setLoading(false);
     }
@@ -85,13 +87,12 @@ export function TagOptimization() {
     fetchProducts();
   }, []);
 
+  // Filtered products logic
   const filteredProducts = products.filter((product) => {
-    // Filter logic
     if (filter === 'with-tags' && !product.tags) return false;
     if (filter === 'without-tags' && product.tags) return false;
     if (filter === 'to-sync' && (product.seo_synced_to_shopify || !product.tags)) return false;
 
-    // Search logic
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -100,6 +101,19 @@ export function TagOptimization() {
       product.category?.toLowerCase().includes(term)
     );
   });
+
+  // Statistics
+  const productsWithTags = products.filter(p => p.tags).length;
+  const productsWithoutTags = products.length - productsWithTags;
+  const productsToSync = products.filter(p => p.tags && !p.seo_synced_to_shopify).length;
+  const tagCompletionRate = products.length > 0 ? Math.round((productsWithTags / products.length) * 100) : 0;
+
+  const filters = [
+    { id: 'all' as FilterType, label: 'All Products', count: products.length },
+    { id: 'with-tags' as FilterType, label: 'With Tags', count: productsWithTags },
+    { id: 'without-tags' as FilterType, label: 'Without Tags', count: productsWithoutTags },
+    { id: 'to-sync' as FilterType, label: 'To Sync', count: productsToSync },
+  ];
 
   const handleEditTags = (productId: string, currentTags: string) => {
     setEditingProduct(productId);
@@ -116,13 +130,13 @@ export function TagOptimization() {
 
       if (error) throw error;
 
-      toast.success('Tags mis à jour avec succès');
+      toast.success('Tags updated successfully');
       setEditingProduct(null);
       setEditTags('');
       await fetchProducts();
     } catch (error) {
       console.error('Error saving tags:', error);
-      toast.error('Erreur lors de la sauvegarde des tags');
+      toast.error('Failed to save tags');
     } finally {
       setSaving(false);
     }
@@ -154,7 +168,7 @@ export function TagOptimization() {
   const handleGenerateAll = async () => {
     const productsToGenerate = products.filter(p => !p.tags);
     if (productsToGenerate.length === 0) {
-      toast.info('Tous les produits ont déjà des tags');
+      toast.info('All products already have tags');
       return;
     }
 
@@ -165,7 +179,7 @@ export function TagOptimization() {
         setShowUpgradeDialog(true);
         return;
       } else {
-        toast.warning(`Limite atteinte. Seulement ${remainingLimit} produits seront optimisés.`);
+        toast.warning(`Limit reached. Only ${remainingLimit} products will be optimized.`);
         await handleBulkGenerate(productsToGenerate.slice(0, remainingLimit).map(p => p.id));
         return;
       }
@@ -181,7 +195,7 @@ export function TagOptimization() {
           !products.find(p => p.id === id)?.tags
         );
     if (productsToGenerate.length === 0) {
-      toast.info('Aucun produit sélectionné');
+      toast.info('No products selected');
       return;
     }
 
@@ -192,7 +206,7 @@ export function TagOptimization() {
         setShowUpgradeDialog(true);
         return;
       } else {
-        toast.warning(`Limite atteinte. Seulement ${remainingLimit} produits seront optimisés.`);
+        toast.warning(`Limit reached. Only ${remainingLimit} products will be optimized.`);
         await handleBulkGenerate(productsToGenerate.slice(0, remainingLimit), force);
         return;
       }
@@ -231,7 +245,6 @@ export function TagOptimization() {
             skipCount++;
           } else {
             successCount++;
-            // Get the updated product
             const product = products.find(p => p.id === productIds[i]);
             if (product) {
               generatedProducts.push(product);
@@ -251,7 +264,6 @@ export function TagOptimization() {
     setIsOptimizationComplete(true);
     await fetchProducts();
     
-    // Get updated products with new tags
     const updatedProducts = await Promise.all(
       productIds.map(async (id) => {
         const { data } = await supabase
@@ -271,7 +283,7 @@ export function TagOptimization() {
   const handleSyncAll = async () => {
     const productsToSync = products.filter(p => p.tags && !p.seo_synced_to_shopify);
     if (productsToSync.length === 0) {
-      toast.info('Tous les produits sont synchronisés');
+      toast.info('All products are synchronized');
       return;
     }
     await handleBulkSync(productsToSync.map(p => p.id));
@@ -283,7 +295,7 @@ export function TagOptimization() {
       return product && product.tags && !product.seo_synced_to_shopify;
     });
     if (productsToSync.length === 0) {
-      toast.info('Aucun produit à synchroniser');
+      toast.info('No products to synchronize');
       return;
     }
     await handleBulkSync(productsToSync);
@@ -323,13 +335,13 @@ export function TagOptimization() {
         } else {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           errorCount++;
-          errors.push(`Produit ${i + 1}: ${errorData.error || 'Erreur inconnue'}`);
+          errors.push(`Product ${i + 1}: ${errorData.error || 'Unknown error'}`);
           console.error(`Sync error for product ${productIds[i]}:`, errorData);
         }
       } catch (error) {
         console.error('Error syncing:', error);
         errorCount++;
-        errors.push(`Produit ${i + 1}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        errors.push(`Product ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
       setProgress({ current: i + 1, total: productIds.length });
     }
@@ -340,9 +352,9 @@ export function TagOptimization() {
     
     if (errorCount > 0) {
       console.error('Sync errors:', errors);
-      toast.error(`Synchronisation terminée: ${successCount} succès, ${errorCount} erreurs. Vérifiez vos identifiants Shopify.`);
+      toast.error(`Sync completed: ${successCount} successful, ${errorCount} errors. Check your Shopify credentials.`);
     } else {
-      toast.success(`Synchronisation réussie: ${successCount} produits synchronisés`);
+      toast.success(`Sync successful: ${successCount} products synchronized`);
     }
     
     await fetchProducts();
@@ -368,129 +380,188 @@ export function TagOptimization() {
     );
   }
 
-  const productsWithTags = products.filter(p => p.tags).length;
-  const productsWithoutTags = products.length - productsWithTags;
-  const productsToSync = products.filter(p => p.tags && !p.seo_synced_to_shopify).length;
-  const tagCompletionRate = products.length > 0 ? Math.round((productsWithTags / products.length) * 100) : 0;
-
-  const filters = [
-    { id: 'all' as FilterType, label: 'Tous', count: products.length },
-    { id: 'with-tags' as FilterType, label: 'Avec tags', count: productsWithTags },
-    { id: 'without-tags' as FilterType, label: 'Sans tags', count: productsWithoutTags },
-    { id: 'to-sync' as FilterType, label: 'À synchroniser', count: productsToSync },
-  ];
-
   return (
     <div className="space-y-6">
-      {/* Hero Banner with CTA */}
-      <Card className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950 dark:via-amber-950 dark:to-yellow-950 border-2 border-orange-200 p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2">
-              <Tags className="w-6 h-6 text-orange-600" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                Optimisation des Tags
-              </h2>
-            </div>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              Organisez vos produits avec des tags pertinents. Améliorez la découvrabilité et augmentez vos conversions de 30%.
+      {/* Header Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Tag Optimization</h1>
+            <p className="text-muted-foreground mt-2">
+              Organize products with relevant tags to improve discoverability and increase conversions
             </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Target className="w-4 h-4 text-orange-600" />
-                <span className="font-medium">Organisation optimale</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="font-medium">+30% découvrabilité</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Hash className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">Tags intelligents</span>
-              </div>
-            </div>
           </div>
-          <div className="flex flex-col gap-3 items-center">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-orange-600">{tagCompletionRate}%</div>
-              <div className="text-sm text-muted-foreground">Produits tagués</div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-2xl font-bold text-primary">{tagCompletionRate}%</div>
+              <div className="text-sm text-muted-foreground">Tagged Products</div>
             </div>
             <Button
               size="lg"
-              onClick={() => toast.info('Taggez vos produits ci-dessous')}
-              className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
+              onClick={() => toast.info('Start optimizing your products below')}
+              className="gap-2"
             >
               <Sparkles className="w-5 h-5" />
-              Commencer l'optimisation
-              <ArrowRight className="w-5 h-5" />
+              Start Optimization
             </Button>
           </div>
         </div>
-      </Card>
 
-      {/* Dashboard Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
-                <Tags className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+        {/* Stats Overview */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Products</p>
+                <p className="text-2xl font-bold">{products.length}</p>
               </div>
-              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Total Produits</h3>
+              <Tags className="w-8 h-8 text-muted-foreground" />
             </div>
-          </div>
-          <p className="text-4xl font-bold mb-1">{products.length}</p>
-          <p className="text-sm text-muted-foreground">Dans votre catalogue</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
-                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+          </Card>
+          
+          <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-green-700 dark:text-green-300">With Tags</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100">{productsWithTags}</p>
               </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100">Avec Tags</h3>
+              <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-            <Badge className="bg-green-600 text-white">{tagCompletionRate}%</Badge>
-          </div>
-          <p className="text-4xl font-bold text-green-900 dark:text-green-100 mb-1">{productsWithTags}</p>
-          <p className="text-sm text-green-700 dark:text-green-300">Produits organisés</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
-                <Plus className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+          </Card>
+          
+          <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Without Tags</p>
+                <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{productsWithoutTags}</p>
               </div>
-              <h3 className="font-semibold text-orange-900 dark:text-orange-100">Sans Tags</h3>
+              <Plus className="w-8 h-8 text-orange-600" />
             </div>
-          </div>
-          <p className="text-4xl font-bold text-orange-900 dark:text-orange-100 mb-1">{productsWithoutTags}</p>
-          <p className="text-sm text-orange-700 dark:text-orange-300">À optimiser</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-xl">
-                <Upload className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </Card>
+          
+          <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">To Sync</p>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{productsToSync}</p>
               </div>
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100">À synchroniser</h3>
+              <Upload className="w-8 h-8 text-blue-600" />
             </div>
-          </div>
-          <p className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-1">{productsToSync}</p>
-          <p className="text-sm text-blue-700 dark:text-blue-300">Prêts pour Shopify</p>
-        </Card>
+          </Card>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-background border rounded-lg p-1 flex flex-wrap gap-1">
+      {/* Controls Section */}
+      <Card className="p-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          {/* Search and View Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products, tags, categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className="flex items-center gap-2"
+              >
+                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
+                <span className="hidden sm:inline">{viewMode === 'grid' ? 'List' : 'Grid'}</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className="lg:hidden flex items-center gap-2"
+              >
+                <Filter className="w-4 h-4" />
+                <span>Filters</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Bulk Actions */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateAll}
+              disabled={generating || productsWithoutTags === 0}
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Optimize All</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleGenerateSelected(false)}
+              disabled={generating || selectedProducts.size === 0}
+              className="flex items-center gap-2"
+            >
+              <Zap className="w-4 h-4" />
+              <span className="hidden sm:inline">Optimize ({selectedProducts.size})</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncSelected}
+              disabled={syncing || selectedProducts.size === 0}
+              className="flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Sync ({selectedProducts.size})</span>
+            </Button>
+            
+            <Button variant="outline" size="icon" onClick={fetchProducts}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Filters */}
+        {showMobileFilters && (
+          <div className="lg:hidden mt-4 p-4 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-2 gap-2">
+              {filters.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className={`flex items-center justify-between p-3 rounded-md text-sm font-medium transition ${
+                    filter === f.id
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-background text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {f.label}
+                  <Badge variant={filter === f.id ? 'secondary' : 'outline'}>
+                    {f.count}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Desktop Filters */}
+      <div className="hidden lg:flex bg-background border rounded-lg p-1 gap-1">
         {filters.map((f) => (
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition flex-1 justify-center ${
               filter === f.id
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-muted-foreground hover:bg-muted'
@@ -504,88 +575,12 @@ export function TagOptimization() {
         ))}
       </div>
 
-      {/* Bulk Actions & Search */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex-1 w-full sm:w-auto">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Rechercher par produit, tag ou catégorie..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            >
-              {viewMode === 'grid' ? <List className="w-4 h-4 mr-2" /> : <Grid3x3 className="w-4 h-4 mr-2" />}
-              {viewMode === 'grid' ? 'Liste' : 'Grille'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateAll}
-              disabled={generating || productsWithoutTags === 0}
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Optimiser tout
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleGenerateSelected(false)}
-              disabled={generating || selectedProducts.size === 0}
-            >
-              <Zap className="w-4 h-4 mr-2" />
-              Optimiser sélection ({selectedProducts.size})
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleGenerateSelected(true)}
-              disabled={generating || selectedProducts.size === 0}
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Régénérer ({selectedProducts.size})
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSyncAll}
-              disabled={syncing || productsToSync === 0}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Synchroniser tout
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSyncSelected}
-              disabled={syncing || selectedProducts.size === 0}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Synchroniser sélection
-            </Button>
-            <Button variant="outline" size="icon" onClick={fetchProducts}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Progress */}
+      {/* Progress Indicator */}
       {(generating || syncing) && (
         <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium">
-              {generating ? 'Génération des tags...' : 'Synchronisation...'}
+              {generating ? 'Generating tags...' : 'Synchronizing...'}
             </span>
             <span className="text-sm text-muted-foreground">
               {progress.current} / {progress.total}
@@ -595,127 +590,100 @@ export function TagOptimization() {
         </Card>
       )}
 
-      {/* Products View */}
+      {/* Products List */}
       {viewMode === 'list' ? (
         <Card className="overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-muted/50 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left w-12">
-                  <Checkbox
-                    checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </th>
-                <th className="px-4 py-3 text-left font-semibold">Image</th>
-                <th className="px-4 py-3 text-left font-semibold">Produit</th>
-                <th className="px-4 py-3 text-left font-semibold">Tags</th>
-                <th className="px-4 py-3 text-left font-semibold">Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map((product) => (
-                <tr key={product.id} className="border-b hover:bg-muted/30 transition">
-                  <td className="px-4 py-3">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left w-12">
                     <Checkbox
-                      checked={selectedProducts.has(product.id)}
-                      onCheckedChange={() => handleSelectProduct(product.id)}
+                      checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                      onCheckedChange={handleSelectAll}
                     />
-                  </td>
-                  <td className="px-4 py-3">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.title}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                        <Tags className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium line-clamp-1">{product.title}</div>
-                    <div className="text-xs text-muted-foreground">{product.vendor}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    {product.tags ? (
-                      <div className="flex flex-wrap gap-1">
-                        {product.tags.split(',').slice(0, 3).map((tag, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {tag.trim()}
-                          </Badge>
-                        ))}
-                        {product.tags.split(',').length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{product.tags.split(',').length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">Aucun tag</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {product.tags ? (
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            try {
-                              setGenerating(true);
-                              const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-tags`;
-                              const response = await fetch(apiUrl, {
-                                method: 'POST',
-                                headers: {
-                                  'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-                                  'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ productId: product.id, force: true }),
-                              });
-                              const result = await response.json();
-                              if (response.ok && result.success) {
-                                toast.success('Tags régénérés avec succès');
-                                await fetchProducts();
-                              } else {
-                                throw new Error(result.error || 'Erreur');
-                              }
-                            } catch (error) {
-                              console.error('Error regenerating tags:', error);
-                              toast.error('Erreur lors de la régénération');
-                            } finally {
-                              setGenerating(false);
-                            }
-                          }}
-                        >
-                          <RefreshCw className="w-3 h-3 mr-1" />
-                          Régénérer
-                        </Button>
-                      </div>
-                    ) : (
-                      <Badge variant="outline" className="gap-1">
-                        <Plus className="w-3 h-3" />
-                        À optimiser
-                      </Badge>
-                    )}
-                  </td>
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-sm">Product</th>
+                  <th className="px-4 py-3 text-left font-semibold text-sm">Tags</th>
+                  <th className="px-4 py-3 text-left font-semibold text-sm">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredProducts.map((product) => (
+                  <tr key={product.id} className="border-b hover:bg-muted/30 transition">
+                    <td className="px-4 py-3">
+                      <Checkbox
+                        checked={selectedProducts.has(product.id)}
+                        onCheckedChange={() => handleSelectProduct(product.id)}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt={product.title}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                            <Tags className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium line-clamp-1">{product.title}</div>
+                          <div className="text-xs text-muted-foreground">{product.vendor}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {product.tags ? (
+                        <div className="flex flex-wrap gap-1">
+                          {product.tags.split(',').slice(0, 3).map((tag, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {tag.trim()}
+                            </Badge>
+                          ))}
+                          {product.tags.split(',').length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{product.tags.split(',').length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">No tags</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {product.tags ? (
+                        <Badge variant="outline" className="gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Tagged
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1">
+                          <Plus className="w-3 h-3" />
+                          To Optimize
+                        </Badge>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       ) : (
+        // Grid View
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-md transition group">
+            <Card key={product.id} className="overflow-hidden hover:shadow-md transition">
               <div className="aspect-square bg-muted relative">
                 {product.image_url ? (
                   <img
                     src={product.image_url}
                     alt={product.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -730,96 +698,98 @@ export function TagOptimization() {
                   />
                 </div>
               </div>
-            <div className="p-4 space-y-3">
-              <div>
-                <h3 className="font-semibold line-clamp-2 mb-1">{product.title}</h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {product.vendor && <span>{product.vendor}</span>}
-                  {product.category && (
-                    <>
-                      <span>•</span>
-                      <span>{product.category}</span>
-                    </>
-                  )}
+              
+              <div className="p-4 space-y-3">
+                <div>
+                  <h3 className="font-semibold line-clamp-2 mb-1">{product.title}</h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {product.vendor && <span>{product.vendor}</span>}
+                    {product.category && (
+                      <>
+                        <span>•</span>
+                        <span>{product.category}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {editingProduct === product.id ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editTags}
-                    onChange={(e) => setEditTags(e.target.value)}
-                    placeholder="Tags séparés par des virgules"
-                    disabled={saving}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleSaveTags(product.id)}
+                {editingProduct === product.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editTags}
+                      onChange={(e) => setEditTags(e.target.value)}
+                      placeholder="Enter tags separated by commas"
                       disabled={saving}
-                      className="flex-1"
-                    >
-                      {saving ? (
-                        <>
-                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                          Sauvegarde...
-                        </>
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveTags(product.id)}
+                        disabled={saving}
+                        className="flex-1"
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save'
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                        disabled={saving}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex flex-wrap gap-1 mb-2 min-h-[32px]">
+                      {product.tags ? (
+                        product.tags.split(',').map((tag, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {tag.trim()}
+                          </Badge>
+                        ))
                       ) : (
-                        'Sauvegarder'
+                        <span className="text-xs text-muted-foreground italic">No tags</span>
                       )}
-                    </Button>
+                    </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={handleCancelEdit}
-                      disabled={saving}
+                      onClick={() => handleEditTags(product.id, product.tags || '')}
+                      className="w-full gap-2"
                     >
-                      <X className="w-3 h-3" />
+                      <Plus className="w-3 h-3" />
+                      {product.tags ? 'Edit Tags' : 'Add Tags'}
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex flex-wrap gap-1 mb-2 min-h-[32px]">
-                    {product.tags ? (
-                      product.tags.split(',').map((tag, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {tag.trim()}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">Aucun tag</span>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEditTags(product.id, product.tags)}
-                    className="w-full gap-2 hover:bg-primary hover:text-primary-foreground"
-                  >
-                    <Plus className="w-3 h-3" />
-                    {product.tags ? 'Modifier les tags' : 'Ajouter des tags'}
-                  </Button>
-                </div>
-              )}
+                )}
               </div>
             </Card>
           ))}
         </div>
       )}
 
+      {/* Empty State */}
       {filteredProducts.length === 0 && (
         <div className="text-center py-12 bg-muted/30 rounded-lg">
           <Tags className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">Aucun produit trouvé</p>
+          <p className="text-muted-foreground">No products found</p>
         </div>
       )}
 
-      {/* Optimization Progress Dialog */}
+      {/* Dialogs */}
       <OptimizationProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        title={generating ? "Optimisation des tags en cours" : "Synchronisation Shopify"}
+        title={generating ? "Optimizing Tags" : "Syncing to Shopify"}
         current={progress.current}
         total={progress.total}
         isComplete={isOptimizationComplete}
@@ -827,7 +797,6 @@ export function TagOptimization() {
         onClose={handleCloseProgressDialog}
       />
 
-      {/* Results Dialog */}
       <OptimizationResultsDialog
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
@@ -840,7 +809,6 @@ export function TagOptimization() {
         onClose={handleCloseResultsDialog}
       />
 
-      {/* Upgrade Dialogs */}
       <TrialLimitDialog
         open={showUpgradeDialog && limits?.shouldForcePayment === true}
         onOpenChange={setShowUpgradeDialog}
