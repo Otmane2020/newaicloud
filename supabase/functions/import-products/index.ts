@@ -613,6 +613,9 @@ Deno.serve(async (req: Request) => {
           shopName: cleanShopName,
           authToken: authToken,
           storeId: storeId
+        },
+        headers: {
+          Authorization: `Bearer ${token}`
         }
       });
 
