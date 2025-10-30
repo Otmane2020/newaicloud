@@ -51,80 +51,80 @@ export function TrialLimitDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-              <Zap className="w-6 h-6 text-primary" />
+      <DialogContent className="max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto">
+        <DialogHeader className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <DialogTitle className="text-xl">🚀 Activez votre abonnement Starter</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl leading-tight">🚀 Activez votre abonnement Starter</DialogTitle>
           </div>
-          <DialogDescription className="text-base pt-2">
+          <DialogDescription className="text-sm sm:text-base pt-2">
             Vous avez atteint votre limite d'essai gratuit :
             {limitType && (
-              <div className="mt-2 font-semibold">
+              <div className="mt-2 font-semibold text-foreground">
                 {limitType} : {currentUsage}/{trialMaxUsage || maxUsage} utilisés
               </div>
             )}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
+        <div className="space-y-4 py-2 sm:py-4">
+          <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="text-sm font-semibold">Plan Starter</div>
-              <div className="text-2xl font-bold">
-                9,99€<span className="text-sm font-normal text-muted-foreground">/mois</span>
+              <div className="text-xl sm:text-2xl font-bold">
+                9,99€<span className="text-xs sm:text-sm font-normal text-muted-foreground">/mois</span>
               </div>
             </div>
-            <ul className="text-sm space-y-2">
+            <ul className="text-xs sm:text-sm space-y-1.5 sm:space-y-2">
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✅</span>
-                <span>100 produits analysés</span>
+                <span className="text-primary font-bold mt-0.5">✅</span>
+                <span className="flex-1">100 produits analysés</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✅</span>
-                <span>100 optimisations SEO IA / mois</span>
+                <span className="text-primary font-bold mt-0.5">✅</span>
+                <span className="flex-1">100 optimisations SEO IA / mois</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✅</span>
-                <span>1 article IA / mois</span>
+                <span className="text-primary font-bold mt-0.5">✅</span>
+                <span className="flex-1">1 article IA / mois</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✅</span>
-                <span>20 recherches IA Shopify / mois</span>
+                <span className="text-primary font-bold mt-0.5">✅</span>
+                <span className="flex-1">20 recherches IA Shopify / mois</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✅</span>
-                <span>50 réponses Chat IA / mois</span>
+                <span className="text-primary font-bold mt-0.5">✅</span>
+                <span className="flex-1">50 réponses Chat IA / mois</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✅</span>
-                <span>1 boutique Shopify connectée</span>
+                <span className="text-primary font-bold mt-0.5">✅</span>
+                <span className="flex-1">1 boutique Shopify connectée</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✅</span>
-                <span>Automation basique</span>
+                <span className="text-primary font-bold mt-0.5">✅</span>
+                <span className="flex-1">Automation basique</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">✅</span>
-                <span>Support par e-mail</span>
+                <span className="text-primary font-bold mt-0.5">✅</span>
+                <span className="flex-1">Support par e-mail</span>
               </li>
             </ul>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:gap-3">
             <Button
               size="lg"
               onClick={handlePayNow}
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-sm sm:text-base h-11 sm:h-12"
             >
               {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
               ) : (
                 <>
-                  <CreditCard className="w-5 h-5 mr-2" />
+                  <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Activer mon abonnement
                 </>
               )}
@@ -134,13 +134,13 @@ export function TrialLimitDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="w-full"
+              className="w-full text-sm sm:text-base h-11 sm:h-12"
             >
               Plus tard
             </Button>
           </div>
 
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-xs text-center text-muted-foreground px-2">
             Libérez toutes les fonctionnalités en activant votre abonnement
           </p>
         </div>
