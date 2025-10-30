@@ -144,17 +144,47 @@ export default function Dashboard() {
     }
   };
 
+  const getSeoScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-yellow-600';
+    if (score >= 40) return 'text-orange-600';
+    return 'text-red-600';
+  };
+
+  const getSeoScoreBgColor = (score: number) => {
+    if (score >= 80) return 'bg-green-100';
+    if (score >= 60) return 'bg-yellow-100';
+    if (score >= 40) return 'bg-orange-100';
+    return 'bg-red-100';
+  };
+
+  const getSeoScoreStatus = (score: number) => {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    if (score >= 40) return 'Needs Improvement';
+    return 'Poor';
+  };
+
   const statCards = [
     {
-      title: t('dashboard.products_total'),
+      title: 'SEO Score',
+      value: `${stats.seoScore}/100`,
+      icon: Target,
+      color: getSeoScoreColor(stats.seoScore),
+      bgColor: getSeoScoreBgColor(stats.seoScore),
+      subtitle: getSeoScoreStatus(stats.seoScore),
+      progress: stats.seoScore
+    },
+    {
+      title: 'Total Products',
       value: stats.totalProducts,
       icon: ShoppingBag,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
-      trend: t('dashboard.trend')
+      trend: 'All stores'
     },
     {
-      title: t('dashboard.products_optimized'),
+      title: 'Optimized Products',
       value: stats.optimizedProducts,
       icon: CheckCircle2,
       color: 'text-green-600',
@@ -162,7 +192,7 @@ export default function Dashboard() {
       percentage: stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%'
     },
     {
-      title: t('dashboard.pending'),
+      title: 'Pending Optimization',
       value: stats.pendingOptimization,
       icon: Clock,
       color: 'text-orange-600',
@@ -170,7 +200,7 @@ export default function Dashboard() {
       percentage: stats.totalProducts > 0 ? `${Math.round((stats.pendingOptimization / stats.totalProducts) * 100)}%` : '0%'
     },
     {
-      title: t('dashboard.catalog_value'),
+      title: 'Catalog Value',
       value: formatCurrency(stats.totalValue),
       icon: DollarSign,
       color: 'text-purple-600',
@@ -178,41 +208,24 @@ export default function Dashboard() {
       trend: '+8.2%'
     },
     {
-      title: t('dashboard.blog_articles'),
+      title: 'Blog Articles',
       value: stats.totalArticles,
       icon: FileText,
       color: 'text-cyan-600',
       bgColor: 'bg-cyan-100',
-      trend: t('dashboard.trend_month')
-    },
-    {
-      title: t('dashboard.optimization_rate'),
-      value: stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%',
-      icon: Zap,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
-      target: t('dashboard.target_100')
-    },
-    {
-      title: t('dashboard.global_seo_score'),
-      value: stats.seoScore,
-      icon: Target,
-      color: stats.seoScore >= 80 ? 'text-green-600' : stats.seoScore >= 60 ? 'text-yellow-600' : 'text-red-600',
-      bgColor: stats.seoScore >= 80 ? 'bg-green-100' : stats.seoScore >= 60 ? 'bg-yellow-100' : 'bg-red-100',
-      percentage: `${stats.seoScore}%`,
-      subtitle: stats.seoScore >= 80 ? t('dashboard.excellent') : stats.seoScore >= 60 ? t('dashboard.good') : t('dashboard.to_improve')
+      trend: 'This month'
     }
   ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle p-8">
+      <div className="min-h-screen bg-gradient-subtle p-4 sm:p-6 lg:p-8">
         <div className="container mx-auto max-w-7xl">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+                <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
               ))}
             </div>
           </div>
@@ -222,7 +235,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
       <TrialUpgradeDialog
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
@@ -230,134 +243,161 @@ export default function Dashboard() {
         limitType={trialStatus.limitType}
       />
       
-      <div>
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 flex items-center gap-2 sm:gap-3">
+      {/* Header */}
+      <div className="text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 flex items-center justify-center sm:justify-start gap-2 sm:gap-3">
           <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-primary" />
-          {t('dashboard.title')}
+          Dashboard Overview
         </h1>
-        <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
-          {t('dashboard.subtitle')}
+        <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto sm:mx-0">
+          Track your store performance and SEO optimization progress
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {statCards.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-medium">
-                    {stat.title}
-                  </CardTitle>
-                  <div className={`${stat.bgColor} p-1.5 sm:p-2 rounded-lg`}>
-                    <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color}`} />
+        {statCards.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={index} className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-medium text-gray-700">
+                  {stat.title}
+                </CardTitle>
+                <div className={`${stat.bgColor} p-2 rounded-xl`}>
+                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color}`} />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  {stat.value}
+                </div>
+                
+                {/* Progress bar for SEO Score */}
+                {stat.progress !== undefined && (
+                  <div className="space-y-2">
+                    <Progress value={stat.progress} className="h-2" />
+                    <div className="flex justify-between items-center">
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs font-medium ${stat.color} border-current`}
+                      >
+                        {stat.subtitle}
+                      </Badge>
+                      <span className="text-xs text-gray-500 font-medium">
+                        {stat.progress}%
+                      </span>
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl sm:text-3xl font-bold">{stat.value}</div>
-                  {stat.percentage && (
-                    <Badge variant="outline" className="mt-1.5 sm:mt-2 text-xs">
-                      {stat.percentage}
-                    </Badge>
-                  )}
-                  {stat.subtitle && (
-                    <p className="text-xs font-medium text-muted-foreground mt-1.5 sm:mt-2">
-                      {stat.subtitle}
-                    </p>
-                  )}
-                  {stat.trend && (
-                    <p className="text-xs text-muted-foreground mt-1.5 sm:mt-2">
-                      {stat.trend}
-                    </p>
-                  )}
-                  {stat.target && (
-                    <p className="text-xs text-muted-foreground mt-1.5 sm:mt-2">
-                      {stat.target}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                )}
+                
+                {/* Percentage badges for other cards */}
+                {stat.percentage && (
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs font-medium bg-gray-100 text-gray-700"
+                  >
+                    {stat.percentage} of total
+                  </Badge>
+                )}
+                
+                {/* Trend text */}
+                {stat.trend && (
+                  <p className="text-xs text-gray-500 font-medium">
+                    {stat.trend}
+                  </p>
+                )}
+                
+                {/* Subtitle for other cards */}
+                {stat.subtitle && stat.progress === undefined && (
+                  <p className="text-xs font-medium text-gray-500">
+                    {stat.subtitle}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Quick Actions */}
-      <Card>
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">{t('dashboard.quick_actions')}</CardTitle>
-            <CardDescription className="text-sm">{t('dashboard.quick_actions_subtitle')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <button
-                onClick={() => window.location.href = '/products'}
-                className="p-3 sm:p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left group"
-              >
-                <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-primary mb-2 group-hover:scale-110 transition-transform" />
-                <p className="text-sm sm:text-base font-semibold">{t('dashboard.manage_products')}</p>
-                <p className="text-xs text-muted-foreground">{t('dashboard.full_catalog')}</p>
-              </button>
-              
-              <button
-                onClick={() => window.location.href = '/seo?tab=optimization'}
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left group"
-              >
-                <Zap className="w-6 h-6 text-yellow-600 mb-2 group-hover:scale-110 transition-transform" />
-                <p className="font-semibold">{t('dashboard.optimize_seo')}</p>
-                <p className="text-xs text-muted-foreground">{stats.pendingOptimization} {t('dashboard.products_pending')}</p>
-              </button>
-              
-              <button
-                onClick={() => window.location.href = '/blog?tab=articles'}
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left group"
-              >
-                <FileText className="w-6 h-6 text-cyan-600 mb-2 group-hover:scale-110 transition-transform" />
-                <p className="font-semibold">{t('dashboard.create_article')}</p>
-                <p className="text-xs text-muted-foreground">{t('dashboard.blog_ai')}</p>
-              </button>
-              
-              <button
-                onClick={() => window.location.href = '/chat'}
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left group"
-              >
-                <MessageSquare className="w-6 h-6 text-purple-600 mb-2 group-hover:scale-110 transition-transform" />
-                <p className="font-semibold">{t('dashboard.smart_chat')}</p>
-                <p className="text-xs text-muted-foreground">{t('dashboard.ai_assistant')}</p>
-              </button>
-            </div>
-          </CardContent>
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg sm:text-xl font-semibold">Quick Actions</CardTitle>
+          <CardDescription className="text-sm">
+            Manage your store and optimize performance
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <button
+              onClick={() => window.location.href = '/products'}
+              className="p-4 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 text-left group hover:shadow-md"
+            >
+              <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mb-3 group-hover:scale-110 transition-transform" />
+              <p className="text-sm font-semibold text-gray-900 mb-1">Manage Products</p>
+              <p className="text-xs text-gray-500">Full catalog overview</p>
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/seo?tab=optimization'}
+              className="p-4 border-2 border-dashed border-gray-200 rounded-xl hover:border-yellow-500 hover:bg-yellow-50 transition-all duration-300 text-left group hover:shadow-md"
+            >
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 mb-3 group-hover:scale-110 transition-transform" />
+              <p className="text-sm font-semibold text-gray-900 mb-1">Optimize SEO</p>
+              <p className="text-xs text-gray-500">{stats.pendingOptimization} products pending</p>
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/blog?tab=articles'}
+              className="p-4 border-2 border-dashed border-gray-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50 transition-all duration-300 text-left group hover:shadow-md"
+            >
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-600 mb-3 group-hover:scale-110 transition-transform" />
+              <p className="text-sm font-semibold text-gray-900 mb-1">Create Article</p>
+              <p className="text-xs text-gray-500">AI-powered blog writing</p>
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/chat'}
+              className="p-4 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 text-left group hover:shadow-md"
+            >
+              <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 mb-3 group-hover:scale-110 transition-transform" />
+              <p className="text-sm font-semibold text-gray-900 mb-1">Smart Chat</p>
+              <p className="text-xs text-gray-500">AI assistant support</p>
+            </button>
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Performance Overview */}
+      {/* Performance Recommendations */}
       {stats.pendingOptimization > 0 && (
-        <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-orange-600" />
-                {t('dashboard.recommendations')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                  <div>
-                    <p className="font-semibold text-orange-900">
-                      {stats.pendingOptimization} {t('dashboard.products_to_optimize')}
-                    </p>
-                    <p className="text-sm text-orange-700">
-                      {t('dashboard.improve_visibility')}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => window.location.href = '/seo?tab=optimization'}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-                  >
-                    {t('dashboard.optimize_button')}
-                  </button>
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl font-semibold">
+              <AlertCircle className="w-5 h-5 text-orange-600" />
+              Optimization Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-200">
+                <div className="mb-3 sm:mb-0">
+                  <p className="font-semibold text-orange-900 text-sm sm:text-base">
+                    {stats.pendingOptimization} products need SEO optimization
+                  </p>
+                  <p className="text-sm text-orange-700 mt-1">
+                    Improve your search visibility and drive more traffic
+                  </p>
                 </div>
+                <button
+                  onClick={() => window.location.href = '/seo?tab=optimization'}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  Optimize Now
+                </button>
               </div>
-            </CardContent>
+            </div>
+          </CardContent>
         </Card>
       )}
     </div>
