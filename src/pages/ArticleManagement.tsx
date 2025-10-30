@@ -86,7 +86,7 @@ export default function ArticleManagement() {
       setArticles((data || []) as unknown as Article[]);
     } catch (error) {
       console.error('Error loading articles:', error);
-      toast.error('Erreur lors du chargement des articles');
+      toast.error('Error loading articles');
     } finally {
       setLoading(false);
     }
@@ -120,7 +120,7 @@ export default function ArticleManagement() {
   };
 
   const deleteArticle = async (articleId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) return;
+    if (!confirm('Are you sure you want to delete this article?')) return;
 
     try {
       const { error } = await supabase
@@ -130,17 +130,17 @@ export default function ArticleManagement() {
 
       if (error) throw error;
       
-      toast.success('Article supprimé');
+      toast.success('Article deleted');
       loadArticles();
     } catch (error) {
       console.error('Error deleting article:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error('Error deleting article');
     }
   };
 
   const optimizeArticles = async (articleIds: string[]) => {
     try {
-      toast.info('Optimisation SEO en cours...');
+      toast.info('SEO optimization in progress...');
       
       const { data, error } = await supabase.functions.invoke('generate-article-seo', {
         body: { article_ids: articleIds }
@@ -148,7 +148,7 @@ export default function ArticleManagement() {
 
       if (error) throw error;
       
-      // Récupérer les articles optimisés depuis la base de données
+      // Get optimized articles from database
       const { data: articles, error: articlesError } = await supabase
         .from('blog_articles')
         .select('id, title, meta_description')
@@ -156,35 +156,35 @@ export default function ArticleManagement() {
 
       if (articlesError) throw articlesError;
 
-      // Afficher le dialog avec les résultats
+      // Show dialog with results
       setOptimizedArticles(articles || []);
       setShowOptimizationResults(true);
       
-      toast.success(`${data.success_count || articleIds.length} article(s) optimisé(s) !`);
+      toast.success(`${data.success_count || articleIds.length} article(s) optimized!`);
       loadArticles();
     } catch (error) {
       console.error('Error optimizing:', error);
-      toast.error('Erreur lors de l\'optimisation');
+      toast.error('Error during optimization');
     }
   };
 
   const syncToShopify = async (articleIds: string[]) => {
     for (const articleId of articleIds) {
       try {
-        toast.loading(`📤 Synchronisation article ${articleId.substring(0, 8)}...`, { id: `sync-${articleId}` });
+        toast.loading(`📤 Syncing article ${articleId.substring(0, 8)}...`, { id: `sync-${articleId}` });
         
         const { error } = await supabase.functions.invoke('sync-blog-to-shopify', {
           body: { articleId }
         });
 
         if (error) {
-          toast.error(`Erreur sync ${articleId.substring(0, 8)}`, { id: `sync-${articleId}` });
+          toast.error(`Sync error ${articleId.substring(0, 8)}`, { id: `sync-${articleId}` });
         } else {
-          toast.success(`✅ Article synchronisé !`, { id: `sync-${articleId}` });
+          toast.success(`✅ Article synced!`, { id: `sync-${articleId}` });
         }
       } catch (error) {
         console.error('Error syncing:', error);
-        toast.error(`Erreur sync ${articleId.substring(0, 8)}`, { id: `sync-${articleId}` });
+        toast.error(`Sync error ${articleId.substring(0, 8)}`, { id: `sync-${articleId}` });
       }
     }
     loadArticles();
@@ -192,7 +192,7 @@ export default function ArticleManagement() {
   };
 
   const bulkDelete = async () => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer ${selectedArticles.length} articles ?`)) return;
+    if (!confirm(`Are you sure you want to delete ${selectedArticles.length} articles?`)) return;
 
     try {
       const { error } = await supabase
@@ -202,12 +202,12 @@ export default function ArticleManagement() {
 
       if (error) throw error;
       
-      toast.success(`${selectedArticles.length} articles supprimés`);
+      toast.success(`${selectedArticles.length} articles deleted`);
       setSelectedArticles([]);
       loadArticles();
     } catch (error) {
       console.error('Error bulk deleting:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error('Error during deletion');
     }
   };
 
@@ -231,52 +231,54 @@ export default function ArticleManagement() {
     <div className="container mx-auto py-8 px-4">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-3xl font-bold">Gestion des Articles</h1>
-          <Button onClick={() => setShowWizard(true)} size="lg">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">Article Management</h1>
+            <p className="text-muted-foreground mt-1">Manage, edit and publish your blog articles</p>
+          </div>
+          <Button onClick={() => setShowWizard(true)} size="lg" className="w-full sm:w-auto">
             <Plus className="w-5 h-5 mr-2" />
-            Créer un Article
+            Create Article
           </Button>
         </div>
-        <p className="text-muted-foreground">Gérez, modifiez et publiez vos articles de blog</p>
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
         <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.total}</div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
             <div className="text-xs text-muted-foreground">Total</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{stats.ai}</div>
-            <div className="text-xs text-muted-foreground">IA</div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.ai}</div>
+            <div className="text-xs text-muted-foreground">AI</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">{stats.shopify}</div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.shopify}</div>
             <div className="text-xs text-muted-foreground">Shopify</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-purple-600">{stats.published}</div>
-            <div className="text-xs text-muted-foreground">Publiés</div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-purple-600">{stats.published}</div>
+            <div className="text-xs text-muted-foreground">Published</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-cyan-600">{stats.synced}</div>
-            <div className="text-xs text-muted-foreground">Synchronisés</div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-cyan-600">{stats.synced}</div>
+            <div className="text-xs text-muted-foreground">Synced</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-orange-600">{stats.seoOptimized}</div>
-            <div className="text-xs text-muted-foreground">SEO Optimisé</div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-orange-600">{stats.seoOptimized}</div>
+            <div className="text-xs text-muted-foreground">SEO Optimized</div>
           </CardContent>
         </Card>
       </div>
@@ -284,12 +286,12 @@ export default function ArticleManagement() {
       {/* Filters & Actions */}
       <Card className="mb-6">
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col gap-4">
             {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par titre ou description..."
+                placeholder="Search by title or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -297,70 +299,74 @@ export default function ArticleManagement() {
             </div>
 
             {/* Filters */}
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Origine" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes origines</SelectItem>
-                <SelectItem value="ai">IA NewAI</SelectItem>
-                <SelectItem value="shopify">Shopify</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sources</SelectItem>
+                  <SelectItem value="ai">AI NewAI</SelectItem>
+                  <SelectItem value="shopify">Shopify</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous statuts</SelectItem>
-                <SelectItem value="draft">Brouillon</SelectItem>
-                <SelectItem value="published">Publié</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={syncFilter} onValueChange={setSyncFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Synchronisation" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                <SelectItem value="synced">Synchronisés</SelectItem>
-                <SelectItem value="not_synced">Non synchronisés</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={syncFilter} onValueChange={setSyncFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Synchronization" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="synced">Synced</SelectItem>
+                  <SelectItem value="not_synced">Not synced</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Bulk Actions */}
           {selectedArticles.length > 0 && (
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-              <span className="text-sm text-muted-foreground">
-                {selectedArticles.length} sélectionné(s)
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-4 pt-4 border-t">
+              <span className="text-sm text-muted-foreground mb-2 sm:mb-0">
+                {selectedArticles.length} selected
               </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => optimizeArticles(selectedArticles)}
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Optimiser SEO
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => syncToShopify(selectedArticles)}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Synchroniser
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={bulkDelete}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Supprimer
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => optimizeArticles(selectedArticles)}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Optimize SEO
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => syncToShopify(selectedArticles)}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Sync
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={bulkDelete}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -371,7 +377,7 @@ export default function ArticleManagement() {
         <Card>
           <CardContent className="py-12 text-center">
             <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">Aucun article trouvé</p>
+            <p className="text-muted-foreground">No articles found</p>
           </CardContent>
         </Card>
       ) : (
@@ -381,26 +387,26 @@ export default function ArticleManagement() {
               <table className="w-full">
                 <thead className="bg-muted/50 border-b">
                   <tr>
-                    <th className="p-4 text-left">
+                    <th className="p-3 text-left">
                       <Checkbox
                         checked={selectedArticles.length === filteredArticles.length}
                         onCheckedChange={toggleSelectAll}
                       />
                     </th>
-                    <th className="p-4 text-left">Image</th>
-                    <th className="p-4 text-left">Titre</th>
-                    <th className="p-4 text-left">Titre SEO</th>
-                    <th className="p-4 text-left">Meta Description</th>
-                    <th className="p-4 text-left">Origine</th>
-                    <th className="p-4 text-left">Statut</th>
-                    <th className="p-4 text-left">Synchronisé</th>
-                    <th className="p-4 text-left">Actions</th>
+                    <th className="p-3 text-left hidden sm:table-cell">Image</th>
+                    <th className="p-3 text-left">Title</th>
+                    <th className="p-3 text-left hidden lg:table-cell">SEO Title</th>
+                    <th className="p-3 text-left hidden md:table-cell">Meta Description</th>
+                    <th className="p-3 text-left hidden sm:table-cell">Source</th>
+                    <th className="p-3 text-left">Status</th>
+                    <th className="p-3 text-left hidden sm:table-cell">Synced</th>
+                    <th className="p-3 text-left">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredArticles.map((article) => (
                     <tr key={article.id} className="border-b hover:bg-muted/30">
-                      <td className="p-4">
+                      <td className="p-3">
                         <Checkbox
                           checked={selectedArticles.includes(article.id)}
                           onCheckedChange={(checked) => {
@@ -412,28 +418,28 @@ export default function ArticleManagement() {
                           }}
                         />
                       </td>
-                      <td className="p-4">
+                      <td className="p-3 hidden sm:table-cell">
                         <div 
-                          className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                          className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
                           onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
                         >
-                          <FileText className="w-6 h-6 text-primary" />
+                          <FileText className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
                         </div>
                       </td>
-                      <td className="p-4">
-                        <div className="max-w-xs">
+                      <td className="p-3">
+                        <div className="max-w-[150px] sm:max-w-xs">
                           <p 
-                            className="font-medium line-clamp-2 cursor-pointer hover:text-primary transition-colors"
+                            className="font-medium line-clamp-2 cursor-pointer hover:text-primary transition-colors text-sm sm:text-base"
                             onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
                           >
                             {article.title}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {format(new Date(article.created_at), 'PP', { locale: fr })}
                           </p>
                         </div>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3 hidden lg:table-cell">
                         <div className="max-w-xs">
                           {article.meta_description ? (
                             <p className="text-sm line-clamp-2 font-medium">
@@ -442,12 +448,12 @@ export default function ArticleManagement() {
                           ) : (
                             <Badge variant="outline" className="text-xs">
                               <X className="w-3 h-3 mr-1" />
-                              Non défini
+                              Not defined
                             </Badge>
                           )}
                         </div>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3 hidden md:table-cell">
                         <div className="max-w-xs">
                           {article.meta_description ? (
                             <p className="text-sm text-muted-foreground line-clamp-2">
@@ -456,53 +462,55 @@ export default function ArticleManagement() {
                           ) : (
                             <Badge variant="outline" className="text-xs">
                               <X className="w-3 h-3 mr-1" />
-                              Non optimisé
+                              Not optimized
                             </Badge>
                           )}
                         </div>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3 hidden sm:table-cell">
                         <Badge 
                           variant={article.source === 'ai_generated' ? 'default' : 'secondary'}
                           className={article.source === 'ai_generated' ? 'bg-blue-600' : 'bg-green-600'}
                         >
-                          {article.source === 'ai_generated' ? 'IA NewAI' : 'Shopify'}
+                          {article.source === 'ai_generated' ? 'AI NewAI' : 'Shopify'}
                         </Badge>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
                           {article.status}
                         </Badge>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3 hidden sm:table-cell">
                         {article.shopify_blog_id ? (
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                             <Check className="w-3 h-3 mr-1" />
-                            Oui
+                            Yes
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-muted-foreground">
                             <X className="w-3 h-3 mr-1" />
-                            Non
+                            No
                           </Badge>
                         )}
                       </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
+                      <td className="p-3">
+                        <div className="flex items-center gap-1">
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
+                            className="h-8 w-8 p-0"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
                           {!article.meta_description && (
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => optimizeArticles([article.id])}
+                              className="h-8 w-8 p-0"
                             >
-                              <Sparkles className="w-4 h-4" />
+                              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
                             </Button>
                           )}
                           {!article.shopify_blog_id && (
@@ -510,16 +518,18 @@ export default function ArticleManagement() {
                               size="sm"
                               variant="ghost"
                               onClick={() => syncToShopify([article.id])}
+                              className="h-8 w-8 p-0"
                             >
-                              <ExternalLink className="w-4 h-4" />
+                              <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
                             </Button>
                           )}
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => deleteArticle(article.id)}
+                            className="h-8 w-8 p-0 text-destructive"
                           >
-                            <Trash2 className="w-4 h-4 text-destructive" />
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
                         </div>
                       </td>
