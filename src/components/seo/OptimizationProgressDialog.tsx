@@ -14,6 +14,7 @@ interface OptimizationProgressDialogProps {
   onSyncClick?: () => void;
   onClose: () => void;
   operationType?: 'optimization' | 'synchronization';
+  alreadySynced?: boolean;
 }
 
 export function OptimizationProgressDialog({
@@ -26,10 +27,14 @@ export function OptimizationProgressDialog({
   onSyncClick,
   onClose,
   operationType = 'optimization',
+  alreadySynced = false,
 }: OptimizationProgressDialogProps) {
   const percentage = total > 0 ? (current / total) * 100 : 0;
 
   const getTitle = () => {
+    if (alreadySynced && isComplete) {
+      return '✅ Déjà synchronisé !';
+    }
     if (operationType === 'synchronization') {
       return isComplete ? '✅ Synchronisation terminée !' : '🔄 Synchronisation avec Shopify...';
     }
@@ -37,6 +42,9 @@ export function OptimizationProgressDialog({
   };
 
   const getDescription = () => {
+    if (alreadySynced && isComplete) {
+      return `${current} élément${current > 1 ? 's sont' : ' est'} déjà synchronisé${current > 1 ? 's' : ''} avec Shopify`;
+    }
     if (operationType === 'synchronization') {
       return isComplete 
         ? `${current} produits synchronisés avec succès sur Shopify`
@@ -72,21 +80,31 @@ export function OptimizationProgressDialog({
           ) : (
             <>
               <div className={cn(
-                "relative w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center",
-                "animate-scale-in"
+                "relative w-16 h-16 rounded-full flex items-center justify-center",
+                "animate-scale-in",
+                alreadySynced ? "bg-blue-100 dark:bg-blue-900" : "bg-green-100 dark:bg-green-900"
               )}>
-                <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+                <CheckCircle className={cn(
+                  "w-10 h-10",
+                  alreadySynced ? "text-blue-600 dark:text-blue-400" : "text-green-600 dark:text-green-400"
+                )} />
               </div>
               <div className="text-center space-y-3">
-                <h3 className="text-xl font-semibold text-green-600 dark:text-green-400">
-                  {operationType === 'synchronization' ? 'Synchronisation terminée !' : 'Optimisation terminée !'}
+                <h3 className={cn(
+                  "text-xl font-semibold",
+                  alreadySynced ? "text-blue-600 dark:text-blue-400" : "text-green-600 dark:text-green-400"
+                )}>
+                  {alreadySynced ? 'Déjà synchronisé !' : operationType === 'synchronization' ? 'Synchronisation terminée !' : 'Optimisation terminée !'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {total} {operationType === 'synchronization' ? 'produits synchronisés' : 'produits optimisés'} avec succès
+                  {alreadySynced 
+                    ? `${total} élément${total > 1 ? 's sont' : ' est'} déjà à jour sur Shopify`
+                    : `${total} ${operationType === 'synchronization' ? 'produits synchronisés' : 'produits optimisés'} avec succès`
+                  }
                 </p>
               </div>
               <div className="flex flex-col gap-2 w-full pt-4">
-                {operationType === 'optimization' && onSyncClick && (
+                {operationType === 'optimization' && onSyncClick && !alreadySynced && (
                   <Button
                     onClick={onSyncClick}
                     className="w-full gap-2 bg-primary hover:bg-primary/90"
