@@ -224,11 +224,15 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
                 <ShopifyTokenGuide />
 
-                <div className="space-y-4 pt-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="h-px bg-border flex-1" />
-                    <span className="text-xs text-muted-foreground font-medium">Formulaire de connexion</span>
-                    <div className="h-px bg-border flex-1" />
+                <div className="relative mt-6 p-6 space-y-4 rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5 shadow-lg shadow-primary/10">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Key className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">Formulaire de connexion</h3>
+                      <p className="text-xs text-muted-foreground">Remplissez vos identifiants API</p>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
