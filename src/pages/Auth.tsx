@@ -8,8 +8,10 @@ import { Card } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { loginSchema, signupSchema } from '@/lib/validationSchemas';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Auth() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
@@ -47,7 +49,7 @@ export default function Auth() {
         validationErrors[err.path[0]] = err.message;
       });
       setErrors(validationErrors);
-      toast.error('Veuillez corriger les erreurs dans le formulaire');
+      toast.error(t('auth.form_error'));
       return;
     }
 
@@ -84,18 +86,18 @@ export default function Auth() {
           </div>
 
           <h1 className="text-3xl font-bold text-center mb-2">
-            {mode === 'login' ? 'Connexion' : 'Inscription'}
+            {t(`auth.${mode}`)}
           </h1>
           <p className="text-center text-muted-foreground mb-8">
             {mode === 'login'
-              ? 'Connectez-vous à votre compte'
-              : 'Créez votre compte gratuitement'}
+              ? t('auth.connect_to_account')
+              : t('auth.create_account_free')}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">Nom complet</Label>
+                <Label htmlFor="fullName">{t('auth.fullname')}</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -105,7 +107,7 @@ export default function Auth() {
                     if (errors.fullName) setErrors({ ...errors, fullName: '' });
                   }}
                   required
-                  placeholder="Jean Dupont"
+                  placeholder={t('auth.name_placeholder')}
                   className={errors.fullName ? 'border-destructive' : ''}
                 />
                 {errors.fullName && (
@@ -115,7 +117,7 @@ export default function Auth() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -125,7 +127,7 @@ export default function Auth() {
                   if (errors.email) setErrors({ ...errors, email: '' });
                 }}
                 required
-                placeholder="vous@exemple.com"
+                placeholder={t('auth.email_placeholder')}
                 className={errors.email ? 'border-destructive' : ''}
               />
               {errors.email && (
@@ -135,14 +137,14 @@ export default function Auth() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="password">Mot de passe</Label>
+                <Label htmlFor="password">{t('auth.password')}</Label>
                 {mode === 'login' && (
                   <button
                     type="button"
                     onClick={() => navigate('/reset-password')}
                     className="text-xs text-primary hover:underline"
                   >
-                    Mot de passe oublié ?
+                    {t('auth.forgot_password')}
                   </button>
                 )}
               </div>
@@ -155,7 +157,7 @@ export default function Auth() {
                   if (errors.password) setErrors({ ...errors, password: '' });
                 }}
                 required
-                placeholder="••••••••"
+                placeholder={t('auth.password_placeholder')}
                 minLength={6}
                 className={errors.password ? 'border-destructive' : ''}
               />
@@ -171,11 +173,11 @@ export default function Auth() {
             >
               {loading
                 ? mode === 'signup'
-                  ? 'Création du compte...'
-                  : 'Connexion...'
+                  ? t('auth.creating_account')
+                  : t('auth.connecting')
                 : mode === 'login'
-                ? 'Se connecter'
-                : "S'inscrire"}
+                ? t('auth.sign_in')
+                : t('auth.sign_up')}
             </Button>
           </form>
 
@@ -186,8 +188,8 @@ export default function Auth() {
               className="text-sm text-primary hover:underline"
             >
               {mode === 'login'
-                ? "Pas encore de compte ? S'inscrire"
-                : 'Déjà un compte ? Se connecter'}
+                ? t('auth.no_account_signup')
+                : t('auth.have_account_login')}
             </button>
           </div>
         </Card>
