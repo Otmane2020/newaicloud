@@ -1,27 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTrialLimits } from '@/hooks/useTrialLimits';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
-import { calculateSeoConfidence } from '@/lib/seoQuality';
+import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { formatCurrency } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
+import { SeoScoreGauge } from '@/components/dashboard/SeoScoreGauge';
+import { MetricCard } from '@/components/dashboard/MetricCard';
+import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
+import { SmartBanner } from '@/components/dashboard/SmartBanner';
+import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ShoppingBag, 
   Zap, 
   FileText, 
   CheckCircle2,
-  AlertCircle,
   Clock,
   DollarSign,
-  BarChart3,
   MessageSquare,
-  Target,
+  BarChart3,
+  Store,
+  Palette,
+  Mail,
   Sparkles
 } from 'lucide-react';
 
@@ -32,6 +36,13 @@ interface Stats {
   totalArticles: number;
   totalValue: number;
   seoScore: number;
+  seoBreakdown: {
+    structure: number;
+    content: number;
+    technical: number;
+    bonus: number;
+  };
+  connectedStores: number;
 }
 
 export default function Dashboard() {
@@ -46,7 +57,14 @@ export default function Dashboard() {
     pendingOptimization: 0,
     totalArticles: 0,
     totalValue: 0,
-    seoScore: 0
+    seoScore: 0,
+    seoBreakdown: {
+      structure: 0,
+      content: 0,
+      technical: 0,
+      bonus: 0
+    },
+    connectedStores: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -91,6 +109,7 @@ export default function Dashboard() {
         .eq('is_active', true);
 
       const activeStoreIds = activeStores?.map(s => s.id) || [];
+      const connectedStores = activeStores?.length || 0;
 
       const { data: products, error: productsError } = await supabase
         .from('shopify_products')
@@ -104,15 +123,36 @@ export default function Dashboard() {
       const optimizedProducts = products?.filter(p => p.seo_title && p.seo_description).length || 0;
       const totalValue = products?.reduce((sum, p) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
 
-      let totalConfidence = 0;
+      // Calculate detailed SEO breakdown
+      const seoBreakdown = {
+        structure: 0,
+        content: 0,
+        technical: 0,
+        bonus: 0
+      };
+      
+      let totalScore = 0;
       let validProducts = 0;
+
       products?.forEach(p => {
         if (p.seo_title || p.seo_description) {
-          totalConfidence += calculateSeoConfidence(p.seo_title, p.seo_description);
+          const result = calculateDetailedSeoScore(p.seo_title, p.seo_description, true, true);
+          totalScore += result.score;
+          seoBreakdown.structure += result.breakdown.structure;
+          seoBreakdown.content += result.breakdown.content;
+          seoBreakdown.technical += result.breakdown.technical;
+          seoBreakdown.bonus += result.breakdown.bonus;
           validProducts++;
         }
       });
-      const seoScore = validProducts > 0 ? Math.round(totalConfidence / validProducts) : 0;
+
+      const avgScore = validProducts > 0 ? Math.round(totalScore / validProducts) : 0;
+      const avgBreakdown = {
+        structure: validProducts > 0 ? Math.round(seoBreakdown.structure / validProducts) : 0,
+        content: validProducts > 0 ? Math.round(seoBreakdown.content / validProducts) : 0,
+        technical: validProducts > 0 ? Math.round(seoBreakdown.technical / validProducts) : 0,
+        bonus: validProducts > 0 ? Math.round(seoBreakdown.bonus / validProducts) : 0
+      };
 
       const { count: articlesCount } = await supabase
         .from('blog_articles')
@@ -125,7 +165,9 @@ export default function Dashboard() {
         pendingOptimization: totalProducts - optimizedProducts,
         totalArticles: articlesCount || 0,
         totalValue,
-        seoScore
+        seoScore: avgScore,
+        seoBreakdown: avgBreakdown,
+        connectedStores
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -134,92 +176,49 @@ export default function Dashboard() {
     }
   };
 
-  const getSeoScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getSeoScoreBgColor = (score: number) => {
-    if (score >= 80) return 'bg-green-50';
-    if (score >= 60) return 'bg-yellow-50';
-    return 'bg-red-50';
-  };
-
-  const getSeoScoreStatus = (score: number) => {
-    if (score >= 80) return 'Excellent';
-    if (score >= 60) return 'Good';
-    return 'Needs improvement';
-  };
-
-  const statCards = [
+  // Mock recent activities - In real app, fetch from database
+  const recentActivities = [
     {
-      title: 'SEO Score',
-      value: stats.seoScore,
-      icon: Target,
-      color: getSeoScoreColor(stats.seoScore),
-      bgColor: getSeoScoreBgColor(stats.seoScore),
-      subtitle: getSeoScoreStatus(stats.seoScore),
-      progress: stats.seoScore
+      id: '1',
+      type: 'optimization' as const,
+      title: `${stats.optimizedProducts} produits optimisés`,
+      timestamp: 'Aujourd\'hui'
     },
     {
-      title: 'Total Products',
-      value: stats.totalProducts,
-      icon: ShoppingBag,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
+      id: '2',
+      type: 'article' as const,
+      title: `${stats.totalArticles} articles publiés`,
+      timestamp: 'Cette semaine'
     },
     {
-      title: 'Optimized',
-      value: stats.optimizedProducts,
-      icon: CheckCircle2,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      percentage: stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%'
-    },
-    {
-      title: 'Pending',
-      value: stats.pendingOptimization,
-      icon: Clock,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      percentage: stats.totalProducts > 0 ? `${Math.round((stats.pendingOptimization / stats.totalProducts) * 100)}%` : '0%'
-    },
-    {
-      title: 'Catalog Value',
-      value: formatCurrency(stats.totalValue),
-      icon: DollarSign,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
-    },
-    {
-      title: 'Blog Articles',
-      value: stats.totalArticles,
-      icon: FileText,
-      color: 'text-cyan-600',
-      bgColor: 'bg-cyan-50'
+      id: '3',
+      type: 'connection' as const,
+      title: `${stats.connectedStores} boutique${stats.connectedStores > 1 ? 's' : ''} connectée${stats.connectedStores > 1 ? 's' : ''}`,
+      timestamp: 'Ce mois'
     }
-  ];
+  ].filter(a => {
+    // Only show activities with non-zero values
+    if (a.type === 'optimization') return stats.optimizedProducts > 0;
+    if (a.type === 'article') return stats.totalArticles > 0;
+    if (a.type === 'connection') return stats.connectedStores > 0;
+    return true;
+  });
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 rounded w-64"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
-              ))}
-            </div>
-          </div>
+      <div className="space-y-6 p-6 max-w-7xl mx-auto animate-fade-in">
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+    <div className="space-y-8 p-6 max-w-7xl mx-auto">
       <TrialUpgradeDialog
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
@@ -227,129 +226,244 @@ export default function Dashboard() {
         limitType={trialStatus.limitType}
       />
       
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-gray-600">Overview of your store performance</p>
+      {/* Hero Section avec Welcome Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary-dark to-accent p-8 shadow-xl animate-fade-in">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
+        <div className="relative">
+          <h1 className="text-4xl font-black text-white mb-2">
+            Bienvenue, {user?.user_metadata?.full_name || 'Utilisateur'} 👋
+          </h1>
+          <p className="text-white/80 text-lg mb-6">
+            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+          <button
+            onClick={() => window.location.href = '/seo?tab=audit'}
+            className="px-6 py-3 bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
+          >
+            <Sparkles className="w-5 h-5" />
+            Lancer l'Audit SEO
+          </button>
+        </div>
       </div>
 
-      {/* Stats Grid - Compact */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {statCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index} className="hover:shadow-md transition-shadow border">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                      <Icon className={`w-4 h-4 ${stat.color}`} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                      <p className="text-xl font-semibold text-gray-900">{stat.value}</p>
-                    </div>
-                  </div>
-                  
-                  {stat.percentage && (
-                    <Badge variant="secondary" className="text-xs">
-                      {stat.percentage}
-                    </Badge>
-                  )}
-                </div>
-
-                {stat.progress !== undefined && (
-                  <div className="mt-3 space-y-2">
-                    <Progress value={stat.progress} className="h-1.5" />
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500">{stat.subtitle}</span>
-                      <span className="text-xs font-medium text-gray-700">{stat.progress}%</span>
-                    </div>
-                  </div>
-                )}
-
-                {stat.subtitle && !stat.progress && (
-                  <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* SEO Score Card - Section Principale */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <SeoScoreGauge 
+          score={stats.seoScore}
+          breakdown={stats.seoBreakdown}
+        />
       </div>
 
-      {/* Quick Actions */}
-      <Card className="border">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
-          <CardDescription>Manage your store efficiently</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <button
-              onClick={() => window.location.href = '/products'}
-              className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left group"
-            >
-              <ShoppingBag className="w-4 h-4 text-blue-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Products</p>
-              <p className="text-xs text-gray-500">Manage catalog</p>
-            </button>
-            
-            <button
-              onClick={() => window.location.href = '/seo?tab=optimization'}
-              className="p-3 border border-gray-200 rounded-lg hover:border-yellow-300 hover:bg-yellow-50 transition-colors text-left group"
-            >
-              <Zap className="w-4 h-4 text-yellow-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Optimize SEO</p>
-              <p className="text-xs text-gray-500">{stats.pendingOptimization} pending</p>
-            </button>
-            
-            <button
-              onClick={() => window.location.href = '/blog?tab=articles'}
-              className="p-3 border border-gray-200 rounded-lg hover:border-cyan-300 hover:bg-cyan-50 transition-colors text-left group"
-            >
-              <FileText className="w-4 h-4 text-cyan-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Blog</p>
-              <p className="text-xs text-gray-500">Create content</p>
-            </button>
-            
-            <button
-              onClick={() => window.location.href = '/chat'}
-              className="p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors text-left group"
-            >
-              <MessageSquare className="w-4 h-4 text-purple-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">AI Assistant</p>
-              <p className="text-xs text-gray-500">Get help</p>
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Métriques Clés - Grid Redesigné */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
+        <MetricCard
+          title="Total Produits"
+          value={stats.totalProducts}
+          icon={ShoppingBag}
+          gradient="from-primary to-primary-dark"
+          iconBg="bg-primary/10 text-primary"
+          trend="+12.5% ce mois"
+        />
+        <MetricCard
+          title="Optimisés"
+          value={stats.optimizedProducts}
+          icon={CheckCircle2}
+          gradient="from-success to-success"
+          iconBg="bg-success/10 text-success"
+          badge={stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%'}
+        />
+        <MetricCard
+          title="En Attente"
+          value={stats.pendingOptimization}
+          icon={Clock}
+          gradient="from-warning to-warning"
+          iconBg="bg-warning/10 text-warning"
+          badge={stats.totalProducts > 0 ? `${Math.round((stats.pendingOptimization / stats.totalProducts) * 100)}%` : '0%'}
+        />
+        <MetricCard
+          title="Valeur Catalogue"
+          value={formatCurrency(stats.totalValue)}
+          icon={DollarSign}
+          gradient="from-purple-500 to-purple-600"
+          iconBg="bg-purple-500/10 text-purple-600"
+        />
+        <MetricCard
+          title="Articles Blog"
+          value={stats.totalArticles}
+          icon={FileText}
+          gradient="from-cyan-500 to-cyan-600"
+          iconBg="bg-cyan-500/10 text-cyan-600"
+          trend="+3 ce mois"
+        />
+        <MetricCard
+          title="Score Santé SEO"
+          value={`${stats.seoScore}%`}
+          icon={Sparkles}
+          gradient="from-primary via-accent to-success"
+          iconBg="bg-gradient-to-br from-primary/10 to-success/10 text-primary"
+          subtitle={stats.seoScore >= 80 ? 'Excellent' : stats.seoScore >= 60 ? 'Bon' : 'À améliorer'}
+        />
+      </div>
 
-      {/* Recommendations */}
-      {stats.pendingOptimization > 0 && (
-        <Card className="border border-orange-200 bg-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Sparkles className="w-4 h-4 text-orange-600" />
-                <div>
-                  <p className="text-sm font-medium text-orange-900">
-                    {stats.pendingOptimization} products need optimization
-                  </p>
-                  <p className="text-xs text-orange-700">
-                    Improve your SEO score and visibility
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => window.location.href = '/seo?tab=optimization'}
-                className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
-              >
-                Optimize
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Quick Actions - 8 actions */}
+      <div className="space-y-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Actions Rapides</h2>
+          <p className="text-muted-foreground">Accédez aux fonctionnalités clés directement</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <QuickActionCard
+            title="Gérer Produits"
+            description="Catalogue complet"
+            icon={ShoppingBag}
+            iconColor="text-primary"
+            iconBg="bg-primary/10"
+            borderColor="border-primary/20"
+            hoverBg="hover:bg-primary/5"
+            onClick={() => window.location.href = '/products'}
+            counter={stats.totalProducts}
+            badge={{
+              text: `${stats.optimizedProducts}/${stats.totalProducts} optimisés`,
+              variant: 'secondary'
+            }}
+          />
+          <QuickActionCard
+            title="Optimiser SEO"
+            description="Produits en attente"
+            icon={Zap}
+            iconColor="text-warning"
+            iconBg="bg-warning/10"
+            borderColor="border-warning/20"
+            hoverBg="hover:bg-warning/5"
+            onClick={() => window.location.href = '/seo?tab=optimization'}
+            counter={stats.pendingOptimization}
+            badge={stats.pendingOptimization > 5 ? {
+              text: 'Action requise',
+              variant: 'destructive'
+            } : undefined}
+          />
+          <QuickActionCard
+            title="Créer Article"
+            description="Blog généré par IA"
+            icon={FileText}
+            iconColor="text-cyan-600"
+            iconBg="bg-cyan-500/10"
+            borderColor="border-cyan-500/20"
+            hoverBg="hover:bg-cyan-500/5"
+            onClick={() => window.location.href = '/blog?tab=articles'}
+            counter={stats.totalArticles}
+            badge={{
+              text: 'Nouveau',
+              variant: 'default'
+            }}
+          />
+          <QuickActionCard
+            title="Assistant IA"
+            description="Chat intelligent"
+            icon={MessageSquare}
+            iconColor="text-purple-600"
+            iconBg="bg-purple-500/10"
+            borderColor="border-purple-500/20"
+            hoverBg="hover:bg-purple-500/5"
+            onClick={() => window.location.href = '/chat'}
+            badge={{
+              text: 'En ligne',
+              variant: 'success'
+            }}
+          />
+          <QuickActionCard
+            title="Analytics"
+            description="Suivez vos performances"
+            icon={BarChart3}
+            iconColor="text-accent"
+            iconBg="bg-accent/10"
+            borderColor="border-accent/20"
+            hoverBg="hover:bg-accent/5"
+            onClick={() => window.location.href = '/products'}
+          />
+          <QuickActionCard
+            title="Connecter Shopify"
+            description={stats.connectedStores > 0 ? 'Gérer boutiques' : 'Connecter maintenant'}
+            icon={Store}
+            iconColor="text-success"
+            iconBg="bg-success/10"
+            borderColor="border-success/20"
+            hoverBg="hover:bg-success/5"
+            onClick={() => window.location.href = '/integration'}
+            counter={stats.connectedStores}
+            badge={stats.connectedStores > 0 ? {
+              text: 'Connecté',
+              variant: 'success'
+            } : {
+              text: 'Connecter',
+              variant: 'outline'
+            }}
+          />
+          <QuickActionCard
+            title="Page d'Accueil"
+            description="Mettre à jour SEO"
+            icon={Palette}
+            iconColor="text-pink-600"
+            iconBg="bg-pink-500/10"
+            borderColor="border-pink-500/20"
+            hoverBg="hover:bg-pink-500/5"
+            onClick={() => window.location.href = '/seo?tab=homepage'}
+          />
+          <QuickActionCard
+            title="Campagnes Email"
+            description="Bientôt disponible"
+            icon={Mail}
+            iconColor="text-gray-600"
+            iconBg="bg-gray-500/10"
+            borderColor="border-gray-500/20"
+            hoverBg="hover:bg-gray-500/5"
+            onClick={() => {}}
+            badge={{
+              text: 'Beta',
+              variant: 'secondary'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Smart Recommendations Banner */}
+      <div className="space-y-4 animate-fade-in" style={{ animationDelay: '300ms' }}>
+        {stats.pendingOptimization > 0 && (
+          <SmartBanner
+            type="optimization"
+            title={`${stats.pendingOptimization} produits nécessitent une optimisation SEO`}
+            description={`Gain potentiel : +${Math.min(stats.pendingOptimization * 5, 30)} points de score SEO`}
+            actionLabel="Optimiser Maintenant"
+            onAction={() => window.location.href = '/seo?tab=optimization'}
+            count={stats.pendingOptimization}
+          />
+        )}
+        
+        {stats.seoScore < 60 && stats.seoScore > 0 && (
+          <SmartBanner
+            type="low-score"
+            title="Votre score SEO peut être amélioré"
+            description="Optimisez vos titres, descriptions et images pour un meilleur référencement"
+            actionLabel="Voir Recommandations"
+            onAction={() => window.location.href = '/seo?tab=optimization'}
+          />
+        )}
+
+        {stats.seoScore >= 80 && (
+          <SmartBanner
+            type="success"
+            title="Excellent travail ! Votre SEO est au top"
+            description="Continuez à maintenir ce niveau de qualité pour votre catalogue"
+            actionLabel="Voir Détails"
+            onAction={() => window.location.href = '/seo'}
+          />
+        )}
+      </div>
+
+      {/* Recent Activity Timeline */}
+      <div className="animate-fade-in" style={{ animationDelay: '400ms' }}>
+        <ActivityTimeline activities={recentActivities} />
+      </div>
     </div>
   );
 }
