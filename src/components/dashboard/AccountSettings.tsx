@@ -11,16 +11,8 @@ import { Loader2, User, Mail, Lock, Eye, EyeOff, Globe } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const languages = [
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
   { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-  { code: 'pt', name: 'Português', flag: '🇵🇹' },
-  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
 ];
 
 export function AccountSettings() {
@@ -166,7 +158,7 @@ export function AccountSettings() {
 
         <div className="space-y-4">
           <Label>{t("account.choose_language")}</Label>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {languages.map((lang) => (
               <Button
                 key={lang.code}
