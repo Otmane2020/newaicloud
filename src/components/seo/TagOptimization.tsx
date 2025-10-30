@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { OptimizationProgressDialog } from './OptimizationProgressDialog';
 import { OptimizationResultsDialog } from './OptimizationResultsDialog';
+import { SeoSyncDialog } from './SeoSyncDialog';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -66,6 +67,8 @@ export function TagOptimization() {
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [selectedProductsForSync, setSelectedProductsForSync] = useState<Array<{id: string; title: string; seo_title: string; seo_description: string; image_url: string}>>([]);
   const { limits, loading: limitsLoading } = useUsageLimits();
 
   const fetchProducts = async () => {
@@ -409,9 +412,13 @@ export function TagOptimization() {
     
     if (errorCount > 0) {
       console.error('Sync errors:', errors);
-      toast.error(`Sync completed: ${successCount} successful, ${errorCount} errors. Check your Shopify credentials.`);
-    } else {
-      toast.success(`Sync successful: ${successCount} products synchronized`);
+      toast.error(`Synchronisation avec erreurs`, {
+        description: `${successCount} produits synchronisés, ${errorCount} erreurs. Vérifiez vos identifiants Shopify.`
+      });
+    } else if (successCount > 0) {
+      toast.success(`Synchronisation terminée !`, {
+        description: `${successCount} produit${successCount > 1 ? 's' : ''} synchronisé${successCount > 1 ? 's' : ''} avec succès sur Shopify`
+      });
     }
     
     await fetchProducts();
@@ -900,7 +907,36 @@ export function TagOptimization() {
           seoDescription: '',
           imageUrl: p.image_url
         }))}
-        onSyncClick={() => { handleBulkSync(optimizedProducts.map(p => p.id)); }}
+        onSyncClick={() => {
+          setShowResultsDialog(false);
+          const productsWithTags = optimizedProducts.filter(p => p.tags);
+          if (productsWithTags.length > 0) {
+            setSelectedProductsForSync(productsWithTags.map(p => ({
+              id: p.id,
+              title: p.title,
+              seo_title: p.tags || '',
+              seo_description: '',
+              image_url: p.image_url
+            })));
+            setShowSyncDialog(true);
+          }
+        }}
+      />
+
+      {/* Sync Confirmation Dialog */}
+      <SeoSyncDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        products={selectedProductsForSync}
+        onConfirm={async () => {
+          setSyncing(true);
+          const productIds = selectedProductsForSync.map(p => p.id);
+          await handleBulkSync(productIds);
+          setShowSyncDialog(false);
+          setSelectedProductsForSync([]);
+          setSyncing(false);
+        }}
+        loading={syncing}
       />
 
       {limits?.isTrialing ? (

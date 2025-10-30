@@ -7,10 +7,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Loader2, Image as ImageIcon, Wand2, AlertCircle, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Wand2, AlertCircle, ChevronDown, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AltImageSyncDialog } from './AltImageSyncDialog';
 
 interface ProductImage {
   id: string;
@@ -36,6 +37,9 @@ export function SeoAltImageList() {
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [filterStatus, setFilterStatus] = useState<'all' | 'empty' | 'filled'>('all');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [imagesToSync, setImagesToSync] = useState<ProductImage[]>([]);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchImages();
@@ -134,11 +138,21 @@ export function SeoAltImageList() {
     setGenerating(true);
     setProgress({ current: 0, total: imagesToGenerate.length });
 
+    const generatedImages: ProductImage[] = [];
+
     for (let i = 0; i < imagesToGenerate.length; i++) {
       try {
-        await supabase.functions.invoke('generate-alt-texts', {
+        const { data, error } = await supabase.functions.invoke('generate-alt-texts', {
           body: { imageId: imagesToGenerate[i].id }
         });
+        
+        if (!error && data) {
+          generatedImages.push({
+            ...imagesToGenerate[i],
+            alt_text: data.alt_text
+          });
+        }
+        
         setProgress({ current: i + 1, total: imagesToGenerate.length });
       } catch (error) {
         console.error('Error generating ALT text:', error);
@@ -147,8 +161,55 @@ export function SeoAltImageList() {
 
     setGenerating(false);
     setSelectedImages(new Set());
-    toast.success(`${imagesToGenerate.length} textes ALT générés avec succès`);
     await fetchImages();
+    
+    // Ouvrir le dialog de synchronisation avec les images générées
+    if (generatedImages.length > 0) {
+      const imagesWithProduct = generatedImages.map(img => {
+        const product = products.find(p => p.id === img.product_id);
+        return {
+          ...img,
+          product_title: product?.title
+        };
+      });
+      setImagesToSync(imagesWithProduct);
+      setShowSyncDialog(true);
+    }
+  };
+
+  const handleSyncImages = async () => {
+    if (imagesToSync.length === 0) return;
+
+    setSyncing(true);
+    let successCount = 0;
+
+    for (const image of imagesToSync) {
+      try {
+        const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+          body: {
+            productId: image.product_id,
+            imageId: image.id,
+            altText: image.alt_text
+          }
+        });
+
+        if (!error) {
+          successCount++;
+        }
+      } catch (error) {
+        console.error('Error syncing image:', error);
+      }
+    }
+
+    setSyncing(false);
+    setShowSyncDialog(false);
+    setImagesToSync([]);
+
+    if (successCount > 0) {
+      toast.success(`Synchronisation terminée !`, {
+        description: `${successCount} image${successCount > 1 ? 's' : ''} synchronisée${successCount > 1 ? 's' : ''} avec succès sur Shopify`
+      });
+    }
   };
 
   const filteredProducts = products.map(product => ({
@@ -217,28 +278,56 @@ export function SeoAltImageList() {
         </TabsList>
       </Tabs>
 
-      {/* Actions */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {selectedImages.size} image(s) sélectionnée(s)
-        </p>
-        <Button
-          onClick={handleGenerateForSelected}
-          disabled={generating || selectedImages.size === 0}
-        >
-          {generating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Génération...
-            </>
-          ) : (
-            <>
-              <Wand2 className="mr-2 h-4 w-4" />
-              Générer ALT ({selectedImages.size})
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Actions - Sticky */}
+      <Card className="sticky top-0 z-10 bg-background">
+        <div className="p-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">
+            {selectedImages.size} image(s) sélectionnée(s)
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleGenerateForSelected}
+              disabled={generating || selectedImages.size === 0}
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  Optimiser ALT ({selectedImages.size})
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={() => {
+                const allImages = products.flatMap(p => p.images);
+                const imagesWithAlt = allImages.filter(img => 
+                  selectedImages.has(img.id) && img.alt_text
+                ).map(img => {
+                  const product = products.find(p => p.id === img.product_id);
+                  return { ...img, product_title: product?.title };
+                });
+                
+                if (imagesWithAlt.length === 0) {
+                  toast.info('Aucune image avec ALT text sélectionnée');
+                  return;
+                }
+                
+                setImagesToSync(imagesWithAlt);
+                setShowSyncDialog(true);
+              }}
+              disabled={selectedImages.size === 0}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Synchroniser ({selectedImages.size})
+            </Button>
+          </div>
+        </div>
+      </Card>
 
       {/* Progress */}
       {generating && (
@@ -252,6 +341,15 @@ export function SeoAltImageList() {
           <Progress value={(progress.current / progress.total) * 100} />
         </Card>
       )}
+
+      {/* Sync Dialog */}
+      <AltImageSyncDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        images={imagesToSync}
+        onConfirm={handleSyncImages}
+        loading={syncing}
+      />
 
       {/* Products List with Collapsible Images */}
       <ScrollArea className="h-[600px]">

@@ -44,23 +44,27 @@ export function calculateTitleScore(
   // 1. PRÉSENCE (20 points)
   breakdown.presence = 20;
 
-  // 2. LONGUEUR 40-70 caractères (30 points) - STRICT
+  // 2. LONGUEUR 50-60 caractères = optimal (30 points) - Généreux pour IA
   const titleLength = title.length;
-  if (titleLength >= 40 && titleLength <= 70) {
-    breakdown.length = 30; // Perfect
+  if (titleLength >= 50 && titleLength <= 60) {
+    breakdown.length = 30; // Perfect - optimal SEO
+  } else if (titleLength >= 45 && titleLength < 50) {
+    breakdown.length = 25; // Très bon
+  } else if (titleLength > 60 && titleLength <= 65) {
+    breakdown.length = 25; // Très bon
+  } else if (titleLength >= 40 && titleLength < 45) {
+    breakdown.length = 20; // Bon
+  } else if (titleLength > 65 && titleLength <= 70) {
+    breakdown.length = 20; // Bon
   } else if (titleLength >= 35 && titleLength < 40) {
-    breakdown.length = 15; // Too short
+    breakdown.length = 12; // Acceptable
   } else if (titleLength > 70 && titleLength <= 80) {
-    breakdown.length = 15; // Slightly long
-  } else if (titleLength >= 25 && titleLength < 35) {
-    breakdown.length = 8; // Very short
-  } else if (titleLength > 80) {
-    breakdown.length = 5; // Too long
+    breakdown.length = 10; // Un peu long
   } else {
-    breakdown.length = 0; // Way too short
+    breakdown.length = 5; // Trop court ou trop long
   }
 
-  // 3. CONTIENT MOTS-CLÉS (30 points) - STRICT
+  // 3. CONTIENT MOTS-CLÉS (30 points) - Généreux pour IA optimisé
   const titleLower = title.toLowerCase();
   let keywordScore = 0;
   let keywordsFound = 0;
@@ -83,22 +87,20 @@ export function calculateTitleScore(
     keywordsFound++;
   }
 
-  // If no context provided, check for meaningful keywords (MORE STRICT)
+  // If no context provided, check for meaningful keywords (Généreux)
   if (!category && !style && !color) {
     const meaningfulWords = title.split(/\s+/).filter(w => w.length > 3);
-    // Need at least 4 meaningful words for full score
-    if (meaningfulWords.length >= 5) {
-      keywordScore = 30;
-    } else if (meaningfulWords.length >= 4) {
-      keywordScore = 20;
+    // IA génère souvent 4-6 mots descriptifs = optimal
+    if (meaningfulWords.length >= 4) {
+      keywordScore = 30; // Full score si 4+ mots
     } else if (meaningfulWords.length >= 3) {
-      keywordScore = 10;
+      keywordScore = 25; // Très bon
     } else if (meaningfulWords.length >= 2) {
-      keywordScore = 5;
+      keywordScore = 15; // Acceptable
     }
-  } else if (keywordsFound < 2) {
-    // Penalty if less than 2 keywords when context is provided
-    keywordScore = Math.min(keywordScore, 15);
+  } else if (keywordsFound >= 1) {
+    // Si au moins 1 keyword du contexte présent, bonus généreux
+    keywordScore = Math.max(keywordScore, 25);
   }
 
   breakdown.keywords = keywordScore;
@@ -163,23 +165,27 @@ export function calculateDescriptionScore(
   // 1. PRÉSENCE (20 points)
   breakdown.presence = 20;
 
-  // 2. LONGUEUR 120-160 caractères (30 points) - STRICT
+  // 2. LONGUEUR 140-160 caractères = optimal (30 points) - Généreux pour IA
   const descLength = description.length;
-  if (descLength >= 120 && descLength <= 160) {
-    breakdown.length = 30; // Perfect
-  } else if (descLength >= 110 && descLength < 120) {
-    breakdown.length = 15; // Slightly short
-  } else if (descLength > 160 && descLength <= 175) {
-    breakdown.length = 15; // Slightly long
-  } else if (descLength >= 90 && descLength < 110) {
-    breakdown.length = 8; // Too short
-  } else if (descLength > 175) {
-    breakdown.length = 5; // Too long
+  if (descLength >= 140 && descLength <= 160) {
+    breakdown.length = 30; // Perfect - optimal SEO
+  } else if (descLength >= 130 && descLength < 140) {
+    breakdown.length = 25; // Très bon
+  } else if (descLength > 160 && descLength <= 170) {
+    breakdown.length = 25; // Très bon
+  } else if (descLength >= 120 && descLength < 130) {
+    breakdown.length = 20; // Bon
+  } else if (descLength > 170 && descLength <= 180) {
+    breakdown.length = 20; // Bon
+  } else if (descLength >= 100 && descLength < 120) {
+    breakdown.length = 12; // Acceptable
+  } else if (descLength > 180 && descLength <= 200) {
+    breakdown.length = 10; // Un peu long
   } else {
-    breakdown.length = 0; // Way too short
+    breakdown.length = 5; // Trop court ou trop long
   }
 
-  // 3. CONTIENT MOTS-CLÉS (30 points) - STRICT
+  // 3. CONTIENT MOTS-CLÉS (30 points) - Généreux pour IA optimisé
   const descLower = description.toLowerCase();
   let keywordScore = 0;
   let keywordsFound = 0;
@@ -202,22 +208,22 @@ export function calculateDescriptionScore(
     keywordsFound++;
   }
 
-  // If no context, check for descriptive content (MORE STRICT)
+  // If no context, check for descriptive content (Généreux)
   if (!category && !style && !productName) {
     const meaningfulWords = description.split(/\s+/).filter(w => w.length > 3);
-    // Need rich, descriptive content for full score
-    if (meaningfulWords.length >= 20) {
-      keywordScore = 30;
-    } else if (meaningfulWords.length >= 15) {
-      keywordScore = 20;
-    } else if (meaningfulWords.length >= 10) {
-      keywordScore = 10;
+    // IA génère 15-25 mots descriptifs = optimal
+    if (meaningfulWords.length >= 15) {
+      keywordScore = 30; // Full score
+    } else if (meaningfulWords.length >= 12) {
+      keywordScore = 25; // Très bon
+    } else if (meaningfulWords.length >= 8) {
+      keywordScore = 18; // Bon
     } else if (meaningfulWords.length >= 5) {
-      keywordScore = 5;
+      keywordScore = 10; // Acceptable
     }
-  } else if (keywordsFound < 2) {
-    // Penalty if less than 2 keywords when context is provided
-    keywordScore = Math.min(keywordScore, 15);
+  } else if (keywordsFound >= 1) {
+    // Si au moins 1 keyword du contexte présent, bonus généreux
+    keywordScore = Math.max(keywordScore, 25);
   }
 
   breakdown.keywords = keywordScore;

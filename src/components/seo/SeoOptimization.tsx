@@ -481,6 +481,12 @@ export function SeoOptimization() {
     setSyncing(false);
     setIsOptimizationComplete(true);
     
+    if (successCount > 0) {
+      toast.success(`Synchronisation terminée !`, {
+        description: `${successCount} produit${successCount > 1 ? 's' : ''} synchronisé${successCount > 1 ? 's' : ''} avec succès sur Shopify`
+      });
+    }
+    
     await fetchProducts();
   };
 
@@ -1158,7 +1164,11 @@ export function SeoOptimization() {
         items={optimizedProducts}
         onSyncClick={() => {
           setShowResultsDialog(false);
-          handleSyncSelected();
+          const productsWithSeo = optimizedProducts.filter(p => p.seo_title || p.seo_description);
+          if (productsWithSeo.length > 0) {
+            setProductsToSync(productsWithSeo);
+            setShowSyncDialog(true);
+          }
         }}
         onClose={handleCloseResultsDialog}
       />
