@@ -166,7 +166,7 @@ async function fetchAndAnalyzeHtml(url: string) {
   const elements = extractEnhancedSeoElements(html, url);
   console.log('SEO elements extracted successfully');
 
-  return { elements };
+  return { elements, shopifySpecific: undefined };
 }
 
 interface EnhancedSeoElements {
@@ -665,10 +665,10 @@ Réponds UNIQUEMENT avec la liste des recommandations, sans introduction ni conc
     // Parse recommendations from AI response
     const recommendations = aiText
       .split('\n')
-      .filter(line => line.trim().length > 0)
-      .filter(line => /^[\d\-•▶]/.test(line.trim()))
-      .map(line => line.replace(/^[\d\-•▶\s.)]+/, '').trim())
-      .filter(rec => rec.length > 20 && rec.length < 200) // Reasonable length
+      .filter((line: string) => line.trim().length > 0)
+      .filter((line: string) => /^[\d\-•▶]/.test(line.trim()))
+      .map((line: string) => line.replace(/^[\d\-•▶\s.)]+/, '').trim())
+      .filter((rec: string) => rec.length > 20 && rec.length < 200) // Reasonable length
       .slice(0, 5); // Max 5 recommendations
 
     return recommendations.length > 0 ? recommendations : generateEnhancedFallbackRecommendations(scoreResult, elements);
