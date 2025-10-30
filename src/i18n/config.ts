@@ -36,31 +36,46 @@ import translationAR from './locales/ar.json';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Helper function to deeply merge translation objects
+const mergeTranslations = (...sources: any[]) => {
+  const result: any = {};
+  sources.forEach(source => {
+    Object.keys(source).forEach(key => {
+      if (result[key] && typeof result[key] === 'object' && typeof source[key] === 'object') {
+        result[key] = { ...result[key], ...source[key] };
+      } else {
+        result[key] = source[key];
+      }
+    });
+  });
+  return result;
+};
+
 // Static fallback resources with modular structure for EN and FR
 const fallbackResources = {
   en: {
-    translation: {
-      ...enCommon,
-      ...enAuth,
-      ...enLanding,
-      ...enDashboard,
-      ...enProducts,
-      ...enSeo,
-      ...enBlog,
-      ...enSubscription,
-    }
+    translation: mergeTranslations(
+      enCommon,
+      enAuth,
+      enLanding,
+      enDashboard,
+      enProducts,
+      enSeo,
+      enBlog,
+      enSubscription
+    )
   },
   fr: {
-    translation: {
-      ...frCommon,
-      ...frAuth,
-      ...frLanding,
-      ...frDashboard,
-      ...frProducts,
-      ...frSeo,
-      ...frBlog,
-      ...frSubscription,
-    }
+    translation: mergeTranslations(
+      frCommon,
+      frAuth,
+      frLanding,
+      frDashboard,
+      frProducts,
+      frSeo,
+      frBlog,
+      frSubscription
+    )
   },
   es: { translation: translationES },
   de: { translation: translationDE },
