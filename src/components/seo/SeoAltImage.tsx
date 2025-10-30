@@ -11,6 +11,7 @@ import { OptimizationResultsDialog } from './OptimizationResultsDialog';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { calculateAltTextScore } from '@/lib/seoQuality';
 import {
   Search,
   RefreshCw,
@@ -285,12 +286,14 @@ export function SeoAltImage() {
   const imagesWithAlt = images.filter(img => img.alt_text).length;
   const altCompletionRate = images.length > 0 ? Math.round((imagesWithAlt / images.length) * 100) : 0;
   
-  // Calculate ALT SEO score (images with ALT get 85/100, without get 15/100)
+  // Calculate ALT SEO score with Shopify vs AI weighting
   const altSeoScore = images.length > 0 
     ? Math.round(
         images.reduce((sum, img) => {
-          // Images with ALT text get 85 points, without get 15 points
-          return sum + (img.alt_text ? 85 : 15);
+          // Check if ALT is AI-generated (assume ALT with good quality = AI)
+          const isAI = img.alt_text && img.alt_text.length > 30;
+          const altScore = calculateAltTextScore(img.alt_text, isAI);
+          return sum + altScore.score;
         }, 0) / images.length
       )
     : 0;

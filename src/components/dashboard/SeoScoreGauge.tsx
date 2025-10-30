@@ -6,10 +6,10 @@ import { Target, TrendingUp, AlertTriangle } from 'lucide-react';
 interface SeoScoreGaugeProps {
   score: number;
   breakdown: {
-    structure: number;
-    content: number;
-    technical: number;
-    bonus: number;
+    presence: number;
+    length: number;
+    keywords: number;
+    readability: number;
   };
 }
 
@@ -40,10 +40,10 @@ export function SeoScoreGauge({ score, breakdown }: SeoScoreGaugeProps) {
   };
 
   const categories = [
-    { name: '🏗️ Structure HTML', value: breakdown.structure, max: 30, color: 'hsl(217 91% 60%)' },
-    { name: '📝 Contenu sémantique', value: breakdown.content, max: 30, color: 'hsl(271 91% 65%)' },
-    { name: '⚙️ Technique & Qualité', value: breakdown.technical, max: 25, color: 'hsl(38 92% 50%)' },
-    { name: '⭐ Bonus SEO', value: breakdown.bonus, max: 15, color: 'hsl(142 71% 45%)' },
+    { name: '✅ Présence (20%)', value: breakdown.presence, max: 20, color: 'hsl(217 91% 60%)' },
+    { name: '📏 Longueur optimale (30%)', value: breakdown.length, max: 30, color: 'hsl(271 91% 65%)' },
+    { name: '🔑 Mots-clés (30%)', value: breakdown.keywords, max: 30, color: 'hsl(38 92% 50%)' },
+    { name: '📖 Lisibilité (20%)', value: breakdown.readability, max: 20, color: 'hsl(142 71% 45%)' },
   ];
 
   return (

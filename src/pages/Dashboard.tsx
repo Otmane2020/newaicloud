@@ -36,10 +36,10 @@ interface Stats {
   totalValue: number;
   seoScore: number;
   seoBreakdown: {
-    structure: number;
-    content: number;
-    technical: number;
-    bonus: number;
+    presence: number;
+    length: number;
+    keywords: number;
+    readability: number;
   };
   connectedStores: number;
 }
@@ -57,10 +57,10 @@ export default function Dashboard() {
     totalValue: 0,
     seoScore: 0,
     seoBreakdown: {
-      structure: 0,
-      content: 0,
-      technical: 0,
-      bonus: 0
+      presence: 0,
+      length: 0,
+      keywords: 0,
+      readability: 0
     },
     connectedStores: 0
   });
@@ -123,10 +123,10 @@ export default function Dashboard() {
 
       // Calculate detailed SEO breakdown
       const seoBreakdown = {
-        structure: 0,
-        content: 0,
-        technical: 0,
-        bonus: 0
+        presence: 0,
+        length: 0,
+        keywords: 0,
+        readability: 0
       };
       
       let totalScore = 0;
@@ -136,20 +136,20 @@ export default function Dashboard() {
         if (p.seo_title || p.seo_description) {
           const result = calculateDetailedSeoScore(p.seo_title, p.seo_description, true, true);
           totalScore += result.score;
-          seoBreakdown.structure += result.breakdown.structure;
-          seoBreakdown.content += result.breakdown.content;
-          seoBreakdown.technical += result.breakdown.technical;
-          seoBreakdown.bonus += result.breakdown.bonus;
+          seoBreakdown.presence += result.breakdown.presence;
+          seoBreakdown.length += result.breakdown.length;
+          seoBreakdown.keywords += result.breakdown.keywords;
+          seoBreakdown.readability += result.breakdown.readability;
           validProducts++;
         }
       });
 
       const avgScore = validProducts > 0 ? Math.round(totalScore / validProducts) : 0;
       const avgBreakdown = {
-        structure: validProducts > 0 ? Math.round(seoBreakdown.structure / validProducts) : 0,
-        content: validProducts > 0 ? Math.round(seoBreakdown.content / validProducts) : 0,
-        technical: validProducts > 0 ? Math.round(seoBreakdown.technical / validProducts) : 0,
-        bonus: validProducts > 0 ? Math.round(seoBreakdown.bonus / validProducts) : 0
+        presence: validProducts > 0 ? Math.round(seoBreakdown.presence / validProducts) : 0,
+        length: validProducts > 0 ? Math.round(seoBreakdown.length / validProducts) : 0,
+        keywords: validProducts > 0 ? Math.round(seoBreakdown.keywords / validProducts) : 0,
+        readability: validProducts > 0 ? Math.round(seoBreakdown.readability / validProducts) : 0
       };
 
       const { count: articlesCount } = await supabase
