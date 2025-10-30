@@ -239,8 +239,9 @@ export function SeoAltImage() {
       return;
     }
 
-    setShowProgressDialog(false);
     setSyncing(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     setProgress({ current: 0, total: imagesToSync.length });
 
     for (let i = 0; i < imagesToSync.length; i++) {
@@ -255,9 +256,8 @@ export function SeoAltImage() {
     }
 
     setSyncing(false);
-    setProgress({ current: 0, total: 0 });
+    setIsOptimizationComplete(true);
     setSelectedImages(new Set());
-    toast.success('Synchronisation terminée');
     await fetchImages();
   };
 
@@ -445,37 +445,19 @@ export function SeoAltImage() {
             {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
           </Button>
           <Button
-            onClick={() => handleGenerateForSelected(false)}
-            disabled={generating || selectedImages.size === 0}
-            className="gap-2"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Génération...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Générer ALT ({selectedImages.size})
-              </>
-            )}
-          </Button>
-          <Button
             onClick={() => handleGenerateForSelected(true)}
             disabled={generating || selectedImages.size === 0}
-            variant="outline"
-            className="gap-2 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950"
+            className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
           >
             {generating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Analyse Vision IA...
+                Analyse Vision...
               </>
             ) : (
               <>
                 <Eye className="w-4 h-4" />
-                Analyse Vision IA ({selectedImages.size})
+                ALT Vision ({selectedImages.size})
               </>
             )}
           </Button>

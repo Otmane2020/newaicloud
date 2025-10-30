@@ -35,27 +35,40 @@ async function callDeepSeekVision(imageUrl: string, productContext: string) {
           content: [
             {
               type: "text",
-              text: `Analyse cette image de produit et génère un texte ALT optimisé SEO qui COMBINE :
-1. Les informations produit fournies (titre, description, variations)
-2. L'analyse visuelle de l'image (couleurs, matériaux, formes, textures, style)
+              text: `Analyse UNIQUEMENT ce que tu VOIS dans cette image de produit e-commerce.
 
-Context produit :
+RÈGLES ABSOLUES - ANALYSE VISUELLE PURE :
+1. Base-toi UNIQUEMENT sur ce qui est VISIBLE dans l'image
+2. Décris les couleurs dominantes et secondaires que tu vois
+3. Identifie les matériaux visibles (bois, métal, tissu, cuir, plastique, verre, etc.)
+4. Décris les formes et dimensions apparentes
+5. Note les textures visibles (lisse, rugueux, brillant, mat, texturé)
+6. Identifie le style visuel (moderne, vintage, minimaliste, classique, industriel)
+7. Décris les détails importants (pieds, poignées, motifs, finitions, décoration)
+
+⚠️ INTERDIT :
+- Ne reprends PAS le titre tel quel
+- N'invente PAS d'informations non visibles
+- Ne mentionne PAS le titre produit directement
+
+Context produit (POUR RÉFÉRENCE UNIQUEMENT) :
 ${productContext}
 
-RÈGLES STRICTES :
-- Le texte ALT DOIT inclure à la fois les infos produit ET l'analyse visuelle
-- Décris ce que tu VOIS dans l'image : couleurs dominantes, matériaux visibles, formes, textures, style
-- Intègre naturellement le titre du produit
-- 10-20 mots maximum
-- En français
-- Naturel et SEO-friendly
+FORMAT DE RÉPONSE - 10 à 20 mots maximum :
+- Commence par la catégorie visuelle du produit (chaise, table, lampe, etc.)
+- Ajoute les couleurs dominantes observées
+- Mentionne les matériaux visibles
+- Décris le style ou les caractéristiques visuelles distinctives
 
-Exemple : "Canapé scandinave 3 places en tissu beige clair avec pieds bois naturel, design minimaliste et coussins moelleux"
+Exemples corrects :
+❌ MAUVAIS : "Canapé Scandinave Premium 3 Places" (reprend le titre)
+✅ BON : "Canapé 3 places tissu gris clair, pieds bois naturel, style scandinave épuré"
+✅ BON : "Chaise design noire métal et bois, assise rembourrée, pieds croisés"
 
 Réponds UNIQUEMENT avec ce JSON valide :
 {
-  "alt_text": "Ton texte ALT ici (combine produit + analyse visuelle)",
-  "visual_analysis": "Description détaillée de ce que tu vois dans l'image"
+  "alt_text": "Ta description visuelle pure (PAS le titre produit)",
+  "visual_analysis": "Description technique complète de ce que tu vois réellement dans l'image"
 }`
             },
             {
@@ -174,15 +187,12 @@ Deno.serve(async (req: Request) => {
       .eq("product_id", image.product_id)
       .limit(5);
 
-    // Build context
-    let productContext = `Product: ${product.title}\n`;
+    // Build minimal context (for reference only, not to be copied)
+    let productContext = `Category: ${product.category || 'Product'}\n`;
     
     if (product.description) {
-      productContext += `Description: ${product.description.substring(0, 200)}\n`;
-    }
-    
-    if (product.category) {
-      productContext += `Category: ${product.category}\n`;
+      const shortDesc = product.description.substring(0, 150);
+      productContext += `Description hint: ${shortDesc}\n`;
     }
 
     if (variants && variants.length > 0) {

@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Package, FileText, CreditCard, AlertCircle, Check, TrendingUp } from "lucide-react";
+import { Loader2, Package, FileText, CreditCard, AlertCircle, Check, TrendingUp, Newspaper } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -35,6 +35,7 @@ interface ImportProgressDialogProps {
   };
   productsImported: number;
   pagesImported: number;
+  articlesImported: number;
   importedItems: ImportedItem[];
   limitReached: boolean;
   maxProducts: number;
@@ -47,6 +48,7 @@ export function ImportProgressDialog({
   progress,
   productsImported,
   pagesImported,
+  articlesImported,
   importedItems,
   limitReached,
   maxProducts,
@@ -56,6 +58,7 @@ export function ImportProgressDialog({
   // Animated counters
   const [displayedProducts, setDisplayedProducts] = useState(0);
   const [displayedPages, setDisplayedPages] = useState(0);
+  const [displayedArticles, setDisplayedArticles] = useState(0);
   const [displayedProgress, setDisplayedProgress] = useState(0);
 
   const handleUpgrade = () => {
@@ -90,15 +93,15 @@ export function ImportProgressDialog({
     }
   }, [displayedProducts, productsImported]);
 
-  // Animate pages counter
+  // Animate articles counter
   useEffect(() => {
-    if (displayedPages < pagesImported) {
+    if (displayedArticles < articlesImported) {
       const timer = setTimeout(() => {
-        setDisplayedPages(prev => Math.min(prev + 1, pagesImported));
+        setDisplayedArticles(prev => Math.min(prev + 1, articlesImported));
       }, 50);
       return () => clearTimeout(timer);
     }
-  }, [displayedPages, pagesImported]);
+  }, [displayedArticles, articlesImported]);
 
   const getPhaseTitle = () => {
     if (limitReached) return "⚠️ Quota Reached";
@@ -153,7 +156,7 @@ export function ImportProgressDialog({
             </div>
             
             {/* Animated counters */}
-            <div className="flex-shrink-0 grid grid-cols-2 gap-2 sm:gap-4">
+            <div className="flex-shrink-0 grid grid-cols-3 gap-2 sm:gap-4">
               <Card className="border-2 hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-lg">
                 <CardContent className="pt-3 sm:pt-4 pb-3 sm:pb-4">
                   <div className="flex items-center justify-between mb-1">
@@ -162,7 +165,7 @@ export function ImportProgressDialog({
                       {displayedProducts}
                     </span>
                   </div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Products imported</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Products</p>
                 </CardContent>
               </Card>
               <Card className="border-2 hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-lg">
@@ -173,7 +176,18 @@ export function ImportProgressDialog({
                       {displayedPages}
                     </span>
                   </div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Pages imported</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Pages</p>
+                </CardContent>
+              </Card>
+              <Card className="border-2 hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                <CardContent className="pt-3 sm:pt-4 pb-3 sm:pb-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <Newspaper className="w-5 h-5 text-primary animate-pulse" />
+                    <span className="text-2xl sm:text-3xl font-bold text-primary tabular-nums">
+                      {displayedArticles}
+                    </span>
+                  </div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Articles</p>
                 </CardContent>
               </Card>
             </div>
@@ -237,7 +251,7 @@ export function ImportProgressDialog({
                       Import completed successfully!
                     </p>
                     <p className="text-xs text-green-700 dark:text-green-300">
-                      {displayedProducts} products and {displayedPages} pages imported
+                      {displayedProducts} products, {displayedPages} pages and {displayedArticles} articles imported
                     </p>
                   </div>
                 </div>

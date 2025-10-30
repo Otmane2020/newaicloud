@@ -15,6 +15,7 @@ const ShopifyConnectionsList = lazy(() =>
 
 export function ShopifyIntegrationTabs() {
   const [showDialog, setShowDialog] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Handle OAuth callback messages
@@ -27,6 +28,8 @@ export function ShopifyIntegrationTabs() {
       toast.success(`Store connected successfully! 🎉`, {
         description: shop ? `Connected to ${shop}` : undefined
       });
+      // Refresh the list
+      setRefreshKey(prev => prev + 1);
       // Clear URL params
       searchParams.delete('success');
       searchParams.delete('shop');
@@ -96,7 +99,7 @@ export function ShopifyIntegrationTabs() {
       </Card>
 
       <Suspense fallback={<SkeletonLoader />}>
-        <ShopifyConnectionsList />
+        <ShopifyConnectionsList key={refreshKey} />
       </Suspense>
 
       <ShopifyConnectionDialog open={showDialog} onOpenChange={setShowDialog} />

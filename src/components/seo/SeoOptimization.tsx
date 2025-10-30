@@ -338,8 +338,9 @@ export function SeoOptimization() {
       return;
     }
 
-    setShowProgressDialog(false);
     setSyncing(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productsToSync.length });
 
     let successCount = 0;
@@ -354,11 +355,10 @@ export function SeoOptimization() {
           }
         });
         
-        // Get store info and show success toast with link
         const product = productsToSync[i];
         const { data: productData } = await supabase
           .from('shopify_products')
-          .select('shopify_id, shop_name, store_id')
+          .select('shopify_id, shop_name, title')
           .eq('id', product.id)
           .single();
 
@@ -367,7 +367,7 @@ export function SeoOptimization() {
           toast.success('Product synced to Shopify', {
             description: (
               <>
-                <span className="font-medium">{product.title}</span>
+                <span className="font-medium">{productData.title}</span>
                 <br />
                 <a 
                   href={shopifyUrl} 
@@ -386,17 +386,12 @@ export function SeoOptimization() {
         setProgress({ current: i + 1, total: productsToSync.length });
       } catch (error) {
         console.error('Error syncing:', error);
-        toast.error(`Failed to sync ${productsToSync[i].title}`);
       }
     }
 
     setSyncing(false);
-    setProgress({ current: 0, total: 0 });
+    setIsOptimizationComplete(true);
     setSelectedProducts(new Set());
-    
-    if (successCount > 0) {
-      toast.success(`${successCount} product${successCount > 1 ? 's' : ''} synchronized successfully`);
-    }
     
     await fetchProducts();
   };
@@ -408,10 +403,11 @@ export function SeoOptimization() {
     }
 
     setSyncing(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productIds.length });
 
     let successCount = 0;
-    let errorCount = 0;
 
     for (let i = 0; i < productIds.length; i++) {
       try {
@@ -423,10 +419,9 @@ export function SeoOptimization() {
           }
         });
         
-        // Get product and store info
         const { data: productData } = await supabase
           .from('shopify_products')
-          .select('title, shopify_id, shop_name, store_id')
+          .select('title, shopify_id, shop_name')
           .eq('id', productIds[i])
           .single();
 
@@ -448,24 +443,17 @@ export function SeoOptimization() {
               </>
             ),
           });
+          successCount++;
         }
         
-        successCount++;
         setProgress({ current: i + 1, total: productIds.length });
       } catch (error) {
         console.error('Error syncing:', error);
-        errorCount++;
       }
     }
 
     setSyncing(false);
-    setProgress({ current: 0, total: 0 });
-    
-    if (errorCount > 0) {
-      toast.error(`Synchronization: ${successCount} success, ${errorCount} errors`);
-    } else {
-      toast.success(`${successCount} product(s) successfully synced to Shopify!`);
-    }
+    setIsOptimizationComplete(true);
     
     await fetchProducts();
   };

@@ -13,6 +13,7 @@ interface OptimizationProgressDialogProps {
   isComplete: boolean;
   onSyncClick?: () => void;
   onClose: () => void;
+  operationType?: 'optimization' | 'synchronization';
 }
 
 export function OptimizationProgressDialog({
@@ -24,13 +25,30 @@ export function OptimizationProgressDialog({
   isComplete,
   onSyncClick,
   onClose,
+  operationType = 'optimization',
 }: OptimizationProgressDialogProps) {
   const percentage = total > 0 ? (current / total) * 100 : 0;
+
+  const getTitle = () => {
+    if (operationType === 'synchronization') {
+      return isComplete ? '✅ Synchronization Complete!' : '🔄 Syncing to Shopify...';
+    }
+    return isComplete ? '✅ Optimization Complete!' : title;
+  };
+
+  const getDescription = () => {
+    if (operationType === 'synchronization') {
+      return isComplete 
+        ? `${current} products synchronized successfully to Shopify`
+        : `${current} / ${total} products synchronized`;
+    }
+    return `${current} / ${total} produits traités`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogTitle className="sr-only">{title}</DialogTitle>
+        <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
         <div className="flex flex-col items-center justify-center py-8 space-y-6">
           {!isComplete ? (
             <>
@@ -41,11 +59,14 @@ export function OptimizationProgressDialog({
                 </div>
               </div>
               <div className="text-center space-y-2 w-full">
-                <h3 className="text-xl font-semibold">{title}</h3>
+                <h3 className="text-xl font-semibold">{getTitle()}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {current} / {total} produits traités
+                  {getDescription()}
                 </p>
                 <Progress value={percentage} className="h-3 mt-4" />
+                <p className="text-xs text-muted-foreground mt-2">
+                  {Math.round(percentage)}%
+                </p>
               </div>
             </>
           ) : (
@@ -58,21 +79,23 @@ export function OptimizationProgressDialog({
               </div>
               <div className="text-center space-y-3">
                 <h3 className="text-xl font-semibold text-green-600 dark:text-green-400">
-                  Optimisation terminée !
+                  {operationType === 'synchronization' ? 'Synchronization completed!' : 'Optimisation terminée !'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {total} produits optimisés avec succès
+                  {total} {operationType === 'synchronization' ? 'products synchronized' : 'produits optimisés'} avec succès
                 </p>
               </div>
               <div className="flex flex-col gap-2 w-full pt-4">
-                <Button
-                  onClick={onSyncClick}
-                  className="w-full gap-2 bg-primary hover:bg-primary/90"
-                  size="lg"
-                >
-                  <Upload className="w-5 h-5" />
-                  Synchroniser avec Shopify
-                </Button>
+                {operationType === 'optimization' && onSyncClick && (
+                  <Button
+                    onClick={onSyncClick}
+                    className="w-full gap-2 bg-primary hover:bg-primary/90"
+                    size="lg"
+                  >
+                    <Upload className="w-5 h-5" />
+                    Synchroniser avec Shopify
+                  </Button>
+                )}
                 <Button
                   onClick={onClose}
                   variant="outline"
