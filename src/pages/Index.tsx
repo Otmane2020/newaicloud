@@ -81,9 +81,6 @@ const Index = () => {
             
             <div className="flex items-center gap-2 text-sm text-gray-300 pt-2">
               <CheckCircle2 className="w-4 h-4 text-success" />
-              <span>No credit card required</span>
-              <span className="text-gray-500">•</span>
-              <CheckCircle2 className="w-4 h-4 text-success" />
               <span>Setup in 5 minutes</span>
             </div>
           </div>
@@ -365,7 +362,7 @@ const Index = () => {
               Ready to transform your store?
             </h2>
             <p className="text-xl text-gray-300">
-              Start free today. No credit card required.
+              Start your 14-day free trial today.
             </p>
             <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90" onClick={() => navigate('/auth?mode=signup')}>
               Start Free Trial
@@ -412,8 +409,8 @@ const features = [
   {
     icon: ImageIcon,
     title: "Image ALT Optimization",
-    description: "Automatically generate and optimize ALT text for all product images to boost image search rankings",
-    tags: ["Images", "Accessibility", "SEO"]
+    description: "Advanced Vision AI analyzes your product images visually and generates contextual, SEO-optimized ALT text based on actual image content and product details",
+    tags: ["Vision AI", "Image Analysis", "Visual Recognition"]
   },
   {
     icon: FileText,
