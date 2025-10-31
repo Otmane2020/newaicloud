@@ -30,10 +30,52 @@ serve(async (req) => {
       .select(`
         *,
         ads_campaign_collections(
-          collection:shopify_collections(*)
+          collection:shopify_collections(
+            id,
+            title,
+            body_html,
+            handle,
+            image_url,
+            image_alt,
+            seo_title,
+            seo_description,
+            optimization_count,
+            last_optimization_at
+          )
         ),
         ads_campaign_products(
-          product:shopify_products(*)
+          product:shopify_products(
+            id,
+            title,
+            description,
+            optimized_title,
+            optimized_description,
+            price,
+            compare_at_price,
+            currency,
+            image_url,
+            handle,
+            vendor,
+            product_type,
+            tags,
+            seo_title,
+            seo_description,
+            category,
+            sub_category,
+            style,
+            room,
+            functionality,
+            characteristics,
+            ai_vision_analysis,
+            ai_color,
+            ai_material,
+            ai_texture,
+            ai_pattern,
+            ai_finish,
+            ai_shape,
+            optimization_count,
+            last_optimization_at
+          )
         )
       `)
       .eq("id", campaignId)
@@ -41,17 +83,84 @@ serve(async (req) => {
     
     if (campaignError) throw campaignError;
     
-    // Get user's store info
+    // Get user's store info with all details
     const { data: store } = await supabase
       .from("shopify_connections")
-      .select("store_name, store_url")
+      .select("*")
       .eq("user_id", campaign.user_id)
       .single();
     
-    // Prepare data for AI
-    const collections = campaign.ads_campaign_collections?.map((c: any) => c.collection) || [];
-    const products = campaign.ads_campaign_products?.map((p: any) => p.product) || [];
+    // Get product images for all campaign products
+    const productIds = campaign.ads_campaign_products?.map((p: any) => p.product?.id).filter(Boolean) || [];
+    let productImages: any[] = [];
+    if (productIds.length > 0) {
+      const { data: images } = await supabase
+        .from("product_images")
+        .select("*")
+        .in("product_id", productIds)
+        .order("position");
+      productImages = images || [];
+    }
     
+    // Get product variants for pricing info
+    let productVariants: any[] = [];
+    if (productIds.length > 0) {
+      const { data: variants } = await supabase
+        .from("product_variants")
+        .select("*")
+        .in("product_id", productIds);
+      productVariants = variants || [];
+    }
+    
+    // Prepare data for AI with full details
+    const collections = campaign.ads_campaign_collections?.map((c: any) => ({
+      ...c.collection,
+      images: [],
+    })) || [];
+    
+    const products = campaign.ads_campaign_products?.map((p: any) => {
+      const product = p.product;
+      return {
+        ...product,
+        images: productImages.filter((img: any) => img.product_id === product.id),
+        variants: productVariants.filter((v: any) => v.product_id === product.id),
+      };
+    }) || [];
+    
+    // Build detailed prompt with all data
+    const collectionsDetails = collections.map((c: any) => `
+      - ${c.title}
+        Description: ${c.body_html?.replace(/<[^>]*>/g, '').substring(0, 200) || 'N/A'}
+        SEO Title: ${c.seo_title || 'N/A'}
+        SEO Description: ${c.seo_description || 'N/A'}
+        Image: ${c.image_url || 'N/A'}
+    `).join('\n');
+    
+    const productsDetails = products.slice(0, 10).map((p: any) => `
+      - ${p.title} (${p.price || 'N/A'} ${p.currency || 'EUR'})
+        Description: ${(p.optimized_description || p.description || '').substring(0, 300)}
+        Catégorie: ${p.category || 'N/A'} ${p.sub_category ? `> ${p.sub_category}` : ''}
+        Style: ${p.style || 'N/A'}
+        Vendor: ${p.vendor || 'N/A'}
+        Tags: ${p.tags || 'N/A'}
+        AI Analysis: ${p.ai_vision_analysis?.substring(0, 200) || 'N/A'}
+        Couleur: ${p.ai_color || 'N/A'}
+        Matériau: ${p.ai_material || 'N/A'}
+        Prix normal: ${p.price || 'N/A'} ${p.currency || 'EUR'}
+        ${p.compare_at_price ? `Prix barré: ${p.compare_at_price} ${p.currency}` : ''}
+        Images: ${p.images?.length || 0} disponible(s)
+        Variants: ${p.variants?.length || 0} disponible(s)
+    `).join('\n');
+    
+    const storeDetails = store ? `
+INFORMATIONS BOUTIQUE COMPLÈTES:
+- Nom: ${store.store_name || 'N/A'}
+- URL: ${store.store_url || 'N/A'}
+- Connexion type: ${store.connection_type || 'N/A'}
+- Active depuis: ${store.connected_at || store.created_at}
+- Dernière sync: ${store.last_sync_at || 'N/A'}
+    ` : '';
+
     const prompt = `Tu es un expert UX/UI designer et copywriter spécialisé en landing pages à haute conversion.
 
 MISSION: Génère une landing page React/TypeScript moderne et attractive pour une campagne e-commerce.
@@ -60,13 +169,20 @@ DONNÉES DE LA CAMPAGNE:
 - Type: ${campaign.campaign_type}
 - Nom: ${campaign.name}
 - Titre: ${campaign.headline}
-- Sous-titre: ${campaign.subheadline || ""}
+- Sous-titre: ${campaign.subheadline || "N/A"}
 - CTA: ${campaign.cta_text}
+- Status: ${campaign.status}
+- Créée le: ${campaign.created_at}
 - Highlights: ${JSON.stringify(campaign.highlights || [])}
-- Résumé boutique: ${campaign.store_summary || ""}
-- Boutique: ${store?.store_name || ""}
-${collections.length > 0 ? `- Collections: ${collections.map((c: any) => c.title).join(", ")}` : ""}
-${products.length > 0 ? `- Produits (${products.length}): ${products.slice(0, 5).map((p: any) => p.title).join(", ")}` : ""}
+- Résumé boutique (généré par IA): ${campaign.store_summary || "N/A"}
+
+${storeDetails}
+
+${collections.length > 0 ? `COLLECTIONS DÉTAILLÉES (${collections.length}):
+${collectionsDetails}` : 'Aucune collection sélectionnée'}
+
+${products.length > 0 ? `PRODUITS DÉTAILLÉS (${products.length}):
+${productsDetails}` : 'Aucun produit sélectionné'}
 
 STRUCTURE OBLIGATOIRE:
 
