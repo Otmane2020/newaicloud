@@ -17,29 +17,31 @@ serve(async (req) => {
       throw new Error("Text is required");
     }
 
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
-      throw new Error("OpenAI API key not configured");
+    const elevenlabsApiKey = Deno.env.get("ELEVENLABS_API_KEY");
+    if (!elevenlabsApiKey) {
+      throw new Error("ElevenLabs API key not configured");
     }
 
-    // Call OpenAI TTS API with male voice
-    const response = await fetch("https://api.openai.com/v1/audio/speech", {
+    // Call ElevenLabs TTS API with high-quality voice (Roger - male voice)
+    const response = await fetch("https://api.elevenlabs.io/v1/text-to-speech/CwhRBWXzGAHq8TQ4Fs17", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openaiApiKey}`,
+        "xi-api-key": elevenlabsApiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "tts-1",
-        voice: "onyx", // Male voice
-        input: text,
-        response_format: "mp3",
+        text: text,
+        model_id: "eleven_turbo_v2_5",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        },
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`OpenAI TTS error: ${error}`);
+      throw new Error(`ElevenLabs TTS error: ${error}`);
     }
 
     // Get audio as array buffer
