@@ -24,6 +24,9 @@ serve(async (req) => {
 
     console.log("Transcribing audio with Gemini...");
 
+    // Convert base64 audio to data URI for Gemini
+    const audioDataUri = `data:audio/webm;base64,${audio}`;
+
     // Use Lovable AI (Gemini 2.5 Flash) for audio transcription
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -42,8 +45,10 @@ serve(async (req) => {
                 text: "Transcris cet audio en français. Retourne uniquement le texte transcrit, sans commentaires ni formatage."
               },
               {
-                type: "audio",
-                audio: audio // base64 encoded audio
+                type: "audio_url",
+                audio_url: {
+                  url: audioDataUri
+                }
               }
             ]
           }
