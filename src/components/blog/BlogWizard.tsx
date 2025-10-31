@@ -11,6 +11,8 @@ import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ProgressDialog, ResultsDialog, SuccessDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { ArticleSyncDialog } from './ArticleSyncDialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import {
   ChevronRight,
   ChevronLeft,
@@ -23,7 +25,10 @@ import {
   Loader2,
   Search,
   Package,
-  X
+  X,
+  Check,
+  ChevronsUpDown,
+  Layers
 } from 'lucide-react';
 
 interface WizardStep {
@@ -81,10 +86,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
   const [formData, setFormData] = useState({
     collection_id: '',
+    collectionTitle: '',
     keywords: '',
     productCount: 3,
     articleLength: '700' as '700' | '2000' | '4000',
   });
+  const [collectionSearchOpen, setCollectionSearchOpen] = useState(false);
 
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
@@ -142,6 +149,15 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     
     return matchesCollection && matchesSearch;
   });
+
+  const filteredCollections = collections.filter(col =>
+    col.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectedCollectionData = collections.find(c => c.id === formData.collection_id);
+  const productsInCollection = formData.collection_id 
+    ? products.filter(p => p.collection_ids?.includes(formData.collection_id)).length
+    : 0;
 
   const addKeyword = () => {
     const newKeyword = keywordInput.trim();
@@ -328,16 +344,79 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Collection</label>
-                  <select
-                    value={formData.collection_id}
-                    onChange={(e) => setFormData({ ...formData, collection_id: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg"
-                  >
-                    <option value="">Sélectionner une collection</option>
-                    {collections.map((col) => (
-                      <option key={col.id} value={col.id}>{col.title}</option>
-                    ))}
-                  </select>
+                  <Popover open={collectionSearchOpen} onOpenChange={setCollectionSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={collectionSearchOpen}
+                        className="w-full justify-between"
+                      >
+                        {formData.collection_id ? (
+                          <span className="flex items-center gap-2">
+                            <Layers className="h-4 w-4" />
+                            {selectedCollectionData?.title}
+                            <Badge variant="secondary" className="ml-auto">
+                              {productsInCollection} produit(s)
+                            </Badge>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">Sélectionner une collection...</span>
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Rechercher une collection..." />
+                        <CommandEmpty>Aucune collection trouvée.</CommandEmpty>
+                        <CommandGroup className="max-h-[300px] overflow-auto">
+                          <CommandItem
+                            value=""
+                            onSelect={() => {
+                              setFormData({ ...formData, collection_id: "", collectionTitle: "" });
+                              setCollectionSearchOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={`mr-2 h-4 w-4 ${!formData.collection_id ? "opacity-100" : "opacity-0"}`}
+                            />
+                            <span>Toutes les collections</span>
+                          </CommandItem>
+                          {filteredCollections.map((collection) => {
+                            const productCount = products.filter(p => 
+                              p.collection_ids?.includes(collection.id)
+                            ).length;
+                            
+                            return (
+                              <CommandItem
+                                key={collection.id}
+                                value={collection.title}
+                                onSelect={() => {
+                                  setFormData({ 
+                                    ...formData, 
+                                    collection_id: collection.id,
+                                    collectionTitle: collection.title 
+                                  });
+                                  setCollectionSearchOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={`mr-2 h-4 w-4 ${
+                                    formData.collection_id === collection.id ? "opacity-100" : "opacity-0"
+                                  }`}
+                                />
+                                <span className="flex-1">{collection.title}</span>
+                                <Badge variant="outline" className="ml-2">
+                                  {productCount} produit(s)
+                                </Badge>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 
                 <div>
@@ -386,12 +465,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
             {currentStep === 2 && (
               <div className="space-y-4">
-                {formData.collection_id && (
+                {formData.collection_id && selectedCollectionData && (
                   <Alert className="bg-purple-50 border-purple-200">
-                    <Package className="w-4 h-4 text-purple-600" />
+                    <Layers className="w-4 h-4 text-purple-600" />
                     <AlertDescription>
                       <span className="font-medium">Collection sélectionnée:</span>{' '}
-                      {collections.find(c => c.id === formData.collection_id)?.title}
+                      <strong>{selectedCollectionData.title}</strong>
                     </AlertDescription>
                   </Alert>
                 )}
@@ -409,10 +488,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
                   <p className="text-sm">
-                    <strong>{selectedProducts.length}</strong> produit(s) sélectionné(s)
-                    {formData.collection_id && (
-                      <> • <strong>{filteredProducts.length}</strong> produit(s) dans la collection</>
-                    )}
+                    <strong>{selectedProducts.length}</strong> produit(s) sélectionné(s) • <strong>{filteredProducts.length}</strong> produit(s) {formData.collection_id ? 'dans la collection' : 'disponibles'}
                   </p>
                 </div>
 

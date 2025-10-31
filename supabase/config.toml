@@ -99,6 +99,9 @@ verify_jwt = false
 [functions.sync-product-collections]
 verify_jwt = true
 
+[functions.import-shopify-collections]
+verify_jwt = true
+
 [functions.generate-collection-seo]
 verify_jwt = true
 

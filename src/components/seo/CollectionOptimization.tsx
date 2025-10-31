@@ -328,10 +328,45 @@ export function CollectionOptimization() {
     }
   };
 
+  const handleImportCollectionsFromShopify = async () => {
+    setSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Non authentifié");
+        return;
+      }
+
+      const toastId = toast.loading("Import des collections depuis Shopify...");
+
+      const { data, error } = await supabase.functions.invoke("import-shopify-collections", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`✅ ${data.imported} collections importées!`, {
+        id: toastId,
+        description: `Smart: ${data.smart_collections}, Custom: ${data.custom_collections}`,
+      });
+
+      fetchCollections();
+    } catch (error: any) {
+      console.error("Error importing collections:", error);
+      toast.error("Erreur lors de l'import", {
+        description: error.message,
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleImportCollections = async () => {
     try {
       setSyncing(true);
-      const toastId = toast.loading('Import des collections depuis Shopify...');
+      const toastId = toast.loading('Import des images de collections depuis Shopify...');
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
@@ -355,7 +390,7 @@ export function CollectionOptimization() {
       if (error) throw error;
 
       const totalImported = data?.totalImported || 0;
-      toast.success(`✅ ${totalImported} collections importées`, { id: toastId });
+      toast.success(`✅ ${totalImported} images importées`, { id: toastId });
       await fetchCollections();
     } catch (error: any) {
       console.error('Error:', error);
@@ -588,12 +623,23 @@ export function CollectionOptimization() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={handleImportCollectionsFromShopify}
+                disabled={syncing || optimizing}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Import Collections
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleImportCollections}
                 disabled={syncing || optimizing}
                 className="flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" />
-                Import Shopify
+                Import Images
               </Button>
 
               <Button

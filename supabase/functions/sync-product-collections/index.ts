@@ -71,36 +71,58 @@ Deno.serve(async (req: Request) => {
     const shopifyUrl = connection.store_url.replace(/\/$/, "");
     const accessToken = connection.access_token;
 
-    // Process products in batches
+    // Process products using GraphQL (more efficient)
+    console.log(`🔄 Using GraphQL to fetch product collections...`);
+    
     for (const product of products || []) {
       if (!product.shopify_id) continue;
 
       try {
-        // Fetch product from Shopify to get collections
-        const response = await fetch(
-          `${shopifyUrl}/admin/api/2025-01/products/${product.shopify_id}.json`,
+        // Use GraphQL to get product collections in one call
+        const graphqlQuery = `
+          query {
+            product(id: "gid://shopify/Product/${product.shopify_id}") {
+              collections(first: 100) {
+                edges {
+                  node {
+                    id
+                    legacyResourceId
+                  }
+                }
+              }
+            }
+          }
+        `;
+
+        const graphqlResponse = await fetch(
+          `${shopifyUrl}/admin/api/2025-01/graphql.json`,
           {
+            method: "POST",
             headers: {
               "X-Shopify-Access-Token": accessToken,
               "Content-Type": "application/json",
             },
+            body: JSON.stringify({ query: graphqlQuery }),
           }
         );
 
-        if (!response.ok) {
-          console.error(`Failed to fetch product ${product.shopify_id}`);
+        if (!graphqlResponse.ok) {
+          console.error(`❌ GraphQL failed for product ${product.shopify_id}`);
           continue;
         }
 
-        const data = await response.json();
-        const shopifyProduct = data.product;
+        const graphqlData = await graphqlResponse.json();
+        
+        if (graphqlData.errors) {
+          console.error(`❌ GraphQL errors for product ${product.shopify_id}:`, graphqlData.errors);
+          continue;
+        }
 
-        // Get collection IDs from Shopify product
-        const shopifyCollectionIds = shopifyProduct.collections || [];
+        const productCollections = graphqlData.data?.product?.collections?.edges || [];
         
         // Map Shopify collection IDs to our internal UUIDs
-        const internalCollectionIds = shopifyCollectionIds
-          .map((coll: any) => collectionMap.get(String(coll.collection_id)))
+        const internalCollectionIds = productCollections
+          .map((edge: any) => collectionMap.get(String(edge.node.legacyResourceId)))
           .filter(Boolean);
 
         if (internalCollectionIds.length > 0) {
@@ -114,17 +136,19 @@ Deno.serve(async (req: Request) => {
             .eq("id", product.id);
 
           if (updateError) {
-            console.error(`Error updating product ${product.id}:`, updateError);
+            console.error(`❌ Error updating product ${product.id}:`, updateError);
           } else {
             updatedCount++;
             console.log(`✅ Updated product ${product.id} with ${internalCollectionIds.length} collections`);
           }
+        } else {
+          console.log(`ℹ️ Product ${product.id} has no collections`);
         }
 
-        // Rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Rate limiting (GraphQL is more efficient, still be respectful)
+        await new Promise(resolve => setTimeout(resolve, 300));
       } catch (error) {
-        console.error(`Error processing product ${product.id}:`, error);
+        console.error(`❌ Error processing product ${product.id}:`, error);
       }
     }
 
