@@ -468,7 +468,7 @@ export function SeoAltImage() {
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
             >
               <Eye className="w-5 h-5" />
-              Analyser avec Vision IA
+              Start Optimisation with AI Vision
               <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
