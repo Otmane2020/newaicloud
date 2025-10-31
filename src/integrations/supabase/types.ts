@@ -975,6 +975,10 @@ export type Database = {
           id: string
           image_alt: string | null
           image_url: string | null
+          last_optimization_at: string | null
+          optimization_count: number | null
+          seo_description: string | null
+          seo_title: string | null
           shopify_collection_id: number | null
           store_id: string | null
           title: string
@@ -988,6 +992,10 @@ export type Database = {
           id?: string
           image_alt?: string | null
           image_url?: string | null
+          last_optimization_at?: string | null
+          optimization_count?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
           shopify_collection_id?: number | null
           store_id?: string | null
           title: string
@@ -1001,6 +1009,10 @@ export type Database = {
           id?: string
           image_alt?: string | null
           image_url?: string | null
+          last_optimization_at?: string | null
+          optimization_count?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
           shopify_collection_id?: number | null
           store_id?: string | null
           title?: string

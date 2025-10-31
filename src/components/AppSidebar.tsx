@@ -53,7 +53,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 const mainMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Products", url: "/products", icon: ShoppingBag },
-  { title: "Collections", url: "/collections", icon: Package },
 ];
 
 const seoSubItems = [
@@ -61,6 +60,7 @@ const seoSubItems = [
   { title: "Tag Optimization", url: "/seo?tab=tags", icon: Tags },
   { title: "Pages", url: "/seo?tab=pages", icon: FileText },
   { title: "Articles SEO", url: "/seo?tab=articles", icon: FileText },
+  { title: "Collections", url: "/seo?tab=collections", icon: Package },
   { title: "Homepage", url: "/seo?tab=homepage", icon: Home },
   { title: "Audit", url: "/seo?tab=audit", icon: BarChart3 },
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
