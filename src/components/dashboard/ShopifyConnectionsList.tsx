@@ -437,7 +437,7 @@ export function ShopifyConnectionsList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="font-semibold text-lg truncate">
-                        {store.store_name || 'Shopify Store'}
+                        {store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '').replace(/\/$/, '') || 'Shopify Store'}
                       </h3>
                       <Badge variant={store.is_active ? 'default' : 'secondary'}>
                         {store.is_active ? (
