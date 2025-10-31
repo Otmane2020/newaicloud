@@ -11,6 +11,7 @@ import { ImportProgressDialog } from './ImportProgressDialog';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { ImportConfirmDialog } from '@/components/integration/ImportConfirmDialog';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   AlertDialog,
@@ -67,6 +68,12 @@ export function ShopifyConnectionsList() {
   // Import confirmation dialog state
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [storeToImport, setStoreToImport] = useState<ShopifyConnection | null>(null);
+  
+  // Edit store name state
+  const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
+  const [editedStoreName, setEditedStoreName] = useState('');
+  
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     loadConnections();
@@ -436,9 +443,49 @@ export function ShopifyConnectionsList() {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-lg truncate">
-                        {store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '').replace(/\/$/, '') || 'Shopify Store'}
-                      </h3>
+                      {editingStoreId === store.id ? (
+                        <input
+                          type="text"
+                          value={editedStoreName}
+                          onChange={(e) => setEditedStoreName(e.target.value)}
+                          onBlur={async () => {
+                            if (editedStoreName.trim()) {
+                              const { error } = await supabase
+                                .from('shopify_connections')
+                                .update({ store_name: editedStoreName.trim() })
+                                .eq('id', store.id);
+                              
+                              if (!error) {
+                                loadConnections();
+                                toast.success('Nom de boutique mis à jour');
+                              } else {
+                                toast.error('Erreur lors de la mise à jour');
+                              }
+                            }
+                            setEditingStoreId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            } else if (e.key === 'Escape') {
+                              setEditingStoreId(null);
+                            }
+                          }}
+                          className="font-semibold text-lg px-2 py-1 border rounded max-w-xs"
+                          autoFocus
+                        />
+                      ) : (
+                        <h3 
+                          className="font-semibold text-lg truncate cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => {
+                            setEditingStoreId(store.id);
+                            setEditedStoreName(store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, ''));
+                          }}
+                          title="Cliquer pour modifier le nom"
+                        >
+                          {store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '') || 'Shopify Store'}
+                        </h3>
+                      )}
                       <Badge variant={store.is_active ? 'default' : 'secondary'}>
                         {store.is_active ? (
                           <>
