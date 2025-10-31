@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Upload, Loader2, ImageIcon } from 'lucide-react';
+import { ImageIcon, Upload, Sparkles, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -17,7 +17,6 @@ interface ArticleFeaturedImageDialogProps {
     id: string;
     title: string;
     content: string;
-    featured_image?: string | null;
   };
   onImageUpdated: () => void;
 }
@@ -37,18 +36,22 @@ export function ArticleFeaturedImageDialog({
     try {
       setLoading(true);
       
-      // Use article title and content to create a relevant prompt
-      const defaultPrompt = `Create a featured image for a blog article titled "${article.title}". 
-Style: professional, modern, blog-appropriate, high-quality.
-Context: ${article.content.substring(0, 200)}...`;
+      let enrichedPrompt = aiPrompt;
       
-      const prompt = aiPrompt || defaultPrompt;
+      if (!enrichedPrompt) {
+        // Build prompt from article title and content excerpt
+        const contentExcerpt = article.content.substring(0, 200);
+        enrichedPrompt = `Generate a professional featured image for a blog article titled "${article.title}". `;
+        enrichedPrompt += `The article is about: ${contentExcerpt}... `;
+        enrichedPrompt += `Make it elegant, modern, and engaging for blog readers with a 16:9 aspect ratio.`;
+      }
       
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: { 
-          prompt,
+          prompt: enrichedPrompt,
           article_id: article.id,
-          type: 'article_featured'
+          width: 1200,
+          height: 675
         }
       });
 
@@ -57,7 +60,6 @@ Context: ${article.content.substring(0, 200)}...`;
       if (data?.image_url) {
         await updateArticleImage(data.image_url);
         
-        // Show success with image preview
         toast.success(
           <div className="flex items-start gap-3">
             <img 
@@ -67,7 +69,7 @@ Context: ${article.content.substring(0, 200)}...`;
             />
             <div>
               <p className="font-semibold">Image générée avec succès</p>
-              <p className="text-xs text-muted-foreground">Synchronisation avec Shopify en cours...</p>
+              <p className="text-xs text-muted-foreground">Image mise à jour</p>
             </div>
           </div>
         );
@@ -101,28 +103,30 @@ Context: ${article.content.substring(0, 200)}...`;
   };
 
   const updateArticleImage = async (imageUrl: string) => {
+    // Store the featured image in content_images table
+    const { data: user } = await supabase.auth.getUser();
+    
     const { error } = await supabase
-      .from('blog_articles')
-      .update({ 
-        featured_image: imageUrl,
-        featured_image_alt: `${article.title} - Featured image`,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', article.id);
+      .from('content_images')
+      .upsert({
+        content_id: article.id,
+        content_type: 'article',
+        src: imageUrl,
+        alt_text: `Featured image for ${article.title}`,
+        position: 0, // Featured image is position 0
+        user_id: user?.user?.id
+      }, {
+        onConflict: 'content_id,content_type,position'
+      });
 
     if (error) throw error;
 
-    // Trigger auto-sync with Shopify
-    try {
-      await supabase.functions.invoke('sync-blog-to-shopify', {
-        body: { article_id: article.id }
-      });
-    } catch (syncError) {
-      console.error('Sync error (non-blocking):', syncError);
-    }
-
     onImageUpdated();
-    handleClose();
+    onOpenChange(false);
+    setSelectedOption(null);
+    setCustomImageUrl('');
+    setAiPrompt('');
+    toast.success('Image mise à jour avec succès');
   };
 
   const handleClose = () => {
@@ -132,11 +136,11 @@ Context: ${article.content.substring(0, 200)}...`;
     setAiPrompt('');
   };
 
-  // Suggested prompts based on article title
+  // Suggested prompts
   const suggestedPrompts = [
-    `Modern illustration for "${article.title.substring(0, 30)}..."`,
-    `Professional photo representing the theme of ${article.title.substring(0, 30)}`,
-    `Abstract visual for blog article about ${article.title.substring(0, 30)}`
+    `Professional featured image for "${article.title}"`,
+    `Modern blog header about ${article.title}`,
+    `Elegant blog banner for article: ${article.title}`
   ];
 
   return (
@@ -145,7 +149,7 @@ Context: ${article.content.substring(0, 200)}...`;
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5" />
-            Ajouter une Featured Image
+            Ajouter une image de couverture
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
             Article: <span className="font-medium">{article.title}</span>
@@ -154,21 +158,21 @@ Context: ${article.content.substring(0, 200)}...`;
 
         <div className="space-y-4">
           {/* Why use AI section */}
-          <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200">
+          <Card className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-indigo-200">
             <div className="flex items-start gap-3">
-              <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shrink-0">
+              <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shrink-0">
                 <Sparkles className="w-3 h-3 mr-1" />
-                Vision AI - Analyse d'images
+                Vision AI - Génération d'images
               </Badge>
             </div>
             <div className="mt-3 text-sm space-y-1">
-              <p className="font-medium">🎨 <strong>Images cohérentes</strong> avec votre marque</p>
+              <p className="font-medium">🎨 <strong>Images professionnelles</strong> adaptées à votre article</p>
               <p className="font-medium">⚡ <strong>Génération instantanée</strong> - pas besoin de designer</p>
               <p className="font-medium">🔍 <strong>Optimisées pour le SEO</strong> automatiquement</p>
             </div>
           </Card>
 
-          {/* Option 1: Generate with AI */}
+          {/* Option 1: Generate with AI - PRIORITY */}
           <Card 
             className={`p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${
               selectedOption === 'ai' ? 'border-primary ring-2 ring-primary/20 shadow-lg' : ''
@@ -176,7 +180,7 @@ Context: ${article.content.substring(0, 200)}...`;
             onClick={() => setSelectedOption('ai')}
           >
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 shrink-0">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0 animate-pulse">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
@@ -185,8 +189,8 @@ Context: ${article.content.substring(0, 200)}...`;
                   <Badge variant="secondary" className="text-xs">Recommandé</Badge>
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Créez une image professionnelle personnalisée basée sur le contenu de votre article. 
-                  L'IA analyse votre texte pour générer une image pertinente.
+                  Créez une image de couverture professionnelle pour cet article. 
+                  L'IA génère une bannière moderne, élégante et optimisée SEO.
                 </p>
               </div>
             </div>
@@ -203,9 +207,12 @@ Context: ${article.content.substring(0, 200)}...`;
                         variant="outline"
                         size="sm"
                         className="text-xs"
-                        onClick={() => setAiPrompt(prompt)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAiPrompt(prompt);
+                        }}
                       >
-                        {prompt.substring(0, 40)}...
+                        {prompt}
                       </Button>
                     ))}
                   </div>
@@ -222,7 +229,7 @@ Context: ${article.content.substring(0, 200)}...`;
                     className="resize-none"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Laissez vide pour utiliser le titre et contenu de l'article comme base
+                    Laissez vide pour un prompt automatique basé sur le titre et le contenu de l'article
                   </p>
                 </div>
                 <div className="flex justify-end gap-2">
@@ -235,7 +242,7 @@ Context: ${article.content.substring(0, 200)}...`;
                   <Button 
                     onClick={handleGenerateWithAI}
                     disabled={loading}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                   >
                     {loading ? (
                       <>

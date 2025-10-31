@@ -15,7 +15,8 @@ import {
   Plus,
   Search,
   Check,
-  X
+  X,
+  ImageIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -24,6 +25,7 @@ import { BlogWizard } from '@/components/blog/BlogWizard';
 import { ResultsDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateDetailedSeoScore, getConfidenceBadgeColor } from '@/lib/seoQuality';
+import { ArticleFeaturedImageDialog } from '@/components/blog/ArticleFeaturedImageDialog';
 
 interface Article {
   id: string;
@@ -48,6 +50,8 @@ export default function ArticleManagement() {
   const [categories, setCategories] = useState<string[]>([]);
   const [showOptimizationResults, setShowOptimizationResults] = useState(false);
   const [optimizedArticles, setOptimizedArticles] = useState<any[]>([]);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [selectedArticleForImage, setSelectedArticleForImage] = useState<Article | null>(null);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -421,10 +425,14 @@ export default function ArticleManagement() {
                       </td>
                       <td className="p-3 hidden sm:table-cell">
                         <div 
-                          className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
+                          className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform border-2 border-dashed border-indigo-300"
+                          onClick={() => {
+                            setSelectedArticleForImage(article);
+                            setShowImageDialog(true);
+                          }}
+                          title="Cliquer pour ajouter une image de couverture"
                         >
-                          <FileText className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+                          <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
                         </div>
                       </td>
                       <td className="p-3">
@@ -588,6 +596,16 @@ export default function ArticleManagement() {
           setSelectedArticles([]);
         }}
       />
+
+      {/* Featured Image Dialog */}
+      {selectedArticleForImage && (
+        <ArticleFeaturedImageDialog
+          open={showImageDialog}
+          onOpenChange={setShowImageDialog}
+          article={selectedArticleForImage}
+          onImageUpdated={loadArticles}
+        />
+      )}
     </div>
   );
 }
