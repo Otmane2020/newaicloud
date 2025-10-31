@@ -340,6 +340,13 @@ export function TagOptimization() {
             }
           }
         } else {
+          // Check if error is due to trial limit or already optimized
+          if (result.error === 'trial_limit_reached' || result.error === 'already_optimized') {
+            setShowProgressDialog(false);
+            setShowUpgradeDialog(true);
+            toast.error(result.message || 'Ce produit a déjà été optimisé. Passez à un plan payant pour ré-optimiser.');
+            return; // Stop the bulk operation
+          }
           errorCount++;
         }
       } catch (error) {
