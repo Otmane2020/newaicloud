@@ -248,8 +248,9 @@ export function SeoAuditReports() {
     }
   };
 
-  const globalData = latestReport?.audit_results?.global || {
-    stats: {
+  const globalData = {
+    ...(latestReport?.audit_results?.global || {}),
+    stats: latestReport?.audit_results?.global?.stats || {
       pagesAnalyzed: 0,
       averageScore: 82,
       titleOptimized: 89,
@@ -258,7 +259,7 @@ export function SeoAuditReports() {
       h1Coherent: 94,
       scoreAbove80: 67,
     },
-    evolution: [
+    evolution: latestReport?.audit_results?.global?.evolution || [
       { month: 'Janvier', score: 72 },
       { month: 'Février', score: 76 },
       { month: 'Mars', score: 82 },
