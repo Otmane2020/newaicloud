@@ -57,17 +57,23 @@ Deno.serve(async (req: Request) => {
     // Get store connection
     const { data: store, error: storeError } = await supabaseClient
       .from("shopify_connections")
-      .select("shop_url, access_token")
+      .select("shop_name, access_token")
       .eq("id", storeId)
       .eq("user_id", user.id)
       .single();
 
-    if (storeError || !store) {
-      throw new Error("Store not found");
+    console.log(`[IMPORT-CONTENT-IMAGES] Store query result:`, { found: !!store, error: storeError?.message });
+
+    if (storeError) {
+      throw new Error(`Store fetch error: ${storeError.message}`);
+    }
+
+    if (!store) {
+      throw new Error("Store not found for this user");
     }
 
     const apiVersion = "2024-07";
-    const baseUrl = `https://${store.shop_url}/admin/api/${apiVersion}`;
+    const baseUrl = `https://${store.shop_name}/admin/api/${apiVersion}`;
     const headers = {
       "X-Shopify-Access-Token": store.access_token,
       "Content-Type": "application/json",

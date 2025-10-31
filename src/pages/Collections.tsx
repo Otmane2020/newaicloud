@@ -185,14 +185,24 @@ export default function Collections() {
         return;
       }
 
-      let totalImported = 0;
+      let totalImages = 0;
+      let collectionsCount = 0;
+      let articlesCount = 0;
+      let pagesCount = 0;
 
       // Import collections
       toast.loading("1/3 - Import des collections...", { id: toastId });
       const { data: collectionsData } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['collections'] }
       });
-      totalImported += collectionsData?.totalImported || 0;
+      totalImages += collectionsData?.totalImported || 0;
+
+      // Check collections count
+      const { count: colCount } = await supabase
+        .from('shopify_collections')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      collectionsCount = colCount || 0;
 
       // Import articles
       toast.loading("2/3 - Import des articles...", { id: toastId });
@@ -206,16 +216,42 @@ export default function Collections() {
       const { data: articlesImagesData } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['articles'] }
       });
-      totalImported += articlesImagesData?.totalImported || 0;
+      totalImages += articlesImagesData?.totalImported || 0;
+
+      // Check articles count
+      const { count: artCount } = await supabase
+        .from('blog_articles')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      articlesCount = artCount || 0;
 
       // Import pages
       toast.loading("3/3 - Import des pages...", { id: toastId });
       const { data: pagesData } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['pages'] }
       });
-      totalImported += pagesData?.totalImported || 0;
+      totalImages += pagesData?.totalImported || 0;
 
-      toast.success(`✅ Import complet terminé: ${totalImported} images importées`, { id: toastId });
+      // Check pages count
+      const { count: pageCount } = await supabase
+        .from('shopify_pages')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      pagesCount = pageCount || 0;
+
+      // Build detailed result message
+      const parts = [];
+      if (collectionsCount > 0) parts.push(`${collectionsCount} collections`);
+      if (articlesCount > 0) parts.push(`${articlesCount} articles`);
+      if (pagesCount > 0) parts.push(`${pagesCount} pages`);
+      if (totalImages > 0) parts.push(`${totalImages} images`);
+
+      if (parts.length === 0) {
+        toast.info("Aucun contenu trouvé sur Shopify", { id: toastId });
+      } else {
+        toast.success(`✅ Import complet: ${parts.join(', ')}`, { id: toastId });
+      }
+
       await fetchCollections();
     } catch (error: any) {
       console.error('Error during full import:', error);
