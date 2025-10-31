@@ -7,6 +7,7 @@ import { SeoAutomation } from '@/components/seo/SeoAutomation';
 import { PageOptimization } from '@/components/seo/PageOptimization';
 import { HomePageSeo } from '@/components/seo/HomePageSeo';
 import { HomePageSeoAudit } from '@/components/seo/HomePageSeoAudit';
+import { SeoAuditReports } from '@/components/seo/SeoAuditReports';
 import { SeoKPIs } from '@/components/seo/SeoKPIs';
 import ArticleManagement from '@/pages/ArticleManagement';
 import { Sparkles, Tags, Image, Settings, FileText, PenSquare, TrendingUp } from 'lucide-react';
@@ -92,6 +93,7 @@ export default function SEO() {
           </>
         )}
         {activeTab === 'homepage' && <HomePageSeoAudit />}
+        {activeTab === 'audit' && <SeoAuditReports />}
         {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'automation' && <SeoAutomation />}
         {activeTab === 'kpis' && <SeoKPIs />}

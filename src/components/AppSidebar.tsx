@@ -61,6 +61,7 @@ const seoSubItems = [
   { title: "Pages", url: "/seo?tab=pages", icon: FileText },
   { title: "Articles SEO", url: "/seo?tab=articles", icon: FileText },
   { title: "Homepage", url: "/seo?tab=homepage", icon: Home },
+  { title: "Audit", url: "/seo?tab=audit", icon: BarChart3 },
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
   { title: "Automation", url: "/seo?tab=automation", icon: Settings },
   { title: "KPIs Audit", url: "/seo?tab=kpis", icon: BarChart3 },
