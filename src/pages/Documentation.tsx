@@ -274,6 +274,89 @@ const Documentation = () => {
                 <div className="bg-muted/50 rounded-lg p-6">
                   <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
                     <ChevronRight className="w-5 h-5 text-primary" />
+                    Optimisation des Collections
+                  </h4>
+                  <ul className="space-y-3 ml-7">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
+                      <p className="text-sm">Accédez à <strong>SEO → Collections</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
+                      <p className="text-sm">Importez vos collections depuis Shopify si ce n'est pas déjà fait</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
+                      <p className="text-sm">Sélectionnez les collections et cliquez sur <strong>Optimiser la Collection</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">L'IA optimise le <strong>titre</strong>, la <strong>description</strong> et les <strong>balises méta</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">5</div>
+                      <p className="text-sm">Optimisez aussi les <strong>images des collections</strong> avec alt text</p>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-primary" />
+                    Optimisation des Pages Shopify
+                  </h4>
+                  <ul className="space-y-3 ml-7">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
+                      <p className="text-sm">Allez dans <strong>SEO → Pages</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
+                      <p className="text-sm">Importez vos pages personnalisées depuis Shopify (À propos, Contact, etc.)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
+                      <p className="text-sm">Optimisez chaque page avec <strong>Optimiser avec AI</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">Synchronisez les modifications vers Shopify en un clic</p>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-primary" />
+                    Optimisation de la Page d'Accueil
+                  </h4>
+                  <ul className="space-y-3 ml-7">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
+                      <p className="text-sm">Accédez à <strong>SEO → Page d'Accueil</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
+                      <p className="text-sm">Optimisez le <strong>titre SEO</strong> et la <strong>meta description</strong> de votre homepage</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
+                      <p className="text-sm">Lancez un <strong>Audit Homepage</strong> pour identifier les opportunités d'amélioration</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">Importez et optimisez les <strong>images de la homepage</strong> avec Vision AI</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">5</div>
+                      <p className="text-sm">Synchronisez tout vers Shopify avec <strong>Sync to Shopify</strong></p>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-primary" />
                     Optimisation des Images (Alt Text)
                   </h4>
                   <ul className="space-y-3 ml-7">
@@ -288,6 +371,35 @@ const Documentation = () => {
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
                       <p className="text-sm">L'IA analyse l'image et crée un alt text optimisé pour le SEO et l'accessibilité</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">Optimisez en masse plusieurs images en même temps</p>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-primary" />
+                    Génération et Optimisation des Tags
+                  </h4>
+                  <ul className="space-y-3 ml-7">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
+                      <p className="text-sm">Dans la liste des produits, sélectionnez plusieurs articles</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
+                      <p className="text-sm">Cliquez sur <strong>Optimiser les Tags</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
+                      <p className="text-sm">L'IA analyse vos produits et génère des <strong>tags pertinents</strong> automatiquement</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">Les tags améliorent la navigation et le référencement de vos produits</p>
                     </li>
                   </ul>
                 </div>
@@ -308,11 +420,15 @@ const Documentation = () => {
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
-                      <p className="text-sm">Consultez les <strong>recommandations</strong> et les <strong>scores</strong> par catégorie</p>
+                      <p className="text-sm">Consultez les <strong>recommandations</strong> et les <strong>scores</strong> par catégorie (produits, collections, blog, images, technique)</p>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
-                      <p className="text-sm">Exportez le rapport en <strong>PDF</strong> pour le partager</p>
+                      <p className="text-sm">Visualisez votre <strong>score SEO global</strong> sur 100 et suivez sa progression</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">5</div>
+                      <p className="text-sm">Exportez le rapport en <strong>PDF</strong> pour le partager avec votre équipe</p>
                     </li>
                   </ul>
                 </div>
@@ -412,6 +528,35 @@ const Documentation = () => {
                     </li>
                   </ul>
                 </div>
+
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-primary" />
+                    Netlinking Automatique
+                  </h4>
+                  <ul className="space-y-3 ml-7">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
+                      <p className="text-sm">Allez dans <strong>Blog AI → Netlinking</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
+                      <p className="text-sm">L'IA extrait automatiquement les <strong>liens internes</strong> de vos articles</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
+                      <p className="text-sm">Visualisez les liens vers vos <strong>produits</strong>, <strong>collections</strong> et <strong>pages</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">Suivez le <strong>score SEO</strong> de chaque lien et optimisez votre maillage interne</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">5</div>
+                      <p className="text-sm">Surveillez les <strong>clics</strong> pour identifier les liens les plus performants</p>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </Card>
 
@@ -452,6 +597,10 @@ const Documentation = () => {
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
                       <p className="text-sm">L'import se fait automatiquement avec toutes les <strong>images</strong>, <strong>variantes</strong> et <strong>informations</strong></p>
                     </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">5</div>
+                      <p className="text-sm">Suivez la progression dans la barre de progression</p>
+                    </li>
                   </ul>
                 </div>
 
@@ -463,19 +612,27 @@ const Documentation = () => {
                   <ul className="space-y-3 ml-7">
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
-                      <p className="text-sm">Dans la liste des produits, cliquez sur <strong>Enrichir</strong></p>
+                      <p className="text-sm">Allez dans <strong>Enrichissement Produit</strong> dans le menu</p>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
-                      <p className="text-sm">L'IA analyse les images du produit et extrait les <strong>attributs visuels</strong> (couleur, matière, style, etc.)</p>
+                      <p className="text-sm">Sélectionnez un produit à enrichir</p>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
-                      <p className="text-sm">Les informations sont ajoutées automatiquement aux champs du produit</p>
+                      <p className="text-sm">Cliquez sur <strong>Analyser avec Vision AI</strong></p>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
-                      <p className="text-sm">Utilisez ces données enrichies pour améliorer vos descriptions et votre SEO</p>
+                      <p className="text-sm">L'IA analyse les images et extrait les <strong>attributs visuels</strong> : couleur, matière, style, finition, motif, texture, forme, etc.</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">5</div>
+                      <p className="text-sm">Les informations sont ajoutées automatiquement pour chaque <strong>variante</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">6</div>
+                      <p className="text-sm">Éditez manuellement si besoin et <strong>sauvegardez</strong></p>
                     </li>
                   </ul>
                 </div>
@@ -488,7 +645,7 @@ const Documentation = () => {
                   <ul className="space-y-3 ml-7">
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
-                      <p className="text-sm">Sélectionnez plusieurs produits</p>
+                      <p className="text-sm">Dans la liste des produits, sélectionnez plusieurs articles</p>
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
@@ -501,6 +658,131 @@ const Documentation = () => {
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
                       <p className="text-sm">Les tags sont ajoutés automatiquement et peuvent être synchronisés vers Shopify</p>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-primary" />
+                    Recherche de Produits Intelligente
+                  </h4>
+                  <ul className="space-y-3 ml-7">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
+                      <p className="text-sm">Accédez à <strong>Recherche Produits</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
+                      <p className="text-sm">Utilisez la recherche par <strong>attributs visuels</strong> (couleur, matière, style)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
+                      <p className="text-sm">Filtrez par <strong>prix</strong>, <strong>disponibilité</strong> ou <strong>statut SEO</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">Trouvez rapidement les produits à optimiser ou à enrichir</p>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </Card>
+
+            {/* Ads Campaigns */}
+            <Card className="p-8">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-2">Campagnes Publicitaires</h3>
+                  <p className="text-muted-foreground">
+                    Créez des landing pages optimisées pour vos campagnes Google Ads et Facebook Ads.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-primary" />
+                    Créer une Campagne Publicitaire
+                  </h4>
+                  <ul className="space-y-3 ml-7">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
+                      <p className="text-sm">Allez dans <strong>Google Shopping → Campagnes Ads</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
+                      <p className="text-sm">Cliquez sur <strong>Créer une Campagne</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
+                      <p className="text-sm">Choisissez le <strong>type de campagne</strong> (produits spécifiques ou collections)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">Sélectionnez les <strong>produits ou collections</strong> à promouvoir</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">5</div>
+                      <p className="text-sm">Définissez le <strong>message principal</strong>, le <strong>sous-titre</strong> et le <strong>CTA</strong></p>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-primary" />
+                    Générer la Landing Page avec AI
+                  </h4>
+                  <ul className="space-y-3 ml-7">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
+                      <p className="text-sm">Choisissez un <strong>style de design</strong> (moderne, minimaliste, élégant)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
+                      <p className="text-sm">Ajoutez des <strong>points forts</strong> de vos produits (3-5 arguments)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
+                      <p className="text-sm">Cliquez sur <strong>Générer la Landing Page</strong></p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">L'IA crée une page HTML complète optimisée pour la conversion</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">5</div>
+                      <p className="text-sm">Prévisualisez et <strong>publiez sur Shopify</strong></p>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-primary" />
+                    Gérer vos Campagnes
+                  </h4>
+                  <ul className="space-y-3 ml-7">
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">1</div>
+                      <p className="text-sm">Consultez toutes vos campagnes dans la liste</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">2</div>
+                      <p className="text-sm">Voir le <strong>statut</strong> (brouillon, actif, terminé)</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">3</div>
+                      <p className="text-sm">Accédez à l'<strong>URL Shopify</strong> de la landing page publiée</p>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                      <p className="text-sm">Utilisez l'URL dans vos campagnes Google Ads ou Facebook Ads</p>
                     </li>
                   </ul>
                 </div>
