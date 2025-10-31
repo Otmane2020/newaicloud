@@ -644,8 +644,8 @@ export function PageOptimization() {
               
               <Tabs value={viewMode} onValueChange={(value: 'table' | 'grid') => setViewMode(value)} className="w-auto">
                 <TabsList className="grid w-20 grid-cols-2">
-                  <TabsTrigger value="table" size="sm">Table</TabsTrigger>
-                  <TabsTrigger value="grid" size="sm">Grid</TabsTrigger>
+                  <TabsTrigger value="table">Table</TabsTrigger>
+                  <TabsTrigger value="grid">Grid</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
