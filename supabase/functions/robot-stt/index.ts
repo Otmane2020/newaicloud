@@ -17,33 +17,33 @@ serve(async (req) => {
       throw new Error("Audio data is required");
     }
 
-    const deepseekApiKey = Deno.env.get("DEEPSEEK_API_KEY");
-    if (!deepseekApiKey) {
-      throw new Error("DeepSeek API key not configured");
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) {
+      throw new Error("OpenAI API key not configured");
     }
 
     // Convert base64 to blob
     const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
     const audioBlob = new Blob([audioData], { type: "audio/webm" });
 
-    // Create form data for DeepSeek Audio API
+    // Create form data for OpenAI Whisper API
     const formData = new FormData();
     formData.append("file", audioBlob, "audio.webm");
-    formData.append("model", "deepseek-reasoner");
+    formData.append("model", "whisper-1");
     formData.append("language", "fr");
 
-    // Call DeepSeek Audio Transcription API
-    const response = await fetch("https://api.deepseek.com/v1/audio/transcriptions", {
+    // Call OpenAI Whisper Transcription API
+    const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${deepseekApiKey}`,
+        "Authorization": `Bearer ${openaiApiKey}`,
       },
       body: formData,
     });
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`DeepSeek Audio error: ${error}`);
+      throw new Error(`OpenAI Whisper error: ${error}`);
     }
 
     const result = await response.json();
