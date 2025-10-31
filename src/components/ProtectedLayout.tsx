@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import { LimitWarningBanner } from "@/components/LimitWarningBanner";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Sparkles } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -40,7 +41,10 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                     <span className="font-bold text-base sm:text-lg">NewAI</span>
                   </div>
                 </div>
-                <NotificationCenter />
+                <div className="flex items-center gap-2">
+                  <LanguageSwitcher />
+                  <NotificationCenter />
+                </div>
               </div>
             </div>
             <LimitWarningBanner />
