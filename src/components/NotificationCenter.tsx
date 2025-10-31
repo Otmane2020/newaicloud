@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Notification {
   id: string;
@@ -25,10 +26,16 @@ interface Notification {
 }
 
 export function NotificationCenter() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Don't render if user is not logged in
+  if (!user) {
+    return null;
+  }
 
   useEffect(() => {
     fetchNotifications();
@@ -64,14 +71,72 @@ export function NotificationCenter() {
 
       if (error) throw error;
 
-      setNotifications((data || []) as Notification[]);
-      setUnreadCount((data || []).filter(n => !n.is_read).length);
+      const dbNotifications = (data || []) as Notification[];
+      
+      // Add 3 sample notifications if no notifications exist
+      const sampleNotifications: Notification[] = dbNotifications.length === 0 ? [
+        {
+          id: 'sample-1',
+          title: 'Optimiser 15 produits',
+          message: 'Vos 15 nouveaux produits nécessitent une optimisation SEO pour améliorer leur visibilité.',
+          type: 'seo_task',
+          priority: 'high',
+          category: 'products',
+          action_url: '/products',
+          action_label: 'Optimiser maintenant',
+          is_read: false,
+          is_completed: false,
+          created_at: new Date().toISOString(),
+          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'sample-2',
+          title: 'Textes ALT manquants',
+          message: '23 images de produits n\'ont pas de texte alternatif. Ajoutez-les pour améliorer votre SEO.',
+          type: 'seo_task',
+          priority: 'medium',
+          category: 'images',
+          action_url: '/seo?tab=alt',
+          action_label: 'Ajouter les ALT',
+          is_read: false,
+          is_completed: false,
+          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'sample-3',
+          title: 'Audit SEO disponible',
+          message: 'Votre rapport d\'audit SEO hebdomadaire est prêt. Consultez les recommandations pour améliorer votre score.',
+          type: 'report',
+          priority: 'low',
+          category: 'homepage',
+          action_url: '/seo?tab=audit',
+          action_label: 'Voir le rapport',
+          is_read: false,
+          is_completed: false,
+          created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+          due_date: null
+        }
+      ] : [];
+
+      const allNotifications = [...dbNotifications, ...sampleNotifications];
+      setNotifications(allNotifications);
+      setUnreadCount(allNotifications.filter(n => !n.is_read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
   };
 
   const markAsRead = async (id: string) => {
+    // Handle sample notifications locally
+    if (id.startsWith('sample-')) {
+      setNotifications(prev => prev.map(n => 
+        n.id === id ? { ...n, is_read: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('seo_notifications')
@@ -87,6 +152,16 @@ export function NotificationCenter() {
   };
 
   const markAsCompleted = async (id: string) => {
+    // Handle sample notifications locally
+    if (id.startsWith('sample-')) {
+      setNotifications(prev => prev.map(n => 
+        n.id === id ? { ...n, is_completed: true, is_read: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      toast.success('Tâche marquée comme complétée');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('seo_notifications')
@@ -104,6 +179,14 @@ export function NotificationCenter() {
   };
 
   const deleteNotification = async (id: string) => {
+    // Handle sample notifications locally
+    if (id.startsWith('sample-')) {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      toast.success('Notification supprimée');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('seo_notifications')
