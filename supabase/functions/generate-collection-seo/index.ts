@@ -89,7 +89,7 @@ Return ONLY a JSON object with:
   "seo_description": "SEO optimized meta description (150-160 characters)"
 }`;
 
-        const aiResponse = await fetch("https://api.lovable.app/v1/chat/completions", {
+        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

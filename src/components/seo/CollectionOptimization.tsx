@@ -15,6 +15,7 @@ import {
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CollectionImageDialog } from './CollectionImageDialog';
 import {
   Table,
   TableBody,
@@ -79,6 +80,8 @@ export function CollectionOptimization() {
   const [collectionsToSync, setCollectionsToSync] = useState<Collection[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [selectedCollectionForImage, setSelectedCollectionForImage] = useState<Collection | null>(null);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   useEffect(() => {
@@ -724,13 +727,26 @@ export function CollectionOptimization() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => toast.info("Détails à venir")}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedCollectionForImage(collection);
+                              setShowImageDialog(true);
+                            }}
+                            title="Ajouter une image"
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => toast.info("Détails à venir")}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -800,6 +816,28 @@ export function CollectionOptimization() {
                     </div>
                   )}
                 </div>
+
+                <div className="mt-3 pt-3 border-t flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedCollectionForImage(collection);
+                      setShowImageDialog(true);
+                    }}
+                  >
+                    <ImageIcon className="w-3 h-3 mr-1" />
+                    Image
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => toast.info("Détails à venir")}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                </div>
               </Card>
             );
           })}
@@ -838,6 +876,15 @@ export function CollectionOptimization() {
         usage={limits?.usage.optimizations_count}
         limit={limits?.limits.max_optimizations}
       />
+
+      {selectedCollectionForImage && (
+        <CollectionImageDialog
+          open={showImageDialog}
+          onOpenChange={setShowImageDialog}
+          collection={selectedCollectionForImage}
+          onImageUpdated={fetchCollections}
+        />
+      )}
     </div>
   );
 }
