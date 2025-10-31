@@ -25,7 +25,10 @@ serve(async (req) => {
       .eq('id', collection_id)
       .single();
 
-    if (collectionError) throw collectionError;
+    if (collectionError) {
+      console.error('Collection error:', collectionError);
+      throw collectionError;
+    }
 
     if (!collection.shopify_collection_id) {
       console.log('Collection not synced to Shopify yet');
@@ -36,13 +39,27 @@ serve(async (req) => {
     }
 
     // Get store credentials - use user_id if store_id is null
-    const storeQuery = collection.store_id 
-      ? supabase.from('shopify_connections').select('store_url, access_token').eq('id', collection.store_id).single()
-      : supabase.from('shopify_connections').select('store_url, access_token').eq('user_id', collection.user_id).eq('is_active', true).single();
+    let storeData;
+    if (collection.store_id) {
+      const { data, error } = await supabase
+        .from('shopify_connections')
+        .select('store_url, access_token')
+        .eq('id', collection.store_id)
+        .single();
+      if (error) throw error;
+      storeData = data;
+    } else {
+      const { data, error } = await supabase
+        .from('shopify_connections')
+        .select('store_url, access_token')
+        .eq('user_id', collection.user_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (error) throw error;
+      storeData = data;
+    }
     
-    const { data: store } = await storeQuery;
-
-    if (!store) {
+    if (!storeData) {
       console.log('No store found for this collection');
       return new Response(
         JSON.stringify({ message: 'No store connected' }),
@@ -52,11 +69,11 @@ serve(async (req) => {
 
     // Sync image to Shopify using Admin API
     const shopifyResponse = await fetch(
-      `https://${store.store_url}/admin/api/2025-01/custom_collections/${collection.shopify_collection_id}.json`,
+      `https://${storeData.store_url}/admin/api/2025-01/custom_collections/${collection.shopify_collection_id}.json`,
       {
         method: 'PUT',
         headers: {
-          'X-Shopify-Access-Token': store.access_token,
+          'X-Shopify-Access-Token': storeData.access_token,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
