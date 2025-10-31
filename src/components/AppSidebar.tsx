@@ -69,7 +69,8 @@ const seoSubItems = [
 const mainMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Products", url: "/products", icon: ShoppingBag },
-  { title: "Ads Campaign", url: "/seo?tab=ads-campaign", icon: Megaphone },
+  // Hidden temporarily
+  // { title: "Ads Campaign", url: "/seo?tab=ads-campaign", icon: Megaphone },
 ];
 
 const blogSubItems = [
