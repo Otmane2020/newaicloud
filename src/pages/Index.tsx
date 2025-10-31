@@ -17,7 +17,13 @@ import {
   ArrowRight,
   CheckCircle2,
   Globe,
-  CreditCard
+  CreditCard,
+  Star,
+  ImageIcon,
+  Search,
+  Tags,
+  TrendingUp,
+  Play
 } from "lucide-react";
 
 const Index = () => {
@@ -51,24 +57,34 @@ const Index = () => {
             </Badge>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white max-w-4xl leading-tight">
-              Optimize Your Shopify Store with{" "}
+              Transform Your Shopify Store Into a{" "}
               <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
-                NewAI
-              </span>
+                Traffic Machine
+              </span>{" "}
+              With AI
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-2xl text-gray-300">
-              Transform your product listings with AI-powered SEO optimization, smart content generation, and automated workflows. Increase your visibility and conversions in minutes.
+              Automate SEO optimization, generate high-quality content, and boost your organic traffic. Get your first results in under 5 minutes.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" className="group" onClick={() => navigate('/auth?mode=signup')}>
-                Start Free Trial
+              <Button size="lg" className="group bg-primary hover:bg-primary/90 shadow-glow" onClick={() => navigate('/auth?mode=signup')}>
+                Start Free Trial — 14 Days Free
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10">
+                <Play className="mr-2 w-5 h-5" />
                 Watch Demo
               </Button>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm text-gray-300 pt-2">
+              <CheckCircle2 className="w-4 h-4 text-success" />
+              <span>No credit card required</span>
+              <span className="text-gray-500">•</span>
+              <CheckCircle2 className="w-4 h-4 text-success" />
+              <span>Setup in 5 minutes</span>
             </div>
           </div>
         </div>
@@ -78,13 +94,46 @@ const Index = () => {
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000" />
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="container mx-auto px-4 py-24">
+      {/* How It Works Section */}
+      <section className="container mx-auto px-4 py-24">
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-primary text-primary">Process</Badge>
+          <h2 className="text-4xl md:text-5xl font-bold">4 Simple Steps to Success</h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            From installation to results in minutes
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          {howItWorksSteps.map((step, index) => (
+            <div key={index} className="relative">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-primary mx-auto flex items-center justify-center shadow-glow">
+                  <step.icon className="w-8 h-8 text-white" />
+                </div>
+                <div className="relative">
+                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                    {index + 1}
+                  </div>
+                  <h3 className="text-xl font-bold">{step.title}</h3>
+                </div>
+                <p className="text-muted-foreground text-sm">{step.description}</p>
+              </div>
+              {index < 3 && (
+                <div className="hidden md:block absolute top-8 -right-4 w-8 h-0.5 bg-gradient-to-r from-primary to-transparent" />
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Key Features Section */}
+      <section id="features" className="container mx-auto px-4 py-24 bg-gradient-subtle">
           <div className="text-center mb-16 space-y-4">
-            <Badge variant="outline" className="border-primary text-primary">Features</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold">Everything You Need to Succeed</h2>
+            <Badge variant="outline" className="border-primary text-primary">Key Features</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold">What Our AI Actually Does</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Powerful tools designed to help you optimize, automate, and grow your e-commerce business
+              Concrete actions that boost your SEO and drive traffic
             </p>
           </div>
 
@@ -111,8 +160,41 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <section className="container mx-auto px-4 py-24">
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-success text-success">Testimonials</Badge>
+          <h2 className="text-4xl md:text-5xl font-bold">Trusted by E-commerce Stores</h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            See what store owners say about NewAI
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {testimonials.map((testimonial, index) => (
+            <Card key={index} className="p-6 space-y-4 border-2 hover:border-primary/30 transition-colors">
+              <div className="flex gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-primary text-primary" />
+                ))}
+              </div>
+              <p className="text-muted-foreground italic">"{testimonial.quote}"</p>
+              <div className="flex items-center gap-3 pt-4 border-t">
+                <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold">
+                  {testimonial.author[0]}
+                </div>
+                <div>
+                  <p className="font-semibold">{testimonial.author}</p>
+                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </section>
+
       {/* Benefits Section */}
-      <section id="benefits" className="container mx-auto px-4 py-24">
+      <section id="benefits" className="container mx-auto px-4 py-24 bg-gradient-subtle">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <Badge variant="outline" className="border-success text-success">Results</Badge>
@@ -297,42 +379,83 @@ const Index = () => {
   );
 };
 
-const features = [
+const howItWorksSteps = [
   {
     icon: ShoppingBag,
-    title: "Smart Product Management",
-    description: "Import, enrich, and manage your product catalog with AI-powered insights",
-    tags: ["Multi-vendor", "Variants", "Google"]
+    title: "Install from Shopify",
+    description: "One-click installation directly from the Shopify App Store"
   },
   {
-    icon: BarChart3,
-    title: "Google Merchant Center",
-    description: "Automatic XML feed generation and Google Shopping sync",
-    tags: ["XML Feed", "Auto-sync"]
-  },
-  {
-    icon: FileText,
-    title: "Content Generation",
-    description: "Create SEO-optimized blog articles and product descriptions in minutes",
-    tags: ["AI Content", "Auto-post"]
-  },
-  {
-    icon: Zap,
-    title: "AI SEO Optimization",
-    description: "Optimize your product titles, descriptions, and meta tags automatically for better search rankings",
-    tags: ["Meta Tags", "Keywords"]
-  },
-  {
-    icon: MessageSquare,
-    title: "AI Chat Assistant",
-    description: "Get instant answers and support for your e-commerce questions",
-    tags: ["AI Chat", "Support"]
+    icon: Search,
+    title: "AI Scans Your Store",
+    description: "Our AI analyzes all your products and identifies optimization opportunities"
   },
   {
     icon: Sparkles,
-    title: "Workflow Automation",
-    description: "Automate repetitive tasks and save hours every week",
-    tags: ["Automation", "Scheduling"]
+    title: "Get Recommendations",
+    description: "Receive actionable AI-powered suggestions to improve your SEO"
+  },
+  {
+    icon: TrendingUp,
+    title: "See Results",
+    description: "Watch your traffic and rankings improve within days"
+  }
+];
+
+const features = [
+  {
+    icon: Search,
+    title: "Auto Meta Tag Analysis",
+    description: "AI scans and optimizes all your meta titles, descriptions, and keywords for maximum search visibility",
+    tags: ["SEO", "Automation", "Analytics"]
+  },
+  {
+    icon: ImageIcon,
+    title: "Image ALT Optimization",
+    description: "Automatically generate and optimize ALT text for all product images to boost image search rankings",
+    tags: ["Images", "Accessibility", "SEO"]
+  },
+  {
+    icon: FileText,
+    title: "SEO Content Generation",
+    description: "Create high-quality, SEO-optimized product descriptions and blog articles that rank",
+    tags: ["Content", "AI Writing", "Blog"]
+  },
+  {
+    icon: Tags,
+    title: "Smart Tagging System",
+    description: "AI-powered automatic tagging for better product organization and discoverability",
+    tags: ["Tags", "Organization"]
+  },
+  {
+    icon: BarChart3,
+    title: "Google Merchant Feed",
+    description: "Automatic XML feed generation and real-time sync with Google Shopping",
+    tags: ["Google", "Shopping", "Feed"]
+  },
+  {
+    icon: Sparkles,
+    title: "Full Automation",
+    description: "Set it and forget it. AI continuously optimizes your store in the background",
+    tags: ["Automation", "AI", "24/7"]
+  }
+];
+
+const testimonials = [
+  {
+    quote: "Our organic traffic increased by 180% in just 2 months. The AI does all the heavy lifting!",
+    author: "Sarah Chen",
+    role: "Fashion Store Owner"
+  },
+  {
+    quote: "I save 15+ hours every week on SEO. The ROI is incredible. Best investment for my store.",
+    author: "Marcus Johnson",
+    role: "Electronics Retailer"
+  },
+  {
+    quote: "Finally ranked on Google's first page! The AI knew exactly what to optimize. Game changer.",
+    author: "Emma Rodriguez",
+    role: "Home Decor Shop"
   }
 ];
 
