@@ -29,8 +29,10 @@ import {
   List,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ImageIcon
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Article {
   id: string;
@@ -379,25 +381,27 @@ export function ArticleManagement() {
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead>
+                <TableHead className="w-12">
                   <Checkbox
                     checked={selectedArticles.size === filteredArticles.length}
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
+                <TableHead className="w-20">Image</TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Score SEO</TableHead>
-                <TableHead>Keywords</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Shopify Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-24">Status</TableHead>
+                <TableHead className="w-32">Score SEO</TableHead>
+                <TableHead className="w-32">Date</TableHead>
+                <TableHead className="text-right w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredArticles.map((article) => {
                 const seoScore = calculateArticleSeoScore(article);
                 const scoreBadge = getSeoScoreBadge(seoScore);
+                const truncatedTitle = article.title.length > 50 
+                  ? article.title.substring(0, 50) + '...' 
+                  : article.title;
                 
                 return (
                   <TableRow key={article.id}>
@@ -408,61 +412,49 @@ export function ArticleManagement() {
                       />
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{article.title}</div>
-                        {article.meta_description && (
-                          <div className="text-xs text-muted-foreground line-clamp-1">
-                            {article.meta_description}
-                          </div>
-                        )}
+                      <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                        <ImageIcon className="w-6 h-6 text-muted-foreground" />
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="max-w-[300px]">
+                              <div className="font-medium truncate">{truncatedTitle}</div>
+                              {article.meta_description && (
+                                <div className="text-xs text-muted-foreground line-clamp-1">
+                                  {article.meta_description}
+                                </div>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-[400px]">{article.title}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={article.status === 'published' ? 'default' : 'secondary'} className="whitespace-nowrap">
                         {article.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Badge variant={scoreBadge.variant}>
+                        <Badge variant={scoreBadge.variant} className="whitespace-nowrap">
                           <span className={scoreBadge.color}>{seoScore}/100</span>
                         </Badge>
                         {article.optimization_count && article.optimization_count > 0 && (
-                          <Sparkles className="w-3 h-3 text-primary" />
+                          <Sparkles className="w-3 h-3 text-primary flex-shrink-0" />
                         )}
                       </div>
-                      {article.optimization_count && article.optimization_count > 0 && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Optimisé {article.optimization_count}x
-                        </div>
-                      )}
                     </TableCell>
-                    <TableCell>
-                      {article.keywords && article.keywords.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {article.keywords.slice(0, 2).map((keyword, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {keyword}
-                            </Badge>
-                          ))}
-                          {article.keywords.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{article.keywords.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {article.source === 'shopify_import' ? 'Shopify' : 'AI Generated'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(article.updated_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1">
                         <Button
                           size="sm"
                           variant="ghost"
@@ -473,11 +465,11 @@ export function ArticleManagement() {
                         {article.status === 'draft' && (
                           <Button
                             size="sm"
+                            variant="outline"
                             onClick={() => handleSyncArticle(article.id)}
                             disabled={syncing}
                           >
-                            <Upload className="w-4 h-4 mr-1" />
-                            Publish
+                            <Upload className="w-4 h-4" />
                           </Button>
                         )}
                       </div>

@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, TrendingUp, FileText, Sparkles } from "lucide-react";
+import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { TrialUpgradeDialog } from "@/components/TrialUpgradeDialog";
 
 interface Opportunity {
   id: string;
@@ -31,6 +33,8 @@ export function BlogOpportunities() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
 
   useEffect(() => {
     const initOpportunities = async () => {
@@ -108,6 +112,17 @@ export function BlogOpportunities() {
   };
 
   const handleCreateArticle = async (opp: Opportunity) => {
+    // Check usage limits first
+    if (!canDoAction('articles')) {
+      toast.error('Limite d\'articles atteinte', {
+        description: limits.isTrialing 
+          ? 'Passez à un plan payant pour créer plus d\'articles.'
+          : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
+      });
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     try {
       setGenerating(opp.id);
       toast.info("Génération de l'article...");
@@ -135,6 +150,7 @@ export function BlogOpportunities() {
       if (error) throw error;
 
       toast.success(`Article "${opp.title}" généré avec succès !`);
+      await refreshLimits();
       window.location.href = "/blog?tab=articles";
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la génération de l'article");
@@ -145,6 +161,10 @@ export function BlogOpportunities() {
 
   const handleRegenerate = async () => {
     setRegenerating(true);
+    toast.info('Analyse du catalogue en cours...', {
+      description: 'Patience, cela peut prendre jusqu\'à 30 secondes',
+      duration: 5000
+    });
     await loadOpportunities();
     setRegenerating(false);
   };
@@ -168,8 +188,15 @@ export function BlogOpportunities() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Sparkles className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="relative">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <div className="absolute inset-0 w-12 h-12 rounded-full bg-primary/20 animate-ping" />
+        </div>
+        <div className="text-center space-y-2">
+          <p className="text-lg font-medium">Analyse du catalogue en cours...</p>
+          <p className="text-sm text-muted-foreground">Patience, cela peut prendre jusqu'à 30 secondes</p>
+        </div>
       </div>
     );
   }
@@ -325,6 +352,13 @@ export function BlogOpportunities() {
           );
         })}
       </div>
+      
+      <TrialUpgradeDialog 
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        reason="limit_reached"
+        limitType="articles"
+      />
     </div>
   );
 }

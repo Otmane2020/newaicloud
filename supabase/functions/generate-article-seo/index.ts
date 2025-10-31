@@ -161,6 +161,7 @@ Retourne uniquement un JSON avec:
         const { error: updateError } = await supabase
           .from("blog_articles")
           .update({
+            title: seoData.seo_title,
             meta_description: seoData.meta_description,
             keywords: seoData.keywords,
             optimization_count: (article.optimization_count || 0) + 1,
