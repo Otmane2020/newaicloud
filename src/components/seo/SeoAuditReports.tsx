@@ -60,10 +60,15 @@ export function SeoAuditReports() {
   useEffect(() => {
     // Load latest audit report on mount
     loadLatestReport();
-    
+  }, []);
+
+  useEffect(() => {
     // Check if we should auto-start audit from dashboard
     const autoStart = searchParams.get('autoStart');
-    if (autoStart === 'true' && !latestReport) {
+    if (autoStart === 'true') {
+      // Remove the autoStart param to avoid re-triggering
+      searchParams.delete('autoStart');
+      window.history.replaceState({}, '', `${window.location.pathname}?${searchParams.toString()}`);
       startAudit();
     }
   }, [searchParams]);
