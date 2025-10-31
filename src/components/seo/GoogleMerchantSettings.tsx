@@ -140,7 +140,7 @@ export function GoogleMerchantSettings() {
     setFeedStatus("idle");
 
     try {
-      const feedUrl = `${window.location.origin}/shoppingfeed/${settings.store_name}/xml`;
+      const feedUrl = `https://newai.sale/shoppingfeed/${settings.store_name}/xml`;
       const response = await fetch(feedUrl);
 
       if (!response.ok) {
@@ -165,8 +165,8 @@ export function GoogleMerchantSettings() {
   };
 
   const feedUrl = settings.store_name
-    ? `${window.location.origin}/shoppingfeed/${settings.store_name}/xml`
-    : `${window.location.origin}/shoppingfeed/{nom-boutique}/xml`;
+    ? `https://newai.sale/shoppingfeed/${settings.store_name}/xml`
+    : `https://newai.sale/shoppingfeed/{nom-boutique}/xml`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);

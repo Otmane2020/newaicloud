@@ -168,16 +168,21 @@ async function generateGoogleShoppingFeed(
   for (const product of products) {
     const productVariants = variants[product.id] || [];
 
-    // If product has variants, create an entry for each variant
-    if (productVariants.length > 0) {
+    // Check if product has real variants (not just "Default Title")
+    const hasRealVariants = productVariants.length > 1 || 
+      (productVariants.length === 1 && 
+       productVariants[0].title !== 'Default Title' && 
+       (productVariants[0].option1 || productVariants[0].option2 || productVariants[0].option3));
+
+    // If product has real variants, create an entry for each variant
+    if (hasRealVariants && productVariants.length > 0) {
       for (const variant of productVariants) {
         const itemId = generateProductId(product, variant);
         const title = truncateText(generateVariantTitle(product, variant), 150);
         const description = truncateText(getProductDescription(product), 5000);
-        const productUrl =
-          product.shopify_id && storeDomain
-            ? `${baseUrl}/products/${product.handle}`
-            : `${baseUrl}/product/${product.handle}`;
+        const productUrl = storeDomain
+          ? `https://${storeDomain}/products/${product.handle}`
+          : `https://newai.sale/product/${product.handle}`;
         const imageUrl = getProductImage(product, variant);
         const price = getProductPrice(product, variant);
         const currency = product.currency || feedSettings?.default_currency || "EUR";
@@ -267,10 +272,9 @@ async function generateGoogleShoppingFeed(
       const itemId = generateProductId(product);
       const title = truncateText(product.optimized_title || product.seo_title || product.title, 150);
       const description = truncateText(getProductDescription(product), 5000);
-      const productUrl =
-        product.shopify_id && storeDomain
-          ? `${baseUrl}/products/${product.handle}`
-          : `${baseUrl}/product/${product.handle}`;
+      const productUrl = storeDomain
+        ? `https://${storeDomain}/products/${product.handle}`
+        : `https://newai.sale/product/${product.handle}`;
       const imageUrl = getProductImage(product);
       const price = getProductPrice(product);
       const currency = product.currency || feedSettings?.default_currency || "EUR";

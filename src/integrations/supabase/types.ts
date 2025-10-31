@@ -785,6 +785,7 @@ export type Database = {
       }
       merchant_feed_settings: {
         Row: {
+          auto_sync_enabled: boolean | null
           auto_update_enabled: boolean | null
           created_at: string | null
           default_brand: string | null
@@ -793,11 +794,14 @@ export type Database = {
           gtin_country_code: string | null
           id: string
           last_feed_generated_at: string | null
+          last_shopify_sync_at: string | null
           store_name: string
+          sync_frequency: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          auto_sync_enabled?: boolean | null
           auto_update_enabled?: boolean | null
           created_at?: string | null
           default_brand?: string | null
@@ -806,11 +810,14 @@ export type Database = {
           gtin_country_code?: string | null
           id?: string
           last_feed_generated_at?: string | null
+          last_shopify_sync_at?: string | null
           store_name: string
+          sync_frequency?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          auto_sync_enabled?: boolean | null
           auto_update_enabled?: boolean | null
           created_at?: string | null
           default_brand?: string | null
@@ -819,7 +826,9 @@ export type Database = {
           gtin_country_code?: string | null
           id?: string
           last_feed_generated_at?: string | null
+          last_shopify_sync_at?: string | null
           store_name?: string
+          sync_frequency?: string | null
           updated_at?: string | null
           user_id?: string
         }

@@ -33,7 +33,8 @@ import {
   RefreshCw,
   Save,
   X,
-  CheckCircle
+  CheckCircle,
+  Hash
 } from 'lucide-react';
 
 interface Product {
@@ -56,6 +57,8 @@ export function GoogleShopping() {
   const [editData, setEditData] = useState<Partial<Product>>({});
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [generatingGtins, setGeneratingGtins] = useState(false);
+  const [generatingCategories, setGeneratingCategories] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -148,6 +151,63 @@ export function GoogleShopping() {
   const handleCancelEdit = () => {
     setEditingProduct(null);
     setEditData({});
+  };
+
+  const handleGenerateGTINs = async () => {
+    if (selectedProducts.size === 0) {
+      toast.info('Sélectionnez au moins un produit');
+      return;
+    }
+
+    try {
+      setGeneratingGtins(true);
+      const { data, error } = await supabase.functions.invoke('generate-gtin', {
+        body: { 
+          productIds: Array.from(selectedProducts),
+          countryCode: 'FR'
+        }
+      });
+
+      if (error) throw error;
+      toast.success(`GTINs générés pour ${data.results.length} produits`);
+      await fetchProducts();
+      setSelectedProducts(new Set());
+    } catch (error) {
+      console.error('Error generating GTINs:', error);
+      toast.error('Erreur lors de la génération des GTINs');
+    } finally {
+      setGeneratingGtins(false);
+    }
+  };
+
+  const handleGenerateCategories = async () => {
+    if (selectedProducts.size === 0) {
+      toast.info('Sélectionnez au moins un produit');
+      return;
+    }
+
+    setGeneratingCategories(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const productId of Array.from(selectedProducts)) {
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-google-category', {
+          body: { productId }
+        });
+        
+        if (error) throw error;
+        if (data.success) successCount++;
+        else errorCount++;
+      } catch (error) {
+        errorCount++;
+      }
+    }
+
+    toast.success(`Catégories générées: ${successCount} succès, ${errorCount} erreurs`);
+    await fetchProducts();
+    setSelectedProducts(new Set());
+    setGeneratingCategories(false);
   };
 
   const handleSyncSelected = async () => {
@@ -263,7 +323,43 @@ export function GoogleShopping() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={handleGenerateGTINs}
+              disabled={generatingGtins || selectedProducts.size === 0}
+              variant="outline"
+              className="gap-2"
+            >
+              {generatingGtins ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Génération GTINs...
+                </>
+              ) : (
+                <>
+                  <Hash className="w-4 h-4" />
+                  Générer GTINs ({selectedProducts.size})
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleGenerateCategories}
+              disabled={generatingCategories || selectedProducts.size === 0}
+              variant="outline"
+              className="gap-2"
+            >
+              {generatingCategories ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Génération catégories...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Générer Catégories AI ({selectedProducts.size})
+                </>
+              )}
+            </Button>
             <Button
               onClick={handleSyncSelected}
               disabled={syncing || selectedProducts.size === 0}

@@ -37,8 +37,8 @@ export function GoogleMerchant() {
   });
   const [isTesting, setIsTesting] = useState(false);
 
-  // Générer l'URL du flux selon le nouveau format
-  const feedUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/shopping-feed/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
+  // URL du flux avec le domaine NewAI
+  const feedUrl = `https://newai.sale/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);

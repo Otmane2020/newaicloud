@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { GoogleMerchant } from "@/components/seo/GoogleMerchant";
 import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings";
+import { GoogleShopping } from "@/components/seo/GoogleShopping";
+import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { FileText, Settings, ShoppingCart, ArrowRight } from "lucide-react";
+import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw } from "lucide-react";
 
 export default function Merchant() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,7 +15,7 @@ export default function Merchant() {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && ["feed", "settings"].includes(tab)) {
+    if (tab && ["feed", "settings", "products", "sync"].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -37,6 +39,20 @@ export default function Merchant() {
       icon: Settings,
       description: "Configurez les paramètres de votre flux",
       component: <GoogleMerchantSettings />,
+    },
+    {
+      id: "products",
+      label: "Produits",
+      icon: Package,
+      description: "Gérez les attributs Google Shopping de vos produits",
+      component: <GoogleShopping />,
+    },
+    {
+      id: "sync",
+      label: "Synchronisation",
+      icon: RefreshCw,
+      description: "Synchronisez vos produits depuis Shopify",
+      component: <GoogleShoppingSyncSettings />,
     },
   ];
 
@@ -112,7 +128,7 @@ export default function Merchant() {
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         {/* Tabs Navigation */}
         <Card className="p-1">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -122,7 +138,7 @@ export default function Merchant() {
                   className="flex items-center gap-2 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                 >
                   <Icon className="w-4 h-4" />
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </TabsTrigger>
               );
             })}
