@@ -22,7 +22,8 @@ import {
   Shield,
   Lightbulb,
   Link as LinkIcon,
-  Menu
+  Menu,
+  Bell
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
