@@ -18,24 +18,20 @@ interface LanguageProviderProps {
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const [language, setLanguage] = useState<Language>(() => {
-    // 1. Check localStorage
-    const saved = localStorage.getItem('app-language');
-    if (saved === 'fr' || saved === 'en') return saved;
-    
-    // 2. Check browser language
-    const browserLang = navigator.language.split('-')[0];
-    return browserLang === 'fr' ? 'fr' : 'en';
+    try {
+      const saved = localStorage.getItem('app-language');
+      if (saved === 'fr' || saved === 'en') return saved;
+      const browserLang = navigator.language?.split('-')[0];
+      return browserLang === 'fr' ? 'fr' : 'en';
+    } catch {
+      return 'en';
+    }
   });
 
-  const translations = {
-    fr,
-    en,
-  };
-
+  const translations = { fr, en };
   const t = translations[language];
 
-  // Function for translation with dynamic variables
-  const tf = (key: string, vars?: Record<string, string | number>): string => {
+  const tf = (key: string, vars?: Record<string, any>): string => {
     const keys = key.split('.');
     let value: any = t;
     
@@ -56,8 +52,10 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   };
 
   useEffect(() => {
-    localStorage.setItem('app-language', language);
-    document.documentElement.lang = language;
+    try {
+      localStorage.setItem('app-language', language);
+      document.documentElement.lang = language;
+    } catch {}
   }, [language]);
 
   return (
