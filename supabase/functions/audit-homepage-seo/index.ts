@@ -26,7 +26,8 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
     );
 
     // Pass the token explicitly to getUser
@@ -49,7 +50,18 @@ serve(async (req) => {
       .eq('is_active', true)
       .maybeSingle();
 
-    if (connError || !connection) {
+    console.log('Connection query result:', { hasConnection: !!connection, hasError: !!connError, errorDetails: connError });
+
+    if (connError) {
+      console.error('Database error fetching connection:', connError);
+      return new Response(
+        JSON.stringify({ error: 'Database error: ' + connError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!connection) {
+      console.log('No connection found for user:', user.id);
       return new Response(
         JSON.stringify({ error: 'No active Shopify connection found. Please reconnect your store.' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
