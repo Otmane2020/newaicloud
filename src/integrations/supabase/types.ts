@@ -787,6 +787,9 @@ export type Database = {
         Row: {
           auto_update_enabled: boolean | null
           created_at: string | null
+          default_brand: string | null
+          default_condition: string | null
+          default_currency: string | null
           gtin_country_code: string | null
           id: string
           last_feed_generated_at: string | null
@@ -797,6 +800,9 @@ export type Database = {
         Insert: {
           auto_update_enabled?: boolean | null
           created_at?: string | null
+          default_brand?: string | null
+          default_condition?: string | null
+          default_currency?: string | null
           gtin_country_code?: string | null
           id?: string
           last_feed_generated_at?: string | null
@@ -807,6 +813,9 @@ export type Database = {
         Update: {
           auto_update_enabled?: boolean | null
           created_at?: string | null
+          default_brand?: string | null
+          default_condition?: string | null
+          default_currency?: string | null
           gtin_country_code?: string | null
           id?: string
           last_feed_generated_at?: string | null

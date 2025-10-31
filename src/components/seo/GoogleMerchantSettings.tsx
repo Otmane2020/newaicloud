@@ -56,17 +56,12 @@ export function GoogleMerchantSettings() {
       if (error && error.code !== "PGRST116") throw error;
 
       if (data) {
-        setSettings(data);
-      } else {
-        // Initialize with user data if no settings exist
-        const { data: userData } = await supabase.from("profiles").select("store_name").eq("id", user.id).single();
-
-        if (userData?.store_name) {
-          setSettings((prev) => ({
-            ...prev,
-            store_name: userData.store_name.toLowerCase().replace(/\s+/g, "-"),
-          }));
-        }
+        setSettings({
+          ...data,
+          default_currency: data.default_currency || 'EUR',
+          default_condition: data.default_condition || 'new',
+          default_brand: data.default_brand || '',
+        });
       }
     } catch (error) {
       console.error("Error loading settings:", error);
