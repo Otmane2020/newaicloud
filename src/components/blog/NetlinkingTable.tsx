@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sparkles, FileText, Link, Download, ExternalLink, TrendingUp } from 'lucide-react';
+import { Sparkles, FileText, Link, Download, ExternalLink, TrendingUp, Search, Settings, Rocket, Eye } from 'lucide-react';
 
 interface NetlinkingEntry {
   id: string;
@@ -17,6 +17,9 @@ interface NetlinkingEntry {
   link_type: 'internal' | 'external';
   click_count: number;
   created_at: string;
+  updated_at: string;
+  product_page_name: string;
+  seo_score: number;
 }
 
 export function NetlinkingTable() {
@@ -47,14 +50,66 @@ export function NetlinkingTable() {
           article:blog_articles!article_id(title)
         `)
         .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
 
       if (netlinkingError) throw netlinkingError;
 
-      const formattedData = netlinkingData?.map((entry: any) => ({
-        ...entry,
-        article_title: entry.article?.title || 'Article supprimé',
-      })) || [];
+      // Enrichir les données avec les infos produit/page
+      const formattedData = await Promise.all(
+        (netlinkingData || []).map(async (entry: any) => {
+          let productPageName = 'Page inconnue';
+          let seoScore = Math.floor(Math.random() * (100 - 50) + 50); // Score aléatoire entre 50-100
+
+          // Extraire le nom du produit/page depuis l'URL
+          if (entry.target_url) {
+            const urlParts = entry.target_url.split('/');
+            const lastPart = urlParts[urlParts.length - 1] || urlParts[urlParts.length - 2];
+            
+            // Vérifier si c'est un produit
+            if (entry.target_url.includes('/products/')) {
+              const { data: product } = await supabase
+                .from('shopify_products')
+                .select('title')
+                .eq('handle', lastPart)
+                .maybeSingle();
+              
+              productPageName = product?.title || lastPart.replace(/-/g, ' ');
+            } 
+            // Vérifier si c'est une collection
+            else if (entry.target_url.includes('/collections/')) {
+              productPageName = `Collection "${lastPart.replace(/-/g, ' ')}"`;
+            }
+            // Vérifier si c'est une page
+            else if (entry.target_url.includes('/pages/')) {
+              const { data: page } = await supabase
+                .from('shopify_pages')
+                .select('title')
+                .eq('handle', lastPart)
+                .maybeSingle();
+              
+              productPageName = page?.title || `Page "${lastPart.replace(/-/g, ' ')}"`;
+            }
+          }
+
+          // Calculer un score SEO basé sur plusieurs facteurs
+          const anchorLength = entry.anchor_text?.length || 0;
+          const hasKeywords = anchorLength > 10 && anchorLength < 60;
+          const isInternal = entry.link_type === 'internal';
+          const hasClicks = (entry.click_count || 0) > 0;
+          
+          seoScore = 50; // Base
+          if (hasKeywords) seoScore += 20;
+          if (isInternal) seoScore += 15;
+          if (hasClicks) seoScore += 15;
+
+          return {
+            ...entry,
+            article_title: entry.article?.title || 'Article supprimé',
+            product_page_name: productPageName,
+            seo_score: seoScore,
+          };
+        })
+      );
 
       setEntries(formattedData);
 
@@ -169,50 +224,108 @@ export function NetlinkingTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Article d'origine</TableHead>
-              <TableHead>URL cible</TableHead>
-              <TableHead>Texte d'ancrage</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Clics</TableHead>
-              <TableHead>Date</TableHead>
+              <TableHead className="w-[300px]">Lien</TableHead>
+              <TableHead className="w-[180px]">Produit / Page</TableHead>
+              <TableHead className="w-[200px]">Article lié</TableHead>
+              <TableHead className="w-[100px]">Type de lien</TableHead>
+              <TableHead className="w-[120px]">Score SEO</TableHead>
+              <TableHead className="w-[140px]">Dernière mise à jour</TableHead>
+              <TableHead className="w-[150px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entries.map((entry) => (
-              <TableRow key={entry.id}>
-                <TableCell className="font-medium max-w-xs truncate">
-                  {entry.article_title}
-                </TableCell>
-                <TableCell>
-                  <a
-                    href={entry.target_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
-                  >
-                    {entry.target_url.substring(0, 40)}...
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </TableCell>
-                <TableCell className="max-w-xs truncate">
-                  {entry.anchor_text}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={entry.link_type === 'internal' ? 'default' : 'secondary'}>
-                    {entry.link_type === 'internal' ? 'Interne' : 'Externe'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                    {entry.click_count}
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {new Date(entry.created_at).toLocaleDateString('fr-FR')}
-                </TableCell>
-              </TableRow>
-            ))}
+            {entries.map((entry) => {
+              const scoreColor = entry.seo_score >= 80 ? 'text-green-600' : entry.seo_score >= 60 ? 'text-orange-600' : 'text-red-600';
+              const scoreEmoji = entry.seo_score >= 80 ? '🟢' : entry.seo_score >= 60 ? '🟠' : '🔴';
+              
+              return (
+                <TableRow key={entry.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <a
+                      href={entry.target_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-blue-600 hover:underline text-sm font-medium"
+                      title={entry.target_url}
+                    >
+                      <span className="truncate max-w-[280px]">{entry.target_url}</span>
+                      <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                    </a>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    <div className="truncate max-w-[170px]" title={entry.product_page_name}>
+                      {entry.product_page_name}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="italic text-sm text-muted-foreground truncate max-w-[190px]" title={entry.article_title}>
+                      {entry.article_title}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={entry.link_type === 'internal' ? 'default' : 'outline'}>
+                      {entry.link_type === 'internal' ? 'Interne' : 'Externe'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className={`flex items-center gap-2 font-semibold ${scoreColor}`}>
+                      <span className="text-lg">{scoreEmoji}</span>
+                      <span>{entry.seo_score}/100</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {new Date(entry.updated_at || entry.created_at).toLocaleDateString('fr-FR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1">
+                      {entry.seo_score >= 80 ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toast.info('Analyse du lien...')}
+                          title="Analyser"
+                        >
+                          <Search className="w-4 h-4 mr-1" />
+                          Analyser
+                        </Button>
+                      ) : entry.seo_score >= 60 ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toast.info('Optimisation du lien...')}
+                          title="Optimiser"
+                        >
+                          <Settings className="w-4 h-4 mr-1" />
+                          Optimiser
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toast.info('Amélioration du lien...')}
+                          title="Améliorer"
+                        >
+                          <Rocket className="w-4 h-4 mr-1" />
+                          Améliorer
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => window.open(entry.target_url, '_blank')}
+                        title="Voir le lien"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
