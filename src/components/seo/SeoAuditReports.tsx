@@ -209,95 +209,37 @@ export function SeoAuditReports() {
     return 'bg-red-100 dark:bg-red-950';
   };
 
-  // Données de démonstration - À remplacer par des données réelles depuis Supabase
-  const homepageData = {
-    globalScore: 82,
-    scores: [
-      { label: 'Technique', score: 90, maxScore: 100, status: 'success' as const },
-      { label: 'Contenu', score: 75, maxScore: 100, status: 'warning' as const },
-      { label: 'Sémantique', score: 80, maxScore: 100, status: 'success' as const },
-    ],
-    technical: [
-      { label: 'Balise Title', value: '✅ "Boutique de meubles design – Decora Home"', status: 'success' as const, icon: <Search className="w-4 h-4" /> },
-      { label: 'Meta Description', value: '⚠️ Trop courte (98 caractères)', status: 'warning' as const, icon: <FileText className="w-4 h-4" /> },
-      { label: 'Balises H1-H6', value: '❌ Plusieurs H1 détectés', status: 'error' as const, icon: <FileText className="w-4 h-4" /> },
-      { label: 'Favicon & OG tags', value: '✅ Présents', status: 'success' as const, icon: <ImageIcon className="w-4 h-4" /> },
-      { label: 'Canonical URL', value: '⚠️ Canonical manquant', status: 'warning' as const, icon: <LinkIcon className="w-4 h-4" /> },
-      { label: 'Temps de chargement', value: '1,9s (Excellent)', status: 'success' as const, icon: <Zap className="w-4 h-4" /> },
-    ],
-    content: [
-      { label: 'Densité mots-clés', value: 'Optimale (2,3%)', status: 'success' as const, icon: <Sparkles className="w-4 h-4" /> },
-      { label: 'Cohérence Title/H1', value: 'Bonne', status: 'success' as const, icon: <CheckCircle2 className="w-4 h-4" /> },
-      { label: 'CTA clair', value: 'Présent', status: 'success' as const, icon: <CheckCircle2 className="w-4 h-4" /> },
-      { label: 'Liens internes', value: '38 liens', status: 'success' as const, icon: <LinkIcon className="w-4 h-4" /> },
-    ],
-    recommendations: [
-      'Améliorer la meta description (viser 150-160 caractères)',
-      'Corriger la structure H1 (un seul H1 par page)',
-      'Ajouter une balise canonical',
-      'Enrichir avec des mots-clés secondaires',
-    ],
+  // Use real data from latestReport instead of mock data
+  const homepageData = latestReport?.audit_results?.homepage || {
+    globalScore: 0,
+    scores: [],
+    technical: [],
+    content: [],
+    recommendations: [],
   };
 
-  const productData = {
-    globalScore: 88,
-    scores: [
-      { label: 'Structure', score: 95, maxScore: 100, status: 'success' as const },
-      { label: 'Contenu IA', score: 92, maxScore: 100, status: 'success' as const },
-      { label: 'Images', score: 78, maxScore: 100, status: 'warning' as const },
-    ],
-    elements: [
-      { label: 'SEO Title', value: '"Table basse en bois massif – Meublei"', status: 'success' as const, icon: <Search className="w-4 h-4" /> },
-      { label: 'Meta Description', value: '✅ Optimisée (152 caractères)', status: 'success' as const, icon: <FileText className="w-4 h-4" /> },
-      { label: 'H1', value: 'Identique au nom produit', status: 'success' as const, icon: <FileText className="w-4 h-4" /> },
-      { label: 'Alt Images', value: '5/6 générés par Vision AI', status: 'warning' as const, icon: <ImageIcon className="w-4 h-4" /> },
-      { label: 'Slug', value: 'table-basse-bois-massif', status: 'success' as const, icon: <LinkIcon className="w-4 h-4" /> },
-      { label: 'Description', value: '420 mots, unique', status: 'success' as const, icon: <FileText className="w-4 h-4" /> },
-      { label: 'Schema.org', value: 'Product, Offer, AggregateRating', status: 'success' as const, icon: <CheckCircle2 className="w-4 h-4" /> },
-    ],
-    aiQuality: {
-      score: 92,
-      humanEdit: 8,
-    },
+  const productData = latestReport?.audit_results?.products || {
+    globalScore: 0,
+    scores: [],
+    elements: [],
+    aiQuality: { score: 0, humanEdit: 0 },
   };
 
-  const collectionData = {
-    globalScore: 75,
-    scores: [
-      { label: 'Structure', score: 80, maxScore: 100, status: 'success' as const },
-      { label: 'Contenu', score: 65, maxScore: 100, status: 'warning' as const },
-      { label: 'Liens internes', score: 82, maxScore: 100, status: 'success' as const },
-    ],
-    elements: [
-      { label: 'Title & Meta', value: 'Mots-clés présents', status: 'success' as const, icon: <Search className="w-4 h-4" /> },
-      { label: 'Texte descriptif', value: '⚠️ Trop court (80 mots)', status: 'warning' as const, icon: <FileText className="w-4 h-4" /> },
-      { label: 'Produits visibles', value: '24 produits cohérents', status: 'success' as const, icon: <ShoppingBag className="w-4 h-4" /> },
-      { label: 'Filtres', value: 'Indexabilité OK', status: 'success' as const, icon: <CheckCircle2 className="w-4 h-4" /> },
-      { label: 'Liens internes', value: 'Vers produits similaires', status: 'success' as const, icon: <LinkIcon className="w-4 h-4" /> },
-      { label: 'H1', value: '"Canapés modernes et design"', status: 'success' as const, icon: <FileText className="w-4 h-4" /> },
-    ],
+  const collectionData = latestReport?.audit_results?.collections || {
+    globalScore: 0,
+    scores: [],
+    elements: [],
   };
 
-  const blogData = {
-    globalScore: 85,
-    scores: [
-      { label: 'Structure', score: 90, maxScore: 100, status: 'success' as const },
-      { label: 'Contenu', score: 88, maxScore: 100, status: 'success' as const },
-      { label: 'Optimisation', score: 78, maxScore: 100, status: 'warning' as const },
-    ],
-    elements: [
-      { label: 'Structure Hn', value: 'H1/H2/H3 cohérents', status: 'success' as const, icon: <FileText className="w-4 h-4" /> },
-      { label: 'Densité mots-clés', value: 'Optimale', status: 'success' as const, icon: <Sparkles className="w-4 h-4" /> },
-      { label: 'Meta & OpenGraph', value: 'Présents', status: 'success' as const, icon: <ImageIcon className="w-4 h-4" /> },
-      { label: 'Longueur', value: '1.250 mots', status: 'success' as const, icon: <FileText className="w-4 h-4" /> },
-      { label: 'Images', value: '⚠️ 2/5 avec alt', status: 'warning' as const, icon: <ImageIcon className="w-4 h-4" /> },
-      { label: 'Interlinking', value: '3 liens produits', status: 'success' as const, icon: <LinkIcon className="w-4 h-4" /> },
-    ],
+  const blogData = latestReport?.audit_results?.blog || {
+    globalScore: 0,
+    scores: [],
+    elements: [],
   };
 
-  const globalData = {
+  const globalData = latestReport?.audit_results?.global || {
     stats: {
-      pagesAnalyzed: 156,
+      pagesAnalyzed: 0,
       averageScore: 82,
       titleOptimized: 89,
       metaMissing: 12,

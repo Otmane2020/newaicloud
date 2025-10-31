@@ -158,12 +158,13 @@ export function NotificationCenter() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="relative bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+          className="relative hover:bg-accent/50 transition-all duration-300 group"
         >
-          <Bell className="h-5 w-5 animate-pulse" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <Bell className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" strokeWidth={1.5} />
           {unreadCount > 0 && (
             <Badge 
-              className="absolute -top-1 -right-1 h-6 w-6 flex items-center justify-center p-0 text-xs bg-gradient-to-r from-red-500 to-orange-500 border-2 border-white shadow-lg animate-bounce"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-gradient-to-br from-red-500 to-pink-500 border-2 border-background shadow-lg"
               variant="destructive"
             >
               {unreadCount > 9 ? '9+' : unreadCount}
