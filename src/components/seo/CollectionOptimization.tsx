@@ -325,6 +325,43 @@ export function CollectionOptimization() {
     await refreshLimits();
   };
 
+  const handleSyncCollections = async () => {
+    if (collectionsToSync.length === 0) return;
+
+    try {
+      setSyncing(true);
+      setShowSyncDialog(false);
+      setShowProgressDialog(true);
+      setProgress({ current: 0, total: collectionsToSync.length });
+
+      let successCount = 0;
+      for (let i = 0; i < collectionsToSync.length; i++) {
+        const collection = collectionsToSync[i];
+        try {
+          const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+            body: { collectionId: collection.id }
+          });
+
+          if (error) throw error;
+          successCount++;
+        } catch (error: any) {
+          console.error(`Error syncing collection ${collection.id}:`, error);
+        }
+        setProgress({ current: i + 1, total: collectionsToSync.length });
+      }
+
+      setShowProgressDialog(false);
+      toast.success(`✅ ${successCount} collection(s) synchronisée(s) avec Shopify`);
+      await fetchCollections();
+    } catch (error: any) {
+      console.error('Error syncing collections:', error);
+      toast.error('Erreur lors de la synchronisation');
+    } finally {
+      setSyncing(false);
+      setCollectionsToSync([]);
+    }
+  };
+
   const handleSyncProductCollections = async () => {
     try {
       setSyncing(true);
@@ -636,6 +673,25 @@ export function CollectionOptimization() {
                 <Sparkles className="w-4 h-4" />
                 Optimiser tout
               </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const optimized = filteredCollections.filter(c => c.optimization_count && c.optimization_count > 0);
+                  if (optimized.length === 0) {
+                    toast.error('Aucune collection optimisée à synchroniser');
+                    return;
+                  }
+                  setCollectionsToSync(optimized);
+                  setShowSyncDialog(true);
+                }}
+                disabled={syncing || collections.filter(c => c.optimization_count && c.optimization_count > 0).length === 0}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Sync à Shopify
+              </Button>
               
               <Button variant="outline" size="icon" onClick={fetchCollections}>
                 <RefreshCw className="w-4 h-4" />
@@ -919,8 +975,21 @@ export function CollectionOptimization() {
           seo_description: c.seo_description || '',
           image_url: c.image_url || ''
         }))}
-        onSyncClick={() => toast.info("Sync collections à venir")}
+        onSyncClick={() => {
+          setCollectionsToSync(optimizedCollections);
+          setShowResultsDialog(false);
+          setShowSyncDialog(true);
+        }}
         onClose={handleCloseResultsDialog}
+      />
+
+      <SyncConfirmationDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        type="seo"
+        itemCount={collectionsToSync.length}
+        onConfirm={handleSyncCollections}
+        loading={syncing}
       />
 
       <UpgradeDialog

@@ -17,9 +17,7 @@ interface Message {
 
 export function AIAssistant() {
   const { user } = useAuth();
-  const { limits, refresh: refreshLimits } = useUsageLimits();
   const [isOpen, setIsOpen] = useState(false);
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -38,12 +36,6 @@ export function AIAssistant() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
-
-    // ✅ Check chat limit
-    if (!limits?.canUseChat) {
-      setShowUpgradeDialog(true);
-      return;
-    }
 
     const userMessage: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -116,16 +108,6 @@ export function AIAssistant() {
           }
         }
       }
-
-      // ✅ Increment chat_responses_count after successful response
-      if (user) {
-        await supabase.rpc('increment_usage', {
-          p_seller_id: user.id,
-          p_field: 'chat_responses_count',
-          p_increment: 1
-        });
-        await refreshLimits();
-      }
     } catch (error) {
       console.error("Error sending message:", error);
       setMessages((prev) => [
@@ -149,14 +131,6 @@ export function AIAssistant() {
 
   return (
     <>
-      <UpgradeDialog 
-        open={showUpgradeDialog}
-        onOpenChange={setShowUpgradeDialog}
-        limitType="chat"
-        usage={limits?.usage.chat_responses_count}
-        limit={limits?.limits.max_chat_responses}
-      />
-      
       {/* Floating button */}
       {!isOpen && (
         <Button
