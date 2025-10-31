@@ -39,6 +39,8 @@ interface ProductImage {
   updated_at: string;
   width: number;
   height: number;
+  optimization_count: number;
+  last_optimization_at: string | null;
 }
 
 interface Product {

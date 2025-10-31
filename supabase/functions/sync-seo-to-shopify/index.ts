@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
       // Get store connection for this user
       const { data: product, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("shopify_id, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id")
+        .select("shopify_id, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id, last_seo_sync_at, last_synced_data")
         .eq("id", productId)
         .eq("seller_id", user.id)
         .maybeSingle();
@@ -85,6 +85,27 @@ Deno.serve(async (req: Request) => {
       if (storeError || !storeConnection) {
         console.error('Store connection error:', storeError);
         throw new Error("Store connection not found");
+      }
+
+      // Check if sync was done less than 1 hour ago
+      if (product.last_seo_sync_at) {
+        const lastSync = new Date(product.last_seo_sync_at);
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        
+        if (lastSync > oneHourAgo) {
+          console.log(`Product ${productId} was synced less than 1 hour ago, skipping`);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Cette synchronisation a déjà été effectuée il y a moins d'une heure. Veuillez attendre avant de synchroniser à nouveau.",
+              error: "SYNC_TOO_RECENT"
+            }),
+            {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
       }
 
       const shopUrl = storeConnection.store_url;
@@ -172,15 +193,33 @@ Deno.serve(async (req: Request) => {
         throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
       }
 
+      // Store snapshot of synced data
+      const syncedData = {
+        seo_title: product.seo_title,
+        seo_description: product.seo_description,
+        tags: product.tags,
+        category: product.category,
+        sub_category: product.sub_category,
+        synced_at: new Date().toISOString()
+      };
+
       // Update sync status in database
       await supabaseClient
         .from("shopify_products")
         .update({
           seo_synced_to_shopify: true,
           last_seo_sync_at: new Date().toISOString(),
+          last_synced_data: syncedData,
           seo_sync_error: null,
         })
         .eq("id", productId);
+
+      // Track Shopify API usage
+      await supabaseAdmin.rpc('increment_usage', {
+        p_seller_id: user.id,
+        p_field: 'shopify_requests_count',
+        p_increment: 1
+      });
 
       console.log(`Product ${product.shopify_id} synced successfully`);
       

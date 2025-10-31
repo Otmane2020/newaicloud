@@ -10,6 +10,7 @@ interface AltTextRequest {
   imageId: string;
   language?: string;
   style?: 'concise' | 'descriptive' | 'seo_optimized';
+  force?: boolean;
 }
 
 interface AltTextResponse {
@@ -39,6 +40,7 @@ interface ProductImage {
   src: string;
   alt_text: string | null;
   product_id: string;
+  optimization_count: number;
 }
 
 interface ShopifyProduct {
@@ -182,12 +184,6 @@ function generateAltPrompt(
   language: string = 'French',
   style: string = 'seo_optimized'
 ): string {
-  const styleInstructions = {
-    concise: "Be very brief and to the point (5-8 words)",
-    descriptive: "Provide detailed description (15-20 words)",
-    seo_optimized: "Balance description with SEO keywords (10-15 words)"
-  };
-
   return `Génère un texte ALT optimisé pour cette image produit en COMBINANT les informations produit ET les analyses visuelles disponibles :
 
 Produit : ${product.title}
@@ -315,6 +311,19 @@ Deno.serve(async (req: Request) => {
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new AppError('No authorization header', 401, 'UNAUTHORIZED');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !user) {
+      throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+    }
+
     // Parse and validate request
     let requestData: AltTextRequest;
     try {
@@ -327,14 +336,14 @@ Deno.serve(async (req: Request) => {
       throw new ValidationError('Invalid JSON in request body');
     }
 
-    const { imageId, language = "French", style = "seo_optimized" } = requestData;
+    const { imageId, language = "French", style = "seo_optimized", force = false } = requestData;
 
-    console.log(`Processing ALT text generation for image: ${imageId}`);
+    console.log(`Processing ALT text generation for image: ${imageId}, force: ${force}`);
 
     // Get image data
     const { data: image, error: imageError } = await supabaseClient
       .from("product_images")
-      .select("id, src, alt_text, product_id")
+      .select("id, src, alt_text, product_id, optimization_count")
       .eq("id", imageId)
       .maybeSingle();
 
@@ -347,8 +356,46 @@ Deno.serve(async (req: Request) => {
       throw new AppError('Image not found', 404, 'IMAGE_NOT_FOUND');
     }
 
-    // Check if ALT text already exists
-    if (image.alt_text && image.alt_text.trim() !== "") {
+    // Get product data
+    const { data: product, error: productError } = await supabaseClient
+      .from("shopify_products")
+      .select("title, description, category, ai_color, ai_material, seller_id")
+      .eq("id", image.product_id)
+      .maybeSingle();
+
+    if (productError) {
+      console.error('Database error fetching product:', productError);
+      throw new AppError('Failed to fetch product data', 500, 'DATABASE_ERROR');
+    }
+
+    if (!product) {
+      throw new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND');
+    }
+
+    // Check optimization limits using RPC
+    const { data: checkResult, error: checkError } = await supabaseClient
+      .rpc('check_optimization_allowed', {
+        p_user_id: user.id,
+        p_resource_type: 'image',
+        p_resource_id: imageId,
+        p_force: force
+      });
+
+    if (checkError) {
+      console.error('Error checking optimization limits:', checkError);
+      throw new AppError('Failed to check optimization limits', 500, 'CHECK_ERROR');
+    }
+
+    if (!checkResult.allowed) {
+      return createResponse({
+        success: false,
+        message: checkResult.message || 'Optimization not allowed',
+        error: checkResult.reason
+      }, 403);
+    }
+
+    // Check if ALT text already exists and not force
+    if (image.alt_text && image.alt_text.trim() !== "" && !force) {
       return createResponse({
         success: true,
         skipped: true,
@@ -364,33 +411,6 @@ Deno.serve(async (req: Request) => {
           model_used: CONFIG.MODEL
         }
       });
-    }
-
-    // Get product data with optimization count
-    const { data: product, error: productError } = await supabaseClient
-      .from("shopify_products")
-      .select("title, description, category, ai_color, ai_material, seller_id, optimization_count")
-      .eq("id", image.product_id)
-      .maybeSingle();
-
-    if (productError) {
-      console.error('Database error fetching product:', productError);
-      throw new AppError('Failed to fetch product data', 500, 'DATABASE_ERROR');
-    }
-
-    if (!product) {
-      throw new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND');
-    }
-
-    // Check if product already optimized for trial users
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('subscription_status')
-      .eq('id', product.seller_id)
-      .single();
-
-    if (profile?.subscription_status === 'trialing' && (product.optimization_count || 0) >= 1) {
-      throw new AppError('Ce produit a déjà été optimisé pendant votre période d\'essai.', 403, 'TRIAL_PRODUCT_ALREADY_OPTIMIZED');
     }
 
     // Generate ALT text using DeepSeek
@@ -419,6 +439,8 @@ Deno.serve(async (req: Request) => {
       .from("product_images")
       .update({ 
         alt_text: altText,
+        optimization_count: (image.optimization_count || 0) + 1,
+        last_optimization_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq("id", imageId);
@@ -427,12 +449,6 @@ Deno.serve(async (req: Request) => {
       console.error('Database error updating ALT text:', updateError);
       throw new AppError('Failed to update ALT text', 500, 'UPDATE_ERROR');
     }
-
-    // Increment product optimization count
-    await supabaseClient
-      .from("shopify_products")
-      .update({ optimization_count: (product.optimization_count || 0) + 1 })
-      .eq("id", image.product_id);
 
     console.log(`ALT text generated successfully for image ${imageId}: ${altText}`);
 

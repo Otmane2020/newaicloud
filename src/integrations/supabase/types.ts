@@ -74,7 +74,9 @@ export type Database = {
           created_at: string
           id: string
           keywords: string[] | null
+          last_optimization_at: string | null
           meta_description: string | null
+          optimization_count: number | null
           published_at: string | null
           shopify_blog_id: string | null
           source: string | null
@@ -88,7 +90,9 @@ export type Database = {
           created_at?: string
           id?: string
           keywords?: string[] | null
+          last_optimization_at?: string | null
           meta_description?: string | null
+          optimization_count?: number | null
           published_at?: string | null
           shopify_blog_id?: string | null
           source?: string | null
@@ -102,7 +106,9 @@ export type Database = {
           created_at?: string
           id?: string
           keywords?: string[] | null
+          last_optimization_at?: string | null
           meta_description?: string | null
+          optimization_count?: number | null
           published_at?: string | null
           shopify_blog_id?: string | null
           source?: string | null
@@ -557,6 +563,8 @@ export type Database = {
           created_at: string
           height: number | null
           id: string
+          last_optimization_at: string | null
+          optimization_count: number | null
           position: number | null
           product_id: string
           shopify_image_id: number | null
@@ -569,6 +577,8 @@ export type Database = {
           created_at?: string
           height?: number | null
           id?: string
+          last_optimization_at?: string | null
+          optimization_count?: number | null
           position?: number | null
           product_id: string
           shopify_image_id?: number | null
@@ -581,6 +591,8 @@ export type Database = {
           created_at?: string
           height?: number | null
           id?: string
+          last_optimization_at?: string | null
+          optimization_count?: number | null
           position?: number | null
           product_id?: string
           shopify_image_id?: number | null
@@ -929,7 +941,9 @@ export type Database = {
           created_at: string
           handle: string | null
           id: string
+          last_optimization_at: string | null
           last_synced_at: string | null
+          optimization_count: number | null
           optimized: boolean | null
           published_at: string | null
           seo_description: string | null
@@ -946,7 +960,9 @@ export type Database = {
           created_at?: string
           handle?: string | null
           id?: string
+          last_optimization_at?: string | null
           last_synced_at?: string | null
+          optimization_count?: number | null
           optimized?: boolean | null
           published_at?: string | null
           seo_description?: string | null
@@ -963,7 +979,9 @@ export type Database = {
           created_at?: string
           handle?: string | null
           id?: string
+          last_optimization_at?: string | null
           last_synced_at?: string | null
+          optimization_count?: number | null
           optimized?: boolean | null
           published_at?: string | null
           seo_description?: string | null
@@ -1045,10 +1063,13 @@ export type Database = {
           imported_at: string | null
           inventory_quantity: number | null
           last_enriched_at: string | null
+          last_optimization_at: string | null
           last_seo_sync_at: string | null
+          last_synced_data: Json | null
           length: number | null
           length_unit: string | null
           optimization_count: number | null
+          optimization_history: Json | null
           optimized_description: string | null
           optimized_title: string | null
           other_dimensions: Json | null
@@ -1147,10 +1168,13 @@ export type Database = {
           imported_at?: string | null
           inventory_quantity?: number | null
           last_enriched_at?: string | null
+          last_optimization_at?: string | null
           last_seo_sync_at?: string | null
+          last_synced_data?: Json | null
           length?: number | null
           length_unit?: string | null
           optimization_count?: number | null
+          optimization_history?: Json | null
           optimized_description?: string | null
           optimized_title?: string | null
           other_dimensions?: Json | null
@@ -1249,10 +1273,13 @@ export type Database = {
           imported_at?: string | null
           inventory_quantity?: number | null
           last_enriched_at?: string | null
+          last_optimization_at?: string | null
           last_seo_sync_at?: string | null
+          last_synced_data?: Json | null
           length?: number | null
           length_unit?: string | null
           optimization_count?: number | null
+          optimization_history?: Json | null
           optimized_description?: string | null
           optimized_title?: string | null
           other_dimensions?: Json | null
@@ -1620,6 +1647,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_optimization_allowed: {
+        Args: {
+          p_force?: boolean
+          p_resource_id: string
+          p_resource_type: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

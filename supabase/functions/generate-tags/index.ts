@@ -86,50 +86,32 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check usage limits directly
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('subscription_status, current_plan_id, trial_ends_at')
-      .eq('id', user.id)
-      .single();
+    // Check optimization limits using RPC
+    const { data: checkResult, error: checkError } = await supabaseClient
+      .rpc('check_optimization_allowed', {
+        p_user_id: user.id,
+        p_resource_type: 'product',
+        p_resource_id: productId,
+        p_force: force
+      });
 
-    const isTrialing = profile?.subscription_status === 'trialing';
-    
-    // Get current month usage
-    const currentMonth = new Date();
-    currentMonth.setDate(1);
-    currentMonth.setHours(0, 0, 0, 0);
+    if (checkError) {
+      console.error('Error checking optimization limits:', checkError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to check optimization limits' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    const { data: usage } = await supabaseClient
-      .from('usage_tracking')
-      .select('*')
-      .eq('seller_id', user.id)
-      .gte('month', currentMonth.toISOString().split('T')[0])
-      .single();
-
-    const currentUsage = usage || { optimizations_count: 0 };
-
-    // For non-trial users, check optimization limits
-    if (!isTrialing) {
-      const { data: plan } = await supabaseClient
-        .from('subscription_plans')
-        .select('max_optimizations_monthly')
-        .eq('id', profile?.current_plan_id || 'starter')
-        .single();
-
-      const maxOptimizations = plan?.max_optimizations_monthly || 999999;
-      
-      if (currentUsage.optimizations_count >= maxOptimizations) {
-        return new Response(
-          JSON.stringify({
-            error: "Limite d'optimisations atteinte",
-            limitReached: true,
-            usage: currentUsage,
-            shouldForcePayment: true
-          }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    if (!checkResult.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: checkResult.reason,
+          message: checkResult.message,
+          limitReached: true
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const { data: product, error: productError } = await supabaseClient
@@ -153,17 +135,6 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "Non autorisé" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if product already optimized for trial users
-    if (isTrialing && (product.optimization_count || 0) >= 1 && !force) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'trial_product_already_optimized',
-          message: 'Ce produit a déjà été optimisé pendant votre période d\'essai.'
-        }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -248,12 +219,19 @@ Example for a wooden coffee table:
       tags = product.product_type || product.category || "";
     }
 
+    // Update optimization history
+    const optimizationHistory = {
+      tags_generated: new Date().toISOString()
+    };
+
     const { error: updateError } = await supabaseClient
       .from("shopify_products")
       .update({
         tags: tags,
         seo_synced_to_shopify: false,
-        optimization_count: (product.optimization_count || 0) + 1
+        optimization_count: (product.optimization_count || 0) + 1,
+        last_optimization_at: new Date().toISOString(),
+        optimization_history: optimizationHistory
       })
       .eq("id", productId);
 

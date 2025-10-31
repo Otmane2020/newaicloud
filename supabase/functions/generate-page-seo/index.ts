@@ -104,19 +104,59 @@ Réponds uniquement en JSON:
 
     console.log('Generated SEO:', seoData);
 
-    // Mettre à jour la page seulement si ce n'est pas la homepage
+    // Check optimization limits for pages
     if (!isHomepage) {
+      const { data: checkResult, error: checkError } = await supabaseClient
+        .rpc('check_optimization_allowed', {
+          p_user_id: user.id,
+          p_resource_type: 'page',
+          p_resource_id: pageId,
+          p_force: false
+        });
+
+      if (checkError) {
+        console.error('Error checking optimization limits:', checkError);
+        throw new Error('Failed to check optimization limits');
+      }
+
+      if (!checkResult.allowed) {
+        return new Response(
+          JSON.stringify({ 
+            error: checkResult.reason,
+            message: checkResult.message 
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get current page data
+      const { data: currentPage } = await supabaseClient
+        .from('shopify_pages')
+        .select('optimization_count')
+        .eq('id', pageId)
+        .single();
+
+      // Update the page
       const { error: updateError } = await supabaseClient
         .from('shopify_pages')
         .update({
           seo_title: seoData.seo_title,
           seo_description: seoData.seo_description,
           optimized: true,
+          optimization_count: (currentPage?.optimization_count || 0) + 1,
+          last_optimization_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', pageId);
 
       if (updateError) throw updateError;
+
+      // Track usage
+      await supabaseClient.rpc('increment_usage', {
+        p_seller_id: user.id,
+        p_field: 'optimizations_count',
+        p_increment: 1
+      });
     }
 
     return new Response(

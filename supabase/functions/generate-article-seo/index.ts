@@ -19,6 +19,26 @@ Deno.serve(async (req) => {
     if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabase = createClient(supabaseUrl!, supabaseKey!);
+
+    // Get authorization
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Non autorisé" }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Non autorisé" }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
     const body = await req.json();
     console.log("📥 Received request body:", JSON.stringify(body));
     
@@ -47,12 +67,41 @@ Deno.serve(async (req) => {
           .from("blog_articles")
           .select("*")
           .eq("id", article_id)
+          .eq("user_id", user.id)
           .single();
 
         if (articleError || !article) {
-          console.error(`❌ Article not found: ${article_id}`);
+          console.error(`❌ Article not found or unauthorized: ${article_id}`);
           errorCount++;
-          results.push({ article_id, success: false, error: "Article not found" });
+          results.push({ article_id, success: false, error: "Article not found or unauthorized" });
+          continue;
+        }
+
+        // Check optimization limits using RPC
+        const { data: checkResult, error: checkError } = await supabase
+          .rpc('check_optimization_allowed', {
+            p_user_id: user.id,
+            p_resource_type: 'article',
+            p_resource_id: article_id,
+            p_force: false
+          });
+
+        if (checkError) {
+          console.error(`❌ Error checking limits for ${article_id}:`, checkError);
+          errorCount++;
+          results.push({ article_id, success: false, error: 'Failed to check optimization limits' });
+          continue;
+        }
+
+        if (!checkResult.allowed) {
+          console.log(`⚠️ Optimization not allowed for ${article_id}: ${checkResult.reason}`);
+          errorCount++;
+          results.push({ 
+            article_id, 
+            success: false, 
+            error: checkResult.message,
+            reason: checkResult.reason 
+          });
           continue;
         }
 
@@ -108,12 +157,14 @@ Retourne uniquement un JSON avec:
           };
         }
 
-        // Mettre à jour l'article
+        // Mettre à jour l'article avec tracking
         const { error: updateError } = await supabase
           .from("blog_articles")
           .update({
             meta_description: seoData.meta_description,
             keywords: seoData.keywords,
+            optimization_count: (article.optimization_count || 0) + 1,
+            last_optimization_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq("id", article_id);
@@ -124,6 +175,13 @@ Retourne uniquement un JSON avec:
           results.push({ article_id, success: false, error: updateError.message });
           continue;
         }
+
+        // Track usage
+        await supabase.rpc('increment_usage', {
+          p_seller_id: user.id,
+          p_field: 'optimizations_count',
+          p_increment: 1
+        });
 
         console.log(`✅ Successfully optimized article: ${article_id}`);
         successCount++;
