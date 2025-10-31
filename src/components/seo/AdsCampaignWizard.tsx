@@ -201,7 +201,11 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       }
       
       toast.success('Landing page créée avec succès !');
-      return data.landingPageUrl;
+      
+      // Wait a bit to ensure DB update is committed
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      return { landingPageUrl: data.landingPageUrl, html: data.code };
     } catch (error) {
       console.error('Error generating landing page:', error);
       toast.error('Erreur lors de la génération de la landing page');
@@ -319,20 +323,24 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       }
 
       // Generate landing page with AI
-      const landingPageUrl = await generateLandingPage(campaign.id);
+      const landingPageData = await generateLandingPage(campaign.id);
       
       // Update campaign with landing page URL
       await supabase
         .from('ads_campaigns')
         .update({ 
-          landing_page_url: landingPageUrl,
+          landing_page_url: landingPageData.landingPageUrl,
           status: 'active'
         })
         .eq('id', campaign.id);
 
-      // Create Shopify page
+      // Create Shopify page (with additional delay to ensure DB commit)
       try {
         toast.info('Création de la page Shopify...');
+        
+        // Additional safety delay to ensure landing_page_html is committed to DB
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
         const { data: shopifyData, error: shopifyError } = await supabase.functions.invoke(
           'create-shopify-landing-page',
           {
@@ -360,7 +368,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       toast.info('Landing page artistique générée', {
         action: {
           label: 'Voir',
-          onClick: () => window.open(landingPageUrl, '_blank')
+          onClick: () => window.open(landingPageData.landingPageUrl, '_blank')
         },
         duration: 10000
       });

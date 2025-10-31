@@ -29,6 +29,7 @@ serve(async (req) => {
     if (userError || !user) throw new Error("Unauthorized");
 
     // Get campaign data
+    console.log("Fetching campaign:", campaignId);
     const { data: campaign, error: campaignError } = await supabase
       .from("ads_campaigns")
       .select("*, landing_page_html, landing_page_url")
@@ -36,9 +37,18 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
     
-    if (campaignError) throw campaignError;
+    if (campaignError) {
+      console.error("Campaign fetch error:", campaignError);
+      throw campaignError;
+    }
+    
+    console.log("Campaign found:", campaign.name);
+    console.log("Landing page HTML present:", !!campaign.landing_page_html);
+    console.log("Landing page HTML length:", campaign.landing_page_html?.length || 0);
+    
     if (!campaign.landing_page_html) {
-      throw new Error("Landing page HTML not generated yet");
+      console.error("No landing_page_html found for campaign:", campaignId);
+      throw new Error("Landing page HTML not generated yet. Please wait a few seconds and try again.");
     }
 
     // Get active Shopify connection
