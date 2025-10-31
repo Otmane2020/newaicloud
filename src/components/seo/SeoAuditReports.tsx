@@ -25,8 +25,10 @@ import {
   Search,
   Zap,
   Loader2,
-  Download
+  Download,
+  Brain
 } from 'lucide-react';
+import { SeoAuditAI } from './SeoAuditAI';
 
 interface ScoreItem {
   label: string;
@@ -47,7 +49,7 @@ interface AuditSection {
 
 export function SeoAuditReports() {
   const [searchParams] = useSearchParams();
-  const [activeReport, setActiveReport] = useState('homepage');
+  const [activeReport, setActiveReport] = useState('ai-analysis');
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [hasData, setHasData] = useState(false);
@@ -522,7 +524,12 @@ export function SeoAuditReports() {
 
       {/* Tabs */}
       <Tabs value={activeReport} onValueChange={setActiveReport} className="space-y-6">
-        <TabsList className="grid grid-cols-2 md:grid-cols-5 gap-2 h-auto p-2">
+        <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2 h-auto p-2">
+          <TabsTrigger value="ai-analysis" className="flex items-center gap-2">
+            <Brain className="w-4 h-4" />
+            <span className="hidden sm:inline">Analyse IA</span>
+            <span className="sm:hidden">IA</span>
+          </TabsTrigger>
           <TabsTrigger value="homepage" className="flex items-center gap-2">
             <Home className="w-4 h-4" />
             <span className="hidden sm:inline">Page d'accueil</span>
@@ -549,6 +556,28 @@ export function SeoAuditReports() {
             <span className="sm:hidden">Global</span>
           </TabsTrigger>
         </TabsList>
+
+        {/* AI Analysis Tab */}
+        <TabsContent value="ai-analysis" className="space-y-6">
+          {latestReport?.audit_results?.aiAnalysis ? (
+            <SeoAuditAI 
+              analysis={latestReport.audit_results.aiAnalysis}
+              storeName={latestReport.audit_results.storeName || 'Votre boutique'}
+            />
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Brain className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Aucune analyse IA disponible</h3>
+                <p className="text-muted-foreground mb-4">Lancez un nouvel audit pour obtenir une analyse détaillée</p>
+                <Button onClick={startAudit} disabled={isLoading}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Démarrer l'analyse
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
         {/* Homepage Report */}
         <TabsContent value="homepage" className="space-y-6">

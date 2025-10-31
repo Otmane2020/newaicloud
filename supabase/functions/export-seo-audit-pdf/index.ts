@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
     const storeName = auditResults?.storeName || 'Boutique';
     const storeUrl = auditResults?.storeUrl || '';
     const analyzedAt = new Date(report.created_at).toLocaleDateString('fr-FR');
+    const aiAnalysis = auditResults?.aiAnalysis;
 
     // Generate PDF HTML content
     const htmlContent = `
@@ -138,6 +139,98 @@ Deno.serve(async (req) => {
         </div>
       </div>
     </div>
+
+    <!-- AI Diagnostic (if available) -->
+    ${aiAnalysis ? `
+    <div class="section" style="border-left-color: #8b5cf6;">
+      <h2 class="section-title">🤖 Diagnostic IA Approfondi</h2>
+      <p style="white-space: pre-wrap; line-height: 1.8; color: #475569;">${aiAnalysis.diagnostic}</p>
+    </div>
+
+    <!-- AI Critical Issues -->
+    <div class="section" style="background: #fef2f2; border-left-color: #ef4444;">
+      <h2 class="section-title">⚠️ Problèmes Critiques Identifiés par l'IA</h2>
+      <ul class="issue-list">
+        ${aiAnalysis.criticalIssues.map((issue: any) => `
+          <li class="issue-item">
+            <strong>${issue.title}</strong>
+            <p style="margin: 8px 0; color: #64748b;">${issue.description}</p>
+            <div style="display: flex; gap: 10px; font-size: 12px; color: #64748b;">
+              <span>📊 Impact: ${issue.impact}</span>
+              <span>📉 Perte estimée: ${issue.estimatedTrafficLoss}</span>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+
+    <!-- Quick Wins -->
+    <div class="section" style="background: #f0fdf4; border-left-color: #10b981;">
+      <h2 class="section-title">⚡ Quick Wins - Actions Rapides</h2>
+      <ul class="issue-list">
+        ${aiAnalysis.quickWins.map((win: any) => `
+          <li class="issue-item info">
+            <strong>${win.title}</strong>
+            <p style="margin: 8px 0; color: #64748b;">${win.description}</p>
+            <div style="display: flex; gap: 10px; font-size: 12px; color: #64748b;">
+              <span>⏱️ ${win.estimatedTime}</span>
+              <span>🎯 ${win.expectedGain}</span>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+
+    <!-- Action Plan (Top 10) -->
+    <div class="section">
+      <h2 class="section-title">📋 Plan d'Action Priorisé (Top 10)</h2>
+      <ul class="issue-list">
+        ${aiAnalysis.actionPlan.slice(0, 10).map((action: any, index: number) => `
+          <li class="issue-item ${action.priority === 'Haute' ? '' : action.priority === 'Moyenne' ? 'warning' : 'info'}">
+            <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 8px;">
+              <strong style="flex: 1;">${index + 1}. ${action.title}</strong>
+              <span style="background: ${action.priority === 'Haute' ? '#fee2e2' : action.priority === 'Moyenne' ? '#fef3c7' : '#dbeafe'}; 
+                           color: ${action.priority === 'Haute' ? '#991b1b' : action.priority === 'Moyenne' ? '#92400e' : '#1e40af'};
+                           padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                ${action.priority}
+              </span>
+            </div>
+            <p style="margin: 8px 0; color: #64748b;">${action.description}</p>
+            <div style="display: flex; gap: 10px; font-size: 12px; color: #64748b;">
+              <span>📂 ${action.category}</span>
+              <span>📊 Impact: ${action.estimatedImpact}</span>
+              <span>⏱️ ${action.effortHours}h</span>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+
+    <!-- Predictions -->
+    <div class="section" style="background: linear-gradient(135deg, #eff6ff 0%, #f3e8ff 100%);">
+      <h2 class="section-title">🎯 Prédictions & Objectifs</h2>
+      <div class="metrics-grid">
+        <div class="metric">
+          <div class="metric-label">Trafic dans 3 mois</div>
+          <div class="metric-value" style="color: #10b981; font-size: 20px;">${aiAnalysis.predictions.trafficIn3Months}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">ROI Estimé</div>
+          <div class="metric-value" style="color: #10b981; font-size: 20px;">${aiAnalysis.predictions.estimatedROI}</div>
+        </div>
+      </div>
+      <div style="margin-top: 20px;">
+        <strong style="display: block; margin-bottom: 10px;">Objectifs de Ranking:</strong>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          ${aiAnalysis.predictions.keywordGoals.map((keyword: string) => `
+            <span style="background: white; padding: 6px 12px; border-radius: 6px; font-size: 13px; border: 1px solid #e2e8f0;">
+              ${keyword}
+            </span>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+    ` : ''}
 
     <!-- Meta Titles Analysis -->
     ${generateMetaTitlesSection(report.meta_titles)}

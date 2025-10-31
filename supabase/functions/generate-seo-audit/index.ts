@@ -119,24 +119,76 @@ Deno.serve(async (req) => {
     console.log('Auditing image ALT tags...');
     const imageAltAudit = await auditImageAltTags(supabaseClient, user.id);
 
-    // 7. Generate Global Audit
+    // 7. Get collections data for AI analysis
+    console.log('Fetching collections for AI analysis...');
+    const { data: collections } = await supabaseClient
+      .from('shopify_collections')
+      .select('id, title, seo_title, seo_description, body_html')
+      .eq('user_id', user.id)
+      .limit(10);
+
+    // 8. Get pages data for AI analysis
+    console.log('Fetching pages for AI analysis...');
+    const { data: pages } = await supabaseClient
+      .from('shopify_pages')
+      .select('id, title, seo_title, seo_description, body_html')
+      .eq('user_id', user.id)
+      .limit(10);
+
+    // 9. Call AI Analysis for deep insights
+    console.log('Calling AI for deep SEO analysis...');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      serviceRoleKey
+    );
+
+    const aiAnalysisResponse = await supabaseAdmin.functions.invoke('analyze-seo-with-ai', {
+      body: {
+        storeName,
+        storeUrl,
+        products: products || [],
+        collections: collections || [],
+        articles: articles || [],
+        pages: pages || [],
+        homepageData: homepageAudit.elements,
+        metaTitlesIssues: metaTitlesAudit,
+        metaDescriptionsIssues: metaDescriptionsAudit,
+        imageAltIssues: imageAltAudit
+      }
+    });
+
+    if (aiAnalysisResponse.error) {
+      console.error('AI analysis error:', aiAnalysisResponse.error);
+      throw new Error('Failed to generate AI analysis');
+    }
+
+    const { analysis: aiAnalysis, globalScore: aiGlobalScore } = aiAnalysisResponse.data;
+
+    // 10. Generate Global Audit combining traditional + AI analysis
     console.log('Generating global audit...');
     const globalAudit = generateGlobalAudit(results);
     results.push(globalAudit);
 
-    // Calculate aggregate scores
-    const globalScore = Math.round(results.reduce((sum, r) => sum + r.score, 0) / results.length);
+    // Use AI-calculated scores
+    const finalScores = {
+      homepage: aiAnalysis.scores.homepage.score,
+      products: aiAnalysis.scores.products.score,
+      collections: aiAnalysis.scores.collections.score,
+      blog: aiAnalysis.scores.blog.score,
+      technical: aiAnalysis.scores.technical.score
+    };
 
-    // Save audit report to database
+    // Save comprehensive audit report to database
     console.log('Saving audit report to database...');
     await supabaseClient.from('seo_audit_reports').insert({
       user_id: user.id,
       store_id: connection.id,
-      global_score: globalScore,
-      homepage_score: homepageAudit.score,
-      products_score: products && products.length > 0 ? results.find(r => r.type === 'product')?.score || 0 : 0,
-      collections_score: collectionAudit.score,
-      blog_score: articles && articles.length > 0 ? results.find(r => r.type === 'blog')?.score || 0 : 0,
+      global_score: aiGlobalScore,
+      homepage_score: finalScores.homepage,
+      products_score: finalScores.products,
+      collections_score: finalScores.collections,
+      blog_score: finalScores.blog,
       meta_titles: metaTitlesAudit,
       meta_descriptions: metaDescriptionsAudit,
       image_alt_tags: imageAltAudit,
@@ -145,7 +197,8 @@ Deno.serve(async (req) => {
         results,
         storeName,
         storeUrl,
-        analyzedAt: new Date().toISOString()
+        analyzedAt: new Date().toISOString(),
+        aiAnalysis
       },
     });
 
@@ -155,12 +208,14 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         results,
-        globalScore,
+        globalScore: aiGlobalScore,
+        scores: finalScores,
         storeName,
         storeUrl,
         metaTitlesAudit,
         metaDescriptionsAudit,
         imageAltAudit,
+        aiAnalysis,
         completedAt: new Date().toISOString(),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

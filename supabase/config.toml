@@ -18,6 +18,12 @@ verify_jwt = true
 [functions.generate-seo-audit]
 verify_jwt = true
 
+[functions.analyze-seo-with-ai]
+verify_jwt = false
+
+[functions.export-seo-audit-pdf]
+verify_jwt = true
+
 [functions.check-usage-limits]
 verify_jwt = true
 
