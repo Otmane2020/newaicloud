@@ -291,7 +291,7 @@ export function SeoAuditDashboard() {
                         {rec.title}
                       </h4>
                       <ul className="space-y-2 ml-4">
-                        {rec.actions.map((action: string, idx: number) => (
+                        {rec.actions?.map((action: string, idx: number) => (
                           <li key={idx} className="flex items-start gap-2 text-sm">
                             <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                             <span>{action}</span>
