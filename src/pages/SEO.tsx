@@ -91,8 +91,7 @@ export default function SEO() {
             <ArticleManagement />
           </>
         )}
-        {activeTab === 'homepage' && <HomePageSeo />}
-        {activeTab === 'audit' && <HomePageSeoAudit />}
+        {activeTab === 'homepage' && <HomePageSeoAudit />}
         {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'automation' && <SeoAutomation />}
         {activeTab === 'kpis' && <SeoKPIs />}
