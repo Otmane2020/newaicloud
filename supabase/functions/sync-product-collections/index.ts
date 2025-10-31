@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
     console.log(`📦 Processing ${products?.length || 0} products`);
 
     let updatedCount = 0;
-    const shopifyUrl = connection.store_url.replace(/\/$/, "");
+    const shopifyUrl = connection.store_url.replace(/\/$/, "").replace(/^https?:\/\//, "");
     const accessToken = connection.access_token;
 
     // Process products using GraphQL (more efficient)
@@ -95,7 +95,7 @@ Deno.serve(async (req: Request) => {
         `;
 
         const graphqlResponse = await fetch(
-          `${shopifyUrl}/admin/api/2025-01/graphql.json`,
+          `https://${shopifyUrl}/admin/api/2025-01/graphql.json`,
           {
             method: "POST",
             headers: {

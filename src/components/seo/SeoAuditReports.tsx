@@ -24,7 +24,8 @@ import {
   Link as LinkIcon,
   Search,
   Zap,
-  Loader2
+  Loader2,
+  Download
 } from 'lucide-react';
 
 interface ScoreItem {
@@ -48,6 +49,7 @@ export function SeoAuditReports() {
   const [searchParams] = useSearchParams();
   const [activeReport, setActiveReport] = useState('homepage');
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [hasData, setHasData] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [auditResults, setAuditResults] = useState<any>(null);
@@ -131,6 +133,52 @@ export function SeoAuditReports() {
       toast.error(error.message || 'Erreur lors de l\'audit SEO');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Vous devez être connecté pour exporter le rapport');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('export-seo-audit-pdf', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      // The response is HTML content
+      const htmlBlob = new Blob([response.data], { type: 'text/html' });
+      const htmlUrl = URL.createObjectURL(htmlBlob);
+      
+      // Open in new window
+      const printWindow = window.open(htmlUrl, '_blank');
+      
+      if (printWindow) {
+        // Auto-trigger print dialog after content loads
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+        
+        toast.success('Rapport généré', {
+          description: "Le rapport s'ouvre dans une nouvelle fenêtre. Vous pouvez l'imprimer ou l'enregistrer en PDF.",
+        });
+      } else {
+        toast.error('Veuillez autoriser les pop-ups pour exporter le rapport');
+      }
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast.error("Impossible d'exporter le rapport PDF");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -428,23 +476,46 @@ export function SeoAuditReports() {
                 Analyse complète de votre site Shopify : pages d'accueil, produits, collections et articles
               </CardDescription>
             </div>
-            <Button
-              onClick={startAudit}
-              disabled={isLoading}
-              className="gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Refresh Audit
-                </>
+            <div className="flex gap-3">
+              <Button
+                onClick={startAudit}
+                disabled={isLoading}
+                className="gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Refresh Audit
+                  </>
+                )}
+              </Button>
+              
+              {latestReport && (
+                <Button
+                  onClick={handleExportPDF}
+                  disabled={isExporting}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Export...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      Exporter en PDF
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>

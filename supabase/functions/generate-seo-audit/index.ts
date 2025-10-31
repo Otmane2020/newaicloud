@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // Check for active Shopify connection
     const { data: connection, error: connectionError } = await supabaseClient
       .from('shopify_connections')
-      .select('id, store_url')
+      .select('id, store_url, store_name')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .maybeSingle();
@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
     }
 
     const storeUrl = connection.store_url;
+    const storeName = connection.store_name || connection.store_url.replace('https://', '').replace('.myshopify.com', '');
     const results: AuditResult[] = [];
 
     // 1. Audit Homepage
@@ -140,7 +141,12 @@ Deno.serve(async (req) => {
       meta_descriptions: metaDescriptionsAudit,
       image_alt_tags: imageAltAudit,
       ssl_secure: storeUrl.startsWith('https'),
-      audit_results: { results },
+      audit_results: { 
+        results,
+        storeName,
+        storeUrl,
+        analyzedAt: new Date().toISOString()
+      },
     });
 
     console.log('SEO audit completed successfully');
@@ -150,6 +156,8 @@ Deno.serve(async (req) => {
         success: true,
         results,
         globalScore,
+        storeName,
+        storeUrl,
         metaTitlesAudit,
         metaDescriptionsAudit,
         imageAltAudit,
