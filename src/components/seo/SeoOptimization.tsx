@@ -523,7 +523,7 @@ export function SeoOptimization() {
                 size="lg"
                 onClick={handleGenerateAll}
                 disabled={generating || notEnrichedCount === 0}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2 shadow-lg"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
               >
                 <Sparkles className="w-5 h-5" />
                 Start Optimization
@@ -674,7 +674,7 @@ export function SeoOptimization() {
               size="sm"
               onClick={handleGenerateForSelected}
               disabled={generating || selectedProducts.size === 0}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
             >
               <Zap className="w-4 h-4" />
               Optimize Selected ({selectedProducts.size})
@@ -685,7 +685,7 @@ export function SeoOptimization() {
               size="sm"
               onClick={handleGenerateAll}
               disabled={generating || notEnrichedCount === 0}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
             >
               <Sparkles className="w-4 h-4" />
               Optimize All
