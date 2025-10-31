@@ -285,7 +285,7 @@ Return ONLY the complete HTML document. Start with <!DOCTYPE html>. No markdown,
         landing_page_url: landingPageUrl,
         landing_page_html: generatedCode,
         updated_at: new Date().toISOString(),
-        status: 'landing_page_generated'
+        status: 'active'
       })
       .eq("id", campaignId);
     
