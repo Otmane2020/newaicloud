@@ -1262,6 +1262,7 @@ export type Database = {
           homepage_score: number | null
           id: string
           image_alt_tags: Json | null
+          images_score: number | null
           indexed_pages: number | null
           meta_descriptions: Json | null
           meta_titles: Json | null
@@ -1272,6 +1273,7 @@ export type Database = {
           recommendations: Json | null
           ssl_secure: boolean | null
           store_id: string | null
+          technical_score: number | null
           updated_at: string | null
           user_id: string
         }
@@ -1291,6 +1293,7 @@ export type Database = {
           homepage_score?: number | null
           id?: string
           image_alt_tags?: Json | null
+          images_score?: number | null
           indexed_pages?: number | null
           meta_descriptions?: Json | null
           meta_titles?: Json | null
@@ -1301,6 +1304,7 @@ export type Database = {
           recommendations?: Json | null
           ssl_secure?: boolean | null
           store_id?: string | null
+          technical_score?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -1320,6 +1324,7 @@ export type Database = {
           homepage_score?: number | null
           id?: string
           image_alt_tags?: Json | null
+          images_score?: number | null
           indexed_pages?: number | null
           meta_descriptions?: Json | null
           meta_titles?: Json | null
@@ -1330,6 +1335,7 @@ export type Database = {
           recommendations?: Json | null
           ssl_secure?: boolean | null
           store_id?: string | null
+          technical_score?: number | null
           updated_at?: string | null
           user_id?: string
         }
