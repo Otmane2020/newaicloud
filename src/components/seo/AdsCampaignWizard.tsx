@@ -58,9 +58,13 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
   const fetchCollections = async () => {
     setLoadingData(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
       const { data, error } = await supabase
         .from('shopify_collections')
         .select('id, title, image_url')
+        .eq('user_id', user.id)
         .order('title');
       if (error) throw error;
       setCollections(data || []);
@@ -75,9 +79,13 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
   const fetchProducts = async () => {
     setLoadingData(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
       const { data, error } = await supabase
         .from('shopify_products')
         .select('id, title, image_url, vendor')
+        .eq('seller_id', user.id)
         .order('title');
       if (error) throw error;
       setProducts(data || []);

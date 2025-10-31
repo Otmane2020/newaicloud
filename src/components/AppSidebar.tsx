@@ -51,10 +51,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const mainMenuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Products", url: "/products", icon: ShoppingBag },
-];
+// Removed - now defined with seoSubItems
 
 const seoSubItems = [
   { title: "Products", url: "/seo?tab=products", icon: ShoppingBag },
@@ -66,8 +63,13 @@ const seoSubItems = [
   { title: "Tags", url: "/seo?tab=tags", icon: Tags },
   { title: "Audit", url: "/seo?tab=audit", icon: BarChart3 },
   { title: "KPIs & Stats", url: "/seo?tab=kpis", icon: BarChart3 },
-  { title: "Ads Campaign", url: "/seo?tab=ads-campaign", icon: Megaphone },
   { title: "Automation", url: "/seo?tab=automation", icon: Settings },
+];
+
+const mainMenuItems = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Products", url: "/products", icon: ShoppingBag },
+  { title: "Ads Campaign", url: "/seo?tab=ads-campaign", icon: Megaphone },
 ];
 
 const blogSubItems = [
