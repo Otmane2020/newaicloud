@@ -38,9 +38,7 @@ serve(async (req) => {
             image_url,
             image_alt,
             seo_title,
-            seo_description,
-            optimization_count,
-            last_optimization_at
+            seo_description
           )
         ),
         ads_campaign_products(
@@ -72,9 +70,7 @@ serve(async (req) => {
             ai_texture,
             ai_pattern,
             ai_finish,
-            ai_shape,
-            optimization_count,
-            last_optimization_at
+            ai_shape
           )
         )
       `)
@@ -83,165 +79,185 @@ serve(async (req) => {
     
     if (campaignError) throw campaignError;
     
-    // Get user's store info with all details
-    const { data: store } = await supabase
-      .from("shopify_connections")
-      .select("*")
-      .eq("user_id", campaign.user_id)
-      .single();
-    
-    // Get product images for all campaign products
+    // Get product images and variants
     const productIds = campaign.ads_campaign_products?.map((p: any) => p.product?.id).filter(Boolean) || [];
+    
     let productImages: any[] = [];
-    if (productIds.length > 0) {
-      const { data: images } = await supabase
-        .from("product_images")
-        .select("*")
-        .in("product_id", productIds)
-        .order("position");
-      productImages = images || [];
-    }
-    
-    // Get product variants for pricing info
     let productVariants: any[] = [];
+    
     if (productIds.length > 0) {
-      const { data: variants } = await supabase
-        .from("product_variants")
-        .select("*")
-        .in("product_id", productIds);
-      productVariants = variants || [];
+      const [imagesResult, variantsResult] = await Promise.all([
+        supabase.from("product_images").select("*").in("product_id", productIds).order("position"),
+        supabase.from("product_variants").select("*").in("product_id", productIds)
+      ]);
+      
+      productImages = imagesResult.data || [];
+      productVariants = variantsResult.data || [];
     }
-    
-    // Prepare data for AI with full details
-    const collections = campaign.ads_campaign_collections?.map((c: any) => ({
-      ...c.collection,
-      images: [],
-    })) || [];
-    
+
+    // Prepare products data with enhanced info
     const products = campaign.ads_campaign_products?.map((p: any) => {
       const product = p.product;
+      const discount = product.compare_at_price 
+        ? Math.round((1 - product.price / product.compare_at_price) * 100)
+        : null;
+
       return {
         ...product,
+        discount,
+        discount_amount: product.compare_at_price ? (product.compare_at_price - product.price) : null,
         images: productImages.filter((img: any) => img.product_id === product.id),
         variants: productVariants.filter((v: any) => v.product_id === product.id),
+        main_image: product.image_url || (productImages.find((img: any) => img.product_id === product.id)?.src),
+        has_multiple_images: productImages.filter((img: any) => img.product_id === product.id).length > 1
       };
     }) || [];
-    
-    // Build detailed prompt with all data
-    const collectionsDetails = collections.map((c: any) => `
-      - ${c.title}
-        Description: ${c.body_html?.replace(/<[^>]*>/g, '').substring(0, 200) || 'N/A'}
-        SEO Title: ${c.seo_title || 'N/A'}
-        SEO Description: ${c.seo_description || 'N/A'}
-        Image: ${c.image_url || 'N/A'}
-    `).join('\n');
-    
-    const productsDetails = products.slice(0, 10).map((p: any) => `
-      - ${p.title} (${p.price || 'N/A'} ${p.currency || 'EUR'})
-        Description: ${(p.optimized_description || p.description || '').substring(0, 300)}
-        Catégorie: ${p.category || 'N/A'} ${p.sub_category ? `> ${p.sub_category}` : ''}
-        Style: ${p.style || 'N/A'}
-        Vendor: ${p.vendor || 'N/A'}
-        Tags: ${p.tags || 'N/A'}
-        AI Analysis: ${p.ai_vision_analysis?.substring(0, 200) || 'N/A'}
-        Couleur: ${p.ai_color || 'N/A'}
-        Matériau: ${p.ai_material || 'N/A'}
-        Prix normal: ${p.price || 'N/A'} ${p.currency || 'EUR'}
-        ${p.compare_at_price ? `Prix barré: ${p.compare_at_price} ${p.currency}` : ''}
-        Images: ${p.images?.length || 0} disponible(s)
-        Variants: ${p.variants?.length || 0} disponible(s)
-    `).join('\n');
-    
-    const storeDetails = store ? `
-INFORMATIONS BOUTIQUE COMPLÈTES:
-- Nom: ${store.store_name || 'N/A'}
-- URL: ${store.store_url || 'N/A'}
-- Connexion type: ${store.connection_type || 'N/A'}
-- Active depuis: ${store.connected_at || store.created_at}
-- Dernière sync: ${store.last_sync_at || 'N/A'}
-    ` : '';
 
-    const prompt = `Tu es un expert UX/UI designer et copywriter spécialisé en landing pages à haute conversion.
+    // 🎯 PROMPT ULTRA-OPTIMISÉ - LANDING PAGE PRODUITS UNIQUE
+    const prompt = `
+# 🎨 MISSION : Créer une LANDING PAGE PRODUITS "GALERIE D'ART" - ZERO TEMPLATE SHOPIFY
 
-MISSION: Génère une landing page React/TypeScript moderne et attractive pour une campagne e-commerce.
+## 🚫 STYLES STRICTEMENT INTERDITS :
+- ❌ Gallery carousel horizontal basique
+- ❌ Layout "Image gauche / infos droite" 
+- ❌ Section description textuelle ennuyeuse
+- ❌ Boutons "Add to Cart" standards
+- ❌ Grid produits symétrique générique
+- ❌ Fiches produits identiques
+- ❌ Design template e-commerce
 
-DONNÉES DE LA CAMPAGNE:
-- Type: ${campaign.campaign_type}
-- Nom: ${campaign.name}
-- Titre: ${campaign.headline}
-- Sous-titre: ${campaign.subheadline || "N/A"}
-- CTA: ${campaign.cta_text}
-- Status: ${campaign.status}
-- Créée le: ${campaign.created_at}
-- Highlights: ${JSON.stringify(campaign.highlights || [])}
-- Résumé boutique (généré par IA): ${campaign.store_summary || "N/A"}
+## ✅ STYLE OBLIGATOIRE : "GALERIE D'ART MODERNE"
+- 🎭 Chaque produit = œuvre d'art unique
+- 🖼️ Mise en page asymétrique et organique
+- ✨ Expérience immersive et sensorielle
+- 🎪 Design editorial haut de gamme
 
-${storeDetails}
+## 🏗️ ARCHITECTURE INNOVANTE :
 
-${collections.length > 0 ? `COLLECTIONS DÉTAILLÉES (${collections.length}):
-${collectionsDetails}` : 'Aucune collection sélectionnée'}
+### 1. HERO "IMMERSIF" 
+- Background : Video loop produit en situation réelle OU collage artistique des produits
+- Titre principal : Storytelling émotionnel "Vivez l'expérience [Brand]" 
+- Navigation visuelle : Mini-grid des produits en fond avec effet parallaxe
 
-${products.length > 0 ? `PRODUITS DÉTAILLÉS (${products.length}):
-${productsDetails}` : 'Aucun produit sélectionné'}
+### 2. SECTION "GALERIE EXPÉRIENTIELLE"
+Layout: MASONRY ASYMÉTRIQUE avec :
+- Cartes de tailles variables selon l'importance du produit
+- Overlay d'informations au hover avec animation morphing
+- Images en plein écran au click avec transition fluide
+- Système de filtres visuels (par ambiance, style, couleur)
 
-STRUCTURE OBLIGATOIRE:
+### 3. FICHE PRODUIT "MODE ARTISTE"
+**POUR CHAQUE PRODUIT, créer un layout UNIQUE :**
 
-1. HERO SECTION (Impact maximal):
-   - Background moderne (gradient ou image)
-   - Titre émotionnel et bénéfice-centré (pas juste le titre brut)
-   - Sous-titre percutant
-   - CTA principal ultra-visible avec micro-copy
-   - Animation subtile au scroll
-
-2. SECTION HIGHLIGHTS (Si disponibles):
-   - Affiche les points forts avec icônes
-   - Design moderne avec cards ou grid
-   - Visuellement attractif
-
-3. SECTION PRODUITS/COLLECTIONS:
-   - Grid responsive moderne
-   - Cards avec hover effects
-   - Images, titres, prix si disponibles
-   - CTA sur chaque produit
-
-4. SECTION CONFIANCE (Si résumé boutique):
-   - Storytelling de la marque
-   - Design épuré et élégant
-
-5. CTA FINAL:
-   - Répétition CTA avec urgence/scarcité si pertinent
-   - Design impactant
-
-CONTRAINTES TECHNIQUES:
-- React + TypeScript
-- Tailwind CSS avec tokens sémantiques (primary, secondary, accent)
-- 100% responsive
-- Animations Tailwind (animate-fade-in, animate-slide-up, etc.)
-- Images optimisées avec lazy loading
-- Accessibility (aria-labels, alt texts)
-
-STYLE:
-- Moderne, clean, espacé
-- Couleurs cohérentes (utilise primary/secondary)
-- Typography hiérarchisée
-- Hover effects partout
-- Micro-interactions
-
-CODE ATTENDU:
-Génère UNIQUEMENT le composant React complet, avec imports nécessaires.
-Format: \`\`\`tsx
-// Code ici
+**Option A - Layout "Storytelling Vertical"**
+\`\`\`
+🖼️ [Image principale en haut - 100% largeur]
+📖 [Titre + Description courte - overlay partiel]
+🎨 [Grid 3 colonnes : Couleurs + Matériaux + Dimensions]
+💫 [Section "Inspiration" avec moodboard]
+🛒 [CTA flottant bottom sticky]
 \`\`\`
 
-IMPORTANT:
-- Ne génère PAS de mock data, utilise les vraies données fournies
-- Sois créatif sur le copy (améliore les textes pour maximiser conversion)
-- Design HIGH-END, pas générique
-- Utilise les vraies images des produits/collections`;
+**Option B - Layout "Cinématique"**  
+\`\`\`
+🎬 [Video/GIF produit en situation - 60% écran]
+🎪 [Infos fixes à droite avec scroll indépendant]
+🌈 [Palette couleurs interactive]
+📱 [Gallery empilée verticalement]
+\`\`\`
 
-    console.log("Calling Lovable AI for landing page generation...");
+**Option C - Layout "Editorial Magazine"**
+\`\`\`
+📰 [Titre artistique typographie creative]
+🖼️ [Images full-bleed avec text overlay]
+📐 [Specs techniques dans colonne latérale stylisée]
+🎯 [CTA intégré dans le design editorial]
+\`\`\`
+
+### 4. INTERACTIONS AVANCÉES :
+- Hover 3D tilt sur les cards
+- Zoom magnifying glass sur images
+- Color picker interactif
+- Scroll-triggered animations
+- Micro-interactions sur chaque action
+
+## 🎨 SYSTÈME DESIGN PREMIUM :
+
+### Palette Émotionnelle :
+\`\`\`
+primary: '#1A1A1A',    // Noir profond artistique
+secondary: '#F5F5F5',   // Blanc galerie
+accent: '#E8C4A1',      // Terre naturelle
+spotlight: '#8B4513',   // Brun chaleureux
+text: '#2C2C2C',        // Gris charbon
+background: '#FAFAFA'   // Blanc cassé
+\`\`\`
+
+### Typographie Creative :
+- Headlines: 'Playfair Display' - Serif élégant
+- Subtitles: 'Cormorant Garamond' - Serif littéraire  
+- Body: 'Inter' - Sans-serif lisible
+- Accent: 'Montserrat' - Modern clean
+
+### Animations Signature :
+\`\`\`
+- fade-in-up-stagger (entrée produits)
+- morphing-overlay (hover cards)
+- parallax-scroll (background)
+- magnetic-cursor (boutons)
+- glassmorphism-effect (modals)
+\`\`\`
+
+## 📦 PRODUITS À METTRE EN VALEUR :
+
+${products.map((p: any, index: number) => `
+### 🎁 PRODUIT ${index + 1} - "${p.title}"
+**Prix :** ${p.compare_at_price ? `~~${p.compare_at_price}€~~ **${p.price}€** (${p.discount}% OFF)` : `${p.price}€`}
+**Description :** ${p.optimized_description || p.description || 'Produit premium'}
+**Style :** ${p.style || 'Moderne'} | **Matériau :** ${p.ai_material || 'Qualité supérieure'}
+**Couleur :** ${p.ai_color || 'Élégant'} | **Texture :** ${p.ai_texture || 'Raffinée'}
+**Analyse IA :** ${p.ai_vision_analysis?.substring(0, 150) || 'Design soigné et fonctionnel'}
+**Images disponibles :** ${p.images?.length || 1}
+**Catégorie :** ${p.category} ${p.sub_category ? `> ${p.sub_category}` : ''}
+
+**LAYOUT SUGGÉRÉ :** ${index % 3 === 0 ? 'Storytelling Vertical' : index % 3 === 1 ? 'Cinématique' : 'Editorial Magazine'}
+`).join('\n')}
+
+## 🛠️ DIRECTIVES TECHNIQUES :
+
+### Code Architecture :
+\`\`\`tsx
+// Composants principaux :
+<ArtGalleryHero />
+<MasonryProductGrid />
+  <ProductCard layout="unique" />
+<FloatingCart />
+<StorytellingModal />
+\`\`\`
+
+### Responsive Breakpoints :
+- Mobile : Stack vertical créatif
+- Tablet : Grid asymétrique adaptatif  
+- Desktop : Experience immersive complète
+
+### Performance :
+- Lazy loading images
+- Intersection Observer animations
+- CSS transforms hardware-accelerated
+
+## 🎯 CONSIGNES FINALES CRÉATIVES :
+
+1. **CHAQUE PRODUIT = UNE ŒUVRE** - Layout unique et mémorable
+2. **ZERO SYMÉTRIE** - Asymétrie organique naturelle
+3. **STORYTELLING VISUEL** - Moins de texte, plus d'émotion
+4. **INTERACTION TACTILE** - Feedback immédiat sur chaque action
+5. **MOBILE FIRST CREATIVE** - Adaptation innovante sur mobile
+
+**GÉNÈRE UNIQUEMENT LE CODE REACT/TYPESCRIPT COMPLET - PAS D'EXPLICATIONS**
+`;
+
+    console.log("Calling Lovable AI with artistic gallery prompt...");
     
-    // Call Lovable AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -250,14 +266,9 @@ IMPORTANT:
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.8,
-        max_tokens: 4000,
+        max_tokens: 5000,
       }),
     });
     
@@ -268,41 +279,50 @@ IMPORTANT:
     }
     
     const data = await response.json();
-    const generatedCode = data.choices[0]?.message?.content || "";
+    let generatedCode = data.choices[0]?.message?.content || "";
     
-    // Extract code from markdown if present
-    let code = generatedCode;
+    // Clean code extraction
     const codeMatch = generatedCode.match(/```(?:tsx|typescript|jsx)?\n([\s\S]*?)```/);
     if (codeMatch) {
-      code = codeMatch[1];
+      generatedCode = codeMatch[1];
     }
+
+    // Save to database
+    const landingPageUrl = `/gallery/${campaignId}`;
     
-    // Update campaign with landing page code and URL
-    const landingPageUrl = `/landing/${campaign.id}`;
-    
-    await supabase
+    const { error: updateError } = await supabase
       .from("ads_campaigns")
       .update({ 
         landing_page_url: landingPageUrl,
-        // Store the generated code in a new field (we'll need to add this column)
+        landing_page_html: generatedCode,
+        updated_at: new Date().toISOString(),
+        status: 'landing_page_generated'
       })
       .eq("id", campaignId);
     
+    if (updateError) {
+      console.error("Failed to save landing page:", updateError);
+    }
+
     return new Response(
       JSON.stringify({ 
-        code,
+        success: true,
+        code: generatedCode,
         landingPageUrl,
-        campaign,
-        collections,
-        products
+        productsCount: products.length,
+        campaignType: campaign.campaign_type,
+        generatedAt: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
     
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error generating artistic landing page:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : "Unknown error",
+        success: false 
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
