@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +54,14 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
 
   const totalSteps = 4;
   const progress = (step / totalSteps) * 100;
+
+  // Charger les collections et produits au montage du composant
+  useEffect(() => {
+    if (open) {
+      fetchCollections();
+      fetchProducts();
+    }
+  }, [open]);
 
   const fetchCollections = async () => {
     setLoadingData(true);
@@ -131,13 +139,6 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     if (step === 3 && formData.selectedProducts.length === 0 && formData.campaignType !== 'store') {
       toast.error('Veuillez sélectionner au moins un produit');
       return;
-    }
-
-    if (step === 2 && collections.length === 0) {
-      fetchCollections();
-    }
-    if (step === 3 && products.length === 0) {
-      fetchProducts();
     }
 
     setStep(step + 1);
