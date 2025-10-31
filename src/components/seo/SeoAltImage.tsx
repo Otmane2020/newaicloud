@@ -215,20 +215,47 @@ export function SeoAltImage() {
     await fetchImages();
 
     // Get updated images with new ALT texts
-    const updatedImages = await Promise.all(
-      finalImagesToGenerate.map(async (img) => {
-        const { data } = await supabase
-          .from('product_images')
-          .select('*, product:shopify_products(id, title, vendor, category)')
-          .eq('id', img.id)
-          .single();
-        return data ? { ...data, product: data.product } as ImageWithProduct : null;
-      })
-    );
+    try {
+      const updatedImages = await Promise.all(
+        finalImagesToGenerate.map(async (img) => {
+          try {
+            const { data, error } = await supabase
+              .from('product_images')
+              .select('*, product:shopify_products(id, title, vendor, category)')
+              .eq('id', img.id)
+              .maybeSingle();
+            
+            if (error) {
+              console.error(`Failed to fetch image ${img.id}:`, error);
+              return null;
+            }
+            
+            return data ? { ...data, product: data.product } as ImageWithProduct : null;
+          } catch (err) {
+            console.error(`Error fetching image ${img.id}:`, err);
+            return null;
+          }
+        })
+      );
 
-    setOptimizedImages(updatedImages.filter(Boolean) as ImageWithProduct[]);
-    setShowProgressDialog(false);
-    setShowResultsDialog(true);
+      const validImages = updatedImages.filter(Boolean) as ImageWithProduct[];
+      
+      if (validImages.length < finalImagesToGenerate.length) {
+        toast.warning(
+          `${validImages.length}/${finalImagesToGenerate.length} images chargées. ` +
+          `Certains produits ont peut-être été supprimés.`
+        );
+      }
+
+      setOptimizedImages(validImages);
+      setShowProgressDialog(false);
+      setShowResultsDialog(true);
+    } catch (error) {
+      console.error('Error fetching updated images:', error);
+      toast.error('Erreur lors du chargement des résultats');
+      setShowProgressDialog(false);
+      await fetchImages();
+    }
   };
 
   const handleSyncSelected = async () => {
@@ -241,26 +268,33 @@ export function SeoAltImage() {
       return;
     }
 
-    setSyncing(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: imagesToSync.length });
+    try {
+      setSyncing(true);
+      setShowProgressDialog(true);
+      setIsOptimizationComplete(false);
+      setProgress({ current: 0, total: imagesToSync.length });
 
-    for (let i = 0; i < imagesToSync.length; i++) {
-      try {
-        await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: { imageId: imagesToSync[i].id, syncAltText: true }
-        });
-        setProgress({ current: i + 1, total: imagesToSync.length });
-      } catch (error) {
-        console.error('Error syncing:', error);
+      for (let i = 0; i < imagesToSync.length; i++) {
+        try {
+          await supabase.functions.invoke('sync-seo-to-shopify', {
+            body: { imageId: imagesToSync[i].id, syncAltText: true }
+          });
+          setProgress({ current: i + 1, total: imagesToSync.length });
+        } catch (error) {
+          console.error('Error syncing:', error);
+        }
       }
-    }
 
-    setSyncing(false);
-    setIsOptimizationComplete(true);
-    setSelectedImages(new Set());
-    await fetchImages();
+      setSyncing(false);
+      setIsOptimizationComplete(true);
+      setSelectedImages(new Set());
+      await fetchImages();
+    } catch (error) {
+      console.error('Error in sync process:', error);
+      toast.error('Erreur lors de la synchronisation');
+      setSyncing(false);
+      setShowProgressDialog(false);
+    }
   };
 
   const handleCloseProgressDialog = () => {
