@@ -147,9 +147,21 @@ RÈGLES STRICTES:
     }
 
     const aiResult = await aiResponse.json();
-    const analysisText = aiResult.choices[0].message.content;
+    let analysisText = aiResult.choices[0].message.content;
     
     console.log('✅ AI analysis completed');
+
+    // Strip markdown code fences if present
+    analysisText = analysisText.trim();
+    if (analysisText.startsWith('```json')) {
+      analysisText = analysisText.slice(7); // Remove ```json
+    } else if (analysisText.startsWith('```')) {
+      analysisText = analysisText.slice(3); // Remove ```
+    }
+    if (analysisText.endsWith('```')) {
+      analysisText = analysisText.slice(0, -3); // Remove trailing ```
+    }
+    analysisText = analysisText.trim();
 
     let parsedAnalysis;
     try {
