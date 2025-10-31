@@ -21,8 +21,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     try {
       const saved = localStorage.getItem('app-language');
       if (saved === 'fr' || saved === 'en') return saved;
-      const browserLang = navigator.language?.split('-')[0];
-      return browserLang === 'fr' ? 'fr' : 'en';
+      return 'en'; // Default to English
     } catch {
       return 'en';
     }
