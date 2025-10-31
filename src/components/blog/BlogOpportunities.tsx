@@ -44,144 +44,24 @@ export function BlogOpportunities() {
 
   const analyzeAndGenerateOpportunities = async (products: any[], userId: string): Promise<Opportunity[]> => {
     try {
-      console.log('🧠 Analyzing product catalog for opportunities...');
+      console.log('🧠 Calling generate-blog-opportunities edge function...');
       
-      // Group products by category
-      const categoryMap = new Map<string, number>();
-      const priceRanges = { low: 0, medium: 0, high: 0 };
-      let totalProducts = products.length;
-      
-      products.forEach(product => {
-        const category = product.category || product.product_type || 'Général';
-        categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
-        
-        const price = parseFloat(product.price) || 0;
-        if (price < 50) priceRanges.low++;
-        else if (price < 200) priceRanges.medium++;
-        else priceRanges.high++;
-      });
+      const { data, error } = await supabase.functions.invoke('generate-blog-opportunities');
 
-      // Build a shorter, optimized prompt
-      const categories = Array.from(categoryMap.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10);
-      
-      const prompt = `Analyse ce catalogue e-commerce et génère 6-8 opportunités d'articles de blog SEO.
-
-📊 STATISTIQUES DU CATALOGUE :
-- Total produits : ${totalProducts}
-- Prix bas (<50€) : ${priceRanges.low}
-- Prix moyen (50-200€) : ${priceRanges.medium}  
-- Prix haut (>200€) : ${priceRanges.high}
-
-📁 CATÉGORIES PRINCIPALES :
-${categories.map(([cat, count]) => `- ${cat} : ${count} produits`).join('\n')}
-
-🎯 TYPES D'ARTICLES DEMANDÉS :
-1. Guides d'achat comparatifs
-2. Tutoriels pratiques
-3. Sélections thématiques
-4. Conseils d'experts
-5. Tendances du marché
-
-📝 FORMAT ATTENDU (JSON strict) :
-{
-  "opportunities": [
-    {
-      "title": "Guide d'achat : Comment choisir...",
-      "description": "Description captivante de 2-3 phrases",
-      "category": "${categories[0]?.[0] || 'Général'}",
-      "type": "guide",
-      "keywords": ["mot-clé 1", "mot-clé 2", "mot-clé 3"],
-      "seoScore": 85,
-      "difficulty": "medium"
-    }
-  ]
-}
-
-⚠️ RÈGLES STRICTES :
-- Retourner UNIQUEMENT du JSON valide
-- Minimum 6 opportunités, maximum 8
-- Titres accrocheurs avec mots-clés SEO
-- Descriptions courtes et percutantes
-- Keywords pertinents pour chaque article`;
-
-      console.log('📤 Sending request to AI (timeout: 30s)...');
-      
-      // Create abort controller for timeout
-      const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30 second timeout
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('chat-smart', {
-          body: {
-            userMessage: prompt,
-            conversationHistory: []
-          }
-        });
-
-        clearTimeout(timeoutId);
-
-        if (error) {
-          console.error('❌ Error from chat-smart:', error);
-          throw new Error(`Erreur API: ${error.message || 'Erreur inconnue'}`);
-        }
-
-        console.log('✅ Raw response from AI:', JSON.stringify(data).substring(0, 500));
-        
-        // Handle different response formats
-        let responseText = '';
-        if (typeof data === 'string') {
-          responseText = data;
-        } else if (data && typeof data.response === 'string') {
-          responseText = data.response;
-        } else if (data && typeof data.message === 'string') {
-          responseText = data.message;
-        } else {
-          throw new Error('Format de réponse invalide de l\'API');
-        }
-
-        if (!responseText) {
-          throw new Error('Réponse vide de l\'API');
-        }
-
-        console.log('📄 Response text preview:', responseText.substring(0, 200));
-        
-        // Clean up response
-        if (responseText.includes('```json')) {
-          responseText = responseText.split('```json')[1].split('```')[0];
-        } else if (responseText.includes('```')) {
-          responseText = responseText.split('```')[1].split('```')[0];
-        }
-        
-        const parsed = JSON.parse(responseText.trim());
-        
-        if (!parsed.opportunities || !Array.isArray(parsed.opportunities)) {
-          throw new Error('Format de réponse invalide: propriété "opportunities" manquante');
-        }
-
-        if (parsed.opportunities.length === 0) {
-          throw new Error('Aucune opportunité générée');
-        }
-
-        console.log(`✅ Generated ${parsed.opportunities.length} opportunities`);
-        return parsed.opportunities;
-        
-      } catch (apiError: any) {
-        clearTimeout(timeoutId);
-        if (apiError.name === 'AbortError') {
-          throw new Error('Timeout: L\'analyse a pris trop de temps (>30s)');
-        }
-        throw apiError;
+      if (error) {
+        console.error('❌ Error from edge function:', error);
+        throw new Error(`Erreur API: ${error.message || 'Erreur inconnue'}`);
       }
+
+      if (!data || !data.opportunities) {
+        throw new Error('Format de réponse invalide de l\'API');
+      }
+
+      console.log(`✅ Generated ${data.opportunities.length} opportunities`);
+      return data.opportunities;
       
     } catch (error) {
       console.error('❌ Error in analyzeAndGenerateOpportunities:', error);
-      console.error('📋 Error details:', {
-        name: (error as Error).name,
-        message: (error as Error).message,
-        stack: (error as Error).stack
-      });
       throw error;
     }
   };
