@@ -74,6 +74,7 @@ export function HomePageSeoAudit() {
   const [hasConnection, setHasConnection] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
   const { toast } = useToast();
@@ -203,14 +204,72 @@ export function HomePageSeoAudit() {
     }
   };
 
+  const importCurrentSeo = async () => {
+    if (!hasConnection) {
+      sonnerToast.error('Veuillez connecter votre boutique Shopify');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Get active store
+      const { data: store, error: storeError } = await supabase
+        .from('shopify_connections')
+        .select('store_url, access_token')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
+
+      if (storeError || !store) {
+        throw new Error('No active Shopify store found');
+      }
+
+      // Fetch homepage HTML to extract current meta tags
+      const response = await fetch(`https://${store.store_url}`, {
+        headers: {
+          'Accept': 'text/html',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch homepage');
+      }
+
+      const html = await response.text();
+
+      // Extract title
+      const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+      const currentTitle = titleMatch ? titleMatch[1].trim() : '';
+
+      // Extract meta description
+      const metaMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+      const currentDescription = metaMatch ? metaMatch[1].trim() : '';
+
+      if (currentTitle) setSeoTitle(currentTitle);
+      if (currentDescription) setSeoDescription(currentDescription);
+
+      sonnerToast.success('SEO actuel importé avec succès', {
+        description: `Titre: ${currentTitle.substring(0, 50)}...`,
+      });
+    } catch (error: any) {
+      console.error('Error importing current SEO:', error);
+      sonnerToast.error(error.message || 'Erreur lors de l\'import du SEO');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const syncToShopify = async () => {
     if (!seoTitle || !seoDescription) {
-      sonnerToast.error('Please fill in all fields');
+      sonnerToast.error('Veuillez remplir tous les champs');
       return;
     }
 
     if (!hasConnection) {
-      sonnerToast.error('Please connect your Shopify store first');
+      sonnerToast.error('Veuillez connecter votre boutique Shopify');
       return;
     }
 
@@ -225,17 +284,68 @@ export function HomePageSeoAudit() {
 
       if (error) throw error;
 
-      sonnerToast.success('Successfully synced to Shopify');
+      // Verify the sync was successful by fetching from Shopify
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: store } = await supabase
+          .from('shopify_connections')
+          .select('store_url, access_token')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+
+        if (store) {
+          // Wait a bit for Shopify to update
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          // Fetch homepage to verify
+          const verifyResponse = await fetch(`https://${store.store_url}`, {
+            headers: { 'Accept': 'text/html' },
+          });
+
+          if (verifyResponse.ok) {
+            const html = await verifyResponse.text();
+            const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+            const currentTitle = titleMatch ? titleMatch[1].trim() : '';
+
+            if (currentTitle === seoTitle) {
+              sonnerToast.success('✅ Synchronisation vérifiée sur Shopify', {
+                description: 'Les changements sont bien visibles sur votre boutique',
+              });
+            } else {
+              sonnerToast.warning('⚠️ Synchronisation effectuée', {
+                description: 'Les metafields sont créés mais peuvent prendre quelques minutes pour apparaître',
+              });
+            }
+          }
+        }
+      }
+
+      // Save to database
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        await supabase
+          .from('homepage_seo')
+          .upsert({
+            user_id: currentUser.id,
+            seo_title: seoTitle,
+            seo_description: seoDescription,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id'
+          });
+      }
+
     } catch (error: any) {
       console.error('Error syncing to Shopify:', error);
       
       if (error.message?.includes('Permission denied')) {
-        sonnerToast.error('Permission denied', {
-          description: 'Make sure your Shopify token has the required permissions',
+        sonnerToast.error('Permission refusée', {
+          description: 'Vérifiez que votre token Shopify a les permissions nécessaires',
           duration: 8000
         });
       } else {
-        sonnerToast.error(error.message || 'Error syncing to Shopify');
+        sonnerToast.error(error.message || 'Erreur lors de la synchronisation');
       }
     } finally {
       setSyncing(false);
@@ -658,14 +768,14 @@ export function HomePageSeoAudit() {
                   SEO Optimization
                 </CardTitle>
                 <CardDescription>
-                  Generate and sync optimized SEO title and description based on your analysis
+                  Import current SEO, optimize with AI, and sync to Shopify
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    The AI will generate SEO content based on your homepage analysis results
+                    Import your current homepage SEO, then optimize it with AI before syncing
                   </AlertDescription>
                 </Alert>
 
@@ -676,7 +786,7 @@ export function HomePageSeoAudit() {
                       id="seo-title"
                       value={seoTitle}
                       onChange={(e) => setSeoTitle(e.target.value)}
-                      placeholder="Click 'Generate with AI' to create optimized title..."
+                      placeholder="Import or generate SEO title..."
                       maxLength={60}
                     />
                     <p className="text-xs text-muted-foreground">
@@ -690,60 +800,73 @@ export function HomePageSeoAudit() {
                       id="seo-description"
                       value={seoDescription}
                       onChange={(e) => setSeoDescription(e.target.value)}
-                      placeholder="Click 'Generate with AI' to create optimized description..."
-                      rows={4}
+                      placeholder="Import or generate SEO description..."
                       maxLength={160}
+                      rows={4}
                     />
                     <p className="text-xs text-muted-foreground">
                       {seoDescription.length}/160 characters
                     </p>
                   </div>
-                </div>
 
-                <div className="flex gap-2 flex-wrap">
-                  <Button
-                    onClick={generateSeoWithAI}
-                    disabled={generating}
-                    variant="outline"
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    {generating ? 'Generating...' : 'Generate with AI'}
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={importCurrentSeo}
+                      disabled={importing}
+                      variant="outline"
+                      className="flex-1 min-w-[180px]"
+                    >
+                      {importing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Importation...
+                        </>
+                      ) : (
+                        <>
+                          <Target className="w-4 h-4 mr-2" />
+                          Importer SEO actuel
+                        </>
+                      )}
+                    </Button>
 
-                  <Button
-                    onClick={syncToShopify}
-                    disabled={syncing || !seoTitle || !seoDescription}
-                    className="bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {syncing ? 'Syncing...' : 'Sync to Shopify'}
-                  </Button>
-                </div>
+                    <Button
+                      onClick={generateSeoWithAI}
+                      disabled={generating}
+                      variant="outline"
+                      className="flex-1 min-w-[180px]"
+                    >
+                      {generating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Génération...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Optimiser avec IA
+                        </>
+                      )}
+                    </Button>
 
-                {/* Preview */}
-                {(seoTitle || seoDescription) && (
-                  <div className="mt-6 p-4 border rounded-lg space-y-3 bg-muted/50">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Search Result Preview
-                      </p>
-                      <SeoConfidenceBadge 
-                        seoTitle={seoTitle} 
-                        seoDescription={seoDescription}
-                      />
-                    </div>
-                    {seoTitle && (
-                      <h3 className="text-lg font-semibold text-primary">
-                        {seoTitle}
-                      </h3>
-                    )}
-                    {seoDescription && (
-                      <p className="text-sm text-muted-foreground">
-                        {seoDescription}
-                      </p>
-                    )}
+                    <Button
+                      onClick={syncToShopify}
+                      disabled={syncing || !seoTitle || !seoDescription}
+                      className="flex-1 min-w-[180px] bg-orange-600 hover:bg-orange-700"
+                    >
+                      {syncing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Synchronisation...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Sync to Shopify
+                        </>
+                      )}
+                    </Button>
                   </div>
-                )}
+                 </div>
               </CardContent>
             </Card>
           )}

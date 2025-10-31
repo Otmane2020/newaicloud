@@ -28,7 +28,7 @@ serve(async (req) => {
     // Get active store
     const { data: store, error: storeError } = await supabase
       .from('shopify_connections')
-      .select('shop_domain, access_token')
+      .select('id, store_url, access_token')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .single();
@@ -37,9 +37,44 @@ serve(async (req) => {
       throw new Error('No active Shopify store found');
     }
 
-    // Fetch theme assets to find images in homepage sections
+    // Fetch the homepage HTML directly
+    const homepageResponse = await fetch(`https://${store.store_url}`, {
+      headers: {
+        'Accept': 'text/html',
+      },
+    });
+
+    if (!homepageResponse.ok) {
+      throw new Error('Failed to fetch homepage HTML');
+    }
+
+    const homepageHtml = await homepageResponse.text();
+
+    // Extract all img tags from the homepage HTML
+    const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*(?:alt=["']([^"']*)["'])?[^>]*>/gi;
+    const homepageImages: { src: string; alt_text: string | null }[] = [];
+    
+    let match;
+    while ((match = imgRegex.exec(homepageHtml)) !== null) {
+      let src = match[1];
+      const alt = match[2] || null;
+      
+      // Convert relative URLs to absolute
+      if (src.startsWith('//')) {
+        src = 'https:' + src;
+      } else if (src.startsWith('/')) {
+        src = `https://${store.store_url}${src}`;
+      }
+      
+      // Filter out tiny images (icons, etc.) and data URIs
+      if (!src.startsWith('data:') && !src.includes('icon') && !src.includes('favicon')) {
+        homepageImages.push({ src, alt_text: alt });
+      }
+    }
+
+    // Also fetch theme assets to find images in homepage sections
     const themeResponse = await fetch(
-      `https://${store.shop_domain}/admin/api/2025-01/themes.json`,
+      `https://${store.store_url}/admin/api/2025-01/themes.json`,
       {
         headers: {
           'X-Shopify-Access-Token': store.access_token,
@@ -48,83 +83,80 @@ serve(async (req) => {
       }
     );
 
-    if (!themeResponse.ok) {
-      throw new Error('Failed to fetch themes');
-    }
+    if (themeResponse.ok) {
 
-    const themesData = await themeResponse.json();
-    const mainTheme = themesData.themes.find((t: any) => t.role === 'main');
+      const themesData = await themeResponse.json();
+      const mainTheme = themesData.themes?.find((t: any) => t.role === 'main');
 
-    if (!mainTheme) {
-      throw new Error('No main theme found');
-    }
+      if (mainTheme) {
+        // Fetch theme files to get homepage sections
+        const assetsResponse = await fetch(
+          `https://${store.store_url}/admin/api/2025-01/themes/${mainTheme.id}/assets.json`,
+          {
+            headers: {
+              'X-Shopify-Access-Token': store.access_token,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
-    // Fetch theme files to get homepage sections
-    const assetsResponse = await fetch(
-      `https://${store.shop_domain}/admin/api/2025-01/themes/${mainTheme.id}/assets.json`,
-      {
-        headers: {
-          'X-Shopify-Access-Token': store.access_token,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+        if (assetsResponse.ok) {
+          const assetsData = await assetsResponse.json();
+          
+          // Find images from templates/index.json (homepage sections)
+          const indexTemplate = assetsData.assets?.find((a: any) => a.key === 'templates/index.json');
+          
+          if (indexTemplate) {
+            const templateResponse = await fetch(
+              `https://${store.store_url}/admin/api/2025-01/themes/${mainTheme.id}/assets.json?asset[key]=${encodeURIComponent(indexTemplate.key)}`,
+              {
+                headers: {
+                  'X-Shopify-Access-Token': store.access_token,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
 
-    if (!assetsResponse.ok) {
-      throw new Error('Failed to fetch theme assets');
-    }
-
-    const assetsData = await assetsResponse.json();
-    
-    // Find images from templates/index.json (homepage sections)
-    const indexTemplate = assetsData.assets.find((a: any) => a.key === 'templates/index.json');
-    
-    let homepageImages: { src: string; alt_text: string | null }[] = [];
-
-    if (indexTemplate) {
-      const templateResponse = await fetch(
-        `https://${store.shop_domain}/admin/api/2025-01/themes/${mainTheme.id}/assets.json?asset[key]=${encodeURIComponent(indexTemplate.key)}`,
-        {
-          headers: {
-            'X-Shopify-Access-Token': store.access_token,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (templateResponse.ok) {
-        const templateData = await templateResponse.json();
-        const content = JSON.parse(templateData.asset.value);
-        
-        // Extract images from sections
-        if (content.sections) {
-          Object.values(content.sections).forEach((section: any) => {
-            if (section.settings) {
-              Object.entries(section.settings).forEach(([key, value]) => {
-                if ((key.includes('image') || key.includes('img')) && typeof value === 'string' && value.startsWith('http')) {
-                  homepageImages.push({
-                    src: value,
-                    alt_text: section.settings[`${key}_alt`] || null
-                  });
-                }
-              });
-            }
-            // Check blocks inside sections
-            if (section.blocks) {
-              Object.values(section.blocks).forEach((block: any) => {
-                if (block.settings) {
-                  Object.entries(block.settings).forEach(([key, value]) => {
-                    if ((key.includes('image') || key.includes('img')) && typeof value === 'string' && value.startsWith('http')) {
-                      homepageImages.push({
-                        src: value,
-                        alt_text: block.settings[`${key}_alt`] || null
+            if (templateResponse.ok) {
+              const templateData = await templateResponse.json();
+              try {
+                const content = JSON.parse(templateData.asset.value);
+                
+                // Extract images from sections
+                if (content.sections) {
+                  Object.values(content.sections).forEach((section: any) => {
+                    if (section.settings) {
+                      Object.entries(section.settings).forEach(([key, value]) => {
+                        if ((key.includes('image') || key.includes('img')) && typeof value === 'string' && value.startsWith('http')) {
+                          homepageImages.push({
+                            src: value,
+                            alt_text: section.settings[`${key}_alt`] || null
+                          });
+                        }
+                      });
+                    }
+                    // Check blocks inside sections
+                    if (section.blocks) {
+                      Object.values(section.blocks).forEach((block: any) => {
+                        if (block.settings) {
+                          Object.entries(block.settings).forEach(([key, value]) => {
+                            if ((key.includes('image') || key.includes('img')) && typeof value === 'string' && value.startsWith('http')) {
+                              homepageImages.push({
+                                src: value,
+                                alt_text: block.settings[`${key}_alt`] || null
+                              });
+                            }
+                          });
+                        }
                       });
                     }
                   });
                 }
-              });
+              } catch (e) {
+                console.error('Error parsing template JSON:', e);
+              }
             }
-          });
+          }
         }
       }
     }
@@ -141,7 +173,7 @@ serve(async (req) => {
         .from('homepage_images')
         .upsert({
           user_id: user.id,
-          store_id: (await supabase.from('shopify_connections').select('id').eq('user_id', user.id).single()).data?.id,
+          store_id: store.id,
           src: img.src,
           alt_text: img.alt_text,
           position: importedCount,
