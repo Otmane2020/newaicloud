@@ -91,13 +91,29 @@ export function CollectionOptimization() {
   const fetchCollections = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Récupérer les collections avec le nombre de produits associés
+      const { data: collectionsData, error } = await supabase
         .from('shopify_collections')
         .select('*')
         .order('title', { ascending: true });
 
       if (error) throw error;
-      setCollections(data || []);
+
+      // Récupérer tous les produits pour compter combien sont dans chaque collection
+      const { data: productsData } = await supabase
+        .from('shopify_products')
+        .select('id, collection_ids');
+
+      // Filtrer pour ne garder que les collections qui ont au moins 1 produit
+      const collectionsWithProducts = (collectionsData || []).filter(collection => {
+        const hasProducts = productsData?.some(product => 
+          product.collection_ids && product.collection_ids.includes(collection.id)
+        );
+        return hasProducts;
+      });
+
+      setCollections(collectionsWithProducts);
     } catch (error) {
       console.error('Error fetching collections:', error);
       toast.error('Failed to load collections');
@@ -484,25 +500,6 @@ export function CollectionOptimization() {
             <div className="flex gap-3">
               <Button
                 size="lg"
-                onClick={handleSyncProductCollections}
-                disabled={syncing}
-                variant="outline"
-                className="gap-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
-              >
-                {syncing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Syncing...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-5 h-5" />
-                    Sync Produits
-                  </>
-                )}
-              </Button>
-              <Button
-                size="lg"
                 onClick={handleGenerateAll}
                 disabled={optimizing || notOptimizedCount === 0}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
@@ -640,40 +637,6 @@ export function CollectionOptimization() {
                 Optimiser tout
               </Button>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleImportCollectionsFromShopify}
-                disabled={syncing || optimizing}
-                className="flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                Import Collections
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleImportCollections}
-                disabled={syncing || optimizing}
-                className="flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                Import Images
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSyncProductCollections}
-                disabled={syncing || optimizing}
-                className="flex items-center gap-2"
-                title="Synchroniser les liens produits-collections"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Sync Produits
-              </Button>
-              
               <Button variant="outline" size="icon" onClick={fetchCollections}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
@@ -732,14 +695,8 @@ export function CollectionOptimization() {
           <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Aucune collection trouvée</h3>
           <p className="text-muted-foreground mb-4">
-            {searchTerm ? 'Ajustez votre recherche' : 'Importez vos collections depuis Shopify'}
+            {searchTerm ? 'Ajustez votre recherche ou réimportez depuis l\'onglet Intégration' : 'Importez vos collections depuis l\'onglet Intégration'}
           </p>
-          {!searchTerm && (
-            <Button onClick={handleImportCollections} disabled={syncing}>
-              <Upload className="w-4 h-4 mr-2" />
-              Import Shopify
-            </Button>
-          )}
         </Card>
       )}
 

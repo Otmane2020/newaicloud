@@ -292,20 +292,6 @@ export default function Collections() {
         </div>
         
         <div className="flex gap-2">
-          <Button onClick={handleImportCollections} variant="outline" disabled={importing}>
-            <Package className="w-4 h-4 mr-2" />
-            Importer Collections
-          </Button>
-          
-          <Button onClick={handleImportArticles} variant="outline" disabled={importing}>
-            <FileText className="w-4 h-4 mr-2" />
-            Importer Articles
-          </Button>
-          
-          <Button onClick={handleFullImport} disabled={importing}>
-            <Upload className="w-4 h-4 mr-2" />
-            Tout Importer
-          </Button>
         </div>
       </div>
 
@@ -386,7 +372,7 @@ export default function Collections() {
           <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-lg font-medium mb-2">Aucune collection trouvée</p>
           <p className="text-muted-foreground">
-            Importez vos collections depuis Shopify
+            Utilisez le bouton "Tout Importer" dans l'onglet Intégration pour importer vos collections depuis Shopify
           </p>
         </Card>
       ) : viewMode === 'grid' ? (

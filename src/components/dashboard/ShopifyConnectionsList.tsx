@@ -243,7 +243,7 @@ export function ShopifyConnectionsList() {
     return () => clearInterval(pollInterval);
   }, [importJobId, showProgressDialog]);
 
-  const importProducts = async (store: ShopifyConnection) => {
+  const importAllContent = async (store: ShopifyConnection) => {
     try {
       setImportingStoreId(store.id);
       
@@ -315,6 +315,9 @@ export function ShopifyConnectionsList() {
       setLimitReached(false);
       setShowProgressDialog(true);
 
+      const globalToastId = toast.loading('Import global en cours...');
+
+      // 1. Import Products
       const { data: importData, error } = await supabase.functions.invoke('import-products', {
         body: requestBody
       });
@@ -326,8 +329,7 @@ export function ShopifyConnectionsList() {
         setImportJobId(importData.jobId);
       }
       
-      // Import articles in parallel
-      console.log('🚀 Starting articles import...');
+      // 2. Import Articles
       try {
         const { data: articlesData, error: articlesError } = await supabase.functions.invoke('import-shopify-articles', {
           body: { 
@@ -337,25 +339,60 @@ export function ShopifyConnectionsList() {
           }
         });
         
-        if (articlesError) {
-          console.error('❌ Articles import error:', articlesError);
-        } else if (articlesData) {
-          console.log('✅ Articles import response:', articlesData);
+        if (!articlesError && articlesData) {
           const count = articlesData.count || 0;
           setArticlesImported(count);
-          console.log(`📊 Total articles imported: ${count}`);
-          
-          if (count > 0) {
-            toast.success(`${count} articles successfully imported!`);
-          }
         }
       } catch (articleError) {
         console.error('❌ Error importing articles:', articleError);
-        // Don't fail the whole import if articles fail
       }
+
+      // 3. Import Pages
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: pagesData } = await supabase.functions.invoke('import-shopify-pages', {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: {
+              storeId: fullStore.id,
+              shopName: cleanShopName,
+              authToken: fullStore.access_token,
+            },
+          });
+          
+          if (pagesData) {
+            setPagesImported(pagesData.imported || 0);
+          }
+        }
+      } catch (pageError) {
+        console.error('❌ Error importing pages:', pageError);
+      }
+
+      // 4. Import Collections
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase.functions.invoke('import-shopify-collections', {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: {
+              storeId: fullStore.id,
+              shopName: cleanShopName,
+              authToken: fullStore.access_token,
+            },
+          });
+        }
+      } catch (collectionError) {
+        console.error('❌ Error importing collections:', collectionError);
+      }
+
+      toast.success('Import global terminé !', { id: globalToastId });
       
     } catch (error: any) {
-      console.error('Error importing products:', error);
+      console.error('Error importing content:', error);
       toast.error(error.message || 'Error during import');
       setShowProgressDialog(false);
     } finally {
@@ -444,19 +481,19 @@ export function ShopifyConnectionsList() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => importProducts(store)}
+                    onClick={() => importAllContent(store)}
                     disabled={importingStoreId === store.id}
                     className="gap-2"
                   >
                     {importingStoreId === store.id ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        Importing...
+                        Import en cours...
                       </>
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4" />
-                        Import Products & Pages & Articles
+                        Tout Importer
                       </>
                     )}
                   </Button>
@@ -479,7 +516,7 @@ export function ShopifyConnectionsList() {
         onOpenChange={setShowImportConfirm}
         onConfirm={() => {
           if (storeToImport) {
-            importProducts(storeToImport);
+            importAllContent(storeToImport);
           }
           setShowImportConfirm(false);
         }}
