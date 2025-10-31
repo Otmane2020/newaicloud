@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 interface Product {
@@ -29,16 +29,30 @@ interface Product {
   google_brand?: string | null;
   shopify_id?: string | null;
   store_id?: string | null;
+  seller_id: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  product_type?: string | null;
 }
 
 interface Variant {
   id: string;
+  product_id: string;
   title: string;
   price: string;
   option1: string | null;
   option2: string | null;
   option3: string | null;
   image_url: string | null;
+  sku?: string | null;
+}
+
+interface FeedSettings {
+  user_id: string;
+  store_name: string;
+  default_currency?: string;
+  default_condition?: string;
+  default_brand?: string;
 }
 
 function getSupabaseClient() {
@@ -49,119 +63,275 @@ function getSupabaseClient() {
 }
 
 function escapeXml(unsafe: string): string {
+  if (!unsafe) return "";
   return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + "...";
+}
+
+function generateProductId(product: Product, variant?: Variant): string {
+  // Use variant ID if available, otherwise product ID
+  if (variant?.id) return `variant_${variant.id}`;
+  return `product_${product.id}`;
+}
+
+function generateVariantTitle(product: Product, variant: Variant): string {
+  const baseTitle = product.optimized_title || product.seo_title || product.title;
+
+  if (!variant.option1 && !variant.option2 && !variant.option3) {
+    return baseTitle;
+  }
+
+  const options = [variant.option1, variant.option2, variant.option3]
+    .filter((opt) => opt && opt.trim() !== "")
+    .join(" - ");
+
+  return `${baseTitle} - ${options}`;
+}
+
+function getProductDescription(product: Product): string {
+  return product.optimized_description || product.seo_description || product.description || product.title;
+}
+
+function getProductImage(product: Product, variant?: Variant): string {
+  // Prefer variant image, then product image, then placeholder
+  return variant?.image_url || product.image_url || "https://newai.sale/placeholder.svg";
+}
+
+function getProductPrice(product: Product, variant?: Variant): number {
+  const priceStr = variant?.price || product.price;
+  return parseFloat(priceStr) || 0;
+}
+
+function getProductAvailability(product: Product): string {
+  return product.status === "active" ? "in stock" : "out of stock";
+}
+
+function getProductCondition(product: Product): string {
+  const condition = product.google_condition || "new";
+  // Validate condition against Google's allowed values
+  const allowedConditions = ["new", "refurbished", "used"];
+  return allowedConditions.includes(condition) ? condition : "new";
+}
+
+function getProductBrand(product: Product, feedSettings?: FeedSettings): string {
+  return product.google_brand || product.vendor || feedSettings?.default_brand || "Generic";
+}
+
+function getProductMpn(product: Product, variant?: Variant): string {
+  return product.google_mpn || variant?.sku || product.vendor || `MPN-${product.id}`;
+}
+
+function getGoogleProductCategory(product: Product): string | null {
+  // Ensure the category is a valid Google product category ID or name
+  if (!product.google_product_category) return null;
+
+  // If it's a numeric string, it's likely a category ID
+  if (/^\d+$/.test(product.google_product_category)) {
+    return product.google_product_category;
+  }
+
+  // Otherwise, escape and use as is
+  return escapeXml(product.google_product_category);
 }
 
 async function generateGoogleShoppingFeed(
-  products: Product[], 
+  products: Product[],
   variants: { [key: string]: Variant[] },
   sellerId: string,
-  storeDomain: string | null
+  storeDomain: string | null,
+  feedSettings?: FeedSettings,
 ): Promise<string> {
-  const baseUrl = storeDomain || "https://newai.sale";
+  const baseUrl = storeDomain ? `https://${storeDomain}` : "https://newai.sale";
   const date = new Date().toISOString();
-  
+
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
   <channel>
-    <title>Product Feed</title>
+    <title>Google Shopping Feed</title>
     <link>${baseUrl}</link>
-    <description>Google Shopping Product Feed</description>
+    <description>Product feed for Google Shopping</description>
     <lastBuildDate>${date}</lastBuildDate>
 `;
 
+  let itemCount = 0;
+
   for (const product of products) {
     const productVariants = variants[product.id] || [];
-    
+
     // If product has variants, create an entry for each variant
     if (productVariants.length > 0) {
       for (const variant of productVariants) {
-        const variantTitle = product.optimized_title || 
-          `${product.title}${variant.option1 ? ' - ' + variant.option1 : ''}${variant.option2 ? ' - ' + variant.option2 : ''}${variant.option3 ? ' - ' + variant.option3 : ''}`;
-        
-        // Use Shopify product link if available
-        const productUrl = product.shopify_id && storeDomain
-          ? `${storeDomain}/products/${product.handle}`
-          : `https://newai.sale/product/${product.handle}`;
-          
-        const imageUrl = variant.image_url || product.image_url || `${baseUrl}/placeholder.svg`;
-        const price = parseFloat(variant.price);
-        const currency = product.currency || 'EUR';
-        const availability = product.status === 'active' ? 'in stock' : 'out of stock';
-        const condition = product.google_condition || 'new';
-        const brand = product.google_brand || product.vendor || 'N/A';
-        const mpn = product.google_mpn || product.vendor || 'N/A';
-        
+        const itemId = generateProductId(product, variant);
+        const title = truncateText(generateVariantTitle(product, variant), 150);
+        const description = truncateText(getProductDescription(product), 5000);
+        const productUrl =
+          product.shopify_id && storeDomain
+            ? `${baseUrl}/products/${product.handle}`
+            : `${baseUrl}/product/${product.handle}`;
+        const imageUrl = getProductImage(product, variant);
+        const price = getProductPrice(product, variant);
+        const currency = product.currency || feedSettings?.default_currency || "EUR";
+        const availability = getProductAvailability(product);
+        const condition = getProductCondition(product);
+        const brand = getProductBrand(product, feedSettings);
+        const mpn = getProductMpn(product, variant);
+        const googleCategory = getGoogleProductCategory(product);
+
+        // Skip products with invalid prices
+        if (price <= 0) {
+          console.warn(`Skipping product ${itemId} with invalid price: ${price}`);
+          continue;
+        }
+
         xml += `
     <item>
-      <g:id>${escapeXml(variant.id)}</g:id>
-      <g:title>${escapeXml(variantTitle)}</g:title>
-      <g:description>${escapeXml(product.optimized_description || product.description || product.title)}</g:description>
+      <g:id>${escapeXml(itemId)}</g:id>
+      <g:title>${escapeXml(title)}</g:title>
+      <g:description>${escapeXml(description)}</g:description>
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>
+      <g:additional_image_link>${escapeXml(imageUrl)}</g:additional_image_link>
       <g:availability>${escapeXml(availability)}</g:availability>
-      <g:price>${price.toFixed(2)} ${currency}</g:price>
+      <g:price>${price.toFixed(2)} ${currency}</g:price>`;
+
+        // Add sale price if available and valid
+        if (product.compare_at_price) {
+          const comparePrice = parseFloat(product.compare_at_price);
+          if (comparePrice > price) {
+            xml += `
+      <g:sale_price>${comparePrice.toFixed(2)} ${currency}</g:sale_price>`;
+          }
+        }
+
+        xml += `
       <g:condition>${escapeXml(condition)}</g:condition>
       <g:brand>${escapeXml(brand)}</g:brand>
       <g:mpn>${escapeXml(mpn)}</g:mpn>`;
-        
-        if (product.google_product_category) {
+
+        // Add product type and category
+        if (product.product_type) {
           xml += `
-      <g:google_product_category>${escapeXml(product.google_product_category)}</g:google_product_category>`;
+      <g:product_type>${escapeXml(product.product_type)}</g:product_type>`;
         }
-        
+
+        if (googleCategory) {
+          xml += `
+      <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
+        }
+
+        // Add GTIN if available
         if (product.google_gtin) {
           xml += `
       <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
         }
-        
+
+        // Add item group ID for variants
+        if (productVariants.length > 1) {
+          xml += `
+      <g:item_group_id>${escapeXml(`group_${product.id}`)}</g:item_group_id>`;
+        }
+
+        // Add variant attributes
+        if (variant.option1) {
+          xml += `
+      <g:size>${escapeXml(variant.option1)}</g:size>`;
+        }
+
+        if (variant.option2) {
+          xml += `
+      <g:color>${escapeXml(variant.option2)}</g:color>`;
+        }
+
+        if (variant.option3) {
+          xml += `
+      <g:material>${escapeXml(variant.option3)}</g:material>`;
+        }
+
         xml += `
     </item>`;
+
+        itemCount++;
       }
     } else {
       // Product without variants - single entry
-      const productUrl = product.shopify_id && storeDomain
-        ? `${storeDomain}/products/${product.handle}`
-        : `https://newai.sale/product/${product.handle}`;
-        
-      const imageUrl = product.image_url || `${baseUrl}/placeholder.svg`;
-      const price = parseFloat(product.price);
-      const currency = product.currency || 'EUR';
-      const availability = product.status === 'active' ? 'in stock' : 'out of stock';
-      const condition = product.google_condition || 'new';
-      const brand = product.google_brand || product.vendor || 'N/A';
-      const mpn = product.google_mpn || product.vendor || 'N/A';
-      
+      const itemId = generateProductId(product);
+      const title = truncateText(product.optimized_title || product.seo_title || product.title, 150);
+      const description = truncateText(getProductDescription(product), 5000);
+      const productUrl =
+        product.shopify_id && storeDomain
+          ? `${baseUrl}/products/${product.handle}`
+          : `${baseUrl}/product/${product.handle}`;
+      const imageUrl = getProductImage(product);
+      const price = getProductPrice(product);
+      const currency = product.currency || feedSettings?.default_currency || "EUR";
+      const availability = getProductAvailability(product);
+      const condition = getProductCondition(product);
+      const brand = getProductBrand(product, feedSettings);
+      const mpn = getProductMpn(product);
+      const googleCategory = getGoogleProductCategory(product);
+
+      // Skip products with invalid prices
+      if (price <= 0) {
+        console.warn(`Skipping product ${itemId} with invalid price: ${price}`);
+        continue;
+      }
+
       xml += `
     <item>
-      <g:id>${escapeXml(product.id)}</g:id>
-      <g:title>${escapeXml(product.optimized_title || product.title)}</g:title>
-      <g:description>${escapeXml(product.optimized_description || product.description || product.title)}</g:description>
+      <g:id>${escapeXml(itemId)}</g:id>
+      <g:title>${escapeXml(title)}</g:title>
+      <g:description>${escapeXml(description)}</g:description>
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>
+      <g:additional_image_link>${escapeXml(imageUrl)}</g:additional_image_link>
       <g:availability>${escapeXml(availability)}</g:availability>
-      <g:price>${price.toFixed(2)} ${currency}</g:price>
+      <g:price>${price.toFixed(2)} ${currency}</g:price>`;
+
+      // Add sale price if available and valid
+      if (product.compare_at_price) {
+        const comparePrice = parseFloat(product.compare_at_price);
+        if (comparePrice > price) {
+          xml += `
+      <g:sale_price>${comparePrice.toFixed(2)} ${currency}</g:sale_price>`;
+        }
+      }
+
+      xml += `
       <g:condition>${escapeXml(condition)}</g:condition>
       <g:brand>${escapeXml(brand)}</g:brand>
       <g:mpn>${escapeXml(mpn)}</g:mpn>`;
-      
-      if (product.google_product_category) {
+
+      // Add product type and category
+      if (product.product_type) {
         xml += `
-      <g:google_product_category>${escapeXml(product.google_product_category)}</g:google_product_category>`;
+      <g:product_type>${escapeXml(product.product_type)}</g:product_type>`;
       }
-      
+
+      if (googleCategory) {
+        xml += `
+      <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
+      }
+
+      // Add GTIN if available
       if (product.google_gtin) {
         xml += `
       <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
       }
-      
+
       xml += `
     </item>`;
+
+      itemCount++;
     }
   }
 
@@ -169,6 +339,7 @@ async function generateGoogleShoppingFeed(
   </channel>
 </rss>`;
 
+  console.log(`Generated feed with ${itemCount} items for seller ${sellerId}`);
   return xml;
 }
 
@@ -177,94 +348,132 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
+  if (req.method !== "GET") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const url = new URL(req.url);
-    const pathParts = url.pathname.split('/');
-    
-    // Support two URL formats:
-    // 1. /shoppingfeed/{store_name}/xml (new format)
-    // 2. /shoppingfeed/{seller_id}/xml (legacy format)
-    const identifier = pathParts[pathParts.length - 2];
-    
-    if (!identifier || identifier === 'xml') {
+    const pathParts = url.pathname.split("/").filter((part) => part !== "");
+
+    // Support URL formats:
+    // /shoppingfeed/{store_name}/xml
+    // /shoppingfeed/{seller_id}/xml
+    const identifierIndex = pathParts.findIndex((part) => part === "shoppingfeed") + 1;
+
+    if (identifierIndex === 0 || identifierIndex >= pathParts.length) {
       return new Response(
-        JSON.stringify({ error: "Store name or Seller ID is required in the path" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
+        JSON.stringify({
+          error: "Invalid URL format. Use /shoppingfeed/{store_name}/xml or /shoppingfeed/{seller_id}/xml",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
+    const identifier = pathParts[identifierIndex];
+
+    if (!identifier || identifier === "xml") {
+      return new Response(JSON.stringify({ error: "Store name or Seller ID is required in the path" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = getSupabaseClient();
-    
-    // Try to find feed settings by store_name first (new format)
+
+    // Try to find feed settings by store_name first
     let sellerId: string | null = null;
     let storeDomain: string | null = null;
-    
-    const { data: feedSettings } = await supabase
-      .from('merchant_feed_settings')
-      .select('user_id')
-      .eq('store_name', identifier)
+    let feedSettings: FeedSettings | null = null;
+
+    const { data: settingsData } = await supabase
+      .from("merchant_feed_settings")
+      .select("*")
+      .eq("store_name", identifier)
       .single();
-    
-    if (feedSettings) {
-      sellerId = feedSettings.user_id;
-      
+
+    if (settingsData) {
+      sellerId = settingsData.user_id;
+      feedSettings = settingsData;
+
       // Get store domain from shopify_connections
       const { data: connection } = await supabase
-        .from('shopify_connections')
-        .select('store_url')
-        .eq('user_id', sellerId)
+        .from("shopify_connections")
+        .select("store_url")
+        .eq("user_id", sellerId)
+        .eq("is_active", true)
         .single();
-      
-      if (connection) {
+
+      if (connection?.store_url) {
         storeDomain = connection.store_url;
       }
     } else {
       // Fallback to legacy format (seller_id directly)
       sellerId = identifier;
+
+      // Try to get feed settings by user_id
+      const { data: userSettings } = await supabase
+        .from("merchant_feed_settings")
+        .select("*")
+        .eq("user_id", sellerId)
+        .single();
+
+      if (userSettings) {
+        feedSettings = userSettings;
+      }
+
+      // Get store domain
+      const { data: connection } = await supabase
+        .from("shopify_connections")
+        .select("store_url")
+        .eq("user_id", sellerId)
+        .eq("is_active", true)
+        .single();
+
+      if (connection?.store_url) {
+        storeDomain = connection.store_url;
+      }
     }
-    
+
     if (!sellerId) {
-      return new Response(
-        JSON.stringify({ error: "Invalid store name or seller ID" }),
-        { 
-          status: 404, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
-      );
+      return new Response(JSON.stringify({ error: "Store or seller not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-    
-    // Fetch active products for this seller
+
+    console.log(`Generating feed for seller: ${sellerId}, store: ${storeDomain}`);
+
+    // Fetch active products for this seller with all necessary fields
     const { data: products, error } = await supabase
-      .from('shopify_products')
-      .select('*')
-      .eq('seller_id', sellerId)
-      .eq('status', 'active');
+      .from("shopify_products")
+      .select("*")
+      .eq("seller_id", sellerId)
+      .eq("status", "active")
+      .not("price", "is", null);
 
     if (error) {
-      console.error('Database error:', error);
+      console.error("Database error:", error);
       throw error;
     }
 
     if (!products || products.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No active products found for this seller" }),
-        { 
-          status: 404, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
-      );
+      return new Response(JSON.stringify({ error: "No active products found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Fetch all variants for these products
-    const productIds = products.map(p => p.id);
-    const { data: allVariants } = await supabase
-      .from('product_variants')
-      .select('*')
-      .in('product_id', productIds);
-    
+    const productIds = products.map((p) => p.id);
+    const { data: allVariants } = await supabase.from("product_variants").select("*").in("product_id", productIds);
+
     // Group variants by product_id
     const variantsByProduct: { [key: string]: Variant[] } = {};
     if (allVariants) {
@@ -276,25 +485,32 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const xmlFeed = await generateGoogleShoppingFeed(products, variantsByProduct, sellerId, storeDomain);
+    const xmlFeed = await generateGoogleShoppingFeed(
+      products,
+      variantsByProduct,
+      sellerId,
+      storeDomain,
+      feedSettings || undefined,
+    );
 
     return new Response(xmlFeed, {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/xml; charset=utf-8",
+        "Content-Disposition": `attachment; filename="google-shopping-feed-${identifier}.xml"`,
       },
     });
   } catch (error) {
     console.error("Error generating shopping feed:", error);
     return new Response(
-      JSON.stringify({ 
-        error: "Internal server error", 
-        message: error instanceof Error ? error.message : "Unknown error" 
+      JSON.stringify({
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : "Unknown error",
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
