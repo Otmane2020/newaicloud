@@ -1397,7 +1397,13 @@ export type Database = {
           is_active: boolean | null
           is_encrypted: boolean | null
           last_sync_at: string | null
+          store_address: string | null
+          store_business_hours: string | null
+          store_category: string | null
+          store_description: string | null
+          store_label: string | null
           store_name: string | null
+          store_phone: string | null
           store_url: string
           token_iv: string | null
           updated_at: string
@@ -1414,7 +1420,13 @@ export type Database = {
           is_active?: boolean | null
           is_encrypted?: boolean | null
           last_sync_at?: string | null
+          store_address?: string | null
+          store_business_hours?: string | null
+          store_category?: string | null
+          store_description?: string | null
+          store_label?: string | null
           store_name?: string | null
+          store_phone?: string | null
           store_url: string
           token_iv?: string | null
           updated_at?: string
@@ -1431,7 +1443,13 @@ export type Database = {
           is_active?: boolean | null
           is_encrypted?: boolean | null
           last_sync_at?: string | null
+          store_address?: string | null
+          store_business_hours?: string | null
+          store_category?: string | null
+          store_description?: string | null
+          store_label?: string | null
           store_name?: string | null
+          store_phone?: string | null
           store_url?: string
           token_iv?: string | null
           updated_at?: string

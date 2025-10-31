@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,7 +24,10 @@ import {
   Code,
   Share2,
   Loader2,
-  Upload
+  Upload,
+  ExternalLink,
+  Store,
+  Target
 } from 'lucide-react';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 
@@ -62,6 +66,7 @@ interface AuditResult {
 }
 
 export function HomePageSeoAudit() {
+  const navigate = useNavigate();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [hasConnection, setHasConnection] = useState(false);
@@ -471,17 +476,107 @@ export function HomePageSeoAudit() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {result.recommendations.map((recommendation, index) => (
-                    <Alert key={index}>
-                      <div className="flex items-start gap-3">
-                        {getPriorityIcon(index)}
-                        <AlertDescription className="flex-1">
-                          {recommendation}
-                        </AlertDescription>
-                      </div>
-                    </Alert>
-                  ))}
+                <div className="space-y-4">
+                  {result.recommendations.map((recommendation, index) => {
+                    // Detect recommendation type for action buttons
+                    const isImageAltRecommendation = recommendation.toLowerCase().includes('alt') || 
+                      recommendation.toLowerCase().includes('image');
+                    const isMetadataRecommendation = recommendation.toLowerCase().includes('métadonnées') || 
+                      recommendation.toLowerCase().includes('boutique') ||
+                      recommendation.toLowerCase().includes('nom commercial');
+                    const isH1Recommendation = recommendation.toLowerCase().includes('h1') ||
+                      recommendation.toLowerCase().includes('titre principal');
+                    const missingAlts = result.elements.totalImages - result.elements.altsCount;
+                    
+                    return (
+                      <Alert key={index} className="p-4">
+                        <div className="flex items-start gap-3">
+                          {getPriorityIcon(index)}
+                          <div className="flex-1 space-y-3">
+                            <AlertDescription>
+                              {recommendation}
+                            </AlertDescription>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex gap-2 flex-wrap">
+                              {isImageAltRecommendation && missingAlts > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => navigate('/seo/alt-images')}
+                                  className="gap-2"
+                                >
+                                  <ImageIcon className="w-4 h-4" />
+                                  Corriger {missingAlts} images
+                                </Button>
+                              )}
+                              
+                              {isMetadataRecommendation && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => navigate('/integration?tab=metadata')}
+                                  className="gap-2"
+                                >
+                                  <Store className="w-4 h-4" />
+                                  Métadonnées boutique
+                                </Button>
+                              )}
+                              
+                              {isH1Recommendation && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  asChild
+                                >
+                                  <a 
+                                    href={`https://admin.shopify.com`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="gap-2"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                    Éditeur Shopify
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Alert>
+                    );
+                  })}
+                </div>
+                
+                {/* Quick Actions Summary */}
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-2">
+                  <div className="font-medium flex items-center gap-2">
+                    <Target className="w-4 h-4" />
+                    Actions Rapides
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {result.elements.totalImages - result.elements.altsCount > 0 && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => navigate('/seo/alt-images')}
+                        className="justify-start gap-2"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        {result.elements.totalImages - result.elements.altsCount} images à optimiser
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => navigate('/integration')}
+                      className="justify-start gap-2"
+                    >
+                      <Store className="w-4 h-4" />
+                      Configurer métadonnées
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

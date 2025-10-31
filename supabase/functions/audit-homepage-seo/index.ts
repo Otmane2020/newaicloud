@@ -629,20 +629,24 @@ DÉTAILS DE L'ANALYSE:
 - Titre: "${elements.title}" (${elements.title.length}/60 caractères)
 - Meta Description: "${elements.metaDescription}" (${elements.metaDescription.length}/160 caractères)
 - H1: "${elements.h1}" (${elements.h1.length} caractères)
+- H2s détectés: ${elements.h2s.slice(0, 5).join(', ') || 'Aucun'}
 - Structure H2: ${elements.h2s.length} sections
-- Images optimisées: ${elements.altsCount}/${elements.totalImages} (${Math.round((elements.altsCount/elements.totalImages)*100)}%)
+- Images sans alt text: ${elements.totalImages - elements.altsCount} sur ${elements.totalImages} (${Math.round(((elements.totalImages - elements.altsCount) / Math.max(elements.totalImages, 1)) * 100)}%)
 - Contenu texte: ${elements.contentLength} caractères
+- Densité mots-clés top 5: ${Object.entries(elements.keywordDensity).slice(0, 5).map(([word, freq]) => `"${word}" (${freq})`).join(', ')}
 - Performance estimée: ${elements.loadingSpeed}/100
 - Mobile Friendly: ${elements.isMobileFriendly ? 'Oui' : 'Non'}
 - Schema.org: ${elements.hasSchema ? `Oui (${elements.schemaTypes.join(', ')})` : 'Non'}
 - OpenGraph: ${elements.hasOpenGraph ? 'Oui' : 'Non'}
 - Liens internes: ${elements.internalLinks}
+- Liens externes: ${elements.externalLinks}
 
 Génère 3 à 5 recommandations PRÉCISES et ACTIONNABLES pour Shopify, classées par ordre de priorité. Chaque recommandation doit:
-1. Être spécifique à Shopify quand c'est possible
-2. Inclure une action concrète à réaliser
-3. Se concentrer sur les gains les plus importants
-4. Être rédigée en français clair et professionnel
+1. Être spécifique avec des exemples concrets tirés de l'analyse ci-dessus
+2. Inclure une action réalisable dans l'admin Shopify ou le thème
+3. Se concentrer sur les gains SEO les plus importants
+4. Mentionner les éléments actuels à améliorer (ex: "Optimiser les ${elements.totalImages - elements.altsCount} images sans alt text détectées")
+5. Être rédigée en français clair et professionnel
 
 Réponds UNIQUEMENT avec la liste des recommandations, sans introduction ni conclusion.`;
 

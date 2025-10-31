@@ -5,6 +5,61 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to fetch and analyze HTML
+const fetchAndAnalyzeHtml = async (url: string) => {
+  const htmlResponse = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; NewAI-SEO-Bot/1.0)'
+    }
+  });
+  
+  if (!htmlResponse.ok) {
+    throw new Error(`Failed to fetch homepage HTML: ${htmlResponse.status}`);
+  }
+  
+  const html = await htmlResponse.text();
+  
+  // Extract key SEO elements
+  const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+  const h2Matches = html.match(/<h2[^>]*>(.*?)<\/h2>/gi) || [];
+  const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i);
+  const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+  
+  // Extract body text (remove HTML tags)
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  let bodyText = '';
+  if (bodyMatch) {
+    bodyText = bodyMatch[1]
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  
+  // Extract keywords from content
+  const words = bodyText.toLowerCase().match(/\b\w+\b/g) || [];
+  const wordFreq: Record<string, number> = {};
+  words.forEach(word => {
+    if (word.length > 4) {
+      wordFreq[word] = (wordFreq[word] || 0) + 1;
+    }
+  });
+  const topKeywords = Object.entries(wordFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([word]) => word);
+  
+  return {
+    h1: h1Match ? h1Match[1].replace(/<[^>]+>/g, '').trim() : '',
+    h2s: h2Matches.map(h2 => h2.replace(/<[^>]+>/g, '').trim()).slice(0, 5),
+    metaDescription: metaDescMatch ? metaDescMatch[1] : '',
+    title: titleMatch ? titleMatch[1].trim() : '',
+    bodyText: bodyText.substring(0, 1000),
+    topKeywords
+  };
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,17 +86,46 @@ Deno.serve(async (req) => {
     let textContent = '';
 
     if (isHomepage) {
-      // Pour la page d'accueil, récupérer les infos de la boutique
+      // Pour la page d'accueil, récupérer les infos complètes de la boutique
       const { data: connection } = await supabaseClient
         .from('shopify_connections')
-        .select('store_name, store_url')
+        .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .single();
 
       if (connection) {
-        pageTitle = connection.store_name || 'My Store';
-        textContent = `E-commerce store: ${connection.store_name}. Homepage of the Shopify store.`;
+        // Fetch and analyze real homepage content
+        const homepageUrl = `https://${connection.store_url}`;
+        console.log(`[GENERATE-PAGE-SEO] Analyzing homepage: ${homepageUrl}`);
+        
+        const elements = await fetchAndAnalyzeHtml(homepageUrl);
+        
+        pageTitle = elements.title || connection.store_label || connection.store_name || 'Home';
+        
+        // Build rich context from real content
+        const storeLabel = connection.store_label || connection.store_name || 'Boutique';
+        const storeCategory = connection.store_category || 'E-commerce';
+        const storeDescription = connection.store_description || '';
+        
+        textContent = `
+BOUTIQUE E-COMMERCE :
+- Nom commercial : ${storeLabel}
+- Secteur : ${storeCategory}
+- Description : ${storeDescription}
+${connection.store_phone ? `- Téléphone : ${connection.store_phone}` : ''}
+${connection.store_address ? `- Adresse : ${connection.store_address}` : ''}
+
+CONTENU ACTUEL DE LA PAGE D'ACCUEIL :
+- Titre actuel : "${elements.title}"
+- H1 actuel : "${elements.h1 || 'Aucun H1 détecté'}"
+- H2s principaux : ${elements.h2s.join(', ') || 'Aucun'}
+- Meta description actuelle : "${elements.metaDescription || 'Aucune'}"
+- Mots-clés détectés : ${elements.topKeywords.join(', ')}
+
+EXTRAIT DU CONTENU :
+${elements.bodyText}
+        `.trim();
       }
       
       console.log(`Generating SEO for homepage of: ${pageTitle}`);
@@ -63,7 +147,24 @@ Deno.serve(async (req) => {
     }
 
     // Générer le SEO avec Lovable AI
-    const prompt = `Génère un titre SEO optimisé (max 60 caractères) et une meta description (max 160 caractères) pour cette page ${isHomepage ? 'home page' : 'Shopify'}:
+    const prompt = isHomepage 
+      ? `Tu es un expert SEO français spécialisé en e-commerce. Génère un titre SEO et une meta description optimisés pour la page d'accueil de cette boutique Shopify.
+
+${textContent}
+
+INSTRUCTIONS :
+- Titre SEO : Max 60 caractères, incluant le nom de la boutique et l'avantage principal
+- Meta Description : Max 160 caractères, engageant avec appel à l'action
+- Utilise les mots-clés détectés naturellement
+- Cible les clients potentiels du secteur mentionné
+- Mets en avant la proposition de valeur unique
+
+Réponds uniquement en JSON valide sans markdown :
+{
+  "seo_title": "...",
+  "seo_description": "..."
+}`
+      : `Génère un titre SEO optimisé (max 60 caractères) et une meta description (max 160 caractères) pour cette page Shopify:
 
 Titre: ${pageTitle}
 Contenu: ${textContent}
