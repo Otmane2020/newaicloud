@@ -6,8 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { OptimizationProgressDialog } from './OptimizationProgressDialog';
-import { OptimizationResultsDialog } from './OptimizationResultsDialog';
+import { ProgressDialog, ResultsDialog, SyncConfirmationDialog, SuccessDialog } from './SeoWorkflowDialogs';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -659,19 +658,17 @@ export function SeoAltImage() {
       )}
 
       {/* Optimization Progress Dialog */}
-      <OptimizationProgressDialog
+      <ProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        title={generating ? "Génération des textes ALT en cours" : "Synchronisation Shopify"}
+        type="alt"
+        operation={generating ? 'optimizing' : 'syncing'}
         current={progress.current}
         total={progress.total}
-        isComplete={isOptimizationComplete}
-        onSyncClick={handleSyncSelected}
-        onClose={handleCloseProgressDialog}
       />
 
       {/* Results Dialog */}
-      <OptimizationResultsDialog
+      <ResultsDialog
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
         type="alt"

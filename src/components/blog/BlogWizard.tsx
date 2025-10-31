@@ -9,8 +9,7 @@ import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { OptimizationProgressDialog } from '@/components/seo/OptimizationProgressDialog';
-import { OptimizationResultsDialog } from '@/components/seo/OptimizationResultsDialog';
+import { ProgressDialog, ResultsDialog, SuccessDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { ArticleSyncDialog } from './ArticleSyncDialog';
 import {
   ChevronRight,
@@ -532,10 +531,10 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       />
 
       {/* Dialogs */}
-      <OptimizationResultsDialog
+      <ResultsDialog
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
-        type="article"
+        type="seo"
         items={generatedArticle ? [{
           id: generatedArticle.id,
           title: generatedArticle.title,
@@ -557,14 +556,25 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         loading={false}
       />
 
-      <OptimizationProgressDialog
+      <ProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        title="📤 Publication sur Shopify..."
+        type="seo"
+        operation="syncing"
         current={1}
         total={1}
-        isComplete={isOptimizationComplete}
-        operationType="synchronization"
+      />
+      
+      <SuccessDialog
+        open={isOptimizationComplete && showProgressDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowProgressDialog(false);
+            onClose();
+          }
+        }}
+        type="seo"
+        count={1}
         onClose={() => {
           setShowProgressDialog(false);
           onClose();

@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { BlogWizard } from '@/components/blog/BlogWizard';
-import { OptimizationResultsDialog } from '@/components/seo/OptimizationResultsDialog';
+import { ResultsDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateDetailedSeoScore, getConfidenceBadgeColor } from '@/lib/seoQuality';
 
@@ -568,7 +568,7 @@ export default function ArticleManagement() {
       )}
 
       {/* Optimization Results Dialog */}
-      <OptimizationResultsDialog
+      <ResultsDialog
         open={showOptimizationResults}
         onOpenChange={setShowOptimizationResults}
         type="seo"

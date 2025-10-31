@@ -11,9 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { Progress } from '@/components/ui/progress';
-import { OptimizationProgressDialog } from './OptimizationProgressDialog';
-import { OptimizationResultsDialog } from './OptimizationResultsDialog';
-import { PageSyncDialog } from './PageSyncDialog';
+import { ProgressDialog, ResultsDialog, SyncConfirmationDialog, SuccessDialog } from './SeoWorkflowDialogs';
 
 interface ShopifyPage {
   id: string;
@@ -632,26 +630,16 @@ export function PageOptimization() {
       )}
       
       {/* Dialogs */}
-      <OptimizationProgressDialog
+      <ProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        title={optimizing ? "🔄 Optimisation des pages..." : "🔄 Synchronisation avec Shopify..."}
+        type="seo"
+        operation={syncing ? 'syncing' : 'optimizing'}
         current={progress.current}
         total={progress.total}
-        isComplete={isOptimizationComplete}
-        operationType={syncing ? 'synchronization' : 'optimization'}
-        onSyncClick={() => {
-          setShowProgressDialog(false);
-          setPagesToSync(optimizedPages);
-          setShowSyncDialog(true);
-        }}
-        onClose={() => {
-          setShowProgressDialog(false);
-          setIsOptimizationComplete(false);
-        }}
       />
 
-      <OptimizationResultsDialog
+      <ResultsDialog
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
         type="seo"
@@ -669,10 +657,11 @@ export function PageOptimization() {
         onClose={() => setShowResultsDialog(false)}
       />
 
-      <PageSyncDialog
+      <SyncConfirmationDialog
         open={showSyncDialog}
         onOpenChange={setShowSyncDialog}
-        pages={pagesToSync}
+        type="seo"
+        itemCount={pagesToSync.length}
         onConfirm={() => {
           setShowSyncDialog(false);
           handleSyncPages(pagesToSync.map(p => p.id));

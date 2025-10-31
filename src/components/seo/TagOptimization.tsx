@@ -73,7 +73,7 @@ export function TagOptimization() {
   const [currentOperation, setCurrentOperation] = useState<'optimizing' | 'syncing'>('optimizing');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [optimizedItems, setOptimizedItems] = useState<WorkflowItem[]>([]);
-  const [productsToSync, setProductsToSync] = useState<Product[]>([]);
+  const [itemsToSync, setItemsToSync] = useState<WorkflowItem[]>([]);
   
   const { limits, loading: limitsLoading } = useUsageLimits();
 
@@ -296,15 +296,14 @@ export function TagOptimization() {
   };
 
   const handleBulkGenerate = async (productIds: string[], force = false) => {
-    setGenerating(true);
     setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
+    setCurrentOperation('optimizing');
     setProgress({ current: 0, total: productIds.length });
 
     let successCount = 0;
     let skipCount = 0;
     let errorCount = 0;
-    const generatedProducts: Product[] = [];
+    const generatedItems: WorkflowItem[] = [];
 
     for (let i = 0; i < productIds.length; i++) {
       try {
@@ -332,7 +331,12 @@ export function TagOptimization() {
             successCount++;
             const product = products.find(p => p.id === productIds[i]);
             if (product) {
-              generatedProducts.push(product);
+              generatedItems.push({
+                id: product.id,
+                title: product.title,
+                tags: product.tags || '',
+                image_url: product.image_url
+              });
             }
           }
         } else {
@@ -345,8 +349,6 @@ export function TagOptimization() {
       setProgress({ current: i + 1, total: productIds.length });
     }
 
-    setGenerating(false);
-    setIsOptimizationComplete(true);
     await fetchProducts();
     
     const updatedProducts = await Promise.all(
@@ -360,7 +362,12 @@ export function TagOptimization() {
       })
     );
 
-    setOptimizedProducts(updatedProducts.filter(Boolean) as Product[]);
+    setOptimizedItems(updatedProducts.filter(Boolean).map(p => ({
+      id: p!.id,
+      title: p!.title,
+      tags: p!.tags || '',
+      image_url: p!.image_url
+    })));
     setShowProgressDialog(false);
     setShowResultsDialog(true);
   };
@@ -389,9 +396,8 @@ export function TagOptimization() {
   const handleBulkSync = async (productIds: string[]) => {
     setShowResultsDialog(false);
     setShowSyncDialog(false);
-    setSyncing(true);
     setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
+    setCurrentOperation('syncing');
     setProgress({ current: 0, total: productIds.length });
 
     let successCount = 0;
@@ -433,8 +439,8 @@ export function TagOptimization() {
       setProgress({ current: i + 1, total: productIds.length });
     }
 
-    setSyncing(false);
-    setIsOptimizationComplete(true);
+    setShowProgressDialog(false);
+    setShowSuccessDialog(true);
     setSelectedProducts(new Set());
     
     if (errorCount > 0) {
@@ -445,23 +451,13 @@ export function TagOptimization() {
   };
 
   const handleCloseProgressDialog = () => {
-    if (isOptimizationComplete) {
-      const successCount = progress.current;
-      if (successCount > 0) {
-        toast.success('Synchronisation terminée !', {
-          description: `${successCount} produit${successCount > 1 ? 's synchronisés' : ' synchronisé'} avec succès sur Shopify`
-        });
-      }
-    }
-    
     setShowProgressDialog(false);
-    setIsOptimizationComplete(false);
     setSelectedProducts(new Set());
   };
 
   const handleCloseResultsDialog = () => {
     setShowResultsDialog(false);
-    setOptimizedProducts([]);
+    setOptimizedItems([]);
     setSelectedProducts(new Set());
   };
 
@@ -519,7 +515,7 @@ export function TagOptimization() {
             <Button
               size="lg"
               onClick={handleGenerateAll}
-              disabled={generating || productsWithoutTags === 0}
+              disabled={showProgressDialog || productsWithoutTags === 0}
               className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
             >
               <Sparkles className="w-5 h-5" />
@@ -567,7 +563,7 @@ export function TagOptimization() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{productsToSync}</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{productsToSyncCount}</p>
             </div>
             <Clock className="w-8 h-8 text-purple-600" />
           </div>
@@ -648,7 +644,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateAll}
-                disabled={generating || productsWithoutTags === 0}
+                disabled={showProgressDialog || productsWithoutTags === 0}
                 className="flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
@@ -659,7 +655,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleGenerateSelected(false)}
-                disabled={generating || selectedProducts.size === 0}
+                disabled={showProgressDialog || selectedProducts.size === 0}
                 className="flex items-center gap-2"
               >
                 <Zap className="w-4 h-4" />
@@ -670,7 +666,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleSyncSelected}
-                disabled={syncing || selectedProducts.size === 0}
+                disabled={showProgressDialog || selectedProducts.size === 0}
                 className="flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" />
@@ -681,7 +677,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleSyncAll}
-                disabled={syncing || productsToSync === 0}
+                disabled={showProgressDialog || productsToSyncCount === 0}
                 className="flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" />
@@ -741,11 +737,11 @@ export function TagOptimization() {
       </div>
 
       {/* Progress Indicator */}
-      {(generating || syncing) && (
+      {showProgressDialog && (
         <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium">
-              {generating ? 'Generating tags...' : 'Synchronizing...'}
+              {currentOperation === 'optimizing' ? 'Generating tags...' : 'Synchronizing...'}
             </span>
             <span className="text-sm text-muted-foreground">
               {progress.current} / {progress.total}
@@ -914,70 +910,53 @@ export function TagOptimization() {
       )}
 
       {/* Dialogs */}
-      <OptimizationProgressDialog
+      <ProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        onClose={handleCloseProgressDialog}
-        title={generating ? "Generating Tags..." : "Synchronizing..."}
+        type="tags"
+        operation={currentOperation}
         current={progress.current}
         total={progress.total}
-        isComplete={isOptimizationComplete}
-        operationType={syncing ? 'synchronization' : 'optimization'}
-        onSyncClick={() => {
-          setShowProgressDialog(false);
-          const productsForSync = optimizedProducts.map(p => ({
-            id: p.id,
-            title: p.title,
-            seo_title: p.tags || '',
-            seo_description: '',
-            image_url: p.image_url
-          }));
-          setSelectedProductsForSync(productsForSync);
-          setShowSyncDialog(true);
-        }}
       />
 
-      <OptimizationResultsDialog
+      <ResultsDialog
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
-        onClose={handleCloseResultsDialog}
         type="tags"
-        items={optimizedProducts.map(p => ({
-          id: p.id,
-          title: p.title,
-          tags: p.tags || '',
-          image_url: p.image_url
-        }))}
+        items={optimizedItems}
         onSyncClick={() => {
           setShowResultsDialog(false);
-          const productsWithTags = optimizedProducts.filter(p => p.tags);
-          if (productsWithTags.length > 0) {
-            setSelectedProductsForSync(productsWithTags.map(p => ({
-              id: p.id,
-              title: p.title,
-              seo_title: p.tags || '',
-              seo_description: '',
-              image_url: p.image_url
-            })));
+          const itemsWithTags = optimizedItems.filter(item => item.tags);
+          if (itemsWithTags.length > 0) {
+            setItemsToSync(itemsWithTags);
             setShowSyncDialog(true);
           }
         }}
+        onClose={handleCloseResultsDialog}
       />
 
       {/* Sync Confirmation Dialog */}
-      <TagSyncDialog
+      <SyncConfirmationDialog
         open={showSyncDialog}
         onOpenChange={setShowSyncDialog}
-        products={selectedProductsForSync}
+        type="tags"
+        itemCount={itemsToSync.length}
         onConfirm={async () => {
-          setSyncing(true);
-          const productIds = selectedProductsForSync.map(p => p.id);
-          await handleBulkSync(productIds);
           setShowSyncDialog(false);
-          setSelectedProductsForSync([]);
-          setSyncing(false);
+          await handleBulkSync(itemsToSync.map(item => item.id));
         }}
-        loading={syncing}
+        loading={showProgressDialog && currentOperation === 'syncing'}
+      />
+
+      <SuccessDialog
+        open={showSuccessDialog}
+        onOpenChange={setShowSuccessDialog}
+        type="tags"
+        count={progress.current}
+        onClose={() => {
+          setShowSuccessDialog(false);
+          setSelectedProducts(new Set());
+        }}
       />
 
       {limits?.isTrialing ? (

@@ -1106,23 +1106,16 @@ export function SeoOptimization() {
       )}
 
       {/* Dialogs */}
-      <OptimizationProgressDialog
+      <ProgressDialog
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
-        title={generating ? "🔄 Optimisation SEO..." : "🔄 Synchronisation avec Shopify..."}
+        type="seo"
+        operation={syncing ? 'syncing' : 'optimizing'}
         current={progress.current}
         total={progress.total}
-        isComplete={isOptimizationComplete}
-        operationType={syncing ? 'synchronization' : 'optimization'}
-        onSyncClick={() => {
-          setShowProgressDialog(false);
-          setProductsToSync(optimizedProducts);
-          setShowSyncDialog(true);
-        }}
-        onClose={handleCloseProgressDialog}
       />
 
-      <OptimizationResultsDialog
+      <ResultsDialog
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
         type="seo"
@@ -1139,10 +1132,11 @@ export function SeoOptimization() {
       />
 
       {/* Sync Confirmation Dialog */}
-      <SeoSyncDialog
+      <SyncConfirmationDialog
         open={showSyncDialog}
         onOpenChange={setShowSyncDialog}
-        products={productsToSync}
+        type="seo"
+        itemCount={productsToSync.length}
         onConfirm={async () => {
           setSyncing(true);
           const productIds = productsToSync.map(p => p.id);
