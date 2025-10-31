@@ -330,6 +330,32 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         })
         .eq('id', campaign.id);
 
+      // Create Shopify page
+      try {
+        toast.info('Création de la page Shopify...');
+        const { data: shopifyData, error: shopifyError } = await supabase.functions.invoke(
+          'create-shopify-landing-page',
+          {
+            body: { campaignId: campaign.id }
+          }
+        );
+
+        if (shopifyError) throw shopifyError;
+        
+        if (shopifyData?.shopifyPageUrl) {
+          toast.success('Page Shopify créée avec succès !', {
+            action: {
+              label: 'Voir sur Shopify',
+              onClick: () => window.open(shopifyData.shopifyPageUrl, '_blank')
+            },
+            duration: 10000
+          });
+        }
+      } catch (shopifyErr) {
+        console.error('Shopify page creation error:', shopifyErr);
+        toast.warning('Landing page créée, mais erreur lors de la création de la page Shopify');
+      }
+
       toast.success('Campagne créée avec succès !');
       toast.info('Landing page artistique générée', {
         action: {

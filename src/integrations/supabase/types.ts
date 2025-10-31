@@ -98,12 +98,15 @@ export type Database = {
           collections_count: number | null
           created_at: string
           cta_text: string | null
+          design_style: string | null
           headline: string | null
           highlights: Json | null
           id: string
           landing_page_url: string | null
           name: string
           products_count: number | null
+          shopify_page_id: string | null
+          shopify_page_url: string | null
           status: string
           store_summary: string | null
           subheadline: string | null
@@ -115,12 +118,15 @@ export type Database = {
           collections_count?: number | null
           created_at?: string
           cta_text?: string | null
+          design_style?: string | null
           headline?: string | null
           highlights?: Json | null
           id?: string
           landing_page_url?: string | null
           name: string
           products_count?: number | null
+          shopify_page_id?: string | null
+          shopify_page_url?: string | null
           status?: string
           store_summary?: string | null
           subheadline?: string | null
@@ -132,12 +138,15 @@ export type Database = {
           collections_count?: number | null
           created_at?: string
           cta_text?: string | null
+          design_style?: string | null
           headline?: string | null
           highlights?: Json | null
           id?: string
           landing_page_url?: string | null
           name?: string
           products_count?: number | null
+          shopify_page_id?: string | null
+          shopify_page_url?: string | null
           status?: string
           store_summary?: string | null
           subheadline?: string | null
