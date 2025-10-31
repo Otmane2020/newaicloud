@@ -406,6 +406,68 @@ export type Database = {
         }
         Relationships: []
       }
+      content_images: {
+        Row: {
+          alt_text: string | null
+          content_id: string
+          content_type: string
+          created_at: string
+          height: number | null
+          id: string
+          last_optimization_at: string | null
+          optimization_count: number | null
+          position: number | null
+          shopify_image_id: number | null
+          src: string
+          store_id: string | null
+          updated_at: string
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string | null
+          content_id: string
+          content_type: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          last_optimization_at?: string | null
+          optimization_count?: number | null
+          position?: number | null
+          shopify_image_id?: number | null
+          src: string
+          store_id?: string | null
+          updated_at?: string
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string | null
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          last_optimization_at?: string | null
+          optimization_count?: number | null
+          position?: number | null
+          shopify_image_id?: number | null
+          src?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_images_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_merchant_feeds: {
         Row: {
           created_at: string
@@ -894,6 +956,56 @@ export type Database = {
           views?: number
         }
         Relationships: []
+      }
+      shopify_collections: {
+        Row: {
+          body_html: string | null
+          created_at: string
+          handle: string | null
+          id: string
+          image_alt: string | null
+          image_url: string | null
+          shopify_collection_id: number | null
+          store_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body_html?: string | null
+          created_at?: string
+          handle?: string | null
+          id?: string
+          image_alt?: string | null
+          image_url?: string | null
+          shopify_collection_id?: number | null
+          store_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body_html?: string | null
+          created_at?: string
+          handle?: string | null
+          id?: string
+          image_alt?: string | null
+          image_url?: string | null
+          shopify_collection_id?: number | null
+          store_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopify_collections_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shopify_connections: {
         Row: {

@@ -30,7 +30,9 @@ import {
 
 interface ProductImage {
   id: string;
-  product_id: string;
+  product_id?: string;
+  content_id?: string;
+  content_type?: 'product' | 'collection' | 'page' | 'article';
   src: string;
   alt_text: string | null;
   position: number;
@@ -41,14 +43,18 @@ interface ProductImage {
   height: number;
   optimization_count: number;
   last_optimization_at: string | null;
+  image_type: 'product' | 'content';
 }
 
 interface Product {
   id: string;
   title: string;
-  vendor: string;
-  category: string;
-  image_url: string;
+  vendor?: string;
+  category?: string;
+  image_url?: string;
+  handle?: string;
+  body_html?: string;
+  content?: string;
 }
 
 interface ImageWithProduct extends ProductImage {
@@ -61,6 +67,7 @@ export function SeoAltImage() {
   const [images, setImages] = useState<ImageWithProduct[]>([]);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<AltImageTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,8 +88,8 @@ export function SeoAltImage() {
     try {
       setLoading(true);
       
-      // Récupérer TOUS les produits avec leurs images, groupés par produit
-      const { data: imagesData, error: imagesError } = await supabase
+      // Fetch product images
+      const { data: productImagesData, error: productError } = await supabase
         .from('product_images')
         .select(`
           *,
@@ -91,22 +98,105 @@ export function SeoAltImage() {
         .order('product_id', { ascending: true })
         .order('position', { ascending: true });
 
-      if (imagesError) throw imagesError;
+      if (productError) throw productError;
 
-      // Filtrer et typer les images
-      const validImages = (imagesData || [])
+      // Fetch content images
+      const { data: contentImagesData, error: contentError } = await supabase
+        .from('content_images')
+        .select('*')
+        .order('content_id', { ascending: true })
+        .order('position', { ascending: true });
+
+      if (contentError) throw contentError;
+
+      // Map product images
+      const productImages = (productImagesData || [])
         .filter(img => img.product && img.product.id)
         .map(img => ({
           ...img,
-          product: img.product as { id: string; title: string; vendor: string | null; category: string | null }
-        })) as ImageWithProduct[];
+          product: img.product,
+          image_type: 'product' as const
+        }));
 
-      setImages(validImages);
+      // Map content images and fetch their content details
+      const contentImages = await Promise.all(
+        (contentImagesData || []).map(async (img) => {
+          let product: Product = { id: img.content_id, title: 'Contenu inconnu' };
+
+          // Fetch content details based on type
+          if (img.content_type === 'collection') {
+            const { data } = await supabase
+              .from('shopify_collections')
+              .select('id, title, handle')
+              .eq('id', img.content_id)
+              .maybeSingle();
+            if (data) product = { ...data, title: `📚 ${data.title}` };
+          } else if (img.content_type === 'page') {
+            const { data } = await supabase
+              .from('shopify_pages')
+              .select('id, title, handle')
+              .eq('id', img.content_id)
+              .maybeSingle();
+            if (data) product = { ...data, title: `📄 ${data.title}` };
+          } else if (img.content_type === 'article') {
+            const { data } = await supabase
+              .from('blog_articles')
+              .select('id, title')
+              .eq('id', img.content_id)
+              .maybeSingle();
+            if (data) product = { ...data, title: `📰 ${data.title}` };
+          }
+
+          return {
+            ...img,
+            product,
+            product_id: undefined,
+            image_type: 'content' as const
+          };
+        })
+      );
+
+      // Merge and set images
+      const allImages = [...productImages, ...contentImages] as ImageWithProduct[];
+      setImages(allImages);
+      
     } catch (error) {
       console.error('Error fetching images:', error);
       toast.error('Erreur lors du chargement des images');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImportContentImages = async () => {
+    try {
+      setImporting(true);
+      
+      // Get active store
+      const { data: stores } = await supabase
+        .from('shopify_connections')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+
+      if (!stores) {
+        toast.error('Aucune boutique connectée');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('import-content-images', {
+        body: { storeId: stores.id, types: ['collections', 'pages', 'articles'] }
+      });
+
+      if (error) throw error;
+
+      toast.success(`${data.totalImported} images importées depuis Shopify`);
+      await fetchImages();
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error('Erreur lors de l\'import');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -188,8 +278,14 @@ export function SeoAltImage() {
 
     for (let i = 0; i < finalImagesToGenerate.length; i++) {
       try {
+        const img = finalImagesToGenerate[i];
+        const imageType = img.image_type || 'product';
+        
         const { error } = await supabase.functions.invoke(functionName, {
-          body: { imageId: finalImagesToGenerate[i].id }
+          body: { 
+            imageId: img.id,
+            imageType: useVision ? imageType : undefined
+          }
         });
         
         if (error) {
@@ -214,48 +310,13 @@ export function SeoAltImage() {
     setIsOptimizationComplete(true);
     await fetchImages();
 
-    // Get updated images with new ALT texts
-    try {
-      const updatedImages = await Promise.all(
-        finalImagesToGenerate.map(async (img) => {
-          try {
-            const { data, error } = await supabase
-              .from('product_images')
-              .select('*, product:shopify_products(id, title, vendor, category)')
-              .eq('id', img.id)
-              .maybeSingle();
-            
-            if (error) {
-              console.error(`Failed to fetch image ${img.id}:`, error);
-              return null;
-            }
-            
-            return data ? { ...data, product: data.product } as ImageWithProduct : null;
-          } catch (err) {
-            console.error(`Error fetching image ${img.id}:`, err);
-            return null;
-          }
-        })
-      );
-
-      const validImages = updatedImages.filter(Boolean) as ImageWithProduct[];
-      
-      if (validImages.length < finalImagesToGenerate.length) {
-        toast.warning(
-          `${validImages.length}/${finalImagesToGenerate.length} images chargées. ` +
-          `Certains produits ont peut-être été supprimés.`
-        );
-      }
-
-      setOptimizedImages(validImages);
-      setShowProgressDialog(false);
-      setShowResultsDialog(true);
-    } catch (error) {
-      console.error('Error fetching updated images:', error);
-      toast.error('Erreur lors du chargement des résultats');
-      setShowProgressDialog(false);
-      await fetchImages();
-    }
+    // Show results dialog with refreshed images
+    const refreshedImages = images.filter(img => 
+      finalImagesToGenerate.some(genImg => genImg.id === img.id)
+    );
+    setOptimizedImages(refreshedImages);
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
   };
 
   const handleSyncSelected = async () => {
@@ -475,6 +536,24 @@ export function SeoAltImage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleImportContentImages}
+            disabled={importing}
+            className="gap-2"
+          >
+            {importing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Import...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                Importer contenu
+              </>
+            )}
+          </Button>
           <Button
             variant="outline"
             size="icon"

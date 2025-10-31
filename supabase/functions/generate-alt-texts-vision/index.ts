@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface AltTextVisionRequest {
   imageId: string;
+  imageType?: 'product' | 'content';
 }
 
 function cleanJsonResponse(text: string): string {
@@ -157,7 +158,7 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { imageId }: AltTextVisionRequest = await req.json();
+    const { imageId, imageType = 'product' }: AltTextVisionRequest = await req.json();
 
     if (!imageId) {
       return new Response(
@@ -169,12 +170,29 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get image info first
-    const { data: image, error: imageError } = await supabaseClient
-      .from("product_images")
-      .select("id, src, alt_text, product_id")
-      .eq("id", imageId)
-      .maybeSingle();
+    // Get image info based on type
+    let image: any;
+    let imageError: any;
+    
+    if (imageType === 'content') {
+      const result = await supabaseClient
+        .from("content_images")
+        .select("id, src, alt_text, content_type, content_id, user_id")
+        .eq("id", imageId)
+        .maybeSingle();
+      
+      image = result.data;
+      imageError = result.error;
+    } else {
+      const result = await supabaseClient
+        .from("product_images")
+        .select("id, src, alt_text, product_id")
+        .eq("id", imageId)
+        .maybeSingle();
+      
+      image = result.data;
+      imageError = result.error;
+    }
 
     if (imageError || !image) {
       console.error('Image not found:', imageError);
@@ -187,56 +205,106 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get associated product info
-    const { data: product, error: productError } = await supabaseClient
-      .from("shopify_products")
-      .select("title, description, category, ai_color, ai_material, seller_id")
-      .eq("id", image.product_id)
-      .maybeSingle();
-
-    if (productError || !product) {
-      console.error('Product not found for image:', imageId, 'product_id:', image.product_id, 'error:', productError);
-      return new Response(
-        JSON.stringify({ 
-          error: "Product not found for this image. The product may have been deleted.",
-          imageId: imageId,
-          productId: image.product_id
-        }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Get variants for this product (for variable products)
-    const { data: variants } = await supabaseClient
-      .from("product_variants")
-      .select("title, option1, option2, option3, ai_color, ai_material")
-      .eq("product_id", image.product_id)
-      .limit(5);
-
-    // Build minimal context (for reference only, not to be copied)
-    let productContext = `Category: ${product.category || 'Product'}\n`;
+    // Get context based on image type
+    let productContext = "";
+    let userId = image.user_id;
     
-    if (product.description) {
-      const shortDesc = product.description.substring(0, 150);
-      productContext += `Description hint: ${shortDesc}\n`;
-    }
-
-    if (variants && variants.length > 0) {
-      productContext += `\nVariations:\n`;
-      variants.forEach(v => {
-        const variantDesc = [v.option1, v.option2, v.option3].filter(Boolean).join(', ');
-        if (variantDesc) {
-          productContext += `- ${v.title || variantDesc}\n`;
+    if (imageType === 'content') {
+      // Get content context
+      const contentType = image.content_type;
+      const contentId = image.content_id;
+      
+      if (contentType === 'collection') {
+        const { data: collection } = await supabaseClient
+          .from("shopify_collections")
+          .select("title, body_html")
+          .eq("id", contentId)
+          .maybeSingle();
+        
+        if (collection) {
+          productContext = `Collection: ${collection.title}\n`;
+          if (collection.body_html) {
+            const shortDesc = collection.body_html.replace(/<[^>]*>/g, '').substring(0, 150);
+            productContext += `Description: ${shortDesc}\n`;
+          }
         }
-        if (v.ai_color) productContext += `  Color: ${v.ai_color}\n`;
-        if (v.ai_material) productContext += `  Material: ${v.ai_material}\n`;
-      });
+      } else if (contentType === 'page') {
+        const { data: page } = await supabaseClient
+          .from("shopify_pages")
+          .select("title, body_html")
+          .eq("id", contentId)
+          .maybeSingle();
+        
+        if (page) {
+          productContext = `Page: ${page.title}\n`;
+        }
+      } else if (contentType === 'article') {
+        const { data: article } = await supabaseClient
+          .from("blog_articles")
+          .select("title, content")
+          .eq("id", contentId)
+          .maybeSingle();
+        
+        if (article) {
+          productContext = `Article: ${article.title}\n`;
+          const shortContent = article.content.replace(/<[^>]*>/g, '').substring(0, 150);
+          productContext += `Content: ${shortContent}\n`;
+        }
+      }
     } else {
-      if (product.ai_color) productContext += `Color: ${product.ai_color}\n`;
-      if (product.ai_material) productContext += `Material: ${product.ai_material}\n`;
+      // Get product info
+      const { data: product, error: productError } = await supabaseClient
+        .from("shopify_products")
+        .select("title, description, category, ai_color, ai_material, seller_id")
+        .eq("id", image.product_id)
+        .maybeSingle();
+
+      if (productError || !product) {
+        console.error('Product not found for image:', imageId, 'product_id:', image.product_id, 'error:', productError);
+        return new Response(
+          JSON.stringify({ 
+            error: "Product not found for this image. The product may have been deleted.",
+            imageId: imageId,
+            productId: image.product_id
+          }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      userId = product.seller_id;
+
+      // Get variants for this product (for variable products)
+      const { data: variants } = await supabaseClient
+        .from("product_variants")
+        .select("title, option1, option2, option3, ai_color, ai_material")
+        .eq("product_id", image.product_id)
+        .limit(5);
+
+      // Build minimal context (for reference only, not to be copied)
+      productContext = `Category: ${product.category || 'Product'}\n`;
+      
+      if (product.description) {
+        const shortDesc = product.description.substring(0, 150);
+        productContext += `Description hint: ${shortDesc}\n`;
+      }
+
+      if (variants && variants.length > 0) {
+        productContext += `\nVariations:\n`;
+        variants.forEach(v => {
+          const variantDesc = [v.option1, v.option2, v.option3].filter(Boolean).join(', ');
+          if (variantDesc) {
+            productContext += `- ${v.title || variantDesc}\n`;
+          }
+          if (v.ai_color) productContext += `  Color: ${v.ai_color}\n`;
+          if (v.ai_material) productContext += `  Material: ${v.ai_material}\n`;
+        });
+      } else {
+        if (product.ai_color) productContext += `Color: ${product.ai_color}\n`;
+        if (product.ai_material) productContext += `Material: ${product.ai_material}\n`;
+      }
     }
 
     console.log(`Analyzing image with Google Gemini: ${image.id}`);
@@ -267,14 +335,18 @@ Deno.serve(async (req: Request) => {
       if (match) {
         altText = match[1];
       } else {
-        altText = `${product.category || 'Produit'} - ${product.ai_color || ''} ${product.ai_material || ''}`.trim();
+        // Generic fallback based on content type
+        const contextLines = productContext.split('\n');
+        const firstLine = contextLines[0] || 'Image';
+        altText = `${firstLine} - Image visuelle`.trim();
         visualAnalysis = 'Analyse visuelle non disponible';
       }
     }
 
     // Update image with ALT text and analysis
+    const tableName = imageType === 'content' ? 'content_images' : 'product_images';
     const { error: updateError } = await supabaseClient
-      .from("product_images")
+      .from(tableName)
       .update({ 
         alt_text: altText
       })
@@ -290,9 +362,9 @@ Deno.serve(async (req: Request) => {
     console.log(`   - Character count: ${altText.length}`);
 
     // Track usage
-    if (product?.seller_id) {
+    if (userId) {
       await supabaseClient.rpc('increment_usage', {
-        p_seller_id: product.seller_id,
+        p_seller_id: userId,
         p_field: 'optimizations_count',
         p_increment: 1
       });
