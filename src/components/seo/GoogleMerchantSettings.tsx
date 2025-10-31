@@ -1,119 +1,252 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { Save, Copy, Check, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
+import { Save, Copy, Check, ExternalLink, RefreshCw, Settings, Info, AlertCircle } from "lucide-react";
+
+interface MerchantSettings {
+  id?: string;
+  user_id: string;
+  store_name: string;
+  auto_update_enabled: boolean;
+  gtin_country_code: string;
+  default_currency: string;
+  default_condition: string;
+  default_brand: string;
+  last_updated?: string;
+  created_at?: string;
+}
 
 export function GoogleMerchantSettings() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [settings, setSettings] = useState({
-    store_name: '',
-    auto_update_enabled: false,
-    gtin_country_code: 'FR',
+  const [feedStatus, setFeedStatus] = useState<"idle" | "success" | "error">("idle");
+  const [settings, setSettings] = useState<MerchantSettings>({
+    user_id: user?.id || "",
+    store_name: "",
+    auto_update_enabled: true,
+    gtin_country_code: "FR",
+    default_currency: "EUR",
+    default_condition: "new",
+    default_brand: "",
   });
 
   useEffect(() => {
-    loadSettings();
+    if (user) {
+      loadSettings();
+    }
   }, [user]);
 
   const loadSettings = async () => {
     if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('merchant_feed_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
-      
+    try {
+      const { data, error } = await supabase.from("merchant_feed_settings").select("*").eq("user_id", user.id).single();
+
+      if (error && error.code !== "PGRST116") throw error;
+
       if (data) {
-        setSettings({
-          store_name: data.store_name,
-          auto_update_enabled: data.auto_update_enabled,
-          gtin_country_code: data.gtin_country_code,
-        });
+        setSettings(data);
+      } else {
+        // Initialize with user data if no settings exist
+        const { data: userData } = await supabase.from("profiles").select("store_name").eq("id", user.id).single();
+
+        if (userData?.store_name) {
+          setSettings((prev) => ({
+            ...prev,
+            store_name: userData.store_name.toLowerCase().replace(/\s+/g, "-"),
+          }));
+        }
       }
     } catch (error) {
-      console.error('Error loading settings:', error);
+      console.error("Error loading settings:", error);
+      toast.error("Erreur lors du chargement des paramètres");
     }
+  };
+
+  const validateSettings = (): string[] => {
+    const errors: string[] = [];
+
+    if (!settings.store_name.trim()) {
+      errors.push("Le nom de la boutique est requis");
+    }
+
+    if (!/^[a-z0-9-]+$/.test(settings.store_name)) {
+      errors.push("Le nom de la boutique ne doit contenir que des lettres minuscules, chiffres et tirets");
+    }
+
+    if (settings.store_name.length < 3) {
+      errors.push("Le nom de la boutique doit contenir au moins 3 caractères");
+    }
+
+    if (settings.store_name.length > 50) {
+      errors.push("Le nom de la boutique ne peut pas dépasser 50 caractères");
+    }
+
+    return errors;
   };
 
   const handleSave = async () => {
     if (!user) return;
-    
-    if (!settings.store_name.trim()) {
-      toast.error('Le nom de la boutique est requis');
+
+    const errors = validateSettings();
+    if (errors.length > 0) {
+      errors.forEach((error) => toast.error(error));
       return;
     }
 
     try {
       setLoading(true);
-      
-      const { error } = await supabase
-        .from('merchant_feed_settings')
-        .upsert({
-          user_id: user.id,
+
+      const { error } = await supabase.from("merchant_feed_settings").upsert(
+        {
           ...settings,
-        });
+          user_id: user.id,
+          last_updated: new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id",
+        },
+      );
 
       if (error) throw error;
 
-      toast.success('Paramètres du feed sauvegardés avec succès ! 🎉');
+      toast.success("Paramètres sauvegardés avec succès ! 🎉");
+
+      // Test the feed automatically after saving
+      if (settings.store_name) {
+        await testFeed();
+      }
     } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error('Erreur lors de la sauvegarde des paramètres');
+      console.error("Error saving settings:", error);
+      toast.error("Erreur lors de la sauvegarde des paramètres");
     } finally {
       setLoading(false);
     }
   };
 
+  const testFeed = async () => {
+    if (!settings.store_name) {
+      toast.error("Veuillez d'abord configurer un nom de boutique");
+      return;
+    }
+
+    setTesting(true);
+    setFeedStatus("idle");
+
+    try {
+      const feedUrl = `${window.location.origin}/shoppingfeed/${settings.store_name}/xml`;
+      const response = await fetch(feedUrl);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const text = await response.text();
+
+      if (!text.includes("<?xml") || !text.includes("<rss")) {
+        throw new Error("Format XML invalide");
+      }
+
+      setFeedStatus("success");
+      toast.success("Flux XML testé avec succès ! ✅");
+    } catch (error) {
+      console.error("Error testing feed:", error);
+      setFeedStatus("error");
+      toast.error("Erreur lors du test du flux");
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const feedUrl = settings.store_name
-    ? `https://newai.sale/shoppingfeed/${settings.store_name}/xml`
-    : `https://newai.sale/shoppingfeed/{nom-boutique}/xml`;
+    ? `${window.location.origin}/shoppingfeed/${settings.store_name}/xml`
+    : `${window.location.origin}/shoppingfeed/{nom-boutique}/xml`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);
     setCopied(true);
+    toast.success("URL copiée dans le presse-papier");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getStatusBadge = () => {
+    switch (feedStatus) {
+      case "success":
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+            ✓ Opérationnel
+          </Badge>
+        );
+      case "error":
+        return (
+          <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
+            ✗ Erreur
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">⏳ Non testé</Badge>;
+    }
   };
 
   return (
     <div className="space-y-6">
-      <Card className="p-6">
-        <h3 className="text-xl font-bold mb-4">Paramètres du Flux XML</h3>
-        
-        <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Configuration du Flux Google Shopping
+          </CardTitle>
+          <CardDescription>Configurez les paramètres de votre flux XML pour Google Merchant Center</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
           {/* Store Name */}
-          <div>
-            <Label htmlFor="store_name">Nom de la boutique (slug URL)</Label>
+          <div className="space-y-2">
+            <Label htmlFor="store_name" className="flex items-center gap-2">
+              Nom de la boutique
+              <Info className="w-4 h-4 text-muted-foreground" />
+            </Label>
             <Input
               id="store_name"
               value={settings.store_name}
-              onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  store_name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+                })
+              }
               placeholder="ma-boutique"
-              className="mt-1"
+              className="font-mono"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Utilisé dans l'URL du flux : <code className="bg-muted px-1 rounded">/shoppingfeed/{'{nom-boutique}'}/xml</code>
-            </p>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Utilisé dans l'URL de votre flux</span>
+              <span>{settings.store_name.length}/50</span>
+            </div>
+            {settings.store_name && (
+              <div className="text-xs text-blue-600 dark:text-blue-400">
+                Votre URL: <code className="bg-blue-50 px-1 rounded">/shoppingfeed/{settings.store_name}/xml</code>
+              </div>
+            )}
           </div>
 
           {/* Auto Update */}
           <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-            <div>
-              <Label htmlFor="auto_update">Mise à jour automatique</Label>
+            <div className="space-y-1">
+              <Label htmlFor="auto_update" className="text-base">
+                Mise à jour automatique
+              </Label>
               <p className="text-sm text-muted-foreground">
-                Synchroniser automatiquement le flux avec vos modifications Shopify
+                Synchroniser automatiquement le flux avec vos modifications
               </p>
             </div>
             <Switch
@@ -123,37 +256,91 @@ export function GoogleMerchantSettings() {
             />
           </div>
 
-          {/* GTIN Country Code */}
-          <div>
-            <Label htmlFor="gtin_country">Format GTIN par pays</Label>
-            <Select
-              value={settings.gtin_country_code}
-              onValueChange={(value) => setSettings({ ...settings, gtin_country_code: value })}
-            >
-              <SelectTrigger id="gtin_country" className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="FR">🇫🇷 France (GTIN-13)</SelectItem>
-                <SelectItem value="US">🇺🇸 États-Unis (GTIN-12)</SelectItem>
-                <SelectItem value="GB">🇬🇧 Royaume-Uni (GTIN-13)</SelectItem>
-                <SelectItem value="DE">🇩🇪 Allemagne (GTIN-13)</SelectItem>
-                <SelectItem value="ES">🇪🇸 Espagne (GTIN-13)</SelectItem>
-                <SelectItem value="IT">🇮🇹 Italie (GTIN-13)</SelectItem>
-                <SelectItem value="NL">🇳🇱 Pays-Bas (GTIN-13)</SelectItem>
-                <SelectItem value="BE">🇧🇪 Belgique (GTIN-13)</SelectItem>
-                <SelectItem value="CH">🇨🇭 Suisse (GTIN-13)</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Choisissez le format GTIN selon votre pays principal de vente
-            </p>
+          {/* Default Settings Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* GTIN Country Code */}
+            <div className="space-y-2">
+              <Label htmlFor="gtin_country">Format GTIN</Label>
+              <Select
+                value={settings.gtin_country_code}
+                onValueChange={(value) => setSettings({ ...settings, gtin_country_code: value })}
+              >
+                <SelectTrigger id="gtin_country">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FR">🇫🇷 France (GTIN-13)</SelectItem>
+                  <SelectItem value="US">🇺🇸 États-Unis (GTIN-12)</SelectItem>
+                  <SelectItem value="GB">🇬🇧 Royaume-Uni (GTIN-13)</SelectItem>
+                  <SelectItem value="DE">🇩🇪 Allemagne (GTIN-13)</SelectItem>
+                  <SelectItem value="ES">🇪🇸 Espagne (GTIN-13)</SelectItem>
+                  <SelectItem value="IT">🇮🇹 Italie (GTIN-13)</SelectItem>
+                  <SelectItem value="NL">🇳🇱 Pays-Bas (GTIN-13)</SelectItem>
+                  <SelectItem value="BE">🇧🇪 Belgique (GTIN-13)</SelectItem>
+                  <SelectItem value="CH">🇨🇭 Suisse (GTIN-13)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Pays principal de vente</p>
+            </div>
+
+            {/* Default Currency */}
+            <div className="space-y-2">
+              <Label htmlFor="default_currency">Devise par défaut</Label>
+              <Select
+                value={settings.default_currency}
+                onValueChange={(value) => setSettings({ ...settings, default_currency: value })}
+              >
+                <SelectTrigger id="default_currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EUR">€ EUR - Euro</SelectItem>
+                  <SelectItem value="USD">$ USD - Dollar US</SelectItem>
+                  <SelectItem value="GBP">£ GBP - Livre Sterling</SelectItem>
+                  <SelectItem value="CHF">CHF - Franc Suisse</SelectItem>
+                  <SelectItem value="CAD">$ CAD - Dollar Canadien</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Default Condition */}
+            <div className="space-y-2">
+              <Label htmlFor="default_condition">État par défaut</Label>
+              <Select
+                value={settings.default_condition}
+                onValueChange={(value) => setSettings({ ...settings, default_condition: value })}
+              >
+                <SelectTrigger id="default_condition">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">Neuf</SelectItem>
+                  <SelectItem value="refurbished">Reconditionné</SelectItem>
+                  <SelectItem value="used">Occasion</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Default Brand */}
+          <div className="space-y-2">
+            <Label htmlFor="default_brand">Marque par défaut</Label>
+            <Input
+              id="default_brand"
+              value={settings.default_brand}
+              onChange={(e) => setSettings({ ...settings, default_brand: e.target.value })}
+              placeholder="Votre marque principale"
+            />
+            <p className="text-xs text-muted-foreground">Utilisée pour les produits sans marque spécifiée</p>
           </div>
 
           {/* Save Button */}
-          <Button onClick={handleSave} disabled={loading} className="w-full">
+          <Button onClick={handleSave} disabled={loading} className="w-full" size="lg">
             {loading ? (
-              'Enregistrement...'
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Enregistrement...
+              </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
@@ -161,48 +348,113 @@ export function GoogleMerchantSettings() {
               </>
             )}
           </Button>
-        </div>
+        </CardContent>
       </Card>
 
       {/* Feed URL Display */}
       {settings.store_name && (
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200">
-          <h3 className="text-xl font-bold mb-4">URL de votre Flux XML</h3>
-          
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4">
-            <Label className="text-sm font-medium mb-2 block">URL du flux Google Shopping</Label>
-            <div className="flex gap-2">
-              <Input
-                readOnly
-                value={feedUrl}
-                className="flex-1 font-mono text-sm"
-              />
-              <Button onClick={handleCopy} variant="default" size="sm">
-                {copied ? (
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>URL de votre Flux XML</span>
+              {getStatusBadge()}
+            </CardTitle>
+            <CardDescription>Utilisez cette URL pour configurer votre flux dans Google Merchant Center</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Feed URL */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">URL du flux Google Shopping</Label>
+              <div className="flex gap-2">
+                <Input readOnly value={feedUrl} className="flex-1 font-mono text-sm bg-white dark:bg-gray-800" />
+                <Button onClick={handleCopy} variant="default" size="sm" className="shrink-0">
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1" />
+                      Copié
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-1" />
+                      Copier
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={testFeed} disabled={testing} variant="default" className="flex-1">
+                {testing ? (
                   <>
-                    <Check className="w-4 h-4 mr-1" />
-                    Copié
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Test en cours...
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4 mr-1" />
-                    Copier
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Tester le flux
                   </>
                 )}
               </Button>
+              <Button asChild variant="outline" className="flex-1">
+                <a href={feedUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Ouvrir dans un nouvel onglet
+                </a>
+              </Button>
             </div>
-          </div>
 
-          <div className="flex gap-3">
-            <Button asChild variant="default">
-              <a href={feedUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Tester le flux
-              </a>
-            </Button>
-          </div>
+            {/* Status Alert */}
+            {feedStatus === "error" && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Impossible de charger le flux. Vérifiez que vous avez des produits actifs et que le nom de boutique
+                  est correct.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Tips */}
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
+                💡 Conseils de configuration
+              </h4>
+              <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                <li>• Utilisez cette URL dans Google Merchant Center → Produits → Flux</li>
+                <li>• Choisissez "Flux planifiés" avec une mise à jour quotidienne</li>
+                <li>• Vérifiez régulièrement l'onglet "Diagnostics" pour les erreurs</li>
+              </ul>
+            </div>
+          </CardContent>
         </Card>
       )}
+
+      {/* Information Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="w-5 h-5" />
+            Informations importantes
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            <strong>Format GTIN :</strong> Le GTIN (Global Trade Item Number) est requis pour certains produits.
+            Choisissez le format correspondant à votre pays principal de vente.
+          </p>
+          <p>
+            <strong>Mise à jour automatique :</strong> Lorsque activée, votre flux se met à jour automatiquement à
+            chaque modification de vos produits.
+          </p>
+          <p>
+            <strong>Marque par défaut :</strong> Cette marque sera utilisée pour les produits qui n'ont pas de marque
+            spécifiée dans Shopify.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
