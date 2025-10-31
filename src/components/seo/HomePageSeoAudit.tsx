@@ -30,6 +30,8 @@ import {
   Target
 } from 'lucide-react';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
+import { SeoTasksList } from './SeoTasksList';
+import { Link } from 'lucide-react';
 
 interface SeoElements {
   title: string;
@@ -503,7 +505,7 @@ export function HomePageSeoAudit() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => navigate('/seo/alt-images')}
+                                  onClick={() => navigate('/seo?tab=alt&filter=needs-alt')}
                                   className="gap-2"
                                 >
                                   <ImageIcon className="w-4 h-4" />
@@ -559,11 +561,23 @@ export function HomePageSeoAudit() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => navigate('/seo/alt-images')}
+                        onClick={() => navigate('/seo?tab=alt&filter=needs-alt')}
                         className="justify-start gap-2"
                       >
                         <ImageIcon className="w-4 h-4" />
                         {result.elements.totalImages - result.elements.altsCount} images à optimiser
+                      </Button>
+                    )}
+                    
+                    {result.elements.internalLinks > 0 && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => navigate('/blog?tab=netlinking')}
+                        className="justify-start gap-2"
+                      >
+                        <Link className="w-4 h-4" />
+                        Optimiser {result.elements.internalLinks} liens internes
                       </Button>
                     )}
                     
@@ -581,6 +595,9 @@ export function HomePageSeoAudit() {
               </CardContent>
             </Card>
           )}
+
+          {/* SEO Tasks To-Do List */}
+          <SeoTasksList />
 
           {/* SEO Optimization Section */}
           {hasConnection && (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,6 +66,7 @@ type AltImageTab = 'all' | 'needs-alt' | 'has-alt' | 'to-sync';
 type ContentTypeFilter = 'all' | 'products' | 'collections' | 'pages' | 'articles';
 
 export function SeoAltImage() {
+  const [searchParams] = useSearchParams();
   const [images, setImages] = useState<ImageWithProduct[]>([]);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -205,6 +207,14 @@ export function SeoAltImage() {
   useEffect(() => {
     fetchImages();
   }, []);
+
+  // Handle URL filter params
+  useEffect(() => {
+    const filterParam = searchParams.get('filter') as AltImageTab | null;
+    if (filterParam && ['all', 'needs-alt', 'has-alt', 'to-sync'].includes(filterParam)) {
+      setActiveTab(filterParam);
+    }
+  }, [searchParams]);
 
   const filteredImages = images.filter((img) => {
     // Filter by content type

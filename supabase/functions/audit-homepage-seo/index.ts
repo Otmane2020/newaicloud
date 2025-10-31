@@ -100,8 +100,12 @@ serve(async (req) => {
       shopifySpecific: seoData.shopifySpecific || null,
     };
 
-    // Store audit result in database for history
+    // Store audit result in database for history AND reports table
     await storeAuditResult(supabaseClient, user.id, result);
+    await storeInReportsTable(supabaseClient, user.id, result);
+    
+    // Create SEO tasks automatically based on critical issues
+    await createSeoTasks(supabaseClient, user.id, scoreResult, seoData.elements);
 
     return new Response(
       JSON.stringify(result),
@@ -399,43 +403,44 @@ function calculateEnhancedSeoScore(elements: EnhancedSeoElements): EnhancedSeoSc
   const warnings: string[] = [];
   const strengths: string[] = [];
 
-  // STRUCTURE SCORING (25 points)
-  // Title optimization
+  // STRUCTURE SCORING (30 points - increased from 25)
+  // Title optimization (10 points)
   if (elements.title && elements.title.length > 0) {
-    if (elements.title.length <= 60) {
-      structureScore += 8;
+    if (elements.title.length >= 50 && elements.title.length <= 60) {
+      structureScore += 10;
       strengths.push('title_length_optimal');
+    } else if (elements.title.length <= 60) {
+      structureScore += 7;
+      if (elements.title.length < 40) warnings.push('title_too_short');
     } else {
       structureScore += 4;
       warnings.push('title_too_long');
-    }
-    
-    // Check title keyword placement
-    if (elements.title.split(' ').length >= 3) {
-      structureScore += 2;
     }
   } else {
     criticalIssues.push('missing_title');
   }
 
-  // Meta description optimization
+  // Meta description optimization (10 points)
   if (elements.metaDescription && elements.metaDescription.length > 0) {
-    if (elements.metaDescription.length <= 160 && elements.metaDescription.length >= 50) {
-      structureScore += 7;
+    if (elements.metaDescription.length >= 150 && elements.metaDescription.length <= 160) {
+      structureScore += 10;
       strengths.push('meta_description_optimal');
+    } else if (elements.metaDescription.length >= 120 && elements.metaDescription.length <= 160) {
+      structureScore += 7;
     } else {
-      structureScore += 3;
+      structureScore += 4;
       warnings.push('meta_description_length_issue');
     }
   } else {
     criticalIssues.push('missing_meta_description');
   }
 
-  // Heading structure
+  // Heading structure (7 points)
   if (elements.h1 && elements.h1.length > 0) {
     structureScore += 5;
-    if (elements.h1.length <= 70) {
+    if (elements.h1.length >= 30 && elements.h1.length <= 70) {
       strengths.push('h1_optimal');
+      structureScore += 2;
     }
   } else {
     criticalIssues.push('missing_h1');
@@ -448,7 +453,7 @@ function calculateEnhancedSeoScore(elements: EnhancedSeoElements): EnhancedSeoSc
     warnings.push('missing_h2');
   }
 
-  // CONTENT SCORING (25 points)
+  // CONTENT SCORING (30 points - increased from 25)
   if (elements.contentLength >= 1000) {
     contentScore += 10;
     strengths.push('substantial_content');
@@ -460,33 +465,36 @@ function calculateEnhancedSeoScore(elements: EnhancedSeoElements): EnhancedSeoSc
     criticalIssues.push('content_too_short');
   }
 
-  // Image optimization
+  // Image optimization (12 points - increased from 8)
   if (elements.totalImages > 0) {
     const altPercentage = (elements.altsCount / elements.totalImages) * 100;
-    if (altPercentage >= 90) {
-      contentScore += 8;
+    if (altPercentage === 100) {
+      contentScore += 12;
+      strengths.push('excellent_image_alts');
+    } else if (altPercentage >= 90) {
+      contentScore += 9;
       strengths.push('excellent_image_alts');
     } else if (altPercentage >= 70) {
-      contentScore += 5;
+      contentScore += 6;
       warnings.push('some_images_missing_alts');
     } else {
-      contentScore += 2;
+      contentScore += 3;
       criticalIssues.push('poor_image_alt_coverage');
     }
   }
 
-  // Readability
+  // Readability (8 points)
   if (elements.readabilityScore >= 70) {
-    contentScore += 7;
+    contentScore += 8;
     strengths.push('good_readability');
   } else if (elements.readabilityScore >= 50) {
-    contentScore += 4;
+    contentScore += 5;
     warnings.push('readability_could_improve');
   } else {
-    contentScore += 1;
+    contentScore += 2;
   }
 
-  // TECHNICAL SCORING (20 points)
+  // TECHNICAL SCORING (20 points - unchanged)
   if (elements.canonical) {
     technicalScore += 5;
     strengths.push('canonical_present');
@@ -516,12 +524,12 @@ function calculateEnhancedSeoScore(elements: EnhancedSeoElements): EnhancedSeoSc
     technicalScore += 3;
   }
 
-  // PERFORMANCE SCORING (15 points)
+  // PERFORMANCE SCORING (10 points - reduced from 15)
   if (elements.loadingSpeed >= 80) {
-    performanceScore += 8;
+    performanceScore += 6;
     strengths.push('good_performance');
   } else if (elements.loadingSpeed >= 60) {
-    performanceScore += 5;
+    performanceScore += 4;
     warnings.push('performance_could_improve');
   } else {
     performanceScore += 2;
@@ -529,9 +537,9 @@ function calculateEnhancedSeoScore(elements: EnhancedSeoElements): EnhancedSeoSc
   }
 
   if (elements.domSize < 1500) {
-    performanceScore += 7;
-  } else if (elements.domSize < 3000) {
     performanceScore += 4;
+  } else if (elements.domSize < 3000) {
+    performanceScore += 2;
   } else {
     performanceScore += 1;
   }
@@ -551,9 +559,9 @@ function calculateEnhancedSeoScore(elements: EnhancedSeoElements): EnhancedSeoSc
     warnings.push('missing_viewport');
   }
 
-  // BONUS SCORING (5 points)
+  // BONUS SCORING (10 points - increased from 5)
   if (elements.hasOpenGraph) {
-    bonusScore += 2;
+    bonusScore += 3;
     strengths.push('opengraph_present');
   } else {
     warnings.push('missing_opengraph');
@@ -567,9 +575,17 @@ function calculateEnhancedSeoScore(elements: EnhancedSeoElements): EnhancedSeoSc
   }
 
   if (elements.internalLinks >= 10) {
-    bonusScore += 1;
+    bonusScore += 2;
     strengths.push('good_internal_linking');
   }
+
+  // Excellence bonus (up to +3 for perfection)
+  let excellenceBonus = 0;
+  if (elements.title.length >= 50 && elements.title.length <= 60) excellenceBonus += 1;
+  if (elements.metaDescription.length >= 150 && elements.metaDescription.length <= 160) excellenceBonus += 1;
+  if (elements.altsCount === elements.totalImages && elements.totalImages > 0) excellenceBonus += 1;
+  
+  bonusScore += excellenceBonus;
 
   const totalScore = Math.min(100, 
     structureScore + contentScore + technicalScore + performanceScore + mobileScore + bonusScore
@@ -641,14 +657,23 @@ DÉTAILS DE L'ANALYSE:
 - Liens internes: ${elements.internalLinks}
 - Liens externes: ${elements.externalLinks}
 
-Génère 3 à 5 recommandations PRÉCISES et ACTIONNABLES pour Shopify, classées par ordre de priorité. Chaque recommandation doit:
-1. Être spécifique avec des exemples concrets tirés de l'analyse ci-dessus
-2. Inclure une action réalisable dans l'admin Shopify ou le thème
-3. Se concentrer sur les gains SEO les plus importants
-4. Mentionner les éléments actuels à améliorer (ex: "Optimiser les ${elements.totalImages - elements.altsCount} images sans alt text détectées")
-5. Être rédigée en français clair et professionnel
+Génère 3 à 5 recommandations PRÉCISES et ACTIONNABLES pour Shopify, classées par ordre de priorité. 
 
-Réponds UNIQUEMENT avec la liste des recommandations, sans introduction ni conclusion.`;
+FORMAT OBLIGATOIRE - Chaque recommandation doit suivre ce modèle:
+"ACTION → COMMENT FAIRE → IMPACT"
+
+EXEMPLES DE BON FORMAT:
+- "Ajouter une balise H1 → Dans l'éditeur Shopify (Thème → Personnaliser), section 'Header', ajoutez un titre principal comme 'Découvrez nos ${elements.h2s[0] || 'produits'} Premium' → Impact: +15 points SEO"
+- "Optimiser ${elements.totalImages - elements.altsCount} images → Onglet Images SEO de l'app, sélectionnez 'Sans ALT' et générez avec IA → Impact: +${Math.min(20, (elements.totalImages - elements.altsCount) * 2)} points"
+
+RÈGLES:
+1. Inclure des chiffres exacts et données de l'analyse (${elements.totalImages - elements.altsCount} images, ${elements.metaDescription.length} caractères, etc.)
+2. Indiquer le chemin exact dans Shopify ou l'app
+3. Donner un exemple concret de contenu à créer
+4. Quantifier l'impact en points SEO (+X points)
+5. Max 150 caractères par recommandation
+
+Réponds UNIQUEMENT avec la liste numérotée, sans introduction.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -816,5 +841,111 @@ async function storeAuditResult(supabaseClient: any, userId: string, result: any
     }
   } catch (error) {
     console.error('Error storing audit history:', error);
+  }
+}
+
+async function storeInReportsTable(supabaseClient: any, userId: string, result: any) {
+  try {
+    const { error } = await supabaseClient
+      .from('seo_audit_reports')
+      .upsert({
+        user_id: userId,
+        homepage_data: {
+          score: result.score,
+          grade: result.grade,
+          breakdown: result.breakdown,
+          elements: result.elements,
+          recommendations: result.recommendations,
+          analyzed_at: result.analyzedAt,
+          analyzed_url: result.analyzedUrl
+        },
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      });
+    
+    if (error) {
+      console.error('Error storing in reports table:', error);
+    }
+  } catch (error) {
+    console.error('Error updating reports:', error);
+  }
+}
+
+async function createSeoTasks(supabaseClient: any, userId: string, scoreResult: any, elements: any) {
+  const tasks = [];
+  
+  // Critical tasks
+  if (scoreResult.criticalIssues.includes('missing_h1')) {
+    tasks.push({
+      user_id: userId,
+      task_type: 'fix_h1',
+      priority: 1,
+      title: 'Ajouter une balise H1 principale',
+      description: 'Votre page d\'accueil n\'a pas de titre principal H1. Cela impacte fortement le référencement.',
+      action_url: 'https://admin.shopify.com',
+      estimated_impact: 15
+    });
+  }
+  
+  if (elements.totalImages - elements.altsCount > 0) {
+    tasks.push({
+      user_id: userId,
+      task_type: 'fix_alt_texts',
+      priority: 1,
+      title: `Optimiser ${elements.totalImages - elements.altsCount} images sans ALT`,
+      description: 'Certaines images n\'ont pas de texte alternatif. Cela nuit à l\'accessibilité et au SEO.',
+      action_url: '/seo?tab=alt&filter=needs-alt',
+      estimated_impact: Math.min(20, (elements.totalImages - elements.altsCount) * 2)
+    });
+  }
+  
+  // Important tasks
+  if (scoreResult.criticalIssues.includes('missing_meta_description') || scoreResult.warnings.includes('missing_meta_description')) {
+    tasks.push({
+      user_id: userId,
+      task_type: 'add_meta_description',
+      priority: 2,
+      title: 'Créer une meta description',
+      description: 'La meta description de votre page d\'accueil est manquante ou trop courte.',
+      action_url: '/seo?tab=homepage',
+      estimated_impact: 12
+    });
+  }
+  
+  if (scoreResult.warnings.includes('missing_schema')) {
+    tasks.push({
+      user_id: userId,
+      task_type: 'add_schema',
+      priority: 2,
+      title: 'Ajouter des données structurées Schema.org',
+      description: 'Les balises schema.org permettent d\'obtenir des rich snippets dans Google.',
+      action_url: null,
+      estimated_impact: 8
+    });
+  }
+  
+  if (scoreResult.criticalIssues.includes('not_mobile_optimized')) {
+    tasks.push({
+      user_id: userId,
+      task_type: 'fix_mobile',
+      priority: 1,
+      title: 'Optimiser l\'affichage mobile',
+      description: 'Votre site n\'est pas optimisé pour mobile. C\'est critique pour le référencement.',
+      action_url: 'https://admin.shopify.com',
+      estimated_impact: 18
+    });
+  }
+  
+  // Delete old pending tasks of same type, then insert new ones
+  for (const task of tasks) {
+    await supabaseClient
+      .from('seo_tasks')
+      .delete()
+      .eq('user_id', userId)
+      .eq('task_type', task.task_type)
+      .eq('status', 'pending');
+    
+    await supabaseClient.from('seo_tasks').insert(task);
   }
 }

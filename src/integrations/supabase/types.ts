@@ -1187,6 +1187,7 @@ export type Database = {
           has_robots_txt: boolean | null
           has_sitemap: boolean | null
           heading_tags: Json | null
+          homepage_data: Json | null
           homepage_score: number | null
           id: string
           image_alt_tags: Json | null
@@ -1215,6 +1216,7 @@ export type Database = {
           has_robots_txt?: boolean | null
           has_sitemap?: boolean | null
           heading_tags?: Json | null
+          homepage_data?: Json | null
           homepage_score?: number | null
           id?: string
           image_alt_tags?: Json | null
@@ -1243,6 +1245,7 @@ export type Database = {
           has_robots_txt?: boolean | null
           has_sitemap?: boolean | null
           heading_tags?: Json | null
+          homepage_data?: Json | null
           homepage_score?: number | null
           id?: string
           image_alt_tags?: Json | null
@@ -1318,6 +1321,51 @@ export type Database = {
           priority?: string
           title?: string
           type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      seo_tasks: {
+        Row: {
+          action_url: string | null
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          estimated_impact: number | null
+          id: string
+          priority: number | null
+          status: string | null
+          task_type: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_impact?: number | null
+          id?: string
+          priority?: number | null
+          status?: string | null
+          task_type: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_impact?: number | null
+          id?: string
+          priority?: number | null
+          status?: string | null
+          task_type?: string
+          title?: string
           updated_at?: string | null
           user_id?: string
         }

@@ -101,9 +101,34 @@ Deno.serve(async (req) => {
         
         const elements = await fetchAndAnalyzeHtml(homepageUrl);
         
+        // Fetch top products for context
+        const { data: topProducts } = await supabaseClient
+          .from('shopify_products')
+          .select('title, category, product_type, tags, vendor')
+          .eq('seller_id', user.id)
+          .limit(10);
+
+        // Fetch collections for context
+        const { data: collections } = await supabaseClient
+          .from('shopify_collections')
+          .select('title, seo_description')
+          .eq('user_id', user.id)
+          .limit(5);
+
+        // Extract common tags
+        const allTags = topProducts?.flatMap(p => p.tags?.split(',').map((t: string) => t.trim()) || []) || [];
+        const tagFreq: Record<string, number> = {};
+        allTags.forEach((tag: string) => {
+          if (tag) tagFreq[tag] = (tagFreq[tag] || 0) + 1;
+        });
+        const topTags = Object.entries(tagFreq)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([tag]) => tag);
+        
         pageTitle = elements.title || connection.store_label || connection.store_name || 'Home';
         
-        // Build rich context from real content
+        // Build rich context from real content + products + collections
         const storeLabel = connection.store_label || connection.store_name || 'Boutique';
         const storeCategory = connection.store_category || 'E-commerce';
         const storeDescription = connection.store_description || '';
@@ -122,6 +147,14 @@ CONTENU ACTUEL DE LA PAGE D'ACCUEIL :
 - H2s principaux : ${elements.h2s.join(', ') || 'Aucun'}
 - Meta description actuelle : "${elements.metaDescription || 'Aucune'}"
 - Mots-clés détectés : ${elements.topKeywords.join(', ')}
+
+PRODUITS POPULAIRES :
+${topProducts?.map((p: any) => `- ${p.title} (${p.category || p.product_type || 'N/A'})`).join('\n') || 'Aucun produit trouvé'}
+
+COLLECTIONS :
+${collections?.map((c: any) => `- ${c.title}${c.seo_description ? ': ' + c.seo_description.substring(0, 100) : ''}`).join('\n') || 'Aucune collection'}
+
+TAGS PRINCIPAUX : ${topTags.join(', ') || 'Aucun'}
 
 EXTRAIT DU CONTENU :
 ${elements.bodyText}
@@ -146,20 +179,26 @@ ${elements.bodyText}
       console.log(`Generating SEO for page: ${pageTitle}`);
     }
 
-    // Générer le SEO avec Lovable AI
+    // Générer le SEO avec Lovable AI (enriched context)
     const prompt = isHomepage 
-      ? `Tu es un expert SEO français spécialisé en e-commerce. Génère un titre SEO et une meta description optimisés pour la page d'accueil de cette boutique Shopify.
+      ? `Tu es un expert SEO français spécialisé en e-commerce Shopify. 
 
 ${textContent}
 
-INSTRUCTIONS :
-- Titre SEO : Max 60 caractères, incluant le nom de la boutique et l'avantage principal
-- Meta Description : Max 160 caractères, engageant avec appel à l'action
-- Utilise les mots-clés détectés naturellement
-- Cible les clients potentiels du secteur mentionné
-- Mets en avant la proposition de valeur unique
+OBJECTIF: Créer un titre SEO et une meta description qui:
+1. Incluent naturellement le nom de la boutique
+2. Mentionnent le secteur d'activité
+3. Intègrent 1-2 mots-clés parmi les tags principaux ou produits détectés
+4. Créent l'urgence avec un appel à l'action
+5. Se démarquent de la concurrence
 
-Réponds uniquement en JSON valide sans markdown :
+RÈGLES STRICTES :
+- Titre SEO : Exactement 50-60 caractères
+- Meta Description : Exactement 150-160 caractères, engageant avec chiffre ou bénéfice concret
+- Utilise des power words (Découvrez, Profitez, Exclusive, Premium, etc.)
+- Mentionne un avantage compétitif (livraison gratuite, garantie, qualité, choix, etc.)
+
+FORMAT JSON strict uniquement (sans markdown):
 {
   "seo_title": "...",
   "seo_description": "..."
