@@ -12,11 +12,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Check, Loader2, Package, FolderOpen, Store } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, Package, FolderOpen, Store, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 
 interface AdsCampaignWizardProps {
   open: boolean;
@@ -40,11 +41,13 @@ interface FormData {
   subheadline: string;
   highlights: Highlight[];
   storeSummary: string;
+  designStyle: 'artistic' | 'minimal' | 'bold';
 }
 
 export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaignWizardProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [generatingLanding, setGeneratingLanding] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: '',
     campaignType: null,
@@ -55,6 +58,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     subheadline: '',
     highlights: [],
     storeSummary: '',
+    designStyle: 'artistic',
   });
   const [collections, setCollections] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -62,7 +66,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [newHighlight, setNewHighlight] = useState('');
 
-  const totalSteps = 5; // Updated to 5 steps
+  const totalSteps = 6; // Updated to 6 steps with design style
   const progress = (step / totalSteps) * 100;
 
   // Charger les collections et produits au montage du composant
@@ -181,6 +185,32 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     }
   };
 
+  const generateLandingPage = async (campaignId: string) => {
+    setGeneratingLanding(true);
+    try {
+      toast.info('Création de votre landing page artistique...');
+      
+      const { data, error } = await supabase.functions.invoke('generate-ads-landing-page', {
+        body: { campaignId }
+      });
+      
+      if (error) throw error;
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      toast.success('Landing page créée avec succès !');
+      return data.landingPageUrl;
+    } catch (error) {
+      console.error('Error generating landing page:', error);
+      toast.error('Erreur lors de la génération de la landing page');
+      throw error;
+    } finally {
+      setGeneratingLanding(false);
+    }
+  };
+
   const handleNext = async () => {
     if (step === 1 && !formData.campaignType) {
       toast.error('Veuillez sélectionner un type de campagne');
@@ -242,6 +272,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         return;
       }
 
+      // Create campaign
       const { data: campaign, error: campaignError } = await supabase
         .from('ads_campaigns')
         .insert({
@@ -256,6 +287,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
           collections_count: formData.selectedCollections.length,
           highlights: formData.highlights as any,
           store_summary: formData.storeSummary || null,
+          design_style: formData.designStyle,
         })
         .select()
         .single();
@@ -286,14 +318,25 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         if (productsError) throw productsError;
       }
 
-      const landingPageUrl = `/landing/${campaign.id}`;
+      // Generate landing page with AI
+      const landingPageUrl = await generateLandingPage(campaign.id);
       
+      // Update campaign with landing page URL
+      await supabase
+        .from('ads_campaigns')
+        .update({ 
+          landing_page_url: landingPageUrl,
+          status: 'active'
+        })
+        .eq('id', campaign.id);
+
       toast.success('Campagne créée avec succès !');
-      toast.info(`Landing page créée : ${landingPageUrl}`, {
+      toast.info('Landing page artistique générée', {
         action: {
           label: 'Voir',
           onClick: () => window.open(landingPageUrl, '_blank')
-        }
+        },
+        duration: 10000
       });
       
       onOpenChange(false);
@@ -311,6 +354,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         subheadline: '',
         highlights: [],
         storeSummary: '',
+        designStyle: 'artistic',
       });
     } catch (error) {
       console.error('Error creating campaign:', error);
@@ -347,7 +391,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
               <Label htmlFor="name">Nom de la campagne *</Label>
               <Input
                 id="name"
-                placeholder="Ex: Promotion Été 2024"
+                placeholder="Ex: Galerie Collection Élément"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
@@ -369,7 +413,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
                     <div>
                       <h3 className="font-semibold">Produit</h3>
                       <p className="text-sm text-muted-foreground">
-                        Landing page pour promouvoir un ou plusieurs produits
+                        Galerie artistique pour mettre en valeur vos produits
                       </p>
                     </div>
                   </div>
@@ -388,7 +432,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
                     <div>
                       <h3 className="font-semibold">Collection</h3>
                       <p className="text-sm text-muted-foreground">
-                        Landing page pour une collection spécifique
+                        Expérience immersive pour une collection complète
                       </p>
                     </div>
                   </div>
@@ -407,7 +451,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
                     <div>
                       <h3 className="font-semibold">Boutique</h3>
                       <p className="text-sm text-muted-foreground">
-                        Landing page pour présenter votre boutique
+                        Présentation artistique de votre univers boutique
                       </p>
                     </div>
                   </div>
@@ -522,13 +566,12 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         );
 
       case 3:
-        // For all types, show product selection
         return (
           <div className="space-y-4">
             <div>
               <Label>Sélectionnez les produits à afficher *</Label>
               <p className="text-sm text-muted-foreground mb-3">
-                Ces produits seront mis en avant sur votre landing page
+                Ces produits seront présentés comme des œuvres d'art dans votre galerie
               </p>
             </div>
 
@@ -645,12 +688,12 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
 
       case 5:
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="headline">Titre principal *</Label>
               <Input
                 id="headline"
-                placeholder="Ex: Découvrez notre nouvelle collection été"
+                placeholder="Ex: Découvrez notre galerie d'art contemporain"
                 value={formData.headline}
                 onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
               />
@@ -660,7 +703,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
               <Label htmlFor="subheadline">Sous-titre</Label>
               <Input
                 id="subheadline"
-                placeholder="Ex: Des produits de qualité à prix réduits"
+                placeholder="Ex: Des pièces uniques qui transforment votre intérieur"
                 value={formData.subheadline}
                 onChange={(e) => setFormData({ ...formData, subheadline: e.target.value })}
               />
@@ -670,12 +713,119 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
               <Label htmlFor="cta">Texte du bouton Call-to-Action *</Label>
               <Input
                 id="cta"
-                placeholder="Ex: Découvrir la collection"
+                placeholder="Ex: Explorer la galerie"
                 value={formData.ctaText}
                 onChange={(e) => setFormData({ ...formData, ctaText: e.target.value })}
               />
               <p className="text-sm text-muted-foreground">
                 Ce texte sera adapté automatiquement selon le contexte
+              </p>
+            </div>
+          </div>
+        );
+
+      case 6:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <Sparkles className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h3 className="text-lg font-semibold">Style de design</h3>
+              <p className="text-muted-foreground">
+                Choisissez le style artistique de votre landing page
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <Card
+                className={`p-4 cursor-pointer transition-all border-2 ${
+                  formData.designStyle === 'artistic'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-transparent hover:border-primary/30'
+                }`}
+                onClick={() => setFormData({ ...formData, designStyle: 'artistic' })}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-semibold">Galerie Artistique</h4>
+                      <Badge variant="secondary" className="bg-purple-500 text-white">
+                        Recommandé
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Layout asymétrique unique pour chaque produit, comme une galerie d'art contemporain
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• Masonry organique et asymétrique</li>
+                      <li>• Overlays morphing au hover</li>
+                      <li>• Expérience immersive type galerie</li>
+                      <li>• Layout unique par produit</li>
+                    </ul>
+                  </div>
+                  {formData.designStyle === 'artistic' && (
+                    <Check className="w-5 h-5 text-primary" />
+                  )}
+                </div>
+              </Card>
+
+              <Card
+                className={`p-4 cursor-pointer transition-all border-2 ${
+                  formData.designStyle === 'minimal'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-transparent hover:border-primary/30'
+                }`}
+                onClick={() => setFormData({ ...formData, designStyle: 'minimal' })}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-1">
+                    <h4 className="font-semibold mb-2">Minimal Élégant</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Design épuré avec focus sur l'essentiel, typographie soignée
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• Espace blanc généreux</li>
+                      <li>• Typographie hiérarchisée</li>
+                      <li>• Animations subtiles</li>
+                      <li>• Navigation intuitive</li>
+                    </ul>
+                  </div>
+                  {formData.designStyle === 'minimal' && (
+                    <Check className="w-5 h-5 text-primary" />
+                  )}
+                </div>
+              </Card>
+
+              <Card
+                className={`p-4 cursor-pointer transition-all border-2 ${
+                  formData.designStyle === 'bold'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-transparent hover:border-primary/30'
+                }`}
+                onClick={() => setFormData({ ...formData, designStyle: 'bold' })}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-1">
+                    <h4 className="font-semibold mb-2">Audacieux & Moderne</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Design impactant avec couleurs vibrantes et animations dynamiques
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• Couleurs contrastées</li>
+                      <li>• Animations bold</li>
+                      <li>• Layout non-conventionnel</li>
+                      <li>• Expérience mémorable</li>
+                    </ul>
+                  </div>
+                  {formData.designStyle === 'bold' && (
+                    <Check className="w-5 h-5 text-primary" />
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            <div className="p-4 bg-primary/5 rounded-lg">
+              <p className="text-sm text-primary font-medium">
+                🎨 Votre landing page sera générée automatiquement avec le style "{formData.designStyle}" sélectionné
               </p>
             </div>
           </div>
@@ -690,9 +840,9 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Créer une Landing Page</DialogTitle>
+          <DialogTitle>Créer une Landing Page Artistique</DialogTitle>
           <DialogDescription>
-            Étape {step} sur {totalSteps}
+            Étape {step} sur {totalSteps} - Design galerie d'art unique
           </DialogDescription>
         </DialogHeader>
 
@@ -704,28 +854,28 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
           <Button
             variant="outline"
             onClick={handleBack}
-            disabled={step === 1 || loading}
+            disabled={step === 1 || loading || generatingLanding}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Retour
           </Button>
 
           {step < totalSteps ? (
-            <Button onClick={handleNext} disabled={loading}>
+            <Button onClick={handleNext} disabled={loading || generatingLanding}>
               Suivant
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={loading}>
-              {loading ? (
+            <Button onClick={handleSubmit} disabled={loading || generatingLanding}>
+              {loading || generatingLanding ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Création...
+                  {generatingLanding ? 'Génération...' : 'Création...'}
                 </>
               ) : (
                 <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Créer la campagne
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Créer la galerie
                 </>
               )}
             </Button>
