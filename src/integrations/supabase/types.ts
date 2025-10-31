@@ -102,6 +102,7 @@ export type Database = {
           headline: string | null
           highlights: Json | null
           id: string
+          landing_page_html: string | null
           landing_page_url: string | null
           name: string
           products_count: number | null
@@ -122,6 +123,7 @@ export type Database = {
           headline?: string | null
           highlights?: Json | null
           id?: string
+          landing_page_html?: string | null
           landing_page_url?: string | null
           name: string
           products_count?: number | null
@@ -142,6 +144,7 @@ export type Database = {
           headline?: string | null
           highlights?: Json | null
           id?: string
+          landing_page_html?: string | null
           landing_page_url?: string | null
           name?: string
           products_count?: number | null
