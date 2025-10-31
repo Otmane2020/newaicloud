@@ -56,16 +56,16 @@ const mainMenuItems = [
 ];
 
 const seoSubItems = [
-  { title: "SEO Optimization", url: "/seo?tab=optimization", icon: Sparkles },
-  { title: "Tag Optimization", url: "/seo?tab=tags", icon: Tags },
-  { title: "Pages", url: "/seo?tab=pages", icon: FileText },
-  { title: "Articles SEO", url: "/seo?tab=articles", icon: FileText },
+  { title: "Products", url: "/seo?tab=products", icon: ShoppingBag },
   { title: "Collections", url: "/seo?tab=collections", icon: Package },
-  { title: "Homepage", url: "/seo?tab=homepage", icon: Home },
-  { title: "Audit", url: "/seo?tab=audit", icon: BarChart3 },
+  { title: "Pages", url: "/seo?tab=pages", icon: FileText },
+  { title: "Articles", url: "/seo?tab=articles", icon: FileText },
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
+  { title: "Homepage", url: "/seo?tab=homepage", icon: Home },
+  { title: "Tags", url: "/seo?tab=tags", icon: Tags },
+  { title: "Audit", url: "/seo?tab=audit", icon: BarChart3 },
+  { title: "KPIs & Stats", url: "/seo?tab=kpis", icon: BarChart3 },
   { title: "Automation", url: "/seo?tab=automation", icon: Settings },
-  { title: "KPIs Audit", url: "/seo?tab=kpis", icon: BarChart3 },
 ];
 
 const blogSubItems = [
@@ -204,7 +204,7 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isSeoActive}>
                       <Sparkles className="h-4 w-4" />
-                      <span>SEO</span>
+                      <span>SEO Optimisation</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>

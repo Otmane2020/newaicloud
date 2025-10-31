@@ -18,12 +18,17 @@ import { cn } from '@/lib/utils';
 
 export default function SEO() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'optimization');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'alt', 'automation', 'kpis'].includes(tab)) {
-      setActiveTab(tab);
+    if (tab && ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'alt', 'automation', 'kpis'].includes(tab)) {
+      // Redirect old 'optimization' tab to 'products'
+      if (tab === 'optimization') {
+        setActiveTab('products');
+      } else {
+        setActiveTab(tab);
+      }
     }
   }, [searchParams]);
 
@@ -31,16 +36,16 @@ export default function SEO() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          SEO Optimization
+          SEO Optimisation
         </h1>
         <p className="text-muted-foreground text-base md:text-lg">
-          Optimize your store for search engines with AI-powered tools
+          Optimisez votre boutique pour les moteurs de recherche avec des outils IA
         </p>
       </div>
 
       {/* Tab Content - Navigation via sidebar uniquement */}
       <div className="mt-6">
-        {activeTab === 'optimization' && <SeoOptimization />}
+        {(activeTab === 'products' || activeTab === 'optimization') && <SeoOptimization />}
         {activeTab === 'tags' && <TagOptimization />}
         {activeTab === 'pages' && <PageOptimization />}
         {activeTab === 'articles' && (
