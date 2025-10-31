@@ -26,6 +26,7 @@ export function NetlinkingTable() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<NetlinkingEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     internal: 0,
@@ -128,6 +129,27 @@ export function NetlinkingTable() {
     }
   };
 
+  const handleAnalyzeAllArticles = async () => {
+    if (!user) return;
+    
+    setAnalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-netlinking-from-articles', {
+        body: { article_ids: null } // null means analyze all articles
+      });
+
+      if (error) throw error;
+
+      toast.success(`✅ ${data.count} liens extraits de ${data.articles_processed} article(s)`);
+      await loadNetlinking(); // Reload the table
+    } catch (error) {
+      console.error('Error analyzing articles:', error);
+      toast.error('Erreur lors de l\'analyse des articles');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   const exportToCSV = () => {
     const csv = [
       ['Article', 'URL cible', 'Texte d\'ancrage', 'Type', 'Clics', 'Date de création'],
@@ -154,6 +176,28 @@ export function NetlinkingTable() {
 
   return (
     <div className="space-y-6">
+      {/* Action Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleAnalyzeAllArticles}
+          disabled={analyzing}
+          size="lg"
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+        >
+          {analyzing ? (
+            <>
+              <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+              Analyse en cours...
+            </>
+          ) : (
+            <>
+              <Link className="w-5 h-5 mr-2" />
+              Analyser tous les articles
+            </>
+          )}
+        </Button>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>

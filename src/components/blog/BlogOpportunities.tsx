@@ -42,179 +42,136 @@ export function BlogOpportunities() {
     initOpportunities();
   }, []);
 
-  const analyzeAndGenerateOpportunities = async (products: any[], userId: string) => {
+  const analyzeAndGenerateOpportunities = async (products: any[], userId: string): Promise<Opportunity[]> => {
     try {
-      // Préparer les données du catalogue avec détails enrichis (limiter à 100 premiers pour ne pas exploser le token count)
-      const catalogueAnalysis = products.slice(0, 100).map(p => ({
-        title: p.title,
-        category: p.product_type || p.category || 'Non catégorisé',
-        vendor: p.vendor || 'Inconnu',
-        price: p.price ? `${p.price} EUR` : 'Prix non disponible',
-        description: p.description?.substring(0, 200) || '',
-        tags: p.tags || '',
-        style: p.style || '',
-        room: p.room || ''
-      }));
+      console.log('🧠 Analyzing product catalog for opportunities...');
+      
+      // Group products by category
+      const categoryMap = new Map<string, number>();
+      const priceRanges = { low: 0, medium: 0, high: 0 };
+      let totalProducts = products.length;
+      
+      products.forEach(product => {
+        const category = product.category || product.product_type || 'Général';
+        categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
+        
+        const price = parseFloat(product.price) || 0;
+        if (price < 50) priceRanges.low++;
+        else if (price < 200) priceRanges.medium++;
+        else priceRanges.high++;
+      });
 
-      // Statistiques du catalogue
-      const categories = [...new Set(products.map(p => p.product_type || p.category).filter(Boolean))];
-      const priceRanges = {
-        budget: products.filter(p => p.price && p.price < 300).length,
-        mid: products.filter(p => p.price && p.price >= 300 && p.price < 1000).length,
-        premium: products.filter(p => p.price && p.price >= 1000).length
-      };
-
-      const prompt = `Tu es un expert en marketing de contenu, SEO et décoration d'intérieur pour e-commerce mobilier.
-
-MISSION : Analyse ce catalogue de ${products.length} produits mobilier et génère des opportunités d'articles de blog à FORT POTENTIEL SEO et VALEUR AJOUTÉE pour les clients.
+      // Build a shorter, optimized prompt
+      const categories = Array.from(categoryMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      
+      const prompt = `Analyse ce catalogue e-commerce et génère 6-8 opportunités d'articles de blog SEO.
 
 📊 STATISTIQUES DU CATALOGUE :
-- Total produits : ${products.length}
-- Catégories principales : ${categories.slice(0, 10).join(', ')}
-- Prix : ${priceRanges.budget} budget, ${priceRanges.mid} milieu de gamme, ${priceRanges.premium} premium
+- Total produits : ${totalProducts}
+- Prix bas (<50€) : ${priceRanges.low}
+- Prix moyen (50-200€) : ${priceRanges.medium}  
+- Prix haut (>200€) : ${priceRanges.high}
 
-📦 ÉCHANTILLON PRODUITS (${catalogueAnalysis.length} premiers) :
-${JSON.stringify(catalogueAnalysis.slice(0, 20), null, 2)}
+📁 CATÉGORIES PRINCIPALES :
+${categories.map(([cat, count]) => `- ${cat} : ${count} produits`).join('\n')}
 
-🎯 OBJECTIF : Identifier les MEILLEURS angles d'articles qui :
-1. Résolvent des PROBLÈMES RÉELS des clients
-2. Répondent à des QUESTIONS FRÉQUENTES 
-3. Ont un FORT POTENTIEL SEO (mots-clés longue traîne)
-4. Apportent une VRAIE VALEUR (conseils experts, guides pratiques)
-5. Sont ORIGINAUX (pas des guides génériques)
+🎯 TYPES D'ARTICLES DEMANDÉS :
+1. Guides d'achat comparatifs
+2. Tutoriels pratiques
+3. Sélections thématiques
+4. Conseils d'experts
+5. Tendances du marché
 
-✅ TYPES D'ARTICLES À PRIVILÉGIER :
-
-**Guides Problème/Solution** (score élevé)
-- "Petit Salon : 7 Astuces pour Optimiser l'Espace avec Style"
-- "Canapé pour Petit Appartement : Top 5 Modèles Gain de Place"
-- "Bureau à Domicile : Aménager un Espace Productif en 2024"
-
-**Guides d'Achat par Besoin** (fort potentiel SEO)
-- "Chaise de Bureau Ergonomique : 5 Critères Essentiels"
-- "Table à Manger Extensible : Guide Complet pour Famille"
-- "Mobilier Scandinave : Comment Créer un Intérieur Harmonieux"
-
-**Comparatifs Intelligents** (engagement élevé)
-- "Canapé en L vs Canapé Droit : Lequel Choisir pour Votre Salon ?"
-- "Table Ronde vs Rectangulaire : Le Guide Complet 2024"
-- "Chaise Scandinave vs Industrielle : Comparatif Styles"
-
-**Tendances & Inspiration** (partages élevés)
-- "Style Japandi : Marier Scandinave et Japonais en 2024"
-- "Couleurs Tendance 2024 : Comment les Intégrer à Votre Intérieur"
-- "Minimalisme Chaleureux : 10 Astuces pour un Intérieur Cosy"
-
-**Conseils d'Expert** (autorité SEO)
-- "7 Erreurs à Éviter lors du Choix d'un Canapé"
-- "Comment Agencer une Salle à Manger pour Recevoir"
-- "Entretien Mobilier : Guide Complet par Matériau"
-
-❌ INTERDICTIONS ABSOLUES :
-- Pas de "Collection X" ou "Découvrez nos produits"
-- Pas de titres commerciaux directs
-- Pas de simple description de produits
-- Pas de contenu générique sans valeur
-
-📋 FORMAT DE RÉPONSE (JSON uniquement) :
-
+📝 FORMAT ATTENDU (JSON strict) :
 {
   "opportunities": [
     {
-      "title": "Titre SEO optimisé, engageant et spécifique (max 60 caractères)",
-      "description": "Description détaillée de la valeur de l'article (2-3 phrases)",
-      "category": "Catégorie principale liée",
-      "type": "guide|comparison|trend|howto|expert",
-      "angle": "Angle unique de l'article (problème résolu ou bénéfice clair)",
-      "targetAudience": "Audience cible (ex: jeunes couples, télétravail, petit espace)",
-      "primaryKeywords": ["mot-clé principal 1", "mot-clé principal 2"],
-      "secondaryKeywords": ["mot-clé secondaire 1", "mot-clé 2", "mot-clé 3"],
-      "metaDescription": "Meta description SEO optimisée (150-160 caractères)",
-      "estimatedWordCount": 1500,
+      "title": "Guide d'achat : Comment choisir...",
+      "description": "Description captivante de 2-3 phrases",
+      "category": "${categories[0]?.[0] || 'Général'}",
+      "type": "guide",
+      "keywords": ["mot-clé 1", "mot-clé 2", "mot-clé 3"],
       "seoScore": 85,
-      "difficulty": "easy|medium|hard"
+      "difficulty": "medium"
     }
   ]
 }
 
-Génère 12-15 opportunités d'articles PERTINENTES, ORIGINALES et à FORT POTENTIEL.
-Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
+⚠️ RÈGLES STRICTES :
+- Retourner UNIQUEMENT du JSON valide
+- Minimum 6 opportunités, maximum 8
+- Titres accrocheurs avec mots-clés SEO
+- Descriptions courtes et percutantes
+- Keywords pertinents pour chaque article`;
 
-      const { data } = await supabase.functions.invoke("chat-smart", {
-        body: { 
-          userMessage: prompt,
-          sellerId: userId,
-          useDeepseek: true
-        }
-      });
-
-      if (!data?.content) {
-        throw new Error('Pas de réponse de l\'IA');
-      }
-
-      const aiResponse = data.content;
+      console.log('📤 Sending request to AI (timeout: 30s)...');
       
-      let optimizedData;
+      // Create abort controller for timeout
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30 second timeout
+      
       try {
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          optimizedData = JSON.parse(jsonMatch[0]);
-        } else {
-          optimizedData = JSON.parse(aiResponse);
-        }
-      } catch (parseError) {
-        console.error('Error parsing AI response:', parseError);
-        throw new Error('Erreur lors du parsing de la réponse IA');
-      }
-
-      if (!optimizedData.opportunities || !Array.isArray(optimizedData.opportunities)) {
-        throw new Error('Structure de réponse IA invalide');
-      }
-
-      // Matcher les opportunités avec les produits du catalogue
-      return optimizedData.opportunities.map((opt: any, index: number) => {
-        const relatedProducts = products.filter(p => {
-          const category = (p.product_type || p.category || '').toLowerCase();
-          const title = (p.title || '').toLowerCase();
-          const vendor = (p.vendor || '').toLowerCase();
-          const tags = (p.tags || '').toLowerCase();
-          
-          // Matching par catégorie
-          if (opt.category && category.includes(opt.category.toLowerCase())) {
-            return true;
+        const { data, error } = await supabase.functions.invoke('chat-smart', {
+          body: {
+            message: prompt,
+            conversationHistory: []
           }
-          
-          // Matching par mots-clés
-          const allKeywords = [...(opt.primaryKeywords || []), ...(opt.secondaryKeywords || [])];
-          return allKeywords.some(keyword => 
-            title.includes(keyword.toLowerCase()) ||
-            category.includes(keyword.toLowerCase()) ||
-            vendor.includes(keyword.toLowerCase()) ||
-            tags.includes(keyword.toLowerCase())
-          );
         });
 
-        return {
-          id: `opp-${index}`,
-          title: opt.title || 'Article sans titre',
-          description: opt.description || '',
-          category: opt.category || '',
-          productsCount: relatedProducts.length,
-          type: opt.type || 'guide',
-          angle: opt.angle || '',
-          targetAudience: opt.targetAudience || '',
-          primaryKeywords: opt.primaryKeywords || [],
-          secondaryKeywords: opt.secondaryKeywords || [],
-          metaDescription: opt.metaDescription || '',
-          estimatedWordCount: opt.estimatedWordCount || 1500,
-          seoScore: opt.seoScore || 70,
-          difficulty: opt.difficulty || 'medium',
-          productIds: relatedProducts.slice(0, 20).map(p => p.id)
-        };
-      }).filter(opt => opt.productsCount > 0); // Garder seulement les opportunités avec des produits matchés
+        clearTimeout(timeoutId);
 
+        if (error) {
+          console.error('❌ Error from chat-smart:', error);
+          throw new Error(`Erreur API: ${error.message || 'Erreur inconnue'}`);
+        }
+
+        if (!data || !data.response) {
+          throw new Error('Réponse vide de l\'API');
+        }
+
+        console.log('✅ Received response from AI');
+        console.log('📄 Response preview:', data.response.substring(0, 200));
+        
+        // Parse response
+        let responseText = data.response;
+        
+        // Clean up response
+        if (responseText.includes('```json')) {
+          responseText = responseText.split('```json')[1].split('```')[0];
+        } else if (responseText.includes('```')) {
+          responseText = responseText.split('```')[1].split('```')[0];
+        }
+        
+        const parsed = JSON.parse(responseText.trim());
+        
+        if (!parsed.opportunities || !Array.isArray(parsed.opportunities)) {
+          throw new Error('Format de réponse invalide: propriété "opportunities" manquante');
+        }
+
+        if (parsed.opportunities.length === 0) {
+          throw new Error('Aucune opportunité générée');
+        }
+
+        console.log(`✅ Generated ${parsed.opportunities.length} opportunities`);
+        return parsed.opportunities;
+        
+      } catch (apiError: any) {
+        clearTimeout(timeoutId);
+        if (apiError.name === 'AbortError') {
+          throw new Error('Timeout: L\'analyse a pris trop de temps (>30s)');
+        }
+        throw apiError;
+      }
+      
     } catch (error) {
-      console.error('Error in analyzeAndGenerateOpportunities:', error);
+      console.error('❌ Error in analyzeAndGenerateOpportunities:', error);
+      console.error('📋 Error details:', {
+        name: (error as Error).name,
+        message: (error as Error).message,
+        stack: (error as Error).stack
+      });
       throw error;
     }
   };
@@ -222,34 +179,37 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
   const loadOpportunities = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      console.log('🔄 Loading opportunities...');
+      const { data: { user: authUser } } = await supabase.auth.getUser();
 
-      // Récupérer TOUS les produits avec leurs détails complets
-      const { data: products } = await supabase
-        .from("shopify_products")
-        .select("id, title, description, category, tags, product_type, vendor, price, style, room")
-        .eq("seller_id", user.id);
+      const { data: products, error: productsError } = await supabase
+        .from('shopify_products')
+        .select('id, title, category, product_type, price, vendor')
+        .eq('seller_id', authUser?.id);
+
+      if (productsError) {
+        console.error('❌ Error fetching products:', productsError);
+        throw new Error(`Erreur base de données: ${productsError.message}`);
+      }
 
       if (!products || products.length === 0) {
-        toast.info("Aucun produit trouvé. Importez des produits d'abord.");
+        console.log('⚠️ No products found');
+        setOpportunities([]);
+        toast.info('Aucun produit trouvé. Importez des produits pour générer des opportunités.');
         return;
       }
 
-      // Analyser le catalogue et générer des opportunités intelligentes avec DeepSeek
-      toast.info("Analyse intelligente du catalogue en cours...");
-      const intelligentOpportunities = await analyzeAndGenerateOpportunities(products, user.id);
-
-      if (intelligentOpportunities && intelligentOpportunities.length > 0) {
-        setOpportunities(intelligentOpportunities);
-        toast.success(`${intelligentOpportunities.length} opportunités d'articles détectées !`);
-      } else {
-        toast.error("Aucune opportunité générée. Réessayez.");
-      }
-
+      console.log(`📦 Found ${products.length} products`);
+      
+      const opportunities = await analyzeAndGenerateOpportunities(products, authUser?.id || '');
+      setOpportunities(opportunities);
+      toast.success(`✅ ${opportunities.length} opportunités détectées`);
+      
     } catch (error) {
-      console.error("Error loading opportunities:", error);
-      toast.error("Erreur lors de l'analyse du catalogue");
+      console.error('❌ Error loading opportunities:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      toast.error(`Erreur lors de l'analyse du catalogue: ${errorMessage}`);
+      setOpportunities([]);
     } finally {
       setLoading(false);
     }

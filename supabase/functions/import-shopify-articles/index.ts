@@ -288,6 +288,18 @@ Deno.serve(async (req: Request) => {
             totalImagesImported++;
           }
         }
+
+        // Extract netlinking data
+        console.log('🔗 Extracting netlinking data...');
+        try {
+          await supabaseServiceClient.functions.invoke('extract-netlinking-from-articles', {
+            body: { article_ids: [dbArticle.id] }
+          });
+          console.log('✅ Netlinking extracted');
+        } catch (netlinkError) {
+          console.error('⚠️ Error extracting netlinking:', netlinkError);
+          // Don't fail the entire import if netlinking extraction fails
+        }
       }
 
       importedCount++;

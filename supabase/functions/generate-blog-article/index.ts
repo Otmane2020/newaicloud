@@ -539,6 +539,18 @@ ${hasProducts ? `- Utilise UNIQUEMENT les ${products.length} produits fournis
 
     console.log(`✅ Article sauvegardé : ${savedArticle.id}`);
     
+    // Extract netlinking data from the generated article
+    console.log('🔗 Extracting netlinking data...');
+    try {
+      await supabaseClient.functions.invoke('extract-netlinking-from-articles', {
+        body: { article_ids: [savedArticle.id] }
+      });
+      console.log('✅ Netlinking extracted');
+    } catch (netlinkError) {
+      console.error('⚠️ Error extracting netlinking:', netlinkError);
+      // Don't fail the entire generation if netlinking extraction fails
+    }
+    
     await supabaseClient.rpc('increment_usage', {
       p_seller_id: user_id,
       p_field: 'articles_count',
