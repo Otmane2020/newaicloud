@@ -79,16 +79,34 @@ export function ShopifyConnectionsList() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Get ALL connections (not just null store_name)
       const { data: connections } = await supabase
         .from('shopify_connections')
         .select('id, store_url, store_name, access_token')
-        .eq('user_id', user.id)
-        .is('store_name', null);
+        .eq('user_id', user.id);
 
       if (!connections || connections.length === 0) return;
 
+      console.log('🔍 Checking store names for', connections.length, 'stores');
+
       for (const conn of connections) {
         try {
+          // Extract technical name from URL (e.g., "qnxv91-2w" from "qnxv91-2w.myshopify.com")
+          const technicalName = conn.store_url
+            .replace(/^https?:\/\//, '')
+            .replace(/\.myshopify\.com.*$/, '');
+
+          // Only update if store_name is null OR matches the technical name
+          const needsUpdate = !conn.store_name || conn.store_name === technicalName;
+          
+          console.log(`📦 Store ${conn.id}:`, {
+            current_name: conn.store_name,
+            technical_name: technicalName,
+            needs_update: needsUpdate
+          });
+
+          if (!needsUpdate) continue;
+
           const response = await fetch(`https://${conn.store_url}/admin/api/2025-10/shop.json`, {
             headers: {
               'X-Shopify-Access-Token': conn.access_token,
@@ -98,21 +116,27 @@ export function ShopifyConnectionsList() {
 
           if (response.ok) {
             const shopData = await response.json();
+            console.log('✅ Got shop data:', shopData.shop?.name);
+            
             if (shopData.shop?.name) {
               await supabase
                 .from('shopify_connections')
                 .update({ store_name: shopData.shop.name })
                 .eq('id', conn.id);
+              
+              console.log(`✅ Updated store name to: ${shopData.shop.name}`);
             }
+          } else {
+            console.error('❌ API error:', response.status, response.statusText);
           }
         } catch (error) {
-          console.error('Error fetching shop name:', error);
+          console.error('❌ Error fetching shop name:', error);
         }
       }
       
       loadConnections();
     } catch (error) {
-      console.error('Error updating store names:', error);
+      console.error('❌ Error updating store names:', error);
     }
   };
   
