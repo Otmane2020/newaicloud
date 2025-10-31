@@ -336,11 +336,9 @@ export function Navigation() {
         {/* Footer - Logout & Collapse */}
         <div className="border-t border-gray-200 p-2 space-y-1">
           {/* Notification Center */}
-          {!collapsed && (
-            <div className="px-2 mb-2">
-              <NotificationCenter />
-            </div>
-          )}
+          <div className={`mb-2 ${collapsed ? 'flex justify-center' : 'px-2'}`}>
+            <NotificationCenter />
+          </div>
           
           <button
             onClick={handleLogout}
