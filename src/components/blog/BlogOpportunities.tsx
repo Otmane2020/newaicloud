@@ -11,17 +11,19 @@ interface Opportunity {
   title: string;
   description: string;
   category: string;
+  subCategory?: string;
   productsCount: number;
-  type: "comparison" | "guide" | "trend" | "howto" | "expert";
+  type: "comparison" | "guide" | "niche" | "tutorial" | "selection";
   angle?: string;
   targetAudience?: string;
-  primaryKeywords?: string[];
-  secondaryKeywords?: string[];
-  metaDescription?: string;
-  estimatedWordCount?: number;
-  seoScore?: number;
-  difficulty?: "easy" | "medium" | "hard";
-  productIds?: string[];
+  primaryKeywords: string[];
+  secondaryKeywords: string[];
+  metaDescription: string;
+  estimatedWordCount: number;
+  seoScore: number;
+  difficulty: "easy" | "medium" | "hard";
+  productIds: string[];
+  collectionIds?: string[];
 }
 
 export function BlogOpportunities() {
@@ -117,11 +119,16 @@ export function BlogOpportunities() {
           user_id: user.id,
           title: opp.title,
           category: opp.category,
-          keywords: [...(opp.primaryKeywords || []), ...(opp.secondaryKeywords || [])],
+          sub_category: opp.subCategory,
+          keywords: [...opp.primaryKeywords, ...opp.secondaryKeywords],
+          primary_keywords: opp.primaryKeywords,
+          secondary_keywords: opp.secondaryKeywords,
           meta_description: opp.metaDescription,
           angle: opp.angle,
           target_audience: opp.targetAudience,
-          estimated_word_count: opp.estimatedWordCount || 1500
+          estimated_word_count: opp.estimatedWordCount,
+          product_ids: opp.productIds,
+          collection_ids: opp.collectionIds || []
         },
       });
 
@@ -148,8 +155,12 @@ export function BlogOpportunities() {
         return TrendingUp;
       case "guide":
         return FileText;
-      case "trend":
+      case "niche":
         return Lightbulb;
+      case "tutorial":
+        return FileText;
+      case "selection":
+        return Sparkles;
       default:
         return Sparkles;
     }
@@ -236,9 +247,12 @@ export function BlogOpportunities() {
                     <Badge variant="outline">
                       {opp.productsCount} produit{opp.productsCount > 1 ? "s" : ""}
                     </Badge>
-                    {opp.seoScore && (
-                      <Badge variant={opp.seoScore >= 80 ? "default" : "secondary"}>
-                        SEO: {opp.seoScore}/100
+                    <Badge variant={opp.seoScore >= 80 ? "default" : "secondary"}>
+                      SEO: {opp.seoScore}/100
+                    </Badge>
+                    {opp.collectionIds && opp.collectionIds.length > 0 && (
+                      <Badge variant="outline">
+                        {opp.collectionIds.length} collection{opp.collectionIds.length > 1 ? "s" : ""}
                       </Badge>
                     )}
                   </div>
@@ -248,24 +262,46 @@ export function BlogOpportunities() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
+                  <div className="text-sm">
+                    <span className="font-semibold">Catégorie:</span> {opp.category}
+                    {opp.subCategory && ` > ${opp.subCategory}`}
+                  </div>
+                  
                   {opp.angle && (
                     <div className="text-sm">
                       <span className="font-semibold">Angle:</span> {opp.angle}
                     </div>
                   )}
+                  
                   {opp.targetAudience && (
                     <div className="text-sm text-muted-foreground">
                       <span className="font-semibold">Audience:</span> {opp.targetAudience}
                     </div>
                   )}
-                  <div className="text-sm text-muted-foreground">
-                    <span className="font-semibold">Catégorie:</span> {opp.category}
-                  </div>
-                  {opp.difficulty && (
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="capitalize">
+                      {opp.type}
+                    </Badge>
                     <Badge variant="outline" className="capitalize">
                       {opp.difficulty === 'easy' ? '🟢 Facile' : opp.difficulty === 'medium' ? '🟡 Moyen' : '🔴 Difficile'}
                     </Badge>
+                  </div>
+
+                  {opp.primaryKeywords && opp.primaryKeywords.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {opp.primaryKeywords.slice(0, 3).map((keyword: string, idx: number) => (
+                        <Badge key={idx} variant="default" className="text-xs">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
                   )}
+
+                  <div className="text-xs text-muted-foreground">
+                    📝 ~{opp.estimatedWordCount} mots
+                  </div>
+
                   <Button
                     className="w-full"
                     onClick={() => handleCreateArticle(opp)}
