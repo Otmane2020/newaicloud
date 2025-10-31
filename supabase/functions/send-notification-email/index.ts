@@ -266,10 +266,14 @@ Deno.serve(async (req) => {
       }
 
       return recommendations.sort((a, b) => {
-        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        const priorityOrder: { [key: string]: number } = { high: 0, medium: 1, low: 2 };
         return priorityOrder[a.priority] - priorityOrder[b.priority];
       });
     };
+
+    // Calculate image statistics for use in audit results
+    const productsWithImages = products?.filter((p) => p.images && p.images.length > 0).length || 0;
+    const imagePercentage = products?.length ? Math.round((productsWithImages / products.length) * 100) : 0;
 
     // Build enhanced audit results
     const auditResults = {
