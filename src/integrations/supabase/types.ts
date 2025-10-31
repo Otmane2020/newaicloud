@@ -99,11 +99,13 @@ export type Database = {
           created_at: string
           cta_text: string | null
           headline: string | null
+          highlights: Json | null
           id: string
           landing_page_url: string | null
           name: string
           products_count: number | null
           status: string
+          store_summary: string | null
           subheadline: string | null
           updated_at: string
           user_id: string
@@ -114,11 +116,13 @@ export type Database = {
           created_at?: string
           cta_text?: string | null
           headline?: string | null
+          highlights?: Json | null
           id?: string
           landing_page_url?: string | null
           name: string
           products_count?: number | null
           status?: string
+          store_summary?: string | null
           subheadline?: string | null
           updated_at?: string
           user_id: string
@@ -129,11 +133,13 @@ export type Database = {
           created_at?: string
           cta_text?: string | null
           headline?: string | null
+          highlights?: Json | null
           id?: string
           landing_page_url?: string | null
           name?: string
           products_count?: number | null
           status?: string
+          store_summary?: string | null
           subheadline?: string | null
           updated_at?: string
           user_id?: string

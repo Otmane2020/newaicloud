@@ -26,6 +26,10 @@ interface AdsCampaignWizardProps {
 
 type CampaignType = 'product' | 'collection' | 'store';
 
+interface Highlight {
+  text: string;
+}
+
 interface FormData {
   name: string;
   campaignType: CampaignType | null;
@@ -34,6 +38,8 @@ interface FormData {
   ctaText: string;
   headline: string;
   subheadline: string;
+  highlights: Highlight[];
+  storeSummary: string;
 }
 
 export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaignWizardProps) {
@@ -47,21 +53,30 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     ctaText: '',
     headline: '',
     subheadline: '',
+    highlights: [],
+    storeSummary: '',
   });
   const [collections, setCollections] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [newHighlight, setNewHighlight] = useState('');
 
-  const totalSteps = 4;
+  const totalSteps = 5; // Updated to 5 steps
   const progress = (step / totalSteps) * 100;
 
   // Charger les collections et produits au montage du composant
   useEffect(() => {
     if (open) {
       fetchCollections();
-      fetchProducts();
+      // For collection type, fetch products after collections are selected
+      if (formData.campaignType === 'collection' && formData.selectedCollections.length > 0) {
+        fetchProducts(formData.selectedCollections);
+      } else if (formData.campaignType !== 'collection') {
+        fetchProducts();
+      }
     }
-  }, [open]);
+  }, [open, formData.campaignType, formData.selectedCollections]);
 
   const fetchCollections = async () => {
     setLoadingData(true);
@@ -93,7 +108,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     }
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (collectionIds?: string[]) => {
     setLoadingData(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -104,11 +119,19 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       }
       
       console.log('Fetching products for user:', user.id);
-      const { data, error } = await supabase
+      let query = supabase
         .from('shopify_products')
-        .select('id, title, image_url, vendor')
-        .eq('seller_id', user.id)
-        .order('title');
+        .select('id, title, image_url, vendor, collection_ids')
+        .eq('seller_id', user.id);
+      
+      // Filter by collections if provided (for collection campaign type)
+      if (collectionIds && collectionIds.length > 0) {
+        query = query.or(
+          collectionIds.map(id => `collection_ids.cs.{${id}}`).join(',')
+        );
+      }
+      
+      const { data, error } = await query.order('title');
       
       console.log('Products data:', data);
       console.log('Products error:', error);
@@ -123,7 +146,42 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     }
   };
 
-  const handleNext = () => {
+  const generateStoreSummary = async () => {
+    setLoadingSummary(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: stores } = await supabase
+        .from('shopify_connections')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+      
+      if (!stores || stores.length === 0) {
+        toast.error('Aucune boutique Shopify connectée');
+        return;
+      }
+      
+      const { data, error } = await supabase.functions.invoke('generate-store-summary', {
+        body: { storeId: stores[0].id }
+      });
+      
+      if (error) throw error;
+      
+      setFormData(prev => ({ ...prev, storeSummary: data.summary }));
+      toast.success('Résumé généré avec succès');
+      // Auto-advance to next step
+      setTimeout(() => setStep(3), 500);
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      toast.error('Erreur lors de la génération du résumé');
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  const handleNext = async () => {
     if (step === 1 && !formData.campaignType) {
       toast.error('Veuillez sélectionner un type de campagne');
       return;
@@ -132,11 +190,15 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       toast.error('Veuillez donner un nom à votre campagne');
       return;
     }
+    if (step === 2 && formData.campaignType === 'store' && !formData.storeSummary) {
+      await generateStoreSummary();
+      return;
+    }
     if (step === 2 && formData.selectedCollections.length === 0 && formData.campaignType !== 'store') {
       toast.error('Veuillez sélectionner au moins une collection');
       return;
     }
-    if (step === 3 && formData.selectedProducts.length === 0 && formData.campaignType !== 'store') {
+    if (step === 3 && formData.selectedProducts.length === 0) {
       toast.error('Veuillez sélectionner au moins un produit');
       return;
     }
@@ -146,6 +208,23 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
 
   const handleBack = () => {
     setStep(step - 1);
+  };
+
+  const addHighlight = () => {
+    if (newHighlight.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        highlights: [...prev.highlights, { text: newHighlight.trim() }]
+      }));
+      setNewHighlight('');
+    }
+  };
+
+  const removeHighlight = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      highlights: prev.highlights.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async () => {
@@ -175,6 +254,8 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
           status: 'draft' as const,
           products_count: formData.selectedProducts.length,
           collections_count: formData.selectedCollections.length,
+          highlights: formData.highlights as any,
+          store_summary: formData.storeSummary || null,
         })
         .select()
         .single();
@@ -219,6 +300,8 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         ctaText: '',
         headline: '',
         subheadline: '',
+        highlights: [],
+        storeSummary: '',
       });
     } catch (error) {
       console.error('Error creating campaign:', error);
@@ -328,11 +411,41 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
       case 2:
         if (formData.campaignType === 'store') {
           return (
-            <div className="py-8 text-center">
-              <Store className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                Mode boutique : Aucune collection spécifique requise
-              </p>
+            <div className="space-y-4">
+              <div>
+                <Label>Résumé de votre boutique</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Un résumé intelligent sera généré automatiquement
+                </p>
+              </div>
+              {formData.storeSummary ? (
+                <Card className="p-4 bg-primary/5">
+                  <p className="text-sm">{formData.storeSummary}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={generateStoreSummary}
+                    disabled={loadingSummary}
+                  >
+                    {loadingSummary ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Régénération...
+                      </>
+                    ) : (
+                      'Régénérer le résumé'
+                    )}
+                  </Button>
+                </Card>
+              ) : (
+                <div className="text-center py-8">
+                  <Store className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    Cliquez sur "Suivant" pour générer un résumé intelligent de votre boutique
+                  </p>
+                </div>
+              )}
             </div>
           );
         }
@@ -400,17 +513,7 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         );
 
       case 3:
-        if (formData.campaignType === 'store') {
-          return (
-            <div className="py-8 text-center">
-              <Store className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                Mode boutique : Aucun produit spécifique requis
-              </p>
-            </div>
-          );
-        }
-
+        // For all types, show product selection
         return (
           <div className="space-y-4">
             <div>
@@ -479,6 +582,59 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         );
 
       case 4:
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Points forts à mettre en avant</Label>
+              <p className="text-sm text-muted-foreground mb-3">
+                Ajoutez des highlights qui attirent l'attention (avis, certifications, avantages...)
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ex: Avis Google 4,9/5"
+                value={newHighlight}
+                onChange={(e) => setNewHighlight(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addHighlight()}
+              />
+              <Button type="button" onClick={addHighlight} variant="outline">
+                Ajouter
+              </Button>
+            </div>
+
+            {formData.highlights.length > 0 && (
+              <div className="space-y-2">
+                {formData.highlights.map((highlight, index) => (
+                  <Card key={index} className="p-3 flex items-center justify-between">
+                    <span className="text-sm">{highlight.text}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeHighlight(index)}
+                    >
+                      ✕
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                💡 Exemples de highlights :
+              </p>
+              <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+                <li>• Avis Google 4,9/5</li>
+                <li>• Showroom de plus de 300m² en région parisienne</li>
+                <li>• Livraison en 10 jours</li>
+                <li>• Produits de qualité européenne</li>
+              </ul>
+            </div>
+          </div>
+        );
+
+      case 5:
         return (
           <div className="space-y-4">
             <div className="space-y-2">
