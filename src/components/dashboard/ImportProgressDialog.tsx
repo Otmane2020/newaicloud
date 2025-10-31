@@ -93,6 +93,16 @@ export function ImportProgressDialog({
     }
   }, [displayedProducts, productsImported]);
 
+  // Animate pages counter
+  useEffect(() => {
+    if (displayedPages < pagesImported) {
+      const timer = setTimeout(() => {
+        setDisplayedPages(prev => Math.min(prev + 1, pagesImported));
+      }, 40);
+      return () => clearTimeout(timer);
+    }
+  }, [displayedPages, pagesImported]);
+
   // Animate articles counter
   useEffect(() => {
     if (displayedArticles < articlesImported) {

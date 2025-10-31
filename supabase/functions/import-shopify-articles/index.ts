@@ -88,6 +88,8 @@ Deno.serve(async (req: Request) => {
     );
 
     console.log('📰 Starting Shopify blog articles import...');
+    console.log('Shop name:', cleanShopName);
+    console.log('Store ID:', storeId);
 
     // Step 1: Fetch blogs
     const blogsResponse = await fetch(
@@ -184,6 +186,8 @@ Deno.serve(async (req: Request) => {
 
     console.log(`📝 Total articles to import: ${allArticles.length}`);
 
+    console.log(`📝 Preparing ${allArticles.length} articles for database insertion...`);
+
     // Step 3: Prepare articles for insertion
     const articlesToInsert = allArticles.map((article) => {
       const keywords = article.tags ? article.tags.split(',').map(tag => tag.trim()) : [];
@@ -200,35 +204,51 @@ Deno.serve(async (req: Request) => {
 
       return {
         user_id: user.id,
+        store_id: storeId,
         title: article.title,
         content: article.body_html || '',
         meta_description: metaDescription,
         keywords: keywords,
         status: article.published_at ? 'published' : 'draft',
         published_at: article.published_at,
-        shopify_article_id: article.id.toString(), // Fixed: changed from shopify_blog_id to shopify_article_id
+        shopify_article_id: article.id.toString(),
+        shopify_blog_id: article.blog_id.toString(),
         source: 'shopify_import',
         created_at: new Date().toISOString(),
         updated_at: article.updated_at,
       };
     });
 
-    // Log first article for debugging
-    console.log('First article to insert:', JSON.stringify(articlesToInsert[0], null, 2));
+    console.log('📊 Article preparation complete');
+    console.log('First article sample:', JSON.stringify({
+      title: articlesToInsert[0]?.title,
+      blog_id: articlesToInsert[0]?.shopify_blog_id,
+      article_id: articlesToInsert[0]?.shopify_article_id,
+      store_id: articlesToInsert[0]?.store_id
+    }, null, 2));
 
     // Step 4: Insert articles into database
+    console.log('💾 Inserting articles into database...');
     const { data: insertedArticles, error: insertError } = await supabaseServiceClient
       .from('blog_articles')
       .upsert(articlesToInsert, {
-        onConflict: 'shopify_article_id', // Fixed: changed from shopify_blog_id to shopify_article_id
+        onConflict: 'shopify_article_id',
         ignoreDuplicates: false,
       })
       .select();
 
     if (insertError) {
-      console.error('❌ Error inserting articles:', insertError);
+      console.error('❌ Database insertion error:', {
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        code: insertError.code
+      });
       return new Response(
-        JSON.stringify({ error: `Failed to save articles: ${insertError.message}` }),
+        JSON.stringify({ 
+          error: `Failed to save articles: ${insertError.message}`,
+          details: insertError.details 
+        }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -237,6 +257,11 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`✅ Successfully imported ${insertedArticles?.length || 0} articles`);
+    console.log('📈 Import statistics:', {
+      total_fetched: allArticles.length,
+      successfully_inserted: insertedArticles?.length || 0,
+      store_id: storeId
+    });
 
     // NOTE: Imported articles from Shopify don't count towards usage limits
     // Only AI-generated articles count towards the limit

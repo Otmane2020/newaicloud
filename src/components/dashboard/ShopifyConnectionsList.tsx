@@ -51,6 +51,7 @@ export function ShopifyConnectionsList() {
   });
   const [productsImported, setProductsImported] = useState(0);
   const [pagesImported, setPagesImported] = useState(0);
+  const [articlesImported, setArticlesImported] = useState(0);
   const [importedItems, setImportedItems] = useState<any[]>([]);
   const [limitReached, setLimitReached] = useState(false);
   const [maxProducts, setMaxProducts] = useState(0);
@@ -307,6 +308,7 @@ export function ShopifyConnectionsList() {
       setImportProgress({ percentage: 0, currentPage: 0, totalPages: 0, productsProcessed: 0 });
       setProductsImported(0);
       setPagesImported(0);
+      setArticlesImported(0);
       setImportedItems([]);
       setImportPhase('products');
       setLimitReached(false);
@@ -324,12 +326,30 @@ export function ShopifyConnectionsList() {
       }
       
       // Import articles in parallel
+      console.log('🚀 Starting articles import...');
       try {
-        await supabase.functions.invoke('import-shopify-articles', {
-          body: { storeId: fullStore.id }
+        const { data: articlesData, error: articlesError } = await supabase.functions.invoke('import-shopify-articles', {
+          body: { 
+            storeId: fullStore.id,
+            shopName: cleanShopName,
+            authToken: fullStore.access_token
+          }
         });
+        
+        if (articlesError) {
+          console.error('❌ Articles import error:', articlesError);
+        } else if (articlesData) {
+          console.log('✅ Articles import response:', articlesData);
+          const count = articlesData.count || 0;
+          setArticlesImported(count);
+          console.log(`📊 Total articles imported: ${count}`);
+          
+          if (count > 0) {
+            toast.success(`${count} articles successfully imported!`);
+          }
+        }
       } catch (articleError) {
-        console.error('Error importing articles:', articleError);
+        console.error('❌ Error importing articles:', articleError);
         // Don't fail the whole import if articles fail
       }
       
@@ -472,7 +492,7 @@ export function ShopifyConnectionsList() {
         progress={importProgress}
         productsImported={productsImported}
         pagesImported={pagesImported}
-        articlesImported={0}
+        articlesImported={articlesImported}
         importedItems={importedItems}
         limitReached={limitReached}
         maxProducts={maxProducts}
