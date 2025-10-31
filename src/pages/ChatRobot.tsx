@@ -95,20 +95,58 @@ export default function ChatRobot() {
       };
       setMessages((prev) => [...prev, userMessage]);
 
-      // Call chat AI
-      const { data: chatData, error: chatError } = await supabase.functions.invoke("chat-smart", {
-        body: {
-          message: userText,
-          conversationHistory: messages.map(m => ({
-            role: m.role,
-            content: m.content
-          }))
-        },
-      });
+      // Call chat AI (streaming response)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-smart`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            userMessage: userText,
+            history: messages.map(m => ({
+              role: m.role,
+              content: m.content
+            }))
+          }),
+        }
+      );
 
-      if (chatError) throw chatError;
+      if (!response.ok) throw new Error("Chat API error");
 
-      const assistantText = chatData.response;
+      // Read SSE stream
+      const streamReader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantText = "";
+
+      if (streamReader) {
+        while (true) {
+          const { done, value } = await streamReader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") break;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.content) {
+                  assistantText += parsed.content;
+                }
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+      }
+
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
