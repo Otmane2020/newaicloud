@@ -231,6 +231,9 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          vision_analyzed: boolean | null
+          vision_attributes: Json | null
+          vision_confidence: number | null
         }
         Insert: {
           collection_id?: string | null
@@ -250,6 +253,9 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          vision_analyzed?: boolean | null
+          vision_attributes?: Json | null
+          vision_confidence?: number | null
         }
         Update: {
           collection_id?: string | null
@@ -269,6 +275,9 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          vision_analyzed?: boolean | null
+          vision_attributes?: Json | null
+          vision_confidence?: number | null
         }
         Relationships: [
           {
@@ -1602,6 +1611,9 @@ export type Database = {
           title: string
           updated_at: string
           vendor: string | null
+          vision_analyzed: boolean | null
+          vision_attributes: Json | null
+          vision_confidence: number | null
           width: number | null
           width_unit: string | null
         }
@@ -1708,6 +1720,9 @@ export type Database = {
           title: string
           updated_at?: string
           vendor?: string | null
+          vision_analyzed?: boolean | null
+          vision_attributes?: Json | null
+          vision_confidence?: number | null
           width?: number | null
           width_unit?: string | null
         }
@@ -1814,6 +1829,9 @@ export type Database = {
           title?: string
           updated_at?: string
           vendor?: string | null
+          vision_analyzed?: boolean | null
+          vision_attributes?: Json | null
+          vision_confidence?: number | null
           width?: number | null
           width_unit?: string | null
         }

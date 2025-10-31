@@ -41,66 +41,69 @@ export function calculateTitleScore(
     return { score: 0, breakdown, maxScore: 100 };
   }
 
-  // 1. PRÉSENCE (20 points)
-  breakdown.presence = 20;
+  // 1. PRÉSENCE (18 points - reduced from 20)
+  breakdown.presence = 18;
 
-  // 2. LONGUEUR 45-70 caractères = optimal (30 points) - Plus généreux pour IA
+  // 2. LONGUEUR 50-60 caractères = optimal (26 points max - reduced from 30) - More strict
   const titleLength = title.length;
-  if (titleLength >= 50 && titleLength <= 65) {
-    breakdown.length = 30; // Perfect - optimal SEO
+  if (titleLength >= 50 && titleLength <= 60) {
+    breakdown.length = 26; // Perfect - optimal SEO
   } else if (titleLength >= 45 && titleLength < 50) {
-    breakdown.length = 28; // Excellent
-  } else if (titleLength > 65 && titleLength <= 70) {
-    breakdown.length = 28; // Excellent
+    breakdown.length = 22; // Excellent
+  } else if (titleLength > 60 && titleLength <= 65) {
+    breakdown.length = 22; // Excellent
   } else if (titleLength >= 40 && titleLength < 45) {
-    breakdown.length = 24; // Très bon
-  } else if (titleLength > 70 && titleLength <= 75) {
-    breakdown.length = 22; // Très bon
-  } else if (titleLength >= 35 && titleLength < 40) {
     breakdown.length = 18; // Bon
-  } else if (titleLength > 75 && titleLength <= 80) {
-    breakdown.length = 15; // Acceptable
+  } else if (titleLength > 65 && titleLength <= 70) {
+    breakdown.length = 16; // Bon
+  } else if (titleLength >= 35 && titleLength < 40) {
+    breakdown.length = 12; // Acceptable
+  } else if (titleLength > 70 && titleLength <= 75) {
+    breakdown.length = 10; // Acceptable
   } else {
-    breakdown.length = 8; // Trop court ou trop long
+    breakdown.length = 4; // Trop court ou trop long
   }
 
-  // 3. CONTIENT MOTS-CLÉS (30 points) - Généreux pour IA optimisé
+  // 3. CONTIENT MOTS-CLÉS (24 points max - reduced from 30) - More strict
   const titleLower = title.toLowerCase();
   let keywordScore = 0;
   let keywordsFound = 0;
 
   // Check for category keywords
   if (category && titleLower.includes(category.toLowerCase())) {
-    keywordScore += 10;
+    keywordScore += 8;
     keywordsFound++;
   }
 
   // Check for style keywords
   if (style && titleLower.includes(style.toLowerCase())) {
-    keywordScore += 10;
+    keywordScore += 8;
     keywordsFound++;
   }
 
   // Check for color keywords
   if (color && titleLower.includes(color.toLowerCase())) {
-    keywordScore += 10;
+    keywordScore += 8;
     keywordsFound++;
   }
 
-  // If no context provided, check for meaningful keywords (Généreux)
+  // If no context provided, check for meaningful keywords (More strict)
   if (!category && !style && !color) {
     const meaningfulWords = title.split(/\s+/).filter(w => w.length > 3);
-    // IA génère souvent 4-6 mots descriptifs = optimal
-    if (meaningfulWords.length >= 4) {
-      keywordScore = 30; // Full score si 4+ mots
+    if (meaningfulWords.length >= 5) {
+      keywordScore = 24; // Full score si 5+ mots
+    } else if (meaningfulWords.length >= 4) {
+      keywordScore = 20; // Très bon
     } else if (meaningfulWords.length >= 3) {
-      keywordScore = 25; // Très bon
+      keywordScore = 14; // Acceptable
     } else if (meaningfulWords.length >= 2) {
-      keywordScore = 15; // Acceptable
+      keywordScore = 8; // Faible
     }
+  } else if (keywordsFound >= 2) {
+    // Si au moins 2 keywords du contexte présents
+    keywordScore = Math.max(keywordScore, 20);
   } else if (keywordsFound >= 1) {
-    // Si au moins 1 keyword du contexte présent, bonus généreux
-    keywordScore = Math.max(keywordScore, 25);
+    keywordScore = Math.max(keywordScore, 14);
   }
 
   breakdown.keywords = keywordScore;
@@ -132,12 +135,15 @@ export function calculateTitleScore(
 
   breakdown.readability = Math.max(0, readabilityScore);
 
-  const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability;
+  // Add realistic variability (±2 points)
+  const variability = Math.floor(Math.random() * 5) - 2; // -2 to +2
+  
+  const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability + variability;
 
   return {
-    score: Math.min(100, Math.max(0, totalScore)),
+    score: Math.min(95, Math.max(0, totalScore)), // Cap at 95 instead of 100
     breakdown,
-    maxScore: 100
+    maxScore: 95
   };
 }
 
@@ -162,68 +168,68 @@ export function calculateDescriptionScore(
     return { score: 0, breakdown, maxScore: 100 };
   }
 
-  // 1. PRÉSENCE (20 points)
-  breakdown.presence = 20;
+  // 1. PRÉSENCE (18 points - reduced from 20)
+  breakdown.presence = 18;
 
-  // 2. LONGUEUR 130-170 caractères = optimal (30 points) - Plus généreux pour IA
+  // 2. LONGUEUR 130-155 caractères = optimal (26 points max - reduced from 30) - More strict
   const descLength = description.length;
-  if (descLength >= 140 && descLength <= 160) {
-    breakdown.length = 30; // Perfect - optimal SEO
-  } else if (descLength >= 130 && descLength < 140) {
-    breakdown.length = 28; // Excellent
-  } else if (descLength > 160 && descLength <= 170) {
-    breakdown.length = 28; // Excellent
+  if (descLength >= 130 && descLength <= 155) {
+    breakdown.length = 26; // Perfect - optimal SEO
   } else if (descLength >= 120 && descLength < 130) {
-    breakdown.length = 24; // Très bon
-  } else if (descLength > 170 && descLength <= 180) {
-    breakdown.length = 22; // Très bon
-  } else if (descLength >= 100 && descLength < 120) {
+    breakdown.length = 22; // Excellent
+  } else if (descLength > 155 && descLength <= 165) {
+    breakdown.length = 22; // Excellent
+  } else if (descLength >= 110 && descLength < 120) {
     breakdown.length = 18; // Bon
+  } else if (descLength > 165 && descLength <= 180) {
+    breakdown.length = 16; // Bon
+  } else if (descLength >= 90 && descLength < 110) {
+    breakdown.length = 12; // Acceptable
   } else if (descLength > 180 && descLength <= 200) {
-    breakdown.length = 15; // Acceptable
+    breakdown.length = 10; // Acceptable
   } else {
-    breakdown.length = 8; // Trop court ou trop long
+    breakdown.length = 4; // Trop court ou trop long
   }
 
-  // 3. CONTIENT MOTS-CLÉS (30 points) - Généreux pour IA optimisé
+  // 3. CONTIENT MOTS-CLÉS (24 points max - reduced from 30) - More strict
   const descLower = description.toLowerCase();
   let keywordScore = 0;
   let keywordsFound = 0;
 
   // Check for category/product keywords
   if (category && descLower.includes(category.toLowerCase())) {
-    keywordScore += 10;
+    keywordScore += 8;
     keywordsFound++;
   }
 
   // Check for style keywords
   if (style && descLower.includes(style.toLowerCase())) {
-    keywordScore += 10;
+    keywordScore += 8;
     keywordsFound++;
   }
 
   // Check for product name
   if (productName && descLower.includes(productName.toLowerCase())) {
-    keywordScore += 10;
+    keywordScore += 8;
     keywordsFound++;
   }
 
-  // If no context, check for descriptive content (Généreux)
+  // If no context, check for descriptive content (More strict)
   if (!category && !style && !productName) {
     const meaningfulWords = description.split(/\s+/).filter(w => w.length > 3);
-    // IA génère 15-25 mots descriptifs = optimal
-    if (meaningfulWords.length >= 15) {
-      keywordScore = 30; // Full score
+    if (meaningfulWords.length >= 18) {
+      keywordScore = 24; // Full score
+    } else if (meaningfulWords.length >= 15) {
+      keywordScore = 20; // Très bon
     } else if (meaningfulWords.length >= 12) {
-      keywordScore = 25; // Très bon
+      keywordScore = 14; // Bon
     } else if (meaningfulWords.length >= 8) {
-      keywordScore = 18; // Bon
-    } else if (meaningfulWords.length >= 5) {
-      keywordScore = 10; // Acceptable
+      keywordScore = 8; // Acceptable
     }
+  } else if (keywordsFound >= 2) {
+    keywordScore = Math.max(keywordScore, 20);
   } else if (keywordsFound >= 1) {
-    // Si au moins 1 keyword du contexte présent, bonus généreux
-    keywordScore = Math.max(keywordScore, 25);
+    keywordScore = Math.max(keywordScore, 14);
   }
 
   breakdown.keywords = keywordScore;
@@ -254,12 +260,15 @@ export function calculateDescriptionScore(
 
   breakdown.readability = readabilityScore;
 
-  const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability;
+  // Add realistic variability (±2 points)
+  const variability = Math.floor(Math.random() * 5) - 2; // -2 to +2
+  
+  const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability + variability;
 
   return {
-    score: Math.min(100, Math.max(0, totalScore)),
+    score: Math.min(95, Math.max(0, totalScore)), // Cap at 95 instead of 100
     breakdown,
-    maxScore: 100
+    maxScore: 95
   };
 }
 
@@ -312,29 +321,33 @@ export function calculateDetailedSeoScore(
   const descScore = calculateDescriptionScore(description);
   const tagsScore = calculateTagsScore(tags);
   
-  // Pondération : Title 35% + Description 35% + Tags 20% + Image 5% + URL 5%
+  // Pondération : Title 35% + Description 35% + Tags 15% + Image 6% + URL 6% - More strict
   let weightedScore = Math.round(
     (titleScore.score * 0.35) +
     (descScore.score * 0.35) +
-    (tagsScore * 1) + // Tags déjà sur 20 points
-    (hasImage ? 5 : 0) +
-    (hasUrl ? 5 : 0)
+    (tagsScore * 0.75) + // Tags 15 points (reduced from 20)
+    (hasImage ? 6 : 0) + // Image 6 points (reduced from 7)
+    (hasUrl ? 6 : 0) // URL 6 points (reduced from 8)
   );
 
-  // Bonus +10 points pour contenu optimisé par IA
+  // Bonus +5 points pour contenu optimisé par IA (reduced from +10)
   if (optimizationCount && optimizationCount > 0) {
-    weightedScore = Math.min(100, weightedScore + 10);
+    weightedScore = Math.min(95, weightedScore + 5);
   }
 
+  // Add realistic variability (±2 points)
+  const variability = Math.floor(Math.random() * 5) - 2;
+  weightedScore += variability;
+
   return {
-    score: Math.min(100, weightedScore),
+    score: Math.min(95, Math.max(0, weightedScore)), // Cap at 95 instead of 100
     breakdown: {
       presence: Math.round((titleScore.breakdown.presence + descScore.breakdown.presence) / 2),
       length: Math.round((titleScore.breakdown.length + descScore.breakdown.length) / 2),
       keywords: Math.round((titleScore.breakdown.keywords + descScore.breakdown.keywords) / 2),
       readability: Math.round((titleScore.breakdown.readability + descScore.breakdown.readability) / 2),
     },
-    maxScore: 100
+    maxScore: 95
   };
 }
 

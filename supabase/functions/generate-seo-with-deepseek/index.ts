@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("*, optimization_count")
+      .select("*, optimization_count, product_images(src, position)")
       .eq("id", productId)
       .maybeSingle();
 
@@ -110,6 +110,36 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`Generating SEO with DeepSeek for product: ${product.title}`);
+    
+    // Try to get Vision AI analysis if product has images
+    let visionData = null;
+    const featuredImage = product.product_images?.find((img: any) => img.position === 0) || product.product_images?.[0];
+    
+    if (featuredImage?.src) {
+      console.log('Attempting Vision AI analysis for image:', featuredImage.src);
+      
+      try {
+        const visionResponse = await supabaseClient.functions.invoke('analyze-image-with-vision', {
+          body: {
+            imageUrl: featuredImage.src,
+            productContext: {
+              title: product.title,
+              category: product.category,
+              type: product.product_type
+            }
+          }
+        });
+
+        if (!visionResponse.error && visionResponse.data) {
+          visionData = visionResponse.data;
+          console.log('Vision AI analysis successful:', visionData);
+        } else {
+          console.log('Vision AI analysis failed, continuing without it:', visionResponse.error);
+        }
+      } catch (visionError) {
+        console.log('Vision AI error, continuing without it:', visionError);
+      }
+    }
     
     // Check usage limits BEFORE generating (cette fonction incrémente +2)
     const authHeader = req.headers.get('Authorization');
@@ -151,6 +181,25 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Construct enriched prompt for DeepSeek with Vision data
+    let visionContext = '';
+    if (visionData?.visualAttributes) {
+      const attrs = visionData.visualAttributes;
+      visionContext = `
+
+**VISION AI ANALYSIS (Use this visual data to enhance SEO):**
+- Primary Color: ${attrs.primaryColor}
+- Secondary Colors: ${attrs.secondaryColors?.join(', ')}
+- Materials Detected: ${attrs.materials?.join(', ')}
+- Style Identified: ${attrs.style}
+- Room Context: ${attrs.room || 'N/A'}
+- Mood/Ambiance: ${attrs.mood}
+- Technical Details Visible: ${attrs.technicalDetails?.join(', ')}
+- Confidence Score: ${(visionData.confidence * 100).toFixed(0)}%
+
+**IMPORTANT:** Integrate these visual attributes naturally into your SEO title and description to make them more descriptive and accurate.`;
+    }
+
     const seoPrompt = `Generate optimized SEO title and meta description for this e-commerce product:
 
 Product Information:
@@ -164,6 +213,7 @@ Product Information:
 - Style: ${product.style || "Not specified"}
 - Vendor: ${product.vendor || "Not specified"}
 - Tags: ${product.tags || "Not specified"}
+${visionContext}
 
 SEO Title Requirements:
 - 55-60 characters maximum
@@ -219,16 +269,26 @@ Example for a gray fabric sofa:
       seoDescription = product.description?.substring(0, 160) || "";
     }
 
+    // Update product with SEO data and Vision AI info
+    const updateData: any = {
+      seo_title: seoTitle,
+      seo_description: seoDescription,
+      enrichment_status: 'enriched',
+      seo_synced_to_shopify: false,
+      optimization_count: (product.optimization_count || 0) + 1,
+      updated_at: new Date().toISOString()
+    };
+
+    // Add Vision AI metadata if analysis was successful
+    if (visionData) {
+      updateData.vision_analyzed = true;
+      updateData.vision_attributes = visionData.visualAttributes;
+      updateData.vision_confidence = visionData.confidence;
+    }
+
     const { error: updateError } = await supabaseClient
       .from("shopify_products")
-      .update({
-        seo_title: seoTitle,
-        seo_description: seoDescription,
-        enrichment_status: 'enriched',
-        seo_synced_to_shopify: false,
-        optimization_count: (product.optimization_count || 0) + 1,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq("id", productId);
 
     if (updateError) {

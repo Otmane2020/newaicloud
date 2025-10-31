@@ -62,10 +62,10 @@ Deno.serve(async (req) => {
       try {
         console.log(`📝 Processing article: ${article_id}`);
 
-        // Récupérer l'article
+        // Récupérer l'article avec images
         const { data: article, error: articleError } = await supabase
           .from("blog_articles")
-          .select("*")
+          .select("*, content_images(src, position)")
           .eq("id", article_id)
           .eq("user_id", user.id)
           .single();
@@ -105,18 +105,67 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Générer SEO avec IA
+        // Try to get Vision AI analysis if article has cover image
+        let visionData = null;
+        const coverImage = article.content_images?.find((img: any) => img.position === 0) || article.content_images?.[0];
+        
+        if (coverImage?.src) {
+          console.log('Attempting Vision AI analysis for article image:', coverImage.src);
+          
+          try {
+            const visionResponse = await supabase.functions.invoke('analyze-image-with-vision', {
+              body: {
+                imageUrl: coverImage.src,
+                productContext: {
+                  title: article.title,
+                  category: 'blog',
+                  type: 'article'
+                }
+              }
+            });
+
+            if (!visionResponse.error && visionResponse.data) {
+              visionData = visionResponse.data;
+              console.log('Vision AI analysis successful for article:', visionData);
+            } else {
+              console.log('Vision AI analysis failed for article, continuing without it:', visionResponse.error);
+            }
+          } catch (visionError) {
+            console.log('Vision AI error for article, continuing without it:', visionError);
+          }
+        }
+
+        // Generate SEO using AI with Vision context
+        let visionContext = '';
+        if (visionData?.visualAttributes) {
+          const attrs = visionData.visualAttributes;
+          visionContext = `
+
+ANALYSE VISUELLE DE L'IMAGE (Utilise ces données pour enrichir le SEO) :
+- Couleur dominante : ${attrs.primaryColor}
+- Couleurs secondaires : ${attrs.secondaryColors?.join(', ')}
+- Style visuel : ${attrs.style}
+- Ambiance : ${attrs.mood}
+- Contexte : ${attrs.room || 'N/A'}
+- Détails techniques : ${attrs.technicalDetails?.join(', ')}
+
+Intègre ces éléments visuels naturellement dans le titre et la description pour les rendre plus descriptifs et précis.`;
+        }
+
         const prompt = `Génère un titre SEO optimisé et une meta description pour cet article de blog:
 
 Titre actuel: ${article.title}
 Contenu: ${article.content.substring(0, 500)}...
+${visionContext}
 
 Retourne uniquement un JSON avec:
 {
   "seo_title": "titre optimisé pour le SEO (max 60 caractères)",
   "meta_description": "description optimisée (max 160 caractères)",
   "keywords": ["mot-clé1", "mot-clé2", "mot-clé3"]
-}`;
+}
+
+${visionData ? 'Utilise les données visuelles pour enrichir le contenu.' : ''}`;
 
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -157,17 +206,26 @@ Retourne uniquement un JSON avec:
           };
         }
 
-        // Mettre à jour l'article avec tracking
+        // Update article with SEO data and Vision AI info
+        const updateData: any = {
+          title: seoData.seo_title,
+          meta_description: seoData.meta_description,
+          keywords: seoData.keywords,
+          optimization_count: (article.optimization_count || 0) + 1,
+          last_optimization_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        // Add Vision AI metadata if analysis was successful
+        if (visionData) {
+          updateData.vision_analyzed = true;
+          updateData.vision_attributes = visionData.visualAttributes;
+          updateData.vision_confidence = visionData.confidence;
+        }
+
         const { error: updateError } = await supabase
           .from("blog_articles")
-          .update({
-            title: seoData.seo_title,
-            meta_description: seoData.meta_description,
-            keywords: seoData.keywords,
-            optimization_count: (article.optimization_count || 0) + 1,
-            last_optimization_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq("id", article_id);
 
         if (updateError) {
