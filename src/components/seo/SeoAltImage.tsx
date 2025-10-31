@@ -27,6 +27,10 @@ import {
   Eye,
   Zap,
   ArrowRight,
+  ShoppingBag,
+  Package,
+  FileText,
+  PenSquare,
 } from 'lucide-react';
 
 interface ProductImage {
@@ -544,27 +548,31 @@ export function SeoAltImage() {
       {/* Content Type Filters */}
       <div className="bg-background border rounded-lg p-1 flex flex-wrap gap-1">
         {[
-          { id: 'all' as const, label: '🔍 Tous', icon: ImageIcon },
-          { id: 'products' as const, label: '🛍️ Produits', icon: ImageIcon },
-          { id: 'collections' as const, label: '📚 Collections', icon: ImageIcon },
-          { id: 'pages' as const, label: '📄 Pages', icon: ImageIcon },
-          { id: 'articles' as const, label: '📰 Articles', icon: ImageIcon },
-        ].map((filter) => (
-          <button
-            key={filter.id}
-            onClick={() => {
-              setContentTypeFilter(filter.id);
-              setCurrentPage(1);
-            }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
-              contentTypeFilter === filter.id
-                ? 'bg-secondary text-secondary-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
+          { id: 'all' as const, label: 'Tous', icon: Search },
+          { id: 'products' as const, label: 'Produits', icon: ShoppingBag },
+          { id: 'collections' as const, label: 'Collections', icon: Package },
+          { id: 'pages' as const, label: 'Pages', icon: FileText },
+          { id: 'articles' as const, label: 'Articles', icon: PenSquare },
+        ].map((filter) => {
+          const Icon = filter.icon;
+          return (
+            <button
+              key={filter.id}
+              onClick={() => {
+                setContentTypeFilter(filter.id);
+                setCurrentPage(1);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
+                contentTypeFilter === filter.id
+                  ? 'bg-secondary text-secondary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {filter.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Actions */}
