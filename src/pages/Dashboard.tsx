@@ -234,22 +234,89 @@ export default function Dashboard() {
           <p className="text-white/80 text-lg mb-6">
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
-          <button
-            onClick={() => window.location.href = '/seo?tab=audit&autoStart=true'}
-            className="px-6 py-3 bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
-          >
-            <Sparkles className="w-5 h-5" />
-            Lancer l'Audit SEO
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => window.location.href = '/seo?tab=audit'}
+              className="px-6 py-3 bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
+            >
+              <Sparkles className="w-5 h-5" />
+              Lancer l'Audit SEO
+            </button>
+            {stats.pendingOptimization > 0 && (
+              <button
+                onClick={() => window.location.href = '/seo?tab=products'}
+                className="px-6 py-3 bg-accent/90 backdrop-blur-md hover:bg-accent text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
+              >
+                <Zap className="w-5 h-5" />
+                Optimiser {stats.pendingOptimization} produits
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* SEO Score Card - Section Principale */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <SeoScoreGauge 
           score={stats.seoScore}
           breakdown={stats.seoBreakdown}
         />
+        
+        {/* Quick Actions sous le score */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <button
+            onClick={() => window.location.href = '/seo?tab=products'}
+            className="p-4 bg-card hover:bg-accent/10 border-2 border-accent/20 rounded-xl transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <ShoppingBag className="w-6 h-6 text-accent" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="font-bold text-foreground">Optimiser Produits</div>
+                <div className="text-sm text-muted-foreground">
+                  {stats.optimizedProducts}/{stats.totalProducts} optimisés
+                </div>
+              </div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => window.location.href = '/blog?tab=articles'}
+            className="p-4 bg-card hover:bg-cyan-500/10 border-2 border-cyan-500/20 rounded-xl transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileText className="w-6 h-6 text-cyan-600" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="font-bold text-foreground">Créer Articles</div>
+                <div className="text-sm text-muted-foreground">
+                  {stats.totalArticles} articles publiés
+                </div>
+              </div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => window.location.href = '/integration'}
+            className="p-4 bg-card hover:bg-success/10 border-2 border-success/20 rounded-xl transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Store className="w-6 h-6 text-success" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="font-bold text-foreground">
+                  {stats.connectedStores > 0 ? 'Gérer Boutiques' : 'Connecter Shopify'}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {stats.connectedStores > 0 ? `${stats.connectedStores} boutique(s)` : 'Importer produits'}
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Métriques Clés - Grid Redesigné */}
