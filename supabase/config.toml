@@ -120,6 +120,9 @@ verify_jwt = true
 [functions.import-shopify-pages]
 verify_jwt = true
 
+[functions.import-homepage-images]
+verify_jwt = true
+
 [functions.generate-alt-texts-vision]
 verify_jwt = true
 

@@ -670,6 +670,77 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          id: string
+          position: number | null
+          src: string
+          store_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          position?: number | null
+          src: string
+          store_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          position?: number | null
+          src?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homepage_images_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      homepage_seo: {
+        Row: {
+          created_at: string
+          id: string
+          last_audit: Json | null
+          seo_description: string | null
+          seo_title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_audit?: Json | null
+          seo_description?: string | null
+          seo_title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_audit?: Json | null
+          seo_description?: string | null
+          seo_title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       import_jobs: {
         Row: {
           completed_at: string | null

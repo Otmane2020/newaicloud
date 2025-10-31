@@ -60,7 +60,7 @@ export function SeoAltImageList() {
     try {
       setLoading(true);
       
-      // Fetch all images with their product info
+      // Fetch product images with their product info
       const { data: imagesData, error: imagesError } = await supabase
         .from('product_images')
         .select(`
@@ -78,16 +78,19 @@ export function SeoAltImageList() {
 
       if (imagesError) throw imagesError;
 
-      if (!imagesData || imagesData.length === 0) {
-        setProducts([]);
-        setLoading(false);
-        return;
-      }
+      // Fetch homepage images
+      const { data: homepageImagesData, error: homepageError } = await supabase
+        .from('homepage_images')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('position', { ascending: true });
 
-      // Group images by product
+      if (homepageError) console.error('Homepage images error:', homepageError);
+
+      // Group product images by product
       const productsMap = new Map<string, ProductWithImages>();
       
-      imagesData.forEach((img: any) => {
+      (imagesData || []).forEach((img: any) => {
         const productId = img.shopify_products.id;
         if (!productsMap.has(productId)) {
           productsMap.set(productId, {
@@ -105,6 +108,22 @@ export function SeoAltImageList() {
           product_id: productId
         });
       });
+
+      // Add homepage images as a separate "product"
+      if (homepageImagesData && homepageImagesData.length > 0) {
+        productsMap.set('homepage', {
+          id: 'homepage',
+          title: '🏠 Page d\'accueil',
+          handle: 'homepage',
+          images: homepageImagesData.map((img: any) => ({
+            id: img.id,
+            src: img.src,
+            alt_text: img.alt_text,
+            position: img.position,
+            product_id: 'homepage'
+          }))
+        });
+      }
 
       setProducts(Array.from(productsMap.values()));
     } catch (error) {
@@ -329,6 +348,24 @@ export function SeoAltImageList() {
                     Tout déplier
                   </>
                 )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const { data, error } = await supabase.functions.invoke('import-homepage-images');
+                    if (error) throw error;
+                    toast.success(`${data.imported} images importées depuis la page d'accueil`);
+                    await fetchImages();
+                  } catch (error) {
+                    console.error('Import error:', error);
+                    toast.error('Erreur lors de l\'import');
+                  }
+                }}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Importer page d'accueil
               </Button>
             </div>
             <div className="flex gap-2">

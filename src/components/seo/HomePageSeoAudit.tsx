@@ -80,7 +80,42 @@ export function HomePageSeoAudit() {
 
   useEffect(() => {
     checkShopifyConnection();
+    loadLastAudit();
   }, []);
+
+  const loadLastAudit = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if there's a saved audit in homepage_seo table
+      const { data: homepageData, error } = await supabase
+        .from('homepage_seo')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading last audit:', error);
+        return;
+      }
+
+      if (homepageData && homepageData.last_audit) {
+        // Load the saved audit - cast JSONB to AuditResult
+        setResult(homepageData.last_audit as unknown as AuditResult);
+        setSeoTitle(homepageData.seo_title || '');
+        setSeoDescription(homepageData.seo_description || '');
+        toast({
+          title: 'Audit chargé',
+          description: 'Dernier audit chargé automatiquement',
+        });
+      }
+    } catch (error) {
+      console.error('Error loading audit:', error);
+    }
+  };
 
   const checkShopifyConnection = async () => {
     try {
@@ -105,6 +140,21 @@ export function HomePageSeoAudit() {
       if (error) throw error;
 
       setResult(data);
+      
+      // Save audit to homepage_seo table
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('homepage_seo')
+          .upsert({
+            user_id: user.id,
+            last_audit: data,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id'
+          });
+      }
+
       toast({
         title: 'Success',
         description: 'Analysis completed successfully',
