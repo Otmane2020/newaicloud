@@ -1,171 +1,517 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface EmailNotification {
-  to: string;
-  userName: string;
-  notifications: Array<{
-    title: string;
-    message: string;
-    category: string;
-    actionUrl: string;
-    priority: string;
-  }>;
-}
+// Enhanced analysis functions
+const analyzeSeoText = (text: string | null) => {
+  if (!text) return { length: 0, hasKeywords: false, optimal: false };
 
-Deno.serve(async (req: Request) => {
+  const length = text.length;
+  const words = text.split(/\s+/).length;
+  const hasKeywords = words >= 3; // Basic keyword presence check
+
+  return {
+    length,
+    wordCount: words,
+    hasKeywords,
+    optimal: length >= 50 && length <= 160 && hasKeywords,
+  };
+};
+
+const analyzeContentQuality = (content: string | null) => {
+  if (!content) return { score: 0, hasStructure: false, wordCount: 0 };
+
+  const wordCount = content.split(/\s+/).length;
+  const hasStructure = content.includes("<h") || content.split("\n").length > 3;
+  const hasLinks = content.includes("href=");
+
+  let score = 0;
+  if (wordCount > 200) score += 40;
+  if (wordCount > 500) score += 20;
+  if (hasStructure) score += 20;
+  if (hasLinks) score += 20;
+
+  return { score: Math.min(score, 100), hasStructure, wordCount, hasLinks };
+};
+
+const calculateSeoScore = (items: any[], analysisFn: (item: any) => number) => {
+  if (!items?.length) return 0;
+
+  const totalScore = items.reduce((sum, item) => sum + analysisFn(item), 0);
+  return Math.round(totalScore / items.length);
+};
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const smtpHost = Deno.env.get("SMTP_HOST")!;
-    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
-    const smtpUser = Deno.env.get("SMTP_USER")!;
-    const smtpPassword = Deno.env.get("SMTP_PASSWORD")!;
-    const fromEmail = Deno.env.get("FROM_EMAIL")!;
-    const fromName = Deno.env.get("FROM_NAME") || "NewAI";
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const emailData: EmailNotification = await req.json();
+    // Get user from auth header
+    const authHeader = req.headers.get("Authorization")!;
+    const token = authHeader.replace("Bearer ", "");
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser(token);
 
-    console.log(`📧 Sending notification email to ${emailData.to}`);
-
-    // Generate email HTML
-    const notificationsHtml = emailData.notifications
-      .map((notif) => {
-        const priorityColor = notif.priority === 'high' ? '#ef4444' : notif.priority === 'medium' ? '#f59e0b' : '#3b82f6';
-        return `
-          <div style="background: #f9fafb; border-left: 4px solid ${priorityColor}; padding: 16px; margin: 12px 0; border-radius: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <span style="background: ${priorityColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">
-                ${notif.priority.toUpperCase()}
-              </span>
-              <span style="color: #6b7280; font-size: 14px;">${notif.category}</span>
-            </div>
-            <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #111827;">${notif.title}</h3>
-            <p style="margin: 0 0 12px 0; color: #4b5563; line-height: 1.5;">${notif.message}</p>
-            <a href="${emailData.notifications[0].actionUrl.startsWith('http') ? notif.actionUrl : `${supabaseUrl.replace('//', '//app.')}${notif.actionUrl}`}" 
-               style="display: inline-block; background: #3b82f6; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: 500;">
-              Voir les détails →
-            </a>
-          </div>
-        `;
-      })
-      .join("");
-
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tâches SEO du jour - NewAI</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-  <div style="max-width: 600px; margin: 0 auto; background: white;">
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); padding: 32px; text-align: center;">
-      <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 700;">
-        🎯 Vos tâches SEO du jour
-      </h1>
-      <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
-        Bonjour ${emailData.userName} !
-      </p>
-    </div>
-
-    <!-- Content -->
-    <div style="padding: 32px;">
-      <p style="margin: 0 0 24px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-        Vous avez <strong>${emailData.notifications.length} tâche(s) SEO</strong> à accomplir aujourd'hui pour améliorer votre référencement :
-      </p>
-
-      ${notificationsHtml}
-
-      <div style="margin-top: 32px; padding: 20px; background: #eff6ff; border-radius: 8px; border: 1px solid #dbeafe;">
-        <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
-          💡 <strong>Conseil :</strong> Complétez ces tâches pour maximiser votre visibilité sur les moteurs de recherche. Les actions sont automatisées par NewAI pour vous faire gagner du temps !
-        </p>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
-      <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">
-        Cet email a été envoyé par <strong>NewAI</strong>
-      </p>
-      <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-        Pour gérer vos préférences de notification, rendez-vous dans les paramètres de votre compte.
-      </p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
-
-    // Send email using SMTP
-    const boundary = "----=_Part_0_" + Date.now();
-    const emailBody = [
-      `From: ${fromName} <${fromEmail}>`,
-      `To: ${emailData.to}`,
-      `Subject: 🎯 Vos ${emailData.notifications.length} tâches SEO du jour`,
-      `MIME-Version: 1.0`,
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
-      ``,
-      `--${boundary}`,
-      `Content-Type: text/html; charset=utf-8`,
-      ``,
-      htmlContent,
-      `--${boundary}--`,
-    ].join("\r\n");
-
-    // Connect and send via SMTP
-    const conn = await Deno.connect({
-      hostname: smtpHost,
-      port: smtpPort,
-    });
-
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-
-    // Helper to send and read
-    async function sendCommand(cmd: string) {
-      await conn.write(encoder.encode(cmd + "\r\n"));
-      const buf = new Uint8Array(1024);
-      const n = await conn.read(buf);
-      return decoder.decode(buf.subarray(0, n || 0));
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // SMTP conversation
-    await sendCommand(`EHLO ${smtpHost}`);
-    await sendCommand(`AUTH LOGIN`);
-    await sendCommand(btoa(smtpUser));
-    await sendCommand(btoa(smtpPassword));
-    await sendCommand(`MAIL FROM:<${fromEmail}>`);
-    await sendCommand(`RCPT TO:<${emailData.to}>`);
-    await sendCommand(`DATA`);
-    await conn.write(encoder.encode(emailBody + "\r\n.\r\n"));
-    await sendCommand(`QUIT`);
-    
-    conn.close();
+    console.log("[AUDIT] Starting enhanced SEO audit for user:", user.id);
 
-    console.log(`✅ Email sent successfully to ${emailData.to}`);
+    // Fetch store connection for additional context
+    const { data: connection } = await supabaseClient
+      .from("shopify_connections")
+      .select("store_name, store_url, store_category")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .single();
 
-    return new Response(
-      JSON.stringify({ success: true, message: "Email sent" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    // Fetch products with enhanced analysis
+    const { data: products, error: productsError } = await supabaseClient
+      .from("shopify_products")
+      .select("id, title, seo_title, seo_description, description, handle, images, vendor, product_type, tags")
+      .eq("seller_id", user.id);
+
+    if (productsError) throw productsError;
+
+    // Fetch collections with enhanced analysis
+    const { data: collections, error: collectionsError } = await supabaseClient
+      .from("shopify_collections")
+      .select("id, title, seo_title, seo_description, body_html, handle")
+      .eq("user_id", user.id);
+
+    if (collectionsError) throw collectionsError;
+
+    // Fetch blog articles
+    const { data: articles, error: articlesError } = await supabaseClient
+      .from("blog_articles")
+      .select("id, title, meta_description, content, excerpt, seo_title, slug")
+      .eq("user_id", user.id);
+
+    if (articlesError) throw articlesError;
+
+    // Fetch pages
+    const { data: pages, error: pagesError } = await supabaseClient
+      .from("shopify_pages")
+      .select("id, title, seo_title, seo_description, body_html, handle")
+      .eq("user_id", user.id);
+
+    if (pagesError) throw pagesError;
+
+    // Enhanced analysis functions for each content type
+    const analyzeProduct = (product: any) => {
+      const titleAnalysis = analyzeSeoText(product.seo_title || product.title);
+      const descAnalysis = analyzeSeoText(product.seo_description);
+      const contentAnalysis = analyzeContentQuality(product.description);
+
+      let score = 0;
+      if (titleAnalysis.optimal) score += 30;
+      if (descAnalysis.optimal) score += 30;
+      if (contentAnalysis.score > 50) score += 40;
+
+      return {
+        score,
+        details: {
+          title: titleAnalysis,
+          description: descAnalysis,
+          content: contentAnalysis,
+          hasImages: !!product.images && product.images.length > 0,
+          hasVendor: !!product.vendor,
+          hasProductType: !!product.product_type,
+          hasTags: !!product.tags,
+        },
+      };
+    };
+
+    const analyzeCollection = (collection: any) => {
+      const titleAnalysis = analyzeSeoText(collection.seo_title || collection.title);
+      const descAnalysis = analyzeSeoText(collection.seo_description);
+      const contentAnalysis = analyzeContentQuality(collection.body_html);
+
+      let score = 0;
+      if (titleAnalysis.optimal) score += 40;
+      if (descAnalysis.optimal) score += 40;
+      if (contentAnalysis.score > 30) score += 20;
+
+      return { score, details: { title: titleAnalysis, description: descAnalysis, content: contentAnalysis } };
+    };
+
+    const analyzeArticle = (article: any) => {
+      const titleAnalysis = analyzeSeoText(article.seo_title || article.title);
+      const descAnalysis = analyzeSeoText(article.meta_description);
+      const contentAnalysis = analyzeContentQuality(article.content);
+
+      let score = 0;
+      if (titleAnalysis.optimal) score += 30;
+      if (descAnalysis.optimal) score += 30;
+      if (contentAnalysis.score > 60) score += 40;
+
+      return { score, details: { title: titleAnalysis, description: descAnalysis, content: contentAnalysis } };
+    };
+
+    const analyzePage = (page: any) => {
+      const titleAnalysis = analyzeSeoText(page.seo_title || page.title);
+      const descAnalysis = analyzeSeoText(page.seo_description);
+      const contentAnalysis = analyzeContentQuality(page.body_html);
+
+      let score = 0;
+      if (titleAnalysis.optimal) score += 40;
+      if (descAnalysis.optimal) score += 40;
+      if (contentAnalysis.score > 40) score += 20;
+
+      return { score, details: { title: titleAnalysis, description: descAnalysis, content: contentAnalysis } };
+    };
+
+    // Calculate scores with enhanced analysis
+    const productAnalyses = products?.map(analyzeProduct) || [];
+    const productsScore = calculateSeoScore(products, (p) => {
+      const analysis = analyzeProduct(p);
+      return analysis.score;
+    });
+
+    const collectionsScore = calculateSeoScore(collections, (c) => {
+      const analysis = analyzeCollection(c);
+      return analysis.score;
+    });
+
+    const blogScore = calculateSeoScore(articles, (a) => {
+      const analysis = analyzeArticle(a);
+      return analysis.score;
+    });
+
+    const pagesScore = calculateSeoScore(pages, (p) => {
+      const analysis = analyzePage(p);
+      return analysis.score;
+    });
+
+    // Calculate global score with weights
+    const weights = {
+      products: 0.4,
+      collections: 0.3,
+      blog: 0.2,
+      pages: 0.1,
+    };
+
+    const globalScore = Math.round(
+      productsScore * weights.products +
+        collectionsScore * weights.collections +
+        blogScore * weights.blog +
+        pagesScore * weights.pages,
     );
-  } catch (error) {
-    console.error("❌ Error sending email:", error);
+
+    // Generate detailed recommendations
+    const generateRecommendations = () => {
+      const recommendations = [];
+
+      // Product recommendations
+      const productsWithPoorSeo = productAnalyses.filter((p) => p.score < 60).length;
+      if (productsWithPoorSeo > 0) {
+        recommendations.push({
+          priority: "high",
+          category: "products",
+          title: `Optimiser ${productsWithPoorSeo} produit(s) manquant(s) le SEO`,
+          description: `${productsWithPoorSeo} produits ont un score SEO inférieur à 60%. Améliorez leurs titres et descriptions.`,
+          action: "optimize_products",
+        });
+      }
+
+      // Collection recommendations
+      if (collectionsScore < 70) {
+        recommendations.push({
+          priority: "medium",
+          category: "collections",
+          title: "Améliorer les collections",
+          description: `Vos collections ont un score SEO de ${collectionsScore}%. Optimisez leurs métadonnées.`,
+          action: "optimize_collections",
+        });
+      }
+
+      // Blog recommendations
+      if (blogScore < 60 && articles && articles.length > 0) {
+        recommendations.push({
+          priority: "medium",
+          category: "blog",
+          title: "Enrichir le contenu blog",
+          description: `Vos articles ont un score moyen de ${blogScore}%. Ajoutez plus de contenu et optimisez le SEO.`,
+          action: "optimize_blog",
+        });
+      }
+
+      // Content quality recommendations
+      const productsWithImages = products?.filter((p) => p.images && p.images.length > 0).length || 0;
+      const imagePercentage = products?.length ? Math.round((productsWithImages / products.length) * 100) : 0;
+
+      if (imagePercentage < 80) {
+        recommendations.push({
+          priority: "medium",
+          category: "media",
+          title: "Améliorer les images produits",
+          description: `Seulement ${imagePercentage}% de vos produits ont des images. Ajoutez des images de qualité.`,
+          action: "add_images",
+        });
+      }
+
+      return recommendations.sort((a, b) => {
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      });
+    };
+
+    // Build enhanced audit results
+    const auditResults = {
+      summary: {
+        storeName: connection?.store_name || "Votre boutique",
+        storeUrl: connection?.store_url,
+        category: connection?.store_category,
+        auditDate: new Date().toISOString(),
+        overallScore: globalScore,
+        grade:
+          globalScore >= 80 ? "Excellent" : globalScore >= 60 ? "Bon" : globalScore >= 40 ? "Moyen" : "À améliorer",
+      },
+      global: {
+        stats: {
+          totalAnalyzed:
+            (products?.length || 0) + (collections?.length || 0) + (articles?.length || 0) + (pages?.length || 0),
+          productsAnalyzed: products?.length || 0,
+          collectionsAnalyzed: collections?.length || 0,
+          articlesAnalyzed: articles?.length || 0,
+          pagesAnalyzed: pages?.length || 0,
+        },
+        score: globalScore,
+        breakdown: {
+          products: { score: productsScore, weight: weights.products },
+          collections: { score: collectionsScore, weight: weights.collections },
+          blog: { score: blogScore, weight: weights.blog },
+          pages: { score: pagesScore, weight: weights.pages },
+        },
+      },
+      homepage: {
+        globalScore: globalScore,
+        scores: [
+          {
+            label: "Technique",
+            score: Math.min(productsScore + 15, 100),
+            maxScore: 100,
+            status: productsScore >= 70 ? "success" : productsScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Contenu",
+            score: Math.min(blogScore + 10, 100),
+            maxScore: 100,
+            status: blogScore >= 70 ? "success" : blogScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Structure",
+            score: Math.min(collectionsScore + 10, 100),
+            maxScore: 100,
+            status: collectionsScore >= 70 ? "success" : collectionsScore >= 50 ? "warning" : "error",
+          },
+        ],
+        technical: [
+          {
+            label: "Produits Optimisés",
+            value: `${productAnalyses.filter((p) => p.score >= 60).length}/${products?.length || 0}`,
+            status: productsScore >= 70 ? "success" : productsScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Collections Optimisées",
+            value: `${collections?.filter((c) => analyzeCollection(c).score >= 60).length || 0}/${collections?.length || 0}`,
+            status: collectionsScore >= 70 ? "success" : collectionsScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Articles Optimisés",
+            value: `${articles?.filter((a) => analyzeArticle(a).score >= 60).length || 0}/${articles?.length || 0}`,
+            status: blogScore >= 70 ? "success" : blogScore >= 50 ? "warning" : "error",
+          },
+        ],
+        content: [
+          {
+            label: "Qualité Contenu",
+            value: blogScore >= 70 ? "Élevée" : blogScore >= 50 ? "Moyenne" : "Faible",
+            status: blogScore >= 70 ? "success" : blogScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Structure SEO",
+            value: globalScore >= 70 ? "Optimale" : globalScore >= 50 ? "Correcte" : "À revoir",
+            status: globalScore >= 70 ? "success" : globalScore >= 50 ? "warning" : "error",
+          },
+        ],
+      },
+      products: {
+        globalScore: productsScore,
+        scores: [
+          {
+            label: "Structure",
+            score: productsScore,
+            maxScore: 100,
+            status: productsScore >= 70 ? "success" : productsScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Contenu",
+            score: Math.min(productsScore + 10, 100),
+            maxScore: 100,
+            status: productsScore >= 70 ? "success" : productsScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Images",
+            score: Math.min(productsScore + 5, 100),
+            maxScore: 100,
+            status: productsScore >= 70 ? "success" : productsScore >= 50 ? "warning" : "error",
+          },
+        ],
+        elements: [
+          {
+            label: "Titres SEO",
+            value: `${products?.filter((p) => analyzeSeoText(p.seo_title || p.title).optimal).length || 0}/${products?.length || 0}`,
+            status: "info",
+          },
+          {
+            label: "Meta Descriptions",
+            value: `${products?.filter((p) => analyzeSeoText(p.seo_description).optimal).length || 0}/${products?.length || 0}`,
+            status: "info",
+          },
+          {
+            label: "Images Produits",
+            value: `${productsWithImages}/${products?.length || 0}`,
+            status: imagePercentage >= 80 ? "success" : imagePercentage >= 60 ? "warning" : "error",
+          },
+        ],
+        details: {
+          totalProducts: products?.length || 0,
+          optimizedProducts: productAnalyses.filter((p) => p.score >= 60).length,
+          needsImprovement: productAnalyses.filter((p) => p.score < 60).length,
+        },
+      },
+      collections: {
+        globalScore: collectionsScore,
+        scores: [
+          {
+            label: "Structure",
+            score: collectionsScore,
+            maxScore: 100,
+            status: collectionsScore >= 70 ? "success" : collectionsScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Contenu",
+            score: Math.min(collectionsScore + 5, 100),
+            maxScore: 100,
+            status: collectionsScore >= 70 ? "success" : collectionsScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Optimisation",
+            score: Math.min(collectionsScore + 10, 100),
+            maxScore: 100,
+            status: collectionsScore >= 70 ? "success" : collectionsScore >= 50 ? "warning" : "error",
+          },
+        ],
+        elements: [
+          {
+            label: "Titres Optimisés",
+            value: `${collections?.filter((c) => analyzeSeoText(c.seo_title || c.title).optimal).length || 0}/${collections?.length || 0}`,
+            status: "info",
+          },
+          {
+            label: "Descriptions Optimisées",
+            value: `${collections?.filter((c) => analyzeSeoText(c.seo_description).optimal).length || 0}/${collections?.length || 0}`,
+            status: "info",
+          },
+        ],
+      },
+      blog: {
+        globalScore: blogScore,
+        scores: [
+          {
+            label: "Structure",
+            score: Math.min(blogScore + 10, 100),
+            maxScore: 100,
+            status: blogScore >= 70 ? "success" : blogScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Contenu",
+            score: blogScore,
+            maxScore: 100,
+            status: blogScore >= 70 ? "success" : blogScore >= 50 ? "warning" : "error",
+          },
+          {
+            label: "Optimisation",
+            score: Math.min(blogScore + 5, 100),
+            maxScore: 100,
+            status: blogScore >= 70 ? "success" : blogScore >= 50 ? "warning" : "error",
+          },
+        ],
+        elements: [
+          {
+            label: "Articles Optimisés",
+            value: `${articles?.filter((a) => analyzeArticle(a).score >= 60).length || 0}/${articles?.length || 0}`,
+            status: "info",
+          },
+          {
+            label: "Contenu Structuré",
+            value: `${articles?.filter((a) => analyzeContentQuality(a.content).hasStructure).length || 0}/${articles?.length || 0}`,
+            status: "info",
+          },
+        ],
+      },
+      recommendations: generateRecommendations(),
+    };
+
+    // Store audit results in database
+    const { error: insertError } = await supabaseClient.from("seo_audit_reports").insert({
+      user_id: user.id,
+      global_score: globalScore,
+      products_score: productsScore,
+      collections_score: collectionsScore,
+      blog_score: blogScore,
+      pages_score: pagesScore,
+      homepage_score: globalScore,
+      audit_results: auditResults,
+      recommendations: auditResults.recommendations,
+      store_name: connection?.store_name,
+      store_url: connection?.store_url,
+    });
+
+    if (insertError) {
+      console.error("[AUDIT] Error storing audit:", insertError);
+      throw insertError;
+    }
+
+    console.log("[AUDIT] Enhanced audit completed successfully");
+
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        success: true,
+        audit: auditResults,
+        timestamp: new Date().toISOString(),
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  } catch (error: any) {
+    console.error("[AUDIT] Error:", error);
+    return new Response(
+      JSON.stringify({
+        error: error?.message || "Error generating audit",
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
