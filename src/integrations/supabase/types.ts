@@ -967,6 +967,101 @@ export type Database = {
         }
         Relationships: []
       }
+      seo_audit_reports: {
+        Row: {
+          audit_results: Json | null
+          backlinks_count: number | null
+          blog_score: number | null
+          collections_score: number | null
+          created_at: string | null
+          domain_authority: number | null
+          errors_404: Json | null
+          global_score: number | null
+          has_robots_txt: boolean | null
+          has_sitemap: boolean | null
+          heading_tags: Json | null
+          homepage_score: number | null
+          id: string
+          image_alt_tags: Json | null
+          indexed_pages: number | null
+          meta_descriptions: Json | null
+          meta_titles: Json | null
+          mobile_friendly: boolean | null
+          page_authority: number | null
+          page_speed: Json | null
+          products_score: number | null
+          recommendations: Json | null
+          ssl_secure: boolean | null
+          store_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          audit_results?: Json | null
+          backlinks_count?: number | null
+          blog_score?: number | null
+          collections_score?: number | null
+          created_at?: string | null
+          domain_authority?: number | null
+          errors_404?: Json | null
+          global_score?: number | null
+          has_robots_txt?: boolean | null
+          has_sitemap?: boolean | null
+          heading_tags?: Json | null
+          homepage_score?: number | null
+          id?: string
+          image_alt_tags?: Json | null
+          indexed_pages?: number | null
+          meta_descriptions?: Json | null
+          meta_titles?: Json | null
+          mobile_friendly?: boolean | null
+          page_authority?: number | null
+          page_speed?: Json | null
+          products_score?: number | null
+          recommendations?: Json | null
+          ssl_secure?: boolean | null
+          store_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          audit_results?: Json | null
+          backlinks_count?: number | null
+          blog_score?: number | null
+          collections_score?: number | null
+          created_at?: string | null
+          domain_authority?: number | null
+          errors_404?: Json | null
+          global_score?: number | null
+          has_robots_txt?: boolean | null
+          has_sitemap?: boolean | null
+          heading_tags?: Json | null
+          homepage_score?: number | null
+          id?: string
+          image_alt_tags?: Json | null
+          indexed_pages?: number | null
+          meta_descriptions?: Json | null
+          meta_titles?: Json | null
+          mobile_friendly?: boolean | null
+          page_authority?: number | null
+          page_speed?: Json | null
+          products_score?: number | null
+          recommendations?: Json | null
+          ssl_secure?: boolean | null
+          store_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_audit_reports_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shopify_collections: {
         Row: {
           body_html: string | null

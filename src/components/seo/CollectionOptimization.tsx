@@ -481,16 +481,36 @@ export function CollectionOptimization() {
                 {optimizationRate}% optimisé
               </div>
             </div>
-            <Button
-              size="lg"
-              onClick={handleGenerateAll}
-              disabled={optimizing || notOptimizedCount === 0}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
-            >
-              <Sparkles className="w-5 h-5" />
-              Démarrer l'optimisation
-              <ArrowRight className="w-5 h-5" />
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                size="lg"
+                onClick={handleSyncProductCollections}
+                disabled={syncing}
+                variant="outline"
+                className="gap-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+              >
+                {syncing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5" />
+                    Sync Produits
+                  </>
+                )}
+              </Button>
+              <Button
+                size="lg"
+                onClick={handleGenerateAll}
+                disabled={optimizing || notOptimizedCount === 0}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
+              >
+                <Sparkles className="w-5 h-5" />
+                Optimiser tout
+              </Button>
+            </div>
           </div>
         </div>
       </Card>

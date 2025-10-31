@@ -51,14 +51,39 @@ export function SeoAuditReports() {
   const [hasData, setHasData] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [auditResults, setAuditResults] = useState<any>(null);
+  const [latestReport, setLatestReport] = useState<any>(null);
 
   useEffect(() => {
+    // Load latest audit report on mount
+    loadLatestReport();
+    
     // Check if we should auto-start audit from dashboard
     const autoStart = searchParams.get('autoStart');
-    if (autoStart === 'true' && !hasData) {
+    if (autoStart === 'true' && !latestReport) {
       startAudit();
     }
   }, [searchParams]);
+
+  const loadLatestReport = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('seo_audit_reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setLatestReport(data);
+        setHasData(true);
+        setAuditResults(data.audit_results);
+      }
+    } catch (error) {
+      console.error('Error loading latest report:', error);
+    }
+  };
 
   const loadingSteps = [
     'Analyzing your homepage structure...',
@@ -93,11 +118,17 @@ export function SeoAuditReports() {
       clearInterval(stepInterval);
       setAuditResults(data);
       setHasData(true);
-      toast.success('SEO Audit completed successfully!');
+      
+      // Reload the latest report from database
+      await loadLatestReport();
+      
+      toast.success('Audit SEO complété avec succès!', {
+        description: `Score global: ${data.globalScore}/100`,
+      });
     } catch (error: any) {
       console.error('Error generating audit:', error);
       clearInterval(stepInterval);
-      toast.error(error.message || 'Error generating SEO audit');
+      toast.error(error.message || 'Erreur lors de l\'audit SEO');
     } finally {
       setIsLoading(false);
     }

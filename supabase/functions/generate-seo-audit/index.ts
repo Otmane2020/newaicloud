@@ -21,6 +21,14 @@ interface AuditResult {
   analyzedAt: string;
 }
 
+interface MetaIssue {
+  url: string;
+  title?: string;
+  length: number;
+  shopify_id?: string;
+  internal_id?: string;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -102,10 +110,38 @@ Deno.serve(async (req) => {
       results.push(blogAudit);
     }
 
-    // 5. Generate Global Audit
+    // 5. Audit Meta Titles & Descriptions
+    console.log('Auditing meta titles and descriptions...');
+    const { metaTitlesAudit, metaDescriptionsAudit } = await auditMetaTags(supabaseClient, user.id);
+
+    // 6. Audit Image ALT Tags
+    console.log('Auditing image ALT tags...');
+    const imageAltAudit = await auditImageAltTags(supabaseClient, user.id);
+
+    // 7. Generate Global Audit
     console.log('Generating global audit...');
     const globalAudit = generateGlobalAudit(results);
     results.push(globalAudit);
+
+    // Calculate aggregate scores
+    const globalScore = Math.round(results.reduce((sum, r) => sum + r.score, 0) / results.length);
+
+    // Save audit report to database
+    console.log('Saving audit report to database...');
+    await supabaseClient.from('seo_audit_reports').insert({
+      user_id: user.id,
+      store_id: connection.id,
+      global_score: globalScore,
+      homepage_score: homepageAudit.score,
+      products_score: products && products.length > 0 ? results.find(r => r.type === 'product')?.score || 0 : 0,
+      collections_score: collectionAudit.score,
+      blog_score: articles && articles.length > 0 ? results.find(r => r.type === 'blog')?.score || 0 : 0,
+      meta_titles: metaTitlesAudit,
+      meta_descriptions: metaDescriptionsAudit,
+      image_alt_tags: imageAltAudit,
+      ssl_secure: storeUrl.startsWith('https'),
+      audit_results: { results },
+    });
 
     console.log('SEO audit completed successfully');
 
@@ -113,6 +149,10 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         results,
+        globalScore,
+        metaTitlesAudit,
+        metaDescriptionsAudit,
+        imageAltAudit,
         completedAt: new Date().toISOString(),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -348,40 +388,264 @@ function generateRecommendations(type: string, scores: any): string[] {
 
   if (type === 'homepage') {
     if (scores.technical < 70) {
-      recommendations.push('Improve meta description (aim for 150-160 characters)');
-      recommendations.push('Fix H1 structure (only one H1 per page)');
-      recommendations.push('Add canonical tag');
+      recommendations.push('Améliorer la meta description (viser 150-160 caractères)');
+      recommendations.push('Corriger la structure H1 (un seul H1 par page)');
+      recommendations.push('Ajouter une balise canonical');
     }
     if (scores.content < 70) {
-      recommendations.push('Add more H2 headings for better structure');
-      recommendations.push('Increase content length for better SEO');
+      recommendations.push('Ajouter plus de balises H2 pour une meilleure structure');
+      recommendations.push('Augmenter la longueur du contenu pour un meilleur SEO');
     }
     if (scores.semantic < 70) {
-      recommendations.push('Align title and H1 content');
-      recommendations.push('Add structured data (Schema.org)');
+      recommendations.push('Aligner le contenu du titre et du H1');
+      recommendations.push('Ajouter des données structurées (Schema.org)');
     }
   }
 
   if (type === 'product') {
     if (scores.structure < 80) {
-      recommendations.push('Add SEO titles to all products');
-      recommendations.push('Complete meta descriptions for products');
+      recommendations.push('Ajouter des titres SEO à tous les produits');
+      recommendations.push('Compléter les meta descriptions des produits');
     }
     if (scores.content < 80) {
-      recommendations.push('Write longer, unique product descriptions');
-      recommendations.push('Add relevant tags to all products');
+      recommendations.push('Rédiger des descriptions de produits plus longues et uniques');
+      recommendations.push('Ajouter des tags pertinents à tous les produits');
     }
   }
 
   if (type === 'blog') {
     if (scores.structure < 80) {
-      recommendations.push('Optimize article titles (30-60 characters)');
-      recommendations.push('Add meta descriptions to all articles');
+      recommendations.push('Optimiser les titres d\'articles (30-60 caractères)');
+      recommendations.push('Ajouter des meta descriptions à tous les articles');
     }
     if (scores.content < 80) {
-      recommendations.push('Increase article length (aim for 800+ words)');
+      recommendations.push('Augmenter la longueur des articles (viser 800+ mots)');
     }
   }
 
-  return recommendations.length > 0 ? recommendations : ['Your SEO is well optimized!'];
+  return recommendations.length > 0 ? recommendations : ['Votre SEO est bien optimisé !'];
+}
+
+async function auditMetaTags(supabaseClient: any, userId: string) {
+  console.log('📊 Auditing meta titles and descriptions...');
+
+  // Audit products
+  const { data: products } = await supabaseClient
+    .from('shopify_products')
+    .select('id, shopify_id, title, seo_title, seo_description, handle')
+    .eq('seller_id', userId);
+
+  // Audit collections
+  const { data: collections } = await supabaseClient
+    .from('shopify_collections')
+    .select('id, shopify_collection_id, title, seo_title, seo_description, handle')
+    .eq('user_id', userId);
+
+  // Audit articles
+  const { data: articles } = await supabaseClient
+    .from('blog_articles')
+    .select('id, shopify_article_id, title, meta_description')
+    .eq('user_id', userId);
+
+  // Audit pages
+  const { data: pages } = await supabaseClient
+    .from('shopify_pages')
+    .select('id, shopify_page_id, title, seo_title, seo_description, handle')
+    .eq('user_id', userId);
+
+  const allContent = [
+    ...(products || []).map((p: any) => ({ ...p, type: 'product', url: `/products/${p.handle}` })),
+    ...(collections || []).map((c: any) => ({ ...c, type: 'collection', url: `/collections/${c.handle}` })),
+    ...(articles || []).map((a: any) => ({ ...a, type: 'article', url: `/blogs/news/${a.id}` })),
+    ...(pages || []).map((p: any) => ({ ...p, type: 'page', url: `/pages/${p.handle}` })),
+  ];
+
+  // Analyze titles
+  const longTitles: MetaIssue[] = [];
+  const shortTitles: MetaIssue[] = [];
+  const missingTitles: MetaIssue[] = [];
+  const duplicateTitles: Map<string, MetaIssue[]> = new Map();
+
+  allContent.forEach((item) => {
+    const title = item.seo_title || item.title;
+    const length = title?.length || 0;
+
+    if (!title) {
+      missingTitles.push({
+        url: item.url,
+        length: 0,
+        shopify_id: item.shopify_id || item.shopify_collection_id || item.shopify_page_id || item.shopify_article_id,
+        internal_id: item.id,
+      });
+    } else if (length > 60) {
+      longTitles.push({
+        url: item.url,
+        title,
+        length,
+        shopify_id: item.shopify_id || item.shopify_collection_id || item.shopify_page_id || item.shopify_article_id,
+        internal_id: item.id,
+      });
+    } else if (length < 30) {
+      shortTitles.push({
+        url: item.url,
+        title,
+        length,
+        shopify_id: item.shopify_id || item.shopify_collection_id || item.shopify_page_id || item.shopify_article_id,
+        internal_id: item.id,
+      });
+    }
+
+    // Check for duplicates
+    if (title) {
+      if (!duplicateTitles.has(title)) {
+        duplicateTitles.set(title, []);
+      }
+      duplicateTitles.get(title)?.push({
+        url: item.url,
+        title,
+        length,
+        shopify_id: item.shopify_id || item.shopify_collection_id || item.shopify_page_id || item.shopify_article_id,
+        internal_id: item.id,
+      });
+    }
+  });
+
+  const duplicateTitlesArray: MetaIssue[][] = [];
+  duplicateTitles.forEach((items) => {
+    if (items.length > 1) {
+      duplicateTitlesArray.push(items);
+    }
+  });
+
+  // Analyze descriptions
+  const longDescriptions: MetaIssue[] = [];
+  const shortDescriptions: MetaIssue[] = [];
+  const missingDescriptions: MetaIssue[] = [];
+  const duplicateDescriptions: Map<string, MetaIssue[]> = new Map();
+
+  allContent.forEach((item) => {
+    const description = item.seo_description || item.meta_description;
+    const length = description?.length || 0;
+
+    if (!description) {
+      missingDescriptions.push({
+        url: item.url,
+        length: 0,
+        shopify_id: item.shopify_id || item.shopify_collection_id || item.shopify_page_id || item.shopify_article_id,
+        internal_id: item.id,
+      });
+    } else if (length > 160) {
+      longDescriptions.push({
+        url: item.url,
+        title: description.substring(0, 100) + '...',
+        length,
+        shopify_id: item.shopify_id || item.shopify_collection_id || item.shopify_page_id || item.shopify_article_id,
+        internal_id: item.id,
+      });
+    } else if (length < 120) {
+      shortDescriptions.push({
+        url: item.url,
+        title: description,
+        length,
+        shopify_id: item.shopify_id || item.shopify_collection_id || item.shopify_page_id || item.shopify_article_id,
+        internal_id: item.id,
+      });
+    }
+
+    // Check for duplicates
+    if (description) {
+      if (!duplicateDescriptions.has(description)) {
+        duplicateDescriptions.set(description, []);
+      }
+      duplicateDescriptions.get(description)?.push({
+        url: item.url,
+        title: description.substring(0, 100),
+        length,
+        shopify_id: item.shopify_id || item.shopify_collection_id || item.shopify_page_id || item.shopify_article_id,
+        internal_id: item.id,
+      });
+    }
+  });
+
+  const duplicateDescriptionsArray: MetaIssue[][] = [];
+  duplicateDescriptions.forEach((items) => {
+    if (items.length > 1) {
+      duplicateDescriptionsArray.push(items);
+    }
+  });
+
+  console.log(`✅ Meta audit complete:
+    Titles - Long: ${longTitles.length}, Short: ${shortTitles.length}, Missing: ${missingTitles.length}, Duplicate: ${duplicateTitlesArray.length}
+    Descriptions - Long: ${longDescriptions.length}, Short: ${shortDescriptions.length}, Missing: ${missingDescriptions.length}, Duplicate: ${duplicateDescriptionsArray.length}`);
+
+  return {
+    metaTitlesAudit: {
+      long: longTitles.slice(0, 50), // Limit to 50 examples
+      short: shortTitles.slice(0, 50),
+      missing: missingTitles.slice(0, 50),
+      duplicate: duplicateTitlesArray.slice(0, 50),
+      total: allContent.length,
+    },
+    metaDescriptionsAudit: {
+      long: longDescriptions.slice(0, 50),
+      short: shortDescriptions.slice(0, 50),
+      missing: missingDescriptions.slice(0, 50),
+      duplicate: duplicateDescriptionsArray.slice(0, 50),
+      total: allContent.length,
+    },
+  };
+}
+
+async function auditImageAltTags(supabaseClient: any, userId: string) {
+  console.log('🖼️ Auditing image ALT tags...');
+
+  // Get product images
+  const { data: productImages } = await supabaseClient
+    .from('product_images')
+    .select(`
+      id,
+      alt_text,
+      src,
+      shopify_image_id,
+      product_id,
+      shopify_products!inner(seller_id, handle, title)
+    `)
+    .eq('shopify_products.seller_id', userId);
+
+  // Get content images (articles, pages, collections)
+  const { data: contentImages } = await supabaseClient
+    .from('content_images')
+    .select('id, alt_text, src, content_type, shopify_image_id')
+    .eq('user_id', userId);
+
+  const allImages = [
+    ...(productImages || []).map((img: any) => ({
+      ...img,
+      url: `/products/${img.shopify_products.handle}`,
+      context: img.shopify_products.title,
+    })),
+    ...(contentImages || []),
+  ];
+
+  const missingAlt = allImages.filter((img) => !img.alt_text || img.alt_text.trim() === '');
+  const optimizedAlt = allImages.filter(
+    (img) => img.alt_text && img.alt_text.trim().length >= 10 && img.alt_text.trim().length <= 125
+  );
+
+  const score = allImages.length > 0 ? Math.round((optimizedAlt.length / allImages.length) * 100) : 0;
+
+  console.log(`✅ Image ALT audit complete: ${optimizedAlt.length}/${allImages.length} optimized (${score}%)`);
+
+  return {
+    missing: missingAlt.slice(0, 100).map((img: any) => ({
+      image_id: img.id,
+      shopify_id: img.shopify_image_id,
+      src: img.src,
+      url: img.url,
+      context: img.context,
+    })),
+    optimized: optimizedAlt.length,
+    total: allImages.length,
+    score,
+  };
 }

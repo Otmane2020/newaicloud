@@ -63,6 +63,7 @@ interface Product {
 interface Collection {
   id: string;
   title: string;
+  productCount?: number;
 }
 
 export function BlogWizard({ onClose, categories }: BlogWizardProps) {
@@ -107,14 +108,32 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     if (!user?.id) return;
     
     try {
-      const { data, error } = await supabase
+      // Fetch collections with product counts
+      const { data: collectionsData, error } = await supabase
         .from('shopify_collections')
         .select('id, title')
         .eq('user_id', user.id)
         .order('title', { ascending: true });
 
       if (error) throw error;
-      setCollections(data || []);
+
+      // Count products for each collection
+      const collectionsWithCount = await Promise.all(
+        (collectionsData || []).map(async (col) => {
+          const { count } = await supabase
+            .from('shopify_products')
+            .select('*', { count: 'exact', head: true })
+            .eq('seller_id', user.id)
+            .contains('collection_ids', [col.id]);
+
+          return {
+            ...col,
+            productCount: count || 0,
+          };
+        })
+      );
+
+      setCollections(collectionsWithCount as any);
     } catch (err) {
       console.error('Error fetching collections:', err);
       toast.error('Erreur lors du chargement des collections');
@@ -157,7 +176,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const selectedCollectionData = collections.find(c => c.id === formData.collection_id);
   const productsInCollection = formData.collection_id 
     ? products.filter(p => p.collection_ids?.includes(formData.collection_id)).length
-    : 0;
+    : products.length;
 
   const addKeyword = () => {
     const newKeyword = keywordInput.trim();
@@ -383,10 +402,8 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                             />
                             <span>Toutes les collections</span>
                           </CommandItem>
-                          {filteredCollections.map((collection) => {
-                            const productCount = products.filter(p => 
-                              p.collection_ids?.includes(collection.id)
-                            ).length;
+                           {filteredCollections.map((collection) => {
+                            const productCount = collection.productCount || 0;
                             
                             return (
                               <CommandItem
