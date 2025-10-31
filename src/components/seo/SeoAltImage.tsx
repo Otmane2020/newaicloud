@@ -455,7 +455,7 @@ export function SeoAltImage() {
             <Button
               size="lg"
               onClick={() => toast.info('Sélectionnez des images ci-dessous')}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
+              className="gap-2 shadow-lg"
             >
               <Eye className="w-5 h-5" />
               Analyser avec Vision IA
@@ -600,7 +600,7 @@ export function SeoAltImage() {
           <Button
             onClick={() => handleGenerateForSelected(true)}
             disabled={generating || selectedImages.size === 0}
-            className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
+            className="gap-2"
           >
             {generating ? (
               <>
