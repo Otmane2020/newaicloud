@@ -81,22 +81,36 @@ Deno.serve(async (req: Request) => {
 
     let totalImported = 0;
 
-    // Import Collections
+    // Import Collections (both custom and smart)
     if (types.includes('collections')) {
       console.log(`[COLLECTIONS] Fetching collections...`);
       
-      const collectionsResponse = await fetch(
+      // Fetch custom collections
+      const customCollectionsResponse = await fetch(
         `${baseUrl}/custom_collections.json?fields=id,title,handle,body_html,image`,
         { headers }
       );
 
-      if (collectionsResponse.ok) {
-        const collectionsData = await collectionsResponse.json();
-        const collections = collectionsData.custom_collections || [];
+      const collections = [];
+      if (customCollectionsResponse.ok) {
+        const collectionsData = await customCollectionsResponse.json();
+        collections.push(...(collectionsData.custom_collections || []));
+      }
 
-        console.log(`[COLLECTIONS] Found ${collections.length} collections`);
+      // Fetch smart collections
+      const smartCollectionsResponse = await fetch(
+        `${baseUrl}/smart_collections.json?fields=id,title,handle,body_html,image`,
+        { headers }
+      );
 
-        for (const collection of collections) {
+      if (smartCollectionsResponse.ok) {
+        const collectionsData = await smartCollectionsResponse.json();
+        collections.push(...(collectionsData.smart_collections || []));
+      }
+
+      console.log(`[COLLECTIONS] Found ${collections.length} collections total`);
+
+      for (const collection of collections) {
           // Upsert collection
           const { data: dbCollection, error: collectionError } = await supabaseClient
             .from("shopify_collections")
@@ -165,7 +179,6 @@ Deno.serve(async (req: Request) => {
           }
         }
       }
-    }
 
     // Import Pages
     if (types.includes('pages')) {

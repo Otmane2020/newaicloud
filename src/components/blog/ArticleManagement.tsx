@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { calculateDescriptionScore } from '@/lib/seoQuality';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
@@ -43,6 +44,8 @@ interface Article {
   source: string;
   created_at: string;
   updated_at: string;
+  optimization_count?: number;
+  last_optimization_at?: string | null;
 }
 
 type QuickFilterTab = 'all' | 'draft' | 'published' | 'shopify-synced';
@@ -55,6 +58,7 @@ export function ArticleManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [optimizing, setOptimizing] = useState(false);
 
   useEffect(() => {
     fetchArticles();
@@ -66,7 +70,7 @@ export function ArticleManagement() {
       const { data, error } = await supabase
         .from('blog_articles')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
 
       if (error) throw error;
       setArticles(data || []);
@@ -76,6 +80,19 @@ export function ArticleManagement() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateArticleSeoScore = (article: Article): number => {
+    const titleScore = calculateDescriptionScore(article.title);
+    const descScore = calculateDescriptionScore(article.meta_description);
+    return Math.round((titleScore.score + descScore.score) / 2);
+  };
+
+  const getSeoScoreBadge = (score: number) => {
+    if (score >= 80) return { variant: 'default' as const, label: 'Excellent', color: 'text-green-600' };
+    if (score >= 60) return { variant: 'secondary' as const, label: 'Bon', color: 'text-blue-600' };
+    if (score >= 40) return { variant: 'outline' as const, label: 'Moyen', color: 'text-yellow-600' };
+    return { variant: 'outline' as const, label: 'Faible', color: 'text-red-600' };
   };
 
   const handleSyncArticle = async (articleId: string) => {
@@ -155,6 +172,40 @@ export function ArticleManagement() {
       toast.error(error.message || 'Failed to import articles');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleOptimizeArticles = async () => {
+    if (selectedArticles.size === 0) {
+      toast.error("Sélectionnez au moins un article");
+      return;
+    }
+
+    try {
+      setOptimizing(true);
+      const toastId = toast.loading(`Optimisation SEO de ${selectedArticles.size} article(s)...`);
+
+      const { data, error } = await supabase.functions.invoke('generate-article-seo', {
+        body: { article_ids: Array.from(selectedArticles) }
+      });
+
+      if (error) throw error;
+
+      const successCount = data?.success_count || 0;
+      const errorCount = data?.error_count || 0;
+
+      if (successCount > 0) {
+        toast.success(`✅ ${successCount} article(s) optimisé(s)`, { id: toastId });
+        await fetchArticles();
+        setSelectedArticles(new Set());
+      } else {
+        toast.error(`Échec de l'optimisation`, { id: toastId });
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Failed to optimize articles');
+    } finally {
+      setOptimizing(false);
     }
   };
 
@@ -270,14 +321,26 @@ export function ArticleManagement() {
           </div>
           
           <div className="flex gap-2 items-center w-full md:w-auto">
+            {selectedArticles.size > 0 && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleOptimizeArticles}
+                disabled={optimizing || syncing}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Optimiser SEO ({selectedArticles.size})
+              </Button>
+            )}
+            
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
               onClick={handleImportArticles}
-              disabled={syncing}
+              disabled={syncing || optimizing}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Import from Shopify
+              Import Shopify
             </Button>
             
             <Button
@@ -323,83 +386,104 @@ export function ArticleManagement() {
                 </TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Score SEO</TableHead>
                 <TableHead>Keywords</TableHead>
                 <TableHead>Source</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Shopify Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredArticles.map((article) => (
-                <TableRow key={article.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedArticles.has(article.id)}
-                      onCheckedChange={() => handleSelectArticle(article.id)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{article.title}</div>
-                      {article.meta_description && (
-                        <div className="text-xs text-muted-foreground line-clamp-1">
-                          {article.meta_description}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
-                      {article.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {article.keywords && article.keywords.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {article.keywords.slice(0, 2).map((keyword, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {keyword}
-                          </Badge>
-                        ))}
-                        {article.keywords.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{article.keywords.length - 2}
-                          </Badge>
+              {filteredArticles.map((article) => {
+                const seoScore = calculateArticleSeoScore(article);
+                const scoreBadge = getSeoScoreBadge(seoScore);
+                
+                return (
+                  <TableRow key={article.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedArticles.has(article.id)}
+                        onCheckedChange={() => handleSelectArticle(article.id)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{article.title}</div>
+                        {article.meta_description && (
+                          <div className="text-xs text-muted-foreground line-clamp-1">
+                            {article.meta_description}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {article.source === 'shopify_import' ? 'Shopify' : 'AI Generated'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {new Date(article.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      {article.status === 'draft' && (
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                        {article.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={scoreBadge.variant}>
+                          <span className={scoreBadge.color}>{seoScore}/100</span>
+                        </Badge>
+                        {article.optimization_count && article.optimization_count > 0 && (
+                          <Sparkles className="w-3 h-3 text-primary" />
+                        )}
+                      </div>
+                      {article.optimization_count && article.optimization_count > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Optimisé {article.optimization_count}x
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {article.keywords && article.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {article.keywords.slice(0, 2).map((keyword, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {keyword}
+                            </Badge>
+                          ))}
+                          {article.keywords.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{article.keywords.length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {article.source === 'shopify_import' ? 'Shopify' : 'AI Generated'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(article.updated_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
                         <Button
                           size="sm"
-                          onClick={() => handleSyncArticle(article.id)}
-                          disabled={syncing}
+                          variant="ghost"
+                          onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
                         >
-                          <Upload className="w-4 h-4 mr-1" />
-                          Publish
+                          <Eye className="w-4 h-4" />
                         </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        {article.status === 'draft' && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleSyncArticle(article.id)}
+                            disabled={syncing}
+                          >
+                            <Upload className="w-4 h-4 mr-1" />
+                            Publish
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
           </div>
