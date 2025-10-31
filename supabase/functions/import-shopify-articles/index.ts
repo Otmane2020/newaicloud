@@ -157,6 +157,8 @@ Deno.serve(async (req: Request) => {
         if (articles && articles.length > 0) {
           allArticles = [...allArticles, ...articles];
           console.log(`  ✅ Fetched ${articles.length} articles`);
+        } else {
+          console.log(`  ⚠️ No articles found in blog ${blog.title}`);
         }
 
         // Check for pagination
@@ -204,18 +206,21 @@ Deno.serve(async (req: Request) => {
         keywords: keywords,
         status: article.published_at ? 'published' : 'draft',
         published_at: article.published_at,
-        shopify_blog_id: article.id.toString(),
+        shopify_article_id: article.id.toString(), // Fixed: changed from shopify_blog_id to shopify_article_id
         source: 'shopify_import',
         created_at: new Date().toISOString(),
         updated_at: article.updated_at,
       };
     });
 
+    // Log first article for debugging
+    console.log('First article to insert:', JSON.stringify(articlesToInsert[0], null, 2));
+
     // Step 4: Insert articles into database
     const { data: insertedArticles, error: insertError } = await supabaseServiceClient
       .from('blog_articles')
       .upsert(articlesToInsert, {
-        onConflict: 'shopify_blog_id',
+        onConflict: 'shopify_article_id', // Fixed: changed from shopify_blog_id to shopify_article_id
         ignoreDuplicates: false,
       })
       .select();
