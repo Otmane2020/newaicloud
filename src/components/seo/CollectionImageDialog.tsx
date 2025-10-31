@@ -72,11 +72,30 @@ export function CollectionImageDialog({
     try {
       setLoading(true);
       
-      const prompt = aiPrompt || `Generate a professional collection banner image for "${collection.title}". Make it elegant, modern, and e-commerce focused.`;
+      // Get products from this collection to enrich the prompt
+      const { data: products } = await supabase
+        .from('shopify_products')
+        .select('title, description')
+        .contains('collection_ids', [collection.id])
+        .limit(5);
+      
+      let enrichedPrompt = aiPrompt;
+      
+      if (!enrichedPrompt) {
+        // Build prompt from collection and products
+        const productTitles = products?.map(p => p.title).join(', ') || '';
+        enrichedPrompt = `Generate a professional square collection banner image for "${collection.title}". `;
+        
+        if (productTitles) {
+          enrichedPrompt += `This collection includes products like: ${productTitles}. `;
+        }
+        
+        enrichedPrompt += `Make it elegant, modern, and e-commerce focused with a 1:1 aspect ratio.`;
+      }
       
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: { 
-          prompt,
+          prompt: enrichedPrompt,
           collection_id: collection.id 
         }
       });

@@ -18,16 +18,16 @@ serve(async (req) => {
 
     const { collection_id } = await req.json();
 
-    // Get collection data
+    // Get collection data with seller info
     const { data: collection, error: collectionError } = await supabase
       .from('shopify_collections')
-      .select('shopify_collection_id, image_url, image_alt, store_id')
+      .select('shopify_collection_id, image_url, image_alt, store_id, seller_id')
       .eq('id', collection_id)
       .single();
 
     if (collectionError) throw collectionError;
 
-    if (!collection.shopify_collection_id || !collection.store_id) {
+    if (!collection.shopify_collection_id) {
       console.log('Collection not synced to Shopify yet');
       return new Response(
         JSON.stringify({ message: 'Collection not synced to Shopify' }),
@@ -35,14 +35,20 @@ serve(async (req) => {
       );
     }
 
-    // Get store credentials
-    const { data: store } = await supabase
-      .from('shopify_connections')
-      .select('shop_domain, access_token')
-      .eq('id', collection.store_id)
-      .single();
+    // Get store credentials - use seller_id if store_id is null
+    const storeQuery = collection.store_id 
+      ? supabase.from('shopify_connections').select('shop_domain, access_token').eq('id', collection.store_id).single()
+      : supabase.from('shopify_connections').select('shop_domain, access_token').eq('user_id', collection.seller_id).single();
+    
+    const { data: store } = await storeQuery;
 
-    if (!store) throw new Error('Store not found');
+    if (!store) {
+      console.log('No store found for this collection');
+      return new Response(
+        JSON.stringify({ message: 'No store connected' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Sync image to Shopify using Admin API
     const shopifyResponse = await fetch(
