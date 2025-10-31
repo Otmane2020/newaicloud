@@ -18,10 +18,10 @@ serve(async (req) => {
 
     const { collection_id } = await req.json();
 
-    // Get collection data with seller info
+    // Get collection data with user info
     const { data: collection, error: collectionError } = await supabase
       .from('shopify_collections')
-      .select('shopify_collection_id, image_url, image_alt, store_id, seller_id')
+      .select('shopify_collection_id, image_url, image_alt, store_id, user_id')
       .eq('id', collection_id)
       .single();
 
@@ -35,10 +35,10 @@ serve(async (req) => {
       );
     }
 
-    // Get store credentials - use seller_id if store_id is null
+    // Get store credentials - use user_id if store_id is null
     const storeQuery = collection.store_id 
-      ? supabase.from('shopify_connections').select('shop_domain, access_token').eq('id', collection.store_id).single()
-      : supabase.from('shopify_connections').select('shop_domain, access_token').eq('user_id', collection.seller_id).single();
+      ? supabase.from('shopify_connections').select('store_url, access_token').eq('id', collection.store_id).single()
+      : supabase.from('shopify_connections').select('store_url, access_token').eq('user_id', collection.user_id).eq('is_active', true).single();
     
     const { data: store } = await storeQuery;
 
@@ -52,7 +52,7 @@ serve(async (req) => {
 
     // Sync image to Shopify using Admin API
     const shopifyResponse = await fetch(
-      `https://${store.shop_domain}/admin/api/2025-01/custom_collections/${collection.shopify_collection_id}.json`,
+      `https://${store.store_url}/admin/api/2025-01/custom_collections/${collection.shopify_collection_id}.json`,
       {
         method: 'PUT',
         headers: {
