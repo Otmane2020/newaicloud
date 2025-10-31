@@ -32,12 +32,8 @@ export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Don't render if user is not logged in
-  if (!user) {
-    return null;
-  }
-
   useEffect(() => {
+    if (!user) return;
     fetchNotifications();
 
     // Subscribe to realtime notifications
@@ -234,6 +230,11 @@ export function NotificationCenter() {
     };
     return icons[category] || '📌';
   };
+
+  // Don't render if user is not logged in
+  if (!user) {
+    return null;
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
