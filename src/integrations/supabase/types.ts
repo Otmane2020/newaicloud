@@ -334,6 +334,8 @@ export type Database = {
           created_at: string | null
           id: string
           link_type: string | null
+          seo_score: number | null
+          target_type: string | null
           target_url: string
           updated_at: string | null
           user_id: string | null
@@ -345,6 +347,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           link_type?: string | null
+          seo_score?: number | null
+          target_type?: string | null
           target_url: string
           updated_at?: string | null
           user_id?: string | null
@@ -356,6 +360,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           link_type?: string | null
+          seo_score?: number | null
+          target_type?: string | null
           target_url?: string
           updated_at?: string | null
           user_id?: string | null

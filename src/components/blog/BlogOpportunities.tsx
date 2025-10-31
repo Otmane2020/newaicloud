@@ -127,15 +127,25 @@ ${categories.map(([cat, count]) => `- ${cat} : ${count} produits`).join('\n')}
           throw new Error(`Erreur API: ${error.message || 'Erreur inconnue'}`);
         }
 
-        if (!data || !data.response) {
+        console.log('✅ Raw response from AI:', JSON.stringify(data).substring(0, 500));
+        
+        // Handle different response formats
+        let responseText = '';
+        if (typeof data === 'string') {
+          responseText = data;
+        } else if (data && typeof data.response === 'string') {
+          responseText = data.response;
+        } else if (data && typeof data.message === 'string') {
+          responseText = data.message;
+        } else {
+          throw new Error('Format de réponse invalide de l\'API');
+        }
+
+        if (!responseText) {
           throw new Error('Réponse vide de l\'API');
         }
 
-        console.log('✅ Received response from AI');
-        console.log('📄 Response preview:', data.response.substring(0, 200));
-        
-        // Parse response
-        let responseText = data.response;
+        console.log('📄 Response text preview:', responseText.substring(0, 200));
         
         // Clean up response
         if (responseText.includes('```json')) {

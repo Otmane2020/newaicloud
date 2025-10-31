@@ -131,8 +131,9 @@ Deno.serve(async (req: Request) => {
             target_url: link.url,
             anchor_text: link.anchorText,
             link_type: link.linkType,
+            target_type: link.targetType,
+            seo_score: link.seoScore,
             click_count: 0,
-            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'user_id,article_id,target_url',

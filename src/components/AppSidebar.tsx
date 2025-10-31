@@ -26,6 +26,7 @@ import {
   Home,
   Crown,
   Megaphone,
+  FileSearch,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -61,7 +62,8 @@ const seoSubItems = [
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
   { title: "Homepage", url: "/seo?tab=homepage", icon: Home },
   { title: "Tags", url: "/seo?tab=tags", icon: Tags },
-  { title: "Audit", url: "/seo?tab=audit", icon: BarChart3 },
+  { title: "Audit SEO", url: "/seo?tab=audit-dashboard", icon: FileSearch },
+  { title: "Rapports", url: "/seo?tab=audit", icon: BarChart3 },
   { title: "KPIs & Stats", url: "/seo?tab=kpis", icon: BarChart3 },
   { title: "Automation", url: "/seo?tab=automation", icon: Settings },
 ];
