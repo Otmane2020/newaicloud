@@ -78,9 +78,11 @@ export type Database = {
           meta_description: string | null
           optimization_count: number | null
           published_at: string | null
+          shopify_article_id: number | null
           shopify_blog_id: string | null
           source: string | null
           status: string | null
+          store_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -94,9 +96,11 @@ export type Database = {
           meta_description?: string | null
           optimization_count?: number | null
           published_at?: string | null
+          shopify_article_id?: number | null
           shopify_blog_id?: string | null
           source?: string | null
           status?: string | null
+          store_id?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -110,14 +114,24 @@ export type Database = {
           meta_description?: string | null
           optimization_count?: number | null
           published_at?: string | null
+          shopify_article_id?: number | null
           shopify_blog_id?: string | null
           source?: string | null
           status?: string | null
+          store_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "blog_articles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       blog_campaigns: {
         Row: {
