@@ -11,6 +11,7 @@ import { SeoAuditReports } from '@/components/seo/SeoAuditReports';
 import { SeoKPIs } from '@/components/seo/SeoKPIs';
 import { CollectionOptimization } from '@/components/seo/CollectionOptimization';
 import ArticleManagement from '@/pages/ArticleManagement';
+import { AdsCampaign } from '@/components/seo/AdsCampaign';
 import { Sparkles, Tags, Image, Settings, FileText, PenSquare, TrendingUp, Package } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ export default function SEO() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'alt', 'automation', 'kpis'].includes(tab)) {
+    if (tab && ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'alt', 'automation', 'kpis', 'ads-campaign'].includes(tab)) {
       // Redirect old 'optimization' tab to 'products'
       if (tab === 'optimization') {
         setActiveTab('products');
@@ -104,6 +105,7 @@ export default function SEO() {
         {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'automation' && <SeoAutomation />}
         {activeTab === 'kpis' && <SeoKPIs />}
+        {activeTab === 'ads-campaign' && <AdsCampaign />}
       </div>
     </div>
   );

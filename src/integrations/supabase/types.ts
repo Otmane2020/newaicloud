@@ -14,6 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      ads_campaign_collections: {
+        Row: {
+          campaign_id: string
+          collection_id: string
+          created_at: string
+          display_order: number | null
+          id: string
+        }
+        Insert: {
+          campaign_id: string
+          collection_id: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+        }
+        Update: {
+          campaign_id?: string
+          collection_id?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ads_campaign_collections_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ads_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ads_campaign_collections_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ads_campaign_products: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          display_order: number | null
+          id: string
+          product_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          product_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ads_campaign_products_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ads_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ads_campaign_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ads_campaigns: {
+        Row: {
+          campaign_type: string
+          collections_count: number | null
+          created_at: string
+          cta_text: string | null
+          headline: string | null
+          id: string
+          landing_page_url: string | null
+          name: string
+          products_count: number | null
+          status: string
+          subheadline: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_type: string
+          collections_count?: number | null
+          created_at?: string
+          cta_text?: string | null
+          headline?: string | null
+          id?: string
+          landing_page_url?: string | null
+          name: string
+          products_count?: number | null
+          status?: string
+          subheadline?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_type?: string
+          collections_count?: number | null
+          created_at?: string
+          cta_text?: string | null
+          headline?: string | null
+          id?: string
+          landing_page_url?: string | null
+          name?: string
+          products_count?: number | null
+          status?: string
+          subheadline?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       automation_settings: {
         Row: {
           alt_auto_enabled: boolean | null

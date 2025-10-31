@@ -29,6 +29,7 @@ import ProductEnrichment from "./pages/ProductEnrichment";
 import ProductSource from "./pages/ProductSource";
 import ProductLanding from "./pages/ProductLanding";
 import ArticleLanding from "./pages/ArticleLanding";
+import LandingPage from "./pages/LandingPage";
 import Account from "./pages/Account";
 import Subscription from "./pages/Subscription";
 import Merchant from "./pages/Merchant";
@@ -260,6 +261,7 @@ const App = () => (
                 </ProtectedLayout>
               }
             />
+            <Route path="/landing/:campaignId" element={<LandingPage />} />
             <Route
               path="/admin"
               element={
