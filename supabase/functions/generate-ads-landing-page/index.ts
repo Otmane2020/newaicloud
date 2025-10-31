@@ -113,148 +113,137 @@ serve(async (req) => {
       };
     }) || [];
 
-    // 🎯 PROMPT ULTRA-OPTIMISÉ - LANDING PAGE PRODUITS UNIQUE
-    const prompt = `
-# 🎨 MISSION : Créer une LANDING PAGE PRODUITS "GALERIE D'ART" - ZERO TEMPLATE SHOPIFY
+    // Amazon-style e-commerce landing page prompt
+    const prompt = `You are an expert e-commerce conversion specialist. Create a COMPLETE, SELF-CONTAINED HTML landing page optimized for maximum conversions, inspired by Amazon's proven design patterns.
 
-## 🚫 STYLES STRICTEMENT INTERDITS :
-- ❌ Gallery carousel horizontal basique
-- ❌ Layout "Image gauche / infos droite" 
-- ❌ Section description textuelle ennuyeuse
-- ❌ Boutons "Add to Cart" standards
-- ❌ Grid produits symétrique générique
-- ❌ Fiches produits identiques
-- ❌ Design template e-commerce
+## CRITICAL REQUIREMENTS - READ CAREFULLY:
 
-## ✅ STYLE OBLIGATOIRE : "GALERIE D'ART MODERNE"
-- 🎭 Chaque produit = œuvre d'art unique
-- 🖼️ Mise en page asymétrique et organique
-- ✨ Expérience immersive et sensorielle
-- 🎪 Design editorial haut de gamme
+### 1. OUTPUT FORMAT
+- Return a COMPLETE, STANDALONE HTML document
+- Include ALL CSS inline in a <style> tag
+- NO external dependencies, NO imports, NO React components
+- Must work immediately when rendered with dangerouslySetInnerHTML
+- Start directly with <!DOCTYPE html>
 
-## 🏗️ ARCHITECTURE INNOVANTE :
+### 2. DESIGN SYSTEM (Amazon-inspired)
+**Colors:**
+- Primary CTA: #FF9900 (Amazon orange) hover #FA8900
+- Secondary CTA: #146EB4 (Amazon blue) hover #0F5A8E
+- Success/Trust: #067D62 white text
+- Urgent/Sale: #B12704 white text
+- Text: #0F1111 (dark) and #565959 (secondary)
+- Background: #FFFFFF and #F7F8F8 (light gray sections)
+- Borders: #D5D9D9
 
-### 1. HERO "IMMERSIF" 
-- Background : Video loop produit en situation réelle OU collage artistique des produits
-- Titre principal : Storytelling émotionnel "Vivez l'expérience [Brand]" 
-- Navigation visuelle : Mini-grid des produits en fond avec effet parallaxe
+**Typography:**
+- Headlines: font-bold, large sizes (48px for hero)
+- Body: 16px, #0F1111
+- Prices: 28px font-bold #B12704
+- Strikethrough prices: 18px line-through #565959
 
-### 2. SECTION "GALERIE EXPÉRIENTIELLE"
-Layout: MASONRY ASYMÉTRIQUE avec :
-- Cartes de tailles variables selon l'importance du produit
-- Overlay d'informations au hover avec animation morphing
-- Images en plein écran au click avec transition fluide
-- Système de filtres visuels (par ambiance, style, couleur)
+### 3. PAGE STRUCTURE (Follow this exact order):
 
-### 3. FICHE PRODUIT "MODE ARTISTE"
-**POUR CHAQUE PRODUIT, créer un layout UNIQUE :**
+#### A. HERO SECTION (Above the fold)
+- Full-width banner with gradient background
+- Campaign headline: "${campaign.headline || 'Découvrez nos meilleures offres'}"
+- Subheadline: "${campaign.subheadline || 'Profitez de réductions exceptionnelles'}"
+- Primary CTA button: "${campaign.cta_text || 'Voir les produits'}"
+- Trust badges row: ⭐⭐⭐⭐⭐ 4.8/5 (2,847 avis) | 🚚 Livraison gratuite | 🔄 Retours 30 jours
 
-**Option A - Layout "Storytelling Vertical"**
-\`\`\`
-🖼️ [Image principale en haut - 100% largeur]
-📖 [Titre + Description courte - overlay partiel]
-🎨 [Grid 3 colonnes : Couleurs + Matériaux + Dimensions]
-💫 [Section "Inspiration" avec moodboard]
-🛒 [CTA flottant bottom sticky]
-\`\`\`
+#### B. HIGHLIGHTS BAR
+${campaign.highlights && Array.isArray(campaign.highlights) && campaign.highlights.length > 0 ? 
+`Display these highlights as icons with text:
+${campaign.highlights.map((h: any) => `- ${h.text || h}`).join('\n')}` : 
+`- ✓ Livraison gratuite dès 50€
+- ✓ Retours gratuits sous 30 jours  
+- ✓ Garantie satisfait ou remboursé
+- ✓ Paiement sécurisé`}
 
-**Option B - Layout "Cinématique"**  
-\`\`\`
-🎬 [Video/GIF produit en situation - 60% écran]
-🎪 [Infos fixes à droite avec scroll indépendant]
-🌈 [Palette couleurs interactive]
-📱 [Gallery empilée verticalement]
-\`\`\`
+#### C. FEATURED PRODUCTS GRID
+Display ${products.length} products in a responsive grid (2 cols mobile, 3-4 cols desktop).
 
-**Option C - Layout "Editorial Magazine"**
-\`\`\`
-📰 [Titre artistique typographie creative]
-🖼️ [Images full-bleed avec text overlay]
-📐 [Specs techniques dans colonne latérale stylisée]
-🎯 [CTA intégré dans le design editorial]
-\`\`\`
+**For each product, create a card with:**
+1. Product image (responsive, optimized)
+2. ${products[0]?.discount ? `BADGE "PROMO -${products[0].discount}%" in top-right corner (bg #B12704 white text)` : ''}
+3. Product title (bold, 18px)
+4. Star rating: ⭐⭐⭐⭐⭐ 4.7/5
+5. Price display with comparison if available
+6. CTA button "Ajouter au panier" (Amazon orange)
+7. Stock indicator for urgency
 
-### 4. INTERACTIONS AVANCÉES :
-- Hover 3D tilt sur les cards
-- Zoom magnifying glass sur images
-- Color picker interactif
-- Scroll-triggered animations
-- Micro-interactions sur chaque action
-
-## 🎨 SYSTÈME DESIGN PREMIUM :
-
-### Palette Émotionnelle :
-\`\`\`
-primary: '#1A1A1A',    // Noir profond artistique
-secondary: '#F5F5F5',   // Blanc galerie
-accent: '#E8C4A1',      // Terre naturelle
-spotlight: '#8B4513',   // Brun chaleureux
-text: '#2C2C2C',        // Gris charbon
-background: '#FAFAFA'   // Blanc cassé
-\`\`\`
-
-### Typographie Creative :
-- Headlines: 'Playfair Display' - Serif élégant
-- Subtitles: 'Cormorant Garamond' - Serif littéraire  
-- Body: 'Inter' - Sans-serif lisible
-- Accent: 'Montserrat' - Modern clean
-
-### Animations Signature :
-\`\`\`
-- fade-in-up-stagger (entrée produits)
-- morphing-overlay (hover cards)
-- parallax-scroll (background)
-- magnetic-cursor (boutons)
-- glassmorphism-effect (modals)
-\`\`\`
-
-## 📦 PRODUITS À METTRE EN VALEUR :
-
-${products.map((p: any, index: number) => `
-### 🎁 PRODUIT ${index + 1} - "${p.title}"
-**Prix :** ${p.compare_at_price ? `~~${p.compare_at_price}€~~ **${p.price}€** (${p.discount}% OFF)` : `${p.price}€`}
-**Description :** ${p.optimized_description || p.description || 'Produit premium'}
-**Style :** ${p.style || 'Moderne'} | **Matériau :** ${p.ai_material || 'Qualité supérieure'}
-**Couleur :** ${p.ai_color || 'Élégant'} | **Texture :** ${p.ai_texture || 'Raffinée'}
-**Analyse IA :** ${p.ai_vision_analysis?.substring(0, 150) || 'Design soigné et fonctionnel'}
-**Images disponibles :** ${p.images?.length || 1}
-**Catégorie :** ${p.category} ${p.sub_category ? `> ${p.sub_category}` : ''}
-
-**LAYOUT SUGGÉRÉ :** ${index % 3 === 0 ? 'Storytelling Vertical' : index % 3 === 1 ? 'Cinématique' : 'Editorial Magazine'}
+**ALL ${products.length} PRODUCTS:**
+${products.map((p: any, idx: number) => `
+Product ${idx + 1}:
+- Title: ${p.title}
+- Price: ${p.price}€
+- Compare at: ${p.compare_at_price || 'N/A'}€
+- Discount: ${p.discount ? `-${p.discount}%` : 'N/A'}
+- Image: ${p.main_image || '/placeholder.svg'}
+- Description: ${(p.optimized_description || p.description || '').substring(0, 150)}...
+- Style: ${p.style || 'Moderne'}
+- Material: ${p.ai_material || 'Qualité supérieure'}
 `).join('\n')}
 
-## 🛠️ DIRECTIVES TECHNIQUES :
+#### D. WHY CHOOSE US SECTION
+3-column grid with icons and benefits:
+- 🏆 Qualité garantie | Produits vérifiés et testés
+- 🚀 Livraison express | Expédition sous 24h
+- 💯 Satisfait ou remboursé | Garantie 30 jours
 
-### Code Architecture :
-\`\`\`tsx
-// Composants principaux :
-<ArtGalleryHero />
-<MasonryProductGrid />
-  <ProductCard layout="unique" />
-<FloatingCart />
-<StorytellingModal />
+#### E. SOCIAL PROOF SECTION  
+Display 3 customer testimonials with:
+- 5-star rating
+- Customer name with initials in colored circles
+- Review text (authentic French testimonials)
+
+#### F. FAQ SECTION (Accordion-style)
+4-5 common questions:
+- Quels sont les délais de livraison ?
+- Puis-je retourner un produit ?
+- Les paiements sont-ils sécurisés ?
+- Comment suivre ma commande ?
+
+#### G. FINAL CTA SECTION
+- Repeat main headline
+- Strong CTA button "Voir tous les produits"
+- Urgency text: "Offre valable jusqu'à épuisement des stocks"
+
+### 4. TECHNICAL SPECIFICATIONS
+
+**Include this CSS in <style> tag:**
+\`\`\`css
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; color: #0F1111; line-height: 1.6; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.btn-primary { background: #FF9900; color: #0F1111; padding: 12px 24px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn-primary:hover { background: #FA8900; }
+.product-card { background: white; border: 1px solid #D5D9D9; border-radius: 8px; padding: 16px; transition: all 0.2s; }
+.product-card:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.price-sale { color: #B12704; font-size: 28px; font-weight: bold; }
+.price-original { color: #565959; text-decoration: line-through; font-size: 18px; }
+.badge-promo { background: #B12704; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px; font-weight: bold; position: absolute; top: 10px; right: 10px; }
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin: 40px 0; }
+@media (max-width: 768px) {
+  .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .hero h1 { font-size: 28px !important; }
+}
 \`\`\`
 
-### Responsive Breakpoints :
-- Mobile : Stack vertical créatif
-- Tablet : Grid asymétrique adaptatif  
-- Desktop : Experience immersive complète
+### 5. CONVERSION OPTIMIZATION
+- Multiple CTAs throughout the page
+- Clear visual hierarchy (large prices, bold CTAs)
+- Trust signals in every section
+- Social proof prominently displayed
+- Urgency and scarcity indicators
+- Mobile-optimized (responsive design)
 
-### Performance :
-- Lazy loading images
-- Intersection Observer animations
-- CSS transforms hardware-accelerated
+### 6. NO PLACEHOLDER CONTENT
+- Use REAL product data provided above
+- Use REAL prices and discounts
+- Create REALISTIC testimonials (French names, believable reviews)
+- NO "Lorem ipsum" or "[Product Name]" placeholders
 
-## 🎯 CONSIGNES FINALES CRÉATIVES :
-
-1. **CHAQUE PRODUIT = UNE ŒUVRE** - Layout unique et mémorable
-2. **ZERO SYMÉTRIE** - Asymétrie organique naturelle
-3. **STORYTELLING VISUEL** - Moins de texte, plus d'émotion
-4. **INTERACTION TACTILE** - Feedback immédiat sur chaque action
-5. **MOBILE FIRST CREATIVE** - Adaptation innovante sur mobile
-
-**GÉNÈRE UNIQUEMENT LE CODE REACT/TYPESCRIPT COMPLET - PAS D'EXPLICATIONS**
-`;
+Return ONLY the complete HTML document. Start with <!DOCTYPE html>. No markdown, no backticks, no explanations.`;
 
     console.log("Calling Lovable AI with artistic gallery prompt...");
     
