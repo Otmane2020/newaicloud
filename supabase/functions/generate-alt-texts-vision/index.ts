@@ -10,6 +10,38 @@ interface AltTextVisionRequest {
   imageId: string;
 }
 
+function cleanJsonResponse(text: string): string {
+  let cleaned = text.trim();
+  
+  // Pattern 1: ```json\n{...}\n```
+  const jsonBlockMatch = cleaned.match(/```json\s*\n?([\s\S]*?)\n?```/);
+  if (jsonBlockMatch) {
+    return jsonBlockMatch[1].trim();
+  }
+  
+  // Pattern 2: ```{...}```
+  const codeBlockMatch = cleaned.match(/```\s*\n?([\s\S]*?)\n?```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+  
+  // Pattern 3: Remove backticks
+  return cleaned.replace(/^```json?\s*|\s*```$/g, '').trim();
+}
+
+function validateAltText(altText: string, minLength = 15, maxLength = 200): boolean {
+  if (!altText || typeof altText !== 'string') {
+    return false;
+  }
+  
+  const trimmed = altText.trim();
+  return (
+    trimmed.length >= minLength &&
+    trimmed.length <= maxLength &&
+    !altText.includes('```')
+  );
+}
+
 async function callVisionAI(imageUrl: string, productContext: string) {
   const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
 
@@ -216,31 +248,28 @@ Deno.serve(async (req: Request) => {
     let visualAnalysis = "";
     
     try {
-      const parsed = JSON.parse(visionContent);
+      const cleanedJson = cleanJsonResponse(visionContent);
+      console.log('Cleaned JSON:', cleanedJson.substring(0, 100));
+      
+      const parsed = JSON.parse(cleanedJson);
       altText = parsed.alt_text || "";
       visualAnalysis = parsed.visual_analysis || "";
       
-      // ✅ Vérifier que l'altText contient bien du contenu visuel
-      if (!altText || altText.length < 15) {
-        throw new Error('ALT text trop court');
+      if (!validateAltText(altText)) {
+        throw new Error('ALT text validation failed');
       }
     } catch (e) {
-      console.error("Failed to parse or validate Vision JSON:", visionContent);
+      console.error('Failed to parse Vision JSON:', visionContent);
+      console.error('Parse error:', e);
       
-      // ✅ Fallback qui tente d'extraire l'analyse du texte brut
+      // Fallback: extract from raw text
       const match = visionContent.match(/"alt_text":\s*"([^"]+)"/);
       if (match) {
         altText = match[1];
       } else {
-        // ❌ Dernier recours (mais avertir l'utilisateur)
-        altText = `${product.title}${variants && variants.length > 0 ? ' - ' + variants[0].title : ''} (analyse visuelle échouée)`;
-        console.error('❌ Vision AI failed to provide visual analysis');
+        altText = `${product.category || 'Produit'} - ${product.ai_color || ''} ${product.ai_material || ''}`.trim();
+        visualAnalysis = 'Analyse visuelle non disponible';
       }
-    }
-
-    // ✅ Valider que l'ALT contient plus que juste le titre
-    if (altText === product.title || altText.length < 20) {
-      console.warn('⚠️ ALT text seems to lack visual description');
     }
 
     // Update image with ALT text and analysis
