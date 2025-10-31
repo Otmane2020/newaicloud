@@ -115,7 +115,7 @@ ${categories.map(([cat, count]) => `- ${cat} : ${count} produits`).join('\n')}
       try {
         const { data, error } = await supabase.functions.invoke('chat-smart', {
           body: {
-            message: prompt,
+            userMessage: prompt,
             conversationHistory: []
           }
         });
