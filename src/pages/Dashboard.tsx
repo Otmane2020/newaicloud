@@ -236,7 +236,7 @@ export default function Dashboard() {
           </p>
           <div className="flex gap-3">
             <button
-              onClick={() => window.location.href = '/seo?tab=audit'}
+              onClick={() => window.location.href = '/seo?tab=audit-dashboard'}
               className="px-6 py-3 bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
