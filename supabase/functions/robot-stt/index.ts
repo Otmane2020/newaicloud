@@ -17,40 +17,58 @@ serve(async (req) => {
       throw new Error("Audio data is required");
     }
 
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
-      throw new Error("OpenAI API key not configured");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!lovableApiKey) {
+      throw new Error("Lovable API key not configured");
     }
 
-    // Convert base64 to blob
-    const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
-    const audioBlob = new Blob([audioData], { type: "audio/webm" });
+    console.log("Transcribing audio with Gemini...");
 
-    // Create form data for OpenAI Whisper API
-    const formData = new FormData();
-    formData.append("file", audioBlob, "audio.webm");
-    formData.append("model", "whisper-1");
-    formData.append("language", "fr");
-
-    // Call OpenAI Whisper Transcription API
-    const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    // Use Lovable AI (Gemini 2.5 Flash) for audio transcription
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openaiApiKey}`,
+        "Authorization": `Bearer ${lovableApiKey}`,
+        "Content-Type": "application/json",
       },
-      body: formData,
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Transcris cet audio en français. Retourne uniquement le texte transcrit, sans commentaires ni formatage."
+              },
+              {
+                type: "audio",
+                audio: audio // base64 encoded audio
+              }
+            ]
+          }
+        ]
+      }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`OpenAI Whisper error: ${error}`);
+      console.error("Lovable AI error:", error);
+      throw new Error(`Transcription error: ${error}`);
     }
 
     const result = await response.json();
+    const text = result.choices?.[0]?.message?.content;
+
+    if (!text) {
+      throw new Error("No transcription returned from AI");
+    }
+
+    console.log("Transcription successful:", text);
 
     return new Response(
       JSON.stringify({ 
-        text: result.text
+        text: text.trim()
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
