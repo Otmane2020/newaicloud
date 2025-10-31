@@ -121,10 +121,16 @@ Deno.serve(async (req) => {
       console.error('[SYNC-PAGE] Error updating last_synced_at:', updateError);
     }
 
+    // Extract store name and build Shopify admin URL
+    const storeName = connection.store_url.replace('.myshopify.com', '');
+    const shopifyAdminUrl = `https://admin.shopify.com/store/${storeName}/pages/${page.shopify_page_id}`;
+
     return new Response(
       JSON.stringify({ 
         success: true,
         message: 'Page synced to Shopify successfully',
+        shopifyUrl: shopifyAdminUrl,
+        resourceType: 'page',
         page: result.page
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

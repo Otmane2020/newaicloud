@@ -48,6 +48,8 @@ import {
   List
 } from 'lucide-react';
 
+import { ShopifySyncSuccessDialog } from './ShopifySyncSuccessDialog';
+
 interface Product {
   id: string;
   title: string;
@@ -86,6 +88,7 @@ export function SeoOptimization() {
   const [productsToSync, setProductsToSync] = useState<Product[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [syncedItems, setSyncedItems] = useState<Array<{ id: string; title: string; shopifyUrl: string; resourceType: 'product' }>>([]);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   const fetchProducts = async () => {
@@ -125,12 +128,13 @@ export function SeoOptimization() {
   const scoreWithoutAI = productsNotOptimized.length > 0
     ? Math.round(
         productsNotOptimized.reduce((sum, p) => {
-          const score = calculateDetailedSeoScore(
+           const score = calculateDetailedSeoScore(
             p.title,        // Original Shopify title
             p.vendor,       // Using vendor as description proxy for non-enriched
             !!p.image_url,
             true,
-            p.tags          // Shopify tags
+            p.tags,         // Shopify tags
+            p.optimization_count  // Pass optimization count
           );
           return sum + score.score;
         }, 0) / productsNotOptimized.length
@@ -146,7 +150,8 @@ export function SeoOptimization() {
             p.seo_description, // AI-generated description
             !!p.image_url,
             true,
-            p.tags             // Tags
+            p.tags,            // Tags
+            p.optimization_count  // Pass optimization count
           );
           return sum + score.score;
         }, 0) / productsOptimized.length
@@ -375,11 +380,11 @@ export function SeoOptimization() {
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productsToSync.length });
 
-    let successCount = 0;
+    const syncedItems: Array<{ id: string; title: string; shopifyUrl: string; resourceType: 'product' }> = [];
 
     for (let i = 0; i < productsToSync.length; i++) {
       try {
-        await supabase.functions.invoke('sync-seo-to-shopify', {
+        const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
           body: { 
             productId: productsToSync[i].id,
             syncTags: true,
@@ -387,7 +392,17 @@ export function SeoOptimization() {
           }
         });
         
-        successCount++;
+        if (error) throw error;
+        
+        if (data?.success && data?.shopifyUrl) {
+          syncedItems.push({
+            id: productsToSync[i].id,
+            title: productsToSync[i].title,
+            shopifyUrl: data.shopifyUrl,
+            resourceType: 'product'
+          });
+        }
+        
         setProgress({ current: i + 1, total: productsToSync.length });
       } catch (error) {
         console.error('Error syncing:', error);
@@ -400,6 +415,11 @@ export function SeoOptimization() {
     
     await fetchProducts();
     await refreshLimits();
+
+    // Show success dialog with Shopify links
+    if (syncedItems.length > 0) {
+      setSyncedItems(syncedItems);
+    }
   };
 
   const handleSyncProducts = async (productIds: string[]) => {
@@ -834,7 +854,9 @@ export function SeoOptimization() {
                   product.seo_title,
                   product.seo_description,
                   !!product.image_url,
-                  true
+                  true,
+                  product.tags,
+                  product.optimization_count
                 );
                 
                 return (
@@ -904,13 +926,14 @@ export function SeoOptimization() {
                          ) : (
                            <>
                              {(() => {
-                               const initialScore = calculateDetailedSeoScore(
-                                 product.title,
-                                 product.vendor,
-                                 !!product.image_url,
-                                 true,
-                                 product.tags
-                               );
+                                const initialScore = calculateDetailedSeoScore(
+                                  product.title,
+                                  product.vendor,
+                                  !!product.image_url,
+                                  true,
+                                  product.tags,
+                                  product.optimization_count
+                                );
                                return (
                                  <>
                                    <div className={`text-2xl font-bold ${
@@ -977,7 +1000,9 @@ export function SeoOptimization() {
               product.seo_title,
               product.seo_description,
               !!product.image_url,
-              true
+              true,
+              product.tags,
+              product.optimization_count
             );
             
             return (
@@ -1058,7 +1083,8 @@ export function SeoOptimization() {
                               product.vendor,
                               !!product.image_url,
                               true,
-                              product.tags
+                              product.tags,
+                              product.optimization_count
                             );
                             return (
                               <>
@@ -1146,6 +1172,12 @@ export function SeoOptimization() {
           setSyncing(false);
         }}
         loading={syncing}
+      />
+
+      {/* Shopify Sync Success Dialog */}
+      <ShopifySyncSuccessDialog
+        items={syncedItems}
+        onClose={() => setSyncedItems([])}
       />
       
       {limits?.shouldForcePayment ? (

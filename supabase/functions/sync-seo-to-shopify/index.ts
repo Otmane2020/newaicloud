@@ -224,10 +224,16 @@ Deno.serve(async (req: Request) => {
 
       console.log(`Product ${product.shopify_id} synced successfully`);
       
+      // Extract store name from store_url
+      const storeName = shopUrl.replace('.myshopify.com', '');
+      const shopifyUrl = `https://admin.shopify.com/store/${storeName}/products/${product.shopify_id}`;
+      
       return new Response(
         JSON.stringify({
           success: true,
           message: "Product synced to Shopify successfully",
+          shopifyUrl: shopifyUrl,
+          resourceType: "product"
         }),
         {
           status: 200,
@@ -365,10 +371,16 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text for image ${imageData.shopify_image_id}`);
 
+      // Extract store name and build Shopify URL (to parent product)
+      const storeName = shopUrl.replace('.myshopify.com', '');
+      const shopifyUrl = `https://admin.shopify.com/store/${storeName}/products/${product.shopify_id}`;
+
       return new Response(
         JSON.stringify({
           success: true,
           message: "Image ALT text synced to Shopify successfully",
+          shopifyUrl: shopifyUrl,
+          resourceType: "image"
         }),
         {
           status: 200,
@@ -481,10 +493,16 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[SYNC-COLLECTION] ✅ Successfully synced collection ${collection.shopify_collection_id}`);
 
+      // Extract store name and build Shopify URL
+      const storeName = shopUrl.replace('.myshopify.com', '');
+      const shopifyUrl = `https://admin.shopify.com/store/${storeName}/collections/${collection.shopify_collection_id}`;
+
       return new Response(
         JSON.stringify({
           success: true,
           message: "Collection SEO synced to Shopify successfully",
+          shopifyUrl: shopifyUrl,
+          resourceType: "collection"
         }),
         {
           status: 200,

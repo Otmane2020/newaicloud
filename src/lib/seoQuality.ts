@@ -44,24 +44,24 @@ export function calculateTitleScore(
   // 1. PRÉSENCE (20 points)
   breakdown.presence = 20;
 
-  // 2. LONGUEUR 50-60 caractères = optimal (30 points) - Généreux pour IA
+  // 2. LONGUEUR 45-70 caractères = optimal (30 points) - Plus généreux pour IA
   const titleLength = title.length;
-  if (titleLength >= 50 && titleLength <= 60) {
+  if (titleLength >= 50 && titleLength <= 65) {
     breakdown.length = 30; // Perfect - optimal SEO
   } else if (titleLength >= 45 && titleLength < 50) {
-    breakdown.length = 25; // Très bon
-  } else if (titleLength > 60 && titleLength <= 65) {
-    breakdown.length = 25; // Très bon
-  } else if (titleLength >= 40 && titleLength < 45) {
-    breakdown.length = 20; // Bon
+    breakdown.length = 28; // Excellent
   } else if (titleLength > 65 && titleLength <= 70) {
-    breakdown.length = 20; // Bon
+    breakdown.length = 28; // Excellent
+  } else if (titleLength >= 40 && titleLength < 45) {
+    breakdown.length = 24; // Très bon
+  } else if (titleLength > 70 && titleLength <= 75) {
+    breakdown.length = 22; // Très bon
   } else if (titleLength >= 35 && titleLength < 40) {
-    breakdown.length = 12; // Acceptable
-  } else if (titleLength > 70 && titleLength <= 80) {
-    breakdown.length = 10; // Un peu long
+    breakdown.length = 18; // Bon
+  } else if (titleLength > 75 && titleLength <= 80) {
+    breakdown.length = 15; // Acceptable
   } else {
-    breakdown.length = 5; // Trop court ou trop long
+    breakdown.length = 8; // Trop court ou trop long
   }
 
   // 3. CONTIENT MOTS-CLÉS (30 points) - Généreux pour IA optimisé
@@ -165,24 +165,24 @@ export function calculateDescriptionScore(
   // 1. PRÉSENCE (20 points)
   breakdown.presence = 20;
 
-  // 2. LONGUEUR 140-160 caractères = optimal (30 points) - Généreux pour IA
+  // 2. LONGUEUR 130-170 caractères = optimal (30 points) - Plus généreux pour IA
   const descLength = description.length;
   if (descLength >= 140 && descLength <= 160) {
     breakdown.length = 30; // Perfect - optimal SEO
   } else if (descLength >= 130 && descLength < 140) {
-    breakdown.length = 25; // Très bon
+    breakdown.length = 28; // Excellent
   } else if (descLength > 160 && descLength <= 170) {
-    breakdown.length = 25; // Très bon
+    breakdown.length = 28; // Excellent
   } else if (descLength >= 120 && descLength < 130) {
-    breakdown.length = 20; // Bon
+    breakdown.length = 24; // Très bon
   } else if (descLength > 170 && descLength <= 180) {
-    breakdown.length = 20; // Bon
+    breakdown.length = 22; // Très bon
   } else if (descLength >= 100 && descLength < 120) {
-    breakdown.length = 12; // Acceptable
+    breakdown.length = 18; // Bon
   } else if (descLength > 180 && descLength <= 200) {
-    breakdown.length = 10; // Un peu long
+    breakdown.length = 15; // Acceptable
   } else {
-    breakdown.length = 5; // Trop court ou trop long
+    breakdown.length = 8; // Trop court ou trop long
   }
 
   // 3. CONTIENT MOTS-CLÉS (30 points) - Généreux pour IA optimisé
@@ -297,26 +297,34 @@ export function calculateTagsScore(tags: string | null | undefined): number {
 /**
  * Calculate detailed SEO score combining title, description, and tags
  * Pondération: Title 35% + Description 35% + Tags 20% + Image 5% + URL 5%
+ * 
+ * @param optimizationCount - Number of times content was AI-optimized (adds +10 bonus if > 0)
  */
 export function calculateDetailedSeoScore(
   title: string | null | undefined,
   description: string | null | undefined,
   hasImage: boolean = false,
   hasUrl: boolean = false,
-  tags?: string | null
+  tags?: string | null,
+  optimizationCount?: number
 ): SeoScoreDetails {
   const titleScore = calculateTitleScore(title);
   const descScore = calculateDescriptionScore(description);
   const tagsScore = calculateTagsScore(tags);
   
   // Pondération : Title 35% + Description 35% + Tags 20% + Image 5% + URL 5%
-  const weightedScore = Math.round(
+  let weightedScore = Math.round(
     (titleScore.score * 0.35) +
     (descScore.score * 0.35) +
     (tagsScore * 1) + // Tags déjà sur 20 points
     (hasImage ? 5 : 0) +
     (hasUrl ? 5 : 0)
   );
+
+  // Bonus +10 points pour contenu optimisé par IA
+  if (optimizationCount && optimizationCount > 0) {
+    weightedScore = Math.min(100, weightedScore + 10);
+  }
 
   return {
     score: Math.min(100, weightedScore),
