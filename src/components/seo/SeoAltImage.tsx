@@ -343,6 +343,108 @@ export function SeoAltImage() {
     setShowResultsDialog(true);
   };
 
+  const handleOptimizeAllImages = async () => {
+    // Get all images without alt text
+    const imagesToOptimize = images.filter(img => !img.alt_text);
+
+    if (imagesToOptimize.length === 0) {
+      toast.info('Toutes les images ont déjà un texte ALT');
+      return;
+    }
+
+    // Check usage limits
+    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
+    
+    if (remainingLimit <= 0) {
+      if (limits?.isTrialing) {
+        toast.error(`Quota atteint: ${limits?.usage.optimizations_count}/${limits?.limits.max_optimizations} optimisations utilisées`);
+        setShowUpgradeDialog(true);
+        return;
+      } else {
+        toast.error('Limite mensuelle d\'optimisations atteinte');
+        return;
+      }
+    }
+
+    let finalImagesToOptimize = imagesToOptimize;
+    const willHitLimit = imagesToOptimize.length > remainingLimit;
+    
+    if (willHitLimit) {
+      if (limits?.isTrialing) {
+        // Trial users: show upgrade dialog
+        toast.warning(`Quota limité: ${remainingLimit}/${imagesToOptimize.length} images seront optimisées`);
+        toast.info('Passez à un plan payant pour optimiser les images restantes', { duration: 5000 });
+        finalImagesToOptimize = imagesToOptimize.slice(0, remainingLimit);
+      } else {
+        // Paid users: just notify
+        toast.warning(`Limite atteinte: seulement ${remainingLimit}/${imagesToOptimize.length} images seront optimisées ce mois-ci`);
+        finalImagesToOptimize = imagesToOptimize.slice(0, remainingLimit);
+      }
+    }
+
+    setGenerating(true);
+    setShowProgressDialog(true);
+    setIsOptimizationComplete(false);
+    setProgress({ current: 0, total: finalImagesToOptimize.length });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < finalImagesToOptimize.length; i++) {
+      try {
+        const img = finalImagesToOptimize[i];
+        const imageType = img.image_type || 'product';
+        
+        const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
+          body: { 
+            imageId: img.id,
+            imageType: imageType
+          }
+        });
+        
+        if (error) {
+          console.error('Error generating ALT text:', error);
+          errorCount++;
+        } else {
+          successCount++;
+        }
+        
+        setProgress({ current: i + 1, total: finalImagesToOptimize.length });
+      } catch (error) {
+        console.error('Error generating ALT text:', error);
+        errorCount++;
+      }
+    }
+
+    const remainingImages = imagesToOptimize.length - finalImagesToOptimize.length;
+
+    if (remainingImages > 0 && limits?.isTrialing) {
+      toast.info(
+        `${successCount} images optimisées. ${remainingImages} images restantes - Passez à un plan payant pour continuer`,
+        { duration: 6000 }
+      );
+      setTimeout(() => setShowUpgradeDialog(true), 1500);
+    } else if (remainingImages > 0) {
+      toast.info(`${successCount} images optimisées ce mois-ci. ${remainingImages} images en attente du prochain cycle`);
+    } else if (errorCount > 0) {
+      toast.warning(`${successCount} textes ALT générés, ${errorCount} erreurs`);
+    } else {
+      toast.success(`Toutes les images ont été optimisées avec succès! 🎉`);
+    }
+
+    setGenerating(false);
+    setIsOptimizationComplete(true);
+    await fetchImages();
+
+    // Show results
+    const refreshedImages = images.filter(img => 
+      finalImagesToOptimize.some(genImg => genImg.id === img.id)
+    );
+    setOptimizedImages(refreshedImages);
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
+  };
+
   const handleSyncSelected = async () => {
     const imagesToSync = images.filter(
       img => selectedImages.has(img.id) && img.alt_text
@@ -468,12 +570,22 @@ export function SeoAltImage() {
             </div>
             <Button
               size="lg"
-              onClick={() => toast.info('Sélectionnez des images ci-dessous')}
+              onClick={handleOptimizeAllImages}
+              disabled={generating || imagesNeedingAlt === 0 || limitsLoading}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
             >
-              <Eye className="w-5 h-5" />
-              Start Optimisation with AI Vision
-              <ArrowRight className="w-5 h-5" />
+              {generating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Optimisation en cours...
+                </>
+              ) : (
+                <>
+                  <Eye className="w-5 h-5" />
+                  Optimiser Toutes les Images ({imagesNeedingAlt})
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </Button>
           </div>
         </div>
