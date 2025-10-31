@@ -131,3 +131,6 @@ verify_jwt = true
 
 [functions.extract-netlinking-from-articles]
 verify_jwt = true
+
+[functions.generate-image]
+verify_jwt = true
