@@ -416,12 +416,12 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[SYNC-COLLECTION] Syncing to Shopify collection ${collection.shopify_collection_id}`);
 
-      // Update collection metafields
-      const metafields: any[] = [];
+      // Shopify collections use metafields for SEO data
+      // We need to create/update metafields individually
+      const metafieldsToSync: Array<{key: string, value: string, type: string}> = [];
 
       if (collection.seo_title) {
-        metafields.push({
-          namespace: "global",
+        metafieldsToSync.push({
           key: "title_tag",
           value: collection.seo_title,
           type: "single_line_text_field"
@@ -429,37 +429,47 @@ Deno.serve(async (req: Request) => {
       }
 
       if (collection.seo_description) {
-        metafields.push({
-          namespace: "global",
+        metafieldsToSync.push({
           key: "description_tag",
           value: collection.seo_description,
           type: "multi_line_text_field"
         });
       }
 
-      const updateData: any = {
-        collection: {
-          id: collection.shopify_collection_id,
-          metafields: metafields
-        }
-      };
+      // Sync each metafield using the correct Shopify REST API endpoint
+      for (const metafield of metafieldsToSync) {
+        const metafieldData = {
+          metafield: {
+            namespace: "global",
+            key: metafield.key,
+            value: metafield.value,
+            type: metafield.type,
+            owner_id: collection.shopify_collection_id,
+            owner_resource: "collection"
+          }
+        };
 
-      const shopifyResponse = await fetch(
-        `https://${shopUrl}/admin/api/2024-01/collections/${collection.shopify_collection_id}.json`,
-        {
-          method: "PUT",
-          headers: {
-            "X-Shopify-Access-Token": shopifyAccessToken,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updateData),
-        }
-      );
+        console.log(`[SYNC-COLLECTION] Creating/updating metafield ${metafield.key}`);
 
-      if (!shopifyResponse.ok) {
-        const errorText = await shopifyResponse.text();
-        console.error(`[SYNC-COLLECTION] Shopify API error:`, errorText);
-        throw new Error(`Erreur Shopify API (${shopifyResponse.status}): ${errorText}`);
+        const metafieldResponse = await fetch(
+          `https://${shopUrl}/admin/api/2024-01/metafields.json`,
+          {
+            method: "POST",
+            headers: {
+              "X-Shopify-Access-Token": shopifyAccessToken,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(metafieldData),
+          }
+        );
+
+        if (!metafieldResponse.ok) {
+          const errorText = await metafieldResponse.text();
+          console.error(`[SYNC-COLLECTION] Metafield ${metafield.key} sync error:`, errorText);
+          // Continue with other metafields even if one fails
+        } else {
+          console.log(`[SYNC-COLLECTION] ✅ Metafield ${metafield.key} synced successfully`);
+        }
       }
 
       // Track Shopify API usage
