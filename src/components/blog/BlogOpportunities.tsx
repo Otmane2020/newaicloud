@@ -286,6 +286,12 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
     }
   };
 
+  const handleRegenerate = async () => {
+    setRegenerating(true);
+    await loadOpportunities();
+    setRegenerating(false);
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
       case "comparison":
@@ -309,22 +315,36 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
 
   if (opportunities.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <Lightbulb className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">
-            No opportunities found. Import products first.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Lightbulb className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground mb-4">
+              Aucune opportunité détectée. Générez des opportunités basées sur votre catalogue.
+            </p>
+            <Button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              size="lg"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              {regenerating ? (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                  Analyse en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Générer opportunités IA
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
-
-  const handleRegenerate = async () => {
-    setRegenerating(true);
-    await loadOpportunities();
-    setRegenerating(false);
-  };
 
   return (
     <div className="space-y-4">

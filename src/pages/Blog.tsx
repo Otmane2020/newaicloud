@@ -142,12 +142,13 @@ export default function Blog() {
       icon: Sparkles, 
       description: 'Create an article with AI' 
     },
-    { 
-      id: 'campaigns', 
-      label: 'AI Campaigns', 
-      icon: CalendarClock, 
-      description: 'Scheduled automation' 
-    },
+    // Campaigns hidden temporarily
+    // { 
+    //   id: 'campaigns', 
+    //   label: 'AI Campaigns', 
+    //   icon: CalendarClock, 
+    //   description: 'Scheduled automation' 
+    // },
     { 
       id: 'opportunities', 
       label: 'Opportunities', 
