@@ -9,6 +9,7 @@ const corsHeaders = {
 interface SyncRequest {
   productId?: string;
   imageId?: string;
+  collectionId?: string;
   syncTags?: boolean;
   syncAltText?: boolean;
   syncGoogleShopping?: boolean;
@@ -57,7 +58,7 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    const { productId, imageId, syncTags, syncAltText, syncGoogleShopping }: SyncRequest = await req.json();
+    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping }: SyncRequest = await req.json();
 
     // Sync product SEO data
     if (productId) {
@@ -376,7 +377,113 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    throw new Error("Either productId or imageId must be provided");
+    // Sync collection SEO data
+    if (collectionId) {
+      console.log(`[SYNC-COLLECTION] Starting SEO sync for collection: ${collectionId}, user: ${user.id}`);
+      
+      const { data: collection, error: collectionError } = await supabaseClient
+        .from("shopify_collections")
+        .select("shopify_collection_id, seo_title, seo_description, store_id, user_id")
+        .eq("id", collectionId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (collectionError || !collection) {
+        console.error('[SYNC-COLLECTION] Collection fetch error:', collectionError);
+        throw new Error("Collection not found or unauthorized");
+      }
+
+      if (!collection.shopify_collection_id) {
+        throw new Error("Cette collection n'a pas d'ID Shopify");
+      }
+
+      // Get Shopify connection
+      const { data: storeConnection, error: storeError } = await supabaseClient
+        .from("shopify_connections")
+        .select("store_url, access_token")
+        .eq("id", collection.store_id)
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (storeError || !storeConnection) {
+        console.error('Store connection error:', storeError);
+        throw new Error("Store connection not found or inactive");
+      }
+
+      const shopUrl = storeConnection.store_url;
+      const shopifyAccessToken = storeConnection.access_token;
+
+      console.log(`[SYNC-COLLECTION] Syncing to Shopify collection ${collection.shopify_collection_id}`);
+
+      // Update collection metafields
+      const metafields: any[] = [];
+
+      if (collection.seo_title) {
+        metafields.push({
+          namespace: "global",
+          key: "title_tag",
+          value: collection.seo_title,
+          type: "single_line_text_field"
+        });
+      }
+
+      if (collection.seo_description) {
+        metafields.push({
+          namespace: "global",
+          key: "description_tag",
+          value: collection.seo_description,
+          type: "multi_line_text_field"
+        });
+      }
+
+      const updateData: any = {
+        collection: {
+          id: collection.shopify_collection_id,
+          metafields: metafields
+        }
+      };
+
+      const shopifyResponse = await fetch(
+        `https://${shopUrl}/admin/api/2024-01/collections/${collection.shopify_collection_id}.json`,
+        {
+          method: "PUT",
+          headers: {
+            "X-Shopify-Access-Token": shopifyAccessToken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updateData),
+        }
+      );
+
+      if (!shopifyResponse.ok) {
+        const errorText = await shopifyResponse.text();
+        console.error(`[SYNC-COLLECTION] Shopify API error:`, errorText);
+        throw new Error(`Erreur Shopify API (${shopifyResponse.status}): ${errorText}`);
+      }
+
+      // Track Shopify API usage
+      await supabaseAdmin.rpc('increment_usage', {
+        p_seller_id: user.id,
+        p_field: 'shopify_requests_count',
+        p_increment: 1
+      });
+
+      console.log(`[SYNC-COLLECTION] ✅ Successfully synced collection ${collection.shopify_collection_id}`);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Collection SEO synced to Shopify successfully",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    throw new Error("Either productId, imageId, or collectionId must be provided");
   } catch (error) {
     console.error("Sync error:", error);
 

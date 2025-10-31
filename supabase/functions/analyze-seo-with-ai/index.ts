@@ -31,131 +31,78 @@ Deno.serve(async (req) => {
 
     const analysisData: SeoAnalysisInput = await req.json();
 
-    // Prepare detailed analysis prompt
-    const analysisPrompt = `Tu es un expert SEO spécialisé dans l'analyse de boutiques e-commerce Shopify. Analyse en profondeur les données suivantes et génère un rapport SEO actionnable.
+    // Prepare concise analysis prompt for automated actions
+    const input = {
+      storeName: analysisData.storeName,
+      storeUrl: analysisData.storeUrl,
+      productsCount: analysisData.products.length,
+      collectionsCount: analysisData.collections.length,
+      articlesCount: analysisData.articles.length,
+      pagesCount: analysisData.pages.length,
+      metaTitles: {
+        long: analysisData.metaTitlesIssues.long?.length || 0,
+        short: analysisData.metaTitlesIssues.short?.length || 0,
+        missing: analysisData.metaTitlesIssues.missing?.length || 0,
+        duplicates: analysisData.metaTitlesIssues.duplicates?.length || 0
+      },
+      metaDescriptions: {
+        long: analysisData.metaDescriptionsIssues.long?.length || 0,
+        short: analysisData.metaDescriptionsIssues.short?.length || 0,
+        missing: analysisData.metaDescriptionsIssues.missing?.length || 0,
+        duplicates: analysisData.metaDescriptionsIssues.duplicates?.length || 0
+      },
+      imageAlt: {
+        missing: analysisData.imageAltIssues.missing?.length || 0,
+        optimized: analysisData.imageAltIssues.optimized?.length || 0
+      },
+      sampleProducts: analysisData.products.slice(0, 3),
+      sampleCollections: analysisData.collections.slice(0, 3),
+      sampleArticles: analysisData.articles.slice(0, 3)
+    };
 
-# DONNÉES DE LA BOUTIQUE
+    const analysisPrompt = `Tu es un expert SEO pour boutiques Shopify. Analyse ces données et fournis un rapport CONCIS en français.
 
-## Informations générales
-- Nom: ${analysisData.storeName}
-- URL: ${analysisData.storeUrl}
-- Nombre de produits: ${analysisData.products.length}
-- Nombre de collections: ${analysisData.collections.length}
-- Nombre d'articles blog: ${analysisData.articles.length}
-- Nombre de pages: ${analysisData.pages.length}
+**Boutique:** ${input.storeName}
+**Données:** ${input.productsCount} produits, ${input.collectionsCount} collections, ${input.articlesCount} articles
 
-## Page d'accueil
-${JSON.stringify(analysisData.homepageData, null, 2)}
+**Problèmes:**
+- Titres: ${input.metaTitles.long} longs, ${input.metaTitles.short} courts, ${input.metaTitles.missing} manquants
+- Descriptions: ${input.metaDescriptions.long} longues, ${input.metaDescriptions.short} courtes, ${input.metaDescriptions.missing} manquantes
+- Images: ${input.imageAlt.missing} sans alt
 
-## Problèmes Meta Titles
-- Titres trop longs: ${analysisData.metaTitlesIssues.long?.length || 0}
-- Titres trop courts: ${analysisData.metaTitlesIssues.short?.length || 0}
-- Titres manquants: ${analysisData.metaTitlesIssues.missing?.length || 0}
-- Titres dupliqués: ${analysisData.metaTitlesIssues.duplicates?.length || 0}
-
-## Problèmes Meta Descriptions
-- Descriptions trop longues: ${analysisData.metaDescriptionsIssues.long?.length || 0}
-- Descriptions trop courtes: ${analysisData.metaDescriptionsIssues.short?.length || 0}
-- Descriptions manquantes: ${analysisData.metaDescriptionsIssues.missing?.length || 0}
-- Descriptions dupliquées: ${analysisData.metaDescriptionsIssues.duplicates?.length || 0}
-
-## Images ALT
-- Images sans ALT: ${analysisData.imageAltIssues.missing?.length || 0}
-- Images optimisées: ${analysisData.imageAltIssues.optimized?.length || 0}
-
-## Échantillon de produits (premiers 5)
-${JSON.stringify(analysisData.products.slice(0, 5), null, 2)}
-
-## Échantillon de collections (premiers 3)
-${JSON.stringify(analysisData.collections.slice(0, 3), null, 2)}
-
-## Échantillon d'articles blog (premiers 3)
-${JSON.stringify(analysisData.articles.slice(0, 3), null, 2)}
-
-# TA MISSION
-
-Analyse ces données et génère un rapport SEO complet comprenant:
-
-1. **DIAGNOSTIC GLOBAL** (2-3 paragraphes)
-   - État actuel du SEO de la boutique
-   - Points forts identifiés
-   - Problèmes critiques détectés
-   
-2. **SCORES DÉTAILLÉS** (sur 100 pour chaque catégorie)
-   - Homepage: score + justification
-   - Produits: score + justification
-   - Collections: score + justification
-   - Blog: score + justification
-   - Technique: score + justification
-   
-3. **PROBLÈMES CRITIQUES** (top 5-7)
-   - Identifier les problèmes les plus graves
-   - Expliquer leur impact sur le référencement
-   - Chiffrer l'impact potentiel (trafic perdu estimé)
-   
-4. **OPPORTUNITÉS QUICK WINS** (top 3-5)
-   - Actions à faible effort / fort impact
-   - Temps estimé pour chaque action
-   - Gain SEO attendu
-   
-5. **PLAN D'ACTION PRIORISÉ** (10-15 actions)
-   - Actions classées par priorité (Haute/Moyenne/Basse)
-   - Pour chaque action:
-     * Titre court et clair
-     * Description détaillée (comment faire)
-     * Impact SEO estimé
-     * Effort requis (heures)
-     * Catégorie (Technique, Contenu, Liens, etc.)
-     
-6. **PRÉDICTIONS & OBJECTIFS**
-   - Estimation du trafic organique dans 3 mois si les actions sont réalisées
-   - Objectifs de ranking pour les mots-clés principaux
-   - ROI estimé de l'optimisation SEO
-
-Réponds UNIQUEMENT en JSON avec cette structure exacte:
+**JSON à retourner (CONCIS, PROFESSIONNEL):**
 {
-  "diagnostic": "string (2-3 paragraphes détaillés)",
+  "diagnostic": "Diagnostic en 4-5 lignes maximum. Clair, précis, professionnel.",
   "scores": {
-    "homepage": {"score": number, "justification": "string"},
-    "products": {"score": number, "justification": "string"},
-    "collections": {"score": number, "justification": "string"},
-    "blog": {"score": number, "justification": "string"},
-    "technical": {"score": number, "justification": "string"}
+    "blog": { "score": 0-100, "justification": "1-2 lignes max" },
+    "homepage": { "score": 0-100, "justification": "1-2 lignes max" },
+    "products": { "score": 0-100, "justification": "1-2 lignes max" },
+    "technical": { "score": 0-100, "justification": "1-2 lignes max" },
+    "collections": { "score": 0-100, "justification": "1-2 lignes max" }
   },
-  "criticalIssues": [
-    {
-      "title": "string",
-      "description": "string",
-      "impact": "string",
-      "estimatedTrafficLoss": "string"
-    }
-  ],
-  "quickWins": [
-    {
-      "title": "string",
-      "description": "string",
-      "estimatedTime": "string",
-      "expectedGain": "string"
-    }
-  ],
-  "actionPlan": [
-    {
-      "title": "string",
-      "description": "string",
-      "priority": "Haute" | "Moyenne" | "Basse",
-      "category": "string",
-      "estimatedImpact": "string",
-      "effortHours": number
-    }
-  ],
-  "predictions": {
-    "trafficIn3Months": "string",
-    "keywordGoals": ["string"],
-    "estimatedROI": "string"
+  "actionsByCategory": {
+    "products": [
+      {
+        "title": "Titre action (ex: Optimiser les titres SEO)",
+        "count": "Nombre d'éléments à traiter",
+        "impact": "Élevé/Modéré",
+        "automated": true
+      }
+    ],
+    "collections": [...],
+    "blog": [...],
+    "images": [...],
+    "homepage": [...]
   }
-}`;
+}
 
-    console.log('🤖 Calling Lovable AI for deep SEO analysis...');
+RÈGLES STRICTES:
+- Diagnostic: 4-5 lignes MAX
+- Justifications: 1-2 lignes MAX
+- Actions automatisées par NewAI (automated: true)
+- Concis, professionnel, actionnable`;
+
+    console.log('🤖 Calling Lovable AI for concise SEO analysis...');
 
     // Call Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -169,14 +116,15 @@ Réponds UNIQUEMENT en JSON avec cette structure exacte:
         messages: [
           {
             role: 'system',
-            content: 'Tu es un expert SEO spécialisé dans l\'optimisation de boutiques e-commerce Shopify. Tu fournis des analyses détaillées, actionnables et mesurables.'
+            content: 'Expert SEO e-commerce. Réponds UNIQUEMENT avec un JSON valide, sans texte avant/après. SOIS CONCIS.'
           },
           {
             role: 'user',
             content: analysisPrompt
           }
         ],
-        response_format: { type: 'json_object' }
+        temperature: 0.7,
+        max_tokens: 2000
       }),
     });
 

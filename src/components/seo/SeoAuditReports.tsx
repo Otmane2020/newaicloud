@@ -585,6 +585,40 @@ export function SeoAuditReports() {
           {renderAuditSection('🔍 Analyse Technique', homepageData.technical)}
           {renderAuditSection('💡 Contenu & Sémantique', homepageData.content)}
           
+          {/* Automated Actions */}
+          {latestReport?.audit_results?.aiAnalysis?.actionsByCategory?.homepage && (
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-600" />
+                  Actions Automatisées NewAI
+                </CardTitle>
+                <CardDescription>Actions rapides optimisées par l'IA</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {latestReport.audit_results.aiAnalysis.actionsByCategory.homepage.map((action: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">{action.title}</span>
+                          <Badge variant={action.impact === 'Élevé' ? 'destructive' : 'secondary'} className="text-xs">
+                            {action.impact}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{action.count} éléments à optimiser</p>
+                      </div>
+                      <Button size="sm" className="gap-2">
+                        <Zap className="w-4 h-4" />
+                        Optimiser
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -610,38 +644,119 @@ export function SeoAuditReports() {
           {renderScoreCard(productData)}
           {renderAuditSection('🛍️ Éléments SEO Produit', productData.elements)}
           
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-                Score IA
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span>Qualité IA</span>
-                  <Badge className="bg-green-100 dark:bg-green-950 text-green-700">{productData.aiQuality.score}%</Badge>
+          {/* Automated Actions */}
+          {latestReport?.audit_results?.aiAnalysis?.actionsByCategory?.products && (
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-600" />
+                  Actions Automatisées NewAI
+                </CardTitle>
+                <CardDescription>Actions rapides optimisées par l'IA</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {latestReport.audit_results.aiAnalysis.actionsByCategory.products.map((action: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">{action.title}</span>
+                          <Badge variant={action.impact === 'Élevé' ? 'destructive' : 'secondary'} className="text-xs">
+                            {action.impact}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{action.count} éléments à optimiser</p>
+                      </div>
+                      <Button size="sm" className="gap-2">
+                        <Zap className="w-4 h-4" />
+                        Optimiser
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-                <Progress value={productData.aiQuality.score} className="h-2" />
-                <div className="text-sm text-muted-foreground">
-                  AI Quality {productData.aiQuality.score}% | Human Edit {productData.aiQuality.humanEdit}%
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Collections Report */}
         <TabsContent value="collections" className="space-y-6">
           {renderScoreCard(collectionData)}
           {renderAuditSection('🧩 Analyse Collection', collectionData.elements)}
+          
+          {/* Automated Actions */}
+          {latestReport?.audit_results?.aiAnalysis?.actionsByCategory?.collections && (
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-600" />
+                  Actions Automatisées NewAI
+                </CardTitle>
+                <CardDescription>Actions rapides optimisées par l'IA</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {latestReport.audit_results.aiAnalysis.actionsByCategory.collections.map((action: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">{action.title}</span>
+                          <Badge variant={action.impact === 'Élevé' ? 'destructive' : 'secondary'} className="text-xs">
+                            {action.impact}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{action.count} éléments à optimiser</p>
+                      </div>
+                      <Button size="sm" className="gap-2">
+                        <Zap className="w-4 h-4" />
+                        Optimiser
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Blog Report */}
         <TabsContent value="blog" className="space-y-6">
           {renderScoreCard(blogData)}
           {renderAuditSection('📝 Analyse Article', blogData.elements)}
+          
+          {/* Automated Actions */}
+          {latestReport?.audit_results?.aiAnalysis?.actionsByCategory?.blog && (
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-600" />
+                  Actions Automatisées NewAI
+                </CardTitle>
+                <CardDescription>Actions rapides optimisées par l'IA</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {latestReport.audit_results.aiAnalysis.actionsByCategory.blog.map((action: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">{action.title}</span>
+                          <Badge variant={action.impact === 'Élevé' ? 'destructive' : 'secondary'} className="text-xs">
+                            {action.impact}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{action.count} éléments à optimiser</p>
+                      </div>
+                      <Button size="sm" className="gap-2">
+                        <Zap className="w-4 h-4" />
+                        Optimiser
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Global Report */}
@@ -679,6 +794,40 @@ export function SeoAuditReports() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Images ALT Actions */}
+          {latestReport?.audit_results?.aiAnalysis?.actionsByCategory?.images && (
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5" />
+                  Optimisation Images ALT
+                </CardTitle>
+                <CardDescription>Actions automatisées pour les images</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {latestReport.audit_results.aiAnalysis.actionsByCategory.images.map((action: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">{action.title}</span>
+                          <Badge variant={action.impact === 'Élevé' ? 'destructive' : 'secondary'} className="text-xs">
+                            {action.impact}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{action.count} images à optimiser</p>
+                      </div>
+                      <Button size="sm" className="gap-2">
+                        <Zap className="w-4 h-4" />
+                        Optimiser
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
