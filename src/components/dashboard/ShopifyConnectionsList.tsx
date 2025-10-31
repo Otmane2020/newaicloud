@@ -11,7 +11,6 @@ import { ImportProgressDialog } from './ImportProgressDialog';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { ImportConfirmDialog } from '@/components/integration/ImportConfirmDialog';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 
 import {
   AlertDialog,
@@ -68,17 +67,54 @@ export function ShopifyConnectionsList() {
   // Import confirmation dialog state
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [storeToImport, setStoreToImport] = useState<ShopifyConnection | null>(null);
-  
-  // Edit store name state
-  const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
-  const [editedStoreName, setEditedStoreName] = useState('');
-  
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     loadConnections();
     checkUsageLimits();
+    updateStoreNames();
   }, []);
+  
+  const updateStoreNames = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: connections } = await supabase
+        .from('shopify_connections')
+        .select('id, store_url, store_name, access_token')
+        .eq('user_id', user.id)
+        .is('store_name', null);
+
+      if (!connections || connections.length === 0) return;
+
+      for (const conn of connections) {
+        try {
+          const response = await fetch(`https://${conn.store_url}/admin/api/2025-10/shop.json`, {
+            headers: {
+              'X-Shopify-Access-Token': conn.access_token,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const shopData = await response.json();
+            if (shopData.shop?.name) {
+              await supabase
+                .from('shopify_connections')
+                .update({ store_name: shopData.shop.name })
+                .eq('id', conn.id);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching shop name:', error);
+        }
+      }
+      
+      loadConnections();
+    } catch (error) {
+      console.error('Error updating store names:', error);
+    }
+  };
   
   // Check if just connected a store and show import dialog
   useEffect(() => {
@@ -443,49 +479,9 @@ export function ShopifyConnectionsList() {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      {editingStoreId === store.id ? (
-                        <input
-                          type="text"
-                          value={editedStoreName}
-                          onChange={(e) => setEditedStoreName(e.target.value)}
-                          onBlur={async () => {
-                            if (editedStoreName.trim()) {
-                              const { error } = await supabase
-                                .from('shopify_connections')
-                                .update({ store_name: editedStoreName.trim() })
-                                .eq('id', store.id);
-                              
-                              if (!error) {
-                                loadConnections();
-                                toast.success('Nom de boutique mis à jour');
-                              } else {
-                                toast.error('Erreur lors de la mise à jour');
-                              }
-                            }
-                            setEditingStoreId(null);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.currentTarget.blur();
-                            } else if (e.key === 'Escape') {
-                              setEditingStoreId(null);
-                            }
-                          }}
-                          className="font-semibold text-lg px-2 py-1 border rounded max-w-xs"
-                          autoFocus
-                        />
-                      ) : (
-                        <h3 
-                          className="font-semibold text-lg truncate cursor-pointer hover:text-primary transition-colors"
-                          onClick={() => {
-                            setEditingStoreId(store.id);
-                            setEditedStoreName(store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, ''));
-                          }}
-                          title="Cliquer pour modifier le nom"
-                        >
-                          {store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '') || 'Shopify Store'}
-                        </h3>
-                      )}
+                      <h3 className="font-semibold text-lg truncate">
+                        {store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '') || 'Shopify Store'}
+                      </h3>
                       <Badge variant={store.is_active ? 'default' : 'secondary'}>
                         {store.is_active ? (
                           <>
