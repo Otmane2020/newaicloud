@@ -6,6 +6,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+function extractImagesFromHtml(html: string): Array<{ src: string; alt: string | null }> {
+  const images: Array<{ src: string; alt: string | null }> = [];
+  const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*(?:alt=["']([^"']*)["'])?[^>]*>/gi;
+  let match;
+  
+  while ((match = imgRegex.exec(html)) !== null) {
+    images.push({
+      src: match[1],
+      alt: match[2] || null
+    });
+  }
+  
+  return images;
+}
+
 interface ShopifyArticle {
   id: number;
   title: string;
@@ -227,39 +242,62 @@ Deno.serve(async (req: Request) => {
       store_id: articlesToInsert[0]?.store_id
     }, null, 2));
 
-    // Step 4: Insert articles into database
+    // Step 4: Insert articles into database and extract images
     console.log('💾 Inserting articles into database...');
-    const { data: insertedArticles, error: insertError } = await supabaseServiceClient
-      .from('blog_articles')
-      .upsert(articlesToInsert, {
-        onConflict: 'shopify_article_id',
-        ignoreDuplicates: false,
-      })
-      .select();
+    let importedCount = 0;
+    let totalImagesImported = 0;
 
-    if (insertError) {
-      console.error('❌ Database insertion error:', {
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-        code: insertError.code
-      });
-      return new Response(
-        JSON.stringify({ 
-          error: `Failed to save articles: ${insertError.message}`,
-          details: insertError.details 
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+    for (const article of allArticles) {
+      const articleData = articlesToInsert[importedCount];
+      
+      const { data: dbArticle, error: articleError } = await supabaseServiceClient
+        .from('blog_articles')
+        .upsert(articleData, {
+          onConflict: 'shopify_article_id',
+          ignoreDuplicates: false,
+        })
+        .select()
+        .single();
+
+      if (articleError) {
+        console.error(`❌ Error upserting article ${article.id}:`, articleError);
+        continue;
+      }
+
+      // Extract and import images from article body_html
+      if (article.body_html && dbArticle) {
+        const images = extractImagesFromHtml(article.body_html);
+        console.log(`📸 Found ${images.length} images in article: ${article.title}`);
+        
+        for (let i = 0; i < images.length; i++) {
+          const { error: imageError } = await supabaseServiceClient
+            .from('content_images')
+            .upsert({
+              user_id: user.id,
+              store_id: storeId,
+              content_type: 'article',
+              content_id: dbArticle.id,
+              src: images[i].src,
+              alt_text: images[i].alt,
+              position: i
+            }, {
+              onConflict: 'user_id,content_type,content_id,src'
+            });
+
+          if (!imageError) {
+            totalImagesImported++;
+          }
         }
-      );
+      }
+
+      importedCount++;
     }
 
-    console.log(`✅ Successfully imported ${insertedArticles?.length || 0} articles`);
+    console.log(`✅ Successfully imported ${importedCount} articles and ${totalImagesImported} images`);
     console.log('📈 Import statistics:', {
       total_fetched: allArticles.length,
-      successfully_inserted: insertedArticles?.length || 0,
+      successfully_inserted: importedCount,
+      images_imported: totalImagesImported,
       store_id: storeId
     });
 
@@ -269,8 +307,9 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: true,
-        count: insertedArticles?.length || 0,
-        message: `Successfully imported ${insertedArticles?.length || 0} blog articles`,
+        count: importedCount,
+        images: totalImagesImported,
+        message: `Successfully imported ${importedCount} blog articles and ${totalImagesImported} images`,
       }),
       {
         status: 200,

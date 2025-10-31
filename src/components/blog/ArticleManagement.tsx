@@ -119,20 +119,37 @@ export function ArticleManagement() {
   const handleImportArticles = async () => {
     try {
       setSyncing(true);
-      toast.info('Importing articles from Shopify...');
+      const toastId = toast.loading('Importing articles from Shopify...');
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      const { data: storeData } = await supabase
+        .from('shopify_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
+
+      if (!storeData) {
+        toast.error("Aucune connexion Shopify active", { id: toastId });
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke('import-shopify-articles', {
-        body: {}
+        body: { 
+          shopName: storeData.store_url.replace('.myshopify.com', ''),
+          authToken: storeData.access_token,
+          storeId: storeData.id
+        }
       });
 
       if (error) throw error;
 
-      if (data?.success) {
-        toast.success(`${data.articlesImported || 0} articles imported from Shopify`);
-        await fetchArticles();
-      } else {
-        throw new Error(data?.error || 'Import error');
-      }
+      const totalArticles = data?.count || 0;
+      const totalImages = data?.images || 0;
+      toast.success(`✅ ${totalArticles} articles et ${totalImages} images importés`, { id: toastId });
+      await fetchArticles();
     } catch (error: any) {
       console.error('Error:', error);
       toast.error(error.message || 'Failed to import articles');
