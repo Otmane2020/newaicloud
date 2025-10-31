@@ -44,10 +44,10 @@ serve(async (req) => {
     // Get active Shopify connection with error handling
     const { data: connection, error: connError } = await supabaseClient
       .from('shopify_connections')
-      .select('shop_url, access_token')
+      .select('store_url, access_token')
       .eq('user_id', user.id)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
     if (connError || !connection) {
       return new Response(
@@ -56,7 +56,7 @@ serve(async (req) => {
       );
     }
 
-    const shopUrl = connection.shop_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const shopUrl = connection.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const homepageUrl = `https://${shopUrl}`;
 
     console.log('Analyzing homepage SEO for:', homepageUrl);
