@@ -85,6 +85,21 @@ export function CollectionImageDialog({
 
       if (data?.image_url) {
         await updateCollectionImage(data.image_url);
+        
+        // Show success with image preview
+        toast.success(
+          <div className="flex items-start gap-3">
+            <img 
+              src={data.image_url} 
+              alt="Generated" 
+              className="w-16 h-16 rounded object-cover"
+            />
+            <div>
+              <p className="font-semibold">Image générée avec succès</p>
+              <p className="text-xs text-muted-foreground">Synchronisation avec Shopify en cours...</p>
+            </div>
+          </div>
+        );
       } else {
         toast.error('Erreur lors de la génération de l\'image');
       }
@@ -119,13 +134,22 @@ export function CollectionImageDialog({
       .from('shopify_collections')
       .update({ 
         image_url: imageUrl,
+        image_alt: `${collection.title} - Collection image`,
         updated_at: new Date().toISOString()
       })
       .eq('id', collection.id);
 
     if (error) throw error;
 
-    toast.success('Image mise à jour avec succès');
+    // Trigger auto-sync with Shopify
+    try {
+      await supabase.functions.invoke('sync-collection-image-to-shopify', {
+        body: { collection_id: collection.id }
+      });
+    } catch (syncError) {
+      console.error('Sync error (non-blocking):', syncError);
+    }
+
     onImageUpdated();
     onOpenChange(false);
     setSelectedOption(null);

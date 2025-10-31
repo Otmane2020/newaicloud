@@ -56,6 +56,21 @@ Context: ${article.content.substring(0, 200)}...`;
 
       if (data?.image_url) {
         await updateArticleImage(data.image_url);
+        
+        // Show success with image preview
+        toast.success(
+          <div className="flex items-start gap-3">
+            <img 
+              src={data.image_url} 
+              alt="Generated" 
+              className="w-16 h-16 rounded object-cover"
+            />
+            <div>
+              <p className="font-semibold">Image générée avec succès</p>
+              <p className="text-xs text-muted-foreground">Synchronisation avec Shopify en cours...</p>
+            </div>
+          </div>
+        );
       } else {
         toast.error('Erreur lors de la génération de l\'image');
       }
@@ -90,13 +105,22 @@ Context: ${article.content.substring(0, 200)}...`;
       .from('blog_articles')
       .update({ 
         featured_image: imageUrl,
+        featured_image_alt: `${article.title} - Featured image`,
         updated_at: new Date().toISOString()
       })
       .eq('id', article.id);
 
     if (error) throw error;
 
-    toast.success('Image mise à jour avec succès');
+    // Trigger auto-sync with Shopify
+    try {
+      await supabase.functions.invoke('sync-blog-to-shopify', {
+        body: { article_id: article.id }
+      });
+    } catch (syncError) {
+      console.error('Sync error (non-blocking):', syncError);
+    }
+
     onImageUpdated();
     handleClose();
   };

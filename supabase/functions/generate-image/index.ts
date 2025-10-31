@@ -28,7 +28,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Generate image using Lovable AI (Nano banana model)
+    // Generate image using Lovable AI (Nano banana model) - SQUARE FORMAT
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -40,7 +40,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'user',
-            content: prompt
+            content: `${prompt}. IMPORTANT: Generate a square image (1:1 aspect ratio, 1024x1024 pixels). The image must be perfectly square.`
           }
         ],
         modalities: ['image', 'text']
