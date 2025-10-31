@@ -18,35 +18,172 @@ interface Product {
   style?: string;
   vendor?: string;
   tags?: string;
+  seller_id: string;
+  optimization_count?: number;
+  product_images?: Array<{ src: string; position: number }>;
 }
 
-async function callDeepSeek(messages: any[], maxTokens = 500) {
-  const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+interface VisionAnalysis {
+  visualAttributes: {
+    primaryColor: string;
+    secondaryColors: string[];
+    materials: string[];
+    style: string;
+    room: string;
+    mood: string;
+    technicalDetails: string[];
+  };
+  confidence: number;
+}
+
+interface SeoResult {
+  seo_title: string;
+  seo_description: string;
+  keywords?: string[];
+  character_count?: {
+    title: number;
+    description: number;
+  };
+}
+
+// Enhanced DeepSeek caller with retry logic
+async function callDeepSeek(messages: any[], maxTokens = 500, retries = 3): Promise<any> {
+  const deepseekApiKey = Deno.env.get("DEEPSEEK_API_KEY");
 
   if (!deepseekApiKey) {
-    throw new Error('DeepSeek API key not configured');
+    throw new Error("DeepSeek API key not configured");
   }
 
-  const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${deepseekApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages,
-      temperature: 0.7,
-      max_tokens: maxTokens,
-    }),
-  });
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${deepseekApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages,
+          temperature: 0.7,
+          max_tokens: maxTokens,
+          stream: false,
+        }),
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+      if (!response.ok) {
+        if (response.status === 429 && attempt < retries) {
+          // Rate limited, wait and retry
+          const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff
+          console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt}`);
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          continue;
+        }
+
+        const errorText = await response.text();
+        throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (attempt === retries) {
+        throw error;
+      }
+      console.log(`Attempt ${attempt} failed, retrying...`, error);
+    }
+  }
+}
+
+// Enhanced SEO content validator
+function validateSeoContent(seoTitle: string, seoDescription: string): { isValid: boolean; issues: string[] } {
+  const issues: string[] = [];
+
+  // Title validation
+  if (seoTitle.length < 30) {
+    issues.push(`Titre SEO trop court: ${seoTitle.length} caractères (minimum 30 recommandé)`);
+  }
+  if (seoTitle.length > 65) {
+    issues.push(`Titre SEO trop long: ${seoTitle.length} caractères (maximum 65 recommandé)`);
   }
 
-  return await response.json();
+  // Description validation
+  if (seoDescription.length < 120) {
+    issues.push(`Description SEO trop courte: ${seoDescription.length} caractères (minimum 120 recommandé)`);
+  }
+  if (seoDescription.length > 165) {
+    issues.push(`Description SEO trop longue: ${seoDescription.length} caractères (maximum 165 recommandé)`);
+  }
+
+  // Content quality checks
+  if (!seoTitle.match(/[a-zA-ZÀ-ÿ]/)) {
+    issues.push("Le titre SEO ne contient pas de texte valide");
+  }
+  if (!seoDescription.match(/[a-zA-ZÀ-ÿ]/)) {
+    issues.push("La description SEO ne contient pas de texte valide");
+  }
+
+  return {
+    isValid: issues.length === 0,
+    issues,
+  };
+}
+
+// Enhanced product data extractor
+function extractProductKeywords(product: Product): string[] {
+  const keywords: string[] = [];
+
+  // Extract from title
+  if (product.title) {
+    keywords.push(
+      ...product.title
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((word) => word.length > 3),
+    );
+  }
+
+  // Extract from product type and category
+  if (product.product_type) keywords.push(product.product_type.toLowerCase());
+  if (product.category) keywords.push(product.category.toLowerCase());
+  if (product.sub_category) keywords.push(product.sub_category.toLowerCase());
+
+  // Extract from attributes
+  if (product.ai_color) keywords.push(product.ai_color.toLowerCase());
+  if (product.ai_material) keywords.push(product.ai_material.toLowerCase());
+  if (product.style) keywords.push(product.style.toLowerCase());
+  if (product.vendor) keywords.push(product.vendor.toLowerCase());
+
+  // Extract from tags
+  if (product.tags) {
+    keywords.push(...product.tags.split(",").map((tag) => tag.trim().toLowerCase()));
+  }
+
+  // Remove duplicates and short words
+  return [...new Set(keywords)].filter((word) => word.length > 2);
+}
+
+// Enhanced vision context builder
+function buildVisionContext(visionData: VisionAnalysis | null): string {
+  if (!visionData?.visualAttributes) return "";
+
+  const attrs = visionData.visualAttributes;
+  return `
+
+**ANALYSE VISUELLE IA (À intégrer naturellement dans le SEO):**
+- Couleur principale: ${attrs.primaryColor}
+- Couleurs secondaires: ${attrs.secondaryColors?.join(", ") || "Non détectées"}
+- Matériaux identifiés: ${attrs.materials?.join(", ") || "Non spécifiés"}
+- Style visuel: ${attrs.style}
+- Contexte d'usage: ${attrs.room || "Non spécifié"}
+- Ambiance: ${attrs.mood}
+- Détails techniques visibles: ${attrs.technicalDetails?.join(", ") || "Aucun"}
+- Confiance de l'analyse: ${(visionData.confidence * 100).toFixed(0)}%
+
+**CONSIGNES IMPORTANTES:**
+- Intégrez ces attributs visuels naturellement dans le titre et la description
+- Utilisez les couleurs et matériaux comme mots-clés supplémentaires
+- Mettez en avant le style et l'ambiance détectés
+- Rendez la description plus immersive grâce aux détails visuels`;
 }
 
 Deno.serve(async (req: Request) => {
@@ -58,278 +195,356 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    const { productId } = await req.json();
-
-    if (!productId) {
-      return new Response(
-        JSON.stringify({ error: "Product ID is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    // Validate request method
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Méthode non autorisée. Utilisez POST." }), {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+
+    // Parse request body with validation
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Corps de requête JSON invalide" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { productId } = requestBody;
+
+    if (!productId) {
+      return new Response(JSON.stringify({ error: "ID produit requis" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log(`[SEO-GENERATION] Début pour le produit: ${productId}`);
+
+    // Fetch product with enhanced error handling
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
       .select("*, optimization_count, product_images(src, position)")
       .eq("id", productId)
       .maybeSingle();
 
-    if (productError || !product) {
-      return new Response(
-        JSON.stringify({ error: "Product not found" }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    if (productError) {
+      console.error("[SEO-GENERATION] Erreur base de données:", productError);
+      throw new Error("Erreur lors de la récupération du produit");
     }
 
-    // Vérifier le statut trial du user
+    if (!product) {
+      return new Response(JSON.stringify({ error: "Produit non trouvé" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Enhanced trial and subscription check
     const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('subscription_status')
-      .eq('id', product.seller_id)
+      .from("profiles")
+      .select("subscription_status, trial_used_optimizations")
+      .eq("id", product.seller_id)
       .single();
 
-    // Si en trial et produit déjà optimisé, bloquer
-    if (profile?.subscription_status === 'trialing' && (product.optimization_count || 0) >= 1) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'trial_product_already_optimized',
-          message: 'Ce produit a déjà été optimisé pendant votre période d\'essai. Activez votre abonnement pour ré-optimiser.'
-        }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const currentOptimizations = product.optimization_count || 0;
+
+    if (profile?.subscription_status === "trialing") {
+      const trialOptimizationsUsed = profile.trial_used_optimizations || 0;
+
+      if (trialOptimizationsUsed >= 5) {
+        // Limite d'essai: 5 optimisations
+        return new Response(
+          JSON.stringify({
+            error: "trial_limit_reached",
+            message:
+              "Vous avez atteint la limite d'optimisations de votre essai. Activez votre abonnement pour continuer.",
+            limit: 5,
+            used: trialOptimizationsUsed,
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
-    console.log(`Generating SEO with DeepSeek for product: ${product.title}`);
-    
-    // Try to get Vision AI analysis if product has images
-    let visionData = null;
+    console.log(`[SEO-GENERATION] Génération SEO avec DeepSeek pour: ${product.title}`);
+
+    // Enhanced Vision AI analysis
+    let visionData: VisionAnalysis | null = null;
     const featuredImage = product.product_images?.find((img: any) => img.position === 0) || product.product_images?.[0];
-    
+
     if (featuredImage?.src) {
-      console.log('Attempting Vision AI analysis for image:', featuredImage.src);
-      
+      console.log("[SEO-GENERATION] Tentative d'analyse visuelle IA");
+
       try {
-        const visionResponse = await supabaseClient.functions.invoke('analyze-image-with-vision', {
+        const visionResponse = await supabaseClient.functions.invoke("analyze-image-with-vision", {
           body: {
             imageUrl: featuredImage.src,
             productContext: {
               title: product.title,
               category: product.category,
-              type: product.product_type
-            }
-          }
+              type: product.product_type,
+              existingAttributes: {
+                color: product.ai_color,
+                material: product.ai_material,
+                style: product.style,
+              },
+            },
+          },
         });
 
         if (!visionResponse.error && visionResponse.data) {
           visionData = visionResponse.data;
-          console.log('Vision AI analysis successful:', visionData);
+          console.log("[SEO-GENERATION] Analyse visuelle réussie");
         } else {
-          console.log('Vision AI analysis failed, continuing without it:', visionResponse.error);
+          console.log("[SEO-GENERATION] Analyse visuelle échouée, continuation sans:", visionResponse.error);
         }
       } catch (visionError) {
-        console.log('Vision AI error, continuing without it:', visionError);
+        console.log("[SEO-GENERATION] Erreur analyse visuelle, continuation sans:", visionError);
       }
-    }
-    
-    // Check usage limits BEFORE generating (cette fonction incrémente +2)
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Non autorisé" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
-    const { data: limitsData, error: limitsError } = await supabaseClient.functions.invoke(
-      'check-usage-limits',
-      {
-        headers: {
-          Authorization: authHeader,
-        },
-      }
-    );
+    // Enhanced usage limits check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: limitsData, error: limitsError } = await supabaseClient.functions.invoke("check-usage-limits", {
+      headers: {
+        Authorization: authHeader,
+      },
+    });
 
     if (limitsError || !limitsData) {
-      console.error('Error checking limits:', limitsError);
-      return new Response(
-        JSON.stringify({ error: "Impossible de vérifier les limites" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.error("[SEO-GENERATION] Erreur vérification limites:", limitsError);
+      return new Response(JSON.stringify({ error: "Impossible de vérifier les limites d'utilisation" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Cette fonction incrémente de +2, vérifier qu'il reste au moins 2 optimisations
-    if (!limitsData.canUseOptimizations || limitsData.usage.optimizations_count >= limitsData.limits.max_optimizations - 1) {
+    // Vérification améliorée des limites
+    const optimizationsNeeded = 2; // titre + description
+    const remainingOptimizations = limitsData.limits.max_optimizations - limitsData.usage.optimizations_count;
+
+    if (!limitsData.canUseOptimizations || remainingOptimizations < optimizationsNeeded) {
       return new Response(
         JSON.stringify({
-          error: "Limite d'optimisations atteinte",
+          error: "limite_optimisations_atteinte",
+          message: `Limite d'optimisations atteinte. Il vous reste ${remainingOptimizations} optimisation(s).`,
           limitReached: true,
           usage: limitsData.usage,
           limits: limitsData.limits,
-          shouldForcePayment: limitsData.shouldForcePayment
+          shouldForcePayment: limitsData.shouldForcePayment,
         }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Construct enriched prompt for DeepSeek with Vision data
-    let visionContext = '';
-    if (visionData?.visualAttributes) {
-      const attrs = visionData.visualAttributes;
-      visionContext = `
+    // Enhanced SEO prompt generation
+    const productKeywords = extractProductKeywords(product);
+    const visionContext = buildVisionContext(visionData);
 
-**VISION AI ANALYSIS (Use this visual data to enhance SEO):**
-- Primary Color: ${attrs.primaryColor}
-- Secondary Colors: ${attrs.secondaryColors?.join(', ')}
-- Materials Detected: ${attrs.materials?.join(', ')}
-- Style Identified: ${attrs.style}
-- Room Context: ${attrs.room || 'N/A'}
-- Mood/Ambiance: ${attrs.mood}
-- Technical Details Visible: ${attrs.technicalDetails?.join(', ')}
-- Confidence Score: ${(visionData.confidence * 100).toFixed(0)}%
+    const enhancedSeoPrompt = `En tant qu'expert SEO e-commerce français, générez un titre et une méta-description optimisés pour ce produit:
 
-**IMPORTANT:** Integrate these visual attributes naturally into your SEO title and description to make them more descriptive and accurate.`;
-    }
-
-    const seoPrompt = `Generate optimized SEO title and meta description for this e-commerce product:
-
-Product Information:
-- Title: ${product.title}
-- Description: ${product.description || "Not provided"}
-- Type: ${product.product_type || "Not specified"}
-- Category: ${product.category || "Not specified"}
-- Sub-Category: ${product.sub_category || "Not specified"}
-- Color: ${product.ai_color || "Not specified"}
-- Material: ${product.ai_material || "Not specified"}
-- Style: ${product.style || "Not specified"}
-- Vendor: ${product.vendor || "Not specified"}
-- Tags: ${product.tags || "Not specified"}
+**INFORMATIONS DU PRODUIT:**
+- Titre: ${product.title}
+- Description: ${product.description || "Non fournie"}
+- Type: ${product.product_type || "Non spécifié"}
+- Catégorie: ${product.category || "Non spécifié"}
+- Sous-catégorie: ${product.sub_category || "Non spécifié"}
+- Couleur: ${product.ai_color || "Non spécifié"}
+- Matériau: ${product.ai_material || "Non spécifié"}
+- Style: ${product.style || "Non spécifié"}
+- Marque: ${product.vendor || "Non spécifié"}
+- Tags: ${product.tags || "Non spécifié"}
+- Mots-clés extraits: ${productKeywords.slice(0, 10).join(", ")}
 ${visionContext}
 
-SEO Title Requirements:
-- 55-60 characters maximum
-- Include primary keyword (product type)
-- Include 1-2 key attributes (color, material, or style)
-- Natural and compelling
-- NO brand name at the end
-- French language
+**EXIGENCES STRICTES SEO:**
 
-Meta Description Requirements:
-- 150-160 characters maximum
-- Include primary and secondary keywords naturally
-- Highlight key benefits or features
-- Include a subtle call-to-action
-- Engaging and descriptive
-- French language
+TITRE (55-65 caractères):
+- Inclure le mot-clé principal (type de produit)
+- Ajouter 1-2 attributs clés (couleur, matériau, style)
+- Rendre accrocheur et naturel
+- SANS nom de marque à la fin
+- Langue française uniquement
 
-Respond ONLY with valid JSON in this exact format:
+MÉTA-DESCRIPTION (150-160 caractères):
+- Intégrer mots-clés principaux et secondaires naturellement
+- Mettre en avant bénéfices et caractéristiques uniques
+- Inclure appel à l'action subtil
+- Description engageante et descriptive
+- Langue française uniquement
+
+**FORMAT DE RÉPONSE EXCLUSIF (JSON uniquement):**
 {
-  "seo_title": "Your SEO title here",
-  "seo_description": "Your meta description here"
+  "seo_title": "Votre titre SEO optimisé ici",
+  "seo_description": "Votre méta-description optimisée ici"
 }
 
-Example for a gray fabric sofa:
+**EXEMPLE POUR UN CANAPÉ:**
 {
-  "seo_title": "Canapé Tissu Gris Anthracite Confortable 3 Places",
-  "seo_description": "Canapé moderne en tissu gris anthracite, design élégant et confortable. Assise profonde, dossier ergonomique. Idéal pour salon contemporain. Livraison rapide."
+  "seo_title": "Canapé Tissu Gris 3 Places Design Moderne et Confortable",
+  "seo_description": "Découvrez notre canapé 3 places en tissu gris, alliant design moderne et confort optimal. Structure robuste, assise généreuse. Parfait pour votre salon. Livraison offerte."
 }`;
 
-    const seoResponse = await callDeepSeek([
-      {
-        role: "system",
-        content: "You are an SEO expert specializing in French e-commerce. Generate compelling, keyword-optimized titles and descriptions. Always respond with valid JSON only.",
-      },
-      {
-        role: "user",
-        content: seoPrompt,
-      },
-    ], 300);
+    console.log("[SEO-GENERATION] Appel à DeepSeek...");
+
+    const seoResponse = await callDeepSeek(
+      [
+        {
+          role: "system",
+          content:
+            "Vous êtes un expert SEO e-commerce français. Générez des titres et descriptions optimisés, percutants et naturels. Répondez UNIQUEMENT en JSON valide sans commentaires.",
+        },
+        {
+          role: "user",
+          content: enhancedSeoPrompt,
+        },
+      ],
+      400,
+    ); // Augmentation des tokens pour plus de qualité
 
     const seoContent = seoResponse.choices[0].message.content;
+    console.log("[SEO-GENERATION] Réponse DeepSeek reçue");
 
-    let seoTitle = "";
-    let seoDescription = "";
+    let seoResult: SeoResult;
 
     try {
       const parsed = JSON.parse(seoContent);
-      seoTitle = parsed.seo_title || product.title.substring(0, 60);
-      seoDescription = parsed.seo_description || product.description?.substring(0, 160) || "";
+
+      // Validation du contenu généré
+      const validation = validateSeoContent(parsed.seo_title, parsed.seo_description);
+
+      if (!validation.isValid) {
+        console.warn("[SEO-GENERATION] Problèmes de validation SEO:", validation.issues);
+        // On continue malgré les warnings, mais on les log
+      }
+
+      seoResult = {
+        seo_title: parsed.seo_title || product.title.substring(0, 60),
+        seo_description: parsed.seo_description || product.description?.substring(0, 160) || "",
+        keywords: productKeywords,
+        character_count: {
+          title: parsed.seo_title?.length || 0,
+          description: parsed.seo_description?.length || 0,
+        },
+      };
     } catch (e) {
-      console.error("Failed to parse SEO JSON:", seoContent);
-      seoTitle = product.title.substring(0, 60);
-      seoDescription = product.description?.substring(0, 160) || "";
+      console.error("[SEO-GENERATION] Échec parsing JSON:", seoContent);
+      // Fallback basique
+      seoResult = {
+        seo_title: product.title.substring(0, 60),
+        seo_description:
+          product.description?.substring(0, 160) ||
+          "Découvrez ce produit de qualité. Livraison rapide et service client exceptionnel.",
+        keywords: productKeywords,
+      };
     }
 
-    // Update product with SEO data and Vision AI info
+    // Enhanced product update with more metadata
     const updateData: any = {
-      seo_title: seoTitle,
-      seo_description: seoDescription,
-      enrichment_status: 'enriched',
+      seo_title: seoResult.seo_title,
+      seo_description: seoResult.seo_description,
+      enrichment_status: "enriched",
       seo_synced_to_shopify: false,
-      optimization_count: (product.optimization_count || 0) + 1,
-      updated_at: new Date().toISOString()
+      optimization_count: currentOptimizations + 1,
+      last_seo_optimization: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      seo_character_count: seoResult.character_count,
     };
 
-    // Add Vision AI metadata if analysis was successful
+    // Enhanced Vision AI metadata
     if (visionData) {
       updateData.vision_analyzed = true;
       updateData.vision_attributes = visionData.visualAttributes;
       updateData.vision_confidence = visionData.confidence;
+      updateData.last_vision_analysis = new Date().toISOString();
     }
 
-    const { error: updateError } = await supabaseClient
-      .from("shopify_products")
-      .update(updateData)
-      .eq("id", productId);
+    // Update product in database
+    const { error: updateError } = await supabaseClient.from("shopify_products").update(updateData).eq("id", productId);
 
     if (updateError) {
+      console.error("[SEO-GENERATION] Erreur mise à jour produit:", updateError);
       throw updateError;
     }
 
-    console.log(`SEO generated for product ${productId}`);
+    // Enhanced usage tracking
+    try {
+      await supabaseClient.rpc("increment_usage", {
+        p_seller_id: product.seller_id,
+        p_field: "optimizations_count",
+        p_increment: 2,
+      });
 
-    // Track usage - 2 optimizations (title + description)
-    await supabaseClient.rpc('increment_usage', {
-      p_seller_id: product.seller_id,
-      p_field: 'optimizations_count',
-      p_increment: 2
-    });
+      // Track trial optimizations if applicable
+      if (profile?.subscription_status === "trialing") {
+        await supabaseClient
+          .from("profiles")
+          .update({
+            trial_used_optimizations: (profile.trial_used_optimizations || 0) + 2,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", product.seller_id);
+      }
+    } catch (trackingError) {
+      console.error("[SEO-GENERATION] Erreur tracking usage:", trackingError);
+      // Ne pas bloquer la réponse pour une erreur de tracking
+    }
+
+    console.log(`[SEO-GENERATION] SEO généré avec succès pour ${productId}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "SEO generated successfully with DeepSeek",
+        message: "SEO généré avec succès",
         data: {
           product_id: productId,
-          seo_title: seoTitle,
-          seo_description: seoDescription,
+          product_title: product.title,
+          seo_title: seoResult.seo_title,
+          seo_description: seoResult.seo_description,
+          character_count: seoResult.character_count,
+          vision_used: !!visionData,
+          optimization_count: currentOptimizations + 1,
+          keywords: seoResult.keywords?.slice(0, 5), // Retourner les 5 premiers mots-clés
+        },
+        metadata: {
+          generated_at: new Date().toISOString(),
+          model: "deepseek-chat",
         },
       }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
-    console.error("Error:", error);
+    console.error("[SEO-GENERATION] Erreur générale:", error);
 
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "An unknown error occurred",
+        error: error instanceof Error ? error.message : "Une erreur inconnue est survenue",
+        code: error instanceof Error && error.message.includes("API") ? "api_error" : "internal_error",
       }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   }
 });
