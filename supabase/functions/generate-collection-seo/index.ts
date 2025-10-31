@@ -76,12 +76,22 @@ Deno.serve(async (req: Request) => {
 
         console.log(`🔍 Generating SEO for: ${collection.title}`);
 
+        // Get products from this collection
+        const { data: products } = await supabase
+          .from('shopify_products')
+          .select('title')
+          .contains('collection_ids', [collection_id])
+          .limit(10);
+
+        const productTitles = products?.map(p => p.title).join(', ') || '';
+
         // Generate SEO with Lovable AI
         const prompt = `Generate SEO-optimized meta title and description for this Shopify collection:
 
 Title: ${collection.title}
 Handle: ${collection.handle}
 Description: ${collection.body_html ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 500) : 'No description'}
+Products in collection: ${productTitles || 'No products yet'}
 
 Return ONLY a JSON object with:
 {

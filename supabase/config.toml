@@ -95,3 +95,21 @@ verify_jwt = false
 
 [functions.get-translations]
 verify_jwt = false
+
+[functions.sync-product-collections]
+verify_jwt = true
+
+[functions.generate-collection-seo]
+verify_jwt = true
+
+[functions.import-shopify-pages]
+verify_jwt = true
+
+[functions.generate-alt-texts-vision]
+verify_jwt = true
+
+[functions.import-content-images]
+verify_jwt = true
+
+[functions.generate-google-category]
+verify_jwt = true

@@ -309,6 +309,25 @@ export function CollectionOptimization() {
     await refreshLimits();
   };
 
+  const handleSyncProductCollections = async () => {
+    try {
+      setSyncing(true);
+      const toastId = toast.loading('Synchronisation des liens produits-collections...');
+
+      const { data, error } = await supabase.functions.invoke('sync-product-collections');
+
+      if (error) throw error;
+
+      toast.success(`${data.updated_count || 0} produits mis à jour`, { id: toastId });
+      await fetchCollections();
+    } catch (error: any) {
+      console.error('Error syncing product collections:', error);
+      toast.error(error.message || 'Erreur lors de la synchronisation');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleImportCollections = async () => {
     try {
       setSyncing(true);
@@ -575,6 +594,18 @@ export function CollectionOptimization() {
               >
                 <Upload className="w-4 h-4" />
                 Import Shopify
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncProductCollections}
+                disabled={syncing || optimizing}
+                className="flex items-center gap-2"
+                title="Synchroniser les liens produits-collections"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Sync Produits
               </Button>
               
               <Button variant="outline" size="icon" onClick={fetchCollections}>
