@@ -237,6 +237,17 @@ export function SeoAuditReports() {
     elements: [],
   };
 
+  // Safe access to AI analysis data
+  const aiAnalysis = latestReport?.audit_results?.aiAnalysis || {
+    actionsByCategory: {
+      homepage: [],
+      products: [],
+      collections: [],
+      blog: [],
+      images: []
+    }
+  };
+
   const globalData = latestReport?.audit_results?.global || {
     stats: {
       pagesAnalyzed: 0,
@@ -539,7 +550,7 @@ export function SeoAuditReports() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {latestReport.audit_results.aiAnalysis.actionsByCategory.homepage.map((action: any, index: number) => (
+                  {aiAnalysis.actionsByCategory.homepage.map((action: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -598,7 +609,7 @@ export function SeoAuditReports() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {latestReport.audit_results.aiAnalysis.actionsByCategory.products.map((action: any, index: number) => (
+                  {aiAnalysis.actionsByCategory.products.map((action: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -638,7 +649,7 @@ export function SeoAuditReports() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {latestReport.audit_results.aiAnalysis.actionsByCategory.collections.map((action: any, index: number) => (
+                  {aiAnalysis.actionsByCategory.collections.map((action: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -678,7 +689,7 @@ export function SeoAuditReports() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {latestReport.audit_results.aiAnalysis.actionsByCategory.blog.map((action: any, index: number) => (
+                  {aiAnalysis.actionsByCategory.blog.map((action: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -749,7 +760,7 @@ export function SeoAuditReports() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {latestReport.audit_results.aiAnalysis.actionsByCategory.images.map((action: any, index: number) => (
+                  {aiAnalysis.actionsByCategory.images.map((action: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
