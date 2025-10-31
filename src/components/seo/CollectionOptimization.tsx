@@ -770,7 +770,7 @@ export function CollectionOptimization() {
         <Card className="overflow-hidden">
           <div className="max-h-[600px] overflow-y-auto">
             <Table>
-              <TableHeader className="sticky top-0 bg-background z-10">
+              <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
@@ -778,11 +778,14 @@ export function CollectionOptimization() {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead>Collection</TableHead>
-                  <TableHead>Score SEO</TableHead>
-                  <TableHead>SEO Title</TableHead>
-                  <TableHead>SEO Description</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-20">Image</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead className="min-w-[200px]">SEO Title</TableHead>
+                  <TableHead className="min-w-[250px]">SEO Description</TableHead>
+                  <TableHead className="w-32">SEO Score</TableHead>
+                  <TableHead className="w-32">Status</TableHead>
+                  <TableHead className="w-32">Synced</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -791,7 +794,7 @@ export function CollectionOptimization() {
                   const scoreBadge = getSeoScoreBadge(seoScore);
                   
                   return (
-                    <TableRow key={collection.id}>
+                    <TableRow key={collection.id} className="hover:bg-muted/50">
                       <TableCell>
                         <Checkbox
                           checked={selectedCollections.has(collection.id)}
@@ -799,34 +802,51 @@ export function CollectionOptimization() {
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          {collection.image_url ? (
-                            <div className="relative group">
-                              <img
-                                src={collection.image_url}
-                                alt={collection.image_alt || collection.title}
-                                className="w-12 h-12 object-cover rounded"
-                              />
-                            </div>
-                          ) : (
-                            <div 
-                              className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform group relative border-2 border-dashed border-indigo-300"
-                              onClick={() => {
-                                setSelectedCollectionForImage(collection);
-                                setShowImageDialog(true);
-                              }}
-                              title="Cliquer pour générer une image avec AI"
-                            >
-                              <ImageIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
-                                <Sparkles className="w-2 h-2 text-white" />
-                              </div>
-                            </div>
-                          )}
-                          <div>
-                            <div className="font-medium">{collection.title}</div>
-                            <div className="text-xs text-muted-foreground">{collection.handle}</div>
+                        {collection.image_url ? (
+                          <img
+                            src={collection.image_url}
+                            alt={collection.image_alt || collection.title}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        ) : (
+                          <div 
+                            className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform border-2 border-dashed border-indigo-300"
+                            onClick={() => {
+                              setSelectedCollectionForImage(collection);
+                              setShowImageDialog(true);
+                            }}
+                            title="Cliquer pour générer une image avec AI"
+                          >
+                            <Package className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                           </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          <p className="font-medium line-clamp-2">{collection.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{collection.handle}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          {collection.seo_title ? (
+                            <p className="text-sm line-clamp-2">{collection.seo_title}</p>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Not optimized
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[250px]">
+                          {collection.seo_description ? (
+                            <p className="text-sm line-clamp-2 text-muted-foreground">{collection.seo_description}</p>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Not optimized
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -838,28 +858,38 @@ export function CollectionOptimization() {
                             <Sparkles className="w-3 h-3 text-primary" />
                           )}
                         </div>
-                        {collection.optimization_count && collection.optimization_count > 0 && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Optimisé {collection.optimization_count}x
-                          </div>
-                        )}
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs">
-                          <div className="text-sm line-clamp-1">
-                            {collection.seo_title || <span className="text-muted-foreground italic">Non défini</span>}
-                          </div>
-                        </div>
+                        <Badge variant={collection.optimization_count && collection.optimization_count > 0 ? 'default' : 'secondary'}>
+                          {collection.optimization_count && collection.optimization_count > 0 ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Optimized
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 mr-1" />
+                              Pending
+                            </>
+                          )}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs">
-                          <div className="text-sm line-clamp-2">
-                            {collection.seo_description || <span className="text-muted-foreground italic">Non défini</span>}
-                          </div>
-                        </div>
+                        <Badge variant="secondary">
+                          <Clock className="w-3 h-3 mr-1" />
+                          N/A
+                        </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSelectCollection(collection.id)}
+                            title="Optimize"
+                          >
+                            <Sparkles className="w-4 h-4" />
+                          </Button>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -867,16 +897,9 @@ export function CollectionOptimization() {
                               setSelectedCollectionForImage(collection);
                               setShowImageDialog(true);
                             }}
-                            title="Ajouter une image"
+                            title="Add Image"
                           >
                             <ImageIcon className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => toast.info("Détails à venir")}
-                          >
-                            <Eye className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>

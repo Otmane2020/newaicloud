@@ -387,7 +387,7 @@ export function ArticleManagement() {
         <Card className="overflow-hidden">
           <div className="max-h-[600px] overflow-y-auto">
           <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
+            <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
@@ -397,10 +397,11 @@ export function ArticleManagement() {
                 </TableHead>
                 <TableHead className="w-20">Image</TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead className="w-24">Status</TableHead>
-                <TableHead className="w-32">Score SEO</TableHead>
-                <TableHead className="w-32">Date</TableHead>
-                <TableHead className="text-right w-32">Actions</TableHead>
+                <TableHead className="min-w-[200px]">Meta Description</TableHead>
+                <TableHead className="w-32">SEO Score</TableHead>
+                <TableHead className="w-32">Status</TableHead>
+                <TableHead className="w-32">Synced</TableHead>
+                <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -445,28 +446,20 @@ export function ArticleManagement() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="max-w-[300px]">
-                              <div className="font-medium truncate">{truncatedTitle}</div>
-                              {article.meta_description && (
-                                <div className="text-xs text-muted-foreground line-clamp-1">
-                                  {article.meta_description}
-                                </div>
-                              )}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-[400px]">{article.title}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <div className="max-w-[200px]">
+                        <p className="font-medium line-clamp-2">{article.title}</p>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={article.status === 'published' ? 'default' : 'secondary'} className="whitespace-nowrap">
-                        {article.status}
-                      </Badge>
+                      <div className="max-w-[250px]">
+                        {article.meta_description ? (
+                          <p className="text-sm line-clamp-2 text-muted-foreground">{article.meta_description}</p>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Not optimized
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -477,6 +470,36 @@ export function ArticleManagement() {
                           <Sparkles className="w-3 h-3 text-primary flex-shrink-0" />
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                        {article.status === 'published' ? (
+                          <>
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Published
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3 h-3 mr-1" />
+                            Draft
+                          </>
+                        )}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={article.shopify_blog_id ? 'default' : 'secondary'}>
+                        {article.shopify_blog_id ? (
+                          <>
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Synced
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3 h-3 mr-1" />
+                            Pending
+                          </>
+                        )}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(article.updated_at).toLocaleDateString()}

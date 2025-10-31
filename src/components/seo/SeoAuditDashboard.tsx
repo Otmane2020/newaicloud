@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,18 +15,57 @@ import {
   Image as ImageIcon,
   FileText,
   Home,
-  Layers
+  Layers,
+  ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
+import { HomePageSeoAudit } from "./HomePageSeoAudit";
 
 export function SeoAuditDashboard() {
+  const navigate = useNavigate();
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
     loadLatestAudit();
+    loadStats();
   }, []);
+
+  const loadStats = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const [products, collections, pages, articles] = await Promise.all([
+        supabase.from('shopify_products').select('id, enrichment_status').eq('seller_id', user?.id),
+        supabase.from('shopify_collections').select('id, optimization_count').eq('user_id', user?.id),
+        supabase.from('shopify_pages').select('id, optimized').eq('user_id', user?.id),
+        supabase.from('blog_articles').select('id, optimization_count').eq('user_id', user?.id),
+      ]);
+
+      setStats({
+        products: {
+          total: products.data?.length || 0,
+          optimized: products.data?.filter(p => p.enrichment_status === 'enriched').length || 0
+        },
+        collections: {
+          total: collections.data?.length || 0,
+          optimized: collections.data?.filter(c => c.optimization_count && c.optimization_count > 0).length || 0
+        },
+        pages: {
+          total: pages.data?.length || 0,
+          optimized: pages.data?.filter(p => p.optimized).length || 0
+        },
+        articles: {
+          total: articles.data?.length || 0,
+          optimized: articles.data?.filter(a => a.optimization_count && a.optimization_count > 0).length || 0
+        }
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
 
   const loadLatestAudit = async () => {
     try {
@@ -191,29 +231,65 @@ export function SeoAuditDashboard() {
           {/* Category Scores */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[
-              { key: 'homepage_score', label: 'Homepage', icon: Home },
-              { key: 'products_score', label: 'Produits', icon: ShoppingBag },
-              { key: 'collections_score', label: 'Collections', icon: Layers },
-              { key: 'blog_score', label: 'Blog', icon: FileText },
-              { key: 'images_score', label: 'Images', icon: ImageIcon },
-              { key: 'technical_score', label: 'Technique', icon: Sparkles }
-            ].map(({ key, label, icon: Icon }) => (
-              <Card key={key}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-3xl font-bold ${getScoreColor(audit[key] || 0)}`}>
-                    {audit[key] || 0}/100
-                  </div>
-                  <Progress value={audit[key] || 0} className="mt-2" />
-                </CardContent>
-              </Card>
-            ))}
+              { key: 'homepage_score', label: 'Homepage', icon: Home, tab: 'homepage' },
+              { key: 'products_score', label: 'Produits', icon: ShoppingBag, tab: 'products' },
+              { key: 'collections_score', label: 'Collections', icon: Layers, tab: 'collections' },
+              { key: 'blog_score', label: 'Blog', icon: FileText, tab: 'articles' },
+              { key: 'images_score', label: 'Images', icon: ImageIcon, tab: 'alt' },
+              { key: 'technical_score', label: 'Technique', icon: Sparkles, tab: 'products' }
+            ].map(({ key, label, icon: Icon, tab }) => {
+              const categoryStats = stats?.[tab === 'products' ? 'products' : tab === 'collections' ? 'collections' : tab === 'articles' ? 'articles' : tab === 'homepage' ? 'pages' : 'pages'];
+              const optimizedCount = categoryStats?.optimized || 0;
+              const totalCount = categoryStats?.total || 0;
+              
+              return (
+                <Card 
+                  key={key}
+                  className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+                  onClick={() => navigate(`/seo?tab=${tab}`)}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-4 h-4" />
+                        {label}
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className={`text-3xl font-bold ${getScoreColor(audit[key] || 0)}`}>
+                        {audit[key] || 0}/100
+                      </div>
+                      {totalCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {optimizedCount}/{totalCount}
+                        </Badge>
+                      )}
+                    </div>
+                    <Progress value={audit[key] || 0} className="mt-2" />
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
+
+          {/* Homepage SEO Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Home className="w-5 h-5" />
+                Analyse Homepage SEO
+              </CardTitle>
+              <CardDescription>
+                Optimisation détaillée de votre page d'accueil
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HomePageSeoAudit />
+            </CardContent>
+          </Card>
 
           {/* Issues */}
           {audit.audit_results?.issues && audit.audit_results.issues.length > 0 && (

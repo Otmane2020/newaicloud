@@ -543,7 +543,7 @@ export function PageOptimization() {
             </div>
 
             <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
+            <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
@@ -552,75 +552,130 @@ export function PageOptimization() {
                   />
                 </TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead>SEO Title</TableHead>
-                <TableHead>Meta Description</TableHead>
-                <TableHead className="text-center">SEO Score</TableHead>
-                <TableHead className="text-center">Optimized</TableHead>
-                <TableHead className="text-center">Synchronized</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="min-w-[200px]">SEO Title</TableHead>
+                <TableHead className="min-w-[250px]">SEO Description</TableHead>
+                <TableHead className="w-32">SEO Score</TableHead>
+                <TableHead className="w-32">Status</TableHead>
+                <TableHead className="w-32">Synced</TableHead>
+                <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
               <TableBody>
-                {filteredPages.map((page) => (
-                  <TableRow key={page.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedPages.has(page.id)}
-                        onCheckedChange={() => handleSelectPage(page.id)}
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">{page.title}</TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {page.seo_title || '-'}
-                    </TableCell>
-                    <TableCell className="max-w-sm truncate text-sm text-muted-foreground">
-                      {page.seo_description || '-'}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <SeoConfidenceBadge 
-                        seoTitle={page.seo_title}
-                        seoDescription={page.seo_description}
-                        showLabel={false}
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {page.optimized ? (
-                        <CheckCircle className="w-5 h-5 text-green-600 mx-auto" />
-                      ) : (
-                        <Clock className="w-5 h-5 text-orange-600 mx-auto" />
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={page.last_synced_at ? 'default' : 'secondary'}>
-                        {page.last_synced_at ? 'Yes' : 'No'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {!page.optimized && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleOptimizePage(page.id)}
-                            disabled={optimizing}
-                          >
-                            <Sparkles className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {page.optimized && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleSyncPage(page.id)}
-                            disabled={syncing}
-                          >
-                            <Upload className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredPages.map((page) => {
+                  const seoScore = calculateDetailedSeoScore(
+                    page.seo_title,
+                    page.seo_description,
+                    false,
+                    true
+                  );
+                  const getSeoScoreBadge = (score: number) => {
+                    if (score >= 80) return { variant: 'default' as const, color: 'text-green-600' };
+                    if (score >= 60) return { variant: 'secondary' as const, color: 'text-blue-600' };
+                    if (score >= 40) return { variant: 'outline' as const, color: 'text-yellow-600' };
+                    return { variant: 'outline' as const, color: 'text-red-600' };
+                  };
+                  const scoreBadge = getSeoScoreBadge(seoScore.score);
+                  
+                  return (
+                    <TableRow key={page.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedPages.has(page.id)}
+                          onCheckedChange={() => handleSelectPage(page.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          <p className="font-medium line-clamp-2">{page.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{page.handle}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          {page.seo_title ? (
+                            <p className="text-sm line-clamp-2">{page.seo_title}</p>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Not optimized
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[250px]">
+                          {page.seo_description ? (
+                            <p className="text-sm line-clamp-2 text-muted-foreground">{page.seo_description}</p>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Not optimized
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={scoreBadge.variant}>
+                          <span className={scoreBadge.color}>{seoScore.score}/100</span>
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={page.optimized ? 'default' : 'secondary'}>
+                          {page.optimized ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Optimized
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 mr-1" />
+                              Pending
+                            </>
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={page.last_synced_at ? 'default' : 'secondary'}>
+                          {page.last_synced_at ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Synced
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 mr-1" />
+                              Pending
+                            </>
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {!page.optimized && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleOptimizePage(page.id)}
+                              disabled={optimizing}
+                              title="Optimize"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {page.optimized && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleSyncPage(page.id)}
+                              disabled={syncing}
+                              title="Sync to Shopify"
+                            >
+                              <Upload className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
