@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Sparkles, Upload, Home, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
+import { VisionAIBanner } from './VisionAIBanner';
 
 export function HomePageSeo() {
   const [loading, setLoading] = useState(false);
@@ -155,6 +156,9 @@ export function HomePageSeo() {
           </div>
         </div>
       </Card>
+
+      {/* Vision AI Banner */}
+      <VisionAIBanner />
 
     <Card>
       <CardContent className="space-y-6 pt-6">

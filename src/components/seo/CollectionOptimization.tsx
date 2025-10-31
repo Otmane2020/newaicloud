@@ -16,6 +16,7 @@ import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CollectionImageDialog } from './CollectionImageDialog';
+import { VisionAIBanner } from './VisionAIBanner';
 import {
   Table,
   TableBody,
@@ -495,12 +496,18 @@ export function CollectionOptimization() {
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                 <Package className="w-6 h-6 text-blue-600" />
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Optimisation Collections SEO
-              </h1>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl md:text-3xl font-bold">Collection SEO</h2>
+                  <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Vision AI
+                  </Badge>
+                </div>
+              </div>
             </div>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              Générez automatiquement des titres et descriptions optimisés pour améliorer votre SEO et augmenter vos conversions de 40%.
+            <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
+              Optimisez vos collections Shopify avec l'IA. Générez des titres, descriptions SEO et images avec <span className="font-semibold">Gemini Vision AI</span>
             </p>
             <div className="flex flex-wrap gap-4 pt-2">
               <div className="flex items-center gap-2 text-sm">
@@ -548,6 +555,9 @@ export function CollectionOptimization() {
           </div>
         </div>
       </Card>
+
+      {/* Vision AI Banner */}
+      <VisionAIBanner />
 
       {/* Clickable Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -791,14 +801,26 @@ export function CollectionOptimization() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {collection.image_url ? (
-                            <img
-                              src={collection.image_url}
-                              alt={collection.image_alt || collection.title}
-                              className="w-12 h-12 object-cover rounded"
-                            />
+                            <div className="relative group">
+                              <img
+                                src={collection.image_url}
+                                alt={collection.image_alt || collection.title}
+                                className="w-12 h-12 object-cover rounded"
+                              />
+                            </div>
                           ) : (
-                            <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                              <Package className="w-6 h-6 text-muted-foreground" />
+                            <div 
+                              className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform group relative border-2 border-dashed border-indigo-300"
+                              onClick={() => {
+                                setSelectedCollectionForImage(collection);
+                                setShowImageDialog(true);
+                              }}
+                              title="Cliquer pour générer une image avec AI"
+                            >
+                              <ImageIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
+                                <Sparkles className="w-2 h-2 text-white" />
+                              </div>
                             </div>
                           )}
                           <div>

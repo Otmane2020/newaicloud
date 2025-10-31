@@ -6,85 +6,56 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ImageIcon, Upload, Sparkles, TrendingUp, Loader2, Eye } from 'lucide-react';
+import { Sparkles, Upload, Loader2, ImageIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
-interface CollectionImageDialogProps {
+interface ArticleFeaturedImageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  collection: {
+  article: {
     id: string;
     title: string;
-    handle: string;
-    image_url: string | null;
+    content: string;
+    featured_image?: string | null;
   };
   onImageUpdated: () => void;
 }
 
-export function CollectionImageDialog({ 
+export function ArticleFeaturedImageDialog({ 
   open, 
   onOpenChange, 
-  collection,
+  article,
   onImageUpdated 
-}: CollectionImageDialogProps) {
+}: ArticleFeaturedImageDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<'popular' | 'ai' | 'upload' | null>(null);
+  const [selectedOption, setSelectedOption] = useState<'ai' | 'upload' | null>(null);
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
-
-  const handleUsePopularProduct = async () => {
-    try {
-      setLoading(true);
-      
-      // Get most popular product from this collection
-      const { data: products, error } = await supabase
-        .from('shopify_products')
-        .select('image_url, inventory_quantity')
-        .contains('collection_ids', [collection.id])
-        .order('inventory_quantity', { ascending: false })
-        .limit(1);
-
-      if (error) throw error;
-
-      if (!products || products.length === 0) {
-        toast.error('Aucun produit trouvé dans cette collection');
-        return;
-      }
-
-      const imageUrl = products[0].image_url;
-      
-      if (!imageUrl) {
-        toast.error('Le produit populaire n\'a pas d\'image');
-        return;
-      }
-
-      await updateCollectionImage(imageUrl);
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Erreur lors de la récupération de l\'image');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleGenerateWithAI = async () => {
     try {
       setLoading(true);
       
-      const prompt = aiPrompt || `Generate a professional collection banner image for "${collection.title}". Make it elegant, modern, and e-commerce focused.`;
+      // Use article title and content to create a relevant prompt
+      const defaultPrompt = `Create a featured image for a blog article titled "${article.title}". 
+Style: professional, modern, blog-appropriate, high-quality.
+Context: ${article.content.substring(0, 200)}...`;
+      
+      const prompt = aiPrompt || defaultPrompt;
       
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: { 
           prompt,
-          collection_id: collection.id 
+          article_id: article.id,
+          type: 'article_featured'
         }
       });
 
       if (error) throw error;
 
       if (data?.image_url) {
-        await updateCollectionImage(data.image_url);
+        await updateArticleImage(data.image_url);
       } else {
         toast.error('Erreur lors de la génération de l\'image');
       }
@@ -105,7 +76,7 @@ export function CollectionImageDialog({
         return;
       }
 
-      await updateCollectionImage(customImageUrl);
+      await updateArticleImage(customImageUrl);
     } catch (error) {
       console.error('Error:', error);
       toast.error('Erreur lors de la mise à jour de l\'image');
@@ -114,23 +85,20 @@ export function CollectionImageDialog({
     }
   };
 
-  const updateCollectionImage = async (imageUrl: string) => {
+  const updateArticleImage = async (imageUrl: string) => {
     const { error } = await supabase
-      .from('shopify_collections')
+      .from('blog_articles')
       .update({ 
-        image_url: imageUrl,
+        featured_image: imageUrl,
         updated_at: new Date().toISOString()
       })
-      .eq('id', collection.id);
+      .eq('id', article.id);
 
     if (error) throw error;
 
     toast.success('Image mise à jour avec succès');
     onImageUpdated();
-    onOpenChange(false);
-    setSelectedOption(null);
-    setCustomImageUrl('');
-    setAiPrompt('');
+    handleClose();
   };
 
   const handleClose = () => {
@@ -140,11 +108,11 @@ export function CollectionImageDialog({
     setAiPrompt('');
   };
 
-  // Suggested prompts
+  // Suggested prompts based on article title
   const suggestedPrompts = [
-    `Professional banner for ${collection.title} collection`,
-    `Modern e-commerce image for ${collection.title}`,
-    `Elegant product showcase for ${collection.title}`
+    `Modern illustration for "${article.title.substring(0, 30)}..."`,
+    `Professional photo representing the theme of ${article.title.substring(0, 30)}`,
+    `Abstract visual for blog article about ${article.title.substring(0, 30)}`
   ];
 
   return (
@@ -153,18 +121,18 @@ export function CollectionImageDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5" />
-            Ajouter une image de collection
+            Ajouter une Featured Image
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Collection: <span className="font-medium">{collection.title}</span>
+            Article: <span className="font-medium">{article.title}</span>
           </p>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Why use AI section */}
-          <Card className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-indigo-200">
+          <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200">
             <div className="flex items-start gap-3">
-              <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shrink-0">
+              <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shrink-0">
                 <Sparkles className="w-3 h-3 mr-1" />
                 Powered by Gemini Vision AI
               </Badge>
@@ -175,7 +143,8 @@ export function CollectionImageDialog({
               <p className="font-medium">🔍 <strong>Optimisées pour le SEO</strong> automatiquement</p>
             </div>
           </Card>
-          {/* Option 1: Generate with AI - PRIORITY */}
+
+          {/* Option 1: Generate with AI */}
           <Card 
             className={`p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${
               selectedOption === 'ai' ? 'border-primary ring-2 ring-primary/20 shadow-lg' : ''
@@ -183,17 +152,17 @@ export function CollectionImageDialog({
             onClick={() => setSelectedOption('ai')}
           >
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0 animate-pulse">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 shrink-0">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold mb-1 flex items-center gap-2">
-                  Générer avec Gemini Vision AI
+                  Générer avec Gemini AI
                   <Badge variant="secondary" className="text-xs">Recommandé</Badge>
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Créez une image professionnelle personnalisée pour cette collection. 
-                  L'IA génère une bannière moderne, élégante et optimisée SEO.
+                  Créez une image professionnelle personnalisée basée sur le contenu de votre article. 
+                  L'IA analyse votre texte pour générer une image pertinente.
                 </p>
               </div>
             </div>
@@ -212,7 +181,7 @@ export function CollectionImageDialog({
                         className="text-xs"
                         onClick={() => setAiPrompt(prompt)}
                       >
-                        {prompt}
+                        {prompt.substring(0, 40)}...
                       </Button>
                     ))}
                   </div>
@@ -229,7 +198,7 @@ export function CollectionImageDialog({
                     className="resize-none"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Laissez vide pour un prompt automatique basé sur le nom de la collection
+                    Laissez vide pour utiliser le titre et contenu de l'article comme base
                   </p>
                 </div>
                 <div className="flex justify-end gap-2">
@@ -242,7 +211,7 @@ export function CollectionImageDialog({
                   <Button 
                     onClick={handleGenerateWithAI}
                     disabled={loading}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                   >
                     {loading ? (
                       <>
@@ -261,54 +230,7 @@ export function CollectionImageDialog({
             )}
           </Card>
 
-          {/* Option 2: Popular Product */}
-          <Card 
-            className={`p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${
-              selectedOption === 'popular' ? 'border-primary ring-2 ring-primary/20 shadow-lg' : ''
-            }`}
-            onClick={() => setSelectedOption('popular')}
-          >
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <TrendingUp className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">Utiliser l'image du produit le plus populaire</h3>
-                <p className="text-sm text-muted-foreground">
-                  Sélectionne automatiquement l'image du produit avec le plus de stock dans cette collection
-                </p>
-              </div>
-            </div>
-            
-            {selectedOption === 'popular' && (
-              <div className="mt-4 flex justify-end gap-2">
-                <Button 
-                  variant="outline"
-                  onClick={handleClose}
-                >
-                  Annuler
-                </Button>
-                <Button 
-                  onClick={handleUsePopularProduct}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Chargement...
-                    </>
-                  ) : (
-                    <>
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Appliquer
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-          </Card>
-
-          {/* Option 3: Upload Custom */}
+          {/* Option 2: Upload Custom */}
           <Card 
             className={`p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${
               selectedOption === 'upload' ? 'border-primary ring-2 ring-primary/20 shadow-lg' : ''

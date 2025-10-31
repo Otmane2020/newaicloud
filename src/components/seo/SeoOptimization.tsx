@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 
 import { ShopifySyncSuccessDialog } from './ShopifySyncSuccessDialog';
+import { VisionAIBanner } from './VisionAIBanner';
 
 interface Product {
   id: string;
@@ -552,6 +553,9 @@ export function SeoOptimization() {
             </div>
         </div>
       </Card>
+
+      {/* Vision AI Banner */}
+      <VisionAIBanner />
 
       {/* Clickable Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

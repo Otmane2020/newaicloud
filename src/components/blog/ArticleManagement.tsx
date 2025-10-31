@@ -33,6 +33,8 @@ import {
   ImageIcon
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { VisionAIBanner } from '../seo/VisionAIBanner';
+import { ArticleFeaturedImageDialog } from './ArticleFeaturedImageDialog';
 
 interface Article {
   id: string;
@@ -48,6 +50,7 @@ interface Article {
   updated_at: string;
   optimization_count?: number;
   last_optimization_at?: string | null;
+  featured_image?: string | null;
 }
 
 type QuickFilterTab = 'all' | 'draft' | 'published' | 'shopify-synced';
@@ -61,6 +64,8 @@ export function ArticleManagement() {
   const [syncing, setSyncing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [optimizing, setOptimizing] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [selectedArticleForImage, setSelectedArticleForImage] = useState<Article | null>(null);
 
   useEffect(() => {
     fetchArticles();
@@ -283,6 +288,9 @@ export function ArticleManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Vision AI Banner */}
+      <VisionAIBanner />
+      
       {/* Quick Filters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {quickFilters.map((filter) => {
@@ -412,8 +420,28 @@ export function ArticleManagement() {
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center overflow-hidden">
-                        <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                      <div 
+                        className="w-16 h-16 rounded-md bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-110 transition-transform border-2 border-dashed border-purple-300 group relative"
+                        onClick={() => {
+                          setSelectedArticleForImage(article);
+                          setShowImageDialog(true);
+                        }}
+                        title="Cliquer pour générer une image avec Gemini AI"
+                      >
+                        {article.featured_image ? (
+                          <img 
+                            src={article.featured_image} 
+                            alt={article.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <>
+                            <ImageIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
+                              <Sparkles className="w-3 h-3 text-white" />
+                            </div>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -532,6 +560,16 @@ export function ArticleManagement() {
             </Card>
           ))}
         </div>
+      )}
+      
+      {/* Featured Image Dialog */}
+      {selectedArticleForImage && (
+        <ArticleFeaturedImageDialog
+          open={showImageDialog}
+          onOpenChange={setShowImageDialog}
+          article={selectedArticleForImage}
+          onImageUpdated={fetchArticles}
+        />
       )}
     </div>
   );

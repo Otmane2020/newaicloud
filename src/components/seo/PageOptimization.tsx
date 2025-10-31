@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { Progress } from '@/components/ui/progress';
+import { VisionAIBanner } from './VisionAIBanner';
 
 interface ShopifyPage {
   id: string;
@@ -406,6 +407,9 @@ export function PageOptimization() {
           </div>
         </div>
       </Card>
+
+      {/* Vision AI Banner */}
+      <VisionAIBanner />
 
       {/* Stats Cards - Enhanced Design */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
