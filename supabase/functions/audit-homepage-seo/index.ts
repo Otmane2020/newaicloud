@@ -46,7 +46,7 @@ serve(async (req) => {
       .from('shopify_connections')
       .select('shop_url, access_token')
       .eq('user_id', user.id)
-      .eq('status', 'active')
+      .eq('is_active', true)
       .single();
 
     if (connError || !connection) {
