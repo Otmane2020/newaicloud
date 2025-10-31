@@ -6,14 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sparkles, Upload, Home, AlertCircle, Loader2 } from 'lucide-react';
+import { Sparkles, Upload, Home, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 
 export function HomePageSeo() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
   const [hasConnection, setHasConnection] = useState(false);
@@ -64,35 +63,74 @@ export function HomePageSeo() {
 
   const syncToShopify = async () => {
     if (!seoTitle || !seoDescription) {
-      toast.error('Please fill in all fields');
+      toast.error('Veuillez remplir tous les champs');
       return;
     }
 
-    setSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('sync-homepage-seo', {
-        body: { 
-          seoTitle,
-          seoDescription
-        }
-      });
+    // Récupérer la connexion Shopify pour obtenir l'URL du store
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-      if (error) throw error;
+    const { data: connection } = await supabase
+      .from('shopify_connections')
+      .select('store_url')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
 
-      toast.success('Successfully synced to Shopify');
-    } catch (error: any) {
-      console.error('Error syncing to Shopify:', error);
-      
-      if (error.message?.includes('Permission denied')) {
-        toast.error('Permission denied', {
-          description: 'Make sure your Shopify token has the required permissions',
-          duration: 8000
-        });
-      } else {
-        toast.error(error.message || 'Error syncing to Shopify');
+    if (!connection) {
+      toast.error('Aucune connexion Shopify active trouvée');
+      return;
+    }
+
+    // Afficher un message informatif avec lien direct
+    toast.info(
+      <div className="space-y-2">
+        <p className="font-semibold">⚠️ Synchronisation manuelle requise</p>
+        <p className="text-sm">
+          Les champs SEO de la homepage ne peuvent pas être modifiés automatiquement via l'API Shopify.
+        </p>
+        <p className="text-sm font-medium">
+          Copiez les valeurs ci-dessous et collez-les manuellement dans :
+        </p>
+        <a
+          href={`https://${connection.store_url}/admin/settings/general`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          Préférences Shopify → SEO de la page d'accueil
+          <ExternalLink className="h-3 w-3" />
+        </a>
+        <div className="mt-2 space-y-1 rounded-md bg-muted p-2 text-xs">
+          <div>
+            <span className="font-semibold">Titre :</span>
+            <br />
+            <code className="break-all">{seoTitle}</code>
+          </div>
+          <div className="mt-1">
+            <span className="font-semibold">Description :</span>
+            <br />
+            <code className="break-all">{seoDescription}</code>
+          </div>
+        </div>
+      </div>,
+      { 
+        duration: 15000,
+        className: 'max-w-xl'
       }
-    } finally {
-      setSyncing(false);
+    );
+
+    // Copier automatiquement dans le presse-papiers
+    try {
+      await navigator.clipboard.writeText(
+        `Titre: ${seoTitle}\n\nDescription: ${seoDescription}`
+      );
+      toast.success('✓ Valeurs copiées dans le presse-papiers', {
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('Clipboard error:', error);
     }
   };
 
@@ -216,10 +254,10 @@ export function HomePageSeo() {
 
           <Button
             onClick={syncToShopify}
-            disabled={syncing || !seoTitle || !seoDescription}
+            disabled={!seoTitle || !seoDescription}
           >
-            <Upload className="h-4 w-4 mr-2" />
-            {syncing ? 'Syncing...' : 'Sync to Shopify'}
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Copier & Ouvrir Shopify
           </Button>
         </div>
 
