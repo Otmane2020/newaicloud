@@ -70,6 +70,7 @@ export type Database = {
       }
       blog_articles: {
         Row: {
+          collection_id: string | null
           content: string
           created_at: string
           id: string
@@ -88,6 +89,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          collection_id?: string | null
           content: string
           created_at?: string
           id?: string
@@ -106,6 +108,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          collection_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -124,6 +127,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "blog_articles_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_collections"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "blog_articles_store_id_fkey"
             columns: ["store_id"]
@@ -1157,6 +1167,7 @@ export type Database = {
           category: string | null
           characteristics: string | null
           chat_text: string | null
+          collection_ids: string[] | null
           compare_at_price: number | null
           created_at: string
           currency: string | null
@@ -1262,6 +1273,7 @@ export type Database = {
           category?: string | null
           characteristics?: string | null
           chat_text?: string | null
+          collection_ids?: string[] | null
           compare_at_price?: number | null
           created_at?: string
           currency?: string | null
@@ -1367,6 +1379,7 @@ export type Database = {
           category?: string | null
           characteristics?: string | null
           chat_text?: string | null
+          collection_ids?: string[] | null
           compare_at_price?: number | null
           created_at?: string
           currency?: string | null

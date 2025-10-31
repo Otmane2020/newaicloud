@@ -53,6 +53,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 const mainMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Products", url: "/products", icon: ShoppingBag },
+  { title: "Collections", url: "/collections", icon: Package },
 ];
 
 const seoSubItems = [

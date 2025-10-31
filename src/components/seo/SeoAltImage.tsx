@@ -62,6 +62,7 @@ interface ImageWithProduct extends ProductImage {
 }
 
 type AltImageTab = 'all' | 'needs-alt' | 'has-alt' | 'to-sync';
+type ContentTypeFilter = 'all' | 'products' | 'collections' | 'pages' | 'articles';
 
 export function SeoAltImage() {
   const [images, setImages] = useState<ImageWithProduct[]>([]);
@@ -70,6 +71,7 @@ export function SeoAltImage() {
   const [importing, setImporting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<AltImageTab>('all');
+  const [contentTypeFilter, setContentTypeFilter] = useState<ContentTypeFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -205,6 +207,14 @@ export function SeoAltImage() {
   }, []);
 
   const filteredImages = images.filter((img) => {
+    // Filter by content type
+    if (contentTypeFilter !== 'all') {
+      if (contentTypeFilter === 'products' && img.image_type !== 'product') return false;
+      if (contentTypeFilter === 'collections' && (!img.content_type || img.content_type !== 'collection')) return false;
+      if (contentTypeFilter === 'pages' && (!img.content_type || img.content_type !== 'page')) return false;
+      if (contentTypeFilter === 'articles' && (!img.content_type || img.content_type !== 'article')) return false;
+    }
+
     if (activeTab === 'needs-alt' && img.alt_text) return false;
     if (activeTab === 'has-alt' && !img.alt_text) return false;
     if (activeTab === 'to-sync' && !img.alt_text) return false;
@@ -517,6 +527,32 @@ export function SeoAltImage() {
             <Badge variant={activeTab === tab.id ? 'secondary' : 'outline'}>
               {tab.count}
             </Badge>
+          </button>
+        ))}
+      </div>
+
+      {/* Content Type Filters */}
+      <div className="bg-background border rounded-lg p-1 flex flex-wrap gap-1">
+        {[
+          { id: 'all' as const, label: '🔍 Tous', icon: ImageIcon },
+          { id: 'products' as const, label: '🛍️ Produits', icon: ImageIcon },
+          { id: 'collections' as const, label: '📚 Collections', icon: ImageIcon },
+          { id: 'pages' as const, label: '📄 Pages', icon: ImageIcon },
+          { id: 'articles' as const, label: '📰 Articles', icon: ImageIcon },
+        ].map((filter) => (
+          <button
+            key={filter.id}
+            onClick={() => {
+              setContentTypeFilter(filter.id);
+              setCurrentPage(1);
+            }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
+              contentTypeFilter === filter.id
+                ? 'bg-secondary text-secondary-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            {filter.label}
           </button>
         ))}
       </div>

@@ -52,6 +52,12 @@ interface Product {
   category: string;
   image_url: string;
   price: number;
+  collection_ids?: string[];
+}
+
+interface Collection {
+  id: string;
+  title: string;
 }
 
 export function BlogWizard({ onClose, categories }: BlogWizardProps) {
@@ -59,6 +65,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -73,7 +80,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [generatedArticleId, setGeneratedArticleId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    category: '',
+    collection_id: '',
     keywords: '',
     productCount: 3,
     articleLength: '700' as '700' | '2000' | '4000',
@@ -85,8 +92,27 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   useEffect(() => {
     if (user?.id) {
       fetchProducts();
+      fetchCollections();
     }
   }, [user?.id]);
+
+  const fetchCollections = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('shopify_collections')
+        .select('id, title')
+        .eq('user_id', user.id)
+        .order('title', { ascending: true });
+
+      if (error) throw error;
+      setCollections(data || []);
+    } catch (err) {
+      console.error('Error fetching collections:', err);
+      toast.error('Erreur lors du chargement des collections');
+    }
+  };
 
   const fetchProducts = async () => {
     if (!user?.id) return;
@@ -94,20 +120,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     try {
       const { data, error } = await supabase
         .from('shopify_products')
-        .select('id, title, description, category, image_url, price, product_type')
+        .select('id, title, description, category, image_url, price, product_type, collection_ids')
         .eq('seller_id', user.id)
         .order('created_at', { ascending: false })
         .limit(200);
 
       if (error) throw error;
       setProducts(data || []);
-      
-      // Extraire les catégories uniques
-      const uniqueCategories = Array.from(
-        new Set(data?.map(p => p.category).filter(Boolean))
-      ) as string[];
-      
-      console.log('📦 Catégories trouvées:', uniqueCategories);
     } catch (err) {
       console.error('Error fetching products:', err);
       toast.error('Erreur lors du chargement des produits');
@@ -115,13 +134,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   };
 
   const filteredProducts = products.filter(product => {
-    const matchesCategory = !formData.category || 
-      product.category?.toLowerCase().includes(formData.category.toLowerCase());
+    const matchesCollection = !formData.collection_id || 
+      product.collection_ids?.includes(formData.collection_id);
     
     const matchesSearch = !searchTerm || 
       product.title?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    return matchesCategory && matchesSearch;
+    return matchesCollection && matchesSearch;
   });
 
   const addKeyword = () => {
@@ -173,7 +192,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       const response = await supabase.functions.invoke('generate-blog-article', {
         body: {
           user_id: user.id,
-          category: formData.category,
+          collection_id: formData.collection_id,
           keywords: finalKeywords,
           productIds: selectedProducts.map(p => p.id),
           articleLength: formData.articleLength,
@@ -308,15 +327,15 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             {currentStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Catégorie</label>
+                  <label className="block text-sm font-medium mb-2">Collection</label>
                   <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    value={formData.collection_id}
+                    onChange={(e) => setFormData({ ...formData, collection_id: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg"
                   >
-                    <option value="">Sélectionner une catégorie</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
+                    <option value="">Sélectionner une collection</option>
+                    {collections.map((col) => (
+                      <option key={col.id} value={col.id}>{col.title}</option>
                     ))}
                   </select>
                 </div>
@@ -477,7 +496,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                   <h3 className="font-semibold mb-4">Résumé</h3>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Catégorie:</strong> {formData.category}</p>
+                    <p><strong>Collection:</strong> {collections.find(c => c.id === formData.collection_id)?.title || 'Aucune'}</p>
                     <p><strong>Longueur:</strong> {formData.articleLength === '700' ? 'Court (~700 mots)' : formData.articleLength === '2000' ? 'Long (~2000 mots)' : 'Large (~4000 mots)'}</p>
                     <p><strong>Produits:</strong> {selectedProducts.length}</p>
                     <p><strong>Mots-clés:</strong> {keywords.join(', ')}</p>

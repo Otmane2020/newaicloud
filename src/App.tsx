@@ -19,6 +19,7 @@ import UpdatePassword from "./pages/UpdatePassword";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
+import Collections from "./pages/Collections";
 import Blog from "./pages/Blog";
 import ArticleManagement from "./pages/ArticleManagement";
 import SEO from "./pages/SEO";
@@ -79,6 +80,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Products />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/collections"
+              element={
+                <ProtectedLayout>
+                  <Collections />
                 </ProtectedLayout>
               }
             />
