@@ -59,13 +59,22 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     setLoadingData(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No user found');
+        setLoadingData(false);
+        return;
+      }
       
+      console.log('Fetching collections for user:', user.id);
       const { data, error } = await supabase
         .from('shopify_collections')
         .select('id, title, image_url')
         .eq('user_id', user.id)
         .order('title');
+      
+      console.log('Collections data:', data);
+      console.log('Collections error:', error);
+      
       if (error) throw error;
       setCollections(data || []);
     } catch (error) {
@@ -80,13 +89,22 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
     setLoadingData(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No user found');
+        setLoadingData(false);
+        return;
+      }
       
+      console.log('Fetching products for user:', user.id);
       const { data, error } = await supabase
         .from('shopify_products')
         .select('id, title, image_url, vendor')
         .eq('seller_id', user.id)
         .order('title');
+      
+      console.log('Products data:', data);
+      console.log('Products error:', error);
+      
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
@@ -331,6 +349,17 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
+            ) : collections.length === 0 ? (
+              <div className="text-center py-12 border rounded-lg">
+                <FolderOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aucune collection trouvée</h3>
+                <p className="text-muted-foreground mb-4">
+                  Vous devez d'abord importer vos collections depuis Shopify
+                </p>
+                <Button variant="outline" onClick={() => window.open('/integration', '_blank')}>
+                  Aller aux Intégrations
+                </Button>
+              </div>
             ) : (
               <ScrollArea className="h-[400px] border rounded-lg p-4">
                 <div className="space-y-2">
@@ -393,6 +422,17 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
             {loadingData ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-12 border rounded-lg">
+                <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aucun produit trouvé</h3>
+                <p className="text-muted-foreground mb-4">
+                  Vous devez d'abord importer vos produits depuis Shopify
+                </p>
+                <Button variant="outline" onClick={() => window.open('/integration', '_blank')}>
+                  Aller aux Intégrations
+                </Button>
               </div>
             ) : (
               <ScrollArea className="h-[400px] border rounded-lg p-4">
