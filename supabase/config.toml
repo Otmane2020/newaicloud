@@ -15,6 +15,9 @@ verify_jwt = true
 [functions.audit-homepage-seo]
 verify_jwt = true
 
+[functions.generate-seo-audit]
+verify_jwt = true
+
 [functions.check-usage-limits]
 verify_jwt = true
 

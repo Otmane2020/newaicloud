@@ -235,7 +235,7 @@ export default function Dashboard() {
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
           <button
-            onClick={() => window.location.href = '/seo?tab=audit'}
+            onClick={() => window.location.href = '/seo?tab=audit&autoStart=true'}
             className="px-6 py-3 bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
           >
             <Sparkles className="w-5 h-5" />

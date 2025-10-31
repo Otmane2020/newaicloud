@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { 
   Home, 
   ShoppingBag, 
@@ -20,7 +23,8 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   Search,
-  Zap
+  Zap,
+  Loader2
 } from 'lucide-react';
 
 interface ScoreItem {
@@ -41,7 +45,63 @@ interface AuditSection {
 }
 
 export function SeoAuditReports() {
+  const [searchParams] = useSearchParams();
   const [activeReport, setActiveReport] = useState('homepage');
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasData, setHasData] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [auditResults, setAuditResults] = useState<any>(null);
+
+  useEffect(() => {
+    // Check if we should auto-start audit from dashboard
+    const autoStart = searchParams.get('autoStart');
+    if (autoStart === 'true' && !hasData) {
+      startAudit();
+    }
+  }, [searchParams]);
+
+  const loadingSteps = [
+    'Analyzing your homepage structure...',
+    'Checking meta tags and SEO elements...',
+    'Scanning all products...',
+    'Reviewing collections...',
+    'Analyzing blog articles...',
+    'Generating recommendations...',
+    'Finalizing your SEO audit...',
+  ];
+
+  const startAudit = async () => {
+    setIsLoading(true);
+    setLoadingStep(0);
+
+    // Simulate loading steps with animation
+    const stepInterval = setInterval(() => {
+      setLoadingStep((prev) => {
+        if (prev >= loadingSteps.length - 1) {
+          clearInterval(stepInterval);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 1500);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-seo-audit');
+
+      if (error) throw error;
+
+      clearInterval(stepInterval);
+      setAuditResults(data);
+      setHasData(true);
+      toast.success('SEO Audit completed successfully!');
+    } catch (error: any) {
+      console.error('Error generating audit:', error);
+      clearInterval(stepInterval);
+      toast.error(error.message || 'Error generating SEO audit');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getStatusIcon = (status: 'success' | 'warning' | 'error') => {
     switch (status) {
@@ -227,18 +287,134 @@ export function SeoAuditReports() {
     </Card>
   );
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-2xl">
+          <CardContent className="pt-12 pb-12">
+            <div className="flex flex-col items-center justify-center space-y-8">
+              {/* Animated Logo/Icon */}
+              <div className="relative">
+                <div className="absolute inset-0 animate-ping">
+                  <BarChart3 className="w-24 h-24 text-blue-500 opacity-20" />
+                </div>
+                <BarChart3 className="w-24 h-24 text-blue-600 animate-pulse" />
+              </div>
+
+              {/* Main Title */}
+              <div className="text-center space-y-2">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent animate-fade-in">
+                  We're making your SEO Audit
+                </h2>
+                <p className="text-muted-foreground animate-fade-in">
+                  Analyzing your entire Shopify store...
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full space-y-2">
+                <Progress value={(loadingStep / loadingSteps.length) * 100} className="h-2" />
+                <p className="text-sm text-center text-muted-foreground animate-fade-in">
+                  {loadingSteps[loadingStep]}
+                </p>
+              </div>
+
+              {/* Loading Steps */}
+              <div className="w-full space-y-2 max-h-64 overflow-y-auto">
+                {loadingSteps.slice(0, loadingStep + 1).map((step, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 text-sm animate-fade-in"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span className={index === loadingStep ? 'text-foreground font-medium' : 'text-muted-foreground'}>
+                      {step}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (!hasData) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 dark:border-blue-800">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
+              <BarChart3 className="w-8 h-8 text-blue-600" />
+              Rapports SEO Automatiques
+            </CardTitle>
+            <CardDescription className="text-base">
+              Analyse complète de votre site Shopify : pages d'accueil, produits, collections et articles
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        <Card className="border-dashed border-2">
+          <CardContent className="flex flex-col items-center justify-center py-16 space-y-6">
+            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950 dark:to-purple-950 flex items-center justify-center">
+              <BarChart3 className="w-16 h-16 text-blue-600" />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-bold">No audit data yet</h3>
+              <p className="text-muted-foreground max-w-md">
+                Start your first SEO audit to get detailed insights about your store's performance
+              </p>
+            </div>
+            <Button
+              size="lg"
+              onClick={startAudit}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2"
+            >
+              <Sparkles className="w-5 h-5" />
+              Start SEO Audit
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Hero Banner */}
       <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 dark:border-blue-800">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
-            <BarChart3 className="w-8 h-8 text-blue-600" />
-            Rapports SEO Automatiques
-          </CardTitle>
-          <CardDescription className="text-base">
-            Analyse complète de votre site Shopify : pages d'accueil, produits, collections et articles
-          </CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
+                <BarChart3 className="w-8 h-8 text-blue-600" />
+                Rapports SEO Automatiques
+              </CardTitle>
+              <CardDescription className="text-base mt-2">
+                Analyse complète de votre site Shopify : pages d'accueil, produits, collections et articles
+              </CardDescription>
+            </div>
+            <Button
+              onClick={startAudit}
+              disabled={isLoading}
+              className="gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Refresh Audit
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
       </Card>
 
