@@ -47,6 +47,7 @@ interface Product {
   product_type: string;
   image_url: string;
   seo_synced_to_shopify: boolean;
+  optimization_count: number;
 }
 
 type FilterType = 'all' | 'to_optimize' | 'tagged' | 'to_sync' | 'synced';
@@ -82,7 +83,7 @@ export function TagOptimization() {
       setLoading(true);
       const { data, error } = await supabase
         .from('shopify_products')
-        .select('id, title, tags, vendor, category, product_type, image_url, seo_synced_to_shopify')
+        .select('id, title, tags, vendor, category, product_type, image_url, seo_synced_to_shopify, optimization_count')
         .order('title', { ascending: true });
 
       if (error) throw error;
@@ -263,6 +264,28 @@ export function TagOptimization() {
       !products.find(p => p.id === id)?.tags
     );
 
+    // Check for products already optimized in trial
+    if (!force && limits?.isTrialing) {
+      const alreadyOptimized = allSelectedProducts.filter(id => {
+        const product = products.find(p => p.id === id);
+        return product && (product.optimization_count || 0) >= 1;
+      });
+
+      if (alreadyOptimized.length > 0) {
+        toast.info(
+          `${alreadyOptimized.length} produit${alreadyOptimized.length > 1 ? 's ont' : ' a'} déjà été optimisé${alreadyOptimized.length > 1 ? 's' : ''}`,
+          {
+            description: 'En période d\'essai, vous pouvez quand même les régénérer',
+            action: {
+              label: 'Régénérer',
+              onClick: () => handleGenerateSelected(true)
+            }
+          }
+        );
+        return;
+      }
+    }
+
     // Si force n'est pas activé et que tous les produits ont déjà des tags
     if (!force && productsWithTags.length > 0 && productsWithoutTags.length === 0) {
       toast.info(
@@ -340,13 +363,7 @@ export function TagOptimization() {
             }
           }
         } else {
-          // Check if error is due to trial limit or already optimized
-          if (result.error === 'trial_limit_reached' || result.error === 'already_optimized') {
-            setShowProgressDialog(false);
-            setShowUpgradeDialog(true);
-            toast.error(result.message || 'Ce produit a déjà été optimisé. Passez à un plan payant pour ré-optimiser.');
-            return; // Stop the bulk operation
-          }
+          console.error(`Error for product ${productIds[i]}:`, result);
           errorCount++;
         }
       } catch (error) {
