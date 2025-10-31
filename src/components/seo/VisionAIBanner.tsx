@@ -17,7 +17,7 @@ export function VisionAIBanner({ className = '' }: VisionAIBannerProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0 shadow-lg">
               <Sparkles className="w-3 h-3 mr-1" />
-              Optimisé par Gemini Vision AI
+              Optimisé par Vision AI (Analyse d'images)
             </Badge>
           </div>
           <AlertDescription className="text-sm leading-relaxed">

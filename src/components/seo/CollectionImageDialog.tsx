@@ -166,7 +166,7 @@ export function CollectionImageDialog({
             <div className="flex items-start gap-3">
               <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shrink-0">
                 <Sparkles className="w-3 h-3 mr-1" />
-                Powered by Gemini Vision AI
+                Vision AI - Analyse d'images
               </Badge>
             </div>
             <div className="mt-3 text-sm space-y-1">
@@ -188,7 +188,7 @@ export function CollectionImageDialog({
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold mb-1 flex items-center gap-2">
-                  Générer avec Gemini Vision AI
+                  Générer avec Vision AI
                   <Badge variant="secondary" className="text-xs">Recommandé</Badge>
                 </h3>
                 <p className="text-sm text-muted-foreground">

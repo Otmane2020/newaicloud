@@ -134,7 +134,7 @@ Context: ${article.content.substring(0, 200)}...`;
             <div className="flex items-start gap-3">
               <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shrink-0">
                 <Sparkles className="w-3 h-3 mr-1" />
-                Powered by Gemini Vision AI
+                Vision AI - Analyse d'images
               </Badge>
             </div>
             <div className="mt-3 text-sm space-y-1">
@@ -157,7 +157,7 @@ Context: ${article.content.substring(0, 200)}...`;
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold mb-1 flex items-center gap-2">
-                  Générer avec Gemini AI
+                  Générer avec Vision AI
                   <Badge variant="secondary" className="text-xs">Recommandé</Badge>
                 </h3>
                 <p className="text-sm text-muted-foreground">

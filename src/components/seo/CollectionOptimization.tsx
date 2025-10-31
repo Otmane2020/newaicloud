@@ -507,7 +507,7 @@ export function CollectionOptimization() {
               </div>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-              Optimisez vos collections Shopify avec l'IA. Générez des titres, descriptions SEO et images avec <span className="font-semibold">Gemini Vision AI</span>
+              Optimisez vos collections Shopify avec l'IA. Générez des titres, descriptions SEO et images avec <span className="font-semibold">Vision AI</span>
             </p>
             <div className="flex flex-wrap gap-4 pt-2">
               <div className="flex items-center gap-2 text-sm">
