@@ -286,7 +286,16 @@ export function AdsCampaignWizard({ open, onOpenChange, onSuccess }: AdsCampaign
         if (productsError) throw productsError;
       }
 
+      const landingPageUrl = `/landing/${campaign.id}`;
+      
       toast.success('Campagne créée avec succès !');
+      toast.info(`Landing page créée : ${landingPageUrl}`, {
+        action: {
+          label: 'Voir',
+          onClick: () => window.open(landingPageUrl, '_blank')
+        }
+      });
+      
       onOpenChange(false);
       onSuccess();
       

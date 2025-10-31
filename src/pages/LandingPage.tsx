@@ -1,102 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ArrowRight, CheckCircle, Shield, Truck, Star } from 'lucide-react';
-import { toast } from 'sonner';
-
-interface Campaign {
-  id: string;
-  name: string;
-  campaign_type: 'product' | 'collection' | 'store';
-  headline: string;
-  subheadline: string;
-  cta_text: string;
-}
-
-interface Product {
-  id: string;
-  title: string;
-  image_url: string;
-  seo_description: string;
-  vendor: string;
-}
-
-interface Collection {
-  id: string;
-  title: string;
-  image_url: string;
-  seo_description: string;
-}
+import { Card } from '@/components/ui/card';
 
 export default function LandingPage() {
   const { campaignId } = useParams();
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [collections, setCollections] = useState<Collection[]>([]);
+  const [campaign, setCampaign] = useState<any>(null);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!campaignId) return;
     fetchCampaignData();
   }, [campaignId]);
 
   const fetchCampaignData = async () => {
     try {
-      setLoading(true);
-      
-      // Fetch campaign
-      const { data: campaignData, error: campaignError } = await supabase
+      if (!campaignId) return;
+
+      const { data: campaignData, error } = await supabase
         .from('ads_campaigns')
-        .select('*')
+        .select(`
+          *,
+          ads_campaign_collections(
+            collection:shopify_collections(*)
+          ),
+          ads_campaign_products(
+            product:shopify_products(*)
+          )
+        `)
         .eq('id', campaignId)
         .single();
 
-      if (campaignError) throw campaignError;
-      setCampaign(campaignData as Campaign);
+      if (error) throw error;
 
-      // Fetch campaign products
-      const { data: campaignProducts, error: productsError } = await supabase
-        .from('ads_campaign_products')
-        .select('product_id')
-        .eq('campaign_id', campaignId);
-
-      if (productsError) throw productsError;
-
-      if (campaignProducts && campaignProducts.length > 0) {
-        const productIds = campaignProducts.map(cp => cp.product_id);
-        const { data: productsData, error: prodError } = await supabase
-          .from('shopify_products')
-          .select('id, title, image_url, seo_description, vendor')
-          .in('id', productIds);
-
-        if (prodError) throw prodError;
-        setProducts(productsData || []);
-      }
-
-      // Fetch campaign collections
-      const { data: campaignCollections, error: collectionsError } = await supabase
-        .from('ads_campaign_collections')
-        .select('collection_id')
-        .eq('campaign_id', campaignId);
-
-      if (collectionsError) throw collectionsError;
-
-      if (campaignCollections && campaignCollections.length > 0) {
-        const collectionIds = campaignCollections.map(cc => cc.collection_id);
-        const { data: collectionsData, error: collError } = await supabase
-          .from('shopify_collections')
-          .select('id, title, image_url, seo_description')
-          .in('id', collectionIds);
-
-        if (collError) throw collError;
-        setCollections(collectionsData || []);
-      }
+      setCampaign(campaignData);
+      setCollections(campaignData.ads_campaign_collections?.map((c: any) => c.collection) || []);
+      setProducts(campaignData.ads_campaign_products?.map((p: any) => p.product) || []);
     } catch (error) {
       console.error('Error fetching campaign:', error);
-      toast.error('Erreur lors du chargement de la campagne');
     } finally {
       setLoading(false);
     }
@@ -105,7 +49,7 @@ export default function LandingPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -113,33 +57,26 @@ export default function LandingPage() {
   if (!campaign) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-2">Campagne introuvable</h2>
-            <p className="text-muted-foreground">
-              Cette campagne n'existe pas ou n'est plus disponible.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Campagne introuvable</h1>
+          <p className="text-muted-foreground">Cette landing page n'existe pas ou a été supprimée.</p>
+        </div>
       </div>
     );
   }
 
+  const highlights = campaign.highlights as any[] || [];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
-        <div className="container mx-auto px-4 py-20 relative">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <Badge className="text-base px-4 py-1">
-              {campaign.campaign_type === 'product' && 'Produits Sélectionnés'}
-              {campaign.campaign_type === 'collection' && 'Collections Exclusives'}
-              {campaign.campaign_type === 'store' && 'Découvrez Notre Boutique'}
-            </Badge>
-            
-            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent leading-tight">
-              {campaign.headline}
+      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/10">
+        <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in">
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
+              {campaign.headline || campaign.name}
             </h1>
             
             {campaign.subheadline && (
@@ -148,74 +85,87 @@ export default function LandingPage() {
               </p>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-              <Button size="lg" className="text-lg px-8 gap-2 shadow-lg hover:shadow-xl transition-shadow">
-                {campaign.cta_text}
-                <ArrowRight className="w-5 h-5" />
+            {campaign.store_summary && (
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto italic">
+                {campaign.store_summary}
+              </p>
+            )}
+            
+            <div className="pt-8">
+              <Button 
+                size="lg" 
+                className="text-lg px-8 py-6 shadow-2xl hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
+              >
+                {campaign.cta_text || 'Découvrir'}
               </Button>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Trust Badges */}
-      <section className="py-12 border-y bg-card/50">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-            <div className="flex flex-col items-center text-center">
-              <Shield className="w-8 h-8 text-primary mb-2" />
-              <span className="font-semibold">Paiement Sécurisé</span>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <Truck className="w-8 h-8 text-primary mb-2" />
-              <span className="font-semibold">Livraison Rapide</span>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <CheckCircle className="w-8 h-8 text-primary mb-2" />
-              <span className="font-semibold">Garantie Qualité</span>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <Star className="w-8 h-8 text-primary mb-2" />
-              <span className="font-semibold">Service Client</span>
-            </div>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 border-2 border-primary/50 rounded-full flex items-start justify-center p-2">
+            <div className="w-1.5 h-3 bg-primary/50 rounded-full animate-pulse" />
           </div>
         </div>
       </section>
+
+      {/* Highlights Section */}
+      {highlights.length > 0 && (
+        <section className="py-20 bg-secondary/5">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+              {highlights.map((highlight: any, index: number) => (
+                <Card 
+                  key={index} 
+                  className="p-6 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-card/50 backdrop-blur"
+                >
+                  <div className="text-4xl mb-4">
+                    {index === 0 && '⭐'}
+                    {index === 1 && '🏪'}
+                    {index === 2 && '🚚'}
+                    {index === 3 && '✨'}
+                    {index > 3 && '💎'}
+                  </div>
+                  <p className="font-semibold text-sm">{highlight.text}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Collections Section */}
       {collections.length > 0 && (
         <section className="py-20">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">Nos Collections</h2>
-              <p className="text-xl text-muted-foreground">
-                Découvrez nos sélections exclusives
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {collections.map((collection) => (
-                <Card key={collection.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                  <div className="aspect-video relative overflow-hidden">
-                    {collection.image_url && (
-                      <img
-                        src={collection.image_url}
-                        alt={collection.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            <h2 className="text-4xl font-bold text-center mb-12">Nos Collections</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {collections.map((collection: any) => (
+                <Card 
+                  key={collection.id}
+                  className="group overflow-hidden hover:shadow-2xl transition-all duration-300"
+                >
+                  {collection.image_url && (
+                    <div className="aspect-square overflow-hidden">
+                      <img 
+                        src={collection.image_url} 
+                        alt={collection.image_alt || collection.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
                       />
-                    )}
-                  </div>
-                  <CardContent className="p-6">
+                    </div>
+                  )}
+                  <div className="p-6">
                     <h3 className="text-xl font-bold mb-2">{collection.title}</h3>
-                    {collection.seo_description && (
-                      <p className="text-muted-foreground mb-4 line-clamp-2">
-                        {collection.seo_description}
+                    {collection.body_html && (
+                      <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
+                        {collection.body_html.replace(/<[^>]*>/g, '')}
                       </p>
                     )}
-                    <Button variant="outline" className="w-full gap-2">
+                    <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                       Voir la collection
-                      <ArrowRight className="w-4 h-4" />
                     </Button>
-                  </CardContent>
+                  </div>
                 </Card>
               ))}
             </div>
@@ -225,43 +175,40 @@ export default function LandingPage() {
 
       {/* Products Section */}
       {products.length > 0 && (
-        <section className="py-20 bg-muted/30">
+        <section className="py-20 bg-secondary/5">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">Produits Sélectionnés</h2>
-              <p className="text-xl text-muted-foreground">
-                Nos meilleures offres du moment
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {products.map((product) => (
-                <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                  <div className="aspect-square relative overflow-hidden">
-                    {product.image_url && (
-                      <img
-                        src={product.image_url}
+            <h2 className="text-4xl font-bold text-center mb-12">Nos Produits</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+              {products.slice(0, 8).map((product: any) => (
+                <Card 
+                  key={product.id}
+                  className="group overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+                >
+                  {product.image_url && (
+                    <div className="aspect-square overflow-hidden bg-secondary/20">
+                      <img 
+                        src={product.image_url} 
                         alt={product.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
                       />
-                    )}
-                  </div>
-                  <CardContent className="p-6">
-                    {product.vendor && (
-                      <Badge variant="secondary" className="mb-2">
-                        {product.vendor}
-                      </Badge>
-                    )}
-                    <h3 className="text-xl font-bold mb-2">{product.title}</h3>
-                    {product.seo_description && (
-                      <p className="text-muted-foreground mb-4 line-clamp-2">
-                        {product.seo_description}
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <h3 className="font-semibold mb-1 line-clamp-2 text-sm">{product.title}</h3>
+                    {product.price && (
+                      <p className="text-primary font-bold text-lg mb-3">
+                        {product.price} {product.currency || 'EUR'}
                       </p>
                     )}
-                    <Button className="w-full gap-2">
-                      {campaign.cta_text}
-                      <ArrowRight className="w-4 h-4" />
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                    >
+                      {campaign.cta_text || 'Voir le produit'}
                     </Button>
-                  </CardContent>
+                  </div>
                 </Card>
               ))}
             </div>
@@ -269,23 +216,26 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <Card className="max-w-4xl mx-auto bg-gradient-to-br from-primary/10 via-accent/10 to-primary/10 border-primary/20">
-            <CardContent className="p-12 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Prêt à découvrir nos produits ?
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8">
-                Profitez de nos offres exceptionnelles dès maintenant
-              </p>
-              <Button size="lg" className="text-lg px-8 gap-2 shadow-lg">
-                {campaign.cta_text}
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            </CardContent>
-          </Card>
+      {/* Final CTA Section */}
+      <section className="py-32 bg-gradient-to-br from-primary via-primary/90 to-secondary text-primary-foreground relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mx-auto text-center space-y-8">
+            <h2 className="text-4xl md:text-5xl font-bold">
+              Prêt à découvrir nos produits ?
+            </h2>
+            <p className="text-xl text-primary-foreground/90">
+              Ne manquez pas cette opportunité exclusive
+            </p>
+            <Button 
+              size="lg" 
+              variant="secondary"
+              className="text-lg px-12 py-6 shadow-2xl hover:shadow-white/20 transition-all duration-300 hover:scale-105"
+            >
+              {campaign.cta_text || 'Découvrir maintenant'}
+            </Button>
+          </div>
         </div>
       </section>
     </div>
