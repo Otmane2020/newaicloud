@@ -43,6 +43,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import PerformanceMonitor from "./pages/PerformanceMonitor";
 import Documentation from "./pages/Documentation";
+import NotificationSettings from "./pages/NotificationSettings";
 
 const queryClient = new QueryClient();
 
@@ -200,6 +201,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ChatSettings />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/notification-settings"
+              element={
+                <ProtectedLayout>
+                  <NotificationSettings />
                 </ProtectedLayout>
               }
             />

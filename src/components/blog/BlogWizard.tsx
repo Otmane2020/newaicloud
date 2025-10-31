@@ -133,7 +133,9 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         })
       );
 
-      setCollections(collectionsWithCount as any);
+      // Filter collections with products only
+      const collectionsWithProducts = collectionsWithCount.filter(col => col.productCount > 0);
+      setCollections(collectionsWithProducts as any);
     } catch (err) {
       console.error('Error fetching collections:', err);
       toast.error('Erreur lors du chargement des collections');

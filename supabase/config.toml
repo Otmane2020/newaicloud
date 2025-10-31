@@ -81,6 +81,12 @@ verify_jwt = true
 [functions.report-usage-to-stripe]
 verify_jwt = false
 
+[functions.send-notification-email]
+verify_jwt = false
+
+[functions.generate-daily-notifications]
+verify_jwt = false
+
 [functions.assistant-ai]
 verify_jwt = false
 

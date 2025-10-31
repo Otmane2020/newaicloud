@@ -586,6 +586,54 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          created_at: string | null
+          daily_digest: boolean | null
+          digest_hour: number | null
+          email_enabled: boolean | null
+          id: string
+          in_app_enabled: boolean | null
+          notify_blog: boolean | null
+          notify_collections: boolean | null
+          notify_homepage: boolean | null
+          notify_images: boolean | null
+          notify_products: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          daily_digest?: boolean | null
+          digest_hour?: number | null
+          email_enabled?: boolean | null
+          id?: string
+          in_app_enabled?: boolean | null
+          notify_blog?: boolean | null
+          notify_collections?: boolean | null
+          notify_homepage?: boolean | null
+          notify_images?: boolean | null
+          notify_products?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          daily_digest?: boolean | null
+          digest_hour?: number | null
+          email_enabled?: boolean | null
+          id?: string
+          in_app_enabled?: boolean | null
+          notify_blog?: boolean | null
+          notify_collections?: boolean | null
+          notify_homepage?: boolean | null
+          notify_images?: boolean | null
+          notify_products?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       oauth_states: {
         Row: {
           created_at: string | null
@@ -1061,6 +1109,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seo_notifications: {
+        Row: {
+          action_label: string | null
+          action_url: string | null
+          category: string
+          created_at: string | null
+          due_date: string | null
+          id: string
+          is_completed: boolean | null
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          priority: string
+          title: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_url?: string | null
+          category: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean | null
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          priority?: string
+          title: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          action_label?: string | null
+          action_url?: string | null
+          category?: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean | null
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          priority?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       shopify_collections: {
         Row: {

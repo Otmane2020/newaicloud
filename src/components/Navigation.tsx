@@ -30,6 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { NotificationCenter } from '@/components/NotificationCenter';
 
 export function Navigation() {
   const location = useLocation();
@@ -90,6 +91,7 @@ export function Navigation() {
 
   const bottomMenuItems = [
     { path: '/dashboard', label: 'Account', icon: User },
+    { path: '/notification-settings', label: 'Notifications', icon: Bell },
     { path: '/subscription', label: 'Subscription', icon: CreditCard },
     { path: '/integration', label: 'Shopify', icon: Settings },
   ];
@@ -332,6 +334,13 @@ export function Navigation() {
 
         {/* Footer - Logout & Collapse */}
         <div className="border-t border-gray-200 p-2 space-y-1">
+          {/* Notification Center */}
+          {!collapsed && (
+            <div className="px-2 mb-2">
+              <NotificationCenter />
+            </div>
+          )}
+          
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
