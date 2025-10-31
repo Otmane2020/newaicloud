@@ -336,7 +336,7 @@ export function PageOptimization() {
   return (
     <div className="space-y-6">
       {/* Hero Banner with Stats - Modern Design */}
-      <Card className="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-900 dark:via-purple-900 dark:to-pink-900 border-0 p-8">
+      <Card className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-2 border-indigo-200 dark:border-indigo-800 p-8">
         {/* Animated background pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC40Ij48cGF0aCBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00ek0yNiAyNGMwLTIuMjEtMS43OS00LTQtNHMtNCAxLjc5LTQgNCAxLjc5IDQgNCA0IDQtMS43OSA0LTR6TTQ2IDQ0YzAtMi4yMS0xLjc5LTQtNC00cy00IDEuNzktNCA0IDEuNzkgNCA0IDQgNC0xLjc5IDQtNHoiLz48L2c+PC9nPjwvc3ZnPg==')] animate-[pulse_4s_ease-in-out_infinite]"></div>
@@ -345,17 +345,17 @@ export function PageOptimization() {
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
                 <FileText className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-white">
+                <h2 className="text-3xl md:text-4xl font-bold text-indigo-900 dark:text-indigo-100">
                   Pages SEO
                 </h2>
-                <p className="text-white/80 text-sm">Optimisation intelligente IA</p>
+                <p className="text-indigo-700 dark:text-indigo-300 text-sm">Optimisation intelligente IA</p>
               </div>
             </div>
-            <p className="text-white/90 text-lg max-w-2xl leading-relaxed">
+            <p className="text-indigo-800 dark:text-indigo-200 text-lg max-w-2xl leading-relaxed">
               Transformez vos pages Shopify en machines de conversion SEO. IA génère des meta titles et descriptions optimisés pour maximiser votre visibilité.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
