@@ -334,84 +334,113 @@ export function PageOptimization() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner with Stats */}
-      <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2">
-              <FileText className="w-6 h-6 text-purple-600" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Page Optimization
-              </h2>
+      {/* Hero Banner with Stats - Modern Design */}
+      <Card className="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-900 dark:via-purple-900 dark:to-pink-900 border-0 p-8">
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC40Ij48cGF0aCBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00ek0yNiAyNGMwLTIuMjEtMS43OS00LTQtNHMtNCAxLjc5LTQgNCAxLjc5IDQgNCA0IDQtMS43OSA0LTR6TTQ2IDQ0YzAtMi4yMS0xLjc5LTQtNC00cy00IDEuNzktNCA0IDEuNzkgNCA0IDQgNC0xLjc5IDQtNHoiLz48L2c+PC9nPjwvc3ZnPg==')] animate-[pulse_4s_ease-in-out_infinite]"></div>
+        </div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <FileText className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white">
+                  Pages SEO
+                </h2>
+                <p className="text-white/80 text-sm">Optimisation intelligente IA</p>
+              </div>
             </div>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              Optimize the SEO of all your Shopify pages. Generate effective meta titles and descriptions to maximize your traffic.
+            <p className="text-white/90 text-lg max-w-2xl leading-relaxed">
+              Transformez vos pages Shopify en machines de conversion SEO. IA génère des meta titles et descriptions optimisés pour maximiser votre visibilité.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <span className="font-medium">Automated SEO</span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white border border-white/20">
+                <Sparkles className="w-4 h-4" />
+                <span className="font-medium text-sm">SEO Automatisé</span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle className="w-4 h-4 text-pink-600" />
-                <span className="font-medium">Complete pages</span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white border border-white/20">
+                <CheckCircle className="w-4 h-4" />
+                <span className="font-medium text-sm">Pages Complètes</span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Upload className="w-4 h-4 text-rose-600" />
-                <span className="font-medium">Shopify Sync</span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white border border-white/20">
+                <Upload className="w-4 h-4" />
+                <span className="font-medium text-sm">Sync Shopify</span>
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-3 items-center">
+          <div className="flex flex-col gap-4 items-center bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
             <div className="text-center">
-              <div className={`text-4xl font-bold ${
-                globalPageSeoScore >= 70 ? 'text-green-600' : 
-                globalPageSeoScore >= 40 ? 'text-orange-600' : 
-                'text-red-600'
+              <div className={`text-5xl font-bold ${
+                globalPageSeoScore >= 70 ? 'text-green-300' : 
+                globalPageSeoScore >= 40 ? 'text-yellow-300' : 
+                'text-red-300'
               }`}>
-                {globalPageSeoScore}/100
+                {globalPageSeoScore}
               </div>
-              <div className="text-sm text-muted-foreground">SEO Score</div>
+              <div className="text-white/80 text-sm font-medium">Score SEO Global</div>
+              <Progress value={globalPageSeoScore} className="mt-2 h-2 bg-white/20" />
             </div>
             <Button
               size="lg"
               onClick={handleOptimizeAll}
               disabled={optimizing || pages.filter(p => !p.optimized).length === 0}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
+              className="bg-white text-purple-600 hover:bg-white/90 gap-2 shadow-xl font-semibold px-6 py-3 text-base"
             >
-              <Sparkles className="w-5 h-5" />
-              Optimize All
+              {optimizing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Optimisation...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Optimiser Tout
+                  <FileText className="w-5 h-5" />
+                </>
+              )}
             </Button>
           </div>
         </div>
       </Card>
 
-      {/* Clickable Stats Cards */}
+      {/* Stats Cards - Enhanced Design */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-3">
-            <FileText className="w-8 h-8 text-muted-foreground" />
+        <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-2 border-blue-200 hover:shadow-xl transition-all hover:scale-105 transform duration-200">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold">{pages.length}</p>
-              <p className="text-sm text-muted-foreground">Total pages</p>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{pages.length}</p>
+              <p className="text-sm text-muted-foreground font-medium mt-1">Pages Totales</p>
+            </div>
+            <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-xl">
+              <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </Card>
-        <Card className="p-6 border-2 border-success hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-8 h-8 text-success" />
+        
+        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-2 border-green-200 hover:shadow-xl transition-all hover:scale-105 transform duration-200">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold">{pages.filter(p => p.optimized).length}</p>
-              <p className="text-sm text-muted-foreground">Optimized</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">{pages.filter(p => p.optimized).length}</p>
+              <p className="text-sm text-muted-foreground font-medium mt-1">Optimisées</p>
+            </div>
+            <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
+              <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </Card>
-        <Card className="p-6 border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200">
-          <div className="flex items-center gap-3">
-            <Clock className="w-8 h-8 text-orange-600" />
+        
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-2 border-orange-200 hover:shadow-xl transition-all hover:scale-105 transform duration-200">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{pages.filter(p => !p.optimized).length}</p>
-              <p className="text-sm text-muted-foreground">To Optimize</p>
+              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{pages.filter(p => !p.optimized).length}</p>
+              <p className="text-sm text-muted-foreground font-medium mt-1">À Optimiser</p>
+            </div>
+            <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
+              <Clock className="w-8 h-8 text-orange-600 dark:text-orange-400" />
             </div>
           </div>
         </Card>
@@ -419,63 +448,81 @@ export function PageOptimization() {
 
       {/* Pages Table */}
       {pages.length === 0 ? (
-        <Card className="p-12 text-center">
-          <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No pages found</h3>
-          <p className="text-muted-foreground mb-6">
-            Import your Shopify pages to start SEO optimization
-          </p>
-          <Button 
-            onClick={handleImportPages}
-            disabled={importingPages}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600"
-          >
-            {importingPages ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Importing...
-              </>
-            ) : (
-              <>
-                <FileText className="mr-2 h-4 w-4" />
-                Import Shopify Pages
-              </>
-            )}
-          </Button>
+        <Card className="p-12 text-center bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-900 dark:to-slate-900">
+          <div className="max-w-md mx-auto">
+            <div className="p-6 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-full w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+              <FileText className="w-16 h-16 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h3 className="text-2xl font-bold mb-3">Aucune page trouvée</h3>
+            <p className="text-muted-foreground mb-8 text-lg">
+              Importez vos pages Shopify pour commencer l'optimisation SEO et booster votre visibilité
+            </p>
+            <Button 
+              onClick={handleImportPages}
+              disabled={importingPages}
+              size="lg"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-xl px-8 py-6 text-lg"
+            >
+              {importingPages ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Importation en cours...
+                </>
+              ) : (
+                <>
+                  <FileText className="mr-2 h-5 w-5" />
+                  Importer les Pages Shopify
+                </>
+              )}
+            </Button>
+          </div>
         </Card>
       ) : (
-        <Card>
+        <Card className="border-2">
           <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold">Shopify Pages</h3>
-              <div className="flex gap-2">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 className="text-2xl font-bold mb-1">Pages Shopify</h3>
+                <p className="text-muted-foreground">Gérez et optimisez toutes vos pages</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={handleImportPages}
                   disabled={importingPages}
                   variant="outline"
                   size="sm"
+                  className="border-2"
                 >
-                  <FileText className="w-4 h-4 mr-2" />
-                  {importingPages ? 'Importing...' : 'Import Pages'}
+                  {importingPages ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Import...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Importer
+                    </>
+                  )}
                 </Button>
                 <Button
                   onClick={handleOptimizeSelected}
                   disabled={optimizing || selectedPages.size === 0}
-                  variant="default"
                   size="sm"
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg border-0"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Optimize Selected ({selectedPages.size})
+                  Optimiser ({selectedPages.size})
                 </Button>
                 <Button
                   onClick={handleSyncSelected}
                   disabled={syncing || selectedPages.size === 0}
                   variant="outline"
                   size="sm"
+                  className="border-2 border-green-200 text-green-700 hover:bg-green-50"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  Sync Selected
+                  Synchroniser
                 </Button>
               </div>
             </div>
