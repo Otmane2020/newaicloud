@@ -51,7 +51,9 @@ export function GoogleMerchant() {
     setFeedStatus((prev) => ({ ...prev, status: "loading" }));
 
     try {
-      const response = await fetch(feedUrl);
+      // Utiliser l'URL Supabase directe pour tester (fonctionne en preview)
+      const testUrl = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user?.id}/xml`;
+      const response = await fetch(testUrl);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -228,7 +230,7 @@ export function GoogleMerchant() {
                   <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-sm">
-                      <strong>Note:</strong> Cette URL newai.sale fonctionnera après publication de l'application. URL propre et professionnelle pour Google Merchant Center.
+                      <strong>Note:</strong> Cette URL newai.sale fonctionnera après publication. En preview, le test utilise l'URL Supabase directe.
                     </AlertDescription>
                   </Alert>
 
