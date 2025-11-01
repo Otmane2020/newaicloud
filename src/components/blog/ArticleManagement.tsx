@@ -435,6 +435,7 @@ export function ArticleManagement() {
         <Card className="overflow-hidden">
           <div className="max-h-[600px] overflow-y-auto">
           <Table>
+            {/* Article Table Headers - Updated structure */}
             <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
               <TableRow>
                 <TableHead className="w-12">
