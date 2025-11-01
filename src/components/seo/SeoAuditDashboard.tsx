@@ -120,21 +120,21 @@ export function SeoAuditDashboard() {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
     if (score >= 60) return "text-[rgb(255,94,23)]"; // Orange vif
     if (score >= 40) return "text-[rgb(255,94,23)]"; // Orange vif
-    return "text-[#dc2626]"; // Rouge pour faible
+    return "text-[#ef4444]"; // Rouge vif distinct
   };
 
   const getScoreBgColor = (score: number) => {
     if (score >= 80) return "bg-[#22c55e]/10 border-[#22c55e]/30";
     if (score >= 60) return "bg-[rgb(255,94,23)]/10 border-[rgb(255,94,23)]/30";
     if (score >= 40) return "bg-[rgb(255,94,23)]/10 border-[rgb(255,94,23)]/30";
-    return "bg-[#dc2626]/10 border-[#dc2626]/30";
+    return "bg-[#ef4444]/10 border-[#ef4444]/30";
   };
 
   const getScoreGradient = (score: number) => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
     if (score >= 60) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
     if (score >= 40) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
-    return "from-[#dc2626]/20 to-[#dc2626]/5";
+    return "from-[#ef4444]/20 to-[#ef4444]/5";
   };
 
   const getCategoryColor = (value: number) => {
@@ -163,11 +163,11 @@ export function SeoAuditDashboard() {
         gradient: "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5",
       };
     return {
-      text: "text-[#dc2626]",
-      bg: "bg-gradient-to-r from-[#dc2626] to-[#b91c1c]",
-      glow: "0 0 10px #dc2626",
-      dot: "bg-[#dc2626]",
-      gradient: "from-[#dc2626]/20 to-[#dc2626]/5",
+      text: "text-[#ef4444]",
+      bg: "bg-gradient-to-r from-[#ef4444] to-[#dc2626]",
+      glow: "0 0 10px #ef4444",
+      dot: "bg-[#ef4444]",
+      gradient: "from-[#ef4444]/20 to-[#ef4444]/5",
     };
   };
 
@@ -191,9 +191,9 @@ export function SeoAuditDashboard() {
         glow: "bg-[rgb(255,94,23)]/30",
       };
     return {
-      start: "#dc2626",
-      end: "#b91c1c",
-      glow: "bg-[#dc2626]/30",
+      start: "#ef4444",
+      end: "#dc2626",
+      glow: "bg-[#ef4444]/30",
     };
   };
 
@@ -371,9 +371,9 @@ export function SeoAuditDashboard() {
                       ? "bg-[#22c55e] text-white"
                       : audit.global_score >= 60
                         ? "bg-[rgb(255,94,23)] text-white"
-                        : audit.global_score >= 40
-                          ? "bg-[rgb(255,94,23)] text-white"
-                          : "bg-[#dc2626] text-white"
+                  : audit.global_score >= 40
+                    ? "bg-[rgb(255,94,23)] text-white"
+                    : "bg-[#ef4444] text-white"
                   }`}
                 >
                   {audit.global_score >= 80
@@ -418,7 +418,7 @@ export function SeoAuditDashboard() {
                                   ? "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]"
                                   : audit.global_score >= 40
                                     ? "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]"
-                                    : "bg-gradient-to-r from-[#dc2626] to-[#b91c1c]"
+                                    : "bg-gradient-to-r from-[#ef4444] to-[#dc2626]"
                             }`}
                             style={{
                               width: `${audit.global_score}%`,
