@@ -107,7 +107,16 @@ Focus on making the title clear, descriptive, and include key attributes. The de
 `;
 
         const aiResponse = await callDeepSeek(prompt);
-        const optimizedData = JSON.parse(aiResponse);
+        
+        // Clean up AI response (remove markdown code blocks if present)
+        let cleanedResponse = aiResponse.trim();
+        if (cleanedResponse.startsWith('```json')) {
+          cleanedResponse = cleanedResponse.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+        } else if (cleanedResponse.startsWith('```')) {
+          cleanedResponse = cleanedResponse.replace(/^```\n?/, '').replace(/\n?```$/, '');
+        }
+        
+        const optimizedData = JSON.parse(cleanedResponse);
         
         // Update product with optimized data
         const updateData = {

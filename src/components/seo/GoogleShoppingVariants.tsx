@@ -62,6 +62,8 @@ export function GoogleShoppingVariants() {
   const [searchTerm, setSearchTerm] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
+  const [generatingGtin, setGeneratingGtin] = useState(false);
+  const [globalOptimizing, setGlobalOptimizing] = useState(false);
 
   const fetchVariants = async () => {
     try {
@@ -230,6 +232,7 @@ export function GoogleShoppingVariants() {
     }
 
     try {
+      setGeneratingGtin(true);
       toast.info(`Génération des GTIN pour ${productIds.length} produit(s)...`);
       
       const { data, error } = await supabase.functions.invoke('generate-gtin', {
@@ -246,6 +249,47 @@ export function GoogleShoppingVariants() {
     } catch (error) {
       console.error('Error generating GTIN:', error);
       toast.error('Erreur lors de la génération des GTIN');
+    } finally {
+      setGeneratingGtin(false);
+    }
+  };
+
+  const handleOptimizeAll = async () => {
+    const allProductIds = Array.from(new Set(variants.map(v => v.product_id)));
+    
+    if (allProductIds.length === 0) {
+      toast.info('Aucun produit à optimiser');
+      return;
+    }
+
+    try {
+      setGlobalOptimizing(true);
+      toast.info(`Optimisation complète de ${allProductIds.length} produit(s)...`);
+      
+      // Step 1: Optimize titles, descriptions, categories, brands
+      const { data: optimizeData, error: optimizeError } = await supabase.functions.invoke('optimize-shopping-feed', {
+        body: { productIds: allProductIds }
+      });
+
+      if (optimizeError) throw optimizeError;
+
+      // Step 2: Generate GTINs
+      const { data: gtinData, error: gtinError } = await supabase.functions.invoke('generate-gtin', {
+        body: { productIds: allProductIds, countryCode: 'FR' }
+      });
+
+      if (gtinError) throw gtinError;
+
+      const optimizeSuccess = optimizeData.results.filter((r: any) => r.status === 'success').length;
+      const gtinGenerated = gtinData.results.filter((r: any) => r.status === 'generated').length;
+
+      toast.success(`Optimisation terminée ! ${optimizeSuccess} produits optimisés, ${gtinGenerated} GTIN générés`);
+      await fetchVariants();
+    } catch (error) {
+      console.error('Error in global optimization:', error);
+      toast.error('Erreur lors de l\'optimisation globale');
+    } finally {
+      setGlobalOptimizing(false);
     }
   };
 
@@ -313,53 +357,70 @@ export function GoogleShoppingVariants() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
-          <ShoppingBag className="w-8 h-8 text-primary" />
-          Google Shopping
-        </h2>
-        <p className="text-muted-foreground">
-          Optimisez vos produits et variantes pour Google Shopping
-        </p>
+      {/* Header with Global Optimization Button */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
+            <ShoppingBag className="w-8 h-8 text-primary" />
+            Google Shopping
+          </h2>
+          <p className="text-muted-foreground">
+            Optimisez vos produits et variantes pour Google Shopping
+          </p>
+        </div>
+        <Button
+          onClick={handleOptimizeAll}
+          disabled={globalOptimizing || variants.length === 0}
+          size="lg"
+          className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700"
+        >
+          {globalOptimizing ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Optimisation en cours...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-5 h-5" />
+              Optimiser Tout
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6 hover:shadow-lg transition-shadow">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4 hover:shadow-lg transition-shadow border-primary/20">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-muted-foreground">Produits</h3>
-            <Package className="w-5 h-5 text-blue-600" />
+            <h3 className="text-xs font-medium text-muted-foreground">Produits</h3>
+            <Package className="w-4 h-4 text-primary" />
           </div>
-          <p className="text-3xl font-bold">{uniqueProducts}</p>
-          <p className="text-sm text-muted-foreground mt-1">{variants.length} variantes</p>
+          <p className="text-2xl font-bold">{uniqueProducts}</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
+        <Card className="p-4 hover:shadow-lg transition-shadow border-emerald-500/20">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-green-900 dark:text-green-100">Optimisés</h3>
-            <TrendingUp className="w-5 h-5 text-green-600" />
+            <h3 className="text-xs font-medium text-muted-foreground">Optimisés</h3>
+            <TrendingUp className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-3xl font-bold text-green-900 dark:text-green-100">{optimizedProducts}</p>
-          <p className="text-sm text-green-700 dark:text-green-300 mt-1">{completionRate}% complétés</p>
+          <p className="text-2xl font-bold text-emerald-600">{optimizedProducts}</p>
+          <p className="text-xs text-muted-foreground mt-1">{completionRate}% complétés</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow">
+        <Card className="p-4 hover:shadow-lg transition-shadow border-purple-500/20">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-orange-900 dark:text-orange-100">À synchroniser</h3>
-            <AlertCircle className="w-5 h-5 text-orange-600" />
+            <h3 className="text-xs font-medium text-muted-foreground">Variantes</h3>
+            <CheckCircle className="w-4 h-4 text-purple-600" />
           </div>
-          <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">{toSyncProducts}</p>
-          <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">Prêts pour Shopify</p>
+          <p className="text-2xl font-bold text-purple-600">{variants.length}</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950 border-purple-200 hover:shadow-lg transition-shadow">
+        <Card className="p-4 hover:shadow-lg transition-shadow border-orange-500/20">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-purple-900 dark:text-purple-100">Variantes</h3>
-            <CheckCircle className="w-5 h-5 text-purple-600" />
+            <h3 className="text-xs font-medium text-muted-foreground">À sync</h3>
+            <AlertCircle className="w-4 h-4 text-orange-600" />
           </div>
-          <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{variants.length}</p>
-          <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">Total dans le catalogue</p>
+          <p className="text-2xl font-bold text-orange-600">{toSyncProducts}</p>
         </Card>
       </div>
 
@@ -409,12 +470,21 @@ export function GoogleShoppingVariants() {
             
             <Button
               onClick={handleGenerateGTIN}
-              disabled={selectedVariants.size === 0}
+              disabled={generatingGtin || selectedVariants.size === 0}
               variant="outline"
               className="gap-2"
             >
-              <Zap className="w-4 h-4" />
-              Générer GTIN ({selectedVariants.size})
+              {generatingGtin ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  Générer GTIN ({selectedVariants.size})
+                </>
+              )}
             </Button>
             
             <Button
