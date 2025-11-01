@@ -43,11 +43,21 @@ function validateAltText(altText: string, minLength = 15, maxLength = 200): bool
   );
 }
 
-async function callVisionAI(imageUrl: string, productContext: string) {
+// Sleep utility for rate limiting
+async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function callVisionAI(imageUrl: string, productContext: string, retryCount = 0) {
   const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
 
   if (!geminiApiKey) {
     throw new Error('Google Gemini API key not configured');
+  }
+
+  // Check for placeholder URLs that won't work
+  if (imageUrl.includes('placeholder.com') || imageUrl.includes('via.placeholder')) {
+    throw new Error('Cannot analyze placeholder images. Please use real product images.');
   }
 
   // Convert image to base64 efficiently
@@ -55,19 +65,36 @@ async function callVisionAI(imageUrl: string, productContext: string) {
   if (imageUrl.startsWith('data:')) {
     base64Data = imageUrl.split(',')[1];
   } else {
-    const imageResponse = await fetch(imageUrl);
-    const arrayBuffer = await imageResponse.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    
-    // Convert to base64 in chunks to avoid stack overflow
-    let binary = '';
-    const chunkSize = 8192;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-      binary += String.fromCharCode(...Array.from(chunk));
+    try {
+      const imageResponse = await fetch(imageUrl, {
+        signal: AbortSignal.timeout(10000) // 10s timeout
+      });
+      
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
+      }
+      
+      const arrayBuffer = await imageResponse.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      
+      // Convert to base64 in chunks to avoid stack overflow
+      let binary = '';
+      const chunkSize = 8192;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+        binary += String.fromCharCode(...Array.from(chunk));
+      }
+      base64Data = btoa(binary);
+    } catch (fetchError) {
+      console.error('Image fetch error:', fetchError);
+      const errorMsg = fetchError instanceof Error ? fetchError.message : 'Unknown error';
+      throw new Error(`Cannot access image URL: ${imageUrl}. ${errorMsg}`);
     }
-    base64Data = btoa(binary);
   }
+
+  // Rate limiting: wait before making request
+  const minDelayBetweenRequests = 6500; // 6.5s to stay under 10 req/min
+  await sleep(minDelayBetweenRequests);
 
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
@@ -133,6 +160,28 @@ Réponds UNIQUEMENT avec ce JSON valide :
 
   if (!response.ok) {
     const errorText = await response.text();
+    
+    // Handle rate limit (429) with retry
+    if (response.status === 429 && retryCount < 3) {
+      console.warn(`Rate limit hit (attempt ${retryCount + 1}/3), retrying...`);
+      
+      // Parse retry delay from error
+      let retryDelaySeconds = 30;
+      try {
+        const errorData = JSON.parse(errorText);
+        const retryInfo = errorData.error?.details?.find((d: any) => d['@type']?.includes('RetryInfo'));
+        if (retryInfo?.retryDelay) {
+          retryDelaySeconds = parseInt(retryInfo.retryDelay.replace('s', '')) || 30;
+        }
+      } catch {}
+      
+      console.log(`Waiting ${retryDelaySeconds}s before retry...`);
+      await sleep(retryDelaySeconds * 1000);
+      
+      // Retry with incremented count
+      return callVisionAI(imageUrl, productContext, retryCount + 1);
+    }
+    
     throw new Error(`Google Gemini API error: ${response.status} - ${errorText}`);
   }
 
