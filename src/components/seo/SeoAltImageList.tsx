@@ -287,9 +287,14 @@ export function SeoAltImageList() {
       // Wait for UI to update before closing (prevents dialog getting stuck at 100%)
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // ALWAYS close the dialog
-      setImagesToSync([]);
+      // ALWAYS close the dialog first
       setShowProgressDialog(false);
+      
+      // Wait a bit before showing success dialog to avoid conflicts
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Clear sync state
+      setImagesToSync([]);
       
       // Show results
       if (successCount > 0) {
