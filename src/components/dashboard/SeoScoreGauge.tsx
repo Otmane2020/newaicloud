@@ -43,46 +43,46 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
 
   const categories = [
     { 
-      name: '🏠 Homepage', 
+      name: 'Homepage', 
       description: 'Titre et description de votre page d\'accueil',
       value: Math.round(categoryScores.homepage), 
       max: 100, 
-      color: 'hsl(217 91% 60%)' 
+      link: '/seo?tab=homepage'
     },
     { 
-      name: '📦 Produits', 
+      name: 'Produits', 
       description: 'Titres SEO, descriptions et tags optimisés',
       value: Math.round(categoryScores.products), 
-      max: 100, 
-      color: 'hsl(271 91% 65%)' 
+      max: 100,
+      link: '/seo?tab=products'
     },
     { 
-      name: '📁 Collections', 
+      name: 'Collections', 
       description: 'Descriptions et images de vos collections',
       value: Math.round(categoryScores.collections), 
-      max: 100, 
-      color: 'hsl(38 92% 50%)' 
+      max: 100,
+      link: '/seo?tab=collections'
     },
     { 
-      name: '📝 Contenu', 
-      description: 'Articles de blog et pages Shopify',
+      name: 'Contenu', 
+      description: 'Articles de blog et pages Shopify optimisés',
       value: Math.round(categoryScores.content), 
-      max: 100, 
-      color: 'hsl(192 71% 45%)' 
+      max: 100,
+      link: '/seo?tab=articles'
     },
     { 
-      name: '🖼️ Images', 
+      name: 'Images', 
       description: 'Textes alternatifs (alt text) des images',
       value: Math.round(categoryScores.images), 
-      max: 100, 
-      color: 'hsl(142 71% 45%)' 
+      max: 100,
+      link: '/seo?tab=alt'
     },
     { 
-      name: '⚙️ Technique', 
-      description: 'Configuration et synchronisation boutique',
+      name: 'Technique', 
+      description: 'Synchronisation et configuration Shopify',
       value: Math.round(categoryScores.technical), 
-      max: 100, 
-      color: 'hsl(0 71% 55%)' 
+      max: 100,
+      link: '/integration'
     },
   ];
 
@@ -145,34 +145,43 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
           </div>
         </div>
 
-        {/* Breakdown des catégories - 6 catégories égales = 100% / 6 */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-foreground/80">6 Catégories SEO</h4>
-            <span className="text-xs text-muted-foreground">Chaque catégorie = 16.7% du score global</span>
-          </div>
+        {/* Breakdown des catégories - Cliquables */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-semibold text-foreground/80 mb-3">6 Catégories SEO</h4>
           {categories.map((cat, idx) => (
-            <div key={idx} className="space-y-2">
+            <a 
+              key={idx}
+              href={cat.link}
+              className="block space-y-2 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-foreground">{cat.name}</div>
+                  <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                    {cat.name}
+                  </div>
                   <div className="text-xs text-muted-foreground">{cat.description}</div>
                 </div>
-                <span className="text-sm font-bold ml-3" style={{ color: cat.color }}>
+                <span className={`text-sm font-bold ml-3 ${
+                  cat.value >= 80 ? 'text-success' : 
+                  cat.value >= 60 ? 'text-warning' : 
+                  'text-destructive'
+                }`}>
                   {cat.value}/100
                 </span>
               </div>
               <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+                  className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out ${
+                    cat.value >= 80 ? 'bg-success' : 
+                    cat.value >= 60 ? 'bg-warning' : 
+                    'bg-destructive'
+                  }`}
                   style={{
                     width: `${(cat.value / cat.max) * 100}%`,
-                    background: `linear-gradient(90deg, ${cat.color}, ${cat.color}dd)`,
-                    boxShadow: `0 0 8px ${cat.color}66`
                   }}
                 />
               </div>
-            </div>
+            </a>
           ))}
         </div>
 

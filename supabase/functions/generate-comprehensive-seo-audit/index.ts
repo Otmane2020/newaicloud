@@ -312,7 +312,7 @@ function auditContent(articles: any[], pages: any[]) {
       action: 'Créer des articles de blog optimisés SEO',
       count: 0
     });
-    articleScore = 50;
+    articleScore = 0;
   } else {
     // Check for published articles
     const published = articles.filter(a => a.status === 'published');
@@ -326,22 +326,28 @@ function auditContent(articles: any[], pages: any[]) {
         action: 'Publier des articles optimisés',
         count: articles.length
       });
-      articleScore -= 40;
-    }
-
-    // Check for missing meta descriptions in articles
-    const missingMeta = articles.filter(a => !a.meta_description);
-    if (missingMeta.length > 0) {
-      issues.push({
-        category: 'content',
-        priority: 'medium',
-        title: `${missingMeta.length} articles sans meta description`,
-        description: 'Articles sans meta description SEO',
-        impact: 'Taux de clic réduit dans les SERP',
-        action: 'Ajouter des meta descriptions engageantes',
-        count: missingMeta.length
-      });
-      articleScore -= Math.min(20, (missingMeta.length / articles.length) * 20);
+      articleScore = 20; // Points for having drafts
+    } else {
+      // Articles are published, check optimization
+      const optimizedArticles = published.filter(a => 
+        a.meta_description && 
+        a.meta_description.length >= 120 &&
+        a.optimization_count > 0
+      );
+      
+      articleScore = Math.round((optimizedArticles.length / published.length) * 100);
+      
+      if (optimizedArticles.length < published.length) {
+        issues.push({
+          category: 'content',
+          priority: 'medium',
+          title: `${published.length - optimizedArticles.length} articles non optimisés`,
+          description: 'Articles publiés sans optimisation SEO complète',
+          impact: 'Taux de clic réduit dans les SERP',
+          action: 'Optimiser les meta descriptions et titres SEO',
+          count: published.length - optimizedArticles.length
+        });
+      }
     }
   }
 
@@ -356,42 +362,45 @@ function auditContent(articles: any[], pages: any[]) {
       action: 'Créer des pages optimisées (À propos, Contact, etc.)',
       count: 0
     });
-    pageScore = 50;
+    pageScore = 0;
   } else {
-    // Check for missing SEO titles in pages
-    const missingSeoTitle = pages.filter(p => !p.seo_title);
-    if (missingSeoTitle.length > 0) {
+    // Check for optimized pages
+    const optimizedPages = pages.filter(p => 
+      p.seo_title && 
+      p.seo_description && 
+      p.seo_description.length >= 120 &&
+      p.optimization_count > 0
+    );
+    
+    pageScore = Math.round((optimizedPages.length / pages.length) * 100);
+    
+    if (optimizedPages.length < pages.length) {
       issues.push({
         category: 'content',
         priority: 'medium',
-        title: `${missingSeoTitle.length} pages sans titre SEO`,
-        description: 'Pages sans titre SEO optimisé',
-        impact: 'Référencement des pages non optimisé',
-        action: 'Ajouter des titres SEO aux pages',
-        count: missingSeoTitle.length
+        title: `${pages.length - optimizedPages.length} pages non optimisées`,
+        description: 'Pages sans SEO optimisé',
+        impact: 'Référencement des pages non optimal',
+        action: 'Optimiser les titres et descriptions SEO des pages',
+        count: pages.length - optimizedPages.length
       });
-      pageScore -= Math.min(25, (missingSeoTitle.length / pages.length) * 25);
-    }
-
-    // Check for missing meta descriptions in pages
-    const missingPageMeta = pages.filter(p => !p.seo_description);
-    if (missingPageMeta.length > 0) {
-      issues.push({
-        category: 'content',
-        priority: 'medium',
-        title: `${missingPageMeta.length} pages sans meta description`,
-        description: 'Pages sans meta description SEO',
-        impact: 'Visibilité réduite dans les résultats de recherche',
-        action: 'Ajouter des meta descriptions aux pages',
-        count: missingPageMeta.length
-      });
-      pageScore -= Math.min(25, (missingPageMeta.length / pages.length) * 25);
     }
   }
 
   // Combined score for articles and pages
-  const finalScore = Math.max(0, Math.round((articleScore + pageScore) / 2));
-  return { issues, score: finalScore };
+  // If one category has 0 items, use only the other category's score
+  let finalScore;
+  if (articles.length === 0 && pages.length === 0) {
+    finalScore = 0;
+  } else if (articles.length === 0) {
+    finalScore = pageScore;
+  } else if (pages.length === 0) {
+    finalScore = articleScore;
+  } else {
+    finalScore = Math.round((articleScore + pageScore) / 2);
+  }
+  
+  return { issues, score: Math.max(0, finalScore) };
 }
 
 function auditImages(products: any[], collections: any[]) {
@@ -422,20 +431,70 @@ function auditTechnical(store: any) {
   let score = 100;
 
   if (!store) {
-    return { issues: [], score: 50 };
+    issues.push({
+      category: 'technical',
+      priority: 'critical',
+      title: 'Aucune boutique connectée',
+      description: 'Pas de connexion Shopify active',
+      impact: 'Impossible de synchroniser et d\'optimiser',
+      action: 'Connecter votre boutique Shopify'
+    });
+    return { issues, score: 0 };
   }
 
-  // Basic technical checks
+  // Check store configuration
+  if (!store.store_url) {
+    issues.push({
+      category: 'technical',
+      priority: 'high',
+      title: 'URL de boutique manquante',
+      description: 'Configuration incomplète',
+      impact: 'Synchronisation impossible',
+      action: 'Configurer l\'URL dans les paramètres'
+    });
+    score -= 30;
+  }
+
+  // Check synchronization status
   if (!store.last_sync_at) {
     issues.push({
       category: 'technical',
-      priority: 'low',
-      title: 'Première synchronisation nécessaire',
+      priority: 'medium',
+      title: 'Aucune synchronisation effectuée',
       description: 'La boutique n\'a jamais été synchronisée',
       impact: 'Données potentiellement obsolètes',
-      action: 'Effectuer une synchronisation complète'
+      action: 'Effectuer une première synchronisation'
     });
-    score -= 10;
+    score -= 20;
+  } else {
+    // Check if sync is recent (within last 7 days)
+    const lastSync = new Date(store.last_sync_at);
+    const daysSinceSync = Math.floor((Date.now() - lastSync.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysSinceSync > 7) {
+      issues.push({
+        category: 'technical',
+        priority: 'low',
+        title: 'Synchronisation ancienne',
+        description: `Dernière sync il y a ${daysSinceSync} jours`,
+        impact: 'Données potentiellement obsolètes',
+        action: 'Re-synchroniser votre boutique'
+      });
+      score -= 10;
+    }
+  }
+
+  // Check if store is active
+  if (!store.is_active) {
+    issues.push({
+      category: 'technical',
+      priority: 'high',
+      title: 'Boutique désactivée',
+      description: 'La connexion est inactive',
+      impact: 'Aucune synchronisation possible',
+      action: 'Réactiver la connexion Shopify'
+    });
+    score -= 40;
   }
 
   return { issues, score: Math.max(0, score) };
