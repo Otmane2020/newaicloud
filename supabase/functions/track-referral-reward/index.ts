@@ -46,7 +46,7 @@ serve(async (req) => {
       .from("referrals")
       .update({
         status: "rewarded",
-        credits_earned: 10,
+        credits_earned: 100,
         activated_at: new Date().toISOString(),
       })
       .eq("id", referral.id);
@@ -55,11 +55,11 @@ serve(async (req) => {
       throw updateError;
     }
 
-    // Award 10 credits to the referrer
+    // Award 100 credits to the referrer
     const { error: creditsError } = await supabaseClient
       .from("profiles")
       .update({
-        credits: supabaseClient.rpc("increment", { x: 10 }),
+        credits: supabaseClient.rpc("increment", { x: 100 }),
       })
       .eq("id", referral.referrer_id);
 
@@ -73,7 +73,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: "Referral reward processed",
-        credits_awarded: 10,
+        credits_awarded: 100,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

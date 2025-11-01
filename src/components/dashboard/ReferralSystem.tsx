@@ -76,7 +76,7 @@ export function ReferralSystem() {
   };
 
   const getReferralLink = () => {
-    return `${window.location.origin}/auth?ref=${referralCode}`;
+    return `https://newai.sale/auth?ref=${referralCode}`;
   };
 
   const handleCopy = () => {
@@ -100,8 +100,8 @@ export function ReferralSystem() {
                   <Gift className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold mb-1">Gagnez 10+ crédits</h3>
-                  <p className="text-sm text-muted-foreground">Parrainez vos amis et gagnez des crédits gratuits</p>
+                  <h3 className="text-xl font-bold mb-1">Gagnez 100+ optimisations</h3>
+                  <p className="text-sm text-muted-foreground">Parrainez vos amis et gagnez des optimisations gratuites</p>
                 </div>
               </div>
               <Button variant="default" size="lg" className="group-hover:scale-105 transition-transform">
@@ -128,7 +128,7 @@ export function ReferralSystem() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">Partagez et gagnez</h2>
-                  <p className="text-sm text-muted-foreground font-normal">et gagnez des crédits gratuits</p>
+                  <p className="text-sm text-muted-foreground font-normal">et gagnez des optimisations gratuites</p>
                 </div>
               </div>
             </DialogTitle>
@@ -154,7 +154,7 @@ export function ReferralSystem() {
                   </div>
                   <div>
                     <p className="font-medium">
-                      Ils s'inscrivent et reçoivent <span className="text-green-600 font-bold">10 crédits gratuits</span>
+                      Ils s'inscrivent et reçoivent <span className="text-green-600 font-bold">100 optimisations gratuites</span>
                     </p>
                   </div>
                 </div>
@@ -165,7 +165,7 @@ export function ReferralSystem() {
                   </div>
                   <div>
                     <p className="font-medium">
-                      Vous recevez <span className="text-purple-600 font-bold">10 crédits</span> une fois qu'ils publient leur premier site
+                      Vous recevez <span className="text-purple-600 font-bold">100 optimisations</span> une fois qu'ils publient leur premier site
                     </p>
                   </div>
                 </div>
@@ -211,7 +211,7 @@ export function ReferralSystem() {
                   <p className="text-2xl font-bold">{totalReferrals}</p>
                 </Card>
                 <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Crédits gagnés</p>
+                  <p className="text-sm text-muted-foreground mb-1">Optimisations gagnées</p>
                   <p className="text-2xl font-bold text-green-600">{creditsEarned}</p>
                 </Card>
               </div>
