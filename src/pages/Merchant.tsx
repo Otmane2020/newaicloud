@@ -77,7 +77,7 @@ export default function Merchant() {
         {/* Quick Actions */}
         <div className="flex gap-3">
           <a
-            href="https://merchants.google.com"
+            href="https://business.google.com/fr/merchant-center/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
