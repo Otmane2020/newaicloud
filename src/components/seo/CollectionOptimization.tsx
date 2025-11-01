@@ -468,7 +468,16 @@ export function CollectionOptimization() {
   const calculateCollectionSeoScore = (collection: Collection): number => {
     const titleScore = calculateDescriptionScore(collection.seo_title || collection.title);
     const descScore = calculateDescriptionScore(collection.seo_description || collection.body_html?.substring(0, 160) || '');
-    return Math.round((titleScore.score + descScore.score) / 2);
+    
+    // Base score from title and description
+    let score = Math.round((titleScore.score + descScore.score) / 2);
+    
+    // Bonus for AI optimization
+    if (collection.optimization_count && collection.optimization_count > 0) {
+      score = Math.min(100, score + 10); // +10 bonus for AI optimization
+    }
+    
+    return score;
   };
 
   const getSeoScoreBadge = (score: number) => {
@@ -780,6 +789,7 @@ export function CollectionOptimization() {
                   </TableHead>
                   <TableHead className="w-20">Image</TableHead>
                   <TableHead>Title</TableHead>
+                  <TableHead className="min-w-[200px]">Description</TableHead>
                   <TableHead className="min-w-[200px]">SEO Title</TableHead>
                   <TableHead className="min-w-[250px]">SEO Description</TableHead>
                   <TableHead className="w-32">SEO Score</TableHead>
@@ -825,6 +835,17 @@ export function CollectionOptimization() {
                         <div className="max-w-[200px]">
                           <p className="font-medium line-clamp-2">{collection.title}</p>
                           <p className="text-xs text-muted-foreground mt-1">{collection.handle}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          {collection.body_html ? (
+                            <p className="text-sm line-clamp-2 text-muted-foreground" dangerouslySetInnerHTML={{ __html: collection.body_html.substring(0, 150) + '...' }} />
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Pas de description
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
