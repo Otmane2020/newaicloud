@@ -22,6 +22,7 @@ import Products from "./pages/Products";
 import Collections from "./pages/Collections";
 import Blog from "./pages/Blog";
 import ArticleManagement from "./pages/ArticleManagement";
+import BlogNewAI from "./pages/BlogNewAI";
 import SEO from "./pages/SEO";
 import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
@@ -55,6 +56,7 @@ const App = () => (
         <AuthProvider>
             <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/blog-newai" element={<BlogNewAI />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/documentation" element={<Documentation />} />
