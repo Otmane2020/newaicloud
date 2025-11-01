@@ -114,7 +114,8 @@ export function SeoAltImageList() {
           alt_text: img.alt_text,
           position: img.position,
           product_id: productId,
-          last_synced_at: img.last_synced_at
+          last_synced_at: img.last_synced_at,
+          shopify_image_id: img.shopify_image_id
         });
       });
 
@@ -130,7 +131,8 @@ export function SeoAltImageList() {
             alt_text: img.alt_text,
             position: img.position,
             product_id: 'homepage',
-            last_synced_at: img.last_synced_at
+            last_synced_at: img.last_synced_at,
+            shopify_image_id: img.shopify_image_id || null
           }))
         });
       }
@@ -305,6 +307,14 @@ export function SeoAltImageList() {
       
       // Show results
       if (successCount > 0) {
+        // Update optimizedItems with successfully synced images
+        const syncedItems: WorkflowItem[] = imagesToSync.map(img => ({
+          id: img.id,
+          title: img.product_title || 'Unknown Product',
+          alt_text: img.alt_text,
+          image_url: img.src
+        }));
+        setOptimizedItems(syncedItems);
         setShowSuccessDialog(true);
       }
       
