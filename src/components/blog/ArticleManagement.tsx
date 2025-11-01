@@ -450,7 +450,7 @@ export function ArticleManagement() {
                 <TableHead className="min-w-[200px]">Meta Description</TableHead>
                 <TableHead className="w-32">SEO Score</TableHead>
                 <TableHead className="w-32">Status</TableHead>
-                <TableHead className="w-32">Synced</TableHead>
+                <TableHead className="w-40">Sync Status</TableHead>
                 <TableHead className="w-32 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -537,19 +537,33 @@ export function ArticleManagement() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={article.last_synced_at ? 'default' : 'secondary'} className={article.last_synced_at ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : ''}>
-                        {article.last_synced_at ? (
-                          <>
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Synced
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="w-3 h-3 mr-1" />
-                            Not synced
-                          </>
-                        )}
-                      </Badge>
+                      {article.last_synced_at ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="default" className="bg-green-600 hover:bg-green-700 cursor-help">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Synced
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">
+                                Last synced: {new Date(article.last_synced_at).toLocaleString()}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : article.shopify_blog_id ? (
+                        <Badge variant="secondary" className="bg-yellow-600 text-white">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Pending
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Not synced
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

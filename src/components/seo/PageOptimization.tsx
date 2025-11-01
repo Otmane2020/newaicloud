@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Search, Loader2, FileText, Sparkles, CheckCircle, Upload, Clock } from 'lucide-react';
+import { Search, Loader2, FileText, Sparkles, CheckCircle, Upload, Clock, AlertCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { Progress } from '@/components/ui/progress';
 import { VisionAIBanner } from './VisionAIBanner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ShopifyPage {
   id: string;
@@ -556,7 +557,7 @@ export function PageOptimization() {
                 <TableHead className="min-w-[250px]">SEO Description</TableHead>
                 <TableHead className="w-32">SEO Score</TableHead>
                 <TableHead className="w-32">Status</TableHead>
-                <TableHead className="w-32">Synced</TableHead>
+                <TableHead className="w-40">Sync Status</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -633,19 +634,33 @@ export function PageOptimization() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={page.last_synced_at ? 'default' : 'secondary'}>
-                          {page.last_synced_at ? (
-                            <>
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Synced
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="w-3 h-3 mr-1" />
-                              Pending
-                            </>
-                          )}
-                        </Badge>
+                        {page.last_synced_at ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="default" className="bg-green-600 hover:bg-green-700 cursor-help">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Synced
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">
+                                  Last synced: {new Date(page.last_synced_at).toLocaleString()}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : page.optimized ? (
+                          <Badge variant="secondary" className="bg-yellow-600 text-white">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Pending
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Not synced
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
