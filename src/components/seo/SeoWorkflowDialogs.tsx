@@ -329,6 +329,7 @@ interface SuccessDialogProps {
   onOpenChange: (open: boolean) => void;
   type: WorkflowType;
   count: number;
+  items?: WorkflowItem[];
   onClose: () => void;
 }
 
@@ -337,6 +338,7 @@ export function SuccessDialog({
   onOpenChange,
   type,
   count,
+  items = [],
   onClose,
 }: SuccessDialogProps) {
   const getTitle = () => {
@@ -357,20 +359,83 @@ export function SuccessDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <div className="flex flex-col items-center justify-center py-8 space-y-6">
-          <div className="relative w-20 h-20 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center animate-scale-in">
-            <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400" />
+      <DialogContent className="sm:max-w-3xl">
+        <div className="flex flex-col space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="relative w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center animate-scale-in flex-shrink-0">
+              <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+            </div>
+            
+            <div className="flex-1">
+              <DialogTitle className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
+                {getTitle()}
+              </DialogTitle>
+              <DialogDescription className="text-base">
+                {getDescription()}
+              </DialogDescription>
+            </div>
           </div>
-          
-          <div className="text-center space-y-3">
-            <DialogTitle className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {getTitle()}
-            </DialogTitle>
-            <DialogDescription className="text-base">
-              {getDescription()}
-            </DialogDescription>
-          </div>
+
+          {/* Preview of synced items */}
+          {items.length > 0 && (
+            <ScrollArea className="max-h-[50vh] pr-4">
+              <div className="space-y-3 py-2">
+                {items.map((item) => (
+                  <Card key={item.id} className="p-4 hover:shadow-md transition-shadow">
+                    <div className="flex gap-4">
+                      {item.image_url && (
+                        <img
+                          src={item.image_url}
+                          alt={item.title}
+                          className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <h4 className="font-semibold text-base line-clamp-1">{item.title}</h4>
+                        
+                        {type === 'alt' && item.alt_text && (
+                          <div className="space-y-1">
+                            <Badge variant="outline" className="text-xs">Texte ALT</Badge>
+                            <p className="text-sm text-muted-foreground">{item.alt_text}</p>
+                          </div>
+                        )}
+                        
+                        {type === 'seo' && (
+                          <div className="space-y-2">
+                            {item.seo_title && (
+                              <div className="space-y-1">
+                                <Badge variant="outline" className="text-xs">Titre SEO</Badge>
+                                <p className="text-sm text-muted-foreground font-medium">{item.seo_title}</p>
+                              </div>
+                            )}
+                            {item.seo_description && (
+                              <div className="space-y-1">
+                                <Badge variant="outline" className="text-xs">Description</Badge>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{item.seo_description}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {type === 'tags' && item.tags && (
+                          <div className="space-y-1">
+                            <Badge variant="outline" className="text-xs">Tags générés</Badge>
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {item.tags.split(',').map((tag, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs font-normal">
+                                  {tag.trim()}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
 
           <div className="w-full bg-green-50 dark:bg-green-900/20 rounded-lg p-4 space-y-2">
             <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">

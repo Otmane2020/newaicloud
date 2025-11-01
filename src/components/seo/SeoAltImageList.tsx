@@ -636,6 +636,7 @@ export function SeoAltImageList() {
         onOpenChange={setShowSuccessDialog}
         type="alt"
         count={progress.total}
+        items={optimizedItems}
         onClose={handleCloseSuccess}
       />
     </div>
