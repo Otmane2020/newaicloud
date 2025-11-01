@@ -38,13 +38,14 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch all data needed for audit
-    const [productsResult, collectionsResult, articlesResult, pagesResult, storeResult] = await Promise.all([
+    // Fetch all data needed for audit (including images)
+    const [productsResult, collectionsResult, articlesResult, pagesResult, storeResult, contentImagesResult] = await Promise.all([
       supabaseAdmin.from('shopify_products').select('*').eq('seller_id', user.id),
       supabaseAdmin.from('shopify_collections').select('*').eq('user_id', user.id),
       supabaseAdmin.from('blog_articles').select('*').eq('user_id', user.id),
       supabaseAdmin.from('shopify_pages').select('*').eq('user_id', user.id),
-      supabaseAdmin.from('shopify_connections').select('*').eq('user_id', user.id).limit(1).single()
+      supabaseAdmin.from('shopify_connections').select('*').eq('user_id', user.id).limit(1).maybeSingle(),
+      supabaseAdmin.from('content_images').select('id, alt_text, optimization_count').eq('user_id', user.id)
     ]);
 
     const products = productsResult.data || [];
@@ -52,8 +53,21 @@ Deno.serve(async (req) => {
     const articles = articlesResult.data || [];
     const pages = pagesResult.data || [];
     const store = storeResult.data;
+    const contentImages = contentImagesResult.data || [];
 
-    console.log(`[AUDIT] Data fetched - Products: ${products.length}, Collections: ${collections.length}, Articles: ${articles.length}, Pages: ${pages.length}`);
+    // Fetch product images for user's products
+    const productIds = products.map(p => p.id);
+    let productImages: any[] = [];
+    
+    if (productIds.length > 0) {
+      const { data: imgData } = await supabaseAdmin
+        .from('product_images')
+        .select('id, alt_text, optimization_count')
+        .in('product_id', productIds);
+      productImages = imgData || [];
+    }
+
+    console.log(`[AUDIT] Data fetched - Products: ${products.length}, Collections: ${collections.length}, Articles: ${articles.length}, Pages: ${pages.length}, Images: ${productImages.length + contentImages.length}`);
 
     // Initialize audit results
     const auditResults = {
@@ -94,7 +108,7 @@ Deno.serve(async (req) => {
 
     // 5. IMAGES AUDIT
     console.log('[AUDIT] Analyzing images...');
-    const imagesAudit = auditImages(products, collections);
+    const imagesAudit = auditImages(productImages, contentImages);
     auditResults.issues.push(...imagesAudit.issues);
     auditResults.images_score = imagesAudit.score;
 
@@ -131,6 +145,8 @@ Deno.serve(async (req) => {
         products_score: auditResults.products_score,
         collections_score: auditResults.collections_score,
         blog_score: auditResults.content_score, // Store as blog_score for compatibility
+        images_score: auditResults.images_score, // Add images score
+        technical_score: auditResults.technical_score, // Add technical score
         audit_results: auditResults,
         recommendations: auditResults.recommendations
       })
@@ -403,25 +419,46 @@ function auditContent(articles: any[], pages: any[]) {
   return { issues, score: Math.max(0, finalScore) };
 }
 
-function auditImages(products: any[], collections: any[]) {
+function auditImages(productImages: any[], contentImages: any[]) {
   const issues = [];
   let score = 100;
 
-  // Count products with images but no alt text
-  const productsWithoutAlt = products.filter(p => p.image_url && !p.seo_description);
+  // Combine all images
+  const allImages = [...productImages, ...contentImages];
+
+  if (allImages.length === 0) {
+    return { issues: [], score: 100 };
+  }
+
+  // Count images without ALT text
+  const imagesWithoutAlt = allImages.filter(img => !img.alt_text || img.alt_text.trim() === '');
+  const imagesWithAlt = allImages.filter(img => img.alt_text && img.alt_text.trim() !== '');
   
-  if (productsWithoutAlt.length > 0) {
+  // Calculate completion percentage
+  const completionRate = (imagesWithAlt.length / allImages.length) * 100;
+  
+  // Score based on completion rate
+  score = Math.round(completionRate);
+
+  // Calculate quality bonus for AI-optimized images
+  const optimizedImages = allImages.filter(img => img.optimization_count > 0);
+  const optimizationBonus = Math.min(20, (optimizedImages.length / allImages.length) * 20);
+  score = Math.min(100, score + optimizationBonus);
+
+  if (imagesWithoutAlt.length > 0) {
+    const percentage = Math.round((imagesWithoutAlt.length / allImages.length) * 100);
     issues.push({
       category: 'images',
-      priority: 'medium',
-      title: `${productsWithoutAlt.length} images produit sans alt`,
-      description: 'Images principales de produits sans texte alternatif',
+      priority: percentage > 50 ? 'high' : 'medium',
+      title: `${imagesWithoutAlt.length} images sans texte alt`,
+      description: `${percentage}% de vos images n'ont pas de texte alternatif`,
       impact: 'Accessibilité réduite et SEO image non optimisé',
-      action: 'Générer des textes alt avec l\'IA',
-      count: productsWithoutAlt.length
+      action: 'Générer des textes alt avec l\'IA Vision',
+      count: imagesWithoutAlt.length
     });
-    score -= Math.min(30, (productsWithoutAlt.length / products.length) * 30);
   }
+
+  console.log(`[AUDIT-IMAGES] Total: ${allImages.length}, With ALT: ${imagesWithAlt.length}, Without ALT: ${imagesWithoutAlt.length}, Score: ${score}`);
 
   return { issues, score: Math.max(0, score) };
 }
