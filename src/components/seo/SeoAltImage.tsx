@@ -463,12 +463,29 @@ export function SeoAltImage() {
   };
 
   const handleSyncSelected = async () => {
+    // Filter images that can be synced (exclude homepage images without shopify_image_id)
     const imagesToSync = images.filter(
-      img => selectedImages.has(img.id) && img.alt_text
+      img => selectedImages.has(img.id) && 
+             img.alt_text && 
+             img.shopify_image_id && 
+             img.content_type !== 'homepage'
     );
 
+    // Check if any homepage images were selected
+    const homepageImagesSelected = images.filter(
+      img => selectedImages.has(img.id) && img.content_type === 'homepage'
+    ).length;
+
+    if (homepageImagesSelected > 0) {
+      toast.info(`${homepageImagesSelected} image(s) homepage ne peuvent pas être synchronisées (elles existent dans le HTML de votre boutique)`);
+    }
+
     if (imagesToSync.length === 0) {
-      toast.info('Aucune image à synchroniser');
+      if (homepageImagesSelected > 0) {
+        toast.error('Aucune image synchronisable sélectionnée. Les images homepage ne peuvent pas être synchronisées vers Shopify.');
+      } else {
+        toast.info('Aucune image à synchroniser');
+      }
       return;
     }
 
@@ -478,15 +495,33 @@ export function SeoAltImage() {
       setIsOptimizationComplete(false);
       setProgress({ current: 0, total: imagesToSync.length });
 
+      let successCount = 0;
+      let errorCount = 0;
+
       for (let i = 0; i < imagesToSync.length; i++) {
         try {
-          await supabase.functions.invoke('sync-seo-to-shopify', {
+          const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
             body: { imageId: imagesToSync[i].id, syncAltText: true }
           });
+          
+          if (error) {
+            console.error('Error syncing:', error);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+          
           setProgress({ current: i + 1, total: imagesToSync.length });
         } catch (error) {
           console.error('Error syncing:', error);
+          errorCount++;
         }
+      }
+
+      if (errorCount > 0) {
+        toast.warning(`${successCount} images synchronisées, ${errorCount} erreurs`);
+      } else {
+        toast.success(`${successCount} images synchronisées avec succès`);
       }
 
       setSyncing(false);

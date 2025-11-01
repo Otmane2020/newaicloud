@@ -298,8 +298,36 @@ Deno.serve(async (req: Request) => {
       }
 
       if (!imageData.shopify_image_id) {
-        console.error('[SYNC-IMAGE] Image has no Shopify ID:', { imageId });
-        throw new Error("Cette image n'a pas d'ID Shopify - elle ne peut pas être synchronisée");
+        console.error('[SYNC-IMAGE] Image has no Shopify ID:', { imageId, imageType: imageData.content_type });
+        
+        // Special message for homepage images
+        if (imageData.content_type === 'homepage') {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Les images de la homepage ne peuvent pas être synchronisées car elles existent directement dans le HTML de votre boutique. L'optimisation du texte ALT a déjà été effectuée dans votre base de données.",
+              error: "HOMEPAGE_IMAGE_NOT_SYNCABLE",
+              imageId: imageId
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: "Cette image n'a pas d'ID Shopify et ne peut pas être synchronisée. Elle a peut-être été importée manuellement ou n'existe plus dans Shopify.",
+            error: "NO_SHOPIFY_ID",
+            imageId: imageId
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       if (!imageData.alt_text) {
@@ -364,6 +392,19 @@ Deno.serve(async (req: Request) => {
           contentTable = 'shopify_pages';
         } else if (contentType === 'article') {
           contentTable = 'blog_articles';
+        } else if (contentType === 'homepage') {
+          // Homepage images cannot be synced to Shopify
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Les images de la homepage ne peuvent pas être synchronisées vers Shopify car elles existent directement dans le HTML. L'optimisation ALT est déjà sauvegardée dans votre base de données.",
+              error: "HOMEPAGE_NOT_SYNCABLE"
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
         } else {
           throw new Error(`Type de contenu non supporté: ${contentType}`);
         }
