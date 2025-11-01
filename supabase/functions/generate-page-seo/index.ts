@@ -272,12 +272,21 @@ Réponds uniquement en JSON:
 
     // Update page with generated SEO
     if (!isHomepage) {
+      console.log('[UPDATE] Starting page update for pageId:', pageId);
+      
       // Get current page data
-      const { data: currentPage } = await supabaseClient
+      const { data: currentPage, error: fetchError } = await supabaseClient
         .from('shopify_pages')
         .select('optimization_count')
         .eq('id', pageId)
         .single();
+
+      if (fetchError) {
+        console.error('[UPDATE] Error fetching current page:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('[UPDATE] Current page optimization_count:', currentPage?.optimization_count);
 
       // Update the page
       const { error: updateError } = await supabaseClient
@@ -292,14 +301,27 @@ Réponds uniquement en JSON:
         })
         .eq('id', pageId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('[UPDATE] Error updating page:', updateError);
+        throw updateError;
+      }
+
+      console.log('[UPDATE] Page updated successfully');
 
       // Track usage
-      await supabaseClient.rpc('increment_usage', {
+      console.log('[USAGE] Incrementing usage count');
+      const { error: usageError } = await supabaseClient.rpc('increment_usage', {
         p_seller_id: user.id,
         p_field: 'optimizations_count',
         p_increment: 1
       });
+
+      if (usageError) {
+        console.error('[USAGE] Error incrementing usage:', usageError);
+        throw usageError;
+      }
+
+      console.log('[USAGE] Usage incremented successfully');
     }
 
     return new Response(
