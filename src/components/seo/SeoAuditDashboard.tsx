@@ -5,10 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  FileSearch, 
-  TrendingUp, 
-  AlertCircle, 
+import {
+  FileSearch,
+  TrendingUp,
+  AlertCircle,
   CheckCircle2,
   Sparkles,
   ShoppingBag,
@@ -17,18 +17,15 @@ import {
   Home,
   Layers,
   ArrowRight,
-  Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { HomePageSeoAudit } from "./HomePageSeoAudit";
-import { AutoOptimizationDialog } from "./AutoOptimizationDialog";
 
 export function SeoAuditDashboard() {
   const navigate = useNavigate();
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [showAutoOptimizeDialog, setShowAutoOptimizeDialog] = useState(false);
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
@@ -38,41 +35,62 @@ export function SeoAuditDashboard() {
 
   const loadStats = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const [products, collections, pages, articles] = await Promise.all([
+        supabase.from("shopify_products").select("id, enrichment_status").eq("seller_id", user?.id),
+        supabase.from("shopify_collections").select("id, optimization_count").eq("user_id", user?.id),
+        supabase.from("shopify_pages").select("id, optimized").eq("user_id", user?.id),
+        supabase.from("blog_articles").select("id, optimization_count").eq("user_id", user?.id),
+      ]);
+
       setStats({
-        products: { total: 0, optimized: 0, notOptimized: 10 },
-        collections: { total: 0, optimized: 0, notOptimized: 5 },
-        pages: { total: 0, optimized: 0, notOptimized: 3 },
-        articles: { total: 0, optimized: 0, notOptimized: 8 },
-        images: { withoutAlt: 45 }
+        products: {
+          total: products.data?.length || 0,
+          optimized: products.data?.filter((p) => p.enrichment_status === "enriched").length || 0,
+        },
+        collections: {
+          total: collections.data?.length || 0,
+          optimized: collections.data?.filter((c) => c.optimization_count && c.optimization_count > 0).length || 0,
+        },
+        pages: {
+          total: pages.data?.length || 0,
+          optimized: pages.data?.filter((p) => p.optimized).length || 0,
+        },
+        articles: {
+          total: articles.data?.length || 0,
+          optimized: articles.data?.filter((a) => a.optimization_count && a.optimization_count > 0).length || 0,
+        },
       });
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error("Error loading stats:", error);
     }
   };
 
   const loadLatestAudit = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       const { data, error } = await supabase
-        .from('seo_audit_reports')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
+        .from("seo_audit_reports")
+        .select("*")
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: false })
         .limit(1)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error && error.code !== "PGRST116") {
         throw error;
       }
 
       setAudit(data);
     } catch (error) {
-      console.error('Error loading audit:', error);
+      console.error("Error loading audit:", error);
     } finally {
       setLoading(false);
     }
@@ -81,44 +99,114 @@ export function SeoAuditDashboard() {
   const handleGenerateAudit = async () => {
     try {
       setGenerating(true);
-      toast.info('Analyse SEO en cours... Cela peut prendre quelques instants.');
+      toast.info("Analyse SEO en cours... Cela peut prendre quelques instants.");
 
-      const { data, error } = await supabase.functions.invoke('generate-comprehensive-seo-audit');
+      const { data, error } = await supabase.functions.invoke("generate-comprehensive-seo-audit");
 
       if (error) throw error;
 
-      toast.success('Audit SEO généré avec succès !');
+      toast.success("Audit SEO généré avec succès !");
       await loadLatestAudit();
     } catch (error: any) {
-      console.error('Error generating audit:', error);
-      toast.error(error.message || 'Erreur lors de la génération de l\'audit');
+      console.error("Error generating audit:", error);
+      toast.error(error.message || "Erreur lors de la génération de l'audit");
     } finally {
       setGenerating(false);
     }
   };
 
+  // Nouvelle palette de couleurs rouge-orange améliorée
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-emerald-500';
-    if (score >= 60) return 'text-[#FF8C00]';  // Orange vif
-    return 'text-[#EF4444]';  // Rouge vif
+    if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
+    if (score >= 60) return "text-[#f59e0b]"; // Orange ambré
+    if (score >= 40) return "text-[#ea580c]"; // Orange-rouge
+    return "text-[#dc2626]"; // Rouge vif
   };
 
   const getScoreBgColor = (score: number) => {
-    if (score >= 80) return 'bg-emerald-500';
-    if (score >= 60) return 'bg-[#FF8C00]';  // Orange vif
-    return 'bg-[#EF4444]';  // Rouge vif
+    if (score >= 80) return "bg-[#22c55e]/10 border-[#22c55e]/30";
+    if (score >= 60) return "bg-[#f59e0b]/10 border-[#f59e0b]/30";
+    if (score >= 40) return "bg-[#ea580c]/10 border-[#ea580c]/30";
+    return "bg-[#dc2626]/10 border-[#dc2626]/30";
+  };
+
+  const getScoreGradient = (score: number) => {
+    if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
+    if (score >= 60) return "from-[#f59e0b]/20 to-[#f59e0b]/5";
+    if (score >= 40) return "from-[#ea580c]/20 to-[#ea580c]/5";
+    return "from-[#dc2626]/20 to-[#dc2626]/5";
+  };
+
+  const getCategoryColor = (value: number) => {
+    if (value >= 80)
+      return {
+        text: "text-[#22c55e]",
+        bg: "bg-gradient-to-r from-[#22c55e] to-[#16a34a]",
+        glow: "0 0 10px #22c55e",
+        dot: "bg-[#22c55e]",
+        gradient: "from-[#22c55e]/20 to-[#22c55e]/5",
+      };
+    if (value >= 60)
+      return {
+        text: "text-[#f59e0b]",
+        bg: "bg-gradient-to-r from-[#f59e0b] to-[#d97706]",
+        glow: "0 0 10px #f59e0b",
+        dot: "bg-[#f59e0b]",
+        gradient: "from-[#f59e0b]/20 to-[#f59e0b]/5",
+      };
+    if (value >= 40)
+      return {
+        text: "text-[#ea580c]",
+        bg: "bg-gradient-to-r from-[#ea580c] to-[#c2410c]",
+        glow: "0 0 10px #ea580c",
+        dot: "bg-[#ea580c]",
+        gradient: "from-[#ea580c]/20 to-[#ea580c]/5",
+      };
+    return {
+      text: "text-[#dc2626]",
+      bg: "bg-gradient-to-r from-[#dc2626] to-[#b91c1c]",
+      glow: "0 0 10px #dc2626",
+      dot: "bg-[#dc2626]",
+      gradient: "from-[#dc2626]/20 to-[#dc2626]/5",
+    };
+  };
+
+  const getGaugeGradient = (score: number) => {
+    if (score >= 80)
+      return {
+        start: "#22c55e",
+        end: "#16a34a",
+        glow: "bg-[#22c55e]/30",
+      };
+    if (score >= 60)
+      return {
+        start: "#f59e0b",
+        end: "#d97706",
+        glow: "bg-[#f59e0b]/30",
+      };
+    if (score >= 40)
+      return {
+        start: "#ea580c",
+        end: "#c2410c",
+        glow: "bg-[#ea580c]/30",
+      };
+    return {
+      start: "#dc2626",
+      end: "#b91c1c",
+      glow: "bg-[#dc2626]/30",
+    };
   };
 
   const getPriorityBadge = (priority: string) => {
     const variants = {
-      high: { className: 'bg-[#EF4444] text-white border-0', label: '🔴 Haute', icon: AlertCircle },
-      medium: { className: 'bg-[#FF8C00] text-white border-0', label: '🟡 Moyenne', icon: AlertCircle },
-      low: { className: 'bg-emerald-500 text-white border-0', label: '🟢 Basse', icon: CheckCircle2 }
+      high: { variant: "destructive" as const, label: "🔴 Haute", icon: AlertCircle },
+      medium: { variant: "default" as const, label: "🟡 Moyenne", icon: AlertCircle },
+      low: { variant: "secondary" as const, label: "🟢 Basse", icon: CheckCircle2 },
     };
     const config = variants[priority as keyof typeof variants] || variants.medium;
     const Icon = config.icon;
     return (
-      <Badge className={`gap-1 ${config.className}`}>
+      <Badge variant={config.variant} className="gap-1">
         <Icon className="w-3 h-3" />
         {config.label}
       </Badge>
@@ -135,11 +223,11 @@ export function SeoAuditDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Hero Header premium */}
+      {/* Hero Header avec design premium */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-dark to-primary-light p-8 shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-2xl translate-y-24 -translate-x-24" />
-        
+
         <div className="relative z-10 flex justify-between items-start">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
@@ -150,16 +238,15 @@ export function SeoAuditDashboard() {
                 Analyse IA Avancée
               </Badge>
             </div>
-            <h1 className="text-4xl font-black text-white mb-3">
-              Audit SEO Complet
-            </h1>
+            <h1 className="text-4xl font-black text-white mb-3">Audit SEO Complet</h1>
             <p className="text-white/90 text-lg font-medium max-w-2xl leading-relaxed">
-              Obtenez une analyse détaillée de votre boutique Shopify avec des recommandations actionnables
+              Obtenez une analyse détaillée de votre boutique Shopify avec des recommandations actionnables pour
+              améliorer votre visibilité en ligne et augmenter votre trafic organique.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
                 <CheckCircle2 className="w-4 h-4 text-white" />
-                <span className="text-sm font-semibold text-white">6 Catégories</span>
+                <span className="text-sm font-semibold text-white">6 Catégories analysées</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
                 <TrendingUp className="w-4 h-4 text-white" />
@@ -167,7 +254,7 @@ export function SeoAuditDashboard() {
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
                 <Sparkles className="w-4 h-4 text-white" />
-                <span className="text-sm font-semibold text-white">Plan d'action</span>
+                <span className="text-sm font-semibold text-white">Plan d'action personnalisé</span>
               </div>
             </div>
           </div>
@@ -185,53 +272,56 @@ export function SeoAuditDashboard() {
             ) : (
               <>
                 <FileSearch className="w-5 h-5 mr-2" />
-                {audit ? 'Relancer l\'audit' : 'Lancer l\'audit'}
+                {audit ? "Relancer l'audit" : "Lancer l'audit"}
               </>
             )}
           </Button>
         </div>
       </div>
 
-      {/* Section éducative premium */}
+      {/* Section éducative */}
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-2 hover:shadow-lg transition-all">
           <CardHeader>
-            <div className="w-12 h-12 rounded-xl bg-[#FF8C00]/10 flex items-center justify-center mb-3">
-              <TrendingUp className="w-6 h-6 text-[#FF8C00]" />
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+              <TrendingUp className="w-6 h-6 text-primary" />
             </div>
             <CardTitle className="text-lg">Pourquoi un audit SEO ?</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Un audit SEO identifie les opportunités d'amélioration pour augmenter votre visibilité sur Google
+              Un audit SEO identifie les opportunités d'amélioration pour augmenter votre visibilité sur Google et
+              attirer plus de clients qualifiés vers votre boutique.
             </p>
           </CardContent>
         </Card>
-        
+
         <Card className="border-2 hover:shadow-lg transition-all">
           <CardHeader>
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3">
-              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+            <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-3">
+              <CheckCircle2 className="w-6 h-6 text-success" />
             </div>
             <CardTitle className="text-lg">Ce que vous obtenez</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Une analyse complète de 6 catégories avec score détaillé et plan d'action priorisé
+              Une analyse complète de 6 catégories SEO avec un score détaillé, des problèmes identifiés et un plan
+              d'action priorisé pour des résultats rapides.
             </p>
           </CardContent>
         </Card>
-        
+
         <Card className="border-2 hover:shadow-lg transition-all">
           <CardHeader>
-            <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 flex items-center justify-center mb-3">
-              <Sparkles className="w-6 h-6 text-[#EF4444]" />
+            <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center mb-3">
+              <Sparkles className="w-6 h-6 text-warning" />
             </div>
             <CardTitle className="text-lg">Analyse IA avancée</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Notre IA analyse automatiquement votre boutique pour vous fournir des recommandations actionnables
+              Notre IA analyse automatiquement vos produits, collections, contenus et images pour vous fournir des
+              recommandations sur-mesure et actionnables.
             </p>
           </CardContent>
         </Card>
@@ -246,26 +336,25 @@ export function SeoAuditDashboard() {
               </div>
               <h3 className="text-3xl font-bold mb-4">Prêt à booster votre SEO ?</h3>
               <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Lancez votre premier audit SEO complet pour découvrir comment améliorer votre classement sur Google. L'analyse prend environ 30 secondes.
+                Lancez votre premier audit SEO complet pour découvrir comment améliorer votre classement sur Google et
+                attirer plus de clients. L'analyse prend environ 30 secondes.
               </p>
               <Button
                 onClick={handleGenerateAudit}
                 disabled={generating}
                 size="lg"
-                className="bg-gradient-to-r from-primary to-primary-dark text-lg px-8 py-6 shadow-xl"
+                className="bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-lg px-8 py-6 shadow-xl"
               >
                 <FileSearch className="w-6 h-6 mr-2" />
                 Lancer mon audit gratuit
               </Button>
-              <p className="text-xs text-muted-foreground mt-4">
-                🔒 Analyse 100% automatique et sécurisée
-              </p>
+              <p className="text-xs text-muted-foreground mt-4">🔒 Analyse 100% automatique et sécurisée</p>
             </div>
           </CardContent>
         </Card>
       ) : (
         <>
-          {/* Global Score - Premium */}
+          {/* Global Score - Design premium avec jauge améliorée */}
           <Card className="border-2 shadow-2xl bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
             <CardHeader className="relative z-10">
@@ -276,13 +365,24 @@ export function SeoAuditDashboard() {
                   </div>
                   Score SEO Global
                 </CardTitle>
-                <Badge className={`text-lg px-5 py-2 border-0 ${
-                  audit.global_score >= 80 ? 'bg-emerald-500 text-white' :
-                  audit.global_score >= 60 ? 'bg-[#FF8C00] text-white' :
-                  'bg-[#EF4444] text-white'
-                }`}>
-                  {audit.global_score >= 80 ? '🎯 Excellent' :
-                   audit.global_score >= 60 ? '📈 Bon' : '⚠️ À améliorer'}
+                <Badge
+                  className={`text-lg px-5 py-2 ${
+                    audit.global_score >= 80
+                      ? "bg-[#22c55e] text-white"
+                      : audit.global_score >= 60
+                        ? "bg-[#f59e0b] text-white"
+                        : audit.global_score >= 40
+                          ? "bg-[#ea580c] text-white"
+                          : "bg-[#dc2626] text-white"
+                  }`}
+                >
+                  {audit.global_score >= 80
+                    ? "🎯 Excellent"
+                    : audit.global_score >= 60
+                      ? "📈 Bon"
+                      : audit.global_score >= 40
+                        ? "⚠️ Moyen"
+                        : "🚨 Faible"}
                 </Badge>
               </div>
             </CardHeader>
@@ -297,25 +397,116 @@ export function SeoAuditDashboard() {
                   </div>
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground font-medium">
-                      📅 Audit généré le {new Date(audit.created_at).toLocaleDateString('fr-FR', {
-                        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      📅 Audit généré le{" "}
+                      {new Date(audit.created_at).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1">
                         <div className="text-xs font-semibold text-muted-foreground mb-2">PROGRESSION</div>
-                        <Progress value={audit.global_score} className="h-4 shadow-inner" />
+                        <div className="relative h-4 bg-muted rounded-full overflow-hidden shadow-inner">
+                          <div
+                            className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
+                              audit.global_score >= 80
+                                ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a]"
+                                : audit.global_score >= 60
+                                  ? "bg-gradient-to-r from-[#f59e0b] to-[#d97706]"
+                                  : audit.global_score >= 40
+                                    ? "bg-gradient-to-r from-[#ea580c] to-[#c2410c]"
+                                    : "bg-gradient-to-r from-[#dc2626] to-[#b91c1c]"
+                            }`}
+                            style={{
+                              width: `${audit.global_score}%`,
+                              boxShadow:
+                                audit.global_score >= 80
+                                  ? "0 0 10px #22c55e"
+                                  : audit.global_score >= 60
+                                    ? "0 0 10px #f59e0b"
+                                    : audit.global_score >= 40
+                                      ? "0 0 10px #ea580c"
+                                      : "0 0 10px #dc2626",
+                            }}
+                          />
+                        </div>
                       </div>
-                      <span className="text-sm font-bold text-primary">
-                        {100 - audit.global_score} pts restants
-                      </span>
+                      <span className="text-sm font-bold text-primary">{100 - audit.global_score} pts restants</span>
                     </div>
                   </div>
                 </div>
                 <div className="hidden md:block">
-                  <div className="w-48 h-48 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-xl border-4 border-primary/20">
-                    <div className="text-center">
-                      <div className={`text-5xl font-black ${getScoreColor(audit.global_score)} mb-2`}>
+                  {/* Jauge circulaire améliorée */}
+                  <div className="relative w-48 h-48">
+                    <div
+                      className={`absolute inset-0 rounded-full blur-xl ${
+                        audit.global_score >= 80
+                          ? "bg-[#22c55e]/30"
+                          : audit.global_score >= 60
+                            ? "bg-[#f59e0b]/30"
+                            : audit.global_score >= 40
+                              ? "bg-[#ea580c]/30"
+                              : "bg-[#dc2626]/30"
+                      } animate-pulse`}
+                    />
+                    <svg className="w-48 h-48 transform -rotate-90 relative z-10" viewBox="0 0 192 192">
+                      <defs>
+                        <linearGradient id="globalGaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop
+                            offset="0%"
+                            stopColor={
+                              audit.global_score >= 80
+                                ? "#22c55e"
+                                : audit.global_score >= 60
+                                  ? "#f59e0b"
+                                  : audit.global_score >= 40
+                                    ? "#ea580c"
+                                    : "#dc2626"
+                            }
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor={
+                              audit.global_score >= 80
+                                ? "#16a34a"
+                                : audit.global_score >= 60
+                                  ? "#d97706"
+                                  : audit.global_score >= 40
+                                    ? "#c2410c"
+                                    : "#b91c1c"
+                            }
+                          />
+                        </linearGradient>
+                      </defs>
+                      <circle
+                        cx="96"
+                        cy="96"
+                        r="84"
+                        stroke="hsl(var(--muted))"
+                        strokeWidth="12"
+                        fill="none"
+                        opacity="0.3"
+                      />
+                      <circle
+                        cx="96"
+                        cy="96"
+                        r="84"
+                        stroke="url(#globalGaugeGradient)"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={`${(audit.global_score / 100) * 528} 528`}
+                        strokeLinecap="round"
+                        className="transition-all duration-1500 ease-out"
+                        style={{
+                          filter: "drop-shadow(0 0 8px currentColor)",
+                        }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <div className={`text-3xl font-black ${getScoreColor(audit.global_score)}`}>
                         {Math.round(audit.global_score / 16.67)}
                       </div>
                       <div className="text-xs text-muted-foreground font-semibold">sur 6 catégories</div>
@@ -324,61 +515,104 @@ export function SeoAuditDashboard() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Message motivationnel */}
-              <div className={`mt-6 p-4 rounded-xl border-2 ${
-                audit.global_score >= 80 ? 'bg-emerald-500/10 border-emerald-500/20' :
-                audit.global_score >= 60 ? 'bg-[#FF8C00]/10 border-[#FF8C00]/20' :
-                'bg-[#EF4444]/10 border-[#EF4444]/20'
-              }`}>
+              <div
+                className={`mt-6 p-4 rounded-xl ${
+                  audit.global_score >= 80
+                    ? "bg-[#22c55e]/10 border-2 border-[#22c55e]/20"
+                    : audit.global_score >= 60
+                      ? "bg-[#f59e0b]/10 border-2 border-[#f59e0b]/20"
+                      : audit.global_score >= 40
+                        ? "bg-[#ea580c]/10 border-2 border-[#ea580c]/20"
+                        : "bg-[#dc2626]/10 border-2 border-[#dc2626]/20"
+                }`}
+              >
                 <p className="text-sm font-semibold">
-                  {audit.global_score >= 80 ? 
-                    '🎉 Excellent travail ! Votre boutique est très bien optimisée.' :
-                   audit.global_score >= 60 ?
-                    '👍 Bon score ! Quelques optimisations supplémentaires vous permettront d\'atteindre l\'excellence.' :
-                    '💪 Il y a du potentiel ! Suivez nos recommandations pour améliorer rapidement.'}
+                  {audit.global_score >= 80
+                    ? "🎉 Excellent travail ! Votre boutique est très bien optimisée pour le SEO. Continuez ainsi !"
+                    : audit.global_score >= 60
+                      ? "👍 Bon score ! Quelques optimisations supplémentaires vous permettront d'atteindre l'excellence."
+                      : audit.global_score >= 40
+                        ? "💪 Score moyen ! Suivez nos recommandations pour améliorer significativement votre visibilité."
+                        : "🚨 Potentiel d'amélioration important ! Mettez en œuvre nos recommandations prioritaires pour booster votre SEO."}
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Category Scores - Premium avec effets */}
+          {/* Category Scores - Design cards premium avec couleurs améliorées */}
           <div>
             <div className="mb-6">
               <h3 className="text-2xl font-bold mb-2">Détail par Catégorie</h3>
               <p className="text-muted-foreground">
-                Cliquez sur une catégorie pour accéder aux optimisations
+                Cliquez sur une catégorie pour accéder aux optimisations correspondantes
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[
-                { key: 'homepage_score', label: 'Homepage', icon: Home, tab: 'homepage', desc: 'Titre et meta' },
-                { key: 'products_score', label: 'Produits', icon: ShoppingBag, tab: 'products', desc: 'Fiches SEO' },
-                { key: 'collections_score', label: 'Collections', icon: Layers, tab: 'collections', desc: 'Pages collections' },
-                { key: 'blog_score', label: 'Contenu', icon: FileText, tab: 'articles', desc: 'Articles et pages' },
-                { key: 'images_score', label: 'Images', icon: ImageIcon, tab: 'alt-image', desc: 'Textes alternatifs' },
-                { key: 'technical_score', label: 'Technique', icon: Sparkles, tab: 'products', desc: 'Configuration' }
+                {
+                  key: "homepage_score",
+                  label: "Homepage",
+                  icon: Home,
+                  tab: "homepage",
+                  desc: "Titre et meta description",
+                },
+                {
+                  key: "products_score",
+                  label: "Produits",
+                  icon: ShoppingBag,
+                  tab: "products",
+                  desc: "Fiches produits SEO",
+                },
+                {
+                  key: "collections_score",
+                  label: "Collections",
+                  icon: Layers,
+                  tab: "collections",
+                  desc: "Pages collections",
+                },
+                { key: "blog_score", label: "Contenu", icon: FileText, tab: "articles", desc: "Articles et pages" },
+                { key: "images_score", label: "Images", icon: ImageIcon, tab: "alt", desc: "Textes alternatifs" },
+                {
+                  key: "technical_score",
+                  label: "Technique",
+                  icon: Sparkles,
+                  tab: "products",
+                  desc: "Configuration Shopify",
+                },
               ].map(({ key, label, icon: Icon, tab, desc }) => {
+                const categoryStats =
+                  stats?.[
+                    tab === "products"
+                      ? "products"
+                      : tab === "collections"
+                        ? "collections"
+                        : tab === "articles"
+                          ? "articles"
+                          : "pages"
+                  ];
+                const optimizedCount = categoryStats?.optimized || 0;
+                const totalCount = categoryStats?.total || 0;
                 const score = audit[key] || 0;
-                
+                const categoryColor = getCategoryColor(score);
+
                 return (
-                  <Card 
+                  <Card
                     key={key}
                     className="group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 hover:border-primary/50 bg-gradient-to-br from-card to-muted/20 overflow-hidden relative"
                     onClick={() => navigate(`/seo?tab=${tab}`)}
                   >
-                    <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl ${
-                      score >= 80 ? 'bg-emerald-500/20' : score >= 60 ? 'bg-[#FF8C00]/20' : 'bg-[#EF4444]/20'
-                    } group-hover:blur-3xl transition-all`} />
-                    
+                    <div
+                      className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl ${categoryColor.gradient} group-hover:blur-3xl transition-all`}
+                    />
+
                     <CardHeader className="pb-3 relative z-10">
                       <div className="flex items-center justify-between mb-2">
-                        <div className={`p-3 rounded-xl ${
-                          score >= 80 ? 'bg-emerald-500/10' : score >= 60 ? 'bg-[#FF8C00]/10' : 'bg-[#EF4444]/10'
-                        } group-hover:scale-110 transition-transform`}>
-                          <Icon className={`w-5 h-5 ${
-                            score >= 80 ? 'text-emerald-500' : score >= 60 ? 'text-[#FF8C00]' : 'text-[#EF4444]'
-                          }`} />
+                        <div
+                          className={`p-3 rounded-xl bg-gradient-to-br ${categoryColor.gradient} group-hover:scale-110 transition-transform`}
+                        >
+                          <Icon className={`w-5 h-5 ${categoryColor.text}`} />
                         </div>
                         <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                       </div>
@@ -389,25 +623,22 @@ export function SeoAuditDashboard() {
                     </CardHeader>
                     <CardContent className="relative z-10">
                       <div className="flex items-center justify-between mb-3">
-                        <div className={`text-4xl font-black ${
-                          score >= 80 ? 'text-emerald-500' : score >= 60 ? 'text-[#FF8C00]' : 'text-[#EF4444]'
-                        }`}>
+                        <div className={`text-4xl font-black ${categoryColor.text}`}>
                           {score}
                           <span className="text-lg text-muted-foreground">/100</span>
                         </div>
+                        {totalCount > 0 && (
+                          <Badge variant="outline" className="text-xs font-semibold">
+                            {optimizedCount}/{totalCount} ✓
+                          </Badge>
+                        )}
                       </div>
                       <div className="relative h-3 bg-muted rounded-full overflow-hidden shadow-inner">
                         <div
-                          className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
-                            score >= 80 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' :
-                            score >= 60 ? 'bg-gradient-to-r from-[#FF8C00] to-[#FFB84D]' :
-                            'bg-gradient-to-r from-[#EF4444] to-[#F87171]'
-                          }`}
-                          style={{ 
+                          className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${categoryColor.bg}`}
+                          style={{
                             width: `${score}%`,
-                            boxShadow: score >= 80 ? '0 0 8px #10b981' :
-                                       score >= 60 ? '0 0 8px #FF8C00' :
-                                       '0 0 8px #EF4444'
+                            boxShadow: categoryColor.glow,
                           }}
                         />
                       </div>
@@ -425,105 +656,123 @@ export function SeoAuditDashboard() {
                 <Home className="w-5 h-5" />
                 Analyse Homepage SEO
               </CardTitle>
-              <CardDescription>
-                Optimisation détaillée de votre page d'accueil
-              </CardDescription>
+              <CardDescription>Optimisation détaillée de votre page d'accueil</CardDescription>
             </CardHeader>
             <CardContent>
               <HomePageSeoAudit />
             </CardContent>
           </Card>
 
-          {/* Issues - Premium */}
+          {/* Issues - Design premium avec couleurs améliorées */}
           {audit.audit_results?.issues && audit.audit_results.issues.length > 0 && (
             <Card className="border-2 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-[#EF4444]/5 to-[#FF8C00]/5 border-b-2">
+              <CardHeader className="bg-gradient-to-r from-[#dc2626]/5 to-[#f59e0b]/5 border-b-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 rounded-xl bg-[#EF4444]/10">
-                        <AlertCircle className="w-6 h-6 text-[#EF4444]" />
+                      <div className="p-3 rounded-xl bg-[#dc2626]/10">
+                        <AlertCircle className="w-6 h-6 text-[#dc2626]" />
                       </div>
                       Problèmes Détectés
                     </CardTitle>
                     <CardDescription className="mt-2 text-base">
-                      {audit.audit_results.issues.length} point{audit.audit_results.issues.length > 1 ? 's' : ''} d'amélioration identifié{audit.audit_results.issues.length > 1 ? 's' : ''}
+                      {audit.audit_results.issues.length} point{audit.audit_results.issues.length > 1 ? "s" : ""}{" "}
+                      d'amélioration identifié{audit.audit_results.issues.length > 1 ? "s" : ""} par l'analyse IA
                     </CardDescription>
                   </div>
-                  <Badge className="bg-[#EF4444] text-white text-lg px-4 py-2 border-0">
-                    {audit.audit_results.issues.filter((i: any) => i.priority === 'high').length} prioritaire{audit.audit_results.issues.filter((i: any) => i.priority === 'high').length > 1 ? 's' : ''}
+                  <Badge className="bg-[#dc2626] text-white text-lg px-4 py-2">
+                    {audit.audit_results.issues.filter((i: any) => i.priority === "high").length} prioritaire
+                    {audit.audit_results.issues.filter((i: any) => i.priority === "high").length > 1 ? "s" : ""}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-6">
-                  {audit.audit_results.issues.map((issue: any, index: number) => (
-                    <div
-                      key={index}
-                      className={`border-2 rounded-2xl p-6 transition-all hover:shadow-xl ${
-                        issue.priority === 'high' ? 'border-[#EF4444]/30 bg-[#EF4444]/5' :
-                        issue.priority === 'medium' ? 'border-[#FF8C00]/30 bg-[#FF8C00]/5' :
-                        'border-muted bg-muted/20'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <Badge variant="outline" className="capitalize text-sm font-semibold">
-                              📍 {issue.category}
+                  {audit.audit_results.issues.map((issue: any, index: number) => {
+                    const issueColor =
+                      issue.priority === "high"
+                        ? {
+                            border: "border-[#dc2626]/30",
+                            bg: "bg-[#dc2626]/5",
+                            text: "text-[#dc2626]",
+                          }
+                        : issue.priority === "medium"
+                          ? {
+                              border: "border-[#f59e0b]/30",
+                              bg: "bg-[#f59e0b]/5",
+                              text: "text-[#f59e0b]",
+                            }
+                          : {
+                              border: "border-[#ea580c]/30",
+                              bg: "bg-[#ea580c]/5",
+                              text: "text-[#ea580c]",
+                            };
+
+                    return (
+                      <div
+                        key={index}
+                        className={`border-2 rounded-2xl p-6 transition-all hover:shadow-xl ${issueColor.border} ${issueColor.bg}`}
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <Badge variant="outline" className="capitalize text-sm font-semibold">
+                                📍 {issue.category}
+                              </Badge>
+                              {getPriorityBadge(issue.priority)}
+                            </div>
+                            <h4 className="font-bold text-lg mb-2">{issue.title}</h4>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{issue.description}</p>
+                          </div>
+                          {issue.count && (
+                            <Badge className="ml-4 bg-primary text-white text-base px-4 py-2">
+                              {issue.count} élément{issue.count > 1 ? "s" : ""}
                             </Badge>
-                            {getPriorityBadge(issue.priority)}
-                          </div>
-                          <h4 className="font-bold text-lg mb-2">{issue.title}</h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{issue.description}</p>
+                          )}
                         </div>
-                        {issue.count && (
-                          <Badge className="ml-4 bg-primary text-white text-base px-4 py-2 border-0">
-                            {issue.count} élément{issue.count > 1 ? 's' : ''}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className="grid md:grid-cols-2 gap-4 mt-4">
-                        <div className="p-4 rounded-xl bg-[#FF8C00]/10 border-2 border-[#FF8C00]/20">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertCircle className="w-4 h-4 text-[#FF8C00]" />
-                            <span className="text-sm font-bold text-[#FF8C00]">Impact SEO</span>
+
+                        <div className="grid md:grid-cols-2 gap-4 mt-4">
+                          <div className={`p-4 rounded-xl bg-[#f59e0b]/10 border-2 border-[#f59e0b]/20`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertCircle className="w-4 h-4 text-[#f59e0b]" />
+                              <span className="text-sm font-bold text-[#f59e0b]">Impact SEO</span>
+                            </div>
+                            <p className="text-sm font-medium leading-relaxed">{issue.impact}</p>
                           </div>
-                          <p className="text-sm font-medium leading-relaxed">{issue.impact}</p>
-                        </div>
-                        <div className="p-4 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/20">
-                          <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                            <span className="text-sm font-bold text-emerald-500">Action recommandée</span>
+                          <div className="p-4 rounded-xl bg-[#22c55e]/10 border-2 border-[#22c55e]/20">
+                            <div className="flex items-center gap-2 mb-2">
+                              <CheckCircle2 className="w-4 h-4 text-[#22c55e]" />
+                              <span className="text-sm font-bold text-[#22c55e]">Action recommandée</span>
+                            </div>
+                            <p className="text-sm font-medium leading-relaxed">{issue.action}</p>
                           </div>
-                          <p className="text-sm font-medium leading-relaxed">{issue.action}</p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Recommendations - Premium timeline */}
+          {/* Recommendations - Design premium avec timeline et couleurs améliorées */}
           {audit.recommendations && audit.recommendations.length > 0 && (
             <Card className="border-2 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-emerald-500/5 to-primary/5 border-b-2">
+              <CardHeader className="bg-gradient-to-r from-[#22c55e]/5 to-primary/5 border-b-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 rounded-xl bg-emerald-500/10">
-                        <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                      <div className="p-3 rounded-xl bg-[#22c55e]/10">
+                        <CheckCircle2 className="w-6 h-6 text-[#22c55e]" />
                       </div>
                       Plan d'Action SEO
                     </CardTitle>
                     <CardDescription className="mt-2 text-base">
-                      Suivez ces {audit.recommendations.length} étapes prioritaires
+                      Suivez ces {audit.recommendations.length} étapes prioritaires pour améliorer votre référencement
+                      naturel
                     </CardDescription>
                   </div>
-                  <Badge className="bg-emerald-500 text-white text-lg px-4 py-2 border-0">
+                  <Badge className="bg-primary text-white text-lg px-4 py-2">
                     {audit.recommendations.length} étapes
                   </Badge>
                 </div>
@@ -532,92 +781,67 @@ export function SeoAuditDashboard() {
                 <div className="space-y-8 relative">
                   {/* Timeline line */}
                   <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary/20" />
-                  
+
                   {audit.recommendations.map((rec: any, index: number) => (
                     <div key={index} className="relative pl-16">
-                      {/* Timeline dot */}
-                      <div className={`absolute left-0 w-12 h-12 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
-                        rec.priority === 'high' ? 'bg-gradient-to-br from-[#EF4444] to-[#DC2626]' :
-                        rec.priority === 'medium' ? 'bg-gradient-to-br from-[#FF8C00] to-[#FF9500]' :
-                        'bg-gradient-to-br from-emerald-500 to-emerald-600'
-                      }`}>
+                      {/* Timeline dot avec couleurs améliorées */}
+                      <div
+                        className={`absolute left-0 w-12 h-12 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
+                          rec.priority === "high"
+                            ? "bg-gradient-to-br from-[#dc2626] to-[#b91c1c]"
+                            : rec.priority === "medium"
+                              ? "bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
+                              : "bg-gradient-to-br from-[#22c55e] to-[#16a34a]"
+                        }`}
+                      >
                         {index + 1}
                       </div>
-                      
+
                       <div className="border-2 rounded-2xl p-6 hover:shadow-xl transition-all bg-card hover:border-primary/50">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-3">
-                              {rec.priority === 'high' && <Badge className="bg-[#EF4444] text-white border-0">🔥 Priorité Haute</Badge>}
-                              {rec.priority === 'medium' && <Badge className="bg-[#FF8C00] text-white border-0">⚡ Priorité Moyenne</Badge>}
-                              {rec.priority === 'low' && <Badge className="bg-emerald-500 text-white border-0">✓ Priorité Basse</Badge>}
+                              {rec.priority === "high" && (
+                                <Badge className="bg-[#dc2626] text-white">🔥 Priorité Haute</Badge>
+                              )}
+                              {rec.priority === "medium" && (
+                                <Badge className="bg-[#f59e0b] text-white">⚡ Priorité Moyenne</Badge>
+                              )}
+                              {rec.priority === "low" && (
+                                <Badge className="bg-[#22c55e] text-white">✓ Priorité Basse</Badge>
+                              )}
                             </div>
                             <h4 className="font-bold text-xl mb-2">{rec.title}</h4>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-3">
                           <div className="text-sm font-semibold text-muted-foreground mb-3">Actions à réaliser :</div>
-                          {rec.actions?.map((action: string, idx: number) => {
-                            const getActionHandler = (actionText: string) => {
-                              const lower = actionText.toLowerCase();
-                              if (lower.includes('alt') || lower.includes('image')) {
-                                return () => navigate('/seo?tab=alt-image');
-                              }
-                              if (lower.includes('produit')) {
-                                return () => navigate('/seo?tab=products');
-                              }
-                              if (lower.includes('collection')) {
-                                return () => navigate('/seo?tab=collections');
-                              }
-                              if (lower.includes('article') || lower.includes('blog')) {
-                                return () => navigate('/blog');
-                              }
-                              if (lower.includes('page')) {
-                                return () => navigate('/seo?tab=pages');
-                              }
-                              return undefined;
-                            };
-                            
-                            const handler = getActionHandler(action);
-                            
-                            return (
-                              <div
-                                key={idx}
-                                className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
-                                  handler
-                                    ? 'bg-primary/10 hover:bg-primary/20 cursor-pointer border-2 border-primary/20'
-                                    : 'bg-muted/30 hover:bg-muted/50'
-                                }`}
-                                onClick={handler}
-                              >
-                                <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                </div>
-                                <span className="text-sm font-medium leading-relaxed flex-1">{action}</span>
-                                {handler && <ArrowRight className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />}
+                          {rec.actions?.map((action: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                <CheckCircle2 className="w-4 h-4 text-primary" />
                               </div>
-                            );
-                          })}
+                              <span className="text-sm font-medium leading-relaxed">{action}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                
+
                 {/* CTA final */}
                 <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/20 text-center">
                   <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
                   <h5 className="text-xl font-bold mb-2">Besoin d'aide pour optimiser ?</h5>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Notre IA peut appliquer ces recommandations automatiquement
+                    Notre IA peut vous aider à appliquer ces recommandations automatiquement
                   </p>
-                  <Button 
-                    size="lg" 
-                    className="bg-gradient-to-r from-primary to-primary-dark text-white gap-2"
-                    onClick={() => setShowAutoOptimizeDialog(true)}
-                  >
-                    <Zap className="w-5 h-5" />
+                  <Button size="lg" className="bg-gradient-to-r from-primary to-primary-dark text-white">
                     Optimiser automatiquement
                   </Button>
                 </div>
@@ -626,23 +850,6 @@ export function SeoAuditDashboard() {
           )}
         </>
       )}
-      
-      {/* Auto Optimization Dialog */}
-      <AutoOptimizationDialog
-        open={showAutoOptimizeDialog}
-        onOpenChange={setShowAutoOptimizeDialog}
-        onComplete={() => {
-          loadLatestAudit();
-          loadStats();
-        }}
-        stats={{
-          productsCount: stats?.products?.notOptimized || 0,
-          collectionsCount: stats?.collections?.notOptimized || 0,
-          imagesCount: stats?.images?.withoutAlt || 0,
-          articlesCount: stats?.articles?.notOptimized || 0,
-          pagesCount: stats?.pages?.notOptimized || 0
-        }}
-      />
     </div>
   );
 }
