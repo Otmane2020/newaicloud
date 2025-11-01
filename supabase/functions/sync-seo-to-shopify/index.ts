@@ -469,6 +469,17 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text for image ${imageData.shopify_image_id}`);
 
+      // Update image last_synced_at timestamp in database
+      const updateTable = imageType === 'product' ? 'product_images' : 'content_images';
+      const { error: updateError } = await supabaseClient
+        .from(updateTable)
+        .update({ last_synced_at: new Date().toISOString() })
+        .eq('id', imageId);
+
+      if (updateError) {
+        console.error('[SYNC-IMAGE] Failed to update last_synced_at:', updateError);
+      }
+
       // Extract store name and build Shopify URL (to parent content)
       const storeName = shopUrl.replace('.myshopify.com', '');
       const shopifyUrl = `https://admin.shopify.com/store/${storeName}/products/${shopifyId}`;

@@ -220,6 +220,7 @@ export type Database = {
           id: string
           keywords: string[] | null
           last_optimization_at: string | null
+          last_synced_at: string | null
           meta_description: string | null
           optimization_count: number | null
           published_at: string | null
@@ -242,6 +243,7 @@ export type Database = {
           id?: string
           keywords?: string[] | null
           last_optimization_at?: string | null
+          last_synced_at?: string | null
           meta_description?: string | null
           optimization_count?: number | null
           published_at?: string | null
@@ -264,6 +266,7 @@ export type Database = {
           id?: string
           keywords?: string[] | null
           last_optimization_at?: string | null
+          last_synced_at?: string | null
           meta_description?: string | null
           optimization_count?: number | null
           published_at?: string | null
@@ -946,6 +949,7 @@ export type Database = {
           height: number | null
           id: string
           last_optimization_at: string | null
+          last_synced_at: string | null
           optimization_count: number | null
           position: number | null
           product_id: string
@@ -960,6 +964,7 @@ export type Database = {
           height?: number | null
           id?: string
           last_optimization_at?: string | null
+          last_synced_at?: string | null
           optimization_count?: number | null
           position?: number | null
           product_id: string
@@ -974,6 +979,7 @@ export type Database = {
           height?: number | null
           id?: string
           last_optimization_at?: string | null
+          last_synced_at?: string | null
           optimization_count?: number | null
           position?: number | null
           product_id?: string

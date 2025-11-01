@@ -51,6 +51,7 @@ interface Article {
   optimization_count?: number;
   last_optimization_at?: string | null;
   featured_image?: string | null;
+  last_synced_at?: string | null;
 }
 
 type QuickFilterTab = 'all' | 'draft' | 'published' | 'shopify-synced';
@@ -536,8 +537,8 @@ export function ArticleManagement() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={article.shopify_blog_id ? 'default' : 'secondary'} className={article.shopify_blog_id ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : ''}>
-                        {article.shopify_blog_id ? (
+                      <Badge variant={article.last_synced_at ? 'default' : 'secondary'} className={article.last_synced_at ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : ''}>
+                        {article.last_synced_at ? (
                           <>
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Synced

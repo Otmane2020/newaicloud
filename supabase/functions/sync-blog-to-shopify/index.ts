@@ -145,7 +145,8 @@ Deno.serve(async (req) => {
       .update({
         status: "published",
         published_at: new Date().toISOString(),
-        shopify_blog_id: created.article?.id?.toString()
+        shopify_blog_id: created.article?.id?.toString(),
+        last_synced_at: new Date().toISOString()
       })
       .eq("id", articleId);
 

@@ -25,6 +25,7 @@ interface ProductImage {
   position: number;
   product_id: string;
   product_title?: string;
+  last_synced_at?: string | null;
 }
 
 interface ProductWithImages {
@@ -105,7 +106,8 @@ export function SeoAltImageList() {
           src: img.src,
           alt_text: img.alt_text,
           position: img.position,
-          product_id: productId
+          product_id: productId,
+          last_synced_at: img.last_synced_at
         });
       });
 
@@ -120,7 +122,8 @@ export function SeoAltImageList() {
             src: img.src,
             alt_text: img.alt_text,
             position: img.position,
-            product_id: 'homepage'
+            product_id: 'homepage',
+            last_synced_at: img.last_synced_at
           }))
         });
       }
@@ -482,6 +485,11 @@ export function SeoAltImageList() {
                               {image.alt_text && (
                                 <Badge className="absolute top-2 right-2 bg-success text-xs">
                                   ALT ✓
+                                </Badge>
+                              )}
+                              {image.last_synced_at && (
+                                <Badge className="absolute top-10 right-2 bg-green-500 text-white text-xs">
+                                  Synced
                                 </Badge>
                               )}
                               {image.position === 0 && (
