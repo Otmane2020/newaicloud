@@ -88,42 +88,6 @@ export default function Merchant() {
         </div>
       </div>
 
-      {/* Progress Steps */}
-      <Card className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border-blue-200 dark:border-blue-800">
-        <h3 className="font-semibold mb-4 text-lg">Configuration en 3 étapes</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
-              1
-            </div>
-            <div>
-              <p className="font-medium text-sm">Configurer les paramètres</p>
-              <p className="text-xs text-muted-foreground">Définissez votre boutique</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-8 h-8 ${activeTab === "feed" ? "bg-blue-500" : "bg-gray-300"} text-white rounded-full flex items-center justify-center font-bold text-sm`}
-            >
-              2
-            </div>
-            <div>
-              <p className="font-medium text-sm">Récupérer le flux XML</p>
-              <p className="text-xs text-muted-foreground">Testez votre flux</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-300 text-white rounded-full flex items-center justify-center font-bold text-sm">
-              3
-            </div>
-            <div>
-              <p className="font-medium text-sm">Configurer Google Merchant</p>
-              <p className="text-xs text-muted-foreground">Importez votre flux</p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
       {/* Main Content with Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         {/* Tabs Navigation */}
