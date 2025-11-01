@@ -18,15 +18,15 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
   // Nouvelle palette de couleurs rouge-orange
   const getScoreColor = () => {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
-    if (score >= 60) return "text-[#f59e0b]"; // Orange ambré
-    if (score >= 40) return "text-[#ea580c]"; // Orange-rouge
+    if (score >= 60) return "text-[rgb(255,94,23)]"; // Orange vif
+    if (score >= 40) return "text-[rgb(255,94,23)]"; // Orange vif
     return "text-[#dc2626]"; // Rouge vif
   };
 
   const getScoreGradient = () => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
-    if (score >= 60) return "from-[#f59e0b]/20 to-[#f59e0b]/5";
-    if (score >= 40) return "from-[#ea580c]/20 to-[#ea580c]/5";
+    if (score >= 60) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
+    if (score >= 40) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
     return "from-[#dc2626]/20 to-[#dc2626]/5";
   };
 
@@ -39,8 +39,8 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
 
   const getScoreIcon = () => {
     if (score >= 80) return <Target className="w-5 h-5 text-[#22c55e]" />;
-    if (score >= 60) return <TrendingUp className="w-5 h-5 text-[#f59e0b]" />;
-    if (score >= 40) return <AlertTriangle className="w-5 h-5 text-[#ea580c]" />;
+    if (score >= 60) return <TrendingUp className="w-5 h-5 text-[rgb(255,94,23)]" />;
+    if (score >= 40) return <AlertTriangle className="w-5 h-5 text-[rgb(255,94,23)]" />;
     return <AlertTriangle className="w-5 h-5 text-[#dc2626]" />;
   };
 
@@ -54,17 +54,17 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
       };
     if (value >= 60)
       return {
-        text: "text-[#f59e0b]",
-        bg: "bg-gradient-to-r from-[#f59e0b] to-[#d97706]",
-        glow: "0 0 10px #f59e0b",
-        dot: "bg-[#f59e0b]",
+        text: "text-[rgb(255,94,23)]",
+        bg: "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]",
+        glow: "0 0 10px rgb(255,94,23)",
+        dot: "bg-[rgb(255,94,23)]",
       };
     if (value >= 40)
       return {
-        text: "text-[#ea580c]",
-        bg: "bg-gradient-to-r from-[#ea580c] to-[#c2410c]",
-        glow: "0 0 10px #ea580c",
-        dot: "bg-[#ea580c]",
+        text: "text-[rgb(255,94,23)]",
+        bg: "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]",
+        glow: "0 0 10px rgb(255,94,23)",
+        dot: "bg-[rgb(255,94,23)]",
       };
     return {
       text: "text-[#dc2626]",
@@ -83,15 +83,15 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
       };
     if (score >= 60)
       return {
-        start: "#f59e0b",
-        end: "#d97706",
-        glow: "bg-[#f59e0b]/30",
+        start: "rgb(255,94,23)",
+        end: "rgb(230,80,20)",
+        glow: "bg-[rgb(255,94,23)]/30",
       };
     if (score >= 40)
       return {
-        start: "#ea580c",
-        end: "#c2410c",
-        glow: "bg-[#ea580c]/30",
+        start: "rgb(255,94,23)",
+        end: "rgb(230,80,20)",
+        glow: "bg-[rgb(255,94,23)]/30",
       };
     return {
       start: "#dc2626",
@@ -363,7 +363,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
       </CardContent>
 
       {/* Styles CSS pour les animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes glow {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.8; }
