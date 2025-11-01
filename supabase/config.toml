@@ -143,3 +143,6 @@ verify_jwt = true
 
 [functions.sync-shopify-to-feed]
 verify_jwt = true
+
+[functions.generate-promotional-articles]
+verify_jwt = false
