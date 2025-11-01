@@ -12,7 +12,7 @@ import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { VisionAIBanner } from './VisionAIBanner';
 
 export function HomePageSeo() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [seoTitle, setSeoTitle] = useState('');
@@ -20,8 +20,35 @@ export function HomePageSeo() {
   const [hasConnection, setHasConnection] = useState(false);
 
   useEffect(() => {
+    loadExistingSeoData();
     checkShopifyConnection();
   }, []);
+
+  const loadExistingSeoData = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('homepage_seo')
+        .select('seo_title, seo_description')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data) {
+        setSeoTitle(data.seo_title || '');
+        setSeoDescription(data.seo_description || '');
+      }
+    } catch (error) {
+      console.error('Error loading SEO data:', error);
+      toast.error('Erreur lors du chargement des données SEO');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkShopifyConnection = async () => {
     try {
@@ -53,11 +80,27 @@ export function HomePageSeo() {
       if (data.seo_title && data.seo_description) {
         setSeoTitle(data.seo_title);
         setSeoDescription(data.seo_description);
-        toast.success('SEO content generated successfully');
+        
+        // Save to database
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('homepage_seo')
+            .upsert({
+              user_id: user.id,
+              seo_title: data.seo_title,
+              seo_description: data.seo_description,
+            }, {
+              onConflict: 'user_id',
+              ignoreDuplicates: false
+            });
+        }
+        
+        toast.success('SEO généré avec succès');
       }
     } catch (error: any) {
       console.error('Error generating SEO:', error);
-      toast.error(error.message || 'Error generating SEO content');
+      toast.error(error.message || 'Erreur lors de la génération');
     } finally {
       setGenerating(false);
     }
@@ -88,6 +131,16 @@ export function HomePageSeo() {
       setSyncing(false);
     }
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!hasConnection) {
     return (
