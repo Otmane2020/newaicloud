@@ -119,8 +119,8 @@ export function ResultsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[85vh] flex flex-col">
-        <div className="flex items-start gap-4 pb-4 border-b">
+      <DialogContent className="sm:max-w-3xl">
+        <div className="flex items-start gap-4 pb-4 border-b flex-shrink-0">
           <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
             <CheckCircle className="w-7 h-7 text-green-600 dark:text-green-400" />
           </div>
@@ -130,9 +130,8 @@ export function ResultsDialog({
           </div>
         </div>
 
-        <ScrollArea className="flex-1 pr-4 my-4">
-          <div className="space-y-3">
-            {items.map((item) => (
+        <ScrollArea className="max-h-[50vh] pr-4">
+          <div className="space-y-3 py-2">{items.map((item) => (
               <Card key={item.id} className="p-4 hover:shadow-md transition-shadow">
                 <div className="flex gap-4">
                   {item.image_url && (
@@ -197,7 +196,7 @@ export function ResultsDialog({
           </div>
         </ScrollArea>
 
-        <div className="flex flex-col gap-2 pt-4 border-t">
+        <div className="flex flex-col gap-2 pt-4 border-t flex-shrink-0">
           <Button
             onClick={onSyncClick}
             className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"

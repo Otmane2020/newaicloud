@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, CheckCircle } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -35,8 +36,8 @@ export function ShopifySyncSuccessDialog({ items, onClose }: ShopifySyncSuccessD
 
   return (
     <Dialog open={items.length > 0} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-500" />
             Synchronisation réussie
@@ -46,7 +47,7 @@ export function ShopifySyncSuccessDialog({ items, onClose }: ShopifySyncSuccessD
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto">
+        <ScrollArea className="max-h-[50vh] pr-4">
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
@@ -56,8 +57,7 @@ export function ShopifySyncSuccessDialog({ items, onClose }: ShopifySyncSuccessD
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {items.map((item) => (
+            <TableBody>{items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>
                     <Badge variant="outline">
@@ -87,9 +87,9 @@ export function ShopifySyncSuccessDialog({ items, onClose }: ShopifySyncSuccessD
               ))}
             </TableBody>
           </Table>
-        </div>
+        </ScrollArea>
 
-        <div className="border-t pt-4 mt-4">
+        <div className="border-t pt-4 mt-4 flex-shrink-0">
           <Button onClick={onClose} className="w-full">
             Fermer
           </Button>
