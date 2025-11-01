@@ -118,23 +118,23 @@ export function SeoAuditDashboard() {
   // Palette de couleurs: vert (excellent), orange (moyen), rouge (faible)
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
-    if (score >= 60) return "text-[rgb(255,94,23)]"; // Orange vif
-    if (score >= 40) return "text-[rgb(255,94,23)]"; // Orange vif
-    return "text-[#b91c1c]"; // Rouge profond distinct
+    if (score >= 60) return "text-[#FF8000]"; // Orange
+    if (score >= 40) return "text-[#FF8000]"; // Orange
+    return "text-[#FF3333]"; // Rouge
   };
 
   const getScoreBgColor = (score: number) => {
     if (score >= 80) return "bg-[#22c55e]/10 border-[#22c55e]/30";
-    if (score >= 60) return "bg-[rgb(255,94,23)]/10 border-[rgb(255,94,23)]/30";
-    if (score >= 40) return "bg-[rgb(255,94,23)]/10 border-[rgb(255,94,23)]/30";
-    return "bg-[#b91c1c]/10 border-[#b91c1c]/30";
+    if (score >= 60) return "bg-[#FF8000]/10 border-[#FF8000]/30";
+    if (score >= 40) return "bg-[#FF8000]/10 border-[#FF8000]/30";
+    return "bg-[#FF3333]/10 border-[#FF3333]/30";
   };
 
   const getScoreGradient = (score: number) => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
-    if (score >= 60) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
-    if (score >= 40) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
-    return "from-[#b91c1c]/20 to-[#b91c1c]/5";
+    if (score >= 60) return "from-[#FF8000]/20 to-[#FF8000]/5";
+    if (score >= 40) return "from-[#FF8000]/20 to-[#FF8000]/5";
+    return "from-[#FF3333]/20 to-[#FF3333]/5";
   };
 
   const getCategoryColor = (value: number) => {
@@ -148,26 +148,26 @@ export function SeoAuditDashboard() {
       };
     if (value >= 60)
       return {
-        text: "text-[rgb(255,94,23)]",
-        bg: "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]",
-        glow: "0 0 10px rgb(255,94,23)",
-        dot: "bg-[rgb(255,94,23)]",
-        gradient: "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5",
+        text: "text-[#FF8000]",
+        bg: "bg-gradient-to-r from-[#FF8000] to-[#FF8000]",
+        glow: "0 0 10px #FF8000",
+        dot: "bg-[#FF8000]",
+        gradient: "from-[#FF8000]/20 to-[#FF8000]/5",
       };
     if (value >= 40)
       return {
-        text: "text-[rgb(255,94,23)]",
-        bg: "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]",
-        glow: "0 0 10px rgb(255,94,23)",
-        dot: "bg-[rgb(255,94,23)]",
-        gradient: "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5",
+        text: "text-[#FF8000]",
+        bg: "bg-gradient-to-r from-[#FF8000] to-[#FF8000]",
+        glow: "0 0 10px #FF8000",
+        dot: "bg-[#FF8000]",
+        gradient: "from-[#FF8000]/20 to-[#FF8000]/5",
       };
     return {
-      text: "text-[#b91c1c]",
-      bg: "bg-gradient-to-r from-[#b91c1c] to-[#991b1b]",
-      glow: "0 0 10px #b91c1c",
-      dot: "bg-[#b91c1c]",
-      gradient: "from-[#b91c1c]/20 to-[#b91c1c]/5",
+      text: "text-[#FF3333]",
+      bg: "bg-gradient-to-r from-[#FF3333] to-[#FF3333]",
+      glow: "0 0 10px #FF3333",
+      dot: "bg-[#FF3333]",
+      gradient: "from-[#FF3333]/20 to-[#FF3333]/5",
     };
   };
 
@@ -180,20 +180,20 @@ export function SeoAuditDashboard() {
       };
     if (score >= 60)
       return {
-        start: "rgb(255,94,23)",
-        end: "rgb(230,80,20)",
-        glow: "bg-[rgb(255,94,23)]/30",
+        start: "#FF8000",
+        end: "#FF8000",
+        glow: "bg-[#FF8000]/30",
       };
     if (score >= 40)
       return {
-        start: "rgb(255,94,23)",
-        end: "rgb(230,80,20)",
-        glow: "bg-[rgb(255,94,23)]/30",
+        start: "#FF8000",
+        end: "#FF8000",
+        glow: "bg-[#FF8000]/30",
       };
     return {
-      start: "#b91c1c",
-      end: "#991b1b",
-      glow: "bg-[#b91c1c]/30",
+      start: "#FF3333",
+      end: "#FF3333",
+      glow: "bg-[#FF3333]/30",
     };
   };
 
@@ -370,10 +370,10 @@ export function SeoAuditDashboard() {
                     audit.global_score >= 80
                       ? "bg-[#22c55e] text-white"
                       : audit.global_score >= 60
-                        ? "bg-[rgb(255,94,23)] text-white"
+                        ? "bg-[#FF8000] text-white"
                   : audit.global_score >= 40
-                    ? "bg-[rgb(255,94,23)] text-white"
-                    : "bg-[#b91c1c] text-white"
+                    ? "bg-[#FF8000] text-white"
+                    : "bg-[#FF3333] text-white"
                   }`}
                 >
                   {audit.global_score >= 80
@@ -415,10 +415,10 @@ export function SeoAuditDashboard() {
                               audit.global_score >= 80
                                 ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a]"
                                 : audit.global_score >= 60
-                                  ? "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]"
+                                  ? "bg-gradient-to-r from-[#FF8000] to-[#FF8000]"
                                   : audit.global_score >= 40
-                                    ? "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]"
-                                    : "bg-gradient-to-r from-[#b91c1c] to-[#991b1b]"
+                                    ? "bg-gradient-to-r from-[#FF8000] to-[#FF8000]"
+                                    : "bg-gradient-to-r from-[#FF3333] to-[#FF3333]"
                             }`}
                             style={{
                               width: `${audit.global_score}%`,
@@ -426,10 +426,10 @@ export function SeoAuditDashboard() {
                                 audit.global_score >= 80
                                   ? "0 0 10px #22c55e"
                                   : audit.global_score >= 60
-                                    ? "0 0 10px rgb(255,94,23)"
+                                    ? "0 0 10px #FF8000"
                                     : audit.global_score >= 40
-                                      ? "0 0 10px rgb(255,94,23)"
-                                      : "0 0 10px #b91c1c",
+                                      ? "0 0 10px #FF8000"
+                                      : "0 0 10px #FF3333",
                             }}
                           />
                         </div>

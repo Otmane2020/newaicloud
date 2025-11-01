@@ -18,16 +18,16 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
   // Nouvelle palette de couleurs rouge-orange
   const getScoreColor = () => {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
-    if (score >= 60) return "text-[rgb(255,94,23)]"; // Orange vif
-    if (score >= 40) return "text-[rgb(255,94,23)]"; // Orange vif
-    return "text-[#b91c1c]"; // Rouge profond distinct
+    if (score >= 60) return "text-[#FF8000]"; // Orange
+    if (score >= 40) return "text-[#FF8000]"; // Orange
+    return "text-[#FF3333]"; // Rouge
   };
 
   const getScoreGradient = () => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
-    if (score >= 60) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
-    if (score >= 40) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
-    return "from-[#b91c1c]/20 to-[#b91c1c]/5";
+    if (score >= 60) return "from-[#FF8000]/20 to-[#FF8000]/5";
+    if (score >= 40) return "from-[#FF8000]/20 to-[#FF8000]/5";
+    return "from-[#FF3333]/20 to-[#FF3333]/5";
   };
 
   const getScoreLabel = () => {
@@ -39,9 +39,9 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
 
   const getScoreIcon = () => {
     if (score >= 80) return <Target className="w-5 h-5 text-[#22c55e]" />;
-    if (score >= 60) return <TrendingUp className="w-5 h-5 text-[rgb(255,94,23)]" />;
-    if (score >= 40) return <AlertTriangle className="w-5 h-5 text-[rgb(255,94,23)]" />;
-    return <AlertTriangle className="w-5 h-5 text-[#b91c1c]" />;
+    if (score >= 60) return <TrendingUp className="w-5 h-5 text-[#FF8000]" />;
+    if (score >= 40) return <AlertTriangle className="w-5 h-5 text-[#FF8000]" />;
+    return <AlertTriangle className="w-5 h-5 text-[#FF3333]" />;
   };
 
   const getCategoryColor = (value: number) => {
@@ -54,23 +54,23 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
       };
     if (value >= 60)
       return {
-        text: "text-[rgb(255,94,23)]",
-        bg: "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]",
-        glow: "0 0 10px rgb(255,94,23)",
-        dot: "bg-[rgb(255,94,23)]",
+        text: "text-[#FF8000]",
+        bg: "bg-gradient-to-r from-[#FF8000] to-[#FF8000]",
+        glow: "0 0 10px #FF8000",
+        dot: "bg-[#FF8000]",
       };
     if (value >= 40)
       return {
-        text: "text-[rgb(255,94,23)]",
-        bg: "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]",
-        glow: "0 0 10px rgb(255,94,23)",
-        dot: "bg-[rgb(255,94,23)]",
+        text: "text-[#FF8000]",
+        bg: "bg-gradient-to-r from-[#FF8000] to-[#FF8000]",
+        glow: "0 0 10px #FF8000",
+        dot: "bg-[#FF8000]",
       };
     return {
-      text: "text-[#b91c1c]",
-      bg: "bg-gradient-to-r from-[#b91c1c] to-[#991b1b]",
-      glow: "0 0 10px #b91c1c",
-      dot: "bg-[#b91c1c]",
+      text: "text-[#FF3333]",
+      bg: "bg-gradient-to-r from-[#FF3333] to-[#FF3333]",
+      glow: "0 0 10px #FF3333",
+      dot: "bg-[#FF3333]",
     };
   };
 
@@ -83,20 +83,20 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
       };
     if (score >= 60)
       return {
-        start: "rgb(255,94,23)",
-        end: "rgb(230,80,20)",
-        glow: "bg-[rgb(255,94,23)]/30",
+        start: "#FF8000",
+        end: "#FF8000",
+        glow: "bg-[#FF8000]/30",
       };
     if (score >= 40)
       return {
-        start: "rgb(255,94,23)",
-        end: "rgb(230,80,20)",
-        glow: "bg-[rgb(255,94,23)]/30",
+        start: "#FF8000",
+        end: "#FF8000",
+        glow: "bg-[#FF8000]/30",
       };
     return {
-      start: "#b91c1c",
-      end: "#991b1b",
-      glow: "bg-[#b91c1c]/30",
+      start: "#FF3333",
+      end: "#FF3333",
+      glow: "bg-[#FF3333]/30",
     };
   };
 
