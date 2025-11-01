@@ -36,11 +36,13 @@ interface Stats {
   totalArticles: number;
   totalValue: number;
   seoScore: number;
-  seoBreakdown: {
-    presence: number;
-    length: number;
-    keywords: number;
-    readability: number;
+  seoCategories: {
+    homepage: number;
+    products: number;
+    collections: number;
+    content: number;
+    images: number;
+    technical: number;
   };
   connectedStores: number;
 }
@@ -57,11 +59,13 @@ export default function Dashboard() {
     totalArticles: 0,
     totalValue: 0,
     seoScore: 0,
-    seoBreakdown: {
-      presence: 0,
-      length: 0,
-      keywords: 0,
-      readability: 0
+    seoCategories: {
+      homepage: 0,
+      products: 0,
+      collections: 0,
+      content: 0,
+      images: 0,
+      technical: 0
     },
     connectedStores: 0
   });
@@ -131,29 +135,30 @@ export default function Dashboard() {
         .limit(1)
         .single();
 
-      // Calculate breakdown from audit scores if available
+      // Use audit scores if available
       let seoScore = 0;
-      let seoBreakdown = {
-        presence: 0,
-        length: 0,
-        keywords: 0,
-        readability: 0
+      let seoCategories = {
+        homepage: 0,
+        products: 0,
+        collections: 0,
+        content: 0,
+        images: 0,
+        technical: 0
       };
 
       if (latestAudit?.global_score) {
-        // Use audit global score
+        // Use audit scores directly
         seoScore = Math.round(latestAudit.global_score);
-        
-        // Calculate breakdown from category scores
-        // Map category scores to breakdown components
-        seoBreakdown = {
-          presence: Math.round((latestAudit.homepage_score || 0) / 5), // 20% weight
-          length: Math.round(((latestAudit.products_score || 0) + (latestAudit.collections_score || 0)) / 2 / 3.33), // 30% weight  
-          keywords: Math.round(((latestAudit.blog_score || 0) + (latestAudit.images_score || 0)) / 2 / 3.33), // 30% weight
-          readability: Math.round((latestAudit.technical_score || 0) / 5) // 20% weight
+        seoCategories = {
+          homepage: latestAudit.homepage_score || 0,
+          products: latestAudit.products_score || 0,
+          collections: latestAudit.collections_score || 0,
+          content: latestAudit.blog_score || 0, // blog_score stores content score
+          images: latestAudit.images_score || 0,
+          technical: latestAudit.technical_score || 0
         };
       } else {
-        // Fallback: Calculate from products only if no audit exists
+        // Fallback: Calculate simple score from products only if no audit exists
         let totalScore = 0;
         let validProducts = 0;
 
@@ -161,20 +166,20 @@ export default function Dashboard() {
           if (p.seo_title || p.seo_description) {
             const result = calculateDetailedSeoScore(p.seo_title, p.seo_description, true, true);
             totalScore += result.score;
-            seoBreakdown.presence += result.breakdown.presence;
-            seoBreakdown.length += result.breakdown.length;
-            seoBreakdown.keywords += result.breakdown.keywords;
-            seoBreakdown.readability += result.breakdown.readability;
             validProducts++;
           }
         });
 
         seoScore = validProducts > 0 ? Math.round(totalScore / validProducts) : 0;
-        seoBreakdown = {
-          presence: validProducts > 0 ? Math.round(seoBreakdown.presence / validProducts) : 0,
-          length: validProducts > 0 ? Math.round(seoBreakdown.length / validProducts) : 0,
-          keywords: validProducts > 0 ? Math.round(seoBreakdown.keywords / validProducts) : 0,
-          readability: validProducts > 0 ? Math.round(seoBreakdown.readability / validProducts) : 0
+        
+        // Estimate category scores from product data
+        seoCategories = {
+          homepage: 50, // Default
+          products: seoScore,
+          collections: 50, // Default
+          content: 50, // Default
+          images: validProducts > 0 ? seoScore : 0,
+          technical: 80 // Default
         };
       }
 
@@ -190,7 +195,7 @@ export default function Dashboard() {
         totalArticles: articlesCount || 0,
         totalValue,
         seoScore,
-        seoBreakdown,
+        seoCategories,
         connectedStores
       });
     } catch (error) {
@@ -285,7 +290,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-6">
         <SeoScoreGauge 
           score={stats.seoScore}
-          breakdown={stats.seoBreakdown}
+          categories={stats.seoCategories}
         />
         
         {/* Quick Actions sous le score */}

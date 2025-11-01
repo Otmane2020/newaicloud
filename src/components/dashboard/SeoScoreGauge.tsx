@@ -5,15 +5,17 @@ import { Target, TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface SeoScoreGaugeProps {
   score: number;
-  breakdown: {
-    presence: number;
-    length: number;
-    keywords: number;
-    readability: number;
+  categories: {
+    homepage: number;
+    products: number;
+    collections: number;
+    content: number;
+    images: number;
+    technical: number;
   };
 }
 
-export function SeoScoreGauge({ score, breakdown }: SeoScoreGaugeProps) {
+export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGaugeProps) {
   const getScoreColor = () => {
     if (score >= 80) return 'text-success';
     if (score >= 60) return 'text-warning';
@@ -40,10 +42,12 @@ export function SeoScoreGauge({ score, breakdown }: SeoScoreGaugeProps) {
   };
 
   const categories = [
-    { name: '✅ Présence (20%)', value: breakdown.presence, max: 20, color: 'hsl(217 91% 60%)' },
-    { name: '📏 Longueur optimale (30%)', value: breakdown.length, max: 30, color: 'hsl(271 91% 65%)' },
-    { name: '🔑 Mots-clés (30%)', value: breakdown.keywords, max: 30, color: 'hsl(38 92% 50%)' },
-    { name: '📖 Lisibilité (20%)', value: breakdown.readability, max: 20, color: 'hsl(142 71% 45%)' },
+    { name: '🏠 Homepage (16.7%)', value: Math.round(categoryScores.homepage), max: 100, color: 'hsl(217 91% 60%)' },
+    { name: '📦 Produits (16.7%)', value: Math.round(categoryScores.products), max: 100, color: 'hsl(271 91% 65%)' },
+    { name: '📁 Collections (16.7%)', value: Math.round(categoryScores.collections), max: 100, color: 'hsl(38 92% 50%)' },
+    { name: '📝 Contenu (16.7%)', value: Math.round(categoryScores.content), max: 100, color: 'hsl(192 71% 45%)' },
+    { name: '🖼️ Images (16.7%)', value: Math.round(categoryScores.images), max: 100, color: 'hsl(142 71% 45%)' },
+    { name: '⚙️ Technique (16.7%)', value: Math.round(categoryScores.technical), max: 100, color: 'hsl(0 71% 55%)' },
   ];
 
   return (
@@ -130,13 +134,29 @@ export function SeoScoreGauge({ score, breakdown }: SeoScoreGaugeProps) {
           ))}
         </div>
 
-        {/* Mini recommandations */}
+        {/* Mini recommandations basées sur la catégorie la plus faible */}
         {score < 80 && (
           <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
             <p className="text-sm font-medium text-primary">
-              💡 Conseil : {score < 60 
-                ? "Optimisez vos titres et descriptions pour améliorer votre score de +20 points"
-                : "Ajoutez des images avec alt text pour gagner +5 points supplémentaires"}
+              💡 Conseil : {(() => {
+                const lowestCategory = categories.reduce((min, cat) => 
+                  cat.value < min.value ? cat : min
+                , categories[0]);
+                
+                if (lowestCategory.name.includes('Homepage')) {
+                  return "Optimisez votre homepage avec titre et description SEO";
+                } else if (lowestCategory.name.includes('Produits')) {
+                  return "Optimisez vos titres et descriptions produits pour +20 points";
+                } else if (lowestCategory.name.includes('Collections')) {
+                  return "Ajoutez des descriptions SEO à vos collections";
+                } else if (lowestCategory.name.includes('Contenu')) {
+                  return "Publiez plus d'articles et de pages optimisés SEO";
+                } else if (lowestCategory.name.includes('Images')) {
+                  return "Ajoutez des textes alt à vos images pour +15 points";
+                } else {
+                  return "Vérifiez vos paramètres techniques et synchronisation";
+                }
+              })()}
             </p>
           </div>
         )}
