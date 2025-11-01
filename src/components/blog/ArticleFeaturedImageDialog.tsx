@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ImageIcon, Upload, Sparkles, Loader2 } from "lucide-react";
+import { ImageIcon, Upload, Sparkles, Loader2, CheckCircle, Eye, Zap } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -32,6 +32,10 @@ export function ArticleFeaturedImageDialog({
   const [customImageUrl, setCustomImageUrl] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string>("");
+  const [generatedImageId, setGeneratedImageId] = useState<string>("");
+  const [processingAlt, setProcessingAlt] = useState(false);
 
   const MAX_PROMPT_LENGTH = 500;
 
@@ -182,7 +186,7 @@ export function ArticleFeaturedImageDialog({
         content_id: article.id,
         content_type: "article",
         src: imageUrl,
-        alt_text: `Featured image for ${article.title}`,
+        alt_text: `Image pour ${article.title}`,
         position: 0,
         user_id: user?.user?.id,
         store_id: storeData?.id,
@@ -192,61 +196,64 @@ export function ArticleFeaturedImageDialog({
 
     if (error) throw error;
 
-    onImageUpdated();
+    // Store image info for success dialog
+    setGeneratedImageUrl(imageUrl);
+    setGeneratedImageId(insertedImage.id);
+    
+    // Close main dialog and show success
     onOpenChange(false);
     setSelectedOption(null);
     setCustomImageUrl("");
     setAiPrompt("");
+    
+    // Refresh the article list
+    onImageUpdated();
+    
+    // Show success dialog
+    toast.success("✅ Image générée avec succès!");
+    setShowSuccessDialog(true);
+  };
 
-    // Show success with option to generate ALT and sync
-    toast.success(
-      <div className="space-y-2">
-        <p className="font-semibold">✅ Image générée avec succès!</p>
-        <p className="text-xs">Voulez-vous générer un ALT optimisé et synchroniser avec Shopify?</p>
-      </div>,
-      {
-        duration: 8000,
-        action: {
-          label: "Optimiser & Sync",
-          onClick: async () => {
-            try {
-              // Generate ALT text
-              const { error: altError } = await supabase.functions.invoke("generate-alt-texts-vision", {
-                body: {
-                  imageId: insertedImage.id,
-                  imageType: "content",
-                },
-              });
-
-              if (altError) throw altError;
-
-              toast.success("ALT généré! Synchronisation avec Shopify...");
-
-              // Sync to Shopify if article has shopify_article_id
-              const { data: articleData } = await supabase
-                .from("blog_articles")
-                .select("shopify_article_id")
-                .eq("id", article.id)
-                .single();
-
-              if (articleData?.shopify_article_id) {
-                const { error: syncError } = await supabase.functions.invoke("sync-blog-to-shopify", {
-                  body: { articleId: article.id },
-                });
-
-                if (syncError) throw syncError;
-                toast.success("✨ Image, ALT et synchronisation Shopify terminés!");
-              } else {
-                toast.success("✨ Image et ALT générés avec succès!");
-              }
-            } catch (err: any) {
-              console.error("Error:", err);
-              toast.error(err.message || "Erreur lors de l'optimisation");
-            }
-          },
+  const handleOptimizeAndSync = async () => {
+    try {
+      setProcessingAlt(true);
+      
+      // Generate ALT text
+      const { error: altError } = await supabase.functions.invoke("generate-alt-texts-vision", {
+        body: {
+          imageId: generatedImageId,
+          imageType: "content",
         },
+      });
+
+      if (altError) throw altError;
+
+      // Sync to Shopify if article has shopify_article_id
+      const { data: articleData } = await supabase
+        .from("blog_articles")
+        .select("shopify_article_id")
+        .eq("id", article.id)
+        .single();
+
+      if (articleData?.shopify_article_id) {
+        const { error: syncError } = await supabase.functions.invoke("sync-blog-to-shopify", {
+          body: { articleId: article.id },
+        });
+
+        if (syncError) throw syncError;
+        toast.success("✨ ALT généré et synchronisé avec Shopify!");
+      } else {
+        toast.success("✨ ALT optimisé généré avec succès!");
       }
-    );
+
+      setShowSuccessDialog(false);
+      onImageUpdated();
+    } catch (err: any) {
+      console.error("Error:", err);
+      toast.error(err.message || "Erreur lors de l'optimisation");
+    } finally {
+      setProcessingAlt(false);
+    }
   };
 
   const handleClose = () => {
@@ -261,8 +268,9 @@ export function ArticleFeaturedImageDialog({
   ];
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5" />
@@ -474,5 +482,77 @@ export function ArticleFeaturedImageDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex items-start gap-4 pb-4 border-b">
+            <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center shrink-0">
+              <CheckCircle className="w-7 h-7 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="flex-1">
+              <DialogTitle className="text-2xl font-bold mb-1">✅ Image générée!</DialogTitle>
+              <DialogDescription className="text-base">
+                Votre image a été créée avec succès
+              </DialogDescription>
+            </div>
+          </div>
+
+          {/* Image Preview */}
+          {generatedImageUrl && (
+            <div className="my-4">
+              <img
+                src={generatedImageUrl}
+                alt="Generated"
+                className="w-full h-48 object-cover rounded-lg border"
+              />
+            </div>
+          )}
+
+          {/* Info Card */}
+          <Card className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-indigo-200">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+              <div className="space-y-2 text-sm">
+                <p className="font-medium">🎨 Optimisez votre image maintenant!</p>
+                <p className="text-muted-foreground">
+                  Générez un texte ALT optimisé avec Vision AI et synchronisez automatiquement avec Shopify.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <div className="flex flex-col gap-2 pt-4">
+            <Button
+              onClick={handleOptimizeAndSync}
+              disabled={processingAlt}
+              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              size="lg"
+            >
+              {processingAlt ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Optimisation...
+                </>
+              ) : (
+                <>
+                  <Eye className="w-5 h-5 mr-2" />
+                  Générer ALT & Synchroniser
+                  <Zap className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={() => setShowSuccessDialog(false)}
+              variant="outline"
+              className="w-full h-11"
+              size="lg"
+            >
+              Plus tard
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
