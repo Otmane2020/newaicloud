@@ -248,11 +248,30 @@ export function SeoAltImageList() {
   const handleSyncImages = async () => {
     if (imagesToSync.length === 0) return;
 
+    // CRITICAL: Filter out images without Shopify ID before syncing
+    const syncableImages = imagesToSync.filter(img => img.shopify_image_id);
+    const filteredCount = imagesToSync.length - syncableImages.length;
+    
+    if (syncableImages.length === 0) {
+      toast.error('Aucune image synchronisable', {
+        description: 'Les images de homepage ne peuvent pas être synchronisées avec Shopify.'
+      });
+      setShowResultsDialog(false);
+      setShowSyncDialog(false);
+      return;
+    }
+    
+    if (filteredCount > 0) {
+      toast.info(`${filteredCount} image(s) de homepage ignorée(s)`, {
+        description: 'Seules les images de produits seront synchronisées.'
+      });
+    }
+
     setShowResultsDialog(false);
     setShowSyncDialog(false);
     setCurrentOperation('syncing');
     setShowProgressDialog(true);
-    setProgress({ current: 0, total: imagesToSync.length });
+    setProgress({ current: 0, total: syncableImages.length });
 
     let successCount = 0;
     let errorCount = 0;
@@ -260,9 +279,9 @@ export function SeoAltImageList() {
     const successfulImages: ProductImage[] = [];
 
     try {
-      for (let i = 0; i < imagesToSync.length; i++) {
-        const image = imagesToSync[i];
-        console.log(`🔄 [${i + 1}/${imagesToSync.length}] Syncing image:`, image.id);
+      for (let i = 0; i < syncableImages.length; i++) {
+        const image = syncableImages[i];
+        console.log(`🔄 [${i + 1}/${syncableImages.length}] Syncing image:`, image.id, 'Shopify ID:', image.shopify_image_id);
         
         try {
           const { data, error } = await invokeWithTimeout(image.id);
