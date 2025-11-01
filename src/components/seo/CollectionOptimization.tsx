@@ -57,6 +57,7 @@ interface Collection {
   seo_description?: string | null;
   optimization_count?: number;
   last_optimization_at?: string | null;
+  last_synced_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -896,10 +897,17 @@ export function CollectionOptimization() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
-                          <Clock className="w-3 h-3 mr-1" />
-                          N/A
-                        </Badge>
+                        {collection.last_synced_at ? (
+                          <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Synced
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Not synced
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">

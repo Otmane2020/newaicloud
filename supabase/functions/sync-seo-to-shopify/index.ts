@@ -589,6 +589,12 @@ Deno.serve(async (req: Request) => {
         p_increment: 1
       });
 
+      // Update last_synced_at timestamp
+      await supabaseClient
+        .from("shopify_collections")
+        .update({ last_synced_at: new Date().toISOString() })
+        .eq("id", collectionId);
+
       console.log(`[SYNC-COLLECTION] ✅ Successfully synced collection ${collection.shopify_collection_id}`);
 
       // Extract store name and build Shopify URL
