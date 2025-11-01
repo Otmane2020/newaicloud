@@ -140,8 +140,10 @@ export function GoogleMerchantSettings() {
     setFeedStatus("idle");
 
     try {
-      const feedUrl = `https://newai.sale/shoppingfeed/${settings.store_name}/xml`;
-      const response = await fetch(feedUrl);
+      const testUrl = user?.id 
+        ? `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user.id}/xml`
+        : feedUrl;
+      const response = await fetch(testUrl);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -164,9 +166,10 @@ export function GoogleMerchantSettings() {
     }
   };
 
-  const feedUrl = settings.store_name
-    ? `https://newai.sale/shoppingfeed/${settings.store_name}/xml`
-    : `https://newai.sale/shoppingfeed/{nom-boutique}/xml`;
+  // URL du flux - utilise l'URL Supabase directe
+  const feedUrl = user?.id 
+    ? `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user.id}/xml`
+    : `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/{VOTRE_ID}/xml`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);
@@ -227,11 +230,9 @@ export function GoogleMerchantSettings() {
               <span>Utilisé dans l'URL de votre flux</span>
               <span>{settings.store_name.length}/50</span>
             </div>
-            {settings.store_name && (
-              <div className="text-xs text-blue-600 dark:text-blue-400">
-                Votre URL: <code className="bg-blue-50 px-1 rounded">/shoppingfeed/{settings.store_name}/xml</code>
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground mt-1">
+              Le nom de boutique peut être utilisé comme identifiant alternatif dans votre flux
+            </div>
           </div>
 
           {/* Auto Update */}
@@ -347,7 +348,7 @@ export function GoogleMerchantSettings() {
       </Card>
 
       {/* Feed URL Display */}
-      {settings.store_name && (
+      {user?.id && (
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -361,7 +362,7 @@ export function GoogleMerchantSettings() {
             <div className="space-y-2">
               <Label className="text-sm font-medium">URL du flux Google Shopping</Label>
               <div className="flex gap-2">
-                <Input readOnly value={feedUrl} className="flex-1 font-mono text-sm bg-white dark:bg-gray-800" />
+                <Input readOnly value={feedUrl} className="flex-1 font-mono text-xs sm:text-sm bg-white dark:bg-gray-800" />
                 <Button onClick={handleCopy} variant="default" size="sm" className="shrink-0">
                   {copied ? (
                     <>
@@ -378,6 +379,13 @@ export function GoogleMerchantSettings() {
               </div>
             </div>
 
+            <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200">
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>URL fonctionnelle:</strong> Cette URL est active et peut être utilisée immédiatement dans Google Merchant Center.
+              </AlertDescription>
+            </Alert>
+
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
               <Button onClick={testFeed} disabled={testing} variant="default" className="flex-1">
@@ -388,7 +396,7 @@ export function GoogleMerchantSettings() {
                   </>
                 ) : (
                   <>
-                    <ExternalLink className="w-4 h-4 mr-2" />
+                    <RefreshCw className="w-4 h-4 mr-2" />
                     Tester le flux
                   </>
                 )}
@@ -396,7 +404,7 @@ export function GoogleMerchantSettings() {
               <Button asChild variant="outline" className="flex-1">
                 <a href={feedUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  Ouvrir dans un nouvel onglet
+                  Ouvrir le flux
                 </a>
               </Button>
             </div>
@@ -406,8 +414,16 @@ export function GoogleMerchantSettings() {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Impossible de charger le flux. Vérifiez que vous avez des produits actifs et que le nom de boutique
-                  est correct.
+                  Impossible de charger le flux. Vérifiez que vous avez des produits actifs avec des images et des prix.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {feedStatus === "success" && (
+              <Alert className="bg-green-50 dark:bg-green-950 border-green-200">
+                <Check className="h-4 w-4" />
+                <AlertDescription>
+                  Flux XML testé avec succès ! ✅ Votre flux est prêt à être utilisé dans Google Merchant Center.
                 </AlertDescription>
               </Alert>
             )}
@@ -415,12 +431,13 @@ export function GoogleMerchantSettings() {
             {/* Tips */}
             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
-                💡 Conseils de configuration
+                💡 Configuration dans Google Merchant Center
               </h4>
               <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-                <li>• Utilisez cette URL dans Google Merchant Center → Produits → Flux</li>
-                <li>• Choisissez "Flux planifiés" avec une mise à jour quotidienne</li>
-                <li>• Vérifiez régulièrement l'onglet "Diagnostics" pour les erreurs</li>
+                <li>• Accédez à Produits → Flux → Ajouter un flux</li>
+                <li>• Choisissez "Flux planifiés" avec mise à jour quotidienne</li>
+                <li>• Collez cette URL dans le champ prévu</li>
+                <li>• Vérifiez l'onglet "Diagnostics" après la première récupération</li>
               </ul>
             </div>
           </CardContent>

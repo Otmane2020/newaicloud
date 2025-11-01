@@ -37,8 +37,8 @@ export function GoogleMerchant() {
   });
   const [isTesting, setIsTesting] = useState(false);
 
-  // URL du flux avec le domaine NewAI
-  const feedUrl = `https://newai.sale/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
+  // URL du flux - utilise l'URL Supabase directe qui fonctionne immédiatement
+  const feedUrl = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);
@@ -198,17 +198,17 @@ export function GoogleMerchant() {
                 <Settings className="w-6 h-6 text-green-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold mb-2">Configuration du Flux</h3>
+                <h3 className="text-xl font-bold mb-2">URL du Flux XML</h3>
                 <p className="text-muted-foreground text-sm mb-4">
-                  Utilisez cette URL pour configurer votre flux de produits dans Google Merchant Center
+                  Copiez cette URL pour configurer votre flux dans Google Merchant Center
                 </p>
 
                 {/* Feed URL */}
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium mb-2">URL du flux XML</label>
+                    <label className="block text-sm font-medium mb-2">URL de votre flux Google Shopping</label>
                     <div className="flex gap-2">
-                      <Input readOnly value={feedUrl} className="flex-1 font-mono text-sm" />
+                      <Input readOnly value={feedUrl} className="flex-1 font-mono text-xs sm:text-sm bg-muted" />
                       <Button onClick={handleCopy} variant="default" className="shrink-0">
                         {copied ? (
                           <>
@@ -225,8 +225,15 @@ export function GoogleMerchant() {
                     </div>
                   </div>
 
+                  <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-sm">
+                      <strong>Note:</strong> Cette URL fonctionne immédiatement. Vous pouvez l'utiliser dès maintenant dans Google Merchant Center.
+                    </AlertDescription>
+                  </Alert>
+
                   <div className="bg-muted rounded-lg p-3">
-                    <h4 className="text-sm font-medium mb-2">Paramètres recommandés Google Merchant</h4>
+                    <h4 className="text-sm font-medium mb-2">Paramètres recommandés pour Google Merchant</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Fréquence:</span>
