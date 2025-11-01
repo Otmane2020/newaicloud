@@ -278,6 +278,12 @@ export function ArticleManagement() {
   };
 
   const filteredArticles = getFilteredArticles();
+  
+  // Calculate global SEO score
+  const globalSeoScore = articles.length > 0
+    ? Math.round(articles.reduce((sum, article) => sum + calculateArticleSeoScore(article), 0) / articles.length)
+    : 0;
+  
   const stats = {
     total: articles.length,
     draft: articles.filter(a => a.status === 'draft').length,
@@ -304,6 +310,31 @@ export function ArticleManagement() {
     <div className="space-y-6">
       {/* Vision AI Banner */}
       <VisionAIBanner />
+      
+      {/* Global SEO Score Card */}
+      <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold mb-1">Score SEO Global des Articles</h3>
+            <p className="text-sm text-muted-foreground">
+              Moyenne des scores SEO de tous les articles
+            </p>
+          </div>
+          <div className="text-center">
+            <div className={`text-4xl font-bold ${
+              globalSeoScore >= 80 ? 'text-green-600' : 
+              globalSeoScore >= 60 ? 'text-blue-600' : 
+              globalSeoScore >= 40 ? 'text-yellow-600' : 
+              'text-red-600'
+            }`}>
+              {globalSeoScore}/100
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {articles.length} article{articles.length > 1 ? 's' : ''}
+            </div>
+          </div>
+        </div>
+      </Card>
       
       {/* Quick Filters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -415,7 +446,7 @@ export function ArticleManagement() {
                 <TableHead className="w-32">SEO Score</TableHead>
                 <TableHead className="w-32">Status</TableHead>
                 <TableHead className="w-32">Synced</TableHead>
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead className="w-32 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -501,7 +532,7 @@ export function ArticleManagement() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={article.shopify_blog_id ? 'default' : 'secondary'}>
+                      <Badge variant={article.shopify_blog_id ? 'default' : 'secondary'} className={article.shopify_blog_id ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : ''}>
                         {article.shopify_blog_id ? (
                           <>
                             <CheckCircle className="w-3 h-3 mr-1" />
@@ -510,13 +541,10 @@ export function ArticleManagement() {
                         ) : (
                           <>
                             <Clock className="w-3 h-3 mr-1" />
-                            Pending
+                            Not synced
                           </>
                         )}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(article.updated_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
