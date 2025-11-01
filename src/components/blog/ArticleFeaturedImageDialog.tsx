@@ -130,19 +130,27 @@ export function ArticleFeaturedImageDialog({
     // Store the featured image in content_images table
     const { data: user } = await supabase.auth.getUser();
 
-    const { error } = await supabase.from("content_images").upsert(
-      {
-        content_id: article.id,
-        content_type: "article",
-        src: imageUrl,
-        alt_text: `Featured image for ${article.title}`,
-        position: 0, // Featured image is position 0
-        user_id: user?.user?.id,
-      },
-      {
-        onConflict: "content_type,content_id,src",
-      },
-    );
+    // Delete existing featured image for this article (position 0)
+    const { error: deleteError } = await supabase
+      .from("content_images")
+      .delete()
+      .eq("content_type", "article")
+      .eq("content_id", article.id)
+      .eq("position", 0);
+
+    if (deleteError) {
+      console.error("Error deleting old image:", deleteError);
+    }
+
+    // Insert new featured image
+    const { error } = await supabase.from("content_images").insert({
+      content_id: article.id,
+      content_type: "article",
+      src: imageUrl,
+      alt_text: `Featured image for ${article.title}`,
+      position: 0, // Featured image is position 0
+      user_id: user?.user?.id,
+    });
 
     if (error) throw error;
 

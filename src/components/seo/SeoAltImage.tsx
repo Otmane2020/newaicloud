@@ -37,7 +37,7 @@ interface ProductImage {
   id: string;
   product_id?: string;
   content_id?: string;
-  content_type?: 'product' | 'collection' | 'page' | 'article';
+  content_type?: 'product' | 'collection' | 'page' | 'article' | 'homepage';
   src: string;
   alt_text: string | null;
   position: number;
@@ -67,7 +67,7 @@ interface ImageWithProduct extends ProductImage {
 }
 
 type AltImageTab = 'all' | 'needs-alt' | 'has-alt' | 'to-sync';
-type ContentTypeFilter = 'all' | 'products' | 'collections' | 'pages' | 'articles';
+type ContentTypeFilter = 'all' | 'products' | 'collections' | 'pages' | 'articles' | 'homepage';
 
 export function SeoAltImage() {
   const [searchParams] = useSearchParams();
@@ -153,6 +153,8 @@ export function SeoAltImage() {
               .eq('id', img.content_id)
               .maybeSingle();
             if (data) product = { ...data, title: `📰 ${data.title}` };
+          } else if (img.content_type === 'homepage') {
+            product = { id: img.content_id, title: `🏠 Page d'accueil` };
           }
 
           return {
@@ -227,6 +229,7 @@ export function SeoAltImage() {
       if (contentTypeFilter === 'collections' && (!img.content_type || img.content_type !== 'collection')) return false;
       if (contentTypeFilter === 'pages' && (!img.content_type || img.content_type !== 'page')) return false;
       if (contentTypeFilter === 'articles' && (!img.content_type || img.content_type !== 'article')) return false;
+      if (contentTypeFilter === 'homepage' && (!img.content_type || img.content_type !== 'homepage')) return false;
     }
 
     if (activeTab === 'needs-alt' && img.alt_text) return false;
@@ -334,7 +337,7 @@ export function SeoAltImage() {
     setIsOptimizationComplete(true);
     await fetchImages();
 
-    // Show results dialog with refreshed images
+    // Show results dialog with refreshed images including image_url
     const refreshedImages = images.filter(img => 
       finalImagesToGenerate.some(genImg => genImg.id === img.id)
     );
@@ -434,9 +437,11 @@ export function SeoAltImage() {
 
     setGenerating(false);
     setIsOptimizationComplete(true);
+    
+    // Refresh images to get updated alt texts  
     await fetchImages();
 
-    // Show results
+    // Show results with refreshed images including image_url
     const refreshedImages = images.filter(img => 
       finalImagesToOptimize.some(genImg => genImg.id === img.id)
     );
@@ -665,6 +670,7 @@ export function SeoAltImage() {
           { id: 'collections' as const, label: 'Collections', icon: Package },
           { id: 'pages' as const, label: 'Pages', icon: FileText },
           { id: 'articles' as const, label: 'Articles', icon: PenSquare },
+          { id: 'homepage' as const, label: 'Page d\'accueil', icon: ImageIcon },
         ].map((filter) => {
           const Icon = filter.icon;
           return (
