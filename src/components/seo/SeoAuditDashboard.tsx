@@ -115,26 +115,26 @@ export function SeoAuditDashboard() {
     }
   };
 
-  // Palette de couleurs cohérente avec SeoScoreGauge (orange vif)
+  // Palette de couleurs: vert (excellent), orange (moyen), rouge (faible)
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
     if (score >= 60) return "text-[rgb(255,94,23)]"; // Orange vif
     if (score >= 40) return "text-[rgb(255,94,23)]"; // Orange vif
-    return "text-[rgb(255,94,23)]"; // Orange vif
+    return "text-[#dc2626]"; // Rouge pour faible
   };
 
   const getScoreBgColor = (score: number) => {
     if (score >= 80) return "bg-[#22c55e]/10 border-[#22c55e]/30";
     if (score >= 60) return "bg-[rgb(255,94,23)]/10 border-[rgb(255,94,23)]/30";
     if (score >= 40) return "bg-[rgb(255,94,23)]/10 border-[rgb(255,94,23)]/30";
-    return "bg-[rgb(255,94,23)]/10 border-[rgb(255,94,23)]/30";
+    return "bg-[#dc2626]/10 border-[#dc2626]/30";
   };
 
   const getScoreGradient = (score: number) => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
     if (score >= 60) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
     if (score >= 40) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
-    return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
+    return "from-[#dc2626]/20 to-[#dc2626]/5";
   };
 
   const getCategoryColor = (value: number) => {
@@ -163,11 +163,11 @@ export function SeoAuditDashboard() {
         gradient: "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5",
       };
     return {
-      text: "text-[rgb(255,94,23)]",
-      bg: "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]",
-      glow: "0 0 10px rgb(255,94,23)",
-      dot: "bg-[rgb(255,94,23)]",
-      gradient: "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5",
+      text: "text-[#dc2626]",
+      bg: "bg-gradient-to-r from-[#dc2626] to-[#b91c1c]",
+      glow: "0 0 10px #dc2626",
+      dot: "bg-[#dc2626]",
+      gradient: "from-[#dc2626]/20 to-[#dc2626]/5",
     };
   };
 
@@ -191,9 +191,9 @@ export function SeoAuditDashboard() {
         glow: "bg-[rgb(255,94,23)]/30",
       };
     return {
-      start: "rgb(255,94,23)",
-      end: "rgb(230,80,20)",
-      glow: "bg-[rgb(255,94,23)]/30",
+      start: "#dc2626",
+      end: "#b91c1c",
+      glow: "bg-[#dc2626]/30",
     };
   };
 
@@ -373,7 +373,7 @@ export function SeoAuditDashboard() {
                         ? "bg-[rgb(255,94,23)] text-white"
                         : audit.global_score >= 40
                           ? "bg-[rgb(255,94,23)] text-white"
-                          : "bg-[rgb(255,94,23)] text-white"
+                          : "bg-[#dc2626] text-white"
                   }`}
                 >
                   {audit.global_score >= 80
@@ -418,7 +418,7 @@ export function SeoAuditDashboard() {
                                   ? "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]"
                                   : audit.global_score >= 40
                                     ? "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]"
-                                    : "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]"
+                                    : "bg-gradient-to-r from-[#dc2626] to-[#b91c1c]"
                             }`}
                             style={{
                               width: `${audit.global_score}%`,
@@ -429,7 +429,7 @@ export function SeoAuditDashboard() {
                                     ? "0 0 10px rgb(255,94,23)"
                                     : audit.global_score >= 40
                                       ? "0 0 10px rgb(255,94,23)"
-                                      : "0 0 10px rgb(255,94,23)",
+                                      : "0 0 10px #dc2626",
                             }}
                           />
                         </div>
@@ -449,7 +449,7 @@ export function SeoAuditDashboard() {
                             ? "bg-[rgb(255,94,23)]/30"
                             : audit.global_score >= 40
                               ? "bg-[rgb(255,94,23)]/30"
-                              : "bg-[rgb(255,94,23)]/30"
+                              : "bg-[#dc2626]/30"
                       } animate-pulse`}
                     />
                     <svg className="w-48 h-48 transform -rotate-90 relative z-10" viewBox="0 0 192 192">
@@ -464,7 +464,7 @@ export function SeoAuditDashboard() {
                                   ? "rgb(255,94,23)"
                                   : audit.global_score >= 40
                                     ? "rgb(255,94,23)"
-                                    : "rgb(255,94,23)"
+                                    : "#dc2626"
                             }
                           />
                           <stop
@@ -476,7 +476,7 @@ export function SeoAuditDashboard() {
                                   ? "rgb(230,80,20)"
                                   : audit.global_score >= 40
                                     ? "rgb(230,80,20)"
-                                    : "rgb(230,80,20)"
+                                    : "#b91c1c"
                             }
                           />
                         </linearGradient>
@@ -525,7 +525,7 @@ export function SeoAuditDashboard() {
                       ? "bg-[rgb(255,94,23)]/10 border-2 border-[rgb(255,94,23)]/20"
                       : audit.global_score >= 40
                         ? "bg-[rgb(255,94,23)]/10 border-2 border-[rgb(255,94,23)]/20"
-                        : "bg-[rgb(255,94,23)]/10 border-2 border-[rgb(255,94,23)]/20"
+                        : "bg-[#dc2626]/10 border-2 border-[#dc2626]/20"
                 }`}
               >
                 <p className="text-sm font-semibold">
