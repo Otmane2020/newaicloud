@@ -17,15 +17,15 @@ interface SeoScoreGaugeProps {
 
 export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGaugeProps) {
   const getScoreColor = () => {
-    if (score >= 80) return 'text-success';
-    if (score >= 60) return 'text-warning';
-    return 'text-destructive';
+    if (score >= 80) return 'text-emerald-500';
+    if (score >= 60) return 'text-[#FF8C00]';
+    return 'text-[#EF4444]';
   };
 
   const getScoreGradient = () => {
-    if (score >= 80) return 'from-success/20 to-success/5';
-    if (score >= 60) return 'from-warning/20 to-warning/5';
-    return 'from-destructive/20 to-destructive/5';
+    if (score >= 80) return 'from-emerald-500/20 to-emerald-500/5';
+    if (score >= 60) return 'from-[#FF8C00]/20 to-[#FF8C00]/5';
+    return 'from-[#EF4444]/20 to-[#EF4444]/5';
   };
 
   const getScoreLabel = () => {
@@ -36,9 +36,9 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
   };
 
   const getScoreIcon = () => {
-    if (score >= 80) return <Target className="w-5 h-5 text-success" />;
-    if (score >= 60) return <TrendingUp className="w-5 h-5 text-warning" />;
-    return <AlertTriangle className="w-5 h-5 text-destructive" />;
+    if (score >= 80) return <Target className="w-5 h-5 text-emerald-500" />;
+    if (score >= 60) return <TrendingUp className="w-5 h-5 text-[#FF8C00]" />;
+    return <AlertTriangle className="w-5 h-5 text-[#EF4444]" />;
   };
 
   const categories = [
@@ -121,15 +121,15 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
           <div className="relative">
             {/* Glow effect background */}
             <div className={`absolute inset-0 rounded-full blur-2xl ${
-              score >= 80 ? 'bg-success/30' : score >= 60 ? 'bg-warning/30' : 'bg-destructive/30'
+              score >= 80 ? 'bg-emerald-500/30' : score >= 60 ? 'bg-[#FF8C00]/30' : 'bg-[#EF4444]/30'
             } animate-pulse`} />
             
             {/* Cercle de fond avec gradient */}
             <svg className="w-56 h-56 transform -rotate-90 relative z-10">
               <defs>
                 <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor={score >= 80 ? 'hsl(var(--success))' : score >= 60 ? 'hsl(var(--warning))' : 'hsl(var(--destructive))'} />
-                  <stop offset="100%" stopColor={score >= 80 ? 'hsl(var(--success))' : score >= 60 ? 'hsl(var(--warning))' : 'hsl(var(--destructive))'} stopOpacity="0.6" />
+                  <stop offset="0%" stopColor={score >= 80 ? '#10b981' : score >= 60 ? '#FF8C00' : '#EF4444'} />
+                  <stop offset="100%" stopColor={score >= 80 ? '#10b981' : score >= 60 ? '#FF8C00' : '#EF4444'} stopOpacity="0.6" />
                 </linearGradient>
               </defs>
               {/* Background circle */}
@@ -194,19 +194,19 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
                     <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
                       {cat.name}
                     </div>
-                    <div className={`w-2 h-2 rounded-full ${
-                      cat.value >= 80 ? 'bg-success' : 
-                      cat.value >= 60 ? 'bg-warning' : 
-                      'bg-destructive'
-                    } animate-pulse`} />
+                  <div className={`w-2 h-2 rounded-full ${
+                    cat.value >= 80 ? 'bg-emerald-500' : 
+                    cat.value >= 60 ? 'bg-[#FF8C00]' : 
+                    'bg-[#EF4444]'
+                  } animate-pulse`} />
                   </div>
                   <div className="text-xs text-muted-foreground font-medium">{cat.description}</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-lg font-black ${
-                    cat.value >= 80 ? 'text-success' : 
-                    cat.value >= 60 ? 'text-warning' : 
-                    'text-destructive'
+                    cat.value >= 80 ? 'text-emerald-500' : 
+                    cat.value >= 60 ? 'text-[#FF8C00]' : 
+                    'text-[#EF4444]'
                   }`}>
                     {cat.value}
                   </span>
@@ -216,15 +216,15 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
               <div className="relative h-3 bg-muted rounded-full overflow-hidden shadow-inner">
                 <div
                   className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out shadow-lg ${
-                    cat.value >= 80 ? 'bg-gradient-to-r from-success to-success/80' : 
-                    cat.value >= 60 ? 'bg-gradient-to-r from-warning to-warning/80' : 
-                    'bg-gradient-to-r from-destructive to-destructive/80'
+                    cat.value >= 80 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 
+                    cat.value >= 60 ? 'bg-gradient-to-r from-[#FF8C00] to-[#FFB84D]' : 
+                    'bg-gradient-to-r from-[#EF4444] to-[#F87171]'
                   }`}
                   style={{
                     width: `${(cat.value / cat.max) * 100}%`,
-                    boxShadow: cat.value >= 80 ? '0 0 10px hsl(var(--success))' : 
-                               cat.value >= 60 ? '0 0 10px hsl(var(--warning))' : 
-                               '0 0 10px hsl(var(--destructive))'
+                    boxShadow: cat.value >= 80 ? '0 0 10px #10b981' : 
+                               cat.value >= 60 ? '0 0 10px #FF8C00' : 
+                               '0 0 10px #EF4444'
                   }}
                 />
               </div>

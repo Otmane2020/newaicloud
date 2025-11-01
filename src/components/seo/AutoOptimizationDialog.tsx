@@ -158,8 +158,8 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-rose-500 text-white border-0';
-      case 'medium': return 'bg-orange-500 text-white border-0';
+      case 'high': return 'bg-[#EF4444] text-white border-0';
+      case 'medium': return 'bg-[#FF8C00] text-white border-0';
       case 'low': return 'bg-emerald-500 text-white border-0';
       default: return 'bg-muted';
     }
