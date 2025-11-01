@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { pageId, isHomepage } = await req.json();
+    const { pageId, isHomepage, force = false } = await req.json();
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -81,6 +81,32 @@ Deno.serve(async (req) => {
 
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error('Unauthorized');
+
+    // Check optimization limits BEFORE calling AI (for non-homepage pages)
+    if (!isHomepage) {
+      const { data: checkResult, error: checkError } = await supabaseClient
+        .rpc('check_optimization_allowed', {
+          p_user_id: user.id,
+          p_resource_type: 'page',
+          p_resource_id: pageId,
+          p_force: force
+        });
+
+      if (checkError) {
+        console.error('Error checking optimization limits:', checkError);
+        throw new Error('Failed to check optimization limits');
+      }
+
+      if (!checkResult.allowed) {
+        return new Response(
+          JSON.stringify({ 
+            error: checkResult.reason,
+            message: checkResult.message 
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     let pageTitle = '';
     let textContent = '';
@@ -244,31 +270,8 @@ Réponds uniquement en JSON:
 
     console.log('Generated SEO:', seoData);
 
-    // Check optimization limits for pages
+    // Update page with generated SEO
     if (!isHomepage) {
-      const { data: checkResult, error: checkError } = await supabaseClient
-        .rpc('check_optimization_allowed', {
-          p_user_id: user.id,
-          p_resource_type: 'page',
-          p_resource_id: pageId,
-          p_force: false
-        });
-
-      if (checkError) {
-        console.error('Error checking optimization limits:', checkError);
-        throw new Error('Failed to check optimization limits');
-      }
-
-      if (!checkResult.allowed) {
-        return new Response(
-          JSON.stringify({ 
-            error: checkResult.reason,
-            message: checkResult.message 
-          }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
       // Get current page data
       const { data: currentPage } = await supabaseClient
         .from('shopify_pages')

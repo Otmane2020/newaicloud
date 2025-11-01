@@ -170,7 +170,7 @@ export function PageOptimization() {
     for (let i = 0; i < pageIds.length; i++) {
       try {
         const { error } = await supabase.functions.invoke('generate-page-seo', {
-          body: { pageId: pageIds[i] }
+          body: { pageId: pageIds[i], force: true }
         });
         
         if (error) throw error;
@@ -207,7 +207,7 @@ export function PageOptimization() {
     for (let i = 0; i < pagesToOptimize.length; i++) {
       try {
         const { error } = await supabase.functions.invoke('generate-page-seo', {
-          body: { pageId: pagesToOptimize[i].id }
+          body: { pageId: pagesToOptimize[i].id, force: true }
         });
         
         if (error) throw error;
@@ -276,11 +276,11 @@ export function PageOptimization() {
     fetchPages();
   };
 
-  const handleOptimizePage = async (pageId: string) => {
+  const handleOptimizePage = async (pageId: string, forceReoptimize = false) => {
     try {
       setOptimizing(true);
       const { error } = await supabase.functions.invoke('generate-page-seo', {
-        body: { pageId }
+        body: { pageId, force: forceReoptimize }
       });
       
       if (error) throw error;
@@ -649,17 +649,15 @@ export function PageOptimization() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          {!page.optimized && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleOptimizePage(page.id)}
-                              disabled={optimizing}
-                              title="Optimize"
-                            >
-                              <Sparkles className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleOptimizePage(page.id, page.optimized)}
+                            disabled={optimizing}
+                            title={page.optimized ? "Re-optimize" : "Optimize"}
+                          >
+                            <Sparkles className="w-4 h-4" />
+                          </Button>
                           {page.optimized && (
                             <Button
                               size="sm"
