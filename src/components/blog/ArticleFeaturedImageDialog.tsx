@@ -200,16 +200,19 @@ export function ArticleFeaturedImageDialog({
     setGeneratedImageUrl(imageUrl);
     setGeneratedImageId(insertedImage.id);
     
-    // Close main dialog and show success
+    // Close main dialog
     onOpenChange(false);
     setSelectedOption(null);
     setCustomImageUrl("");
     setAiPrompt("");
     
-    // Refresh the article list
-    onImageUpdated();
+    // Refresh the article list FIRST
+    await onImageUpdated();
     
-    // Show success dialog
+    // Wait a bit to ensure parent has refreshed
+    await new Promise(resolve => setTimeout(resolve, 150));
+    
+    // Then show success dialog
     toast.success("✅ Image générée avec succès!");
     setShowSuccessDialog(true);
   };

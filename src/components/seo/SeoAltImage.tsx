@@ -206,10 +206,15 @@ export function SeoAltImage() {
       
       if (homepageError) {
         console.error('Homepage import error:', homepageError);
+        toast.warning('Images homepage non importées. Vérifiez la connexion Shopify.');
+      } else if (homepageData?.imported > 0) {
+        toast.success(`${homepageData.imported} images de homepage importées`);
       }
 
       const totalImported = (data?.totalImported || 0) + (homepageData?.imported || 0);
-      toast.success(`${totalImported} images importées depuis Shopify`);
+      if (totalImported > 0) {
+        toast.success(`${totalImported} images importées depuis Shopify`);
+      }
       await fetchImages();
     } catch (error) {
       console.error('Import error:', error);
@@ -349,8 +354,11 @@ export function SeoAltImage() {
     // Show results dialog with refreshed images including image_url
     const refreshedImages = images.filter(img => 
       finalImagesToGenerate.some(genImg => genImg.id === img.id)
-    );
-    setOptimizedImages(refreshedImages);
+    ).map(img => ({
+      ...img,
+      image_url: img.src // Map src to image_url for ResultsDialog
+    }));
+    setOptimizedImages(refreshedImages as any);
     setShowProgressDialog(false);
     setShowResultsDialog(true);
   };
@@ -453,8 +461,11 @@ export function SeoAltImage() {
     // Show results with refreshed images including image_url
     const refreshedImages = images.filter(img => 
       finalImagesToOptimize.some(genImg => genImg.id === img.id)
-    );
-    setOptimizedImages(refreshedImages);
+    ).map(img => ({
+      ...img,
+      image_url: img.src // Map src to image_url for ResultsDialog
+    }));
+    setOptimizedImages(refreshedImages as any);
     setShowProgressDialog(false);
     setShowResultsDialog(true);
   };
