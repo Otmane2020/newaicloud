@@ -21,7 +21,7 @@ interface MerchantSettings {
   default_currency: string;
   default_condition: string;
   default_brand: string;
-  last_updated?: string;
+  updated_at?: string;
   created_at?: string;
 }
 
@@ -105,9 +105,13 @@ export function GoogleMerchantSettings() {
 
       const { error } = await supabase.from("merchant_feed_settings").upsert(
         {
-          ...settings,
           user_id: user.id,
-          last_updated: new Date().toISOString(),
+          store_name: settings.store_name,
+          auto_update_enabled: settings.auto_update_enabled,
+          gtin_country_code: settings.gtin_country_code,
+          default_currency: settings.default_currency,
+          default_condition: settings.default_condition,
+          default_brand: settings.default_brand,
         },
         {
           onConflict: "user_id",
