@@ -116,7 +116,7 @@ export function ArticleFeaturedImageDialog({
         position: 0, // Featured image is position 0
         user_id: user?.user?.id
       }, {
-        onConflict: 'content_id,content_type,position'
+        onConflict: 'content_type,content_id,src'
       });
 
     if (error) throw error;
