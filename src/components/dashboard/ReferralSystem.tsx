@@ -36,42 +36,67 @@ export function ReferralSystem() {
   const loadReferralData = async () => {
     if (!user) return;
 
-    // Get or create referral code
-    const { data: existingReferral } = await supabase
-      .from("referrals")
-      .select("referral_code")
-      .eq("referrer_id", user.id)
-      .single();
+    try {
+      // Get or create referral code (use maybeSingle instead of single)
+      const { data: existingReferral, error: fetchError } = await supabase
+        .from("referrals")
+        .select("referral_code")
+        .eq("referrer_id", user.id)
+        .maybeSingle();
 
-    if (existingReferral) {
-      setReferralCode(existingReferral.referral_code);
-    } else {
-      // Generate new code
-      const { data: codeData } = await supabase.rpc("generate_referral_code", {
-        user_id: user.id,
-      });
-
-      if (codeData) {
-        // Create initial referral record
-        await supabase.from("referrals").insert({
-          referrer_id: user.id,
-          referral_code: codeData,
-        });
-        setReferralCode(codeData);
+      if (fetchError) {
+        console.error("Error fetching referral:", fetchError);
+        return;
       }
-    }
 
-    // Load referral stats
-    const { data: referralData } = await supabase
-      .from("referrals")
-      .select("*")
-      .eq("referrer_id", user.id)
-      .order("created_at", { ascending: false });
+      if (existingReferral) {
+        setReferralCode(existingReferral.referral_code);
+      } else {
+        // Generate new code
+        const { data: codeData, error: rpcError } = await supabase.rpc("generate_referral_code", {
+          user_id: user.id,
+        });
 
-    if (referralData) {
-      setReferrals(referralData);
-      setTotalReferrals(referralData.filter((r) => r.status !== "pending").length);
-      setCreditsEarned(referralData.reduce((sum, r) => sum + r.credits_earned, 0));
+        if (rpcError) {
+          console.error("Error generating code:", rpcError);
+          return;
+        }
+
+        if (codeData) {
+          // Create initial referral record
+          const { error: insertError } = await supabase.from("referrals").insert({
+            referrer_id: user.id,
+            referral_code: codeData,
+          });
+
+          if (insertError) {
+            console.error("Error inserting referral:", insertError);
+            return;
+          }
+          
+          setReferralCode(codeData);
+        }
+      }
+
+      // Load referral stats
+      const { data: referralData, error: statsError } = await supabase
+        .from("referrals")
+        .select("*")
+        .eq("referrer_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (statsError) {
+        console.error("Error loading referral stats:", statsError);
+        return;
+      }
+
+      if (referralData) {
+        setReferrals(referralData);
+        setTotalReferrals(referralData.filter((r) => r.status !== "pending").length);
+        setCreditsEarned(referralData.reduce((sum, r) => sum + r.credits_earned, 0));
+      }
+    } catch (error) {
+      console.error("Error in loadReferralData:", error);
     }
   };
 
