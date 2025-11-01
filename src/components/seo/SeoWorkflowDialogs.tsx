@@ -17,6 +17,7 @@ export interface WorkflowItem {
   seo_description?: string;
   alt_text?: string;
   tags?: string;
+  shopify_image_id?: number | null;
 }
 
 export type WorkflowType = 'seo' | 'tags' | 'alt';

@@ -212,7 +212,8 @@ export function SeoAltImageList() {
       id: img.id,
       title: img.product_title || 'Unknown Product',
       alt_text: img.alt_text,
-      image_url: img.src
+      image_url: img.src,
+      shopify_image_id: img.shopify_image_id
     }));
     
     setOptimizedItems(items);
@@ -314,7 +315,8 @@ export function SeoAltImageList() {
           id: img.id,
           title: img.product_title || 'Unknown Product',
           alt_text: img.alt_text || '',
-          image_url: img.src
+          image_url: img.src,
+          shopify_image_id: img.shopify_image_id
         }));
         setOptimizedItems(syncedItems);
         setShowSuccessDialog(true);
@@ -648,7 +650,25 @@ export function SeoAltImageList() {
         items={optimizedItems}
         onSyncClick={() => {
           setShowResultsDialog(false);
-          const imagesWithProduct = optimizedItems.map(img => {
+          
+          // Filter images that have Shopify ID
+          const syncableImages = optimizedItems.filter(img => img.shopify_image_id);
+          const imagesWithoutShopifyId = optimizedItems.filter(img => !img.shopify_image_id);
+          
+          if (syncableImages.length === 0) {
+            toast.error('Images non synchronisables', {
+              description: `Aucune image n'a d'ID Shopify. Les images de homepage ne peuvent pas être synchronisées.`
+            });
+            return;
+          }
+          
+          if (imagesWithoutShopifyId.length > 0) {
+            toast.warning('Certaines images ignorées', {
+              description: `${imagesWithoutShopifyId.length} image(s) de homepage sans ID Shopify seront ignorées.`
+            });
+          }
+          
+          const imagesWithProduct = syncableImages.map(img => {
             const product = products.find(p => p.images.some(i => i.id === img.id));
             return {
               id: img.id,
@@ -656,7 +676,8 @@ export function SeoAltImageList() {
               alt_text: img.alt_text,
               position: 0,
               product_id: product?.id || '',
-              product_title: product?.title
+              product_title: product?.title,
+              shopify_image_id: img.shopify_image_id
             };
           });
           setImagesToSync(imagesWithProduct);
