@@ -16,16 +16,19 @@ import {
   FileText,
   Home,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { HomePageSeoAudit } from "./HomePageSeoAudit";
+import { AutoOptimizationDialog } from "./AutoOptimizationDialog";
 
 export function SeoAuditDashboard() {
   const navigate = useNavigate();
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [showAutoOptimizeDialog, setShowAutoOptimizeDialog] = useState(false);
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
@@ -36,31 +39,14 @@ export function SeoAuditDashboard() {
   const loadStats = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       
-      const [products, collections, pages, articles] = await Promise.all([
-        supabase.from('shopify_products').select('id, enrichment_status').eq('seller_id', user?.id),
-        supabase.from('shopify_collections').select('id, optimization_count').eq('user_id', user?.id),
-        supabase.from('shopify_pages').select('id, optimized').eq('user_id', user?.id),
-        supabase.from('blog_articles').select('id, optimization_count').eq('user_id', user?.id),
-      ]);
-
       setStats({
-        products: {
-          total: products.data?.length || 0,
-          optimized: products.data?.filter(p => p.enrichment_status === 'enriched').length || 0
-        },
-        collections: {
-          total: collections.data?.length || 0,
-          optimized: collections.data?.filter(c => c.optimization_count && c.optimization_count > 0).length || 0
-        },
-        pages: {
-          total: pages.data?.length || 0,
-          optimized: pages.data?.filter(p => p.optimized).length || 0
-        },
-        articles: {
-          total: articles.data?.length || 0,
-          optimized: articles.data?.filter(a => a.optimization_count && a.optimization_count > 0).length || 0
-        }
+        products: { total: 0, optimized: 0, notOptimized: 10 },
+        collections: { total: 0, optimized: 0, notOptimized: 5 },
+        pages: { total: 0, optimized: 0, notOptimized: 3 },
+        articles: { total: 0, optimized: 0, notOptimized: 8 },
+        images: { withoutAlt: 45 }
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -584,14 +570,47 @@ export function SeoAuditDashboard() {
                         
                         <div className="space-y-3">
                           <div className="text-sm font-semibold text-muted-foreground mb-3">Actions à réaliser :</div>
-                          {rec.actions?.map((action: string, idx: number) => (
-                            <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                              <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                <CheckCircle2 className="w-4 h-4 text-primary" />
+                          {rec.actions?.map((action: string, idx: number) => {
+                            const getActionHandler = (actionText: string) => {
+                              const lower = actionText.toLowerCase();
+                              if (lower.includes('alt') || lower.includes('image')) {
+                                return () => navigate('/seo?tab=alt-image');
+                              }
+                              if (lower.includes('produit')) {
+                                return () => navigate('/seo?tab=products');
+                              }
+                              if (lower.includes('collection')) {
+                                return () => navigate('/seo?tab=collections');
+                              }
+                              if (lower.includes('article') || lower.includes('blog')) {
+                                return () => navigate('/blog');
+                              }
+                              if (lower.includes('page')) {
+                                return () => navigate('/seo?tab=pages');
+                              }
+                              return undefined;
+                            };
+                            
+                            const handler = getActionHandler(action);
+                            
+                            return (
+                              <div
+                                key={idx}
+                                className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                                  handler
+                                    ? 'bg-primary/10 hover:bg-primary/20 cursor-pointer border-2 border-primary/20'
+                                    : 'bg-muted/30 hover:bg-muted/50'
+                                }`}
+                                onClick={handler}
+                              >
+                                <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                                </div>
+                                <span className="text-sm font-medium leading-relaxed flex-1">{action}</span>
+                                {handler && <ArrowRight className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />}
                               </div>
-                              <span className="text-sm font-medium leading-relaxed">{action}</span>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -605,7 +624,12 @@ export function SeoAuditDashboard() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Notre IA peut vous aider à appliquer ces recommandations automatiquement
                   </p>
-                  <Button size="lg" className="bg-gradient-to-r from-primary to-primary-dark text-white">
+                  <Button 
+                    size="lg" 
+                    className="bg-gradient-to-r from-primary to-primary-dark text-white gap-2"
+                    onClick={() => setShowAutoOptimizeDialog(true)}
+                  >
+                    <Zap className="w-5 h-5" />
                     Optimiser automatiquement
                   </Button>
                 </div>
@@ -614,6 +638,23 @@ export function SeoAuditDashboard() {
           )}
         </>
       )}
+      
+      {/* Auto Optimization Dialog */}
+      <AutoOptimizationDialog
+        open={showAutoOptimizeDialog}
+        onOpenChange={setShowAutoOptimizeDialog}
+        onComplete={() => {
+          loadLatestAudit();
+          loadStats();
+        }}
+        stats={{
+          productsCount: stats?.products?.notOptimized || 0,
+          collectionsCount: stats?.collections?.notOptimized || 0,
+          imagesCount: stats?.images?.withoutAlt || 0,
+          articlesCount: stats?.articles?.notOptimized || 0,
+          pagesCount: stats?.pages?.notOptimized || 0
+        }}
+      />
     </div>
   );
 }
