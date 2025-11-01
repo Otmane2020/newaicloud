@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       homepage_score: 0,
       products_score: 0,
       collections_score: 0,
-      blog_score: 0,
+      content_score: 0, // Articles + Pages combined
       images_score: 0,
       technical_score: 0,
       issues: [] as any[],
@@ -86,11 +86,11 @@ Deno.serve(async (req) => {
     auditResults.issues.push(...collectionsAudit.issues);
     auditResults.collections_score = collectionsAudit.score;
 
-    // 4. BLOG AUDIT
-    console.log('[AUDIT] Analyzing blog articles...');
-    const blogAudit = auditBlog(articles);
-    auditResults.issues.push(...blogAudit.issues);
-    auditResults.blog_score = blogAudit.score;
+    // 4. CONTENT AUDIT (Articles + Pages)
+    console.log('[AUDIT] Analyzing content (articles + pages)...');
+    const contentAudit = auditContent(articles, pages);
+    auditResults.issues.push(...contentAudit.issues);
+    auditResults.content_score = contentAudit.score;
 
     // 5. IMAGES AUDIT
     console.log('[AUDIT] Analyzing images...');
@@ -104,12 +104,12 @@ Deno.serve(async (req) => {
     auditResults.issues.push(...technicalAudit.issues);
     auditResults.technical_score = technicalAudit.score;
 
-    // Calculate global score
+    // Calculate global score (6 categories)
     const scores = [
       auditResults.homepage_score,
       auditResults.products_score,
       auditResults.collections_score,
-      auditResults.blog_score,
+      auditResults.content_score,
       auditResults.images_score,
       auditResults.technical_score
     ];
@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
         homepage_score: auditResults.homepage_score,
         products_score: auditResults.products_score,
         collections_score: auditResults.collections_score,
-        blog_score: auditResults.blog_score,
+        blog_score: auditResults.content_score, // Store as blog_score for compatibility
         audit_results: auditResults,
         recommendations: auditResults.recommendations
       })
@@ -296,13 +296,15 @@ function auditCollections(collections: any[]) {
   return { issues, score: Math.max(0, score) };
 }
 
-function auditBlog(articles: any[]) {
+function auditContent(articles: any[], pages: any[]) {
   const issues = [];
-  let score = 100;
+  let articleScore = 100;
+  let pageScore = 100;
 
+  // ARTICLES AUDIT
   if (articles.length === 0) {
     issues.push({
-      category: 'blog',
+      category: 'content',
       priority: 'low',
       title: 'Aucun article de blog',
       description: 'Pas de contenu blog pour le SEO',
@@ -310,40 +312,86 @@ function auditBlog(articles: any[]) {
       action: 'Créer des articles de blog optimisés SEO',
       count: 0
     });
-    return { issues, score: 50 };
+    articleScore = 50;
+  } else {
+    // Check for published articles
+    const published = articles.filter(a => a.status === 'published');
+    if (published.length === 0) {
+      issues.push({
+        category: 'content',
+        priority: 'medium',
+        title: 'Aucun article publié',
+        description: 'Tous les articles sont en brouillon',
+        impact: 'Pas de contenu visible pour les moteurs de recherche',
+        action: 'Publier des articles optimisés',
+        count: articles.length
+      });
+      articleScore -= 40;
+    }
+
+    // Check for missing meta descriptions in articles
+    const missingMeta = articles.filter(a => !a.meta_description);
+    if (missingMeta.length > 0) {
+      issues.push({
+        category: 'content',
+        priority: 'medium',
+        title: `${missingMeta.length} articles sans meta description`,
+        description: 'Articles sans meta description SEO',
+        impact: 'Taux de clic réduit dans les SERP',
+        action: 'Ajouter des meta descriptions engageantes',
+        count: missingMeta.length
+      });
+      articleScore -= Math.min(20, (missingMeta.length / articles.length) * 20);
+    }
   }
 
-  // Check for published articles
-  const published = articles.filter(a => a.status === 'published');
-  if (published.length === 0) {
+  // PAGES AUDIT
+  if (pages.length === 0) {
     issues.push({
-      category: 'blog',
-      priority: 'medium',
-      title: 'Aucun article publié',
-      description: 'Tous les articles sont en brouillon',
-      impact: 'Pas de contenu visible pour les moteurs de recherche',
-      action: 'Publier des articles optimisés',
-      count: articles.length
+      category: 'content',
+      priority: 'low',
+      title: 'Aucune page Shopify',
+      description: 'Pas de pages statiques pour le SEO',
+      impact: 'Opportunités de contenu manquées',
+      action: 'Créer des pages optimisées (À propos, Contact, etc.)',
+      count: 0
     });
-    score -= 40;
+    pageScore = 50;
+  } else {
+    // Check for missing SEO titles in pages
+    const missingSeoTitle = pages.filter(p => !p.seo_title);
+    if (missingSeoTitle.length > 0) {
+      issues.push({
+        category: 'content',
+        priority: 'medium',
+        title: `${missingSeoTitle.length} pages sans titre SEO`,
+        description: 'Pages sans titre SEO optimisé',
+        impact: 'Référencement des pages non optimisé',
+        action: 'Ajouter des titres SEO aux pages',
+        count: missingSeoTitle.length
+      });
+      pageScore -= Math.min(25, (missingSeoTitle.length / pages.length) * 25);
+    }
+
+    // Check for missing meta descriptions in pages
+    const missingPageMeta = pages.filter(p => !p.seo_description);
+    if (missingPageMeta.length > 0) {
+      issues.push({
+        category: 'content',
+        priority: 'medium',
+        title: `${missingPageMeta.length} pages sans meta description`,
+        description: 'Pages sans meta description SEO',
+        impact: 'Visibilité réduite dans les résultats de recherche',
+        action: 'Ajouter des meta descriptions aux pages',
+        count: missingPageMeta.length
+      });
+      pageScore -= Math.min(25, (missingPageMeta.length / pages.length) * 25);
+    }
   }
 
-  // Check for missing meta descriptions
-  const missingMeta = articles.filter(a => !a.meta_description);
-  if (missingMeta.length > 0) {
-    issues.push({
-      category: 'blog',
-      priority: 'medium',
-      title: `${missingMeta.length} articles sans meta description`,
-      description: 'Articles sans meta description SEO',
-      impact: 'Taux de clic réduit dans les SERP',
-      action: 'Ajouter des meta descriptions engageantes',
-      count: missingMeta.length
-    });
-    score -= Math.min(20, (missingMeta.length / articles.length) * 20);
-  }
-
-  return { issues, score: Math.max(0, score) };
+  // Combined score for articles and pages
+  const finalScore = Math.max(0, Math.round((articleScore + pageScore) / 2));
+  return { issues, score: finalScore };
 }
 
 function auditImages(products: any[], collections: any[]) {

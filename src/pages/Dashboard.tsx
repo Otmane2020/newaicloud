@@ -122,36 +122,61 @@ export default function Dashboard() {
       const optimizedProducts = products?.filter(p => p.seo_title && p.seo_description).length || 0;
       const totalValue = products?.reduce((sum, p) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
 
-      // Calculate detailed SEO breakdown
-      const seoBreakdown = {
+      // Get latest SEO audit for global score
+      const { data: latestAudit } = await supabase
+        .from('seo_audit_reports')
+        .select('global_score, homepage_score, products_score, collections_score, blog_score, images_score, technical_score')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      // Calculate breakdown from audit scores if available
+      let seoScore = 0;
+      let seoBreakdown = {
         presence: 0,
         length: 0,
         keywords: 0,
         readability: 0
       };
-      
-      let totalScore = 0;
-      let validProducts = 0;
 
-      products?.forEach(p => {
-        if (p.seo_title || p.seo_description) {
-          const result = calculateDetailedSeoScore(p.seo_title, p.seo_description, true, true);
-          totalScore += result.score;
-          seoBreakdown.presence += result.breakdown.presence;
-          seoBreakdown.length += result.breakdown.length;
-          seoBreakdown.keywords += result.breakdown.keywords;
-          seoBreakdown.readability += result.breakdown.readability;
-          validProducts++;
-        }
-      });
+      if (latestAudit?.global_score) {
+        // Use audit global score
+        seoScore = Math.round(latestAudit.global_score);
+        
+        // Calculate breakdown from category scores
+        // Map category scores to breakdown components
+        seoBreakdown = {
+          presence: Math.round((latestAudit.homepage_score || 0) / 5), // 20% weight
+          length: Math.round(((latestAudit.products_score || 0) + (latestAudit.collections_score || 0)) / 2 / 3.33), // 30% weight  
+          keywords: Math.round(((latestAudit.blog_score || 0) + (latestAudit.images_score || 0)) / 2 / 3.33), // 30% weight
+          readability: Math.round((latestAudit.technical_score || 0) / 5) // 20% weight
+        };
+      } else {
+        // Fallback: Calculate from products only if no audit exists
+        let totalScore = 0;
+        let validProducts = 0;
 
-      const avgScore = validProducts > 0 ? Math.round(totalScore / validProducts) : 0;
-      const avgBreakdown = {
-        presence: validProducts > 0 ? Math.round(seoBreakdown.presence / validProducts) : 0,
-        length: validProducts > 0 ? Math.round(seoBreakdown.length / validProducts) : 0,
-        keywords: validProducts > 0 ? Math.round(seoBreakdown.keywords / validProducts) : 0,
-        readability: validProducts > 0 ? Math.round(seoBreakdown.readability / validProducts) : 0
-      };
+        products?.forEach(p => {
+          if (p.seo_title || p.seo_description) {
+            const result = calculateDetailedSeoScore(p.seo_title, p.seo_description, true, true);
+            totalScore += result.score;
+            seoBreakdown.presence += result.breakdown.presence;
+            seoBreakdown.length += result.breakdown.length;
+            seoBreakdown.keywords += result.breakdown.keywords;
+            seoBreakdown.readability += result.breakdown.readability;
+            validProducts++;
+          }
+        });
+
+        seoScore = validProducts > 0 ? Math.round(totalScore / validProducts) : 0;
+        seoBreakdown = {
+          presence: validProducts > 0 ? Math.round(seoBreakdown.presence / validProducts) : 0,
+          length: validProducts > 0 ? Math.round(seoBreakdown.length / validProducts) : 0,
+          keywords: validProducts > 0 ? Math.round(seoBreakdown.keywords / validProducts) : 0,
+          readability: validProducts > 0 ? Math.round(seoBreakdown.readability / validProducts) : 0
+        };
+      }
 
       const { count: articlesCount } = await supabase
         .from('blog_articles')
@@ -164,8 +189,8 @@ export default function Dashboard() {
         pendingOptimization: totalProducts - optimizedProducts,
         totalArticles: articlesCount || 0,
         totalValue,
-        seoScore: avgScore,
-        seoBreakdown: avgBreakdown,
+        seoScore,
+        seoBreakdown,
         connectedStores
       });
     } catch (error) {
