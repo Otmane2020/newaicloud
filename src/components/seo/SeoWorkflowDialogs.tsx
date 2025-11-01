@@ -63,10 +63,16 @@ export function ProgressDialog({
         <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
         <div className="flex flex-col items-center justify-center py-8 space-y-6">
           <div className="relative">
-            <Loader2 className="w-16 h-16 text-primary animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 bg-background rounded-full" />
-            </div>
+            {percentage === 100 ? (
+              <CheckCircle className="w-16 h-16 text-green-600 dark:text-green-400" />
+            ) : (
+              <>
+                <Loader2 className="w-16 h-16 text-primary animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 bg-background rounded-full" />
+                </div>
+              </>
+            )}
           </div>
           <div className="text-center space-y-2 w-full">
             <h3 className="text-xl font-semibold">{getTitle()}</h3>
