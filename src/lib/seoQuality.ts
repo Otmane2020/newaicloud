@@ -330,9 +330,9 @@ export function calculateDetailedSeoScore(
     (hasUrl ? 6 : 0) // URL 6 points (reduced from 8)
   );
 
-  // Bonus +5 points pour contenu optimisé par IA (reduced from +10)
+  // Bonus +10 points pour contenu optimisé par IA
   if (optimizationCount && optimizationCount > 0) {
-    weightedScore = Math.min(95, weightedScore + 5);
+    weightedScore = Math.min(95, weightedScore + 10);
   }
 
   // Add realistic variability (±2 points)

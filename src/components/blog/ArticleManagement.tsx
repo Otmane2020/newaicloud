@@ -90,15 +90,18 @@ export function ArticleManagement() {
   };
 
   const calculateArticleSeoScore = (article: Article): number => {
-    const titleScore = calculateDescriptionScore(article.title);
-    const descScore = calculateDescriptionScore(article.meta_description);
+    const detailedScore = calculateDescriptionScore(
+      article.meta_description,
+      undefined,
+      undefined,
+      article.title
+    );
     
-    // Base score from title and description
-    let score = Math.round((titleScore.score + descScore.score) / 2);
+    let score = detailedScore.score;
     
-    // Penalty if no featured image
+    // Penalty if no featured image (15%)
     if (!article.featured_image) {
-      score = Math.round(score * 0.85); // 15% penalty
+      score = Math.round(score * 0.85);
     }
     
     // Bonus for optimization
