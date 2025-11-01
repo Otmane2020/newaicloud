@@ -196,24 +196,16 @@ export function SeoAltImage() {
 
       // Import all types including homepage
       const { data, error } = await supabase.functions.invoke('import-content-images', {
-        body: { storeId: stores.id, types: ['collections', 'pages', 'articles'] }
+        body: { storeId: stores.id, types: ['collections', 'pages', 'articles', 'homepage'] }
       });
 
       if (error) throw error;
 
-      // Also import homepage images
-      const { data: homepageData, error: homepageError } = await supabase.functions.invoke('import-homepage-images');
-      
-      if (homepageError) {
-        console.error('Homepage import error:', homepageError);
-        toast.warning('Images homepage non importées. Vérifiez la connexion Shopify.');
-      } else if (homepageData?.imported > 0) {
-        toast.success(`${homepageData.imported} images de homepage importées`);
-      }
-
-      const totalImported = (data?.totalImported || 0) + (homepageData?.imported || 0);
+      const totalImported = data?.totalImported || 0;
       if (totalImported > 0) {
         toast.success(`${totalImported} images importées depuis Shopify`);
+      } else {
+        toast.info('Aucune nouvelle image trouvée');
       }
       await fetchImages();
     } catch (error) {

@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface ImportRequest {
   storeId: string;
-  types?: ('collections' | 'pages' | 'articles')[];
+  types?: ('collections' | 'pages' | 'articles' | 'homepage')[];
 }
 
 function extractImagesFromHtml(html: string): Array<{ src: string; alt: string | null }> {
@@ -49,7 +49,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { storeId, types = ['collections', 'pages', 'articles'] }: ImportRequest = await req.json();
+    const { storeId, types = ['collections', 'pages', 'articles', 'homepage'] }: ImportRequest = await req.json();
 
     console.log(`[IMPORT-CONTENT-IMAGES] Starting import for user ${user.id}, store ${storeId}`);
     console.log(`[IMPORT-CONTENT-IMAGES] Types: ${types.join(', ')}`);
@@ -300,6 +300,67 @@ Deno.serve(async (req: Request) => {
             }
           }
         }
+      }
+    }
+
+    // Import Homepage Images
+    if (types.includes('homepage')) {
+      console.log(`[HOMEPAGE] Fetching homepage images...`);
+      
+      // Fetch the homepage HTML directly
+      const homepageResponse = await fetch(`https://${store.store_url}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; NewAI/1.0)',
+          'Accept': 'text/html',
+        },
+      });
+
+      if (homepageResponse.ok) {
+        const homepageHtml = await homepageResponse.text();
+        const homepageImages = extractImagesFromHtml(homepageHtml);
+        
+        console.log(`[HOMEPAGE] Found ${homepageImages.length} images from HTML`);
+        
+        // Filter valid images (skip tiny icons, data URIs, etc.)
+        const validImages = homepageImages.filter(img => 
+          !img.src.startsWith('data:') && 
+          !img.src.includes('icon') && 
+          !img.src.includes('favicon') &&
+          !img.src.includes('logo.svg') &&
+          img.src.length > 20
+        );
+        
+        console.log(`[HOMEPAGE] ${validImages.length} valid images after filtering`);
+
+        for (let i = 0; i < validImages.length; i++) {
+          let src = validImages[i].src;
+          
+          // Convert relative URLs to absolute
+          if (src.startsWith('//')) {
+            src = 'https:' + src;
+          } else if (src.startsWith('/')) {
+            src = `https://${store.store_url}${src}`;
+          }
+          
+          await supabaseClient
+            .from("content_images")
+            .upsert({
+              user_id: user.id,
+              store_id: storeId,
+              content_type: 'homepage',
+              content_id: user.id, // Use user_id as content_id for homepage
+              src: src,
+              alt_text: validImages[i].alt,
+              position: i
+            }, {
+              onConflict: 'content_type,content_id,src',
+              ignoreDuplicates: false
+            });
+
+          totalImported++;
+        }
+      } else {
+        console.error(`[HOMEPAGE] Failed to fetch homepage: ${homepageResponse.status}`);
       }
     }
 
