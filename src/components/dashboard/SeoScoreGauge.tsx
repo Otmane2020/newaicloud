@@ -42,12 +42,48 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
   };
 
   const categories = [
-    { name: '🏠 Homepage (16.7%)', value: Math.round(categoryScores.homepage), max: 100, color: 'hsl(217 91% 60%)' },
-    { name: '📦 Produits (16.7%)', value: Math.round(categoryScores.products), max: 100, color: 'hsl(271 91% 65%)' },
-    { name: '📁 Collections (16.7%)', value: Math.round(categoryScores.collections), max: 100, color: 'hsl(38 92% 50%)' },
-    { name: '📝 Contenu (16.7%)', value: Math.round(categoryScores.content), max: 100, color: 'hsl(192 71% 45%)' },
-    { name: '🖼️ Images (16.7%)', value: Math.round(categoryScores.images), max: 100, color: 'hsl(142 71% 45%)' },
-    { name: '⚙️ Technique (16.7%)', value: Math.round(categoryScores.technical), max: 100, color: 'hsl(0 71% 55%)' },
+    { 
+      name: '🏠 Homepage', 
+      description: 'Titre et description de votre page d\'accueil',
+      value: Math.round(categoryScores.homepage), 
+      max: 100, 
+      color: 'hsl(217 91% 60%)' 
+    },
+    { 
+      name: '📦 Produits', 
+      description: 'Titres SEO, descriptions et tags optimisés',
+      value: Math.round(categoryScores.products), 
+      max: 100, 
+      color: 'hsl(271 91% 65%)' 
+    },
+    { 
+      name: '📁 Collections', 
+      description: 'Descriptions et images de vos collections',
+      value: Math.round(categoryScores.collections), 
+      max: 100, 
+      color: 'hsl(38 92% 50%)' 
+    },
+    { 
+      name: '📝 Contenu', 
+      description: 'Articles de blog et pages Shopify',
+      value: Math.round(categoryScores.content), 
+      max: 100, 
+      color: 'hsl(192 71% 45%)' 
+    },
+    { 
+      name: '🖼️ Images', 
+      description: 'Textes alternatifs (alt text) des images',
+      value: Math.round(categoryScores.images), 
+      max: 100, 
+      color: 'hsl(142 71% 45%)' 
+    },
+    { 
+      name: '⚙️ Technique', 
+      description: 'Configuration et synchronisation boutique',
+      value: Math.round(categoryScores.technical), 
+      max: 100, 
+      color: 'hsl(0 71% 55%)' 
+    },
   ];
 
   return (
@@ -109,15 +145,21 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
           </div>
         </div>
 
-        {/* Breakdown des catégories */}
+        {/* Breakdown des catégories - 6 catégories égales = 100% / 6 */}
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-foreground/80 mb-3">Détails par catégorie</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-foreground/80">6 Catégories SEO</h4>
+            <span className="text-xs text-muted-foreground">Chaque catégorie = 16.7% du score global</span>
+          </div>
           {categories.map((cat, idx) => (
             <div key={idx} className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">{cat.name}</span>
-                <span className="text-sm font-bold" style={{ color: cat.color }}>
-                  {cat.value}/{cat.max}
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-foreground">{cat.name}</div>
+                  <div className="text-xs text-muted-foreground">{cat.description}</div>
+                </div>
+                <span className="text-sm font-bold ml-3" style={{ color: cat.color }}>
+                  {cat.value}/100
                 </span>
               </div>
               <div className="relative h-2 bg-muted rounded-full overflow-hidden">

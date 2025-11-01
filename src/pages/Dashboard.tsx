@@ -26,7 +26,8 @@ import {
   Store,
   Palette,
   Mail,
-  Sparkles
+  Sparkles,
+  Target
 } from 'lucide-react';
 
 interface Stats {
@@ -350,54 +351,57 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Métriques Clés - Grid Redesigné */}
+      {/* Métriques Clés - Focus sur l'Optimisation */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
         <MetricCard
-          title="Total Produits"
-          value={stats.totalProducts}
-          icon={ShoppingBag}
-          gradient="from-primary to-primary-dark"
-          iconBg="bg-primary/10 text-primary"
-          trend="+12.5% ce mois"
-        />
-        <MetricCard
-          title="Optimisés"
+          title="Produits Optimisés IA"
           value={stats.optimizedProducts}
-          icon={CheckCircle2}
+          icon={Sparkles}
           gradient="from-success to-success"
           iconBg="bg-success/10 text-success"
           badge={stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%'}
+          subtitle={`${stats.optimizedProducts}/${stats.totalProducts} produits`}
         />
         <MetricCard
-          title="En Attente"
+          title="À Optimiser"
           value={stats.pendingOptimization}
           icon={Clock}
           gradient="from-warning to-warning"
           iconBg="bg-warning/10 text-warning"
-          badge={stats.totalProducts > 0 ? `${Math.round((stats.pendingOptimization / stats.totalProducts) * 100)}%` : '0%'}
+          badge={stats.pendingOptimization > 10 ? 'Action requise' : 'Bon'}
+          subtitle="Produits sans SEO"
         />
         <MetricCard
-          title="Valeur Catalogue"
-          value={formatCurrency(stats.totalValue)}
-          icon={DollarSign}
-          gradient="from-purple-500 to-purple-600"
-          iconBg="bg-purple-500/10 text-purple-600"
+          title="Score SEO Global"
+          value={`${stats.seoScore}/100`}
+          icon={Target}
+          gradient="from-primary via-accent to-success"
+          iconBg="bg-gradient-to-br from-primary/10 to-success/10 text-primary"
+          subtitle={stats.seoScore >= 80 ? 'Excellent' : stats.seoScore >= 60 ? 'Bon' : 'À améliorer'}
         />
         <MetricCard
-          title="Articles Blog"
+          title="Articles Publiés"
           value={stats.totalArticles}
           icon={FileText}
           gradient="from-cyan-500 to-cyan-600"
           iconBg="bg-cyan-500/10 text-cyan-600"
-          trend="+3 ce mois"
+          subtitle="Contenu SEO"
         />
         <MetricCard
-          title="Score Santé SEO"
-          value={`${stats.seoScore}%`}
-          icon={Sparkles}
-          gradient="from-primary via-accent to-success"
-          iconBg="bg-gradient-to-br from-primary/10 to-success/10 text-primary"
-          subtitle={stats.seoScore >= 80 ? 'Excellent' : stats.seoScore >= 60 ? 'Bon' : 'À améliorer'}
+          title="Valeur Optimisée"
+          value={formatCurrency(stats.totalValue * (stats.optimizedProducts / Math.max(stats.totalProducts, 1)))}
+          icon={DollarSign}
+          gradient="from-purple-500 to-purple-600"
+          iconBg="bg-purple-500/10 text-purple-600"
+          subtitle={`${Math.round((stats.optimizedProducts / Math.max(stats.totalProducts, 1)) * 100)}% du catalogue`}
+        />
+        <MetricCard
+          title="Boutiques Actives"
+          value={stats.connectedStores}
+          icon={Store}
+          gradient="from-primary to-primary-dark"
+          iconBg="bg-primary/10 text-primary"
+          subtitle={stats.connectedStores > 0 ? 'Synchronisées' : 'Non connecté'}
         />
       </div>
 
