@@ -354,7 +354,22 @@ function auditContent(articles: any[], pages: any[]) {
         a.optimization_count > 0
       );
       
-      articleScore = Math.round((optimizedArticles.length / published.length) * 100);
+      // Check for articles without featured image
+      const missingFeaturedImage = published.filter(a => !a.featured_image);
+      if (missingFeaturedImage.length > 0) {
+        issues.push({
+          category: 'content',
+          priority: 'medium',
+          title: `${missingFeaturedImage.length} articles sans image à la une`,
+          description: 'Articles publiés sans featured image',
+          impact: 'Moins attractif dans les SERP et réseaux sociaux',
+          action: 'Ajouter une image à la une pour chaque article',
+          count: missingFeaturedImage.length
+        });
+        articleScore -= Math.min(15, (missingFeaturedImage.length / published.length) * 15);
+      }
+      
+      articleScore = Math.round((optimizedArticles.length / published.length) * articleScore);
       
       if (optimizedArticles.length < published.length) {
         issues.push({

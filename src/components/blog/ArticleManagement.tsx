@@ -92,7 +92,21 @@ export function ArticleManagement() {
   const calculateArticleSeoScore = (article: Article): number => {
     const titleScore = calculateDescriptionScore(article.title);
     const descScore = calculateDescriptionScore(article.meta_description);
-    return Math.round((titleScore.score + descScore.score) / 2);
+    
+    // Base score from title and description
+    let score = Math.round((titleScore.score + descScore.score) / 2);
+    
+    // Penalty if no featured image
+    if (!article.featured_image) {
+      score = Math.round(score * 0.85); // 15% penalty
+    }
+    
+    // Bonus for optimization
+    if (article.optimization_count && article.optimization_count > 0) {
+      score = Math.min(100, score + 5);
+    }
+    
+    return score;
   };
 
   const getSeoScoreBadge = (score: number) => {
