@@ -117,7 +117,7 @@ export default function Dashboard() {
 
       const { data: products, error: productsError } = await supabase
         .from('shopify_products')
-        .select('price, seo_title, seo_description')
+        .select('id, price, seo_title, seo_description')
         .eq('seller_id', user?.id)
         .in('store_id', activeStoreIds.length > 0 ? activeStoreIds : ['']);
 

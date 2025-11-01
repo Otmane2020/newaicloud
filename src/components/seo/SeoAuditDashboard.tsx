@@ -120,21 +120,21 @@ export function SeoAuditDashboard() {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
     if (score >= 60) return "text-[rgb(255,94,23)]"; // Orange vif
     if (score >= 40) return "text-[rgb(255,94,23)]"; // Orange vif
-    return "text-[#ef4444]"; // Rouge vif distinct
+    return "text-[#b91c1c]"; // Rouge profond distinct
   };
 
   const getScoreBgColor = (score: number) => {
     if (score >= 80) return "bg-[#22c55e]/10 border-[#22c55e]/30";
     if (score >= 60) return "bg-[rgb(255,94,23)]/10 border-[rgb(255,94,23)]/30";
     if (score >= 40) return "bg-[rgb(255,94,23)]/10 border-[rgb(255,94,23)]/30";
-    return "bg-[#ef4444]/10 border-[#ef4444]/30";
+    return "bg-[#b91c1c]/10 border-[#b91c1c]/30";
   };
 
   const getScoreGradient = (score: number) => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
     if (score >= 60) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
     if (score >= 40) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
-    return "from-[#ef4444]/20 to-[#ef4444]/5";
+    return "from-[#b91c1c]/20 to-[#b91c1c]/5";
   };
 
   const getCategoryColor = (value: number) => {
@@ -163,11 +163,11 @@ export function SeoAuditDashboard() {
         gradient: "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5",
       };
     return {
-      text: "text-[#ef4444]",
-      bg: "bg-gradient-to-r from-[#ef4444] to-[#dc2626]",
-      glow: "0 0 10px #ef4444",
-      dot: "bg-[#ef4444]",
-      gradient: "from-[#ef4444]/20 to-[#ef4444]/5",
+      text: "text-[#b91c1c]",
+      bg: "bg-gradient-to-r from-[#b91c1c] to-[#991b1b]",
+      glow: "0 0 10px #b91c1c",
+      dot: "bg-[#b91c1c]",
+      gradient: "from-[#b91c1c]/20 to-[#b91c1c]/5",
     };
   };
 
@@ -191,9 +191,9 @@ export function SeoAuditDashboard() {
         glow: "bg-[rgb(255,94,23)]/30",
       };
     return {
-      start: "#ef4444",
-      end: "#dc2626",
-      glow: "bg-[#ef4444]/30",
+      start: "#b91c1c",
+      end: "#991b1b",
+      glow: "bg-[#b91c1c]/30",
     };
   };
 
@@ -373,7 +373,7 @@ export function SeoAuditDashboard() {
                         ? "bg-[rgb(255,94,23)] text-white"
                   : audit.global_score >= 40
                     ? "bg-[rgb(255,94,23)] text-white"
-                    : "bg-[#ef4444] text-white"
+                    : "bg-[#b91c1c] text-white"
                   }`}
                 >
                   {audit.global_score >= 80
@@ -418,7 +418,7 @@ export function SeoAuditDashboard() {
                                   ? "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]"
                                   : audit.global_score >= 40
                                     ? "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]"
-                                    : "bg-gradient-to-r from-[#ef4444] to-[#dc2626]"
+                                    : "bg-gradient-to-r from-[#b91c1c] to-[#991b1b]"
                             }`}
                             style={{
                               width: `${audit.global_score}%`,
@@ -429,7 +429,7 @@ export function SeoAuditDashboard() {
                                     ? "0 0 10px rgb(255,94,23)"
                                     : audit.global_score >= 40
                                       ? "0 0 10px rgb(255,94,23)"
-                                      : "0 0 10px #dc2626",
+                                      : "0 0 10px #b91c1c",
                             }}
                           />
                         </div>
@@ -449,7 +449,7 @@ export function SeoAuditDashboard() {
                             ? "bg-[rgb(255,94,23)]/30"
                             : audit.global_score >= 40
                               ? "bg-[rgb(255,94,23)]/30"
-                              : "bg-[#dc2626]/30"
+                              : "bg-[#b91c1c]/30"
                       } animate-pulse`}
                     />
                     <svg className="w-48 h-48 transform -rotate-90 relative z-10" viewBox="0 0 192 192">
@@ -464,7 +464,7 @@ export function SeoAuditDashboard() {
                                   ? "rgb(255,94,23)"
                                   : audit.global_score >= 40
                                     ? "rgb(255,94,23)"
-                                    : "#dc2626"
+                                    : "#b91c1c"
                             }
                           />
                           <stop
@@ -525,7 +525,7 @@ export function SeoAuditDashboard() {
                       ? "bg-[rgb(255,94,23)]/10 border-2 border-[rgb(255,94,23)]/20"
                       : audit.global_score >= 40
                         ? "bg-[rgb(255,94,23)]/10 border-2 border-[rgb(255,94,23)]/20"
-                        : "bg-[#dc2626]/10 border-2 border-[#dc2626]/20"
+                        : "bg-[#b91c1c]/10 border-2 border-[#b91c1c]/20"
                 }`}
               >
                 <p className="text-sm font-semibold">
@@ -666,12 +666,12 @@ export function SeoAuditDashboard() {
           {/* Issues - Design premium avec couleurs améliorées */}
           {audit.audit_results?.issues && audit.audit_results.issues.length > 0 && (
             <Card className="border-2 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-[#dc2626]/5 to-[#f59e0b]/5 border-b-2">
+              <CardHeader className="bg-gradient-to-r from-[#b91c1c]/5 to-[#f59e0b]/5 border-b-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 rounded-xl bg-[#dc2626]/10">
-                        <AlertCircle className="w-6 h-6 text-[#dc2626]" />
+                      <div className="p-3 rounded-xl bg-[#b91c1c]/10">
+                        <AlertCircle className="w-6 h-6 text-[#b91c1c]" />
                       </div>
                       Problèmes Détectés
                     </CardTitle>
@@ -680,7 +680,7 @@ export function SeoAuditDashboard() {
                       d'amélioration identifié{audit.audit_results.issues.length > 1 ? "s" : ""} par l'analyse IA
                     </CardDescription>
                   </div>
-                  <Badge className="bg-[#dc2626] text-white text-lg px-4 py-2">
+                  <Badge className="bg-[#b91c1c] text-white text-lg px-4 py-2">
                     {audit.audit_results.issues.filter((i: any) => i.priority === "high").length} prioritaire
                     {audit.audit_results.issues.filter((i: any) => i.priority === "high").length > 1 ? "s" : ""}
                   </Badge>
@@ -692,9 +692,9 @@ export function SeoAuditDashboard() {
                     const issueColor =
                       issue.priority === "high"
                         ? {
-                            border: "border-[#dc2626]/30",
-                            bg: "bg-[#dc2626]/5",
-                            text: "text-[#dc2626]",
+                            border: "border-[#b91c1c]/30",
+                            bg: "bg-[#b91c1c]/5",
+                            text: "text-[#b91c1c]",
                           }
                         : issue.priority === "medium"
                           ? {
@@ -788,7 +788,7 @@ export function SeoAuditDashboard() {
                       <div
                         className={`absolute left-0 w-12 h-12 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
                           rec.priority === "high"
-                            ? "bg-gradient-to-br from-[#dc2626] to-[#b91c1c]"
+                            ? "bg-gradient-to-br from-[#b91c1c] to-[#991b1b]"
                             : rec.priority === "medium"
                               ? "bg-gradient-to-br from-[#f59e0b] to-[#d97706]"
                               : "bg-gradient-to-br from-[#22c55e] to-[#16a34a]"
@@ -802,7 +802,7 @@ export function SeoAuditDashboard() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-3">
                               {rec.priority === "high" && (
-                                <Badge className="bg-[#dc2626] text-white">🔥 Priorité Haute</Badge>
+                                <Badge className="bg-[#b91c1c] text-white">🔥 Priorité Haute</Badge>
                               )}
                               {rec.priority === "medium" && (
                                 <Badge className="bg-[#f59e0b] text-white">⚡ Priorité Moyenne</Badge>

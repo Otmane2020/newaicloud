@@ -246,25 +246,40 @@ Deno.serve(async (req: Request) => {
     if (imageId) {
       console.log(`[SYNC-IMAGE] Starting ALT text sync for image: ${imageId}, user: ${user.id}`);
       
-      // First, get the image details
-      const { data: imageData, error: imageError } = await supabaseClient
+      // Try to get the image from product_images first
+      let imageData: any = null;
+      let imageType: 'product' | 'content' = 'product';
+      
+      const { data: productImageData, error: productImageError } = await supabaseClient
         .from("product_images")
         .select("id, shopify_image_id, alt_text, product_id")
         .eq("id", imageId)
         .maybeSingle();
 
+      if (productImageData) {
+        imageData = productImageData;
+        imageType = 'product';
+      } else {
+        // If not found in product_images, try content_images
+        const { data: contentImageData, error: contentImageError } = await supabaseClient
+          .from("content_images")
+          .select("id, shopify_image_id, alt_text, content_id, content_type")
+          .eq("id", imageId)
+          .maybeSingle();
+        
+        if (contentImageData) {
+          imageData = contentImageData;
+          imageType = 'content';
+        }
+      }
+
       console.log(`[SYNC-IMAGE] Image query result:`, { 
         found: !!imageData, 
+        imageType,
         imageId: imageData?.id,
         shopifyImageId: imageData?.shopify_image_id,
         hasAltText: !!imageData?.alt_text,
-        error: imageError 
       });
-
-      if (imageError) {
-        console.error('[SYNC-IMAGE] Image fetch error:', imageError);
-        throw new Error(`Database error fetching image: ${imageError.message}`);
-      }
 
       if (!imageData) {
         console.warn('[SYNC-IMAGE] Image not found in database (may have been deleted):', { imageId });
@@ -292,39 +307,111 @@ Deno.serve(async (req: Request) => {
         throw new Error("Cette image n'a pas de texte ALT à synchroniser");
       }
 
-      // Now get the product to verify ownership and get store info
-      const { data: product, error: productError } = await supabaseClient
-        .from("shopify_products")
-        .select("shopify_id, store_id, seller_id")
-        .eq("id", imageData.product_id)
-        .maybeSingle();
+      // Get content details and store info based on image type
+      let shopifyId: number;
+      let storeId: string;
+      let contentOwnerId: string;
+      let shopUrl: string;
+      let shopifyAccessToken: string;
 
-      console.log(`[SYNC-IMAGE] Product query result:`, { 
-        found: !!product, 
-        productId: imageData.product_id,
-        shopifyProductId: product?.shopify_id,
-        sellerId: product?.seller_id,
-        error: productError 
-      });
+      if (imageType === 'product') {
+        // Handle product image
+        const { data: product, error: productError } = await supabaseClient
+          .from("shopify_products")
+          .select("shopify_id, store_id, seller_id")
+          .eq("id", imageData.product_id)
+          .maybeSingle();
 
-      if (productError) {
-        console.error('[SYNC-IMAGE] Product fetch error:', productError);
-        throw new Error(`Database error fetching product: ${productError.message}`);
-      }
-
-      if (!product) {
-        console.error('[SYNC-IMAGE] Product not found:', { productId: imageData.product_id });
-        throw new Error("Le produit associé à cette image n'existe pas");
-      }
-
-      // Check if user owns the product
-      if (product.seller_id !== user.id) {
-        console.error('[SYNC-IMAGE] Unauthorized access attempt:', { 
-          imageId, 
-          userId: user.id, 
-          productSellerId: product.seller_id 
+        console.log(`[SYNC-IMAGE] Product query result:`, { 
+          found: !!product, 
+          productId: imageData.product_id,
+          shopifyProductId: product?.shopify_id,
+          sellerId: product?.seller_id,
+          error: productError 
         });
-        throw new Error("Vous n'avez pas l'autorisation d'accéder à cette image");
+
+        if (productError) {
+          console.error('[SYNC-IMAGE] Product fetch error:', productError);
+          throw new Error(`Database error fetching product: ${productError.message}`);
+        }
+
+        if (!product) {
+          console.error('[SYNC-IMAGE] Product not found:', { productId: imageData.product_id });
+          throw new Error("Le produit associé à cette image n'existe pas");
+        }
+
+        // Check if user owns the product
+        if (product.seller_id !== user.id) {
+          console.error('[SYNC-IMAGE] Unauthorized access attempt:', { 
+            imageId, 
+            userId: user.id, 
+            productSellerId: product.seller_id 
+          });
+          throw new Error("Vous n'avez pas l'autorisation d'accéder à cette image");
+        }
+
+        shopifyId = product.shopify_id;
+        storeId = product.store_id;
+        contentOwnerId = product.seller_id;
+      } else {
+        // Handle content image (collection, page, article)
+        const contentType = imageData.content_type;
+        let contentTable: string;
+        
+        if (contentType === 'collection') {
+          contentTable = 'shopify_collections';
+        } else if (contentType === 'page') {
+          contentTable = 'shopify_pages';
+        } else if (contentType === 'article') {
+          contentTable = 'blog_articles';
+        } else {
+          throw new Error(`Type de contenu non supporté: ${contentType}`);
+        }
+
+        const { data: contentData, error: contentError } = await supabaseClient
+          .from(contentTable)
+          .select("shopify_collection_id, shopify_page_id, shopify_article_id, store_id, user_id")
+          .eq("id", imageData.content_id)
+          .maybeSingle();
+
+        console.log(`[SYNC-IMAGE] Content query result:`, { 
+          found: !!contentData, 
+          contentId: imageData.content_id,
+          contentType,
+          error: contentError 
+        });
+
+        if (contentError) {
+          console.error('[SYNC-IMAGE] Content fetch error:', contentError);
+          throw new Error(`Database error fetching ${contentType}: ${contentError.message}`);
+        }
+
+        if (!contentData) {
+          console.error('[SYNC-IMAGE] Content not found:', { contentId: imageData.content_id, contentType });
+          throw new Error(`Le ${contentType} associé à cette image n'existe pas`);
+        }
+
+        // Check if user owns the content
+        if (contentData.user_id !== user.id) {
+          console.error('[SYNC-IMAGE] Unauthorized access attempt:', { 
+            imageId, 
+            userId: user.id, 
+            contentOwnerId: contentData.user_id 
+          });
+          throw new Error("Vous n'avez pas l'autorisation d'accéder à cette image");
+        }
+
+        // Get the appropriate Shopify ID based on content type
+        if (contentType === 'collection') {
+          shopifyId = contentData.shopify_collection_id;
+        } else if (contentType === 'page') {
+          shopifyId = contentData.shopify_page_id;
+        } else {
+          shopifyId = contentData.shopify_article_id;
+        }
+
+        storeId = contentData.store_id;
+        contentOwnerId = contentData.user_id;
       }
 
       console.log(`[SYNC-IMAGE] Authorization successful - proceeding with sync`);
@@ -333,7 +420,7 @@ Deno.serve(async (req: Request) => {
       const { data: storeConnection, error: storeError } = await supabaseClient
         .from("shopify_connections")
         .select("store_url, access_token")
-        .eq("id", product.store_id)
+        .eq("id", storeId)
         .eq("user_id", user.id)
         .eq("is_active", true)
         .maybeSingle();
@@ -343,18 +430,18 @@ Deno.serve(async (req: Request) => {
         throw new Error("Store connection not found or inactive");
       }
 
-      const shopUrl = storeConnection.store_url;
-      const shopifyAccessToken = storeConnection.access_token;
+      shopUrl = storeConnection.store_url;
+      shopifyAccessToken = storeConnection.access_token;
       
       console.log(`[SYNC-IMAGE] Syncing to Shopify:`, {
         shopUrl,
-        productId: product.shopify_id,
+        contentId: shopifyId,
         imageId: imageData.shopify_image_id,
         altText: imageData.alt_text?.substring(0, 50) + '...'
       });
       
       const shopifyResponse = await fetch(
-        `https://${shopUrl}/admin/api/2024-01/products/${product.shopify_id}/images/${imageData.shopify_image_id}.json`,
+        `https://${shopUrl}/admin/api/2024-01/products/${shopifyId}/images/${imageData.shopify_image_id}.json`,
         {
           method: "PUT",
           headers: {
@@ -382,9 +469,9 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text for image ${imageData.shopify_image_id}`);
 
-      // Extract store name and build Shopify URL (to parent product)
+      // Extract store name and build Shopify URL (to parent content)
       const storeName = shopUrl.replace('.myshopify.com', '');
-      const shopifyUrl = `https://admin.shopify.com/store/${storeName}/products/${product.shopify_id}`;
+      const shopifyUrl = `https://admin.shopify.com/store/${storeName}/products/${shopifyId}`;
 
       return new Response(
         JSON.stringify({
