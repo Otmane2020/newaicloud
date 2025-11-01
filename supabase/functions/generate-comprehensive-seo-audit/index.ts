@@ -67,7 +67,8 @@ Deno.serve(async (req) => {
       productImages = imgData || [];
     }
 
-    console.log(`[AUDIT] Data fetched - Products: ${products.length}, Collections: ${collections.length}, Articles: ${articles.length}, Pages: ${pages.length}, Images: ${productImages.length + contentImages.length}`);
+    console.log(`[AUDIT] Data fetched - Products: ${products.length}, Collections: ${collections.length}, Articles: ${articles.length}, Pages: ${pages.length}`);
+    console.log(`[AUDIT] Images fetched - Product images: ${productImages.length}, Content images: ${contentImages.length}, Total: ${productImages.length + contentImages.length}`);
 
     // Initialize audit results
     const auditResults = {
@@ -107,14 +108,16 @@ Deno.serve(async (req) => {
     auditResults.content_score = contentAudit.score;
 
     // 5. IMAGES AUDIT
-    console.log('[AUDIT] Analyzing images...');
+    console.log(`[AUDIT] Analyzing images... (${productImages.length} product + ${contentImages.length} content)`);
     const imagesAudit = auditImages(productImages, contentImages);
+    console.log(`[AUDIT] Images score calculated: ${imagesAudit.score}`);
     auditResults.issues.push(...imagesAudit.issues);
     auditResults.images_score = imagesAudit.score;
 
     // 6. TECHNICAL AUDIT
     console.log('[AUDIT] Technical analysis...');
     const technicalAudit = auditTechnical(store);
+    console.log(`[AUDIT] Technical score calculated: ${technicalAudit.score}`);
     auditResults.issues.push(...technicalAudit.issues);
     auditResults.technical_score = technicalAudit.score;
 
