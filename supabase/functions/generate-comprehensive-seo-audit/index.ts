@@ -38,14 +38,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch all data needed for audit (including images)
-    const [productsResult, collectionsResult, articlesResult, pagesResult, storeResult, contentImagesResult] = await Promise.all([
+    // Fetch all data needed for audit (including images and homepage SEO)
+    const [productsResult, collectionsResult, articlesResult, pagesResult, storeResult, contentImagesResult, homepageSeoResult] = await Promise.all([
       supabaseAdmin.from('shopify_products').select('*').eq('seller_id', user.id),
       supabaseAdmin.from('shopify_collections').select('*').eq('user_id', user.id),
       supabaseAdmin.from('blog_articles').select('*').eq('user_id', user.id),
       supabaseAdmin.from('shopify_pages').select('*').eq('user_id', user.id),
       supabaseAdmin.from('shopify_connections').select('*').eq('user_id', user.id).limit(1).maybeSingle(),
-      supabaseAdmin.from('content_images').select('id, alt_text, optimization_count').eq('user_id', user.id)
+      supabaseAdmin.from('content_images').select('id, alt_text, optimization_count').eq('user_id', user.id),
+      supabaseAdmin.from('homepage_seo').select('last_audit').eq('user_id', user.id).maybeSingle()
     ]);
 
     const products = productsResult.data || [];
@@ -54,6 +55,7 @@ Deno.serve(async (req) => {
     const pages = pagesResult.data || [];
     const store = storeResult.data;
     const contentImages = contentImagesResult.data || [];
+    const homepageSeo = homepageSeoResult.data;
 
     // Fetch product images for user's products
     const productIds = products.map(p => p.id);
@@ -85,9 +87,15 @@ Deno.serve(async (req) => {
 
     // 1. HOMEPAGE AUDIT
     console.log('[AUDIT] Analyzing homepage...');
-    const homepageIssues = auditHomepage(store);
-    auditResults.issues.push(...homepageIssues.issues);
-    auditResults.homepage_score = homepageIssues.score;
+    // Use the detailed analysis from homepage_seo if available
+    if (homepageSeo?.last_audit && typeof homepageSeo.last_audit === 'object' && 'score' in homepageSeo.last_audit) {
+      auditResults.homepage_score = homepageSeo.last_audit.score;
+      console.log(`[AUDIT] Using detailed homepage score: ${homepageSeo.last_audit.score}`);
+    } else {
+      const homepageIssues = auditHomepage(store);
+      auditResults.issues.push(...homepageIssues.issues);
+      auditResults.homepage_score = homepageIssues.score;
+    }
 
     // 2. PRODUCTS AUDIT
     console.log('[AUDIT] Analyzing products...');
