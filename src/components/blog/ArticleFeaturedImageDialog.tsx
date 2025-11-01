@@ -196,6 +196,17 @@ export function ArticleFeaturedImageDialog({
 
     if (error) throw error;
 
+    // Update blog_articles.featured_image
+    const { error: updateArticleError } = await supabase
+      .from('blog_articles')
+      .update({ featured_image: imageUrl })
+      .eq('id', article.id);
+
+    if (updateArticleError) {
+      console.error('Failed to update article featured_image:', updateArticleError);
+      toast.warning('Image enregistrée mais article non mis à jour');
+    }
+
     // Store image info for success dialog
     setGeneratedImageUrl(imageUrl);
     setGeneratedImageId(insertedImage.id);

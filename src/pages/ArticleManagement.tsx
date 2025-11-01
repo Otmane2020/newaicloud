@@ -39,6 +39,7 @@ interface Article {
   created_at: string;
   updated_at: string;
   source: string | null;
+  featured_image: string | null;
 }
 
 export default function ArticleManagement() {
@@ -424,16 +425,28 @@ export default function ArticleManagement() {
                         />
                       </td>
                       <td className="p-3 hidden sm:table-cell">
-                        <div 
-                          className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform border-2 border-dashed border-indigo-300"
-                          onClick={() => {
-                            setSelectedArticleForImage(article);
-                            setShowImageDialog(true);
-                          }}
-                          title="Cliquer pour ajouter une image de couverture"
-                        >
-                          <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
-                        </div>
+                        {article.featured_image ? (
+                          <img
+                            src={article.featured_image}
+                            alt={article.title}
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover cursor-pointer hover:scale-110 transition-transform"
+                            onClick={() => {
+                              setSelectedArticleForImage(article);
+                              setShowImageDialog(true);
+                            }}
+                          />
+                        ) : (
+                          <div 
+                            className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform border-2 border-dashed border-indigo-300"
+                            onClick={() => {
+                              setSelectedArticleForImage(article);
+                              setShowImageDialog(true);
+                            }}
+                            title="Cliquer pour ajouter une image de couverture"
+                          >
+                            <ImageIcon className="w-4 h-4 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
+                          </div>
+                        )}
                       </td>
                       <td className="p-3">
                         <div className="max-w-[150px] sm:max-w-xs">

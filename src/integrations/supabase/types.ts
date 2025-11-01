@@ -217,6 +217,7 @@ export type Database = {
           collection_id: string | null
           content: string
           created_at: string
+          featured_image: string | null
           id: string
           keywords: string[] | null
           last_optimization_at: string | null
@@ -240,6 +241,7 @@ export type Database = {
           collection_id?: string | null
           content: string
           created_at?: string
+          featured_image?: string | null
           id?: string
           keywords?: string[] | null
           last_optimization_at?: string | null
@@ -263,6 +265,7 @@ export type Database = {
           collection_id?: string | null
           content?: string
           created_at?: string
+          featured_image?: string | null
           id?: string
           keywords?: string[] | null
           last_optimization_at?: string | null
