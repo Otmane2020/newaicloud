@@ -42,6 +42,9 @@ export function ProgressDialog({
   const percentage = total > 0 ? (current / total) * 100 : 0;
 
   const getTitle = () => {
+    if (percentage === 100) {
+      return operation === 'syncing' ? '✅ Synchronisation terminée !' : '✅ Optimisation terminée !';
+    }
     if (operation === 'syncing') return '🔄 Synchronisation en cours...';
     switch (type) {
       case 'seo': return '✨ Optimisation SEO en cours...';
@@ -51,6 +54,11 @@ export function ProgressDialog({
   };
 
   const getDescription = () => {
+    if (percentage === 100) {
+      return operation === 'syncing' 
+        ? `✅ ${total} élément${total > 1 ? 's synchronisés' : ' synchronisé'}` 
+        : `✅ ${total} élément${total > 1 ? 's traités' : ' traité'}`;
+    }
     if (operation === 'syncing') {
       return `Synchronisation avec Shopify : ${current} / ${total}`;
     }
