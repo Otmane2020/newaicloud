@@ -20,14 +20,14 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
     if (score >= 60) return "text-[rgb(255,94,23)]"; // Orange vif
     if (score >= 40) return "text-[rgb(255,94,23)]"; // Orange vif
-    return "text-[rgb(255,94,23)]"; // Orange vif
+    return "text-[#b91c1c]"; // Rouge profond distinct
   };
 
   const getScoreGradient = () => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
     if (score >= 60) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
     if (score >= 40) return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
-    return "from-[rgb(255,94,23)]/20 to-[rgb(255,94,23)]/5";
+    return "from-[#b91c1c]/20 to-[#b91c1c]/5";
   };
 
   const getScoreLabel = () => {
@@ -41,7 +41,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
     if (score >= 80) return <Target className="w-5 h-5 text-[#22c55e]" />;
     if (score >= 60) return <TrendingUp className="w-5 h-5 text-[rgb(255,94,23)]" />;
     if (score >= 40) return <AlertTriangle className="w-5 h-5 text-[rgb(255,94,23)]" />;
-    return <AlertTriangle className="w-5 h-5 text-[rgb(255,94,23)]" />;
+    return <AlertTriangle className="w-5 h-5 text-[#b91c1c]" />;
   };
 
   const getCategoryColor = (value: number) => {
@@ -67,10 +67,10 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
         dot: "bg-[rgb(255,94,23)]",
       };
     return {
-      text: "text-[rgb(255,94,23)]",
-      bg: "bg-gradient-to-r from-[rgb(255,94,23)] to-[rgb(230,80,20)]",
-      glow: "0 0 10px rgb(255,94,23)",
-      dot: "bg-[rgb(255,94,23)]",
+      text: "text-[#b91c1c]",
+      bg: "bg-gradient-to-r from-[#b91c1c] to-[#991b1b]",
+      glow: "0 0 10px #b91c1c",
+      dot: "bg-[#b91c1c]",
     };
   };
 
@@ -94,9 +94,9 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
         glow: "bg-[rgb(255,94,23)]/30",
       };
     return {
-      start: "rgb(255,94,23)",
-      end: "rgb(230,80,20)",
-      glow: "bg-[rgb(255,94,23)]/30",
+      start: "#b91c1c",
+      end: "#991b1b",
+      glow: "bg-[#b91c1c]/30",
     };
   };
 
