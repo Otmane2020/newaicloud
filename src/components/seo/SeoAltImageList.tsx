@@ -225,27 +225,37 @@ export function SeoAltImageList() {
 
     for (let i = 0; i < imagesToSync.length; i++) {
       try {
+        console.log(`Syncing image ${i + 1}/${imagesToSync.length}:`, imagesToSync[i].id);
+        
         const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
           body: { imageId: imagesToSync[i].id }
         });
 
+        // Handle function invocation errors
         if (error) {
-          console.error('Sync error:', error);
+          console.error('Function invocation error:', error);
           errorCount++;
-          toast.error(`Erreur: ${error.message || 'Échec de synchronisation'}`);
-        } else if (data?.error) {
-          console.error('API error:', data.error);
-          errorCount++;
-          toast.error(`Erreur API: ${data.error}`);
-        } else {
-          successCount++;
+          continue;
         }
+
+        // Handle API response errors
+        if (!data?.success) {
+          console.error('Sync failed:', data);
+          errorCount++;
+          if (data?.error) {
+            toast.error(`Erreur: ${data.error}`);
+          }
+          continue;
+        }
+
+        // Success
+        console.log(`✓ Image ${i + 1} synced successfully`);
+        successCount++;
         
         setProgress({ current: i + 1, total: imagesToSync.length });
       } catch (error) {
         console.error('Unexpected error syncing image:', error);
         errorCount++;
-        toast.error('Erreur inattendue lors de la synchronisation');
       }
     }
 
