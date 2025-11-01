@@ -58,7 +58,7 @@ export default function Auth() {
       
       if (!result.error) {
         if (referralCode) {
-          toast.success("Compte créé ! Vous avez reçu 10 crédits de bienvenue ! 🎉");
+          toast.success("Compte créé ! Vous avez reçu 100 optimisations de bienvenue ! 🎉");
         }
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
@@ -92,7 +92,7 @@ export default function Auth() {
             {mode === 'login'
               ? 'Log in to your account'
               : referralCode 
-                ? '🎁 Create your account and get 10 free credits!'
+                ? '🎁 Créez votre compte et obtenez 100 optimisations gratuites !'
                 : 'Create your account for free'}
           </p>
 
@@ -105,7 +105,7 @@ export default function Auth() {
                   Bonus de bienvenue activé !
                 </p>
                 <p className="text-purple-700 dark:text-purple-300">
-                  Vous recevrez <span className="font-bold">10 crédits gratuits</span> après votre inscription
+                  Vous recevrez <span className="font-bold">100 optimisations gratuites</span> après votre inscription
                 </p>
               </AlertDescription>
             </Alert>
