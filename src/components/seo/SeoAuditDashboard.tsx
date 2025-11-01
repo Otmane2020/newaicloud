@@ -101,7 +101,13 @@ export function SeoAuditDashboard() {
       setGenerating(true);
       toast.info("Analyse SEO en cours... Cela peut prendre quelques instants.");
 
-      const { data, error } = await supabase.functions.invoke("generate-comprehensive-seo-audit");
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { data, error } = await supabase.functions.invoke("generate-comprehensive-seo-audit", {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
 
       if (error) throw error;
 
