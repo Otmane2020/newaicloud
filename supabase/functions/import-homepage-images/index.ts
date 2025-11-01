@@ -166,20 +166,22 @@ serve(async (req) => {
       new Map(homepageImages.map(img => [img.src, img])).values()
     );
 
-    // Store images in homepage_images table
+    // Store images in content_images table with homepage type
     let importedCount = 0;
     for (const img of uniqueImages) {
       const { error: insertError } = await supabase
-        .from('homepage_images')
+        .from('content_images')
         .upsert({
           user_id: user.id,
           store_id: store.id,
+          content_type: 'homepage',
+          content_id: user.id, // Use user_id as content_id for homepage
           src: img.src,
           alt_text: img.alt_text,
           position: importedCount,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'user_id,src',
+          onConflict: 'content_type,content_id,src',
           ignoreDuplicates: false
         });
 

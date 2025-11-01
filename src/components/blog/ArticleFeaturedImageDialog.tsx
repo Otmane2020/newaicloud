@@ -483,72 +483,87 @@ export function ArticleFeaturedImageDialog({
       </DialogContent>
     </Dialog>
 
-      {/* Success Dialog */}
+      {/* Success Dialog - Large centered */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl">
           <div className="flex items-start gap-4 pb-4 border-b">
-            <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center shrink-0">
-              <CheckCircle className="w-7 h-7 text-green-600 dark:text-green-400" />
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-lg">
+              <CheckCircle className="w-9 h-9 text-white" />
             </div>
             <div className="flex-1">
-              <DialogTitle className="text-2xl font-bold mb-1">✅ Image générée!</DialogTitle>
-              <DialogDescription className="text-base">
-                Votre image a été créée avec succès
+              <DialogTitle className="text-3xl font-bold mb-2 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                ✅ Image générée avec succès!
+              </DialogTitle>
+              <DialogDescription className="text-lg">
+                Votre image a été créée et ajoutée à l'article
               </DialogDescription>
             </div>
           </div>
 
-          {/* Image Preview */}
+          {/* Image Preview - Large */}
           {generatedImageUrl && (
-            <div className="my-4">
+            <div className="my-6">
               <img
                 src={generatedImageUrl}
                 alt="Generated"
-                className="w-full h-48 object-cover rounded-lg border"
+                className="w-full h-64 object-cover rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg"
               />
             </div>
           )}
 
-          {/* Info Card */}
-          <Card className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-indigo-200">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
-              <div className="space-y-2 text-sm">
-                <p className="font-medium">🎨 Optimisez votre image maintenant!</p>
-                <p className="text-muted-foreground">
-                  Générez un texte ALT optimisé avec Vision AI et synchronisez automatiquement avec Shopify.
+          {/* Info Card - Enhanced */}
+          <Card className="p-6 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-2 border-indigo-200">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold">Optimisez maintenant avec Vision AI!</h3>
+              </div>
+              <div className="space-y-2 text-base">
+                <p className="flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-indigo-600" />
+                  <span><strong>Texte ALT optimisé</strong> généré par intelligence artificielle</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-purple-600" />
+                  <span><strong>Synchronisation automatique</strong> avec votre boutique Shopify</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-pink-600" />
+                  <span><strong>SEO amélioré</strong> pour un meilleur référencement</span>
                 </p>
               </div>
             </div>
           </Card>
 
-          <div className="flex flex-col gap-2 pt-4">
+          <div className="flex flex-col gap-3 pt-6">
             <Button
               onClick={handleOptimizeAndSync}
               disabled={processingAlt}
-              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              className="w-full h-14 text-lg font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 shadow-lg"
               size="lg"
             >
               {processingAlt ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Optimisation...
+                  <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+                  Optimisation en cours...
                 </>
               ) : (
                 <>
-                  <Eye className="w-5 h-5 mr-2" />
-                  Générer ALT & Synchroniser
-                  <Zap className="w-5 h-5 ml-2" />
+                  <Sparkles className="w-6 h-6 mr-2" />
+                  Générer ALT & Synchroniser avec Shopify
+                  <Zap className="w-6 h-6 ml-2" />
                 </>
               )}
             </Button>
             <Button
               onClick={() => setShowSuccessDialog(false)}
               variant="outline"
-              className="w-full h-11"
+              className="w-full h-12 text-base"
               size="lg"
             >
-              Plus tard
+              Je le ferai plus tard
             </Button>
           </div>
         </DialogContent>

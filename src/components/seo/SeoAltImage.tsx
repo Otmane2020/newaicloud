@@ -194,13 +194,22 @@ export function SeoAltImage() {
         return;
       }
 
+      // Import all types including homepage
       const { data, error } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: stores.id, types: ['collections', 'pages', 'articles'] }
       });
 
       if (error) throw error;
 
-      toast.success(`${data.totalImported} images importées depuis Shopify`);
+      // Also import homepage images
+      const { data: homepageData, error: homepageError } = await supabase.functions.invoke('import-homepage-images');
+      
+      if (homepageError) {
+        console.error('Homepage import error:', homepageError);
+      }
+
+      const totalImported = (data?.totalImported || 0) + (homepageData?.imported || 0);
+      toast.success(`${totalImported} images importées depuis Shopify`);
       await fetchImages();
     } catch (error) {
       console.error('Import error:', error);
