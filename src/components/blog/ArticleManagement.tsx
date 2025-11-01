@@ -103,7 +103,7 @@ export function ArticleManagement() {
     
     // Bonus for optimization
     if (article.optimization_count && article.optimization_count > 0) {
-      score = Math.min(100, score + 5);
+      score = Math.min(100, score + 10);
     }
     
     return score;
