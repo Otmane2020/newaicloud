@@ -256,6 +256,7 @@ export function SeoAltImageList() {
     let successCount = 0;
     let errorCount = 0;
     const failedImages: string[] = [];
+    const successfulImages: ProductImage[] = [];
 
     try {
       for (let i = 0; i < imagesToSync.length; i++) {
@@ -284,6 +285,7 @@ export function SeoAltImageList() {
 
           console.log(`✅ [${i + 1}/${imagesToSync.length}] Synced successfully`);
           successCount++;
+          successfulImages.push(image);
         } catch (error: any) {
           console.error(`❌ [${i + 1}/${imagesToSync.length}] Unexpected error:`, error.message);
           errorCount++;
@@ -308,10 +310,10 @@ export function SeoAltImageList() {
       // Show results
       if (successCount > 0) {
         // Update optimizedItems with successfully synced images
-        const syncedItems: WorkflowItem[] = imagesToSync.map(img => ({
+        const syncedItems: WorkflowItem[] = successfulImages.map(img => ({
           id: img.id,
           title: img.product_title || 'Unknown Product',
-          alt_text: img.alt_text,
+          alt_text: img.alt_text || '',
           image_url: img.src
         }));
         setOptimizedItems(syncedItems);
