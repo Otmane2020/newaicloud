@@ -91,7 +91,7 @@ export default function Merchant() {
       {/* Main Content with Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         {/* Tabs Navigation */}
-        <Card className="p-1">
+        <Card className="p-1 hidden">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
             {tabs.map((tab) => {
               const Icon = tab.icon;
