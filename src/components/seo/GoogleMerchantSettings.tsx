@@ -131,8 +131,8 @@ export function GoogleMerchantSettings() {
   };
 
   const testFeed = async () => {
-    if (!settings.store_name) {
-      toast.error("Veuillez d'abord configurer un nom de boutique");
+    if (!user?.id) {
+      toast.error("Utilisateur non connecté");
       return;
     }
 
@@ -140,7 +140,9 @@ export function GoogleMerchantSettings() {
     setFeedStatus("idle");
 
     try {
-      const response = await fetch(feedUrl);
+      // Utiliser l'URL Supabase directe pour le test
+      const testUrl = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user.id}/xml`;
+      const response = await fetch(testUrl);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -163,10 +165,15 @@ export function GoogleMerchantSettings() {
     }
   };
 
-  // URL du flux avec le domaine NewAI
+  // URL du flux avec le domaine NewAI (pour affichage)
   const feedUrl = user?.id 
     ? `https://newai.sale/shoppingfeed/${user.id}/xml`
     : `https://newai.sale/shoppingfeed/{VOTRE_ID}/xml`;
+  
+  // URL Supabase directe (fonctionne toujours)
+  const directFeedUrl = user?.id
+    ? `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user.id}/xml`
+    : "";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);

@@ -37,8 +37,11 @@ export function GoogleMerchant() {
   });
   const [isTesting, setIsTesting] = useState(false);
 
-  // URL du flux avec le domaine NewAI
+  // URL du flux avec le domaine NewAI (pour affichage final)
   const feedUrl = `https://newai.sale/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
+  
+  // URL Supabase directe (fonctionne toujours)
+  const directFeedUrl = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);
@@ -184,7 +187,7 @@ export function GoogleMerchant() {
 
               {feedStatus.status === "success" && (
                 <Button asChild variant="default">
-                  <a href={feedUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={directFeedUrl} target="_blank" rel="noopener noreferrer">
                     <Download className="w-4 h-4 mr-2" />
                     Télécharger XML
                   </a>
@@ -260,7 +263,7 @@ export function GoogleMerchant() {
                 {/* Action Buttons */}
                 <div className="flex gap-3 mt-4">
                   <Button asChild variant="default">
-                    <a href={feedUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={directFeedUrl} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Prévisualiser le flux
                     </a>
