@@ -26,6 +26,7 @@ interface ProductImage {
   product_id: string;
   product_title?: string;
   last_synced_at?: string | null;
+  shopify_image_id?: number | null;
 }
 
 interface ProductWithImages {
@@ -65,7 +66,13 @@ export function SeoAltImageList() {
       const { data: imagesData, error: imagesError } = await supabase
         .from('product_images')
         .select(`
-          *,
+          id,
+          src,
+          alt_text,
+          position,
+          product_id,
+          last_synced_at,
+          shopify_image_id,
           shopify_products!inner(
             id,
             title,
@@ -458,19 +465,43 @@ export function SeoAltImageList() {
               <Button
                 onClick={() => {
                   const allImages = products.flatMap(p => p.images);
-                  const imagesWithAlt = allImages.filter(img => 
-                    selectedImages.has(img.id) && img.alt_text
+                  
+                  // Filter images that have ALT text AND Shopify image ID
+                  const syncableImages = allImages.filter(img => 
+                    selectedImages.has(img.id) && 
+                    img.alt_text && 
+                    img.shopify_image_id
                   ).map(img => {
                     const product = products.find(p => p.id === img.product_id);
                     return { ...img, product_title: product?.title };
                   });
+
+                  // Check for images without Shopify ID
+                  const imagesWithoutShopifyId = allImages.filter(img =>
+                    selectedImages.has(img.id) && 
+                    img.alt_text && 
+                    !img.shopify_image_id
+                  );
                   
-                  if (imagesWithAlt.length === 0) {
+                  if (syncableImages.length === 0 && imagesWithoutShopifyId.length > 0) {
+                    toast.error('Images non synchronisables', {
+                      description: `${imagesWithoutShopifyId.length} image(s) n'ont pas d'ID Shopify. Importez-les d'abord depuis Shopify.`
+                    });
+                    return;
+                  }
+
+                  if (syncableImages.length === 0) {
                     toast.info('Aucune image avec ALT text sélectionnée');
                     return;
                   }
+
+                  if (imagesWithoutShopifyId.length > 0) {
+                    toast.warning('Certaines images ignorées', {
+                      description: `${imagesWithoutShopifyId.length} image(s) sans ID Shopify seront ignorées.`
+                    });
+                  }
                   
-                  setImagesToSync(imagesWithAlt);
+                  setImagesToSync(syncableImages);
                   setShowSyncDialog(true);
                 }}
                 disabled={selectedImages.size === 0}
