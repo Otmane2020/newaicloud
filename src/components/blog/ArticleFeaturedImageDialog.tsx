@@ -157,6 +157,11 @@ export function ArticleFeaturedImageDialog({
   const updateArticleImage = async (imageUrl: string) => {
     // Store the featured image in content_images table
     const { data: user } = await supabase.auth.getUser();
+    const { data: storeData } = await supabase
+      .from("shopify_connections")
+      .select("id")
+      .limit(1)
+      .maybeSingle();
 
     // Delete existing featured image for this article (position 0)
     const { error: deleteError } = await supabase
@@ -171,14 +176,19 @@ export function ArticleFeaturedImageDialog({
     }
 
     // Insert new featured image
-    const { error } = await supabase.from("content_images").insert({
-      content_id: article.id,
-      content_type: "article",
-      src: imageUrl,
-      alt_text: `Featured image for ${article.title}`,
-      position: 0, // Featured image is position 0
-      user_id: user?.user?.id,
-    });
+    const { data: insertedImage, error } = await supabase
+      .from("content_images")
+      .insert({
+        content_id: article.id,
+        content_type: "article",
+        src: imageUrl,
+        alt_text: `Featured image for ${article.title}`,
+        position: 0,
+        user_id: user?.user?.id,
+        store_id: storeData?.id,
+      })
+      .select()
+      .single();
 
     if (error) throw error;
 
@@ -187,7 +197,56 @@ export function ArticleFeaturedImageDialog({
     setSelectedOption(null);
     setCustomImageUrl("");
     setAiPrompt("");
-    toast.success("Image mise à jour avec succès");
+
+    // Show success with option to generate ALT and sync
+    toast.success(
+      <div className="space-y-2">
+        <p className="font-semibold">✅ Image générée avec succès!</p>
+        <p className="text-xs">Voulez-vous générer un ALT optimisé et synchroniser avec Shopify?</p>
+      </div>,
+      {
+        duration: 8000,
+        action: {
+          label: "Optimiser & Sync",
+          onClick: async () => {
+            try {
+              // Generate ALT text
+              const { error: altError } = await supabase.functions.invoke("generate-alt-texts-vision", {
+                body: {
+                  imageId: insertedImage.id,
+                  imageType: "content",
+                },
+              });
+
+              if (altError) throw altError;
+
+              toast.success("ALT généré! Synchronisation avec Shopify...");
+
+              // Sync to Shopify if article has shopify_article_id
+              const { data: articleData } = await supabase
+                .from("blog_articles")
+                .select("shopify_article_id")
+                .eq("id", article.id)
+                .single();
+
+              if (articleData?.shopify_article_id) {
+                const { error: syncError } = await supabase.functions.invoke("sync-blog-to-shopify", {
+                  body: { articleId: article.id },
+                });
+
+                if (syncError) throw syncError;
+                toast.success("✨ Image, ALT et synchronisation Shopify terminés!");
+              } else {
+                toast.success("✨ Image et ALT générés avec succès!");
+              }
+            } catch (err: any) {
+              console.error("Error:", err);
+              toast.error(err.message || "Erreur lors de l'optimisation");
+            }
+          },
+        },
+      }
+    );
   };
 
   const handleClose = () => {
