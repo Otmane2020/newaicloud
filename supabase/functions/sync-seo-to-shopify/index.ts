@@ -267,8 +267,19 @@ Deno.serve(async (req: Request) => {
       }
 
       if (!imageData) {
-        console.error('[SYNC-IMAGE] Image not found in database:', { imageId });
-        throw new Error(`Image with ID ${imageId} not found in database`);
+        console.warn('[SYNC-IMAGE] Image not found in database (may have been deleted):', { imageId });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: "Cette image n'existe plus dans la base de données. Elle a peut-être été supprimée ou le lien est incorrect.",
+            error: "IMAGE_NOT_FOUND",
+            imageId: imageId
+          }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       if (!imageData.shopify_image_id) {
