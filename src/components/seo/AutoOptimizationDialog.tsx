@@ -158,9 +158,9 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-destructive text-destructive-foreground';
-      case 'medium': return 'bg-warning text-warning-foreground';
-      case 'low': return 'bg-muted text-muted-foreground';
+      case 'high': return 'bg-rose-500 text-white border-0';
+      case 'medium': return 'bg-orange-500 text-white border-0';
+      case 'low': return 'bg-emerald-500 text-white border-0';
       default: return 'bg-muted';
     }
   };
@@ -301,8 +301,8 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
           <div className="space-y-6 py-4">
             <div className="text-center space-y-4 py-6">
               <div className="flex justify-center">
-                <div className="p-4 rounded-full bg-success/20">
-                  <CheckCircle className="h-12 w-12 text-success" />
+                <div className="p-4 rounded-full bg-emerald-100">
+                  <CheckCircle className="h-12 w-12 text-emerald-500" />
                 </div>
               </div>
               <div>
@@ -323,15 +323,15 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
                     key={result.action}
                     className={`p-4 rounded-lg border-2 ${
                       result.success
-                        ? 'border-success/30 bg-success/5'
-                        : 'border-destructive/30 bg-destructive/5'
+                        ? 'border-emerald-200 bg-emerald-50'
+                        : 'border-rose-200 bg-rose-50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       {result.success ? (
-                        <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
+                        <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0" />
                       ) : (
-                        <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+                        <AlertCircle className="h-5 w-5 text-rose-500 flex-shrink-0" />
                       )}
                       <div className="flex-1">
                         <p className="font-semibold">{action.label}</p>

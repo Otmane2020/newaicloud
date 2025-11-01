@@ -98,27 +98,27 @@ export function SeoAuditDashboard() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 80) return 'text-emerald-500';
+    if (score >= 60) return 'text-orange-500';
+    return 'text-rose-500';
   };
 
   const getScoreBgColor = (score: number) => {
-    if (score >= 80) return 'bg-green-100 border-green-300';
-    if (score >= 60) return 'bg-yellow-100 border-yellow-300';
-    return 'bg-red-100 border-red-300';
+    if (score >= 80) return 'bg-emerald-500';
+    if (score >= 60) return 'bg-orange-500';
+    return 'bg-rose-500';
   };
 
   const getPriorityBadge = (priority: string) => {
     const variants = {
-      high: { variant: 'destructive' as const, label: '🔴 Haute', icon: AlertCircle },
-      medium: { variant: 'default' as const, label: '🟡 Moyenne', icon: AlertCircle },
-      low: { variant: 'secondary' as const, label: '🟢 Basse', icon: CheckCircle2 }
+      high: { className: 'bg-rose-500 text-white border-0', label: '🔴 Haute', icon: AlertCircle },
+      medium: { className: 'bg-orange-500 text-white border-0', label: '🟡 Moyenne', icon: AlertCircle },
+      low: { className: 'bg-emerald-500 text-white border-0', label: '🟢 Basse', icon: CheckCircle2 }
     };
     const config = variants[priority as keyof typeof variants] || variants.medium;
     const Icon = config.icon;
     return (
-      <Badge variant={config.variant} className="gap-1">
+      <Badge className={`gap-1 ${config.className}`}>
         <Icon className="w-3 h-3" />
         {config.label}
       </Badge>
@@ -135,213 +135,142 @@ export function SeoAuditDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Hero Header avec design premium */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-dark to-primary-light p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-2xl translate-y-24 -translate-x-24" />
-        
-        <div className="relative z-10 flex justify-between items-start">
+      {/* Hero Header simple et coloré */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-8 shadow-xl">
+        <div className="relative z-10 flex justify-between items-center">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-sm">
-                <FileSearch className="w-8 h-8 text-white" />
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-xl bg-white/20">
+                <FileSearch className="w-6 h-6 text-white" />
               </div>
-              <Badge className="bg-white/20 text-white border-white/30 px-4 py-1.5 text-sm font-semibold">
-                Analyse IA Avancée
+              <Badge className="bg-white/20 text-white border-0">
+                Analyse IA
               </Badge>
             </div>
-            <h1 className="text-4xl font-black text-white mb-3">
+            <h1 className="text-4xl font-black text-white mb-2">
               Audit SEO Complet
             </h1>
-            <p className="text-white/90 text-lg font-medium max-w-2xl leading-relaxed">
-              Obtenez une analyse détaillée de votre boutique Shopify avec des recommandations actionnables pour améliorer votre visibilité en ligne et augmenter votre trafic organique.
+            <p className="text-white/90 text-base max-w-2xl">
+              Analyse détaillée avec recommandations pour améliorer votre visibilité
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
-                <CheckCircle2 className="w-4 h-4 text-white" />
-                <span className="text-sm font-semibold text-white">6 Catégories analysées</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
-                <TrendingUp className="w-4 h-4 text-white" />
-                <span className="text-sm font-semibold text-white">Scoring intelligent</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
-                <Sparkles className="w-4 h-4 text-white" />
-                <span className="text-sm font-semibold text-white">Plan d'action personnalisé</span>
-              </div>
-            </div>
           </div>
           <Button
             onClick={handleGenerateAudit}
             disabled={generating}
             size="lg"
-            className="bg-white text-primary hover:bg-white/90 font-bold shadow-xl px-8 py-6 text-lg"
+            className="bg-white text-primary hover:bg-white/90 font-bold shadow-lg"
           >
             {generating ? (
               <>
                 <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                Analyse en cours...
+                Analyse...
               </>
             ) : (
               <>
                 <FileSearch className="w-5 h-5 mr-2" />
-                {audit ? 'Relancer l\'audit' : 'Lancer l\'audit'}
+                {audit ? 'Relancer' : 'Lancer l\'audit'}
               </>
             )}
           </Button>
         </div>
       </div>
 
-      {/* Section éducative */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="border-2 hover:shadow-lg transition-all">
+      {/* Section éducative simplifiée */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="border-0 shadow-md hover:shadow-lg transition-all">
           <CardHeader>
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-              <TrendingUp className="w-6 h-6 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center mb-2">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
-            <CardTitle className="text-lg">Pourquoi un audit SEO ?</CardTitle>
+            <CardTitle className="text-base">Pourquoi un audit ?</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Un audit SEO identifie les opportunités d'amélioration pour augmenter votre visibilité sur Google et attirer plus de clients qualifiés vers votre boutique.
+            <p className="text-sm text-muted-foreground">
+              Identifiez les opportunités pour augmenter votre visibilité sur Google
             </p>
           </CardContent>
         </Card>
         
-        <Card className="border-2 hover:shadow-lg transition-all">
+        <Card className="border-0 shadow-md hover:shadow-lg transition-all">
           <CardHeader>
-            <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-3">
-              <CheckCircle2 className="w-6 h-6 text-success" />
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center mb-2">
+              <CheckCircle2 className="w-6 h-6 text-white" />
             </div>
-            <CardTitle className="text-lg">Ce que vous obtenez</CardTitle>
+            <CardTitle className="text-base">Ce que vous obtenez</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Une analyse complète de 6 catégories SEO avec un score détaillé, des problèmes identifiés et un plan d'action priorisé pour des résultats rapides.
+            <p className="text-sm text-muted-foreground">
+              Score détaillé, problèmes identifiés et plan d'action priorisé
             </p>
           </CardContent>
         </Card>
         
-        <Card className="border-2 hover:shadow-lg transition-all">
+        <Card className="border-0 shadow-md hover:shadow-lg transition-all">
           <CardHeader>
-            <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center mb-3">
-              <Sparkles className="w-6 h-6 text-warning" />
+            <div className="w-12 h-12 rounded-xl bg-rose-500 flex items-center justify-center mb-2">
+              <Sparkles className="w-6 h-6 text-white" />
             </div>
-            <CardTitle className="text-lg">Analyse IA avancée</CardTitle>
+            <CardTitle className="text-base">Analyse IA</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Notre IA analyse automatiquement vos produits, collections, contenus et images pour vous fournir des recommandations sur-mesure et actionnables.
+            <p className="text-sm text-muted-foreground">
+              Recommandations sur-mesure et actionnables pour votre boutique
             </p>
           </CardContent>
         </Card>
       </div>
 
       {!audit ? (
-        <Card className="border-2 shadow-xl">
+        <Card className="border-0 shadow-lg">
           <CardContent className="py-16 text-center">
             <div className="max-w-2xl mx-auto">
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-dark mx-auto mb-6 flex items-center justify-center shadow-lg">
                 <FileSearch className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-3xl font-bold mb-4">Prêt à booster votre SEO ?</h3>
-              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Lancez votre premier audit SEO complet pour découvrir comment améliorer votre classement sur Google et attirer plus de clients. L'analyse prend environ 30 secondes.
+              <h3 className="text-3xl font-bold mb-3">Prêt à booster votre SEO ?</h3>
+              <p className="text-muted-foreground mb-6">
+                Lancez votre audit SEO complet pour améliorer votre classement Google
               </p>
               <Button
                 onClick={handleGenerateAudit}
                 disabled={generating}
                 size="lg"
-                className="bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-lg px-8 py-6 shadow-xl"
+                className="shadow-lg"
               >
-                <FileSearch className="w-6 h-6 mr-2" />
-                Lancer mon audit gratuit
+                <FileSearch className="w-5 h-5 mr-2" />
+                Lancer mon audit
               </Button>
-              <p className="text-xs text-muted-foreground mt-4">
-                🔒 Analyse 100% automatique et sécurisée
-              </p>
             </div>
           </CardContent>
         </Card>
       ) : (
         <>
-          {/* Global Score - Design premium */}
-          <Card className="border-2 shadow-2xl bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
-            <CardHeader className="relative z-10">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10">
-                    <TrendingUp className="w-7 h-7 text-primary" />
-                  </div>
-                  Score SEO Global
-                </CardTitle>
-                <Badge className={`text-lg px-5 py-2 ${
-                  audit.global_score >= 80 ? 'bg-success text-white' :
-                  audit.global_score >= 60 ? 'bg-warning text-white' :
-                  'bg-destructive text-white'
-                }`}>
-                  {audit.global_score >= 80 ? '🎯 Excellent' :
-                   audit.global_score >= 60 ? '📈 Bon' : '⚠️ À améliorer'}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="relative z-10">
+          {/* Global Score - Simple et coloré */}
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <CardContent className="p-8">
               <div className="flex items-center justify-between gap-8">
                 <div className="flex-1">
-                  <div className="flex items-baseline gap-3 mb-4">
-                    <span className={`text-8xl font-black ${getScoreColor(audit.global_score)}`}>
+                  <h3 className="text-lg font-semibold text-muted-foreground mb-4">Score SEO Global</h3>
+                  <div className="flex items-baseline gap-4 mb-6">
+                    <span className={`text-9xl font-black ${getScoreColor(audit.global_score)}`}>
                       {audit.global_score}
                     </span>
-                    <span className="text-4xl text-muted-foreground font-bold">/100</span>
+                    <span className="text-5xl text-muted-foreground font-bold">/100</span>
                   </div>
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground font-medium">
-                      📅 Audit généré le {new Date(audit.created_at).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                  <div className="space-y-2">
+                    <Progress value={audit.global_score} className="h-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Audit du {new Date(audit.created_at).toLocaleDateString('fr-FR')}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <div className="text-xs font-semibold text-muted-foreground mb-2">PROGRESSION</div>
-                        <Progress value={audit.global_score} className="h-4 shadow-inner" />
-                      </div>
-                      <span className="text-sm font-bold text-primary">
-                        {100 - audit.global_score} pts restants
-                      </span>
+                  </div>
+                </div>
+                <div className={`w-40 h-40 rounded-full flex items-center justify-center ${getScoreBgColor(audit.global_score)}`}>
+                  <div className="text-center">
+                    <div className="text-5xl font-black text-white">
+                      {audit.global_score >= 80 ? '🎯' : audit.global_score >= 60 ? '📈' : '⚡'}
                     </div>
                   </div>
                 </div>
-                <div className="hidden md:block">
-                  <div className="w-48 h-48 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-xl border-4 border-primary/20">
-                    <div className="text-center">
-                      <div className={`text-5xl font-black ${getScoreColor(audit.global_score)} mb-2`}>
-                        {Math.round(audit.global_score / 16.67)}
-                      </div>
-                      <div className="text-xs text-muted-foreground font-semibold">sur 6 catégories</div>
-                      <div className="text-xs text-muted-foreground">optimisées</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Message motivationnel */}
-              <div className={`mt-6 p-4 rounded-xl ${
-                audit.global_score >= 80 ? 'bg-success/10 border-2 border-success/20' :
-                audit.global_score >= 60 ? 'bg-warning/10 border-2 border-warning/20' :
-                'bg-destructive/10 border-2 border-destructive/20'
-              }`}>
-                <p className="text-sm font-semibold">
-                  {audit.global_score >= 80 ? 
-                    '🎉 Excellent travail ! Votre boutique est très bien optimisée pour le SEO. Continuez ainsi !' :
-                   audit.global_score >= 60 ?
-                    '👍 Bon score ! Quelques optimisations supplémentaires vous permettront d\'atteindre l\'excellence.' :
-                    '💪 Il y a du potentiel ! Suivez nos recommandations pour améliorer rapidement votre visibilité.'}
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -354,75 +283,38 @@ export function SeoAuditDashboard() {
                 Cliquez sur une catégorie pour accéder aux optimisations correspondantes
               </p>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {[
-                { key: 'homepage_score', label: 'Homepage', icon: Home, tab: 'homepage', desc: 'Titre et meta description' },
-                { key: 'products_score', label: 'Produits', icon: ShoppingBag, tab: 'products', desc: 'Fiches produits SEO' },
-                { key: 'collections_score', label: 'Collections', icon: Layers, tab: 'collections', desc: 'Pages collections' },
-                { key: 'blog_score', label: 'Contenu', icon: FileText, tab: 'articles', desc: 'Articles et pages' },
-                { key: 'images_score', label: 'Images', icon: ImageIcon, tab: 'alt', desc: 'Textes alternatifs' },
-                { key: 'technical_score', label: 'Technique', icon: Sparkles, tab: 'products', desc: 'Configuration Shopify' }
-              ].map(({ key, label, icon: Icon, tab, desc }) => {
-                const categoryStats = stats?.[tab === 'products' ? 'products' : tab === 'collections' ? 'collections' : tab === 'articles' ? 'articles' : 'pages'];
-                const optimizedCount = categoryStats?.optimized || 0;
-                const totalCount = categoryStats?.total || 0;
+                { key: 'homepage_score', label: 'Homepage', icon: Home, tab: 'homepage' },
+                { key: 'products_score', label: 'Produits', icon: ShoppingBag, tab: 'products' },
+                { key: 'collections_score', label: 'Collections', icon: Layers, tab: 'collections' },
+                { key: 'blog_score', label: 'Contenu', icon: FileText, tab: 'articles' },
+                { key: 'images_score', label: 'Images', icon: ImageIcon, tab: 'alt-image' },
+                { key: 'technical_score', label: 'Technique', icon: Sparkles, tab: 'products' }
+              ].map(({ key, label, icon: Icon, tab }) => {
                 const score = audit[key] || 0;
                 
                 return (
                   <Card 
                     key={key}
-                    className="group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 hover:border-primary/50 bg-gradient-to-br from-card to-muted/20 overflow-hidden relative"
+                    className="group cursor-pointer hover:shadow-xl transition-all border-0 overflow-hidden"
                     onClick={() => navigate(`/seo?tab=${tab}`)}
                   >
-                    <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl ${
-                      score >= 80 ? 'bg-success/20' : score >= 60 ? 'bg-warning/20' : 'bg-destructive/20'
-                    } group-hover:blur-3xl transition-all`} />
-                    
-                    <CardHeader className="pb-3 relative z-10">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className={`p-3 rounded-xl ${
-                          score >= 80 ? 'bg-success/10' : score >= 60 ? 'bg-warning/10' : 'bg-destructive/10'
-                        } group-hover:scale-110 transition-transform`}>
-                          <Icon className={`w-5 h-5 ${
-                            score >= 80 ? 'text-success' : score >= 60 ? 'text-warning' : 'text-destructive'
-                          }`} />
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`p-3 rounded-xl ${getScoreBgColor(score)}`}>
+                          <Icon className="w-5 h-5 text-white" />
                         </div>
                         <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                       </div>
-                      <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
-                        {label}
-                      </CardTitle>
-                      <p className="text-xs text-muted-foreground font-medium">{desc}</p>
-                    </CardHeader>
-                    <CardContent className="relative z-10">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className={`text-4xl font-black ${
-                          score >= 80 ? 'text-success' : score >= 60 ? 'text-warning' : 'text-destructive'
-                        }`}>
+                      <h4 className="font-bold text-lg mb-3">{label}</h4>
+                      <div className="flex items-baseline gap-2 mb-3">
+                        <span className={`text-5xl font-black ${getScoreColor(score)}`}>
                           {score}
-                          <span className="text-lg text-muted-foreground">/100</span>
-                        </div>
-                        {totalCount > 0 && (
-                          <Badge variant="outline" className="text-xs font-semibold">
-                            {optimizedCount}/{totalCount} ✓
-                          </Badge>
-                        )}
+                        </span>
+                        <span className="text-xl text-muted-foreground">/100</span>
                       </div>
-                      <div className="relative h-3 bg-muted rounded-full overflow-hidden shadow-inner">
-                        <div
-                          className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
-                            score >= 80 ? 'bg-gradient-to-r from-success to-success/80' :
-                            score >= 60 ? 'bg-gradient-to-r from-warning to-warning/80' :
-                            'bg-gradient-to-r from-destructive to-destructive/80'
-                          }`}
-                          style={{ 
-                            width: `${score}%`,
-                            boxShadow: score >= 80 ? '0 0 8px hsl(var(--success))' :
-                                       score >= 60 ? '0 0 8px hsl(var(--warning))' :
-                                       '0 0 8px hsl(var(--destructive))'
-                          }}
-                        />
-                      </div>
+                      <Progress value={score} className="h-2" />
                     </CardContent>
                   </Card>
                 );
@@ -446,70 +338,59 @@ export function SeoAuditDashboard() {
             </CardContent>
           </Card>
 
-          {/* Issues - Design premium */}
+          {/* Issues - Simple et coloré */}
           {audit.audit_results?.issues && audit.audit_results.issues.length > 0 && (
-            <Card className="border-2 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-destructive/5 to-warning/5 border-b-2">
+            <Card className="border-0 shadow-xl">
+              <CardHeader className="border-b">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 rounded-xl bg-destructive/10">
-                        <AlertCircle className="w-6 h-6 text-destructive" />
-                      </div>
-                      Problèmes Détectés
-                    </CardTitle>
-                    <CardDescription className="mt-2 text-base">
-                      {audit.audit_results.issues.length} point{audit.audit_results.issues.length > 1 ? 's' : ''} d'amélioration identifié{audit.audit_results.issues.length > 1 ? 's' : ''} par l'analyse IA
-                    </CardDescription>
-                  </div>
-                  <Badge className="bg-destructive text-white text-lg px-4 py-2">
-                    {audit.audit_results.issues.filter((i: any) => i.priority === 'high').length} prioritaire{audit.audit_results.issues.filter((i: any) => i.priority === 'high').length > 1 ? 's' : ''}
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <AlertCircle className="w-5 h-5 text-rose-500" />
+                    Problèmes Détectés
+                  </CardTitle>
+                  <Badge className="bg-rose-500 text-white border-0">
+                    {audit.audit_results.issues.length} problème{audit.audit_results.issues.length > 1 ? 's' : ''}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {audit.audit_results.issues.map((issue: any, index: number) => (
                     <div
                       key={index}
-                      className={`border-2 rounded-2xl p-6 transition-all hover:shadow-xl ${
-                        issue.priority === 'high' ? 'border-destructive/30 bg-destructive/5' :
-                        issue.priority === 'medium' ? 'border-warning/30 bg-warning/5' :
-                        'border-muted bg-muted/20'
-                      }`}
+                      className="border rounded-xl p-4 hover:shadow-md transition-all"
                     >
-                      <div className="flex justify-between items-start mb-4">
+                      <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <Badge variant="outline" className="capitalize text-sm font-semibold">
-                              📍 {issue.category}
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="capitalize">
+                              {issue.category}
                             </Badge>
                             {getPriorityBadge(issue.priority)}
                           </div>
-                          <h4 className="font-bold text-lg mb-2">{issue.title}</h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{issue.description}</p>
+                          <h4 className="font-bold mb-2">{issue.title}</h4>
+                          <p className="text-sm text-muted-foreground">{issue.description}</p>
                         </div>
                         {issue.count && (
-                          <Badge className="ml-4 bg-primary text-white text-base px-4 py-2">
-                            {issue.count} élément{issue.count > 1 ? 's' : ''}
+                          <Badge className="ml-4 bg-primary text-white">
+                            {issue.count}
                           </Badge>
                         )}
                       </div>
                       
-                      <div className="grid md:grid-cols-2 gap-4 mt-4">
-                        <div className="p-4 rounded-xl bg-warning/10 border-2 border-warning/20">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertCircle className="w-4 h-4 text-warning" />
-                            <span className="text-sm font-bold text-warning">Impact SEO</span>
+                      <div className="grid md:grid-cols-2 gap-3 mt-3">
+                        <div className="p-3 rounded-lg bg-orange-50 border border-orange-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertCircle className="w-4 h-4 text-orange-500" />
+                            <span className="text-sm font-bold text-orange-700">Impact</span>
                           </div>
-                          <p className="text-sm font-medium leading-relaxed">{issue.impact}</p>
+                          <p className="text-sm">{issue.impact}</p>
                         </div>
-                        <div className="p-4 rounded-xl bg-success/10 border-2 border-success/20">
-                          <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="w-4 h-4 text-success" />
-                            <span className="text-sm font-bold text-success">Action recommandée</span>
+                        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <span className="text-sm font-bold text-emerald-700">Action</span>
                           </div>
-                          <p className="text-sm font-medium leading-relaxed">{issue.action}</p>
+                          <p className="text-sm">{issue.action}</p>
                         </div>
                       </div>
                     </div>
@@ -519,57 +400,47 @@ export function SeoAuditDashboard() {
             </Card>
           )}
 
-          {/* Recommendations - Design premium avec timeline */}
+          {/* Recommendations - Timeline simple et coloré */}
           {audit.recommendations && audit.recommendations.length > 0 && (
-            <Card className="border-2 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-success/5 to-primary/5 border-b-2">
+            <Card className="border-0 shadow-xl">
+              <CardHeader className="border-b">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-3 text-2xl">
-                      <div className="p-3 rounded-xl bg-success/10">
-                        <CheckCircle2 className="w-6 h-6 text-success" />
-                      </div>
-                      Plan d'Action SEO
-                    </CardTitle>
-                    <CardDescription className="mt-2 text-base">
-                      Suivez ces {audit.recommendations.length} étapes prioritaires pour améliorer votre référencement naturel
-                    </CardDescription>
-                  </div>
-                  <Badge className="bg-primary text-white text-lg px-4 py-2">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    Plan d'Action SEO
+                  </CardTitle>
+                  <Badge className="bg-emerald-500 text-white border-0">
                     {audit.recommendations.length} étapes
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="pt-8">
-                <div className="space-y-8 relative">
-                  {/* Timeline line */}
-                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary/20" />
-                  
+                <div className="space-y-6">
                   {audit.recommendations.map((rec: any, index: number) => (
-                    <div key={index} className="relative pl-16">
+                    <div key={index} className="relative pl-12">
                       {/* Timeline dot */}
-                      <div className={`absolute left-0 w-12 h-12 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
-                        rec.priority === 'high' ? 'bg-gradient-to-br from-destructive to-destructive/80' :
-                        rec.priority === 'medium' ? 'bg-gradient-to-br from-warning to-warning/80' :
-                        'bg-gradient-to-br from-success to-success/80'
+                      <div className={`absolute left-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
+                        rec.priority === 'high' ? 'bg-rose-500' :
+                        rec.priority === 'medium' ? 'bg-orange-500' :
+                        'bg-emerald-500'
                       }`}>
                         {index + 1}
                       </div>
                       
-                      <div className="border-2 rounded-2xl p-6 hover:shadow-xl transition-all bg-card hover:border-primary/50">
-                        <div className="flex items-start justify-between mb-4">
+                      <div className="border rounded-xl p-4 hover:shadow-md transition-all">
+                        <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-3">
-                              {rec.priority === 'high' && <Badge className="bg-destructive text-white">🔥 Priorité Haute</Badge>}
-                              {rec.priority === 'medium' && <Badge className="bg-warning text-white">⚡ Priorité Moyenne</Badge>}
-                              {rec.priority === 'low' && <Badge className="bg-success text-white">✓ Priorité Basse</Badge>}
+                            <div className="mb-2">
+                              {rec.priority === 'high' && <Badge className="bg-rose-500 text-white border-0">🔥 Priorité Haute</Badge>}
+                              {rec.priority === 'medium' && <Badge className="bg-orange-500 text-white border-0">⚡ Priorité Moyenne</Badge>}
+                              {rec.priority === 'low' && <Badge className="bg-emerald-500 text-white border-0">✓ Priorité Basse</Badge>}
                             </div>
-                            <h4 className="font-bold text-xl mb-2">{rec.title}</h4>
+                            <h4 className="font-bold text-lg">{rec.title}</h4>
                           </div>
                         </div>
                         
-                        <div className="space-y-3">
-                          <div className="text-sm font-semibold text-muted-foreground mb-3">Actions à réaliser :</div>
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold text-muted-foreground">Actions :</p>
                           {rec.actions?.map((action: string, idx: number) => {
                             const getActionHandler = (actionText: string) => {
                               const lower = actionText.toLowerCase();
@@ -596,18 +467,16 @@ export function SeoAuditDashboard() {
                             return (
                               <div
                                 key={idx}
-                                className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                                className={`flex items-center gap-2 p-2 rounded-lg transition-all ${
                                   handler
-                                    ? 'bg-primary/10 hover:bg-primary/20 cursor-pointer border-2 border-primary/20'
-                                    : 'bg-muted/30 hover:bg-muted/50'
+                                    ? 'bg-primary/10 hover:bg-primary/20 cursor-pointer'
+                                    : 'bg-muted/50'
                                 }`}
                                 onClick={handler}
                               >
-                                <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                                </div>
-                                <span className="text-sm font-medium leading-relaxed flex-1">{action}</span>
-                                {handler && <ArrowRight className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />}
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                <span className="text-sm flex-1">{action}</span>
+                                {handler && <ArrowRight className="w-4 h-4 text-primary flex-shrink-0" />}
                               </div>
                             );
                           })}
@@ -618,15 +487,15 @@ export function SeoAuditDashboard() {
                 </div>
                 
                 {/* CTA final */}
-                <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/20 text-center">
-                  <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
-                  <h5 className="text-xl font-bold mb-2">Besoin d'aide pour optimiser ?</h5>
+                <div className="mt-8 p-6 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20 text-center">
+                  <Sparkles className="w-10 h-10 mx-auto mb-3 text-primary" />
+                  <h5 className="text-lg font-bold mb-2">Optimisation Automatique</h5>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Notre IA peut vous aider à appliquer ces recommandations automatiquement
+                    Laissez l'IA appliquer ces recommandations automatiquement
                   </p>
                   <Button 
                     size="lg" 
-                    className="bg-gradient-to-r from-primary to-primary-dark text-white gap-2"
+                    className="gap-2"
                     onClick={() => setShowAutoOptimizeDialog(true)}
                   >
                     <Zap className="w-5 h-5" />
