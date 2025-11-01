@@ -37,8 +37,8 @@ export function GoogleMerchant() {
   });
   const [isTesting, setIsTesting] = useState(false);
 
-  // URL du flux - utilise l'URL Supabase directe qui fonctionne immédiatement
-  const feedUrl = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
+  // URL du flux avec le domaine NewAI
+  const feedUrl = `https://newai.sale/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);
@@ -228,7 +228,7 @@ export function GoogleMerchant() {
                   <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-sm">
-                      <strong>Note:</strong> Cette URL fonctionne immédiatement. Vous pouvez l'utiliser dès maintenant dans Google Merchant Center.
+                      <strong>Note:</strong> Cette URL newai.sale fonctionnera après publication de l'application. URL propre et professionnelle pour Google Merchant Center.
                     </AlertDescription>
                   </Alert>
 

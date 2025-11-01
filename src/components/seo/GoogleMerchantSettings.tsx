@@ -140,10 +140,7 @@ export function GoogleMerchantSettings() {
     setFeedStatus("idle");
 
     try {
-      const testUrl = user?.id 
-        ? `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user.id}/xml`
-        : feedUrl;
-      const response = await fetch(testUrl);
+      const response = await fetch(feedUrl);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -166,10 +163,10 @@ export function GoogleMerchantSettings() {
     }
   };
 
-  // URL du flux - utilise l'URL Supabase directe
+  // URL du flux avec le domaine NewAI
   const feedUrl = user?.id 
-    ? `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user.id}/xml`
-    : `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/{VOTRE_ID}/xml`;
+    ? `https://newai.sale/shoppingfeed/${user.id}/xml`
+    : `https://newai.sale/shoppingfeed/{VOTRE_ID}/xml`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(feedUrl);
@@ -382,7 +379,7 @@ export function GoogleMerchantSettings() {
             <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200">
               <Info className="h-4 w-4" />
               <AlertDescription className="text-sm">
-                <strong>URL fonctionnelle:</strong> Cette URL est active et peut être utilisée immédiatement dans Google Merchant Center.
+                <strong>URL newai.sale:</strong> URL professionnelle qui fonctionnera après publication de l'application.
               </AlertDescription>
             </Alert>
 
