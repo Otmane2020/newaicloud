@@ -2105,6 +2105,54 @@ export type Database = {
           },
         ]
       }
+      shopify_sync_settings: {
+        Row: {
+          created_at: string
+          export_after_optimization: boolean | null
+          export_auto_enabled: boolean | null
+          id: string
+          import_frequency: string
+          import_schedule_day: number | null
+          import_schedule_hour: number | null
+          import_types: string[] | null
+          last_export_at: string | null
+          last_import_at: string | null
+          next_import_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          export_after_optimization?: boolean | null
+          export_auto_enabled?: boolean | null
+          id?: string
+          import_frequency?: string
+          import_schedule_day?: number | null
+          import_schedule_hour?: number | null
+          import_types?: string[] | null
+          last_export_at?: string | null
+          last_import_at?: string | null
+          next_import_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          export_after_optimization?: boolean | null
+          export_auto_enabled?: boolean | null
+          id?: string
+          import_frequency?: string
+          import_schedule_day?: number | null
+          import_schedule_hour?: number | null
+          import_types?: string[] | null
+          last_export_at?: string | null
+          last_import_at?: string | null
+          next_import_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           best_value: boolean | null
@@ -2256,6 +2304,59 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_history: {
+        Row: {
+          completed_at: string | null
+          content_types: string[]
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          items_synced: number | null
+          started_at: string
+          status: string
+          store_id: string | null
+          sync_type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          content_types: string[]
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          items_synced?: number | null
+          started_at?: string
+          status: string
+          store_id?: string | null
+          sync_type: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          content_types?: string[]
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          items_synced?: number | null
+          started_at?: string
+          status?: string
+          store_id?: string | null
+          sync_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_history_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
             referencedColumns: ["id"]
           },
         ]

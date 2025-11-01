@@ -146,3 +146,6 @@ verify_jwt = true
 
 [functions.generate-promotional-articles]
 verify_jwt = false
+
+[functions.scheduled-sync]
+verify_jwt = false

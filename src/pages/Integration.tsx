@@ -1,6 +1,7 @@
 import { ShopifyIntegrationTabs } from '@/components/integration/ShopifyIntegrationTabs';
 import { CollectionImportSelector } from '@/components/integration/CollectionImportSelector';
 import { StoreMetadataForm } from '@/components/integration/StoreMetadataForm';
+import { ShopifySyncSettings } from '@/components/integration/ShopifySyncSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Integration() {
@@ -23,13 +24,18 @@ export default function Integration() {
         </div>
 
         <Tabs defaultValue="connections" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="connections">Connexions</TabsTrigger>
+            <TabsTrigger value="sync">Synchronisation</TabsTrigger>
             <TabsTrigger value="metadata">Métadonnées</TabsTrigger>
           </TabsList>
           
           <TabsContent value="connections" className="space-y-6">
             <ShopifyIntegrationTabs />
+          </TabsContent>
+          
+          <TabsContent value="sync" className="space-y-6">
+            <ShopifySyncSettings />
           </TabsContent>
           
           <TabsContent value="metadata" className="space-y-6">
