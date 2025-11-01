@@ -211,6 +211,30 @@ export function SeoAltImageList() {
     setShowResultsDialog(true);
   };
 
+  // Helper: Invoke with timeout and retry
+  const invokeWithTimeout = async (imageId: string, timeoutMs = 30000, retries = 1): Promise<any> => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+        );
+
+        const invokePromise = supabase.functions.invoke('sync-seo-to-shopify', {
+          body: { imageId }
+        });
+
+        const result = await Promise.race([invokePromise, timeoutPromise]);
+        return result;
+      } catch (error: any) {
+        if (attempt < retries && (error.message === 'Timeout' || error.message?.includes('network'))) {
+          console.log(`⚠️ Retry ${attempt + 1}/${retries} for image ${imageId}`);
+          continue;
+        }
+        throw error;
+      }
+    }
+  };
+
   const handleSyncImages = async () => {
     if (imagesToSync.length === 0) return;
 
@@ -222,57 +246,63 @@ export function SeoAltImageList() {
 
     let successCount = 0;
     let errorCount = 0;
+    const failedImages: string[] = [];
 
-    for (let i = 0; i < imagesToSync.length; i++) {
-      try {
-        console.log(`Syncing image ${i + 1}/${imagesToSync.length}:`, imagesToSync[i].id);
+    try {
+      for (let i = 0; i < imagesToSync.length; i++) {
+        const image = imagesToSync[i];
+        console.log(`🔄 [${i + 1}/${imagesToSync.length}] Syncing image:`, image.id);
         
-        const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: { imageId: imagesToSync[i].id }
-        });
+        try {
+          const { data, error } = await invokeWithTimeout(image.id);
 
-        // Handle function invocation errors
-        if (error) {
-          console.error('Function invocation error:', error);
-          errorCount++;
-          continue;
-        }
-
-        // Handle API response errors
-        if (!data?.success) {
-          console.error('Sync failed:', data);
-          errorCount++;
-          if (data?.error) {
-            toast.error(`Erreur: ${data.error}`);
+          if (error) {
+            console.error(`❌ [${i + 1}/${imagesToSync.length}] Function error:`, error);
+            errorCount++;
+            failedImages.push(image.product_title || image.id);
+            continue;
           }
-          continue;
+
+          if (!data?.success) {
+            console.error(`❌ [${i + 1}/${imagesToSync.length}] API error:`, data?.error || data?.message);
+            errorCount++;
+            failedImages.push(image.product_title || image.id);
+            if (data?.message) {
+              toast.error(data.message, { duration: 3000 });
+            }
+            continue;
+          }
+
+          console.log(`✅ [${i + 1}/${imagesToSync.length}] Synced successfully`);
+          successCount++;
+        } catch (error: any) {
+          console.error(`❌ [${i + 1}/${imagesToSync.length}] Unexpected error:`, error.message);
+          errorCount++;
+          failedImages.push(image.product_title || image.id);
+        } finally {
+          setProgress({ current: i + 1, total: imagesToSync.length });
         }
-
-        // Success
-        console.log(`✓ Image ${i + 1} synced successfully`);
-        successCount++;
-        
-        setProgress({ current: i + 1, total: imagesToSync.length });
-      } catch (error) {
-        console.error('Unexpected error syncing image:', error);
-        errorCount++;
       }
+    } finally {
+      // ALWAYS close the dialog
+      setImagesToSync([]);
+      setShowProgressDialog(false);
+      
+      // Show results
+      if (successCount > 0) {
+        setShowSuccessDialog(true);
+      }
+      
+      if (errorCount > 0) {
+        toast.warning(`${errorCount} image(s) échouée(s)`, {
+          description: failedImages.length > 0 ? `Produits: ${failedImages.slice(0, 3).join(', ')}${failedImages.length > 3 ? '...' : ''}` : undefined,
+          duration: 5000
+        });
+      }
+      
+      // Refresh
+      await fetchImages();
     }
-
-    setImagesToSync([]);
-    setShowProgressDialog(false);
-    
-    // Show appropriate feedback
-    if (successCount > 0) {
-      setShowSuccessDialog(true);
-    }
-    
-    if (errorCount > 0) {
-      toast.warning(`${errorCount} image(s) n'ont pas pu être synchronisées`);
-    }
-    
-    // Refresh images to show updated sync status
-    await fetchImages();
   };
 
   const handleCloseSuccess = () => {
