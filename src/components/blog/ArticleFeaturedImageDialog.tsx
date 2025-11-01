@@ -223,8 +223,7 @@ export function ArticleFeaturedImageDialog({
     // Wait a bit to ensure parent has refreshed
     await new Promise(resolve => setTimeout(resolve, 150));
     
-    // Then show success dialog
-    toast.success("✅ Image générée avec succès!");
+    // Then show success dialog (no toast to avoid hiding the dialog)
     setShowSuccessDialog(true);
   };
 

@@ -15,6 +15,7 @@ export function HomePageSeo() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
   const [hasConnection, setHasConnection] = useState(false);
@@ -86,6 +87,26 @@ export function HomePageSeo() {
       toast.error(error.message || 'Erreur lors de la synchronisation');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleImportHomepageImages = async () => {
+    setImporting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('import-homepage-images');
+      
+      if (error) throw error;
+      
+      if (data?.imported > 0) {
+        toast.success(`${data.imported} images de la page d'accueil importées avec succès`);
+      } else {
+        toast.info('Aucune nouvelle image trouvée sur la page d\'accueil');
+      }
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast.error(error.message || 'Échec de l\'import des images de la page d\'accueil');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -208,6 +229,24 @@ export function HomePageSeo() {
           >
             <Sparkles className="h-4 w-4 mr-2" />
             {generating ? 'Generating...' : 'Generate with AI'}
+          </Button>
+
+          <Button
+            onClick={handleImportHomepageImages}
+            disabled={importing}
+            variant="outline"
+          >
+            {importing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Import en cours...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                Importer les images
+              </>
+            )}
           </Button>
 
           <Button

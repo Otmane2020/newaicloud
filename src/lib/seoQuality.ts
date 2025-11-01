@@ -451,3 +451,32 @@ export function getConfidenceLabel(score: number): string {
   if (score >= 40) return 'Moyen';
   return 'Faible';
 }
+
+/**
+ * Calculate bonus score for featured images in articles/collections
+ * Returns bonus points if image exists and has been synced to Shopify
+ */
+export function calculateFeaturedImageBonus(
+  hasFeaturedImage: boolean,
+  isSyncedToShopify: boolean
+): { bonus: number; breakdown: string[] } {
+  const breakdown: string[] = [];
+  let bonus = 0;
+
+  if (hasFeaturedImage) {
+    bonus += 5;
+    breakdown.push('+5 points: Image de couverture ajoutée');
+    
+    if (isSyncedToShopify) {
+      bonus += 10;
+      breakdown.push('+10 points: Image synchronisée avec Shopify');
+    } else {
+      breakdown.push('💡 Synchronisez avec Shopify pour +10 points');
+    }
+  } else {
+    breakdown.push('💡 Ajoutez une image de couverture pour +5 points');
+    breakdown.push('💡 Synchronisez-la avec Shopify pour +10 points supplémentaires');
+  }
+
+  return { bonus, breakdown };
+}
