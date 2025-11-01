@@ -27,6 +27,7 @@ import {
   Crown,
   Megaphone,
   FileSearch,
+  RefreshCw,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -83,10 +84,16 @@ const blogSubItems = [
   { title: "Settings", url: "/blog?subtab=settings", icon: Settings },
 ];
 
+const merchantSubItems = [
+  { title: "Flux XML", url: "/merchant?tab=feed", icon: FileText },
+  { title: "Paramètres", url: "/merchant?tab=settings", icon: Settings },
+  { title: "Produits", url: "/merchant?tab=products", icon: Package },
+  { title: "Synchronisation", url: "/merchant?tab=sync", icon: RefreshCw },
+];
+
 const bottomMenuItems = [
   { title: "AI Search", url: "/search", icon: Search },
   { title: "Google Shopping", url: "/shopping", icon: ShoppingCart },
-  { title: "Google Merchant", url: "/merchant", icon: Package },
 ];
 
 const chatSubItems = [
@@ -171,6 +178,7 @@ export function AppSidebar() {
     chatSubItems.some((item) => isActive(item.url));
   const isSeoActive = currentPath === "/seo" || seoSubItems.some((item) => isActive(item.url));
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
+  const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
   const isAccountActive = currentPath === "/account" || accountSubItems.some((item) => isActive(item.url));
 
   return (
@@ -270,6 +278,33 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Google Merchant Menu with Submenu */}
+              <Collapsible defaultOpen={isMerchantActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isMerchantActive}>
+                      <Package className="h-4 w-4" />
+                      <span>Google Merchant</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {merchantSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
 
               {/* Chat Menu with Submenu */}
               <Collapsible defaultOpen={isChatActive} className="group/collapsible">

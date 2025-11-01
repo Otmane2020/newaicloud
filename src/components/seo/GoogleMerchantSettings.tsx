@@ -176,7 +176,7 @@ export function GoogleMerchantSettings() {
     : "";
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(feedUrl);
+    navigator.clipboard.writeText(directFeedUrl);
     setCopied(true);
     toast.success("URL copiée dans le presse-papier");
     setTimeout(() => setCopied(false), 2000);

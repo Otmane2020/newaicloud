@@ -44,7 +44,7 @@ export function GoogleMerchant() {
   const directFeedUrl = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(feedUrl);
+    navigator.clipboard.writeText(directFeedUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
