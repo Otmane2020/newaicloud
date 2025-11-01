@@ -1212,6 +1212,57 @@ export type Database = {
           },
         ]
       }
+      promotional_articles: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          excerpt: string | null
+          featured_image: string | null
+          id: string
+          meta_description: string | null
+          published: boolean | null
+          published_at: string | null
+          read_time: number | null
+          slug: string
+          title: string
+          updated_at: string
+          views: number | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          meta_description?: string | null
+          published?: boolean | null
+          published_at?: string | null
+          read_time?: number | null
+          slug: string
+          title: string
+          updated_at?: string
+          views?: number | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          meta_description?: string | null
+          published?: boolean | null
+          published_at?: string | null
+          read_time?: number | null
+          slug?: string
+          title?: string
+          updated_at?: string
+          views?: number | null
+        }
+        Relationships: []
+      }
       public_blog_posts: {
         Row: {
           author: string

@@ -57,6 +57,7 @@ const App = () => (
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/blog-newai" element={<BlogNewAI />} />
+            <Route path="/blog-newai/:slug" element={<BlogNewAI />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/documentation" element={<Documentation />} />

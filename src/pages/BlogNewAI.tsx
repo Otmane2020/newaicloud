@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,15 +13,20 @@ import { useToast } from "@/hooks/use-toast";
 interface BlogArticle {
   id: string;
   title: string;
+  slug: string;
   excerpt: string;
   content: string;
   category: string;
-  readTime: string;
+  readTime: number;
   date: string;
   image: string;
+  metaDescription: string;
+  views: number;
 }
 
 const BlogNewAI = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<BlogArticle | null>(null);
@@ -29,28 +35,83 @@ const BlogNewAI = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadArticles();
-  }, []);
+    if (slug) {
+      loadArticleBySlug(slug);
+    } else {
+      loadArticles();
+    }
+  }, [slug]);
+
+  const loadArticleBySlug = async (articleSlug: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('promotional_articles')
+        .select('*')
+        .eq('slug', articleSlug)
+        .eq('published', true)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Increment view count
+        await supabase
+          .from('promotional_articles')
+          .update({ views: (data.views || 0) + 1 })
+          .eq('id', data.id);
+
+        const article: BlogArticle = {
+          id: data.id,
+          title: data.title,
+          slug: data.slug,
+          excerpt: data.excerpt || '',
+          content: data.content,
+          category: data.category,
+          readTime: data.read_time || 5,
+          date: data.published_at || data.created_at,
+          image: data.featured_image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800',
+          metaDescription: data.meta_description || '',
+          views: data.views || 0
+        };
+
+        setSelectedArticle(article);
+        document.title = `${article.title} | NewAI Blog`;
+      }
+    } catch (error) {
+      console.error('Error loading article:', error);
+      toast({
+        title: "Article not found",
+        description: "The article you're looking for doesn't exist",
+        variant: "destructive"
+      });
+      navigate('/blog-newai');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadArticles = async () => {
     try {
       const { data, error } = await supabase
-        .from('blog_articles')
+        .from('promotional_articles')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .eq('published', true)
+        .order('published_at', { ascending: false });
 
       if (error) throw error;
 
       const formattedArticles: BlogArticle[] = (data || []).map((article: any) => ({
         id: article.id,
-        title: article.title || '',
-        excerpt: article.meta_description || '',
-        content: article.content || '',
-        category: 'SEO',
-        readTime: '5 min',
-        date: article.created_at,
-        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'
+        title: article.title,
+        slug: article.slug,
+        excerpt: article.excerpt || article.meta_description || '',
+        content: article.content,
+        category: article.category,
+        readTime: article.read_time || 5,
+        date: article.published_at || article.created_at,
+        image: article.featured_image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800',
+        metaDescription: article.meta_description || '',
+        views: article.views || 0
       }));
 
       setBlogArticles(formattedArticles);
@@ -83,7 +144,7 @@ const BlogNewAI = () => {
           <article className="container mx-auto px-4 py-12 max-w-4xl">
             <Button 
               variant="ghost" 
-              onClick={() => setSelectedArticle(null)}
+              onClick={() => navigate('/blog-newai')}
               className="mb-6"
             >
               ← Back to Articles
@@ -99,31 +160,26 @@ const BlogNewAI = () => {
               <Badge variant="secondary">{selectedArticle.category}</Badge>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                <span>{new Date(selectedArticle.date).toLocaleDateString('fr-FR')}</span>
+                <span>{new Date(selectedArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span>{selectedArticle.readTime} read</span>
+                <span>{selectedArticle.readTime} min read</span>
               </div>
             </div>
 
             <h1 className="text-4xl font-bold mb-6">{selectedArticle.title}</h1>
             
-            <div className="prose prose-lg max-w-none">
-              <p className="text-xl text-muted-foreground mb-8">{selectedArticle.excerpt}</p>
-              <div className="space-y-4 text-foreground">
-                {selectedArticle.content.split('\n').map((paragraph, i) => (
-                  <p key={i}>{paragraph}</p>
-                ))}
-              </div>
+            <div className="prose prose-lg max-w-none text-foreground">
+              <div dangerouslySetInnerHTML={{ __html: selectedArticle.content }} />
             </div>
 
             <div className="mt-12 p-8 bg-primary/5 rounded-lg border border-primary/20">
-              <h3 className="text-2xl font-bold mb-4">Ready to Transform Your E-commerce?</h3>
+              <h3 className="text-2xl font-bold mb-4">Ready to Transform Your Store?</h3>
               <p className="text-muted-foreground mb-6">
-                Join hundreds of merchants using NewAI to automate their SEO and multiply their sales.
+                Join hundreds of merchants using NewAI to automate their SEO and boost their sales.
               </p>
-              <Button size="lg" className="w-full sm:w-auto" onClick={() => window.location.href = '/auth'}>
+              <Button size="lg" className="w-full sm:w-auto" onClick={() => navigate('/auth?mode=signup')}>
                 Start Free Trial
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
@@ -173,7 +229,7 @@ const BlogNewAI = () => {
               >
                 All Articles
               </Button>
-              {categories.map(category => (
+              {['SEO', 'Google Merchant', 'AI Assistant', 'E-commerce'].map(category => (
                 <Button
                   key={category}
                   variant={selectedCategory === category ? "default" : "outline"}
@@ -200,7 +256,7 @@ const BlogNewAI = () => {
                     <Card 
                       key={article.id} 
                       className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
-                      onClick={() => setSelectedArticle(article)}
+                      onClick={() => navigate(`/blog-newai/${article.slug}`)}
                     >
                       <div className="relative h-48 overflow-hidden">
                         <img 
@@ -219,7 +275,7 @@ const BlogNewAI = () => {
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
-                            <span>{article.readTime}</span>
+                            <span>{article.readTime} min</span>
                           </div>
                         </div>
                         
@@ -262,12 +318,12 @@ const BlogNewAI = () => {
               Join hundreds of merchants automating their SEO and multiplying their sales with NewAI
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="secondary" onClick={() => window.location.href = '/auth'}>
-                Try Free
+              <Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=signup')}>
+                Start Free Trial
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                View Demo
+              <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" onClick={() => navigate('/')}>
+                Learn More
               </Button>
             </div>
           </div>
