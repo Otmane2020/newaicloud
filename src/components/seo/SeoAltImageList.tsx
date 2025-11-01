@@ -221,30 +221,48 @@ export function SeoAltImageList() {
     setProgress({ current: 0, total: imagesToSync.length });
 
     let successCount = 0;
+    let errorCount = 0;
 
     for (let i = 0; i < imagesToSync.length; i++) {
       try {
-        const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: {
-            productId: imagesToSync[i].product_id,
-            imageId: imagesToSync[i].id,
-            altText: imagesToSync[i].alt_text
-          }
+        const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+          body: { imageId: imagesToSync[i].id }
         });
 
-        if (!error) {
+        if (error) {
+          console.error('Sync error:', error);
+          errorCount++;
+          toast.error(`Erreur: ${error.message || 'Échec de synchronisation'}`);
+        } else if (data?.error) {
+          console.error('API error:', data.error);
+          errorCount++;
+          toast.error(`Erreur API: ${data.error}`);
+        } else {
           successCount++;
         }
         
         setProgress({ current: i + 1, total: imagesToSync.length });
       } catch (error) {
-        console.error('Error syncing image:', error);
+        console.error('Unexpected error syncing image:', error);
+        errorCount++;
+        toast.error('Erreur inattendue lors de la synchronisation');
       }
     }
 
     setImagesToSync([]);
     setShowProgressDialog(false);
-    setShowSuccessDialog(true);
+    
+    // Show appropriate feedback
+    if (successCount > 0) {
+      setShowSuccessDialog(true);
+    }
+    
+    if (errorCount > 0) {
+      toast.warning(`${errorCount} image(s) n'ont pas pu être synchronisées`);
+    }
+    
+    // Refresh images to show updated sync status
+    await fetchImages();
   };
 
   const handleCloseSuccess = () => {
