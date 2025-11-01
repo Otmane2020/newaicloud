@@ -34,13 +34,38 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
 
       if (data?.url) {
         console.log('✅ Redirecting to payment:', data.url);
-        window.location.href = data.url;
+        window.open(data.url, '_blank');
       } else {
         throw new Error('No checkout URL returned');
       }
     } catch (error) {
       console.error('Upgrade error:', error);
       toast.error('Error creating payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setLoading(true);
+    try {
+      console.log('🔧 Opening customer portal...');
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+
+      if (error) {
+        console.error('Portal error:', error);
+        throw error;
+      }
+
+      if (data?.url) {
+        console.log('✅ Redirecting to portal:', data.url);
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No portal URL returned');
+      }
+    } catch (error) {
+      console.error('Portal error:', error);
+      toast.error('Error opening subscription portal');
     } finally {
       setLoading(false);
     }
@@ -89,18 +114,27 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
           </div>
         </div>
 
-        <DialogFooter className="sm:justify-between">
+        <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             Later
           </Button>
           <Button
+            onClick={handleManageSubscription}
+            disabled={loading}
+            variant="secondary"
+            className="w-full sm:w-auto"
+          >
+            {loading ? 'Loading...' : 'Manage Subscription'}
+          </Button>
+          <Button
             onClick={handleUpgrade}
             disabled={loading}
-            className="bg-primary"
+            className="bg-primary w-full sm:w-auto"
           >
             {loading ? 'Loading...' : 'Activate Now'}
           </Button>

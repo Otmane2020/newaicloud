@@ -261,7 +261,8 @@ export function SeoOptimization() {
 
     if (productsToGenerate.length === 0) {
       if (limits?.isTrialing) {
-        toast.info('Selected products have already been optimized during your trial. Activate your subscription to re-optimize.');
+        // Show upgrade dialog instead of toast for better UX
+        setShowUpgradeDialog(true);
       } else {
         toast.info('No products to optimize');
       }
