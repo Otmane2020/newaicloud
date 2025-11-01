@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { ImageIcon, Upload, Sparkles, Loader2 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { ImageIcon, Upload, Sparkles, Loader2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ArticleFeaturedImageDialogProps {
   open: boolean;
@@ -21,23 +21,41 @@ interface ArticleFeaturedImageDialogProps {
   onImageUpdated: () => void;
 }
 
-export function ArticleFeaturedImageDialog({ 
-  open, 
-  onOpenChange, 
+export function ArticleFeaturedImageDialog({
+  open,
+  onOpenChange,
   article,
-  onImageUpdated 
+  onImageUpdated,
 }: ArticleFeaturedImageDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<'ai' | 'upload' | null>(null);
-  const [customImageUrl, setCustomImageUrl] = useState('');
-  const [aiPrompt, setAiPrompt] = useState('');
+  const [selectedOption, setSelectedOption] = useState<"ai" | "upload" | null>(null);
+  const [customImageUrl, setCustomImageUrl] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const MAX_PROMPT_LENGTH = 500;
+
+  // Reset states when dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      setError(null);
+      setSelectedOption(null);
+      setCustomImageUrl("");
+      setAiPrompt("");
+    }
+  }, [open]);
+
+  const isValidImageUrl = (url: string) => {
+    return url.startsWith("http") && /\.(jpg|jpeg|png|webp|gif|svg|bmp)(\?.*)?$/i.test(url);
+  };
 
   const handleGenerateWithAI = async () => {
     try {
       setLoading(true);
-      
+      setError(null);
+
       let enrichedPrompt = aiPrompt;
-      
+
       if (!enrichedPrompt) {
         // Build prompt from article title and content excerpt
         const contentExcerpt = article.content.substring(0, 200);
@@ -45,40 +63,38 @@ export function ArticleFeaturedImageDialog({
         enrichedPrompt += `The article is about: ${contentExcerpt}... `;
         enrichedPrompt += `Make it elegant, modern, and engaging for blog readers with a 16:9 aspect ratio.`;
       }
-      
-      const { data, error } = await supabase.functions.invoke('generate-image', {
-        body: { 
+
+      const { data, error } = await supabase.functions.invoke("generate-image", {
+        body: {
           prompt: enrichedPrompt,
           article_id: article.id,
           width: 1200,
-          height: 675
-        }
+          height: 675,
+        },
       });
 
       if (error) throw error;
 
       if (data?.image_url) {
         await updateArticleImage(data.image_url);
-        
+
         toast.success(
           <div className="flex items-start gap-3">
-            <img 
-              src={data.image_url} 
-              alt="Generated" 
-              className="w-16 h-16 rounded object-cover"
-            />
+            <img src={data.image_url} alt="Generated" className="w-16 h-16 rounded object-cover" />
             <div>
               <p className="font-semibold">Image générée avec succès</p>
               <p className="text-xs text-muted-foreground">Image mise à jour</p>
             </div>
-          </div>
+          </div>,
         );
       } else {
-        toast.error('Erreur lors de la génération de l\'image');
+        throw new Error("Aucune URL d'image reçue");
       }
     } catch (error: any) {
-      console.error('Error:', error);
-      toast.error(error.message || 'Erreur lors de la génération de l\'image');
+      console.error("Error:", error);
+      const errorMessage = error.message || "Erreur lors de la génération de l'image";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -87,16 +103,24 @@ export function ArticleFeaturedImageDialog({
   const handleUploadCustomImage = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      if (!customImageUrl || !customImageUrl.startsWith('http')) {
-        toast.error('URL d\'image invalide');
+      if (!customImageUrl) {
+        setError("Veuillez entrer une URL d'image");
+        return;
+      }
+
+      if (!isValidImageUrl(customImageUrl)) {
+        setError("URL d'image invalide. Utilisez une URL directe vers une image (JPG, PNG, WebP, GIF, SVG, BMP)");
         return;
       }
 
       await updateArticleImage(customImageUrl);
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Erreur lors de la mise à jour de l\'image');
+    } catch (error: any) {
+      console.error("Error:", error);
+      const errorMessage = error.message || "Erreur lors de la mise à jour de l'image";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -105,42 +129,40 @@ export function ArticleFeaturedImageDialog({
   const updateArticleImage = async (imageUrl: string) => {
     // Store the featured image in content_images table
     const { data: user } = await supabase.auth.getUser();
-    
-    const { error } = await supabase
-      .from('content_images')
-      .upsert({
+
+    const { error } = await supabase.from("content_images").upsert(
+      {
         content_id: article.id,
-        content_type: 'article',
+        content_type: "article",
         src: imageUrl,
         alt_text: `Featured image for ${article.title}`,
         position: 0, // Featured image is position 0
-        user_id: user?.user?.id
-      }, {
-        onConflict: 'content_type,content_id,src'
-      });
+        user_id: user?.user?.id,
+      },
+      {
+        onConflict: "content_type,content_id,src",
+      },
+    );
 
     if (error) throw error;
 
     onImageUpdated();
     onOpenChange(false);
     setSelectedOption(null);
-    setCustomImageUrl('');
-    setAiPrompt('');
-    toast.success('Image mise à jour avec succès');
+    setCustomImageUrl("");
+    setAiPrompt("");
+    toast.success("Image mise à jour avec succès");
   };
 
   const handleClose = () => {
     onOpenChange(false);
-    setSelectedOption(null);
-    setCustomImageUrl('');
-    setAiPrompt('');
   };
 
   // Suggested prompts
   const suggestedPrompts = [
     `Professional featured image for "${article.title}"`,
     `Modern blog header about ${article.title}`,
-    `Elegant blog banner for article: ${article.title}`
+    `Elegant blog banner for article: ${article.title}`,
   ];
 
   return (
@@ -156,6 +178,13 @@ export function ArticleFeaturedImageDialog({
           </p>
         </DialogHeader>
 
+        {/* Error Display */}
+        {error && (
+          <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-4">
           {/* Why use AI section */}
           <Card className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-indigo-200">
@@ -166,18 +195,24 @@ export function ArticleFeaturedImageDialog({
               </Badge>
             </div>
             <div className="mt-3 text-sm space-y-1">
-              <p className="font-medium">🎨 <strong>Images professionnelles</strong> adaptées à votre article</p>
-              <p className="font-medium">⚡ <strong>Génération instantanée</strong> - pas besoin de designer</p>
-              <p className="font-medium">🔍 <strong>Optimisées pour le SEO</strong> automatiquement</p>
+              <p className="font-medium">
+                🎨 <strong>Images professionnelles</strong> adaptées à votre article
+              </p>
+              <p className="font-medium">
+                ⚡ <strong>Génération instantanée</strong> - pas besoin de designer
+              </p>
+              <p className="font-medium">
+                🔍 <strong>Optimisées pour le SEO</strong> automatiquement
+              </p>
             </div>
           </Card>
 
           {/* Option 1: Generate with AI - PRIORITY */}
-          <Card 
+          <Card
             className={`p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${
-              selectedOption === 'ai' ? 'border-primary ring-2 ring-primary/20 shadow-lg' : ''
+              selectedOption === "ai" ? "border-primary ring-2 ring-primary/20 shadow-lg" : ""
             }`}
-            onClick={() => setSelectedOption('ai')}
+            onClick={() => setSelectedOption("ai")}
           >
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0 animate-pulse">
@@ -186,16 +221,18 @@ export function ArticleFeaturedImageDialog({
               <div className="flex-1">
                 <h3 className="font-semibold mb-1 flex items-center gap-2">
                   Générer avec Vision AI
-                  <Badge variant="secondary" className="text-xs">Recommandé</Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    Recommandé
+                  </Badge>
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Créez une image de couverture professionnelle pour cet article. 
-                  L'IA génère une bannière moderne, élégante et optimisée SEO.
+                  Créez une image de couverture professionnelle pour cet article. L'IA génère une bannière moderne,
+                  élégante et optimisée SEO.
                 </p>
               </div>
             </div>
-            
-            {selectedOption === 'ai' && (
+
+            {selectedOption === "ai" && (
               <div className="mt-4 space-y-4">
                 {/* Suggested prompts */}
                 <div className="space-y-2">
@@ -227,22 +264,32 @@ export function ArticleFeaturedImageDialog({
                     onChange={(e) => setAiPrompt(e.target.value)}
                     rows={3}
                     className="resize-none"
+                    maxLength={MAX_PROMPT_LENGTH}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Laissez vide pour un prompt automatique basé sur le titre et le contenu de l'article
-                  </p>
+                  <div className="flex justify-between mt-1">
+                    <p className="text-xs text-muted-foreground">
+                      Laissez vide pour un prompt automatique basé sur le titre et le contenu de l'article
+                    </p>
+                    {aiPrompt.length > MAX_PROMPT_LENGTH * 0.8 && (
+                      <p
+                        className={`text-xs ${
+                          aiPrompt.length > MAX_PROMPT_LENGTH ? "text-destructive" : "text-muted-foreground"
+                        }`}
+                      >
+                        {aiPrompt.length}/{MAX_PROMPT_LENGTH}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline"
-                    onClick={handleClose}
-                  >
+                  <Button variant="outline" onClick={handleClose}>
                     Annuler
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleGenerateWithAI}
-                    disabled={loading}
+                    disabled={loading || aiPrompt.length > MAX_PROMPT_LENGTH}
                     className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                    aria-label="Générer l'image avec IA"
                   >
                     {loading ? (
                       <>
@@ -262,11 +309,11 @@ export function ArticleFeaturedImageDialog({
           </Card>
 
           {/* Option 2: Upload Custom */}
-          <Card 
+          <Card
             className={`p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${
-              selectedOption === 'upload' ? 'border-primary ring-2 ring-primary/20 shadow-lg' : ''
+              selectedOption === "upload" ? "border-primary ring-2 ring-primary/20 shadow-lg" : ""
             }`}
-            onClick={() => setSelectedOption('upload')}
+            onClick={() => setSelectedOption("upload")}
           >
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
@@ -274,13 +321,11 @@ export function ArticleFeaturedImageDialog({
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold mb-1">Utiliser une image personnalisée</h3>
-                <p className="text-sm text-muted-foreground">
-                  Ajoutez une image depuis une URL externe
-                </p>
+                <p className="text-sm text-muted-foreground">Ajoutez une image depuis une URL externe</p>
               </div>
             </div>
-            
-            {selectedOption === 'upload' && (
+
+            {selectedOption === "upload" && (
               <div className="mt-4 space-y-3">
                 <div>
                   <Label htmlFor="image-url">URL de l'image</Label>
@@ -292,16 +337,28 @@ export function ArticleFeaturedImageDialog({
                     onChange={(e) => setCustomImageUrl(e.target.value)}
                   />
                 </div>
+
+                {/* Image Preview */}
+                {customImageUrl && isValidImageUrl(customImageUrl) && (
+                  <div className="mt-2">
+                    <Label>Aperçu:</Label>
+                    <img
+                      src={customImageUrl}
+                      alt="Aperçu"
+                      className="mt-1 w-full h-32 object-cover rounded border"
+                      onError={() => setError("Impossible de charger l'image depuis cette URL")}
+                    />
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline"
-                    onClick={handleClose}
-                  >
+                  <Button variant="outline" onClick={handleClose}>
                     Annuler
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleUploadCustomImage}
                     disabled={loading || !customImageUrl}
+                    aria-label="Appliquer l'image personnalisée"
                   >
                     {loading ? (
                       <>
