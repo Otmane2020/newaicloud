@@ -12,6 +12,7 @@ import { MetricCard } from '@/components/dashboard/MetricCard';
 import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
 import { SmartBanner } from '@/components/dashboard/SmartBanner';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
+import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ShoppingBag, 
@@ -368,6 +369,11 @@ export default function Dashboard() {
           iconBg="bg-gradient-to-br from-primary/10 to-success/10 text-primary"
           subtitle={stats.seoScore >= 80 ? 'Excellent' : stats.seoScore >= 60 ? 'Bon' : 'À améliorer'}
         />
+      </div>
+
+      {/* Referral System */}
+      <div className="animate-fade-in" style={{ animationDelay: '150ms' }}>
+        <ReferralSystem />
       </div>
 
       {/* Quick Actions - 8 actions */}

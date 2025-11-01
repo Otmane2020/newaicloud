@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
 import { PublicHeader } from "@/components/PublicHeader";
 import PricingComparison from "@/components/PricingComparison";
+import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -90,6 +91,13 @@ const Index = () => {
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/30 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000" />
       </section>
+
+      {/* Referral Section - Only for authenticated users */}
+      {user && (
+        <section className="container mx-auto px-4 py-12">
+          <ReferralSystem />
+        </section>
+      )}
 
       {/* How It Works Section */}
       <section className="container mx-auto px-4 py-24">

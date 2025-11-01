@@ -1154,6 +1154,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          credits: number | null
           current_plan_id: string | null
           email: string
           full_name: string | null
@@ -1168,6 +1169,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          credits?: number | null
           current_plan_id?: string | null
           email: string
           full_name?: string | null
@@ -1182,6 +1184,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          credits?: number | null
           current_plan_id?: string | null
           email?: string
           full_name?: string | null
@@ -1260,6 +1263,42 @@ export type Database = {
           title?: string
           updated_at?: string
           views?: number
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          credits_earned: number | null
+          id: string
+          referral_code: string
+          referred_email: string | null
+          referred_user_id: string | null
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          credits_earned?: number | null
+          id?: string
+          referral_code: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          credits_earned?: number | null
+          id?: string
+          referral_code?: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_id?: string
+          status?: string
         }
         Relationships: []
       }
@@ -2333,6 +2372,7 @@ export type Database = {
         }
         Returns: Json
       }
+      generate_referral_code: { Args: { user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Sparkles, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { loginSchema, signupSchema } from '@/lib/validationSchemas';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
+  const referralCode = searchParams.get('ref'); // Get referral code from URL
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,9 +54,12 @@ export default function Auth() {
     setLoading(true);
 
     if (mode === 'signup') {
-      const result = await signUp(email, password, fullName);
+      const result = await signUp(email, password, fullName, referralCode || undefined);
       
       if (!result.error) {
+        if (referralCode) {
+          toast.success("Compte créé ! Vous avez reçu 10 crédits de bienvenue ! 🎉");
+        }
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
     } else {
@@ -86,8 +91,25 @@ export default function Auth() {
           <p className="text-center text-muted-foreground mb-8">
             {mode === 'login'
               ? 'Log in to your account'
-              : 'Create your account for free'}
+              : referralCode 
+                ? '🎁 Create your account and get 10 free credits!'
+                : 'Create your account for free'}
           </p>
+
+          {/* Referral Bonus Alert */}
+          {mode === 'signup' && referralCode && (
+            <Alert className="mb-6 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-2 border-purple-200 dark:border-purple-800">
+              <Gift className="h-5 w-5 text-purple-600" />
+              <AlertDescription className="text-sm">
+                <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">
+                  Bonus de bienvenue activé !
+                </p>
+                <p className="text-purple-700 dark:text-purple-300">
+                  Vous recevrez <span className="font-bold">10 crédits gratuits</span> après votre inscription
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
