@@ -1,7 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Target, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Target, TrendingUp, AlertTriangle } from "lucide-react";
 
 interface SeoScoreGaugeProps {
   score: number;
@@ -16,86 +15,150 @@ interface SeoScoreGaugeProps {
 }
 
 export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGaugeProps) {
+  // Nouvelle palette de couleurs rouge-orange
   const getScoreColor = () => {
-    if (score >= 80) return 'text-emerald-500';
-    if (score >= 60) return 'text-[#FF8C00]';
-    return 'text-[#EF4444]';
+    if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
+    if (score >= 60) return "text-[#f59e0b]"; // Orange ambré
+    if (score >= 40) return "text-[#ea580c]"; // Orange-rouge
+    return "text-[#dc2626]"; // Rouge vif
   };
 
   const getScoreGradient = () => {
-    if (score >= 80) return 'from-emerald-500/20 to-emerald-500/5';
-    if (score >= 60) return 'from-[#FF8C00]/20 to-[#FF8C00]/5';
-    return 'from-[#EF4444]/20 to-[#EF4444]/5';
+    if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
+    if (score >= 60) return "from-[#f59e0b]/20 to-[#f59e0b]/5";
+    if (score >= 40) return "from-[#ea580c]/20 to-[#ea580c]/5";
+    return "from-[#dc2626]/20 to-[#dc2626]/5";
   };
 
   const getScoreLabel = () => {
-    if (score >= 80) return 'Excellent';
-    if (score >= 60) return 'Bon';
-    if (score >= 40) return 'Moyen';
-    return 'Faible';
+    if (score >= 80) return "Excellent";
+    if (score >= 60) return "Bon";
+    if (score >= 40) return "Moyen";
+    return "Faible";
   };
 
   const getScoreIcon = () => {
-    if (score >= 80) return <Target className="w-5 h-5 text-emerald-500" />;
-    if (score >= 60) return <TrendingUp className="w-5 h-5 text-[#FF8C00]" />;
-    return <AlertTriangle className="w-5 h-5 text-[#EF4444]" />;
+    if (score >= 80) return <Target className="w-5 h-5 text-[#22c55e]" />;
+    if (score >= 60) return <TrendingUp className="w-5 h-5 text-[#f59e0b]" />;
+    if (score >= 40) return <AlertTriangle className="w-5 h-5 text-[#ea580c]" />;
+    return <AlertTriangle className="w-5 h-5 text-[#dc2626]" />;
+  };
+
+  const getCategoryColor = (value: number) => {
+    if (value >= 80)
+      return {
+        text: "text-[#22c55e]",
+        bg: "bg-gradient-to-r from-[#22c55e] to-[#16a34a]",
+        glow: "0 0 10px #22c55e",
+        dot: "bg-[#22c55e]",
+      };
+    if (value >= 60)
+      return {
+        text: "text-[#f59e0b]",
+        bg: "bg-gradient-to-r from-[#f59e0b] to-[#d97706]",
+        glow: "0 0 10px #f59e0b",
+        dot: "bg-[#f59e0b]",
+      };
+    if (value >= 40)
+      return {
+        text: "text-[#ea580c]",
+        bg: "bg-gradient-to-r from-[#ea580c] to-[#c2410c]",
+        glow: "0 0 10px #ea580c",
+        dot: "bg-[#ea580c]",
+      };
+    return {
+      text: "text-[#dc2626]",
+      bg: "bg-gradient-to-r from-[#dc2626] to-[#b91c1c]",
+      glow: "0 0 10px #dc2626",
+      dot: "bg-[#dc2626]",
+    };
+  };
+
+  const getGaugeGradient = () => {
+    if (score >= 80)
+      return {
+        start: "#22c55e",
+        end: "#16a34a",
+        glow: "bg-[#22c55e]/30",
+      };
+    if (score >= 60)
+      return {
+        start: "#f59e0b",
+        end: "#d97706",
+        glow: "bg-[#f59e0b]/30",
+      };
+    if (score >= 40)
+      return {
+        start: "#ea580c",
+        end: "#c2410c",
+        glow: "bg-[#ea580c]/30",
+      };
+    return {
+      start: "#dc2626",
+      end: "#b91c1c",
+      glow: "bg-[#dc2626]/30",
+    };
   };
 
   const categories = [
-    { 
-      name: 'Homepage', 
-      description: 'Titre et description de votre page d\'accueil',
-      value: Math.round(categoryScores.homepage), 
-      max: 100, 
-      link: '/seo?tab=homepage'
-    },
-    { 
-      name: 'Produits', 
-      description: 'Titres SEO, descriptions et tags optimisés',
-      value: Math.round(categoryScores.products), 
+    {
+      name: "Homepage",
+      description: "Titre et description de votre page d'accueil",
+      value: Math.round(categoryScores.homepage),
       max: 100,
-      link: '/seo?tab=products'
+      link: "/seo?tab=homepage",
     },
-    { 
-      name: 'Collections', 
-      description: 'Descriptions et images de vos collections',
-      value: Math.round(categoryScores.collections), 
+    {
+      name: "Produits",
+      description: "Titres SEO, descriptions et tags optimisés",
+      value: Math.round(categoryScores.products),
       max: 100,
-      link: '/seo?tab=collections'
+      link: "/seo?tab=products",
     },
-    { 
-      name: 'Contenu', 
-      description: 'Articles de blog et pages Shopify optimisés',
-      value: Math.round(categoryScores.content), 
+    {
+      name: "Collections",
+      description: "Descriptions et images de vos collections",
+      value: Math.round(categoryScores.collections),
       max: 100,
-      link: '/seo?tab=articles'
+      link: "/seo?tab=collections",
     },
-    { 
-      name: 'Images', 
-      description: 'Textes alternatifs (alt text) des images',
-      value: Math.round(categoryScores.images), 
+    {
+      name: "Contenu",
+      description: "Articles de blog et pages Shopify optimisés",
+      value: Math.round(categoryScores.content),
       max: 100,
-      link: '/seo?tab=alt'
+      link: "/seo?tab=articles",
     },
-    { 
-      name: 'Technique', 
-      description: 'Synchronisation et configuration Shopify',
-      value: Math.round(categoryScores.technical), 
+    {
+      name: "Images",
+      description: "Textes alternatifs (alt text) des images",
+      value: Math.round(categoryScores.images),
       max: 100,
-      link: '/integration'
+      link: "/seo?tab=alt",
+    },
+    {
+      name: "Technique",
+      description: "Synchronisation et configuration Shopify",
+      value: Math.round(categoryScores.technical),
+      max: 100,
+      link: "/integration",
     },
   ];
+
+  const gaugeGradient = getGaugeGradient();
 
   return (
     <Card className="col-span-full border-2 bg-gradient-to-br from-card via-card to-primary/5 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden relative">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -translate-y-32 translate-x-32" />
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-accent/10 to-transparent rounded-full blur-2xl translate-y-24 -translate-x-24" />
-      
+
       <CardHeader className="pb-4 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className={`p-4 rounded-2xl bg-gradient-to-br ${getScoreGradient()} backdrop-blur-sm shadow-lg border border-white/20`}>
+            <div
+              className={`p-4 rounded-2xl bg-gradient-to-br ${getScoreGradient()} backdrop-blur-sm shadow-lg border border-white/20`}
+            >
               {getScoreIcon()}
             </div>
             <div>
@@ -107,8 +170,8 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
               </p>
             </div>
           </div>
-          <Badge 
-            variant="outline" 
+          <Badge
+            variant="outline"
             className={`${getScoreColor()} border-2 border-current px-5 py-2.5 text-lg font-bold shadow-lg`}
           >
             {getScoreLabel()}
@@ -116,23 +179,29 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
         </div>
       </CardHeader>
       <CardContent className="space-y-8 relative z-10">
-        {/* Score principal avec gauge circulaire ultra stylisé */}
+        {/* Score principal avec gauge circulaire ultra stylisée */}
         <div className="flex items-center justify-center relative py-12">
           <div className="relative">
             {/* Glow effect background */}
-            <div className={`absolute inset-0 rounded-full blur-2xl ${
-              score >= 80 ? 'bg-emerald-500/30' : score >= 60 ? 'bg-[#FF8C00]/30' : 'bg-[#EF4444]/30'
-            } animate-pulse`} />
-            
-            {/* Cercle de fond avec gradient */}
-            <svg className="w-56 h-56 transform -rotate-90 relative z-10">
+            <div className={`absolute inset-0 rounded-full blur-2xl ${gaugeGradient.glow} animate-pulse`} />
+
+            {/* Cercle de fond avec gradient amélioré */}
+            <svg className="w-56 h-56 transform -rotate-90 relative z-10" viewBox="0 0 224 224">
               <defs>
+                {/* Gradient principal pour la jauge */}
                 <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor={score >= 80 ? '#10b981' : score >= 60 ? '#FF8C00' : '#EF4444'} />
-                  <stop offset="100%" stopColor={score >= 80 ? '#10b981' : score >= 60 ? '#FF8C00' : '#EF4444'} stopOpacity="0.6" />
+                  <stop offset="0%" stopColor={gaugeGradient.start} />
+                  <stop offset="50%" stopColor={gaugeGradient.end} />
+                  <stop offset="100%" stopColor={gaugeGradient.start} stopOpacity="0.8" />
                 </linearGradient>
+
+                {/* Ombre portée pour effet 3D */}
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="8" floodColor={gaugeGradient.start} floodOpacity="0.6" />
+                </filter>
               </defs>
-              {/* Background circle */}
+
+              {/* Background circle avec effet de profondeur */}
               <circle
                 cx="112"
                 cy="112"
@@ -141,8 +210,10 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
                 strokeWidth="16"
                 fill="none"
                 opacity="0.3"
+                className="drop-shadow-lg"
               />
-              {/* Progress circle avec gradient et animation */}
+
+              {/* Progress circle avec gradient et animation améliorée */}
               <circle
                 cx="112"
                 cy="112"
@@ -152,17 +223,32 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
                 fill="none"
                 strokeDasharray={`${(score / 100) * 628} 628`}
                 strokeLinecap="round"
-                className="transition-all duration-1500 ease-out"
-                style={{ 
-                  filter: 'drop-shadow(0 0 12px currentColor)',
+                filter="url(#shadow)"
+                className="transition-all duration-2000 ease-out animate-glow"
+                style={{
+                  animationDelay: "0.5s",
                 }}
               />
+
+              {/* Effet de brillance supplémentaire */}
+              <circle
+                cx="112"
+                cy="112"
+                r="100"
+                stroke="white"
+                strokeWidth="2"
+                fill="none"
+                strokeDasharray={`${(score / 100) * 628} 628`}
+                strokeLinecap="round"
+                opacity="0.3"
+                className="transition-all duration-2000 ease-out"
+              />
             </svg>
-            
-            {/* Texte au centre avec animation */}
+
+            {/* Texte au centre avec animation améliorée */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="relative">
-                <span className={`text-7xl font-black ${getScoreColor()} animate-scale-in`}>
+                <span className={`text-7xl font-black ${getScoreColor()} animate-scale-in drop-shadow-lg`}>
                   {score}
                 </span>
                 <span className="text-2xl text-muted-foreground font-bold">/100</span>
@@ -179,57 +265,44 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-base font-bold text-foreground">6 Catégories SEO</h4>
             <Badge variant="outline" className="text-xs">
-              {categories.filter(c => c.value >= 80).length}/6 Excellentes
+              {categories.filter((c) => c.value >= 80).length}/6 Excellentes
             </Badge>
           </div>
-          {categories.map((cat, idx) => (
-            <a 
-              key={idx}
-              href={cat.link}
-              className="block space-y-3 p-4 rounded-xl hover:bg-gradient-to-r hover:from-muted/50 hover:to-muted/30 transition-all duration-300 cursor-pointer group border border-transparent hover:border-border hover:shadow-lg"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                      {cat.name}
+          {categories.map((cat, idx) => {
+            const categoryColor = getCategoryColor(cat.value);
+            return (
+              <a
+                key={idx}
+                href={cat.link}
+                className="block space-y-3 p-4 rounded-xl hover:bg-gradient-to-r hover:from-muted/50 hover:to-muted/30 transition-all duration-300 cursor-pointer group border border-transparent hover:border-border hover:shadow-lg"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                        {cat.name}
+                      </div>
+                      <div className={`w-2 h-2 rounded-full ${categoryColor.dot} animate-pulse`} />
                     </div>
-                  <div className={`w-2 h-2 rounded-full ${
-                    cat.value >= 80 ? 'bg-emerald-500' : 
-                    cat.value >= 60 ? 'bg-[#FF8C00]' : 
-                    'bg-[#EF4444]'
-                  } animate-pulse`} />
+                    <div className="text-xs text-muted-foreground font-medium">{cat.description}</div>
                   </div>
-                  <div className="text-xs text-muted-foreground font-medium">{cat.description}</div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-lg font-black ${categoryColor.text}`}>{cat.value}</span>
+                    <span className="text-xs text-muted-foreground font-medium">/100</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-lg font-black ${
-                    cat.value >= 80 ? 'text-emerald-500' : 
-                    cat.value >= 60 ? 'text-[#FF8C00]' : 
-                    'text-[#EF4444]'
-                  }`}>
-                    {cat.value}
-                  </span>
-                  <span className="text-xs text-muted-foreground font-medium">/100</span>
+                <div className="relative h-3 bg-muted rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out shadow-lg ${categoryColor.bg}`}
+                    style={{
+                      width: `${(cat.value / cat.max) * 100}%`,
+                      boxShadow: categoryColor.glow,
+                    }}
+                  />
                 </div>
-              </div>
-              <div className="relative h-3 bg-muted rounded-full overflow-hidden shadow-inner">
-                <div
-                  className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out shadow-lg ${
-                    cat.value >= 80 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 
-                    cat.value >= 60 ? 'bg-gradient-to-r from-[#FF8C00] to-[#FFB84D]' : 
-                    'bg-gradient-to-r from-[#EF4444] to-[#F87171]'
-                  }`}
-                  style={{
-                    width: `${(cat.value / cat.max) * 100}%`,
-                    boxShadow: cat.value >= 80 ? '0 0 10px #10b981' : 
-                               cat.value >= 60 ? '0 0 10px #FF8C00' : 
-                               '0 0 10px #EF4444'
-                  }}
-                />
-              </div>
-            </a>
-          ))}
+              </a>
+            );
+          })}
         </div>
 
         {/* Recommandations premium basées sur la catégorie la plus faible */}
@@ -243,19 +316,20 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
                 <h5 className="text-base font-bold text-foreground mb-2">💡 Recommandation Prioritaire</h5>
                 <p className="text-sm font-medium text-foreground/80 leading-relaxed">
                   {(() => {
-                    const lowestCategory = categories.reduce((min, cat) => 
-                      cat.value < min.value ? cat : min
-                    , categories[0]);
-                    
-                    if (lowestCategory.name.includes('Homepage')) {
+                    const lowestCategory = categories.reduce(
+                      (min, cat) => (cat.value < min.value ? cat : min),
+                      categories[0],
+                    );
+
+                    if (lowestCategory.name.includes("Homepage")) {
                       return "Optimisez votre page d'accueil avec un titre et une description SEO accrocheurs. C'est la vitrine de votre boutique et peut améliorer votre score de +20 points !";
-                    } else if (lowestCategory.name.includes('Produits')) {
+                    } else if (lowestCategory.name.includes("Produits")) {
                       return "Enrichissez vos fiches produits avec des titres SEO optimisés et des descriptions détaillées. Chaque produit optimisé peut booster votre visibilité et votre score global de +20 points.";
-                    } else if (lowestCategory.name.includes('Collections')) {
+                    } else if (lowestCategory.name.includes("Collections")) {
                       return "Ajoutez des descriptions SEO complètes à vos collections pour améliorer leur référencement. Les collections bien optimisées attirent plus de trafic qualifié.";
-                    } else if (lowestCategory.name.includes('Contenu')) {
+                    } else if (lowestCategory.name.includes("Contenu")) {
                       return "Créez et publiez des articles de blog optimisés SEO pour attirer du trafic organique. Le contenu de qualité est la clé d'une stratégie SEO réussie !";
-                    } else if (lowestCategory.name.includes('Images')) {
+                    } else if (lowestCategory.name.includes("Images")) {
                       return "Ajoutez des textes alternatifs (alt text) descriptifs à toutes vos images. C'est rapide, facile et peut améliorer votre score de +15 points tout en rendant votre site accessible.";
                     } else {
                       return "Vérifiez votre configuration technique et assurez-vous que la synchronisation avec Shopify fonctionne correctement. Une base technique solide est essentielle !";
@@ -265,9 +339,21 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
                 <div className="mt-3 flex items-center gap-2 text-xs text-primary font-semibold">
                   <span>Impact potentiel :</span>
                   <Badge className="bg-primary text-primary-foreground">
-                    +{categories.reduce((min, cat) => cat.value < min.value ? cat : min, categories[0]).name.includes('Produits') ? '20' : 
-                      categories.reduce((min, cat) => cat.value < min.value ? cat : min, categories[0]).name.includes('Images') ? '15' : 
-                      categories.reduce((min, cat) => cat.value < min.value ? cat : min, categories[0]).name.includes('Homepage') ? '20' : '10'} points
+                    +
+                    {categories
+                      .reduce((min, cat) => (cat.value < min.value ? cat : min), categories[0])
+                      .name.includes("Produits")
+                      ? "20"
+                      : categories
+                            .reduce((min, cat) => (cat.value < min.value ? cat : min), categories[0])
+                            .name.includes("Images")
+                        ? "15"
+                        : categories
+                              .reduce((min, cat) => (cat.value < min.value ? cat : min), categories[0])
+                              .name.includes("Homepage")
+                          ? "20"
+                          : "10"}{" "}
+                    points
                   </Badge>
                 </div>
               </div>
@@ -275,6 +361,30 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
           </div>
         )}
       </CardContent>
+
+      {/* Styles CSS pour les animations */}
+      <style jsx>{`
+        @keyframes glow {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+        .animate-glow {
+          animation: glow 2s ease-in-out infinite;
+        }
+        .animate-scale-in {
+          animation: scaleIn 0.8s ease-out;
+        }
+        @keyframes scaleIn {
+          from {
+            transform: scale(0.8);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </Card>
   );
 }
