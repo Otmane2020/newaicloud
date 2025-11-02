@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface SyncSettings {
-  import_frequency: 'manual' | 'hourly' | 'daily' | 'weekly';
+  import_frequency: 'manual' | 'hourly' | 'daily' | 'weekly' | 'monthly';
   import_schedule_hour: number;
   import_schedule_day: number;
   import_types: string[];
@@ -161,6 +161,25 @@ export function ShopifySyncSettings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Get active Shopify connection
+      const { data: connection, error: connectionError } = await supabase
+        .from('shopify_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (connectionError || !connection) {
+        toast.error('Aucune connexion Shopify active trouvée');
+        return;
+      }
+
+      // Clean the shop name
+      let cleanShopName = (connection.store_url || '')
+        .replace(/^https?:\/\//, '')
+        .replace(/\.myshopify\.com.*$/, '')
+        .replace(/\/$/, '');
+
       // Create sync history entry
       const { data: historyEntry, error: historyError } = await supabase
         .from('sync_history')
@@ -184,7 +203,13 @@ export function ShopifySyncSettings() {
           let result;
           switch (type) {
             case 'products':
-              result = await supabase.functions.invoke('import-products');
+              result = await supabase.functions.invoke('import-products', {
+                body: {
+                  storeId: connection.id,
+                  shopName: cleanShopName,
+                  apiSecret: connection.access_token,
+                }
+              });
               break;
             case 'collections':
               result = await supabase.functions.invoke('import-shopify-collections');
@@ -193,17 +218,30 @@ export function ShopifySyncSettings() {
               result = await supabase.functions.invoke('import-shopify-pages');
               break;
             case 'articles':
-              result = await supabase.functions.invoke('import-shopify-articles');
+              result = await supabase.functions.invoke('import-shopify-articles', {
+                body: {
+                  storeId: connection.id,
+                  shopName: cleanShopName,
+                  authToken: connection.access_token,
+                }
+              });
               break;
             case 'images':
               result = await supabase.functions.invoke('import-content-images', {
-                body: { types: ['collections', 'pages', 'articles', 'homepage'] }
+                body: {
+                  storeId: connection.id,
+                  types: ['collections', 'pages', 'articles', 'homepage']
+                }
               });
               break;
           }
 
           if (result?.data?.totalImported) {
             totalImported += result.data.totalImported;
+          } else if (result?.data?.imported) {
+            totalImported += result.data.imported;
+          } else if (result?.data?.count) {
+            totalImported += result.data.count;
           }
         } catch (error) {
           console.error(`Error importing ${type}:`, error);
@@ -296,14 +334,15 @@ export function ShopifySyncSettings() {
                 <SelectItem value="hourly">Toutes les heures</SelectItem>
                 <SelectItem value="daily">Quotidien</SelectItem>
                 <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                <SelectItem value="monthly">Mensuel</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Schedule */}
-          {settings.import_frequency !== 'manual' && (
+          {settings.import_frequency !== 'manual' && settings.import_frequency !== 'hourly' && (
             <div className="grid gap-4 sm:grid-cols-2">
-              {(settings.import_frequency === 'daily' || settings.import_frequency === 'weekly') && (
+              {(settings.import_frequency === 'daily' || settings.import_frequency === 'weekly' || settings.import_frequency === 'monthly') && (
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />

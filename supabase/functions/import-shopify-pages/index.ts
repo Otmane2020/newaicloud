@@ -47,7 +47,11 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🏪 [IMPORT-PAGES] Store: ${connection.store_url}`);
 
-    const shopifyUrl = connection.store_url.replace(/\/$/, "");
+    // Ensure URL has https:// protocol
+    let shopifyUrl = connection.store_url.replace(/\/$/, "");
+    if (!shopifyUrl.startsWith('http://') && !shopifyUrl.startsWith('https://')) {
+      shopifyUrl = `https://${shopifyUrl}`;
+    }
     const accessToken = connection.access_token;
 
     let allPages: any[] = [];
