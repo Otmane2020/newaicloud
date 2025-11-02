@@ -58,6 +58,7 @@ interface Collection {
   optimization_count?: number;
   last_optimization_at?: string | null;
   last_synced_at?: string | null;
+  products_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -94,28 +95,16 @@ export function CollectionOptimization() {
     try {
       setLoading(true);
       
-      // Récupérer les collections avec le nombre de produits associés
+      // Récupérer les collections avec le compteur de produits
       const { data: collectionsData, error } = await supabase
         .from('shopify_collections')
         .select('*')
+        .gt('products_count', 0) // Filtrer uniquement les collections avec au moins 1 produit
         .order('title', { ascending: true });
 
       if (error) throw error;
 
-      // Récupérer tous les produits pour compter combien sont dans chaque collection
-      const { data: productsData } = await supabase
-        .from('shopify_products')
-        .select('id, collection_ids');
-
-      // Filtrer pour ne garder que les collections qui ont au moins 1 produit
-      const collectionsWithProducts = (collectionsData || []).filter(collection => {
-        const hasProducts = productsData?.some(product => 
-          product.collection_ids && product.collection_ids.includes(collection.id)
-        );
-        return hasProducts;
-      });
-
-      setCollections(collectionsWithProducts);
+      setCollections(collectionsData || []);
     } catch (error) {
       console.error('Error fetching collections:', error);
       toast.error('Failed to load collections');
@@ -921,6 +910,7 @@ export function CollectionOptimization() {
                   </TableHead>
                   <TableHead className="w-20">Image</TableHead>
                   <TableHead>Title</TableHead>
+                  <TableHead className="w-24">Produits</TableHead>
                   <TableHead className="min-w-[200px]">Description</TableHead>
                   <TableHead className="min-w-[200px]">SEO Title</TableHead>
                   <TableHead className="min-w-[250px]">SEO Description</TableHead>
@@ -967,6 +957,13 @@ export function CollectionOptimization() {
                         <div className="max-w-[200px]">
                           <p className="font-medium line-clamp-2">{collection.title}</p>
                           <p className="text-xs text-muted-foreground mt-1">{collection.handle}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center">
+                          <Badge variant="secondary" className="font-semibold">
+                            {collection.products_count || 0}
+                          </Badge>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -1131,6 +1128,9 @@ export function CollectionOptimization() {
                   <div className="flex-1">
                     <h3 className="font-semibold line-clamp-1">{collection.title}</h3>
                     <p className="text-xs text-muted-foreground">{collection.handle}</p>
+                    <Badge variant="secondary" className="text-xs mt-1">
+                      {collection.products_count || 0} produit{(collection.products_count || 0) > 1 ? 's' : ''}
+                    </Badge>
                   </div>
                 </div>
                 

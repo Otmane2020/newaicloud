@@ -1575,6 +1575,7 @@ export type Database = {
           image_url: string | null
           last_optimization_at: string | null
           optimization_count: number | null
+          products_count: number | null
           seo_description: string | null
           seo_title: string | null
           shopify_collection_id: number | null
@@ -1592,6 +1593,7 @@ export type Database = {
           image_url?: string | null
           last_optimization_at?: string | null
           optimization_count?: number | null
+          products_count?: number | null
           seo_description?: string | null
           seo_title?: string | null
           shopify_collection_id?: number | null
@@ -1609,6 +1611,7 @@ export type Database = {
           image_url?: string | null
           last_optimization_at?: string | null
           optimization_count?: number | null
+          products_count?: number | null
           seo_description?: string | null
           seo_title?: string | null
           shopify_collection_id?: number | null
