@@ -493,7 +493,8 @@ export function TagOptimization() {
             body: JSON.stringify({ 
               productId: productIds[i], 
               syncTags: true,
-              syncGoogleShopping: true
+              syncGoogleShopping: true,
+              force: true // Allow immediate sync after tag generation
             }),
           }
         );

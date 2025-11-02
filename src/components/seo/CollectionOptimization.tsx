@@ -517,7 +517,10 @@ export function CollectionOptimization() {
         const collection = collectionsToSync[i];
         try {
           const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-            body: { collectionId: collection.id }
+            body: { 
+              collectionId: collection.id,
+              force: true // Allow immediate sync after collection optimization
+            }
           });
 
           if (error) throw error;

@@ -559,7 +559,11 @@ export function SeoAltImage() {
       for (let i = 0; i < imagesToSync.length; i++) {
         try {
           const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-            body: { imageId: imagesToSync[i].id, syncAltText: true }
+            body: { 
+              imageId: imagesToSync[i].id, 
+              syncAltText: true,
+              force: true // Allow immediate sync after ALT text generation
+            }
           });
           
           if (error) {
