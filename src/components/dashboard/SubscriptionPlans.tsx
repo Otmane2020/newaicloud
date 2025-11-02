@@ -110,43 +110,67 @@ export function SubscriptionPlans() {
   const handleSelectPlan = async (planId: string) => {
     setCheckoutLoading(planId);
     try {
-      // Get the selected plan to validate Stripe price ID
-      const selectedPlan = plans.find(p => p.id === planId);
-      
-      // Check if plan has valid Stripe price IDs
-      const stripePriceId = billingPeriod === 'yearly' 
-        ? selectedPlan?.stripe_price_id_yearly 
-        : selectedPlan?.stripe_price_id_monthly;
-      
-      if (!stripePriceId || !stripePriceId.startsWith('price_')) {
-        toast({
-          title: "Configuration manquante",
-          description: `Le plan "${selectedPlan?.name}" doit être configuré dans Stripe. Veuillez créer les prix dans votre tableau de bord Stripe.`,
-          variant: "destructive"
-        });
-        setCheckoutLoading(null);
-        return;
-      }
+      // Check if user is in trial and activating their current plan
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status, current_plan_id')
+        .eq('id', user?.id)
+        .single();
 
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          plan_id: planId,
-          billing_period: billingPeriod,
-          success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
-          cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
+      const isTrialing = profile?.subscription_status === 'trialing';
+      const isCurrentPlan = profile?.current_plan_id === planId;
+
+      // If in trial and activating current plan, use direct payment
+      if (isTrialing && isCurrentPlan) {
+        const { data, error } = await supabase.functions.invoke('activate-full-plan');
+        if (error) throw error;
+        
+        if (data?.success) {
+          toast({
+            title: "Abonnement activé",
+            description: "Votre abonnement complet a été activé avec succès !",
+          });
+          setTimeout(() => window.location.reload(), 1500);
         }
-      });
+      } else {
+        // Otherwise use standard checkout
+        const selectedPlan = plans.find(p => p.id === planId);
+        
+        // Check if plan has valid Stripe price IDs
+        const stripePriceId = billingPeriod === 'yearly' 
+          ? selectedPlan?.stripe_price_id_yearly 
+          : selectedPlan?.stripe_price_id_monthly;
+        
+        if (!stripePriceId || !stripePriceId.startsWith('price_')) {
+          toast({
+            title: "Configuration manquante",
+            description: `Le plan "${selectedPlan?.name}" doit être configuré dans Stripe. Veuillez créer les prix dans votre tableau de bord Stripe.`,
+            variant: "destructive"
+          });
+          setCheckoutLoading(null);
+          return;
+        }
 
-      if (error) throw error;
-      
-      if (data?.url) {
-        window.open(data.url, '_blank');
+        const { data, error } = await supabase.functions.invoke('create-checkout', {
+          body: { 
+            plan_id: planId,
+            billing_period: billingPeriod,
+            success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
+            cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
+          }
+        });
+
+        if (error) throw error;
+        
+        if (data?.url) {
+          window.open(data.url, '_blank');
+        }
       }
     } catch (error) {
-      console.error('Error creating checkout:', error);
+      console.error('Error handling plan selection:', error);
       toast({
-        title: "Error",
-        description: "Unable to create payment session",
+        title: "Erreur",
+        description: "Impossible de traiter la demande",
         variant: "destructive"
       });
     } finally {
