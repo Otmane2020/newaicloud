@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
+import { useState, useEffect } from 'react';
 
 // ============= TYPES =============
 export interface WorkflowItem {
@@ -41,10 +42,32 @@ export function ProgressDialog({
   current, 
   total 
 }: ProgressDialogProps) {
-  const percentage = total > 0 ? (current / total) * 100 : 0;
+  const targetPercentage = total > 0 ? (current / total) * 100 : 0;
+  const [animatedPercentage, setAnimatedPercentage] = useState(0);
+
+  // Animate percentage from 0 to target with smooth increments
+  useEffect(() => {
+    if (targetPercentage === 0) {
+      setAnimatedPercentage(0);
+      return;
+    }
+
+    const increment = 1;
+    const interval = setInterval(() => {
+      setAnimatedPercentage((prev) => {
+        if (prev >= targetPercentage) {
+          clearInterval(interval);
+          return targetPercentage;
+        }
+        return Math.min(prev + increment, targetPercentage);
+      });
+    }, 30); // Update every 30ms for smooth animation
+
+    return () => clearInterval(interval);
+  }, [targetPercentage]);
 
   const getTitle = () => {
-    if (percentage === 100) {
+    if (animatedPercentage === 100) {
       return operation === 'syncing' ? '✅ Synchronisation terminée !' : '✅ Optimisation terminée !';
     }
     if (operation === 'syncing') return '🔄 Synchronisation en cours...';
@@ -56,7 +79,7 @@ export function ProgressDialog({
   };
 
   const getDescription = () => {
-    if (percentage === 100) {
+    if (animatedPercentage === 100) {
       return operation === 'syncing' 
         ? `✅ ${total} élément${total > 1 ? 's synchronisés' : ' synchronisé'}` 
         : `✅ ${total} élément${total > 1 ? 's traités' : ' traité'}`;
@@ -73,8 +96,8 @@ export function ProgressDialog({
         <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
         <div className="flex flex-col items-center justify-center py-8 space-y-6">
           <div className="relative">
-            {percentage === 100 ? (
-              <CheckCircle className="w-16 h-16 text-green-600 dark:text-green-400" />
+            {animatedPercentage === 100 ? (
+              <CheckCircle className="w-16 h-16 text-green-600 dark:text-green-400 animate-scale-in" />
             ) : (
               <>
                 <Loader2 className="w-16 h-16 text-primary animate-spin" />
@@ -87,9 +110,27 @@ export function ProgressDialog({
           <div className="text-center space-y-2 w-full">
             <h3 className="text-xl font-semibold">{getTitle()}</h3>
             <p className="text-sm text-muted-foreground">{getDescription()}</p>
-            <Progress value={percentage} className="h-3 mt-4" />
-            <p className="text-xs text-muted-foreground mt-2">
-              {Math.round(percentage)}%
+            
+            {/* Animated Progress Bar with Blue Gradient */}
+            <div className="relative mt-4">
+              <div className="h-3 w-full bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
+                  style={{ width: `${animatedPercentage}%` }}
+                >
+                  {/* Animated shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+                  
+                  {/* Moving gradient animation */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/50 via-blue-500/50 to-blue-600/50 animate-slide-in-right" 
+                       style={{ animationDuration: '2s', animationIterationCount: 'infinite' }} 
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-lg font-bold text-blue-600 mt-2 animate-fade-in">
+              {Math.round(animatedPercentage)}%
             </p>
           </div>
         </div>
