@@ -463,18 +463,9 @@ MÉTA-DESCRIPTION (150-160 caractères):
       enrichment_status: "enriched",
       seo_synced_to_shopify: false,
       optimization_count: currentOptimizations + 1,
-      last_seo_optimization: new Date().toISOString(),
+      last_optimization_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      seo_character_count: seoResult.character_count,
     };
-
-    // Enhanced Vision AI metadata
-    if (visionData) {
-      updateData.vision_analyzed = true;
-      updateData.vision_attributes = visionData.visualAttributes;
-      updateData.vision_confidence = visionData.confidence;
-      updateData.last_vision_analysis = new Date().toISOString();
-    }
 
     // Update product in database
     const { error: updateError } = await supabaseClient.from("shopify_products").update(updateData).eq("id", productId);
