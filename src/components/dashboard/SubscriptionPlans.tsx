@@ -338,12 +338,11 @@ export function SubscriptionPlans() {
                 <SelectTrigger className="w-full bg-card border-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border-2 shadow-lg z-[100]">
+                <SelectContent>
                   {proPlans.map((plan) => (
                     <SelectItem 
                       key={plan.id} 
                       value={plan.id}
-                      className="hover:bg-accent cursor-pointer"
                     >
                       {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly)}€/mois
                     </SelectItem>
@@ -421,12 +420,11 @@ export function SubscriptionPlans() {
                 <SelectTrigger className="w-full bg-card border-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border-2 shadow-lg z-[100]">
+                <SelectContent>
                   {enterprisePlans.map((plan) => (
                     <SelectItem 
                       key={plan.id} 
                       value={plan.id}
-                      className="hover:bg-accent cursor-pointer"
                     >
                       {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly).toLocaleString()}€/mois
                     </SelectItem>
