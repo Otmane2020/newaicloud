@@ -3,8 +3,10 @@ import { CollectionImportSelector } from '@/components/integration/CollectionImp
 import { StoreMetadataForm } from '@/components/integration/StoreMetadataForm';
 import { ShopifySyncSettings } from '@/components/integration/ShopifySyncSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslation } from '@/lib/language';
 
 export default function Integration() {
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-gradient-subtle p-4 sm:p-6 lg:p-8">
@@ -13,10 +15,10 @@ export default function Integration() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
-                Shopify Integrations
+                {t.integration.title}
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base lg:text-lg">
-                Connect and manage your Shopify stores
+                {t.integration.description}
               </p>
             </div>
             <CollectionImportSelector />
@@ -25,9 +27,9 @@ export default function Integration() {
 
         <Tabs defaultValue="connections" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="connections">Connexions</TabsTrigger>
-            <TabsTrigger value="sync">Synchronisation</TabsTrigger>
-            <TabsTrigger value="metadata">Métadonnées</TabsTrigger>
+            <TabsTrigger value="connections">{t.integration.tabs.connections}</TabsTrigger>
+            <TabsTrigger value="sync">{t.integration.tabs.sync}</TabsTrigger>
+            <TabsTrigger value="metadata">{t.integration.tabs.metadata}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="connections" className="space-y-6">

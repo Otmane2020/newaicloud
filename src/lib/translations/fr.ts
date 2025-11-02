@@ -95,6 +95,14 @@ export const translations = {
   },
 
   account: {
+    title: "Paramètres du Compte",
+    trial: "Essai",
+    tabs: {
+      profile: "Profil",
+      integrations: "Intégrations",
+      subscription: "Abonnement",
+      billing: "Portail de Facturation",
+    },
     profile: {
       title: "Informations Personnelles",
       email: "Email",
@@ -128,6 +136,30 @@ export const translations = {
       english: "Anglais",
       french: "Français",
       changeSuccess: "Langue changée en {{language}}",
+    },
+    billing: {
+      title: "Portail de Facturation",
+      description: "Gérez vos moyens de paiement, consultez vos factures et mettez à jour vos informations de facturation",
+      openPortal: "Ouvrir le Portail de Facturation",
+      loading: "Chargement...",
+      redirectInfo: "Vous serez redirigé vers le portail sécurisé de Stripe",
+      error: "Impossible d'ouvrir le portail de facturation",
+    },
+    subscription: {
+      title: "Abonnement Actuel",
+      currentPlan: "Plan Actuel",
+      active: "Actif",
+      expiresOn: "Expire le",
+      renewalDate: "Date de renouvellement",
+      noSubscription: "Aucun abonnement actif",
+      choosePlan: "Choisir un Plan",
+      activateFullPlan: "Activer le Plan Complet",
+      changePlan: "Changer de Plan",
+      manageSubscription: "Gérer l'Abonnement",
+      activating: "Activation...",
+      activationSuccess: "Abonnement activé avec succès !",
+      activationError: "Erreur lors de l'activation de l'abonnement",
+      portalError: "Erreur lors de l'ouverture du portail",
     },
   },
 
@@ -292,6 +324,7 @@ export const translations = {
     description: "Connectez et gérez vos boutiques Shopify",
     tabs: {
       connections: "Connexions",
+      sync: "Synchronisation",
       metadata: "Métadonnées",
     },
     sync: {

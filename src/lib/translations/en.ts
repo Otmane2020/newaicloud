@@ -95,6 +95,14 @@ export const translations = {
   },
 
   account: {
+    title: "Account Settings",
+    trial: "Trial",
+    tabs: {
+      profile: "Profile",
+      integrations: "Integrations",
+      subscription: "Subscription",
+      billing: "Billing Portal",
+    },
     profile: {
       title: "Personal Information",
       email: "Email",
@@ -128,6 +136,30 @@ export const translations = {
       english: "English",
       french: "French",
       changeSuccess: "Language changed to {{language}}",
+    },
+    billing: {
+      title: "Billing Portal",
+      description: "Manage your payment methods, view invoices, and update billing information",
+      openPortal: "Open Billing Portal",
+      loading: "Loading...",
+      redirectInfo: "You will be redirected to Stripe's secure portal",
+      error: "Unable to open billing portal",
+    },
+    subscription: {
+      title: "Current Subscription",
+      currentPlan: "Current Plan",
+      active: "Active",
+      expiresOn: "Expires on",
+      renewalDate: "Renewal date",
+      noSubscription: "No active subscription",
+      choosePlan: "Choose a Plan",
+      activateFullPlan: "Activate Full Plan",
+      changePlan: "Change Plan",
+      manageSubscription: "Manage Subscription",
+      activating: "Activation...",
+      activationSuccess: "Subscription activated successfully!",
+      activationError: "Error activating subscription",
+      portalError: "Error opening portal",
     },
   },
 
@@ -292,6 +324,7 @@ export const translations = {
     description: "Connect and manage your Shopify stores",
     tabs: {
       connections: "Connections",
+      sync: "Synchronization",
       metadata: "Metadata",
     },
     sync: {

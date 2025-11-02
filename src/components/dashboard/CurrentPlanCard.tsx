@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, CreditCard, Calendar, Package, RefreshCw } from 'lucide-react';
 import { PlanUpgradeDialog } from './PlanUpgradeDialog';
+import { useTranslation } from '@/lib/language';
 
 interface Plan {
   id: string;
@@ -19,6 +20,7 @@ interface Plan {
 
 export function CurrentPlanCard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
@@ -78,12 +80,12 @@ export function CurrentPlanCard() {
       const { data, error } = await supabase.functions.invoke('activate-full-plan');
       if (error) throw error;
       if (data?.success) {
-        toast.success('Abonnement activé avec succès !');
+        toast.success(t.account.subscription.activationSuccess);
         setTimeout(() => window.location.reload(), 1500);
       }
     } catch (error) {
       console.error('Error activating plan:', error);
-      toast.error('Erreur lors de l\'activation de l\'abonnement');
+      toast.error(t.account.subscription.activationError);
     } finally {
       setUpgradeLoading(false);
     }
@@ -99,7 +101,7 @@ export function CurrentPlanCard() {
       }
     } catch (error) {
       console.error('Error opening portal:', error);
-      toast.error('Erreur lors de l\'ouverture du portail');
+      toast.error(t.account.subscription.portalError);
     } finally {
       setPortalLoading(false);
     }
@@ -117,7 +119,7 @@ export function CurrentPlanCard() {
     <Card className="p-6">
       <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
         <Package className="w-6 h-6 text-primary" />
-        Current Subscription
+        {t.account.subscription.title}
       </h2>
       
       {currentPlan ? (
@@ -125,17 +127,17 @@ export function CurrentPlanCard() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold">{currentPlan.name}</h3>
-              <p className="text-sm text-muted-foreground">Current Plan</p>
+              <p className="text-sm text-muted-foreground">{t.account.subscription.currentPlan}</p>
             </div>
             <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-              Active
+              {t.account.subscription.active}
             </Badge>
           </div>
 
           {subscriptionEnd && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="w-4 h-4" />
-              {currentPlan.name.includes('Trial') ? 'Expires on' : 'Renewal date'}: {new Date(subscriptionEnd).toLocaleDateString()}
+              {currentPlan.name.includes('Trial') ? t.account.subscription.expiresOn : t.account.subscription.renewalDate}: {new Date(subscriptionEnd).toLocaleDateString()}
             </div>
           )}
 
@@ -149,12 +151,12 @@ export function CurrentPlanCard() {
               {upgradeLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Activation...
+                  {t.account.subscription.activating}
                 </>
               ) : (
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Activate Full Plan
+                  {t.account.subscription.activateFullPlan}
                 </>
               )}
             </Button>
@@ -168,7 +170,7 @@ export function CurrentPlanCard() {
               className="flex-1"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Change Plan
+              {t.account.subscription.changePlan}
             </Button>
 
             <Button 
@@ -180,12 +182,12 @@ export function CurrentPlanCard() {
               {portalLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading...
+                  {t.common.loading}
                 </>
               ) : (
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Manage Subscription
+                  {t.account.subscription.manageSubscription}
                 </>
               )}
             </Button>
@@ -194,10 +196,10 @@ export function CurrentPlanCard() {
       ) : (
         <div className="text-center py-4">
           <p className="text-muted-foreground mb-4">
-            No active subscription
+            {t.account.subscription.noSubscription}
           </p>
           <Button onClick={() => window.location.href = '/onboarding'}>
-            Choose a Plan
+            {t.account.subscription.choosePlan}
           </Button>
         </div>
       )}

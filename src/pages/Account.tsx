@@ -12,11 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/lib/language';
 
 export default function Account() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'profile';
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [planName, setPlanName] = useState<string | null>(null);
   const [isTrialing, setIsTrialing] = useState(false);
 
@@ -57,11 +59,11 @@ export default function Account() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">Account Settings</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">{t.account.title}</h1>
         {planName && (
           <Badge variant="secondary" className="mt-2">
             <Sparkles className="w-3 h-3 mr-1" />
-            {planName}{isTrialing && ' (Trial)'}
+            {planName}{isTrialing && ` (${t.account.trial})`}
           </Badge>
         )}
       </div>
@@ -69,10 +71,10 @@ export default function Account() {
       {/* Content */}
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })} className="mt-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="subscription">Subscription</TabsTrigger>
-          <TabsTrigger value="billing">Billing Portal</TabsTrigger>
+          <TabsTrigger value="profile">{t.account.tabs.profile}</TabsTrigger>
+          <TabsTrigger value="integrations">{t.account.tabs.integrations}</TabsTrigger>
+          <TabsTrigger value="subscription">{t.account.tabs.subscription}</TabsTrigger>
+          <TabsTrigger value="billing">{t.account.tabs.billing}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
