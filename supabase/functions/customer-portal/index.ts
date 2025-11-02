@@ -55,12 +55,16 @@ serve(async (req) => {
     }
 
     // Create portal session
-    // NOTE: To enable promotion codes, configure in Stripe Dashboard:
-    // Settings > Billing > Customer Portal > Enable promotion code redemption
+    // IMPORTANT: To enable upgrade/downgrade options and promotion codes:
+    // 1. Go to Stripe Dashboard > Settings > Billing > Customer Portal
+    // 2. Enable "Allow customers to update subscriptions"
+    // 3. Select all eligible products (Starter, Pro, Enterprise - Monthly & Yearly)
+    // 4. Enable "Promotion code redemption" in Features section
+    // See docs/STRIPE_PORTAL_UPGRADE_SETUP.md for detailed instructions
     const origin = req.headers.get('origin') || 'http://localhost:8080';
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
-      return_url: `${origin}/subscription`,
+      return_url: `${origin}/account?tab=subscription`,
     });
 
     return new Response(
