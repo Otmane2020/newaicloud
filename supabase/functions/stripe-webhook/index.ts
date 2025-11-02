@@ -240,6 +240,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
     // Map the Stripe price ID to our plan ID
     let planId = metadata?.plan_id; // Try metadata first
+    let oldPlanId: string | null = null;
     if (!planId && plans) {
       const matchingPlan = plans.find(
         plan => plan.stripe_price_id_monthly === stripePriceId || plan.stripe_price_id_yearly === stripePriceId
@@ -277,6 +278,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const userId = metadata?.user_id;
     if (userId) {
       console.log('👤 Updating profile for user:', userId);
+      
+      // Get old plan ID to detect upgrades
+      const { data: oldProfile } = await supabase
+        .from('profiles')
+        .select('current_plan_id')
+        .eq('id', userId)
+        .single();
+      
+      oldPlanId = oldProfile?.current_plan_id;
+      
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -290,6 +301,18 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         console.error('❌ Error updating profile subscription status:', profileError);
       } else {
         console.log('✅ Profile subscription status updated to:', status, 'with plan:', planId);
+        
+        // Trigger auto-sync if this is an upgrade (plan changed and status is active)
+        if (oldPlanId && planId && oldPlanId !== planId && status === 'active') {
+          console.log('🚀 Plan upgrade detected, triggering auto-sync...');
+          supabase.functions.invoke('trigger-auto-sync', {
+            body: { user_id: userId }
+          }).then(() => {
+            console.log('✅ Auto-sync triggered successfully');
+          }).catch((error) => {
+            console.error('❌ Failed to trigger auto-sync:', error);
+          });
+        }
       }
     } else {
       console.warn('⚠️ No user_id in subscription metadata, trying to find by customer_id');
@@ -298,7 +321,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       if (customer && typeof customer === 'string') {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('id')
+          .select('id, current_plan_id')
           .eq('stripe_customer_id', customer)
           .single();
         
@@ -306,6 +329,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
           console.error('❌ Error finding profile by customer_id:', profileError);
         } else if (profile) {
           console.log('👤 Found profile via customer_id:', profile.id);
+          oldPlanId = profile.current_plan_id;
+          
           const { error: updateError } = await supabase
             .from('profiles')
             .update({
@@ -319,6 +344,18 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
             console.error('❌ Error updating profile via customer_id:', updateError);
           } else {
             console.log('✅ Profile updated via customer_id lookup with plan:', planId);
+            
+            // Trigger auto-sync if this is an upgrade
+            if (oldPlanId && planId && oldPlanId !== planId && status === 'active') {
+              console.log('🚀 Plan upgrade detected, triggering auto-sync...');
+              supabase.functions.invoke('trigger-auto-sync', {
+                body: { user_id: profile.id }
+              }).then(() => {
+                console.log('✅ Auto-sync triggered successfully');
+              }).catch((error) => {
+                console.error('❌ Failed to trigger auto-sync:', error);
+              });
+            }
           }
         } else {
           console.error('❌ No profile found for customer_id:', customer);
