@@ -202,8 +202,8 @@ export function SeoOptimization() {
     // Quality filter
     if (qualityFilter !== 'all') {
       const score = calculateDetailedSeoScore(
-        product.seo_title || product.title,
-        product.seo_description || product.vendor,
+        product.seo_title,
+        product.seo_description,
         !!product.image_url,
         true,
         product.tags,
@@ -228,14 +228,14 @@ export function SeoOptimization() {
     return true;
   });
 
-  // Apply SEO score sorting - FIXED to use correct calculation
+  // Apply SEO score sorting
   const sortedProducts = [...filteredProducts];
   if (seoScoreSort !== 'none') {
     sortedProducts.sort((a, b) => {
-      // Calculate scores using the same function as display
+      // Calculate scores using the same values as display
       const scoreA = calculateDetailedSeoScore(
-        a.seo_title || a.title,
-        a.seo_description || a.vendor,
+        a.seo_title,
+        a.seo_description,
         !!a.image_url,
         true,
         a.tags,
@@ -243,8 +243,8 @@ export function SeoOptimization() {
       ).score;
       
       const scoreB = calculateDetailedSeoScore(
-        b.seo_title || b.title,
-        b.seo_description || b.vendor,
+        b.seo_title,
+        b.seo_description,
         !!b.image_url,
         true,
         b.tags,
