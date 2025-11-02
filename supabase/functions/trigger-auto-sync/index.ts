@@ -74,6 +74,8 @@ serve(async (req) => {
     const startTime = Date.now();
     let totalImported = 0;
     let hasErrors = false;
+    let collectionsImported = false;
+    let productsImported = false;
 
     // Import based on selected types
     for (const type of importTypes) {
@@ -89,9 +91,11 @@ serve(async (req) => {
                 apiSecret: connection.access_token,
               }
             });
+            productsImported = true;
             break;
           case 'collections':
             result = await supabase.functions.invoke('import-shopify-collections');
+            collectionsImported = true;
             break;
           case 'pages':
             result = await supabase.functions.invoke('import-shopify-pages');
@@ -129,6 +133,27 @@ serve(async (req) => {
         console.log(`✅ ${type} import completed`);
       } catch (error) {
         console.error(`❌ Error importing ${type}:`, error);
+        hasErrors = true;
+      }
+    }
+
+    // CRITICAL: Synchronize product-collection relationships if both were imported
+    if (collectionsImported && productsImported) {
+      try {
+        console.log('🔄 Synchronizing product-collection relationships...');
+        const syncResult = await supabase.functions.invoke('sync-product-collections');
+        
+        if (syncResult?.error) {
+          console.error('❌ Error syncing product-collections:', syncResult.error);
+          hasErrors = true;
+        } else {
+          console.log('✅ Product-collection relationships synchronized');
+          if (syncResult?.data?.updated_count) {
+            totalImported += syncResult.data.updated_count;
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error in product-collection sync:', error);
         hasErrors = true;
       }
     }
