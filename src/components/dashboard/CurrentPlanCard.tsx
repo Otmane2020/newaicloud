@@ -20,6 +20,7 @@ export function CurrentPlanCard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
 
@@ -66,6 +67,22 @@ export function CurrentPlanCard() {
       console.error('Error loading subscription:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpgradeToFullPlan = async () => {
+    setUpgradeLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('force-payment');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      toast.error('Erreur lors de la création du paiement');
+    } finally {
+      setUpgradeLoading(false);
     }
   };
 
@@ -121,12 +138,22 @@ export function CurrentPlanCard() {
 
           {currentPlan.name.includes('Trial') && (
             <Button 
-              onClick={() => window.location.href = '/subscription'}
+              onClick={handleUpgradeToFullPlan}
+              disabled={upgradeLoading}
               variant="default"
-              className="w-full"
+              className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700"
             >
-              <CreditCard className="mr-2 h-4 w-4" />
-              Upgrade to Full Plan
+              {upgradeLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Chargement...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Activer mon abonnement
+                </>
+              )}
             </Button>
           )}
 
