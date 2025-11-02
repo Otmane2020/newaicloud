@@ -8,6 +8,7 @@ import { UsageLimits } from '@/components/dashboard/UsageLimits';
 import { SubscriptionPlans } from '@/components/dashboard/SubscriptionPlans';
 
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,20 +67,27 @@ export default function Account() {
       </div>
 
       {/* Content */}
-      <div className="mt-6">
-        {activeTab === 'profile' && (
+      <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })} className="mt-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
+          <TabsTrigger value="billing">Billing Portal</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile" className="mt-6">
           <div className="bg-white rounded-lg border p-4 md:p-6">
             <AccountSettings />
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'integrations' && (
+        <TabsContent value="integrations" className="mt-6">
           <div className="bg-white rounded-lg border p-4 md:p-6">
             <ShopifyIntegrationTabs />
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'subscription' && (
+        <TabsContent value="subscription" className="mt-6">
           <div className="space-y-4 md:space-y-6">
             <div className="bg-white rounded-lg border p-4 md:p-6">
               <CurrentPlanCard />
@@ -91,14 +99,14 @@ export default function Account() {
               <UsageLimits />
             </div>
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'billing' && (
+        <TabsContent value="billing" className="mt-6">
           <div className="bg-white rounded-lg border p-4 md:p-6">
             <BillingPortal />
           </div>
-        )}
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
