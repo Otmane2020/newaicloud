@@ -1049,7 +1049,7 @@ export function CollectionOptimization() {
                               setOptimizing(true);
                               try {
                                 const { error } = await supabase.functions.invoke('generate-collection-seo', {
-                                  body: { collectionIds: [collection.id] }
+                                  body: { collection_ids: [collection.id] }
                                 });
                                 if (error) throw error;
                                 toast.success('Collection optimisée !');
