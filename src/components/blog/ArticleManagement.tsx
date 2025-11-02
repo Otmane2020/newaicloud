@@ -67,6 +67,8 @@ export function ArticleManagement() {
   const [optimizing, setOptimizing] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedArticleForImage, setSelectedArticleForImage] = useState<Article | null>(null);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [optimizedArticle, setOptimizedArticle] = useState<Article | null>(null);
 
   useEffect(() => {
     fetchArticles();
@@ -118,6 +120,65 @@ export function ArticleManagement() {
     if (score >= 60) return { variant: 'secondary' as const, label: 'Bon', color: 'text-blue-600' };
     if (score >= 40) return { variant: 'outline' as const, label: 'Moyen', color: 'text-yellow-600' };
     return { variant: 'outline' as const, label: 'Faible', color: 'text-red-600' };
+  };
+
+  const handleOptimizeArticle = async (articleId: string) => {
+    setOptimizing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-article-seo', {
+        body: { article_ids: [articleId] }
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Article optimisé !');
+      await fetchArticles();
+      
+      // Get updated article
+      const { data: updatedArticle } = await supabase
+        .from('blog_articles')
+        .select('*')
+        .eq('id', articleId)
+        .single();
+      
+      if (updatedArticle) {
+        setOptimizedArticle(updatedArticle);
+        setShowResultsDialog(true);
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Erreur lors de l\'optimisation');
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  const handleSyncOptimizedArticle = async () => {
+    if (!optimizedArticle) return;
+    
+    try {
+      setSyncing(true);
+      setShowResultsDialog(false);
+      
+      const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
+        body: { articleId: optimizedArticle.id }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success('Article synchronisé avec Shopify !', {
+          description: optimizedArticle.title
+        });
+        await fetchArticles();
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Erreur lors de la synchronisation');
+    } finally {
+      setSyncing(false);
+      setOptimizedArticle(null);
+    }
   };
 
   const handleSyncArticle = async (articleId: string) => {
@@ -570,21 +631,7 @@ export function ArticleManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={async () => {
-                            setOptimizing(true);
-                            try {
-                              const { error } = await supabase.functions.invoke('generate-article-seo', {
-                                body: { article_ids: [article.id] }
-                              });
-                              if (error) throw error;
-                              toast.success('Article optimisé !');
-                              await fetchArticles();
-                            } catch (error: any) {
-                              toast.error(error.message || 'Erreur lors de l\'optimisation');
-                            } finally {
-                              setOptimizing(false);
-                            }
-                          }}
+                          onClick={() => handleOptimizeArticle(article.id)}
                           disabled={optimizing}
                           title="Optimize"
                           className="hover:bg-blue-50"
@@ -680,6 +727,67 @@ export function ArticleManagement() {
           article={selectedArticleForImage}
           onImageUpdated={fetchArticles}
         />
+      )}
+      
+      {/* Results Dialog */}
+      {optimizedArticle && (
+        <div className={`fixed inset-0 z-50 ${showResultsDialog ? 'block' : 'hidden'}`}>
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowResultsDialog(false)} />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl">
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
+                  <CheckCircle className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">Optimisation Réussie !</h2>
+                  <p className="text-muted-foreground">Votre article a été optimisé avec succès</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4 mb-6">
+                <div>
+                  <h3 className="font-semibold mb-1">Titre</h3>
+                  <p className="text-sm">{optimizedArticle.title}</p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold mb-1">Meta Description</h3>
+                  <p className="text-sm text-muted-foreground">{optimizedArticle.meta_description}</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowResultsDialog(false);
+                    setOptimizedArticle(null);
+                  }}
+                >
+                  Fermer
+                </Button>
+                <Button
+                  onClick={handleSyncOptimizedArticle}
+                  disabled={syncing}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                >
+                  {syncing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Synchronisation...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Synchroniser avec Shopify
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );
