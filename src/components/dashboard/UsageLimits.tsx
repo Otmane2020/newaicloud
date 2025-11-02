@@ -108,13 +108,6 @@ export function UsageLimits() {
       color: "hsl(var(--chart-3))"
     },
     {
-      label: "Campagnes auto",
-      current: usage?.campaigns_count || 0,
-      limit: plan?.max_campaigns || 0,
-      icon: <Zap className="h-4 w-4" />,
-      color: "hsl(var(--chart-5))"
-    },
-    {
       label: "Recherche IA Shopify",
       current: usage?.shopify_requests_count || 0,
       limit: plan?.max_shopify_requests_monthly || 0,
@@ -127,6 +120,13 @@ export function UsageLimits() {
       limit: plan?.max_chat_responses_monthly || 0,
       icon: <MessageSquare className="h-4 w-4" />,
       color: "hsl(var(--chart-4))"
+    },
+    {
+      label: "Campagnes auto",
+      current: usage?.campaigns_count || 0,
+      limit: plan?.max_campaigns || 0,
+      icon: <Zap className="h-4 w-4" />,
+      color: "hsl(var(--chart-5))"
     }
   ];
 

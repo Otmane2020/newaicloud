@@ -266,7 +266,34 @@ Deno.serve(async (req: Request) => {
     );
 
     const maxProducts = limitsData?.limits?.max_products || 50;
-    const currentProductsCount = limitsData?.usage?.products_count || 0;
+    
+    // Count actual products from database for accuracy
+    const { count: actualProductCount } = await supabaseServiceClient
+      .from('shopify_products')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', user.id);
+    
+    const currentProductsCount = actualProductCount || 0;
+    
+    // Verify consistency with usage_tracking
+    const trackedCount = limitsData?.usage?.products_count || 0;
+    if (trackedCount !== currentProductsCount) {
+      console.warn(`⚠️ Inconsistency detected: usage_tracking shows ${trackedCount} but actual count is ${currentProductsCount}. Using actual count.`);
+      
+      // Auto-correct usage_tracking
+      const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
+      await supabaseServiceClient
+        .from('usage_tracking')
+        .update({ 
+          products_count: currentProductsCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('seller_id', user.id)
+        .eq('month', currentMonth);
+      
+      console.log(`✅ Corrected usage_tracking to ${currentProductsCount} products`);
+    }
+    
     const availableSlots = Math.max(0, maxProducts - currentProductsCount);
 
     console.log(`User can import up to ${availableSlots} more products (current: ${currentProductsCount}/${maxProducts})`);
