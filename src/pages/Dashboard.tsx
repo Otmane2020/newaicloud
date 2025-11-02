@@ -81,8 +81,8 @@ export default function Dashboard() {
       const checkoutStatus = searchParams.get('checkout');
       if (checkoutStatus === 'success') {
         toast({
-          title: "🎉 Subscription Activated",
-          description: "Your subscription is now active. Welcome aboard!",
+          title: t.toasts.subscriptionActivated,
+          description: t.toasts.subscriptionActivatedMessage,
         });
         
         searchParams.delete('checkout');
@@ -94,8 +94,8 @@ export default function Dashboard() {
         }, 1500);
       } else if (checkoutStatus === 'cancelled') {
         toast({
-          title: "Payment Cancelled",
-          description: "Your payment was cancelled. You can try again anytime.",
+          title: t.toasts.paymentCancelled,
+          description: t.toasts.paymentCancelledMessage,
           variant: "destructive"
         });
         

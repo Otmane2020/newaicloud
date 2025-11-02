@@ -1,6 +1,7 @@
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/lib/language";
 
 interface TrialLimitBannerProps {
   resourceType: string;
@@ -11,6 +12,7 @@ interface TrialLimitBannerProps {
 
 export function TrialLimitBanner({ resourceType, usage, limit, onActivate }: TrialLimitBannerProps) {
   const navigate = useNavigate();
+  const { t, tf } = useTranslation();
 
   const handleActivate = () => {
     if (onActivate) {
@@ -27,22 +29,22 @@ export function TrialLimitBanner({ resourceType, usage, limit, onActivate }: Tri
           <div className="flex items-start gap-3 w-full sm:w-auto">
             <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 dark:text-orange-500 flex-shrink-0 mt-0.5 sm:mt-0" />
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-orange-900 dark:text-orange-100 text-sm sm:text-base">
-                Trial limit reached
-              </p>
-              <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 mt-1 break-words">
-                You've used {usage} of {limit} {resourceType}. Upgrade to continue.
-              </p>
+      <p className="font-medium text-orange-900 dark:text-orange-100 text-sm sm:text-base">
+        {t.trial.limitReached}
+      </p>
+      <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 mt-1 break-words">
+        {tf('trial.usageMessage', { usage, limit, resourceType })}
+      </p>
             </div>
           </div>
-          <Button
-            onClick={handleActivate}
-            variant="default"
-            size="sm"
-            className="bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 text-white shadow-lg whitespace-nowrap w-full sm:w-auto"
-          >
-            Activate My Plan
-          </Button>
+    <Button
+      onClick={handleActivate}
+      variant="default"
+      size="sm"
+      className="bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 text-white shadow-lg whitespace-nowrap w-full sm:w-auto"
+    >
+      {t.trial.activateMyPlan}
+    </Button>
         </div>
       </div>
     </div>

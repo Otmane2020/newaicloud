@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/lib/language';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -37,6 +38,7 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog', '/blog?tab=opportunities']);
@@ -45,56 +47,56 @@ export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const menuItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/products', label: 'Catalog', icon: ShoppingBag },
-    { path: '/merchant', label: 'Google Merchant', icon: BarChart3 },
-    { path: '/shopping', label: 'Google Shopping', icon: ShoppingBag },
-    { path: '/search-products', label: 'AI Search', icon: MessageSquare },
+    { path: '/', label: t.navigation.dashboard, icon: LayoutDashboard },
+    { path: '/products', label: t.navigation.catalog, icon: ShoppingBag },
+    { path: '/merchant', label: t.navigation.googleMerchant, icon: BarChart3 },
+    { path: '/shopping', label: t.navigation.googleShopping, icon: ShoppingBag },
+    { path: '/search-products', label: t.navigation.aiSearch, icon: MessageSquare },
     { 
       path: '/seo', 
-      label: 'SEO', 
+      label: t.navigation.seo, 
       icon: Zap,
       subItems: [
-        { path: '/seo?tab=optimization', label: 'SEO Optimization', icon: Sparkles },
-        { path: '/seo?tab=tags', label: 'Tag Optimization', icon: Tag },
-        { path: '/seo?tab=alt', label: 'ALT Image', icon: ImageIcon },
+        { path: '/seo?tab=optimization', label: t.navigation.seoOptimization, icon: Sparkles },
+        { path: '/seo?tab=tags', label: t.navigation.tagOptimization, icon: Tag },
+        { path: '/seo?tab=alt', label: t.navigation.altImage, icon: ImageIcon },
       ]
     },
     { 
       path: '/blog', 
-      label: 'SEO Blog', 
+      label: t.navigation.seoBlog, 
       icon: FileText,
       subItems: [
-        { path: '/blog?tab=articles', label: 'Articles', icon: PenSquare },
-        { path: '/blog?tab=campaigns', label: 'Campaigns', icon: CalendarClock },
+        { path: '/blog?tab=articles', label: t.navigation.articles, icon: PenSquare },
+        { path: '/blog?tab=campaigns', label: t.navigation.campaigns, icon: CalendarClock },
         { 
           path: '/blog?tab=opportunities', 
-          label: 'Opportunities', 
+          label: t.navigation.opportunities, 
           icon: Lightbulb,
           subItems: [
-            { path: '/blog?tab=netlinking', label: 'Netlinking', icon: LinkIcon },
-            { path: '/blog?tab=settings', label: 'Settings', icon: Settings }
+            { path: '/blog?tab=netlinking', label: t.navigation.netlinking, icon: LinkIcon },
+            { path: '/blog?tab=settings', label: t.navigation.settings, icon: Settings }
           ]
         }
       ]
     },
     { 
       path: '/chat', 
-      label: 'Smart Chat', 
+      label: t.navigation.smartChat, 
       icon: MessageSquare,
       subItems: [
-        { path: '/chat', label: 'Conversation', icon: MessageSquare },
-        { path: '/chat-history', label: 'History', icon: CalendarClock },
-        { path: '/product-source', label: 'Product Source', icon: ShoppingBag },
+        { path: '/chat', label: t.navigation.conversation, icon: MessageSquare },
+        { path: '/chat-history', label: t.navigation.history, icon: CalendarClock },
+        { path: '/product-source', label: t.navigation.productSource, icon: ShoppingBag },
       ]
     },
   ];
 
   const bottomMenuItems = [
-    { path: '/dashboard', label: 'Account', icon: User },
-    { path: '/notification-settings', label: 'Notifications', icon: Bell },
-    { path: '/subscription', label: 'Subscription', icon: CreditCard },
-    { path: '/integration', label: 'Shopify', icon: Settings },
+    { path: '/dashboard', label: t.navigation.account, icon: User },
+    { path: '/notification-settings', label: t.navigation.notifications, icon: Bell },
+    { path: '/subscription', label: t.navigation.subscription, icon: CreditCard },
+    { path: '/integration', label: t.navigation.shopify, icon: Settings },
   ];
 
   useEffect(() => {
@@ -178,7 +180,7 @@ export function Navigation() {
                 title={collapsed ? 'Admin Panel' : undefined}
               >
                 <Shield className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="font-bold">Admin Panel</span>}
+                {!collapsed && <span className="font-bold">{t.navigation.adminPanel}</span>}
               </Link>
             )}
             
@@ -300,16 +302,16 @@ export function Navigation() {
         <div className="px-2 pb-2 space-y-1 border-t border-gray-200 pt-2">
           {!collapsed && userPlan && (
             <div className="px-3 py-2 mb-2 text-center">
-              <div className="text-xs text-muted-foreground mb-1">Current Plan</div>
+              <div className="text-xs text-muted-foreground mb-1">{t.navigation.currentPlan}</div>
               <div className="px-2 py-1 bg-gradient-primary text-white rounded-md text-xs font-semibold">
                 {userPlan}
               </div>
             </div>
           )}
           {!collapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Settings
-            </div>
+        <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          {t.navigation.settings}
+        </div>
           )}
           {bottomMenuItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -341,7 +343,7 @@ export function Navigation() {
             title={collapsed ? 'Logout' : undefined}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span className="font-medium">Logout</span>}
+            {!collapsed && <span className="font-medium">{t.navigation.logout}</span>}
           </button>
           
           <button
@@ -353,7 +355,7 @@ export function Navigation() {
             ) : (
               <>
                 <ChevronLeft className="w-5 h-5" />
-                <span className="font-medium">Collapse</span>
+                <span className="font-medium">{t.navigation.collapse}</span>
               </>
             )}
           </button>
