@@ -427,8 +427,8 @@ export function calculateSeoConfidence(
  * Get confidence badge color based on score
  */
 export function getConfidenceBadgeColor(score: number): string {
-  if (score >= 80) return 'bg-green-500/10 text-green-500 border-green-500/20';
-  if (score >= 60) return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+  if (score >= 70) return 'bg-green-500/10 text-green-500 border-green-500/20';
+  if (score >= 50) return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
   return 'bg-red-500/10 text-red-500 border-red-500/20';
 }
 
@@ -436,10 +436,9 @@ export function getConfidenceBadgeColor(score: number): string {
  * Get confidence label
  */
 export function getConfidenceLabel(score: number): string {
-  if (score >= 80) return 'Excellent';
-  if (score >= 60) return 'Bon';
-  if (score >= 40) return 'Moyen';
-  return 'Faible';
+  if (score >= 70) return 'Excellent';
+  if (score >= 50) return 'Bon';
+  return 'À améliorer';
 }
 
 /**

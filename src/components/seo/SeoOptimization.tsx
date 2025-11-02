@@ -213,10 +213,9 @@ export function SeoOptimization() {
         product.optimization_count || 0
       ).score;
 
-      if (qualityFilter === 'excellent' && score < 80) return false;
-      if (qualityFilter === 'good' && (score < 60 || score >= 80)) return false;
-      if (qualityFilter === 'medium' && (score < 40 || score >= 60)) return false;
-      if (qualityFilter === 'poor' && score >= 40) return false;
+      if (qualityFilter === 'excellent' && score < 70) return false;
+      if (qualityFilter === 'good' && (score < 50 || score >= 70)) return false;
+      if (qualityFilter === 'poor' && score >= 50) return false;
     }
 
     // Category filter
@@ -622,8 +621,8 @@ export function SeoOptimization() {
             <div className="flex flex-col gap-4 items-center">
               <div className="text-center">
                 <div className={`text-3xl md:text-4xl font-bold ${
-                  globalSeoScore >= 80 ? 'text-green-600' : 
-                  globalSeoScore >= 70 ? 'text-orange-600' : 
+                  globalSeoScore >= 70 ? 'text-green-600' : 
+                  globalSeoScore >= 50 ? 'text-orange-600' : 
                   'text-red-600'
                 }`}>
                   {globalSeoScore}/100
@@ -1074,17 +1073,15 @@ export function SeoOptimization() {
                          {product.enrichment_status === 'enriched' ? (
                            <>
                               <div className={`text-2xl font-bold ${
-                                seoScore.score >= 85 ? 'text-green-600' : 
-                                seoScore.score >= 70 ? 'text-blue-600' : 
-                                seoScore.score >= 60 ? 'text-orange-600' : 
+                                seoScore.score >= 70 ? 'text-green-600' : 
+                                 seoScore.score >= 50 ? 'text-orange-600' :
                                 'text-red-600'
                               }`}>
                                 {seoScore.score}%
                               </div>
                               <span className="text-xs text-muted-foreground">
-                                {seoScore.score >= 85 ? '🎯 Excellent' : 
-                                 seoScore.score >= 70 ? '✨ Très bon' :
-                                 seoScore.score >= 60 ? '👍 Bon' : 
+                                 {seoScore.score >= 70 ? '✅ Excellent' : 
+                                  seoScore.score >= 50 ? '👍 Bon' :
                                  '⚠️ À améliorer'}
                               </span>
                            </>
@@ -1102,9 +1099,8 @@ export function SeoOptimization() {
                                return (
                                   <>
                                     <div className={`text-2xl font-bold ${
-                                      initialScore.score >= 85 ? 'text-green-600' : 
-                                      initialScore.score >= 70 ? 'text-blue-600' : 
-                                      initialScore.score >= 60 ? 'text-orange-600' : 
+                                       initialScore.score >= 70 ? 'text-green-600' : 
+                                       initialScore.score >= 50 ? 'text-orange-600' :
                                       'text-red-600'
                                     }`}>
                                       {initialScore.score}%
@@ -1259,13 +1255,17 @@ export function SeoOptimization() {
                       {product.enrichment_status === 'enriched' ? (
                         <>
                           <div className={`text-2xl font-bold ${
-                            seoScore.score >= 80 ? 'text-green-600' : 
-                            seoScore.score >= 70 ? 'text-orange-600' : 
+                            seoScore.score >= 70 ? 'text-green-600' : 
+                            seoScore.score >= 50 ? 'text-orange-600' :
                             'text-red-600'
                           }`}>
-                            {seoScore.score}
+                            {seoScore.score}%
                           </div>
-                          <span className="text-xs text-muted-foreground">AI-optimized</span>
+                          <span className="text-xs text-muted-foreground">
+                            {seoScore.score >= 70 ? '✅ Excellent' : 
+                             seoScore.score >= 50 ? '👍 Bon' : 
+                             '⚠️ À améliorer'}
+                          </span>
                         </>
                       ) : (
                         <>
@@ -1276,25 +1276,25 @@ export function SeoOptimization() {
                               !!product.image_url,
                               true,
                               product.tags,
-                              product.optimization_count
-                            );
-                            return (
-                              <>
-                                <div className={`text-2xl font-bold ${
-                                  initialScore.score >= 80 ? 'text-green-600' : 
-                                  initialScore.score >= 70 ? 'text-orange-600' : 
-                                  'text-red-600'
-                                }`}>
-                                  {initialScore.score}
-                                </div>
-                                <span className="text-xs text-muted-foreground">Initial score</span>
-                              </>
-                            );
-                          })()}
-                        </>
-                      )}
-                    </div>
-                    
+                                product.optimization_count
+                              );
+                              return (
+                                <>
+                                  <div className={`text-2xl font-bold ${
+                                    initialScore.score >= 70 ? 'text-green-600' : 
+                                    initialScore.score >= 50 ? 'text-orange-600' : 
+                                    'text-red-600'
+                                  }`}>
+                                    {initialScore.score}%
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">Score initial</span>
+                                </>
+                              );
+                            })()}
+                          </>
+                        )}
+                      </div>
+
                     <Button
                       size="sm"
                       variant="outline"
