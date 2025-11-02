@@ -61,25 +61,36 @@ Deno.serve(async (req: Request) => {
     let smartCount = 0;
     let customCount = 0;
 
-    // Fetch Smart Collections
-    console.log("📦 [IMPORT-COLLECTIONS] Fetching smart collections...");
-    let smartPage = 1;
-    let hasMoreSmart = true;
+    // Helper function to extract next URL from Link header
+    const getNextUrl = (linkHeader: string | null): string | null => {
+      if (!linkHeader) return null;
+      const links = linkHeader.split(',');
+      for (const link of links) {
+        const match = link.match(/<([^>]+)>;\s*rel="next"/);
+        if (match) return match[1];
+      }
+      return null;
+    };
 
-    while (hasMoreSmart) {
-      const smartResponse = await fetch(
-        `${shopifyUrl}/admin/api/2025-01/smart_collections.json?limit=250&page=${smartPage}`,
-        {
-          headers: {
-            "X-Shopify-Access-Token": accessToken,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    // Fetch Smart Collections with cursor-based pagination
+    console.log("📦 [IMPORT-COLLECTIONS] Fetching smart collections...");
+    let smartUrl: string | null = `${shopifyUrl}/admin/api/2025-01/smart_collections.json?limit=250`;
+    let smartBatch = 0;
+
+    while (smartUrl) {
+      smartBatch++;
+      console.log(`  Batch ${smartBatch}...`);
+      
+      const smartResponse = await fetch(smartUrl, {
+        headers: {
+          "X-Shopify-Access-Token": accessToken,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!smartResponse.ok) {
         const errorText = await smartResponse.text();
-        console.error(`❌ Failed to fetch smart collections page ${smartPage}`);
+        console.error(`❌ Failed to fetch smart collections batch ${smartBatch}`);
         console.error(`Status: ${smartResponse.status}, Error: ${errorText}`);
         break;
       }
@@ -87,37 +98,40 @@ Deno.serve(async (req: Request) => {
       const smartData = await smartResponse.json();
       const smartCollections = smartData.smart_collections || [];
       
-      if (smartCollections.length === 0) {
-        hasMoreSmart = false;
-      } else {
+      if (smartCollections.length > 0) {
         allCollections = allCollections.concat(smartCollections);
         smartCount += smartCollections.length;
-        smartPage++;
+        console.log(`  ✅ Fetched ${smartCollections.length} smart collections`);
+      }
+
+      // Get next page URL from Link header
+      smartUrl = getNextUrl(smartResponse.headers.get('Link'));
+      if (smartUrl) {
         await new Promise(resolve => setTimeout(resolve, 500)); // Rate limiting
       }
     }
 
     console.log(`✅ [IMPORT-COLLECTIONS] Smart collections fetched: ${smartCount}`);
 
-    // Fetch Custom Collections
+    // Fetch Custom Collections with cursor-based pagination
     console.log("📦 [IMPORT-COLLECTIONS] Fetching custom collections...");
-    let customPage = 1;
-    let hasMoreCustom = true;
+    let customUrl: string | null = `${shopifyUrl}/admin/api/2025-01/custom_collections.json?limit=250`;
+    let customBatch = 0;
 
-    while (hasMoreCustom) {
-      const customResponse = await fetch(
-        `${shopifyUrl}/admin/api/2025-01/custom_collections.json?limit=250&page=${customPage}`,
-        {
-          headers: {
-            "X-Shopify-Access-Token": accessToken,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    while (customUrl) {
+      customBatch++;
+      console.log(`  Batch ${customBatch}...`);
+      
+      const customResponse = await fetch(customUrl, {
+        headers: {
+          "X-Shopify-Access-Token": accessToken,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!customResponse.ok) {
         const errorText = await customResponse.text();
-        console.error(`❌ Failed to fetch custom collections page ${customPage}`);
+        console.error(`❌ Failed to fetch custom collections batch ${customBatch}`);
         console.error(`Status: ${customResponse.status}, Error: ${errorText}`);
         break;
       }
@@ -125,12 +139,15 @@ Deno.serve(async (req: Request) => {
       const customData = await customResponse.json();
       const customCollections = customData.custom_collections || [];
       
-      if (customCollections.length === 0) {
-        hasMoreCustom = false;
-      } else {
+      if (customCollections.length > 0) {
         allCollections = allCollections.concat(customCollections);
         customCount += customCollections.length;
-        customPage++;
+        console.log(`  ✅ Fetched ${customCollections.length} custom collections`);
+      }
+
+      // Get next page URL from Link header
+      customUrl = getNextUrl(customResponse.headers.get('Link'));
+      if (customUrl) {
         await new Promise(resolve => setTimeout(resolve, 500)); // Rate limiting
       }
     }

@@ -58,26 +58,36 @@ Deno.serve(async (req: Request) => {
     const accessToken = connection.access_token;
 
     let allPages: any[] = [];
-    let page = 1;
-    let hasMore = true;
 
-    // Fetch all pages with pagination
-    while (hasMore) {
-      console.log(`📄 [IMPORT-PAGES] Fetching page ${page}...`);
+    // Helper function to extract next URL from Link header
+    const getNextUrl = (linkHeader: string | null): string | null => {
+      if (!linkHeader) return null;
+      const links = linkHeader.split(',');
+      for (const link of links) {
+        const match = link.match(/<([^>]+)>;\s*rel="next"/);
+        if (match) return match[1];
+      }
+      return null;
+    };
+
+    // Fetch all pages with cursor-based pagination
+    let nextUrl: string | null = `${shopifyUrl}/admin/api/2025-01/pages.json?limit=250`;
+    let batchCount = 0;
+    
+    while (nextUrl) {
+      batchCount++;
+      console.log(`📄 [IMPORT-PAGES] Fetching batch ${batchCount}...`);
       
-      const response = await fetch(
-        `${shopifyUrl}/admin/api/2025-01/pages.json?limit=250&page=${page}`,
-        {
-          headers: {
-            "X-Shopify-Access-Token": accessToken,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(nextUrl, {
+        headers: {
+          "X-Shopify-Access-Token": accessToken,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ Failed to fetch pages page ${page}`);
+        console.error(`❌ Failed to fetch pages batch ${batchCount}`);
         console.error(`Status: ${response.status}, Error: ${errorText}`);
         break;
       }
@@ -85,11 +95,14 @@ Deno.serve(async (req: Request) => {
       const data = await response.json();
       const pages = data.pages || [];
       
-      if (pages.length === 0) {
-        hasMore = false;
-      } else {
+      if (pages.length > 0) {
         allPages = allPages.concat(pages);
-        page++;
+        console.log(`  ✅ Fetched ${pages.length} pages`);
+      }
+
+      // Get next page URL from Link header
+      nextUrl = getNextUrl(response.headers.get('Link'));
+      if (nextUrl) {
         await new Promise(resolve => setTimeout(resolve, 500)); // Rate limiting
       }
     }

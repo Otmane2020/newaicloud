@@ -115,6 +115,19 @@ export function ShopifySyncSettings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Clean up stuck syncs (running for more than 5 minutes)
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      await supabase
+        .from('sync_history')
+        .update({ 
+          status: 'failed', 
+          error_message: 'Sync timeout - exceeded 5 minutes',
+          completed_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('status', 'running')
+        .lt('started_at', fiveMinutesAgo);
+
       const { data, error } = await supabase
         .from('sync_history')
         .select('*')
@@ -196,6 +209,7 @@ export function ShopifySyncSettings() {
 
       const startTime = Date.now();
       let totalImported = 0;
+      let hasErrors = false;
 
       // Import based on selected types
       for (const type of settings.import_types) {
@@ -236,7 +250,10 @@ export function ShopifySyncSettings() {
               break;
           }
 
-          if (result?.data?.totalImported) {
+          if (result?.error) {
+            console.error(`Error importing ${type}:`, result.error);
+            hasErrors = true;
+          } else if (result?.data?.totalImported) {
             totalImported += result.data.totalImported;
           } else if (result?.data?.imported) {
             totalImported += result.data.imported;
@@ -245,6 +262,7 @@ export function ShopifySyncSettings() {
           }
         } catch (error) {
           console.error(`Error importing ${type}:`, error);
+          hasErrors = true;
         }
       }
 
@@ -254,10 +272,11 @@ export function ShopifySyncSettings() {
       await supabase
         .from('sync_history')
         .update({
-          status: 'success',
+          status: hasErrors ? 'failed' : 'success',
           items_synced: totalImported,
           duration_ms: duration,
           completed_at: new Date().toISOString(),
+          error_message: hasErrors ? 'Some imports failed - check logs' : null
         })
         .eq('id', historyEntry.id);
 
