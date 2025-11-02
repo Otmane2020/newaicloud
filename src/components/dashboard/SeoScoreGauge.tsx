@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Target, TrendingUp, AlertTriangle } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 interface SeoScoreGaugeProps {
   score: number;
@@ -15,6 +16,8 @@ interface SeoScoreGaugeProps {
 }
 
 export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGaugeProps) {
+  const { t, tf } = useTranslation();
+  
   // Nouvelle palette de couleurs rouge-orange
   const getScoreColor = () => {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
@@ -85,46 +88,52 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
 
   const categories = [
     {
-      name: "Homepage",
-      description: "Titre et description de votre page d'accueil",
+      name: t.seoGauge.categoryNames.homepage,
+      description: t.seoGauge.categoryDescriptions.homepage,
       value: Math.round(categoryScores.homepage),
       max: 100,
       link: "/seo?tab=homepage",
+      key: "homepage" as const
     },
     {
-      name: "Produits",
-      description: "Titres SEO, descriptions et tags optimisés",
+      name: t.seoGauge.categoryNames.products,
+      description: t.seoGauge.categoryDescriptions.products,
       value: Math.round(categoryScores.products),
       max: 100,
       link: "/seo?tab=products",
+      key: "products" as const
     },
     {
-      name: "Collections",
-      description: "Descriptions et images de vos collections",
+      name: t.seoGauge.categoryNames.collections,
+      description: t.seoGauge.categoryDescriptions.collections,
       value: Math.round(categoryScores.collections),
       max: 100,
       link: "/seo?tab=collections",
+      key: "collections" as const
     },
     {
-      name: "Contenu",
-      description: "Articles de blog et pages Shopify optimisés",
+      name: t.seoGauge.categoryNames.content,
+      description: t.seoGauge.categoryDescriptions.content,
       value: Math.round(categoryScores.content),
       max: 100,
       link: "/seo?tab=articles",
+      key: "content" as const
     },
     {
-      name: "Images",
-      description: "Textes alternatifs (alt text) des images",
+      name: t.seoGauge.categoryNames.images,
+      description: t.seoGauge.categoryDescriptions.images,
       value: Math.round(categoryScores.images),
       max: 100,
       link: "/seo?tab=alt",
+      key: "images" as const
     },
     {
-      name: "Technique",
-      description: "Synchronisation et configuration Shopify",
+      name: t.seoGauge.categoryNames.technical,
+      description: t.seoGauge.categoryDescriptions.technical,
       value: Math.round(categoryScores.technical),
       max: 100,
       link: "/integration",
+      key: "technical" as const
     },
   ];
 
@@ -146,10 +155,10 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
             </div>
             <div>
               <CardTitle className="text-2xl font-black bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-                Score SEO Global
+                {t.seoGauge.title}
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1 font-medium">
-                Analyse complète de votre visibilité en ligne
+                {t.seoGauge.subtitle}
               </p>
             </div>
           </div>
@@ -237,7 +246,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
                 <span className="text-2xl text-muted-foreground font-bold">/100</span>
               </div>
               <div className="mt-3 px-4 py-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-lg">
-                <span className="text-xs font-semibold text-muted-foreground">SCORE ACTUEL</span>
+                <span className="text-xs font-semibold text-muted-foreground">{t.seoGauge.currentScore}</span>
               </div>
             </div>
           </div>
@@ -246,9 +255,9 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
         {/* Breakdown des catégories - Cliquables avec design premium */}
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-base font-bold text-foreground">6 Catégories SEO</h4>
+            <h4 className="text-base font-bold text-foreground">6 {t.seoGauge.categories}</h4>
             <Badge variant="outline" className="text-xs">
-              {categories.filter((c) => c.value >= 80).length}/6 Excellentes
+              {tf('seoGauge.excellentCount', { count: categories.filter((c) => c.value >= 80).length })}
             </Badge>
           </div>
           {categories.map((cat, idx) => {
@@ -296,7 +305,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
                 <Target className="w-6 h-6 text-primary" />
               </div>
               <div className="flex-1">
-                <h5 className="text-base font-bold text-foreground mb-2">💡 Recommandation Prioritaire</h5>
+                <h5 className="text-base font-bold text-foreground mb-2">{t.seoGauge.priorityRecommendation}</h5>
                 <p className="text-sm font-medium text-foreground/80 leading-relaxed">
                   {(() => {
                     const lowestCategory = categories.reduce(
@@ -304,39 +313,29 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
                       categories[0],
                     );
 
-                    if (lowestCategory.name.includes("Homepage")) {
-                      return "Optimisez votre page d'accueil avec un titre et une description SEO accrocheurs. C'est la vitrine de votre boutique et peut améliorer votre score de +20 points !";
-                    } else if (lowestCategory.name.includes("Produits")) {
-                      return "Enrichissez vos fiches produits avec des titres SEO optimisés et des descriptions détaillées. Chaque produit optimisé peut booster votre visibilité et votre score global de +20 points.";
-                    } else if (lowestCategory.name.includes("Collections")) {
-                      return "Ajoutez des descriptions SEO complètes à vos collections pour améliorer leur référencement. Les collections bien optimisées attirent plus de trafic qualifié.";
-                    } else if (lowestCategory.name.includes("Contenu")) {
-                      return "Créez et publiez des articles de blog optimisés SEO pour attirer du trafic organique. Le contenu de qualité est la clé d'une stratégie SEO réussie !";
-                    } else if (lowestCategory.name.includes("Images")) {
-                      return "Ajoutez des textes alternatifs (alt text) descriptifs à toutes vos images. C'est rapide, facile et peut améliorer votre score de +15 points tout en rendant votre site accessible.";
-                    } else {
-                      return "Vérifiez votre configuration technique et assurez-vous que la synchronisation avec Shopify fonctionne correctement. Une base technique solide est essentielle !";
-                    }
+                    const recommendationKey = lowestCategory.key;
+                    return t.seoGauge.recommendations[recommendationKey];
                   })()}
                 </p>
                 <div className="mt-3 flex items-center gap-2 text-xs text-primary font-semibold">
-                  <span>Impact potentiel :</span>
+                  <span>{t.seoGauge.potentialImpact}</span>
                   <Badge className="bg-primary text-primary-foreground">
                     +
-                    {categories
-                      .reduce((min, cat) => (cat.value < min.value ? cat : min), categories[0])
-                      .name.includes("Produits")
-                      ? "20"
-                      : categories
-                            .reduce((min, cat) => (cat.value < min.value ? cat : min), categories[0])
-                            .name.includes("Images")
-                        ? "15"
-                        : categories
-                              .reduce((min, cat) => (cat.value < min.value ? cat : min), categories[0])
-                              .name.includes("Homepage")
-                          ? "20"
-                          : "10"}{" "}
-                    points
+                    {(() => {
+                      const lowestCategory = categories.reduce(
+                        (min, cat) => (cat.value < min.value ? cat : min),
+                        categories[0]
+                      );
+                      
+                      if (lowestCategory.key === "products" || lowestCategory.key === "homepage") {
+                        return "20";
+                      } else if (lowestCategory.key === "images") {
+                        return "15";
+                      } else {
+                        return "10";
+                      }
+                    })()}{" "}
+                    {t.seoGauge.points}
                   </Badge>
                 </div>
               </div>

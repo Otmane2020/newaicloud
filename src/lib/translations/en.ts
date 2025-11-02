@@ -235,6 +235,42 @@ export const translations = {
     },
   },
 
+  seoGauge: {
+    title: "Global SEO Score",
+    subtitle: "Complete analysis of your online visibility",
+    currentScore: "CURRENT SCORE",
+    categories: "SEO Categories",
+    excellent: "Excellent",
+    excellentCount: "{count}/6 Excellent",
+    priorityRecommendation: "💡 Priority Recommendation",
+    potentialImpact: "Potential impact:",
+    points: "points",
+    categoryNames: {
+      homepage: "Homepage",
+      products: "Products",
+      collections: "Collections",
+      content: "Content",
+      images: "Images",
+      technical: "Technical"
+    },
+    categoryDescriptions: {
+      homepage: "Title and description of your homepage",
+      products: "SEO titles, descriptions and optimized tags",
+      collections: "Descriptions and images of your collections",
+      content: "Blog articles and optimized Shopify pages",
+      images: "Alternative texts (alt text) for images",
+      technical: "Shopify synchronization and configuration"
+    },
+    recommendations: {
+      homepage: "Optimize your homepage with an eye-catching SEO title and description. It's your store's showcase and can improve your score by +20 points!",
+      products: "Enrich your product pages with optimized SEO titles and detailed descriptions. Each optimized product can boost your visibility and global score by +20 points.",
+      collections: "Add complete SEO descriptions to your collections to improve their ranking. Well-optimized collections attract more qualified traffic.",
+      content: "Create and publish SEO-optimized blog articles to attract organic traffic. Quality content is the key to a successful SEO strategy!",
+      images: "Add descriptive alternative texts (alt text) to all your images. It's quick, easy and can improve your score by +15 points while making your site accessible.",
+      technical: "Check your technical configuration and ensure synchronization with Shopify works properly. A solid technical foundation is essential!"
+    }
+  },
+
   seo: {
     title: "SEO Optimization",
     description: "Optimize your store for search engines with AI tools",
