@@ -17,6 +17,7 @@ import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CollectionImageDialog } from './CollectionImageDialog';
 import { VisionAIBanner } from './VisionAIBanner';
+import { useTranslation } from '@/lib/language';
 import {
   Table,
   TableBody,
@@ -80,6 +81,7 @@ type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function CollectionOptimization() {
+  const { t } = useTranslation();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -125,7 +127,7 @@ export function CollectionOptimization() {
       setCollections(collectionsData || []);
     } catch (error) {
       console.error('Error fetching collections:', error);
-      toast.error('Failed to load collections');
+      toast.error(t.collections.loadError);
     } finally {
       setLoading(false);
     }
@@ -216,25 +218,25 @@ export function CollectionOptimization() {
   }
 
   const tabs = [
-    { id: 'all' as QuickFilterTab, label: 'Toutes', count: collections.length },
-    { id: 'not-optimized' as QuickFilterTab, label: 'À optimiser', count: notOptimizedCount },
-    { id: 'optimized' as QuickFilterTab, label: 'Optimisées', count: optimizedCount },
+    { id: 'all' as QuickFilterTab, label: t.collections.optimization.tabs.all, count: collections.length },
+    { id: 'not-optimized' as QuickFilterTab, label: t.collections.optimization.tabs.notOptimized, count: notOptimizedCount },
+    { id: 'optimized' as QuickFilterTab, label: t.collections.optimization.tabs.optimized, count: optimizedCount },
   ];
 
   // Clickable stats handlers
   const handleNotOptimizedClick = () => {
     setActiveTab('not-optimized');
-    toast.info(`${notOptimizedCount} collections à optimiser`);
+    toast.info(t.collections.optimization.messages.collectionsToOptimize.replace('{{count}}', String(notOptimizedCount)));
   };
 
   const handleOptimizedClick = () => {
     setActiveTab('optimized');
-    toast.info(`${optimizedCount} collections optimisées`);
+    toast.info(t.collections.optimization.messages.collectionsOptimized.replace('{{count}}', String(optimizedCount)));
   };
 
   const handleGenerateAll = () => {
     if (notOptimizedCount === 0) {
-      toast.info('Toutes les collections sont déjà optimisées');
+      toast.info(t.collections.optimization.messages.allOptimized);
       return;
     }
     setActiveTab('not-optimized');
@@ -273,7 +275,7 @@ export function CollectionOptimization() {
 
   const handleOptimizeSelected = async () => {
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
-      toast.error('Limite trial atteinte pour les optimisations SEO');
+      toast.error(t.collections.optimization.messages.trialLimitReached);
       setShowUpgradeDialog(true);
       return;
     }
@@ -281,7 +283,7 @@ export function CollectionOptimization() {
     const collectionsToOptimize = collections.filter(c => selectedCollections.has(c.id));
 
     if (collectionsToOptimize.length === 0) {
-      toast.info('Aucune collection sélectionnée');
+      toast.info(t.collections.optimization.messages.noneSelected);
       return;
     }
 
@@ -291,7 +293,7 @@ export function CollectionOptimization() {
     
     if (invalidIds.length > 0) {
       console.error('❌ Invalid collection IDs detected:', invalidIds.map(c => ({ id: c.id, title: c.title })));
-      toast.error('Erreur: IDs de collection invalides détectés. Veuillez rafraîchir la page.');
+      toast.error(t.collections.optimization.messages.invalidIds);
       return;
     }
 
@@ -376,7 +378,7 @@ export function CollectionOptimization() {
     const optimized = updatedCollections.filter(Boolean) as Collection[];
     setOptimizedCollections(optimized);
     
-    toast.success(`✅ ${successCount} collection(s) optimisée(s)`);
+    toast.success(t.collections.optimization.messages.optimizationSuccess.replace('{{count}}', String(successCount)));
     
     // Check if auto-sync is enabled
     const { data: { user } } = await supabase.auth.getUser();
@@ -408,7 +410,7 @@ export function CollectionOptimization() {
 
   const handleOptimizeAllCollections = async () => {
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
-      toast.error('Limite trial atteinte pour les optimisations SEO');
+      toast.error(t.collections.optimization.messages.trialLimitReached);
       setShowUpgradeDialog(true);
       return;
     }
@@ -416,7 +418,7 @@ export function CollectionOptimization() {
     const collectionsToOptimize = collections.filter(c => !c.optimization_count || c.optimization_count === 0);
 
     if (collectionsToOptimize.length === 0) {
-      toast.info('Toutes les collections sont déjà optimisées');
+      toast.info(t.collections.optimization.messages.allOptimized);
       return;
     }
 

@@ -38,6 +38,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { VisionAIBanner } from '../seo/VisionAIBanner';
 import { ArticleFeaturedImageDialog } from './ArticleFeaturedImageDialog';
+import { useTranslation } from '@/lib/language';
 import {
   Select,
   SelectContent,
@@ -71,6 +72,7 @@ type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function ArticleManagement() {
+  const { t } = useTranslation();
   const [articles, setArticles] = useState<Article[]>([]);
   const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -104,7 +106,7 @@ export function ArticleManagement() {
       setArticles(data || []);
     } catch (error) {
       console.error('Error fetching articles:', error);
-      toast.error('Failed to load articles');
+      toast.error(t.blog.management.messages.loadError);
     } finally {
       setLoading(false);
     }
@@ -134,10 +136,10 @@ export function ArticleManagement() {
   };
 
   const getSeoScoreBadge = (score: number) => {
-    if (score >= 80) return { variant: 'default' as const, label: 'Excellent', color: 'text-green-600' };
-    if (score >= 60) return { variant: 'secondary' as const, label: 'Bon', color: 'text-blue-600' };
-    if (score >= 40) return { variant: 'outline' as const, label: 'Moyen', color: 'text-yellow-600' };
-    return { variant: 'outline' as const, label: 'Faible', color: 'text-red-600' };
+    if (score >= 80) return { variant: 'default' as const, label: t.blog.management.score.excellent, color: 'text-green-600' };
+    if (score >= 60) return { variant: 'secondary' as const, label: t.blog.management.score.good, color: 'text-blue-600' };
+    if (score >= 40) return { variant: 'outline' as const, label: t.blog.management.score.medium, color: 'text-yellow-600' };
+    return { variant: 'outline' as const, label: t.blog.management.score.poor, color: 'text-red-600' };
   };
 
   const handleOptimizeArticle = async (articleId: string) => {
@@ -149,7 +151,7 @@ export function ArticleManagement() {
       
       if (error) throw error;
       
-      toast.success('Article optimisé !');
+      toast.success(t.blog.management.messages.optimizationSuccess);
       await fetchArticles();
       
       // Get updated article
@@ -165,7 +167,7 @@ export function ArticleManagement() {
       }
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Erreur lors de l\'optimisation');
+      toast.error(error.message || t.blog.management.messages.optimizationError);
     } finally {
       setOptimizing(false);
     }
@@ -185,14 +187,14 @@ export function ArticleManagement() {
       if (error) throw error;
       
       if (data?.success) {
-        toast.success('Article synchronisé avec Shopify !', {
+        toast.success(t.blog.management.messages.syncSuccess, {
           description: optimizedArticle.title
         });
         await fetchArticles();
       }
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Erreur lors de la synchronisation');
+      toast.error(error.message || t.blog.management.messages.syncError);
     } finally {
       setSyncing(false);
       setOptimizedArticle(null);
@@ -202,7 +204,7 @@ export function ArticleManagement() {
   const handleSyncArticle = async (articleId: string) => {
     try {
       setSyncing(true);
-      toast.info('Syncing with Shopify...');
+      toast.info(t.blog.management.messages.importing);
 
       const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
         body: { articleId }
@@ -213,7 +215,7 @@ export function ArticleManagement() {
       if (data?.success) {
         const article = articles.find(a => a.id === articleId);
         if (article) {
-          toast.success('Article published to Shopify', {
+          toast.success(t.blog.management.messages.syncSuccess, {
             description: (
               <>
                 <span className="font-medium">{article.title}</span>
@@ -227,11 +229,11 @@ export function ArticleManagement() {
         }
         await fetchArticles();
       } else {
-        throw new Error(data?.error || 'Sync error');
+        throw new Error(data?.error || t.blog.management.messages.syncError);
       }
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Sync error');
+      toast.error(error.message || t.blog.management.messages.syncError);
     } finally {
       setSyncing(false);
     }
@@ -240,7 +242,7 @@ export function ArticleManagement() {
   const handleImportArticles = async () => {
     try {
       setSyncing(true);
-      const toastId = toast.loading('Importing articles from Shopify...');
+      const toastId = toast.loading(t.blog.management.messages.importing);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
@@ -269,11 +271,13 @@ export function ArticleManagement() {
 
       const totalArticles = data?.count || 0;
       const totalImages = data?.images || 0;
-      toast.success(`✅ ${totalArticles} articles et ${totalImages} images importés`, { id: toastId });
+      toast.success(t.blog.management.messages.importSuccess
+        .replace('{{totalArticles}}', String(totalArticles))
+        .replace('{{totalImages}}', String(totalImages)), { id: toastId });
       await fetchArticles();
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Failed to import articles');
+      toast.error(error.message || t.blog.management.messages.importError);
     } finally {
       setSyncing(false);
     }
@@ -281,13 +285,13 @@ export function ArticleManagement() {
 
   const handleOptimizeArticles = async () => {
     if (selectedArticles.size === 0) {
-      toast.error("Sélectionnez au moins un article");
+      toast.error(t.blog.management.messages.noneSelected);
       return;
     }
 
     try {
       setOptimizing(true);
-      const toastId = toast.loading(`Optimisation SEO de ${selectedArticles.size} article(s)...`);
+      const toastId = toast.loading(t.blog.management.messages.optimizing.replace('{{count}}', String(selectedArticles.size)));
 
       const { data, error } = await supabase.functions.invoke('generate-article-seo', {
         body: { article_ids: Array.from(selectedArticles) }
@@ -299,15 +303,15 @@ export function ArticleManagement() {
       const errorCount = data?.error_count || 0;
 
       if (successCount > 0) {
-        toast.success(`✅ ${successCount} article(s) optimisé(s)`, { id: toastId });
+        toast.success(t.blog.management.messages.optimizationSuccess.replace('{{count}}', String(successCount)), { id: toastId });
         await fetchArticles();
         setSelectedArticles(new Set());
       } else {
-        toast.error(`Échec de l'optimisation`, { id: toastId });
+        toast.error(t.blog.management.messages.optimizationError, { id: toastId });
       }
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Failed to optimize articles');
+      toast.error(error.message || t.blog.management.messages.importError);
     } finally {
       setOptimizing(false);
     }
@@ -432,10 +436,10 @@ export function ArticleManagement() {
   const optimizedCount = stats.aiOptimized;
 
   const quickFilters = [
-    { id: 'all' as QuickFilterTab, label: 'All', count: stats.total, icon: FileText },
-    { id: 'draft' as QuickFilterTab, label: 'Draft', count: stats.draft, icon: Clock },
-    { id: 'published' as QuickFilterTab, label: 'Published', count: stats.published, icon: CheckCircle },
-    { id: 'shopify-synced' as QuickFilterTab, label: 'Synced', count: stats.synced, icon: Upload },
+    { id: 'all' as QuickFilterTab, label: t.blog.management.tabs.all, count: stats.total, icon: FileText },
+    { id: 'draft' as QuickFilterTab, label: t.blog.management.tabs.draft, count: stats.draft, icon: Clock },
+    { id: 'published' as QuickFilterTab, label: t.blog.management.tabs.published, count: stats.published, icon: CheckCircle },
+    { id: 'shopify-synced' as QuickFilterTab, label: t.blog.management.tabs.shopifySynced, count: stats.synced, icon: Upload },
   ];
 
   if (loading) {
@@ -455,9 +459,9 @@ export function ArticleManagement() {
       <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold mb-1">Score SEO Global des Articles</h3>
+            <h3 className="text-lg font-semibold mb-1">{t.blog.management.globalScore.title}</h3>
             <p className="text-sm text-muted-foreground">
-              Moyenne des scores SEO de tous les articles
+              {t.blog.management.globalScore.subtitle}
             </p>
           </div>
           <div className="text-center">
@@ -470,7 +474,7 @@ export function ArticleManagement() {
               {globalSeoScore}/100
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {articles.length} article{articles.length > 1 ? 's' : ''}
+              {articles.length} {articles.length > 1 ? t.blog.management.globalScore.articles : t.blog.management.globalScore.article}
             </div>
           </div>
         </div>
@@ -576,7 +580,7 @@ export function ArticleManagement() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="Search articles..."
+                placeholder={t.blog.management.filters.search}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -585,36 +589,36 @@ export function ArticleManagement() {
 
             <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
               <SelectTrigger className="min-w-[150px]">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t.blog.management.filters.status} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="optimized">Optimized</SelectItem>
-                <SelectItem value="not-optimized">Not Optimized</SelectItem>
+                <SelectItem value="all">{t.blog.management.status.all}</SelectItem>
+                <SelectItem value="optimized">{t.blog.management.status.optimized}</SelectItem>
+                <SelectItem value="not-optimized">{t.blog.management.status.notOptimized}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
               <SelectTrigger className="min-w-[150px]">
-                <SelectValue placeholder="Sync" />
+                <SelectValue placeholder={t.blog.management.filters.sync} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Sync</SelectItem>
-                <SelectItem value="synced">Synced</SelectItem>
-                <SelectItem value="not-synced">Not Synced</SelectItem>
+                <SelectItem value="all">{t.blog.management.sync.all}</SelectItem>
+                <SelectItem value="synced">{t.blog.management.sync.synced}</SelectItem>
+                <SelectItem value="not-synced">{t.blog.management.sync.notSynced}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
               <SelectTrigger className="min-w-[150px]">
-                <SelectValue placeholder="SEO Quality" />
+                <SelectValue placeholder={t.blog.management.filters.quality} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Qualities</SelectItem>
-                <SelectItem value="excellent">Excellent (≥80)</SelectItem>
-                <SelectItem value="good">Good (60-79)</SelectItem>
-                <SelectItem value="medium">Medium (40-59)</SelectItem>
-                <SelectItem value="poor">Poor (&lt;40)</SelectItem>
+                <SelectItem value="all">{t.blog.management.quality.all}</SelectItem>
+                <SelectItem value="excellent">{t.blog.management.quality.excellent} (≥80)</SelectItem>
+                <SelectItem value="good">{t.blog.management.quality.good} (60-79)</SelectItem>
+                <SelectItem value="medium">{t.blog.management.quality.medium} (40-59)</SelectItem>
+                <SelectItem value="poor">{t.blog.management.quality.poor} (&lt;40)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -629,7 +633,7 @@ export function ArticleManagement() {
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
-                Optimiser SEO ({selectedArticles.size})
+                {t.blog.management.actions.optimizeSelected} ({selectedArticles.size})
               </Button>
             )}
             
@@ -640,7 +644,7 @@ export function ArticleManagement() {
               disabled={syncing || optimizing}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Import Shopify
+              {t.blog.management.actions.importArticles}
             </Button>
             
             <Button
@@ -693,7 +697,7 @@ export function ArticleManagement() {
                     onClick={handleSeoScoreSortToggle}
                     className="flex items-center gap-1 hover:text-primary transition-colors"
                   >
-                    SEO Score
+                    {t.blog.management.table.seoScore}
                     {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
                     {seoScoreSort === 'asc' && <ArrowUp className="w-4 h-4" />}
                     {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}

@@ -543,6 +543,80 @@ export const translations = {
     newCampaign: "New Campaign",
     createLinkingArticle: "Create Linking Article",
     configure: "Configure",
+    management: {
+      tabs: {
+        all: "All",
+        draft: "Draft",
+        published: "Published",
+        shopifySynced: "Synced"
+      },
+      status: {
+        optimized: "Optimized",
+        notOptimized: "Not Optimized",
+        all: "All Status"
+      },
+      sync: {
+        synced: "Synced",
+        notSynced: "Not Synced",
+        all: "All Sync"
+      },
+      quality: {
+        all: "All Quality",
+        excellent: "Excellent",
+        good: "Good",
+        medium: "Medium",
+        poor: "Poor"
+      },
+      score: {
+        excellent: "Excellent",
+        good: "Good",
+        medium: "Medium",
+        poor: "Poor"
+      },
+      actions: {
+        optimizeSelected: "Optimize Selected",
+        syncToShopify: "Sync to Shopify",
+        importArticles: "Import Articles",
+        selectAll: "Select All",
+        refresh: "Refresh",
+        generateImage: "Generate Image",
+        optimize: "Optimize"
+      },
+      messages: {
+        optimizationSuccess: "Article optimized!",
+        optimizationError: "Error during optimization",
+        syncSuccess: "Article published to Shopify",
+        syncError: "Sync error",
+        importSuccess: "✅ {{totalArticles}} articles and {{totalImages}} images imported",
+        importError: "Failed to import articles",
+        noneSelected: "Select at least one article",
+        loadError: "Failed to load articles",
+        importing: "Importing articles from Shopify...",
+        optimizing: "Optimizing SEO for {{count}} article(s)..."
+      },
+      viewMode: {
+        grid: "Grid",
+        list: "List"
+      },
+      filters: {
+        search: "Search articles...",
+        status: "Status",
+        sync: "Sync",
+        quality: "Quality"
+      },
+      table: {
+        title: "Title",
+        seoScore: "SEO Score",
+        status: "Status",
+        actions: "Actions"
+      },
+      globalScore: {
+        title: "Global Article SEO Score",
+        subtitle: "Average SEO score of all articles",
+        articles: "articles",
+        article: "article"
+      }
+    }
   },
 
   products: {
@@ -618,6 +692,73 @@ export const translations = {
     },
     loading: "Loading collections...",
     loadError: "Error loading collections",
+    optimization: {
+      tabs: {
+        all: "All",
+        notOptimized: "To Optimize",
+        optimized: "Optimized"
+      },
+      status: {
+        optimized: "Optimized",
+        notOptimized: "Not Optimized",
+        all: "All Status"
+      },
+      sync: {
+        synced: "Synced",
+        notSynced: "Not Synced",
+        all: "All Sync"
+      },
+      quality: {
+        all: "All Quality",
+        excellent: "Excellent",
+        good: "Good",
+        medium: "Medium",
+        poor: "Poor"
+      },
+      score: {
+        excellent: "Excellent",
+        good: "Good",
+        medium: "Medium",
+        poor: "Poor"
+      },
+      actions: {
+        optimizeSelected: "Optimize Selected",
+        optimizeAll: "Optimize All",
+        syncToShopify: "Sync to Shopify",
+        selectAll: "Select All",
+        refresh: "Refresh",
+        generateImage: "Generate Image"
+      },
+      messages: {
+        collectionsToOptimize: "{{count}} collections to optimize",
+        collectionsOptimized: "{{count}} collections optimized",
+        allOptimized: "All collections are already optimized",
+        noneSelected: "No collection selected",
+        optimizationSuccess: "✅ {{count}} collection(s) optimized",
+        optimizationError: "Error: {{message}}",
+        trialLimitReached: "Trial limit reached for SEO optimizations",
+        invalidIds: "Error: Invalid collection IDs detected. Please refresh.",
+        syncSuccess: "Successfully synced to Shopify",
+        syncError: "Failed to sync to Shopify"
+      },
+      viewMode: {
+        grid: "Grid",
+        list: "List"
+      },
+      filters: {
+        search: "Search by title or handle...",
+        status: "Status",
+        sync: "Sync",
+        quality: "Quality"
+      },
+      table: {
+        collection: "Collection",
+        seoScore: "SEO Score",
+        products: "Products",
+        status: "Status",
+        actions: "Actions"
+      }
+    }
   },
 
   chat: {

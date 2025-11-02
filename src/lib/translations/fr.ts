@@ -543,6 +543,80 @@ export const translations = {
     newCampaign: "Nouvelle Campagne",
     createLinkingArticle: "Créer un Article de Linking",
     configure: "Configurer",
+    management: {
+      tabs: {
+        all: "Tous",
+        draft: "Brouillon",
+        published: "Publié",
+        shopifySynced: "Synchronisé"
+      },
+      status: {
+        optimized: "Optimisé",
+        notOptimized: "Non optimisé",
+        all: "Tous les statuts"
+      },
+      sync: {
+        synced: "Synchronisé",
+        notSynced: "Non synchronisé",
+        all: "Toutes les syncs"
+      },
+      quality: {
+        all: "Toutes qualités",
+        excellent: "Excellent",
+        good: "Bon",
+        medium: "Moyen",
+        poor: "Faible"
+      },
+      score: {
+        excellent: "Excellent",
+        good: "Bon",
+        medium: "Moyen",
+        poor: "Faible"
+      },
+      actions: {
+        optimizeSelected: "Optimiser sélection",
+        syncToShopify: "Sync vers Shopify",
+        importArticles: "Importer articles",
+        selectAll: "Tout sélectionner",
+        refresh: "Actualiser",
+        generateImage: "Générer image",
+        optimize: "Optimiser"
+      },
+      messages: {
+        optimizationSuccess: "Article optimisé !",
+        optimizationError: "Erreur lors de l'optimisation",
+        syncSuccess: "Article publié sur Shopify",
+        syncError: "Erreur de synchronisation",
+        importSuccess: "✅ {{totalArticles}} articles et {{totalImages}} images importés",
+        importError: "Échec de l'import des articles",
+        noneSelected: "Sélectionnez au moins un article",
+        loadError: "Échec du chargement des articles",
+        importing: "Import des articles depuis Shopify...",
+        optimizing: "Optimisation SEO de {{count}} article(s)..."
+      },
+      viewMode: {
+        grid: "Grille",
+        list: "Liste"
+      },
+      filters: {
+        search: "Rechercher des articles...",
+        status: "Statut",
+        sync: "Synchronisation",
+        quality: "Qualité"
+      },
+      table: {
+        title: "Titre",
+        seoScore: "Score SEO",
+        status: "Statut",
+        actions: "Actions"
+      },
+      globalScore: {
+        title: "Score SEO Global des Articles",
+        subtitle: "Moyenne des scores SEO de tous les articles",
+        articles: "articles",
+        article: "article"
+      }
+    }
   },
 
   products: {
@@ -618,6 +692,73 @@ export const translations = {
     },
     loading: "Chargement des collections...",
     loadError: "Erreur lors du chargement des collections",
+    optimization: {
+      tabs: {
+        all: "Toutes",
+        notOptimized: "À optimiser",
+        optimized: "Optimisées"
+      },
+      status: {
+        optimized: "Optimisé",
+        notOptimized: "Non optimisé",
+        all: "Tous les statuts"
+      },
+      sync: {
+        synced: "Synchronisé",
+        notSynced: "Non synchronisé",
+        all: "Toutes les syncs"
+      },
+      quality: {
+        all: "Toutes qualités",
+        excellent: "Excellent",
+        good: "Bon",
+        medium: "Moyen",
+        poor: "Faible"
+      },
+      score: {
+        excellent: "Excellent",
+        good: "Bon",
+        medium: "Moyen",
+        poor: "Faible"
+      },
+      actions: {
+        optimizeSelected: "Optimiser sélection",
+        optimizeAll: "Optimiser tout",
+        syncToShopify: "Sync vers Shopify",
+        selectAll: "Tout sélectionner",
+        refresh: "Actualiser",
+        generateImage: "Générer image"
+      },
+      messages: {
+        collectionsToOptimize: "{{count}} collections à optimiser",
+        collectionsOptimized: "{{count}} collections optimisées",
+        allOptimized: "Toutes les collections sont déjà optimisées",
+        noneSelected: "Aucune collection sélectionnée",
+        optimizationSuccess: "✅ {{count}} collection(s) optimisée(s)",
+        optimizationError: "Erreur : {{message}}",
+        trialLimitReached: "Limite trial atteinte pour les optimisations SEO",
+        invalidIds: "Erreur: IDs de collection invalides détectés. Veuillez rafraîchir la page.",
+        syncSuccess: "Synchronisation réussie vers Shopify",
+        syncError: "Échec de la synchronisation vers Shopify"
+      },
+      viewMode: {
+        grid: "Grille",
+        list: "Liste"
+      },
+      filters: {
+        search: "Rechercher par titre ou identifiant...",
+        status: "Statut",
+        sync: "Synchronisation",
+        quality: "Qualité"
+      },
+      table: {
+        collection: "Collection",
+        seoScore: "Score SEO",
+        products: "Produits",
+        status: "Statut",
+        actions: "Actions"
+      }
+    }
   },
 
   chat: {

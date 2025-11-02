@@ -84,11 +84,11 @@ export default function Collections() {
 
   const handleImportCollections = async () => {
     setImporting(true);
-    const toastId = toast.loading("Import des collections...");
+    const toastId = toast.loading(t.collections.import.importing);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      if (!user) throw new Error(t.collections.import.notAuthenticated);
 
       const { data: storeData } = await supabase
         .from('shopify_connections')
@@ -98,7 +98,7 @@ export default function Collections() {
         .single();
 
       if (!storeData) {
-        toast.error("Aucune connexion Shopify active", { id: toastId });
+        toast.error(t.collections.import.noActiveConnection, { id: toastId });
         return;
       }
 
@@ -108,11 +108,11 @@ export default function Collections() {
 
       if (error) throw error;
 
-      toast.success(`✅ ${data.totalImported || 0} images de collections importées`, { id: toastId });
+      toast.success(t.collections.import.imagesImported.replace('{{count}}', String(data.totalImported || 0)), { id: toastId });
       await fetchCollections();
     } catch (error: any) {
       console.error('Error importing collections:', error);
-      toast.error(error.message || "Erreur lors de l'import", { id: toastId });
+      toast.error(error.message || t.collections.import.importError, { id: toastId });
     } finally {
       setImporting(false);
     }
