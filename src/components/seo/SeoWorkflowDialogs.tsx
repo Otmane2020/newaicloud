@@ -79,7 +79,7 @@ export function ProgressDialog({
   }, [open, isComplete]);
 
   const getTitle = () => {
-    if (animatedPercentage === 100) {
+    if (isComplete) {
       return operation === 'syncing' ? '✅ Synchronisation terminée !' : '✅ Optimisation terminée !';
     }
     if (operation === 'syncing') return '🔄 Synchronisation en cours...';
@@ -91,7 +91,7 @@ export function ProgressDialog({
   };
 
   const getDescription = () => {
-    if (animatedPercentage === 100) {
+    if (isComplete) {
       return operation === 'syncing' 
         ? `✅ ${total} élément${total > 1 ? 's synchronisés' : ' synchronisé'}` 
         : `✅ ${total} élément${total > 1 ? 's traités' : ' traité'}`;
@@ -108,7 +108,7 @@ export function ProgressDialog({
         <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
         <div className="flex flex-col items-center justify-center py-8 space-y-6">
           <div className="relative">
-            {animatedPercentage === 100 ? (
+            {isComplete ? (
               <CheckCircle className="w-16 h-16 text-green-600 dark:text-green-400 animate-scale-in" />
             ) : (
               <>
