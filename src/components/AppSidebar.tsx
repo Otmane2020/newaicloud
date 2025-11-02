@@ -59,68 +59,6 @@ import { useTranslation } from "@/lib/language";
 
 // Removed - now defined with seoSubItems
 
-const seoSubItems = [
-  { title: "Products", url: "/seo?tab=products", icon: ShoppingBag },
-  { title: "Collections", url: "/seo?tab=collections", icon: Package },
-  { title: "Pages", url: "/seo?tab=pages", icon: FileText },
-  { title: "Articles", url: "/seo?tab=articles", icon: FileText },
-  { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
-  { title: "Homepage", url: "/seo?tab=homepage", icon: Home },
-  { title: "Tags", url: "/seo?tab=tags", icon: Tags },
-  { title: "KPIs & Stats", url: "/seo?tab=kpis", icon: BarChart3 },
-  { title: "Automation", url: "/seo?tab=automation", icon: Settings },
-];
-
-const auditSubItems = [
-  { title: "Vue d'ensemble", url: "/seo?tab=audit-dashboard&subtab=overview", icon: BarChart3, translationKey: "overview" },
-  { title: "Page d'accueil", url: "/seo?tab=audit-dashboard&subtab=homepage", icon: Home, translationKey: "homepage" },
-  { title: "Problèmes", url: "/seo?tab=audit-dashboard&subtab=issues", icon: AlertCircle, translationKey: "issues" },
-  { title: "Plan d'action", url: "/seo?tab=audit-dashboard&subtab=actions", icon: Target, translationKey: "actions" },
-  { title: "Rapports", url: "/seo?tab=audit", icon: List, translationKey: "reports" },
-];
-
-const mainMenuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Products", url: "/products", icon: ShoppingBag },
-  // Hidden temporarily
-  // { title: "Ads Campaign", url: "/seo?tab=ads-campaign", icon: Megaphone },
-];
-
-const blogSubItems = [
-  { title: "AI Articles", url: "/blog?subtab=create-article", icon: Sparkles },
-  { title: "AI Campaigns", url: "/blog?subtab=campaigns", icon: CalendarClock },
-  { title: "Opportunities", url: "/blog?subtab=opportunities", icon: Lightbulb },
-  { title: "Netlinking", url: "/blog?subtab=netlinking", icon: Link },
-  { title: "Settings", url: "/blog?subtab=settings", icon: Settings },
-];
-
-const merchantSubItems = [
-  { title: "Flux XML", url: "/merchant?tab=feed", icon: FileText },
-  { title: "Paramètres", url: "/merchant?tab=settings", icon: Settings },
-  { title: "Produits", url: "/merchant?tab=products", icon: Package },
-  { title: "Synchronisation", url: "/merchant?tab=sync", icon: RefreshCw },
-];
-
-const bottomMenuItems = [
-  { title: "AI Search", url: "/search", icon: Search },
-  { title: "Google Shopping", url: "/shopping", icon: ShoppingCart },
-];
-
-const chatSubItems = [
-  { title: "Chat Assistant", url: "/chat", icon: MessageSquare },
-  { title: "AI Robot", url: "/chat-robot", icon: Bot },
-  { title: "History", url: "/chat-history", icon: History },
-  { title: "Product Source", url: "/product-source", icon: Database },
-  { title: "Chat Settings", url: "/chat-settings", icon: Settings },
-];
-
-const accountSubItems = [
-  { title: "My Profile", url: "/account?tab=profile", icon: User },
-  { title: "Integrations", url: "/account?tab=integrations", icon: Package },
-  { title: "Subscription", url: "/account?tab=subscription", icon: CreditCard },
-  { title: "Billing", url: "/account?tab=billing", icon: Receipt },
-];
-
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
@@ -130,6 +68,66 @@ export function AppSidebar() {
   const currentSearch = location.search;
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const isMobile = useIsMobile();
+
+  const seoSubItems = [
+    { title: t.seo.submenu.products, url: "/seo?tab=products", icon: ShoppingBag, key: "products" },
+    { title: t.seo.submenu.collections, url: "/seo?tab=collections", icon: Package, key: "collections" },
+    { title: t.seo.submenu.pages, url: "/seo?tab=pages", icon: FileText, key: "pages" },
+    { title: t.seo.submenu.articles, url: "/seo?tab=articles", icon: FileText, key: "articles" },
+    { title: t.seo.submenu.altimage, url: "/seo?tab=alt", icon: Image, key: "altimage" },
+    { title: t.seo.submenu.homepage, url: "/seo?tab=homepage", icon: Home, key: "homepage" },
+    { title: t.seo.submenu.tags, url: "/seo?tab=tags", icon: Tags, key: "tags" },
+    { title: t.seo.submenu.kpisStats, url: "/seo?tab=kpis", icon: BarChart3, key: "kpisStats" },
+    { title: t.seo.submenu.automation, url: "/seo?tab=automation", icon: Settings, key: "automation" },
+  ];
+
+  const auditSubItems = [
+    { title: t.seo.audit.subtabs.overview, url: "/seo?tab=audit-dashboard&subtab=overview", icon: BarChart3, translationKey: "overview" },
+    { title: t.seo.audit.subtabs.homepage, url: "/seo?tab=audit-dashboard&subtab=homepage", icon: Home, translationKey: "homepage" },
+    { title: t.seo.audit.subtabs.issues, url: "/seo?tab=audit-dashboard&subtab=issues", icon: AlertCircle, translationKey: "issues" },
+    { title: t.seo.audit.subtabs.actions, url: "/seo?tab=audit-dashboard&subtab=actions", icon: Target, translationKey: "actions" },
+    { title: t.seo.audit.subtabs.reports, url: "/seo?tab=audit", icon: List, translationKey: "reports" },
+  ];
+
+  const mainMenuItems = [
+    { title: t.navigation.dashboard, url: "/dashboard", icon: LayoutDashboard, key: "dashboard" },
+    { title: t.navigation.products, url: "/products", icon: ShoppingBag, key: "products" },
+  ];
+
+  const blogSubItems = [
+    { title: t.blog.submenu.aiArticles, url: "/blog?subtab=create-article", icon: Sparkles, key: "aiArticles" },
+    { title: t.blog.submenu.campaigns, url: "/blog?subtab=campaigns", icon: CalendarClock, key: "campaigns" },
+    { title: t.blog.submenu.opportunities, url: "/blog?subtab=opportunities", icon: Lightbulb, key: "opportunities" },
+    { title: t.blog.submenu.netlinking, url: "/blog?subtab=netlinking", icon: Link, key: "netlinking" },
+    { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings" },
+  ];
+
+  const merchantSubItems = [
+    { title: t.merchant.submenu.feed, url: "/merchant?tab=feed", icon: FileText, key: "feed" },
+    { title: t.merchant.submenu.settings, url: "/merchant?tab=settings", icon: Settings, key: "settings" },
+    { title: t.merchant.submenu.products, url: "/merchant?tab=products", icon: Package, key: "products" },
+    { title: t.merchant.submenu.sync, url: "/merchant?tab=sync", icon: RefreshCw, key: "sync" },
+  ];
+
+  const bottomMenuItems = [
+    { title: t.navigation.aiSearch, url: "/search", icon: Search, key: "aiSearch" },
+    { title: t.navigation.googleShopping, url: "/shopping", icon: ShoppingCart, key: "googleShopping" },
+  ];
+
+  const chatSubItems = [
+    { title: t.chat.submenu.assistant, url: "/chat", icon: MessageSquare, key: "assistant" },
+    { title: t.chat.submenu.robot, url: "/chat-robot", icon: Bot, key: "robot" },
+    { title: t.chat.submenu.history, url: "/chat-history", icon: History, key: "history" },
+    { title: t.chat.submenu.productSource, url: "/product-source", icon: Database, key: "productSource" },
+    { title: t.chat.submenu.settings, url: "/chat-settings", icon: Settings, key: "settings" },
+  ];
+
+  const accountSubItems = [
+    { title: t.account.submenu.profile, url: "/account?tab=profile", icon: User, key: "profile" },
+    { title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" },
+    { title: t.account.submenu.subscription, url: "/account?tab=subscription", icon: CreditCard, key: "subscription" },
+    { title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" },
+  ];
 
   useEffect(() => {
     const fetchUserPlan = async () => {
@@ -219,7 +217,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild isActive={isActive(item.url)}>
                   <NavLink to={item.url}>
                     <item.icon className="h-4 w-4" />
-                    <span>{t.navigation[item.title.toLowerCase() as keyof typeof t.navigation] || item.title}</span>
+                    <span>{item.title}</span>
                   </NavLink>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -242,7 +240,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{t.seo.submenu[subItem.title.toLowerCase().replace(/\s+/g, '') as keyof typeof t.seo.submenu] || subItem.title}</span>
+                              <span>{subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -264,9 +262,7 @@ export function AppSidebar() {
                                 <SidebarMenuSubButton key={auditItem.title} asChild isActive={isActive(auditItem.url)} className="pl-2">
                                   <NavLink to={auditItem.url}>
                                     <auditItem.icon className="h-3 w-3" />
-                                    <span className="text-xs">
-                                      {t.seo.audit.subtabs[auditItem.translationKey as keyof typeof t.seo.audit.subtabs] || auditItem.title}
-                                    </span>
+                                    <span className="text-xs">{auditItem.title}</span>
                                   </NavLink>
                                 </SidebarMenuSubButton>
                               ))}
@@ -296,7 +292,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{t.blog.submenu[subItem.title.toLowerCase().replace(/\s+/g, '') as keyof typeof t.blog.submenu] || subItem.title}</span>
+                              <span>{subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -312,7 +308,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title === "AI Search" ? t.navigation.aiSearch : t.navigation.googleShopping}</span>
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -335,7 +331,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{t.merchant.submenu[subItem.title.toLowerCase().replace(/\s+/g, '') === 'fluxxml' ? 'feed' : subItem.title.toLowerCase().replace(/\s+/g, '') as keyof typeof t.merchant.submenu] || subItem.title}</span>
+                              <span>{subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -357,25 +353,16 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {chatSubItems.map((subItem) => {
-                        let key: keyof typeof t.chat.submenu = 'assistant';
-                        if (subItem.title === "Chat Assistant") key = 'assistant';
-                        else if (subItem.title === "AI Robot") key = 'robot';
-                        else if (subItem.title === "History") key = 'history';
-                        else if (subItem.title === "Product Source") key = 'productSource';
-                        else if (subItem.title === "Chat Settings") key = 'settings';
-                        
-                        return (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                              <NavLink to={subItem.url}>
-                                <subItem.icon className="h-4 w-4" />
-                                <span>{t.chat.submenu[key]}</span>
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        );
-                      })}
+                      {chatSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
@@ -393,24 +380,16 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {accountSubItems.map((subItem) => {
-                        let key: keyof typeof t.account.submenu = 'profile';
-                        if (subItem.title === "My Profile") key = 'profile';
-                        else if (subItem.title === "Integrations") key = 'integrations';
-                        else if (subItem.title === "Subscription") key = 'subscription';
-                        else if (subItem.title === "Billing") key = 'billing';
-                        
-                        return (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                              <NavLink to={subItem.url}>
-                                <subItem.icon className="h-4 w-4" />
-                                <span>{t.account.submenu[key]}</span>
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        );
-                      })}
+                      {accountSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
