@@ -134,18 +134,17 @@ export function SeoOptimization() {
 
   // Statistics - distinguishing between existing data and AI-optimized data
   const totalEmpty = products.filter(p => !p.seo_title && !p.seo_description).length;
-  const existingData = products.filter(p => (p.seo_title || p.seo_description) && (p.optimization_count || 0) === 0).length;
-  const aiOptimized = products.filter(p => (p.optimization_count || 0) > 0).length;
+  const existingData = products.filter(p => (p.seo_title || p.seo_description) && p.enrichment_status !== 'enriched').length;
+  const aiOptimized = products.filter(p => p.enrichment_status === 'enriched').length;
   const notEnrichedCount = totalEmpty + existingData;
   const enrichedCount = aiOptimized;
-  const pendingSyncCount = products.filter(p => (p.optimization_count || 0) > 0 && !p.seo_synced_to_shopify).length;
-  const syncedCount = products.filter(p => p.seo_synced_to_shopify && (p.optimization_count || 0) > 0).length;
+  const pendingSyncCount = products.filter(p => p.enrichment_status === 'enriched' && !p.seo_synced_to_shopify).length;
+  const syncedCount = products.filter(p => p.seo_synced_to_shopify && p.enrichment_status === 'enriched').length;
   const optimizationRate = products.length > 0 ? Math.round((aiOptimized / products.length) * 100) : 0;
 
   // Calculate global SEO score with 30/70 weighting
-  // Use optimization_count to identify AI-optimized products (persists across plans)
-  const productsNotOptimized = products.filter(p => (p.optimization_count || 0) === 0);
-  const productsOptimized = products.filter(p => (p.optimization_count || 0) > 0);
+  const productsNotOptimized = products.filter(p => p.enrichment_status !== 'enriched');
+  const productsOptimized = products.filter(p => p.enrichment_status === 'enriched');
 
   // Score for non-optimized products (based on original Shopify data)
   const scoreWithoutAI = productsNotOptimized.length > 0
