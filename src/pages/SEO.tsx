@@ -23,12 +23,12 @@ import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
 
 export default function SEO() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
   const [articlesSeoScore, setArticlesSeoScore] = useState<number>(0);
   const [pagesSeoScore, setPagesSeoScore] = useState<number>(0);
   const [loadingScores, setLoadingScores] = useState(false);
-  const { t } = useTranslation();
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -155,10 +155,10 @@ export default function SEO() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
-            SEO Optimisation
+            {t.seo.title}
           </h1>
           <p className="text-muted-foreground text-base md:text-lg">
-            Optimisez votre boutique pour les moteurs de recherche avec des outils IA
+            {t.seo.description}
           </p>
         </div>
         <Button
@@ -168,7 +168,7 @@ export default function SEO() {
           className="gap-2"
         >
           <RefreshCw className="w-4 h-4" />
-          Clear Cache
+          {t.seo.clearCache}
         </Button>
       </div>
 

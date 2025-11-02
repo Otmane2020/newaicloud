@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 import { 
   ProgressDialog, 
   ResultsDialog, 
@@ -85,6 +86,7 @@ type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function SeoOptimization() {
+  const { t, tf } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -258,32 +260,32 @@ export function SeoOptimization() {
   }
 
   const tabs = [
-    { id: 'all' as QuickFilterTab, label: 'All Products', count: products.length },
-    { id: 'not-enriched' as QuickFilterTab, label: 'To Optimize', count: notEnrichedCount },
-    { id: 'enriched' as QuickFilterTab, label: 'Optimized', count: enrichedCount },
-    { id: 'pending-sync' as QuickFilterTab, label: 'To Synchronize', count: pendingSyncCount },
-    { id: 'synced' as QuickFilterTab, label: 'Synchronized', count: syncedCount }
+    { id: 'all' as QuickFilterTab, label: t.seo.optimization.allProducts, count: products.length },
+    { id: 'not-enriched' as QuickFilterTab, label: t.seo.optimization.toOptimize, count: notEnrichedCount },
+    { id: 'enriched' as QuickFilterTab, label: t.seo.optimization.optimizedTab, count: enrichedCount },
+    { id: 'pending-sync' as QuickFilterTab, label: t.seo.optimization.toSynchronizeTab, count: pendingSyncCount },
+    { id: 'synced' as QuickFilterTab, label: t.seo.optimization.synchronizedTab, count: syncedCount }
   ];
 
   // Clickable stats handlers
   const handleNotOptimizedClick = () => {
     setActiveTab('not-enriched');
-    toast.info(`Showing ${notEnrichedCount} products to optimize`);
+    toast.info(tf('seo.optimization.showingToOptimize', { count: notEnrichedCount }));
   };
 
   const handleOptimizedClick = () => {
     setActiveTab('enriched');
-    toast.info(`Showing ${enrichedCount} optimized products`);
+    toast.info(tf('seo.optimization.showingOptimized', { count: enrichedCount }));
   };
 
   const handleSyncedClick = () => {
     setActiveTab('synced');
-    toast.info(`Showing ${syncedCount} synchronized products`);
+    toast.info(tf('seo.optimization.showingSynchronized', { count: syncedCount }));
   };
 
   const handleGenerateAll = () => {
     if (notEnrichedCount === 0) {
-      toast.info('All products are already optimized');
+      toast.info(t.seo.optimization.allProductsOptimized);
       return;
     }
     setActiveTab('not-enriched');
@@ -353,12 +355,12 @@ export function SeoOptimization() {
 
     if (productsToGenerate.length === 0) {
       if (allAlreadyOptimized) {
-        toast.warning('Les produits sélectionnés sont déjà optimisés');
+        toast.warning(t.seo.optimization.alreadyOptimized);
       } else if (limits?.isTrialing) {
         // Show upgrade dialog instead of toast for better UX
         setShowUpgradeDialog(true);
       } else {
-        toast.info('No products to optimize');
+        toast.info(t.seo.optimization.noProductsSelected);
       }
       return;
     }
@@ -422,7 +424,7 @@ export function SeoOptimization() {
     const productsToGenerate = products.filter(p => !p.seo_title || !p.seo_description);
 
     if (productsToGenerate.length === 0) {
-      toast.info('All products are already optimized');
+      toast.info(t.seo.optimization.allProductsOptimized);
       return;
     }
 
@@ -465,7 +467,7 @@ export function SeoOptimization() {
     );
 
     if (productsToSync.length === 0) {
-      toast.info('No products to synchronize');
+      toast.info(t.seo.optimization.noProductsToSynchronize);
       return;
     }
 
@@ -521,7 +523,7 @@ export function SeoOptimization() {
 
   const handleSyncProducts = async (productIds: string[]) => {
     if (productIds.length === 0) {
-      toast.info('No products to synchronize');
+      toast.info(t.seo.optimization.noProductsToSynchronize);
       return;
     }
 
@@ -563,8 +565,8 @@ export function SeoOptimization() {
     if (isOptimizationComplete) {
       const successCount = progress.current;
       if (successCount > 0) {
-        toast.success('Synchronisation terminée !', {
-          description: `${successCount} produit${successCount > 1 ? 's synchronisés' : ' synchronisé'} avec succès sur Shopify`
+        toast.success(t.seo.optimization.syncCompleted, {
+          description: tf('seo.optimization.productsSynced', { count: successCount })
         });
       }
     }
@@ -599,24 +601,24 @@ export function SeoOptimization() {
                 <Sparkles className="w-6 h-6 text-blue-600" />
               </div>
               <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                SEO Optimization
+                {t.seo.optimization.title}
               </h1>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              Generate optimized titles and descriptions automatically to improve your SEO and increase conversions by 40%.
+              {t.seo.optimization.subtitle}
             </p>
             <div className="flex flex-wrap gap-4 pt-2">
               <div className="flex items-center gap-2 text-sm">
                 <Target className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">Smart SEO</span>
+                <span className="font-medium">{t.seo.optimization.smartSeo}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="font-medium">+40% visibility</span>
+                <span className="font-medium">{t.seo.optimization.visibility}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Zap className="w-4 h-4 text-purple-600" />
-                <span className="font-medium">Fast generation</span>
+                <span className="font-medium">{t.seo.optimization.fastGeneration}</span>
               </div>
             </div>
           </div>
@@ -629,12 +631,12 @@ export function SeoOptimization() {
                 }`}>
                   {globalSeoScore}/100
                 </div>
-                <div className="text-sm text-muted-foreground">Global SEO Score</div>
+                <div className="text-sm text-muted-foreground">{t.seo.optimization.globalScore}</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  30% non-optimized + 70% AI-optimized
+                  30% {t.seo.optimization.notOptimized} + 70% {t.seo.optimization.aiOptimized}
                 </div>
                 <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  {optimizationRate}% optimized
+                  {optimizationRate}% {t.seo.optimization.optimized}
                 </div>
               </div>
               <Button
@@ -644,7 +646,7 @@ export function SeoOptimization() {
                 className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
               >
                 <Sparkles className="w-5 h-5" />
-                Start Optimization
+                {t.seo.optimization.startOptimization}
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </div>
@@ -662,17 +664,17 @@ export function SeoOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Not AI-Optimized</p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">{t.seo.optimization.notAiOptimized}</p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{notEnrichedCount}</p>
               <div className="flex gap-2 mt-1 text-xs text-orange-600 dark:text-orange-400">
-                <span>Empty: {totalEmpty}</span>
+                <span>{t.seo.optimization.empty}: {totalEmpty}</span>
                 <span>•</span>
-                <span>Existing: {existingData}</span>
+                <span>{t.seo.optimization.existing}: {existingData}</span>
               </div>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Click to view</p>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">{t.seo.optimization.clickToView}</p>
         </Card>
         
         <Card 
@@ -681,15 +683,15 @@ export function SeoOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">{t.seo.optimization.aiOptimizedLabel}</p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{enrichedCount}</p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                Generated by AI
+                {t.seo.optimization.generatedByAI}
               </p>
             </div>
             <Sparkles className="w-8 h-8 text-green-600" />
           </div>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to view</p>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.optimization.clickToView}</p>
         </Card>
         
         <Card 
@@ -701,15 +703,15 @@ export function SeoOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">{t.seo.optimization.toSynchronize}</p>
               <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pendingSyncCount}</p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                AI-optimized only
+                {t.seo.optimization.aiOptimizedOnly}
               </p>
             </div>
             <Upload className="w-8 h-8 text-purple-600" />
           </div>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to view</p>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">{t.seo.optimization.clickToView}</p>
         </Card>
         
         <Card 
@@ -718,15 +720,15 @@ export function SeoOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t.seo.optimization.synchronized}</p>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{syncedCount}</p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                AI-optimized synced
+                {t.seo.optimization.aiOptimizedSynced}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-blue-600" />
           </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">{t.seo.optimization.clickToView}</p>
         </Card>
       </div>
 
@@ -756,7 +758,7 @@ export function SeoOptimization() {
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search products by title..."
+                placeholder={t.seo.optimization.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-12 h-12 text-lg"
@@ -768,7 +770,7 @@ export function SeoOptimization() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="h-12 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px]"
             >
-              <option value="all">All Categories</option>
+              <option value="all">{t.seo.optimization.allCategories}</option>
               {uniqueCategories.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -778,36 +780,36 @@ export function SeoOptimization() {
 
             <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
               <SelectTrigger className="h-12 min-w-[180px]">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t.seo.optimization.status} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="optimized">Optimized</SelectItem>
-                <SelectItem value="not-optimized">Not Optimized</SelectItem>
+                <SelectItem value="all">{t.seo.optimization.allStatus}</SelectItem>
+                <SelectItem value="optimized">{t.seo.optimization.optimizedTab}</SelectItem>
+                <SelectItem value="not-optimized">{t.seo.optimization.toOptimize}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
               <SelectTrigger className="h-12 min-w-[180px]">
-                <SelectValue placeholder="Sync Status" />
+                <SelectValue placeholder={t.seo.optimization.syncStatus} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Sync</SelectItem>
-                <SelectItem value="synced">Synced</SelectItem>
-                <SelectItem value="not-synced">Not Synced</SelectItem>
+                <SelectItem value="all">{t.seo.optimization.allSync}</SelectItem>
+                <SelectItem value="synced">{t.seo.optimization.synced}</SelectItem>
+                <SelectItem value="not-synced">{t.seo.optimization.toSynchronize}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
               <SelectTrigger className="h-12 min-w-[180px]">
-                <SelectValue placeholder="SEO Quality" />
+                <SelectValue placeholder={t.seo.optimization.seoQuality} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Qualities</SelectItem>
-                <SelectItem value="excellent">Excellent (≥80)</SelectItem>
-                <SelectItem value="good">Good (60-79)</SelectItem>
-                <SelectItem value="medium">Medium (40-59)</SelectItem>
-                <SelectItem value="poor">Poor (&lt;40)</SelectItem>
+                <SelectItem value="all">{t.seo.optimization.allQualities}</SelectItem>
+                <SelectItem value="excellent">{t.seo.optimization.excellent}</SelectItem>
+                <SelectItem value="good">{t.seo.optimization.good}</SelectItem>
+                <SelectItem value="medium">{t.seo.optimization.medium}</SelectItem>
+                <SelectItem value="poor">{t.seo.optimization.poor}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -823,7 +825,7 @@ export function SeoOptimization() {
                 className="flex items-center gap-2"
               >
                 {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
-                <span className="hidden sm:inline">{viewMode === 'grid' ? 'List' : 'Grid'}</span>
+                <span className="hidden sm:inline">{viewMode === 'grid' ? t.seo.optimization.list : t.seo.optimization.grid}</span>
               </Button>
               
               <Button
@@ -833,7 +835,7 @@ export function SeoOptimization() {
                 className="lg:hidden flex items-center gap-2"
               >
                 <Filter className="w-4 h-4" />
-                <span>Filters</span>
+                <span>{t.seo.optimization.filters}</span>
               </Button>
             </div>
 
@@ -847,7 +849,7 @@ export function SeoOptimization() {
               className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
             >
               <Zap className="w-4 h-4" />
-              Optimize Selected ({selectedProducts.size})
+              {tf('seo.optimization.optimizeSelected', { count: selectedProducts.size })}
             </Button>
             
             <Button
@@ -858,7 +860,7 @@ export function SeoOptimization() {
               className="flex items-center gap-2 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 shadow-lg hover:shadow-accent/50 border-accent/30 text-accent-foreground font-semibold transition-all duration-300"
             >
               <Sparkles className="w-4 h-4" />
-              Optimize All
+              {t.seo.optimization.optimizeAll}
             </Button>
             
             <Button
@@ -871,7 +873,7 @@ export function SeoOptimization() {
                   p.seo_description
                 );
                 if (toSync.length === 0) {
-                  toast.error('No optimized products selected for sync');
+                  toast.error(t.seo.optimization.noOptimizedProductsSelected);
                   return;
                 }
                 setProductsToSync(toSync);
@@ -881,7 +883,7 @@ export function SeoOptimization() {
               className="flex items-center gap-2"
             >
               <Upload className="w-4 h-4" />
-              Sync Selection ({selectedProducts.size})
+              {tf('seo.optimization.syncSelection', { count: selectedProducts.size })}
             </Button>
             
             <Button
@@ -895,7 +897,7 @@ export function SeoOptimization() {
                   !p.seo_synced_to_shopify
                 );
                 if (toSync.length === 0) {
-                  toast.info('All optimized products are already synced');
+                  toast.info(t.seo.optimization.allOptimizedSynced);
                   return;
                 }
                 setProductsToSync(toSync);
@@ -905,7 +907,7 @@ export function SeoOptimization() {
               className="flex items-center gap-2"
             >
               <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Sync All ({pendingSyncCount})</span>
+              <span className="hidden sm:inline">{tf('seo.optimization.syncAll', { count: pendingSyncCount })}</span>
             </Button>
             
               <Button variant="outline" size="icon" onClick={fetchProducts}>
@@ -965,7 +967,7 @@ export function SeoOptimization() {
         <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium">
-              {generating ? 'Generating SEO...' : 'Synchronizing...'}
+              {generating ? t.seo.optimization.generatingSeo : t.seo.optimization.synchronizing}
             </span>
             <span className="text-sm text-muted-foreground">
               {progress.current} / {progress.total}
@@ -988,24 +990,24 @@ export function SeoOptimization() {
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="w-20">Image</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead className="min-w-[200px]">SEO Title</TableHead>
-                <TableHead className="min-w-[250px]">SEO Description</TableHead>
+                <TableHead className="w-20">{t.seo.optimization.image}</TableHead>
+                <TableHead>{t.common.title}</TableHead>
+                <TableHead className="min-w-[200px]">{t.seo.optimization.seoTitle}</TableHead>
+                <TableHead className="min-w-[250px]">{t.seo.optimization.seoDescription}</TableHead>
                 <TableHead className="w-32">
                   <button
                     onClick={handleSeoScoreSortToggle}
                     className="flex items-center gap-1 hover:text-primary transition-colors"
                   >
-                    SEO Score
+                    {t.seo.optimization.seoScore}
                     {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
                     {seoScoreSort === 'asc' && <ArrowUp className="w-4 h-4" />}
                     {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
                   </button>
                 </TableHead>
-                <TableHead className="w-32">Status</TableHead>
-                <TableHead className="w-32">Synced</TableHead>
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead className="w-32">{t.seo.optimization.status}</TableHead>
+                <TableHead className="w-32">{t.seo.optimization.synced}</TableHead>
+                <TableHead className="w-24">{t.seo.optimization.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
