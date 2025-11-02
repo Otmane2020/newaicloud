@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, CreditCard, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 
 interface TrialLimitDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ export function TrialLimitDialog({
   trialMaxUsage,
 }: TrialLimitDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { t, tf } = useTranslation();
 
   const handlePayNow = async () => {
     setLoading(true);
@@ -43,7 +45,7 @@ export function TrialLimitDialog({
       }
     } catch (error) {
       console.error("Error creating immediate payment:", error);
-      toast.error("Erreur lors de la création du paiement");
+      toast.error(t.toasts.error.payment);
     } finally {
       setLoading(false);
     }
@@ -57,13 +59,17 @@ export function TrialLimitDialog({
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
               <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <DialogTitle className="text-lg sm:text-xl leading-tight">🚀 Activez votre abonnement Starter</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl leading-tight">{t.dialogs.trialLimit.title}</DialogTitle>
           </div>
           <DialogDescription className="text-sm sm:text-base pt-2">
-            Vous avez atteint votre limite d'essai gratuit :
+            {t.dialogs.trialLimit.description}
             {limitType && (
               <div className="mt-2 font-semibold text-foreground">
-                {limitType} : {currentUsage}/{trialMaxUsage || maxUsage} utilisés
+                {tf('dialogs.trialLimit.usageFormat', { 
+                  limitType, 
+                  currentUsage, 
+                  maxUsage: trialMaxUsage || maxUsage 
+                })}
               </div>
             )}
           </DialogDescription>
@@ -72,43 +78,43 @@ export function TrialLimitDialog({
         <div className="space-y-4 py-2 sm:py-4">
           <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="text-sm font-semibold">Plan Starter</div>
+              <div className="text-sm font-semibold">{t.dialogs.upgrade.starter.title}</div>
               <div className="text-xl sm:text-2xl font-bold">
-                9,99€<span className="text-xs sm:text-sm font-normal text-muted-foreground">/mois</span>
+                {t.dialogs.upgrade.starter.price}<span className="text-xs sm:text-sm font-normal text-muted-foreground">{t.dialogs.upgrade.starter.perMonth}</span>
               </div>
             </div>
             <ul className="text-xs sm:text-sm space-y-1.5 sm:space-y-2">
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">100 produits analysés</span>
+                <span className="flex-1">{t.dialogs.upgrade.starter.features.products}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">100 optimisations SEO IA / mois</span>
+                <span className="flex-1">{t.dialogs.upgrade.starter.features.optimizations}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">1 article IA / mois</span>
+                <span className="flex-1">{t.dialogs.upgrade.starter.features.articles}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">20 recherches IA Shopify / mois</span>
+                <span className="flex-1">{t.dialogs.upgrade.starter.features.searches}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">50 réponses Chat IA / mois</span>
+                <span className="flex-1">{t.dialogs.upgrade.starter.features.chatResponses}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">1 boutique Shopify connectée</span>
+                <span className="flex-1">{t.dialogs.upgrade.starter.features.stores}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">Automation basique</span>
+                <span className="flex-1">{t.dialogs.upgrade.starter.features.automation}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">Support par e-mail</span>
+                <span className="flex-1">{t.dialogs.upgrade.starter.features.support}</span>
               </li>
             </ul>
           </div>
@@ -125,7 +131,7 @@ export function TrialLimitDialog({
               ) : (
                 <>
                   <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  Activer mon abonnement
+                  {t.dialogs.upgrade.activateMyPlan}
                 </>
               )}
             </Button>
@@ -136,12 +142,12 @@ export function TrialLimitDialog({
               disabled={loading}
               className="w-full text-sm sm:text-base h-11 sm:h-12"
             >
-              Plus tard
+              {t.dialogs.upgrade.later}
             </Button>
           </div>
 
           <p className="text-xs text-center text-muted-foreground px-2">
-            Libérez toutes les fonctionnalités en activant votre abonnement
+            {t.dialogs.upgrade.unlockFeatures}
           </p>
         </div>
       </DialogContent>

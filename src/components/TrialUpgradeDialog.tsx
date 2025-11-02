@@ -4,6 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 
 interface TrialUpgradeDialogProps {
   open: boolean;
@@ -14,6 +15,7 @@ interface TrialUpgradeDialogProps {
 
 export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: TrialUpgradeDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { t, tf } = useTranslation();
 
   const handleUpgrade = async () => {
     setLoading(true);
@@ -40,7 +42,7 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
       }
     } catch (error) {
       console.error('Upgrade error:', error);
-      toast.error('Error creating payment');
+      toast.error(t.toasts.error.payment);
     } finally {
       setLoading(false);
     }
@@ -65,21 +67,21 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
       }
     } catch (error) {
       console.error('Portal error:', error);
-      toast.error('Error opening subscription portal');
+      toast.error(t.toasts.error.portal);
     } finally {
       setLoading(false);
     }
   };
 
   const features = [
-    "100 analyzed products",
-    "100 AI SEO optimizations / month",
-    "1 AI article / month",
-    "20 Shopify AI searches / month",
-    "50 AI Chat responses / month",
-    "1 Shopify store connected",
-    "Basic automation",
-    "Email support"
+    t.dialogs.upgrade.starter.features.products,
+    t.dialogs.upgrade.starter.features.optimizations,
+    t.dialogs.upgrade.starter.features.articles,
+    t.dialogs.upgrade.starter.features.searches,
+    t.dialogs.upgrade.starter.features.chatResponses,
+    t.dialogs.upgrade.starter.features.stores,
+    t.dialogs.upgrade.starter.features.automation,
+    t.dialogs.upgrade.starter.features.support
   ];
 
   return (
@@ -88,20 +90,20 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
         <DialogHeader>
           <DialogTitle className="text-xl">
             {reason === 'limit_reached' 
-              ? `🎯 Limit Reached` 
-              : `⏰ Trial Expired`}
+              ? t.dialogs.upgrade.limitReached.title
+              : t.dialogs.upgrade.trialExpired.title}
           </DialogTitle>
           <DialogDescription className="text-base">
             {reason === 'limit_reached' 
-              ? `You've reached the ${limitType} limit of the free plan. Upgrade to the Starter plan now to continue (immediate payment).`
-              : `Your free trial period has ended. Activate the Starter plan to continue (immediate payment).`}
+              ? tf('dialogs.upgrade.limitReached.description', { limitType })
+              : t.dialogs.upgrade.trialExpired.description}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="bg-muted/50 p-4 rounded-lg">
-            <div className="text-sm font-semibold mb-2">Starter Plan</div>
-            <div className="text-2xl font-bold">$9.99 <span className="text-sm font-normal text-muted-foreground">/ month</span></div>
+            <div className="text-sm font-semibold mb-2">{t.dialogs.upgrade.starter.title}</div>
+            <div className="text-2xl font-bold">{t.dialogs.upgrade.starter.price} <span className="text-sm font-normal text-muted-foreground">{t.dialogs.upgrade.starter.perMonth}</span></div>
           </div>
 
           <div className="space-y-2">
@@ -121,7 +123,7 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
             disabled={loading}
             className="w-full sm:w-auto"
           >
-            Later
+            {t.dialogs.upgrade.later}
           </Button>
           <Button
             onClick={handleManageSubscription}
@@ -129,14 +131,14 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
             variant="secondary"
             className="w-full sm:w-auto"
           >
-            {loading ? 'Loading...' : 'Manage Subscription'}
+            {loading ? t.dialogs.upgrade.loading : t.dialogs.upgrade.manageSub}
           </Button>
           <Button
             onClick={handleUpgrade}
             disabled={loading}
             className="bg-primary w-full sm:w-auto"
           >
-            {loading ? 'Loading...' : 'Activate Now'}
+            {loading ? t.dialogs.upgrade.loading : t.dialogs.upgrade.activateNow}
           </Button>
         </DialogFooter>
       </DialogContent>

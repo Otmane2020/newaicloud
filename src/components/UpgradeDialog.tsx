@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CreditCard } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface UpgradeDialogProps {
   open: boolean;
@@ -16,27 +17,14 @@ interface UpgradeDialogProps {
 
 export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: UpgradeDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { t, tf } = useTranslation();
 
-  const limitMessages = {
-    optimizations: {
-      title: "SEO Optimizations",
-      message: `You've used ${usage} of ${limit} optimizations`
-    },
-    articles: {
-      title: "AI Articles",
-      message: `You've used ${usage} of ${limit} articles`
-    },
-    chat: {
-      title: "Chat Responses",
-      message: `You've used ${usage} of ${limit} responses`
-    },
-    shopifySearch: {
-      title: "Shopify Searches",
-      message: `You've used ${usage} of ${limit} searches`
-    }
-  };
-
-  const limitData = limitMessages[limitType];
+  const limitTitle = t.dialogs.limit.limitTypes[limitType];
+  const limitMessage = tf('dialogs.limit.usageMessage', { 
+    usage: usage || 0, 
+    limit: limit || 0, 
+    type: limitTitle 
+  });
 
   const handleActivate = async () => {
     setLoading(true);
@@ -58,7 +46,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: U
       }
     } catch (error) {
       console.error('Error creating payment:', error);
-      toast.error('Error creating payment');
+      toast.error(t.toasts.error.payment);
     } finally {
       setLoading(false);
     }
@@ -68,54 +56,54 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: U
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">🚀 Upgrade Required</DialogTitle>
+          <DialogTitle className="text-xl">{t.dialogs.limit.upgradeRequired}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            You've reached your usage limit for this feature.
+            {t.dialogs.limit.reachedLimit}
           </p>
           <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg">
             <p className="font-medium text-orange-900 dark:text-orange-100">
-              {limitData.title}: {limitData.message}
+              {limitTitle}: {limitMessage}
             </p>
           </div>
           
           <Separator />
           
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-            <h3 className="font-semibold mb-3 text-lg">Starter Plan - $9.99/month</h3>
+            <h3 className="font-semibold mb-3 text-lg">{t.dialogs.upgrade.starter.title} - {t.dialogs.upgrade.starter.price}{t.dialogs.upgrade.starter.perMonth}</h3>
             <ul className="space-y-2">
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">100 analyzed products</span>
+                <span className="text-sm">{t.dialogs.upgrade.starter.features.products}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">1,000 AI SEO optimizations / month</span>
+                <span className="text-sm">{t.dialogs.upgrade.starter.features.optimizations}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">1 AI article / month</span>
+                <span className="text-sm">{t.dialogs.upgrade.starter.features.articles}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">20 Shopify AI searches / month</span>
+                <span className="text-sm">{t.dialogs.upgrade.starter.features.searches}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">50 AI Chat responses / month</span>
+                <span className="text-sm">{t.dialogs.upgrade.starter.features.chatResponses}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">1 Shopify store connected</span>
+                <span className="text-sm">{t.dialogs.upgrade.starter.features.stores}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">Basic automation</span>
+                <span className="text-sm">{t.dialogs.upgrade.starter.features.automation}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                <span className="text-sm">Email support</span>
+                <span className="text-sm">{t.dialogs.upgrade.starter.features.support}</span>
               </li>
             </ul>
           </div>
@@ -131,7 +119,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: U
             ) : (
               <CreditCard className="w-5 h-5 mr-2" />
             )}
-            {loading ? 'Loading...' : 'Activate Plan'}
+            {loading ? t.dialogs.upgrade.loading : t.dialogs.limit.activatePlan}
           </Button>
           
           <Button 
@@ -139,7 +127,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: U
             variant="ghost" 
             className="w-full"
           >
-            Maybe Later
+            {t.dialogs.limit.maybeLater}
           </Button>
         </div>
       </DialogContent>

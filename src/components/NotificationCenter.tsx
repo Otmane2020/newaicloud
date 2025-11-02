@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/lib/language';
 
 interface Notification {
   id: string;
@@ -27,6 +28,7 @@ interface Notification {
 
 export function NotificationCenter() {
   const { user } = useAuth();
+  const { t, language } = useTranslation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -73,13 +75,13 @@ export function NotificationCenter() {
       const sampleNotifications: Notification[] = dbNotifications.length === 0 ? [
         {
           id: 'sample-1',
-          title: 'Optimiser 15 produits',
-          message: 'Vos 15 nouveaux produits nécessitent une optimisation SEO pour améliorer leur visibilité.',
+          title: t.notifications.samples.optimizeProducts.title,
+          message: t.notifications.samples.optimizeProducts.message,
           type: 'seo_task',
           priority: 'high',
           category: 'products',
           action_url: '/products',
-          action_label: 'Optimiser maintenant',
+          action_label: t.notifications.samples.optimizeProducts.actionLabel,
           is_read: false,
           is_completed: false,
           created_at: new Date().toISOString(),
@@ -87,13 +89,13 @@ export function NotificationCenter() {
         },
         {
           id: 'sample-2',
-          title: 'Textes ALT manquants',
-          message: '23 images de produits n\'ont pas de texte alternatif. Ajoutez-les pour améliorer votre SEO.',
+          title: t.notifications.samples.missingAlts.title,
+          message: t.notifications.samples.missingAlts.message,
           type: 'seo_task',
           priority: 'medium',
           category: 'images',
           action_url: '/seo?tab=alt',
-          action_label: 'Ajouter les ALT',
+          action_label: t.notifications.samples.missingAlts.actionLabel,
           is_read: false,
           is_completed: false,
           created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
@@ -101,13 +103,13 @@ export function NotificationCenter() {
         },
         {
           id: 'sample-3',
-          title: 'Audit SEO disponible',
-          message: 'Votre rapport d\'audit SEO hebdomadaire est prêt. Consultez les recommandations pour améliorer votre score.',
+          title: t.notifications.samples.seoAudit.title,
+          message: t.notifications.samples.seoAudit.message,
           type: 'report',
           priority: 'low',
           category: 'homepage',
           action_url: '/seo?tab=audit',
-          action_label: 'Voir le rapport',
+          action_label: t.notifications.samples.seoAudit.actionLabel,
           is_read: false,
           is_completed: false,
           created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
@@ -166,11 +168,11 @@ export function NotificationCenter() {
 
       if (error) throw error;
 
-      toast.success('Tâche marquée comme complétée');
+      toast.success(t.toasts.success.taskCompleted);
       fetchNotifications();
     } catch (error) {
       console.error('Error marking notification as completed:', error);
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t.toasts.error.updating);
     }
   };
 
@@ -179,7 +181,7 @@ export function NotificationCenter() {
     if (id.startsWith('sample-')) {
       setNotifications(prev => prev.filter(n => n.id !== id));
       setUnreadCount(prev => Math.max(0, prev - 1));
-      toast.success('Notification supprimée');
+      toast.success(t.toasts.success.deleted);
       return;
     }
 
@@ -191,11 +193,11 @@ export function NotificationCenter() {
 
       if (error) throw error;
 
-      toast.success('Notification supprimée');
+      toast.success(t.toasts.success.deleted);
       fetchNotifications();
     } catch (error) {
       console.error('Error deleting notification:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error(t.toasts.error.deleting);
     }
   };
 
@@ -260,10 +262,10 @@ export function NotificationCenter() {
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Notifications SEO
+            {t.notifications.title}
           </SheetTitle>
           <SheetDescription>
-            Vos tâches d'optimisation quotidiennes
+            {t.notifications.description}
           </SheetDescription>
         </SheetHeader>
 
@@ -271,9 +273,9 @@ export function NotificationCenter() {
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Aucune notification</p>
+              <p className="text-muted-foreground">{t.notifications.empty}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Les tâches SEO apparaîtront ici
+                {t.notifications.emptyDescription}
               </p>
             </div>
           ) : (
@@ -302,7 +304,7 @@ export function NotificationCenter() {
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <Badge variant={getPriorityColor(notification.priority)} className="text-xs">
-                        {notification.priority}
+                        {t.notifications.priority[notification.priority as 'high' | 'medium' | 'low']}
                       </Badge>
                       <Button
                         variant="ghost"
@@ -321,7 +323,7 @@ export function NotificationCenter() {
 
                   {notification.due_date && (
                     <p className="text-xs text-muted-foreground mb-3">
-                      ⏰ À faire avant {new Date(notification.due_date).toLocaleDateString('fr-FR')}
+                      ⏰ {t.notifications.dueBefore} {new Date(notification.due_date).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
                     </p>
                   )}
 
@@ -333,7 +335,7 @@ export function NotificationCenter() {
                         className="gap-2"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        {notification.action_label || 'Voir'}
+                        {notification.action_label || t.notifications.view}
                       </Button>
                     )}
                     {!notification.is_completed && (
@@ -344,19 +346,19 @@ export function NotificationCenter() {
                         className="gap-2"
                       >
                         <Check className="h-3 w-3" />
-                        Marquer terminé
+                        {t.notifications.markCompleted}
                       </Button>
                     )}
                     {notification.is_completed && (
                       <Badge variant="secondary" className="gap-1">
                         <Check className="h-3 w-3" />
-                        Terminé
+                        {t.notifications.completed}
                       </Badge>
                     )}
                   </div>
 
                   <p className="text-xs text-muted-foreground mt-2">
-                    {new Date(notification.created_at).toLocaleString('fr-FR')}
+                    {new Date(notification.created_at).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US')}
                   </p>
                 </div>
               ))}

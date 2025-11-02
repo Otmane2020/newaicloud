@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { formatLimit } from '@/lib/formatUtils';
+import { useTranslation } from '@/lib/language';
 
 export function LimitWarningBanner() {
   const navigate = useNavigate();
   const { limits, loading } = useUsageLimits();
+  const { t, tf } = useTranslation();
 
   if (loading || !limits) return null;
 
@@ -40,17 +42,17 @@ export function LimitWarningBanner() {
   const getWarningMessage = () => {
     if (limitReached) {
       const limitTypes = [];
-      if (limits.limitReached.optimizations) limitTypes.push('optimisations SEO');
-      if (limits.limitReached.articles) limitTypes.push('articles');
-      if (limits.limitReached.chat) limitTypes.push('réponses chat');
-      if (limits.limitReached.shopifySearch) limitTypes.push('recherches Shopify');
-      if (limits.limitReached.products) limitTypes.push('produits');
-      if (limits.limitReached.shopifyStores) limitTypes.push('boutiques');
+      if (limits.limitReached.optimizations) limitTypes.push(t.banners.limitWarning.limitLabels.optimizations);
+      if (limits.limitReached.articles) limitTypes.push(t.banners.limitWarning.limitLabels.articles);
+      if (limits.limitReached.chat) limitTypes.push(t.banners.limitWarning.limitLabels.chat);
+      if (limits.limitReached.shopifySearch) limitTypes.push(t.banners.limitWarning.limitLabels.searches);
+      if (limits.limitReached.products) limitTypes.push(t.banners.limitWarning.limitLabels.products);
+      if (limits.limitReached.shopifyStores) limitTypes.push(t.banners.limitWarning.limitLabels.stores);
       
-      return `⚠️ Limite d'essai atteinte pour : ${limitTypes.join(', ')}`;
+      return tf('banners.limitWarning.limitReached', { limitTypes: limitTypes.join(', ') });
     }
 
-    return '📊 Vous approchez de vos limites d\'essai gratuit';
+    return t.banners.limitWarning.approaching;
   };
 
   return (
@@ -79,9 +81,9 @@ export function LimitWarningBanner() {
                 ? 'text-red-700 dark:text-red-300' 
                 : 'text-orange-700 dark:text-orange-300'
             }`}>
-              Optimisations: {limits.usage.optimizations_count}/{formatLimit(limits.limits.max_optimizations)} • 
-              Articles: {limits.usage.articles_count}/{formatLimit(limits.limits.max_articles)} • 
-              Chat: {limits.usage.chat_responses_count}/{formatLimit(limits.limits.max_chat_responses)}
+              {t.dashboard.usage.labels.optimizations}: {limits.usage.optimizations_count}/{formatLimit(limits.limits.max_optimizations)} • 
+              {t.dashboard.usage.labels.articles}: {limits.usage.articles_count}/{formatLimit(limits.limits.max_articles)} • 
+              {t.dashboard.usage.labels.chatResponses}: {limits.usage.chat_responses_count}/{formatLimit(limits.limits.max_chat_responses)}
             </p>
           </div>
         </div>
@@ -93,7 +95,7 @@ export function LimitWarningBanner() {
               : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
           } text-white whitespace-nowrap`}
         >
-          {limitReached ? 'Activer maintenant' : 'Voir les plans'}
+          {limitReached ? t.banners.limitWarning.activateNow : t.banners.limitWarning.viewPlans}
         </Button>
       </div>
     </div>

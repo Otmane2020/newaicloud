@@ -957,7 +957,7 @@ export const translations = {
     syncAll: "Sync All Products",
   },
 
-  notifications: {
+  notificationSettings: {
     title: "Notification Settings",
     emailNotifications: "Email Notifications",
     pushNotifications: "Push Notifications",
@@ -1273,10 +1273,40 @@ export const translations = {
   },
 
   toasts: {
-    success: "Success",
-    error: "Error",
-    warning: "Warning",
-    info: "Info",
+    success: {
+      saved: "Saved successfully",
+      updated: "Updated successfully",
+      created: "Created successfully",
+      deleted: "Deleted successfully",
+      copied: "Copied!",
+      syncSuccess: "Synchronized with Shopify",
+      taskCompleted: "Task marked as completed",
+      subscriptionActivated: "Subscription activated!",
+      subscriptionActivatedMessage: "Your subscription is now active",
+      welcomeBonus: "Welcome bonus!",
+      welcomeBonusMessage: "Bonus credits added to your account"
+    },
+    error: {
+      generic: "An error occurred",
+      loading: "Error loading data",
+      saving: "Error saving",
+      updating: "Error updating",
+      deleting: "Error deleting",
+      payment: "Error creating payment",
+      sync: "Synchronization error",
+      portal: "Error opening subscription portal"
+    },
+    info: {
+      processing: "Processing...",
+      importing: "Importing...",
+      generating: "Generating..."
+    },
+    warning: {
+      limitReached: "Limit reached",
+      trialExpired: "Trial expired",
+      paymentCancelled: "Payment cancelled",
+      paymentCancelledMessage: "Your payment was cancelled"
+    },
     savedSuccessfully: "Saved successfully",
     deletedSuccessfully: "Deleted successfully",
     updatedSuccessfully: "Updated successfully",
@@ -1431,6 +1461,110 @@ export const translations = {
       instant: "Instant Results",
       instantDesc: "Intelligent relevance scoring for optimal results",
     },
+  },
+
+  notifications: {
+    title: "SEO Notifications",
+    description: "Your daily optimization tasks",
+    empty: "No notifications",
+    emptyDescription: "SEO tasks will appear here",
+    markCompleted: "Mark as completed",
+    delete: "Delete",
+    completed: "Completed",
+    view: "View",
+    dueBefore: "Due before",
+    priority: {
+      high: "high",
+      medium: "medium",
+      low: "low"
+    },
+    samples: {
+      optimizeProducts: {
+        title: "Optimize 15 products",
+        message: "Your 15 new products need SEO optimization to improve their visibility.",
+        actionLabel: "Optimize now"
+      },
+      missingAlts: {
+        title: "Missing ALT texts",
+        message: "23 product images don't have alt text. Add them to improve your SEO.",
+        actionLabel: "Add ALTs"
+      },
+      seoAudit: {
+        title: "SEO Audit available",
+        message: "Your weekly SEO audit report is ready. Check the recommendations to improve your score.",
+        actionLabel: "View report"
+      }
+    },
+  },
+
+  dialogs: {
+    upgrade: {
+      limitReached: {
+        title: "🎯 Limit Reached",
+        description: "You've reached the {{limitType}} limit of the free plan. Upgrade to the Starter plan now to continue (immediate payment)."
+      },
+      trialExpired: {
+        title: "⏰ Trial Expired",
+        description: "Your free trial period has ended. Activate the Starter plan to continue (immediate payment)."
+      },
+      activateNow: "Activate Now",
+      manageSub: "Manage Subscription",
+      later: "Later",
+      loading: "Loading...",
+      starter: {
+        title: "Starter Plan",
+        price: "$9.99",
+        perMonth: "/ month",
+        features: {
+          products: "100 analyzed products",
+          optimizations: "100 AI SEO optimizations / month",
+          articles: "1 AI article / month",
+          searches: "20 Shopify AI searches / month",
+          chatResponses: "50 AI Chat responses / month",
+          stores: "1 Shopify store connected",
+          automation: "Basic automation",
+          support: "Email support"
+        }
+      },
+      activateMyPlan: "Activate my subscription",
+      activateSubscription: "Activate subscription",
+      unlockFeatures: "Unlock all features by activating your subscription"
+    },
+    limit: {
+      upgradeRequired: "🚀 Upgrade Required",
+      reachedLimit: "You've reached your usage limit for this feature.",
+      limitTypes: {
+        optimizations: "SEO Optimizations",
+        articles: "AI Articles",
+        chat: "Chat Responses",
+        shopifySearch: "Shopify Searches"
+      },
+      usageMessage: "You've used {{usage}} of {{limit}} {{type}}",
+      activatePlan: "Activate Plan",
+      maybeLater: "Maybe Later"
+    },
+    trialLimit: {
+      title: "🚀 Activate your Starter subscription",
+      description: "You have reached your free trial limit:",
+      usageFormat: "{{limitType}}: {{currentUsage}}/{{maxUsage}} used"
+    }
+  },
+
+  banners: {
+    limitWarning: {
+      limitReached: "⚠️ Trial limit reached for: {{limitTypes}}",
+      approaching: "📊 You're approaching your free trial limits",
+      activateNow: "Activate now",
+      viewPlans: "View plans",
+      limitLabels: {
+        optimizations: "SEO optimizations",
+        articles: "articles",
+        chat: "chat responses",
+        searches: "Shopify searches",
+        products: "products",
+        stores: "stores"
+      }
+    }
   },
 };
 

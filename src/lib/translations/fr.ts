@@ -1432,4 +1432,108 @@ export const translations = {
       instantDesc: "Scoring de pertinence intelligent pour des résultats optimaux",
     },
   },
+
+  notifications: {
+    title: "Notifications SEO",
+    description: "Vos tâches d'optimisation quotidiennes",
+    empty: "Aucune notification",
+    emptyDescription: "Les tâches SEO apparaîtront ici",
+    markCompleted: "Marquer terminé",
+    delete: "Supprimer",
+    completed: "Terminé",
+    view: "Voir",
+    dueBefore: "À faire avant",
+    priority: {
+      high: "haute",
+      medium: "moyenne",
+      low: "basse"
+    },
+    samples: {
+      optimizeProducts: {
+        title: "Optimiser 15 produits",
+        message: "Vos 15 nouveaux produits nécessitent une optimisation SEO pour améliorer leur visibilité.",
+        actionLabel: "Optimiser maintenant"
+      },
+      missingAlts: {
+        title: "Textes ALT manquants",
+        message: "23 images de produits n'ont pas de texte alternatif. Ajoutez-les pour améliorer votre SEO.",
+        actionLabel: "Ajouter les ALT"
+      },
+      seoAudit: {
+        title: "Audit SEO disponible",
+        message: "Votre rapport d'audit SEO hebdomadaire est prêt. Consultez les recommandations pour améliorer votre score.",
+        actionLabel: "Voir le rapport"
+      }
+    },
+  },
+
+  dialogs: {
+    upgrade: {
+      limitReached: {
+        title: "🎯 Limite Atteinte",
+        description: "Vous avez atteint la limite {{limitType}} du plan gratuit. Passez au plan Starter maintenant pour continuer (paiement immédiat)."
+      },
+      trialExpired: {
+        title: "⏰ Essai Expiré",
+        description: "Votre période d'essai gratuite est terminée. Activez le plan Starter pour continuer (paiement immédiat)."
+      },
+      activateNow: "Activer maintenant",
+      manageSub: "Gérer l'abonnement",
+      later: "Plus tard",
+      loading: "Chargement...",
+      starter: {
+        title: "Plan Starter",
+        price: "9,99€",
+        perMonth: "/ mois",
+        features: {
+          products: "100 produits analysés",
+          optimizations: "100 optimisations SEO IA / mois",
+          articles: "1 article IA / mois",
+          searches: "20 recherches IA Shopify / mois",
+          chatResponses: "50 réponses Chat IA / mois",
+          stores: "1 boutique Shopify connectée",
+          automation: "Automation basique",
+          support: "Support par e-mail"
+        }
+      },
+      activateMyPlan: "Activer mon abonnement",
+      activateSubscription: "Activer l'abonnement",
+      unlockFeatures: "Libérez toutes les fonctionnalités en activant votre abonnement"
+    },
+    limit: {
+      upgradeRequired: "🚀 Mise à niveau requise",
+      reachedLimit: "Vous avez atteint votre limite d'utilisation pour cette fonctionnalité.",
+      limitTypes: {
+        optimizations: "Optimisations SEO",
+        articles: "Articles IA",
+        chat: "Réponses Chat",
+        shopifySearch: "Recherches Shopify"
+      },
+      usageMessage: "Vous avez utilisé {{usage}} sur {{limit}} {{type}}",
+      activatePlan: "Activer le plan",
+      maybeLater: "Plus tard"
+    },
+    trialLimit: {
+      title: "🚀 Activez votre abonnement Starter",
+      description: "Vous avez atteint votre limite d'essai gratuit :",
+      usageFormat: "{{limitType}} : {{currentUsage}}/{{maxUsage}} utilisés"
+    }
+  },
+
+  banners: {
+    limitWarning: {
+      limitReached: "⚠️ Limite d'essai atteinte pour : {{limitTypes}}",
+      approaching: "📊 Vous approchez de vos limites d'essai gratuit",
+      activateNow: "Activer maintenant",
+      viewPlans: "Voir les plans",
+      limitLabels: {
+        optimizations: "optimisations SEO",
+        articles: "articles",
+        chat: "réponses chat",
+        searches: "recherches Shopify",
+        products: "produits",
+        stores: "boutiques"
+      }
+    }
+  },
 };
