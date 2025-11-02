@@ -236,140 +236,239 @@ export function SeoAuditDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Hero Header avec design premium */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-dark to-primary-light p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-2xl translate-y-24 -translate-x-24" />
-
-        <div className="relative z-10 flex justify-between items-start">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-sm">
-                <FileSearch className="w-8 h-8 text-white" />
-              </div>
-              <Badge className="bg-white/20 text-white border-white/30 px-4 py-1.5 text-sm font-semibold">
-                Analyse IA Avancée
-              </Badge>
-            </div>
-            <h1 className="text-4xl font-black text-white mb-3">Audit SEO Complet</h1>
-            <p className="text-white/90 text-lg font-medium max-w-2xl leading-relaxed">
-              Obtenez une analyse détaillée de votre boutique Shopify avec des recommandations actionnables pour
-              améliorer votre visibilité en ligne et augmenter votre trafic organique.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
-                <CheckCircle2 className="w-4 h-4 text-white" />
-                <span className="text-sm font-semibold text-white">6 Catégories analysées</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
-                <TrendingUp className="w-4 h-4 text-white" />
-                <span className="text-sm font-semibold text-white">Scoring intelligent</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
-                <Sparkles className="w-4 h-4 text-white" />
-                <span className="text-sm font-semibold text-white">Plan d'action personnalisé</span>
-              </div>
-            </div>
-          </div>
-          <Button
-            onClick={handleGenerateAudit}
-            disabled={generating}
-            size="lg"
-            className="bg-white text-primary hover:bg-white/90 font-bold shadow-xl px-8 py-6 text-lg"
-          >
-            {generating ? (
-              <>
-                <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                Analyse en cours...
-              </>
-            ) : (
-              <>
-                <FileSearch className="w-5 h-5 mr-2" />
-                {audit ? "Relancer l'audit" : "Lancer l'audit"}
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Section éducative */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="border-2 hover:shadow-lg transition-all">
-          <CardHeader>
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-              <TrendingUp className="w-6 h-6 text-primary" />
-            </div>
-            <CardTitle className="text-lg">Pourquoi un audit SEO ?</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Un audit SEO identifie les opportunités d'amélioration pour augmenter votre visibilité sur Google et
-              attirer plus de clients qualifiés vers votre boutique.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 hover:shadow-lg transition-all">
-          <CardHeader>
-            <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-3">
-              <CheckCircle2 className="w-6 h-6 text-success" />
-            </div>
-            <CardTitle className="text-lg">Ce que vous obtenez</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Une analyse complète de 6 catégories SEO avec un score détaillé, des problèmes identifiés et un plan
-              d'action priorisé pour des résultats rapides.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 hover:shadow-lg transition-all">
-          <CardHeader>
-            <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center mb-3">
-              <Sparkles className="w-6 h-6 text-warning" />
-            </div>
-            <CardTitle className="text-lg">Analyse IA avancée</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Notre IA analyse automatiquement vos produits, collections, contenus et images pour vous fournir des
-              recommandations sur-mesure et actionnables.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {!audit ? (
-        <Card className="border-2 shadow-xl">
-          <CardContent className="py-16 text-center">
-            <div className="max-w-2xl mx-auto">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-dark mx-auto mb-6 flex items-center justify-center shadow-lg">
-                <FileSearch className="w-10 h-10 text-white" />
+        <>
+          {/* Hero Header avec design premium */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-dark to-primary-light p-8 shadow-2xl">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-2xl translate-y-24 -translate-x-24" />
+
+            <div className="relative z-10 flex justify-between items-start">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-sm">
+                    <FileSearch className="w-8 h-8 text-white" />
+                  </div>
+                  <Badge className="bg-white/20 text-white border-white/30 px-4 py-1.5 text-sm font-semibold">
+                    Analyse IA Avancée
+                  </Badge>
+                </div>
+                <h1 className="text-4xl font-black text-white mb-3">Audit SEO Complet</h1>
+                <p className="text-white/90 text-lg font-medium max-w-2xl leading-relaxed">
+                  Obtenez une analyse détaillée de votre boutique Shopify avec des recommandations actionnables pour
+                  améliorer votre visibilité en ligne et augmenter votre trafic organique.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span className="text-sm font-semibold text-white">6 Catégories analysées</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                    <span className="text-sm font-semibold text-white">Scoring intelligent</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
+                    <Sparkles className="w-4 h-4 text-white" />
+                    <span className="text-sm font-semibold text-white">Plan d'action personnalisé</span>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-3xl font-bold mb-4">Prêt à booster votre SEO ?</h3>
-              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Lancez votre premier audit SEO complet pour découvrir comment améliorer votre classement sur Google et
-                attirer plus de clients. L'analyse prend environ 30 secondes.
-              </p>
               <Button
                 onClick={handleGenerateAudit}
                 disabled={generating}
                 size="lg"
-                className="bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-lg px-8 py-6 shadow-xl"
+                className="bg-white text-primary hover:bg-white/90 font-bold shadow-xl px-8 py-6 text-lg"
               >
-                <FileSearch className="w-6 h-6 mr-2" />
-                Lancer mon audit gratuit
+                {generating ? (
+                  <>
+                    <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                    Analyse en cours...
+                  </>
+                ) : (
+                  <>
+                    <FileSearch className="w-5 h-5 mr-2" />
+                    {audit ? "Relancer l'audit" : "Lancer l'audit"}
+                  </>
+                )}
               </Button>
-              <p className="text-xs text-muted-foreground mt-4">🔒 Analyse 100% automatique et sécurisée</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Section éducative */}
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card className="border-2 hover:shadow-lg transition-all">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                  <TrendingUp className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Pourquoi un audit SEO ?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Un audit SEO identifie les opportunités d'amélioration pour augmenter votre visibilité sur Google et
+                  attirer plus de clients qualifiés vers votre boutique.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 hover:shadow-lg transition-all">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-3">
+                  <CheckCircle2 className="w-6 h-6 text-success" />
+                </div>
+                <CardTitle className="text-lg">Ce que vous obtenez</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Une analyse complète de 6 catégories SEO avec un score détaillé, des problèmes identifiés et un plan
+                  d'action priorisé pour des résultats rapides.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 hover:shadow-lg transition-all">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center mb-3">
+                  <Sparkles className="w-6 h-6 text-warning" />
+                </div>
+                <CardTitle className="text-lg">Analyse IA avancée</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Notre IA analyse automatiquement vos produits, collections, contenus et images pour vous fournir des
+                  recommandations sur-mesure et actionnables.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          <Card className="border-2 shadow-xl">
+            <CardContent className="py-16 text-center">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-dark mx-auto mb-6 flex items-center justify-center shadow-lg">
+                  <FileSearch className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-3xl font-bold mb-4">Prêt à booster votre SEO ?</h3>
+                <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
+                  Lancez votre premier audit SEO complet pour découvrir comment améliorer votre classement sur Google et
+                  attirer plus de clients. L'analyse prend environ 30 secondes.
+                </p>
+                <Button
+                  onClick={handleGenerateAudit}
+                  disabled={generating}
+                  size="lg"
+                  className="bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-lg px-8 py-6 shadow-xl"
+                >
+                  <FileSearch className="w-6 h-6 mr-2" />
+                  Lancer mon audit gratuit
+                </Button>
+                <p className="text-xs text-muted-foreground mt-4">🔒 Analyse 100% automatique et sécurisée</p>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       ) : (
         <div className="space-y-8">
+          {/* Header only for overview */}
+          {activeSubTab === "overview" && (
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-dark to-primary-light p-8 shadow-2xl">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-2xl translate-y-24 -translate-x-24" />
+
+              <div className="relative z-10 flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-sm">
+                      <FileSearch className="w-8 h-8 text-white" />
+                    </div>
+                    <Badge className="bg-white/20 text-white border-white/30 px-4 py-1.5 text-sm font-semibold">
+                      Analyse IA Avancée
+                    </Badge>
+                  </div>
+                  <h1 className="text-4xl font-black text-white mb-3">Audit SEO Complet</h1>
+                  <p className="text-white/90 text-lg font-medium max-w-2xl leading-relaxed">
+                    Obtenez une analyse détaillée de votre boutique Shopify avec des recommandations actionnables pour
+                    améliorer votre visibilité en ligne et augmenter votre trafic organique.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleGenerateAudit}
+                  disabled={generating}
+                  size="lg"
+                  className="bg-white text-primary hover:bg-white/90 font-bold shadow-xl px-8 py-6 text-lg"
+                >
+                  {generating ? (
+                    <>
+                      <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                      Analyse en cours...
+                    </>
+                  ) : (
+                    <>
+                      <FileSearch className="w-5 h-5 mr-2" />
+                      Relancer l'audit
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
           {/* Content based on activeSubTab */}
           {activeSubTab === "overview" && (
             <>
+              {/* Quick Access Cards */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card
+                  className="group cursor-pointer hover:shadow-xl transition-all border-2 hover:border-primary/50 bg-gradient-to-br from-card to-primary/5"
+                  onClick={() => navigate("/seo?tab=audit-dashboard&subtab=homepage")}
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                        <Home className="w-6 h-6 text-primary" />
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">Page d'accueil</h3>
+                    <p className="text-sm text-muted-foreground">Optimiser le titre et la description</p>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className="group cursor-pointer hover:shadow-xl transition-all border-2 hover:border-destructive/50 bg-gradient-to-br from-card to-destructive/5"
+                  onClick={() => navigate("/seo?tab=audit-dashboard&subtab=issues")}
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-3 rounded-xl bg-destructive/10 group-hover:bg-destructive/20 transition-colors">
+                        <AlertCircle className="w-6 h-6 text-destructive" />
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-destructive group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-1 group-hover:text-destructive transition-colors">Problèmes</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {audit?.audit_results?.issues?.length || 0} points à corriger
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className="group cursor-pointer hover:shadow-xl transition-all border-2 hover:border-success/50 bg-gradient-to-br from-card to-success/5"
+                  onClick={() => navigate("/seo?tab=audit-dashboard&subtab=actions")}
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-3 rounded-xl bg-success/10 group-hover:bg-success/20 transition-colors">
+                        <Target className="w-6 h-6 text-success" />
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-success group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-1 group-hover:text-success transition-colors">Plan d'action</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {audit?.audit_results?.action_plan?.length || 0} actions prioritaires
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
               {/* Global Score - Design premium avec jauge améliorée */}
             <Card className="border-2 shadow-2xl bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
