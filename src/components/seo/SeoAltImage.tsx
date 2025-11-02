@@ -31,6 +31,9 @@ import {
   Package,
   FileText,
   PenSquare,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 
 interface ProductImage {
@@ -68,6 +71,7 @@ interface ImageWithProduct extends ProductImage {
 
 type AltImageTab = 'all' | 'needs-alt' | 'has-alt' | 'to-sync';
 type ContentTypeFilter = 'all' | 'products' | 'collections' | 'pages' | 'articles' | 'homepage';
+type SeoScoreSort = 'none' | 'asc' | 'desc';
 
 export function SeoAltImage() {
   const [searchParams] = useSearchParams();
@@ -79,6 +83,7 @@ export function SeoAltImage() {
   const [activeTab, setActiveTab] = useState<AltImageTab>('all');
   const [contentTypeFilter, setContentTypeFilter] = useState<ContentTypeFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -254,15 +259,26 @@ export function SeoAltImage() {
     return true;
   });
 
-  const totalPages = Math.ceil(filteredImages.length / IMAGES_PER_PAGE);
+  // Apply SEO score sorting
+  const sortedImages = [...filteredImages];
+  if (seoScoreSort !== 'none') {
+    sortedImages.sort((a, b) => {
+      const scoreA = calculateAltTextScore(a.alt_text || '').score;
+      const scoreB = calculateAltTextScore(b.alt_text || '').score;
+      
+      return seoScoreSort === 'asc' ? scoreA - scoreB : scoreB - scoreA;
+    });
+  }
+
+  const totalPages = Math.ceil(sortedImages.length / IMAGES_PER_PAGE);
   const startIndex = (currentPage - 1) * IMAGES_PER_PAGE;
-  const paginatedImages = filteredImages.slice(startIndex, startIndex + IMAGES_PER_PAGE);
+  const paginatedImages = sortedImages.slice(startIndex, startIndex + IMAGES_PER_PAGE);
 
   const handleSelectAll = () => {
-    if (selectedImages.size === filteredImages.length) {
+    if (selectedImages.size === sortedImages.length) {
       setSelectedImages(new Set());
     } else {
-      setSelectedImages(new Set(filteredImages.map((img) => img.id)));
+      setSelectedImages(new Set(sortedImages.map((img) => img.id)));
     }
   };
 
@@ -274,6 +290,16 @@ export function SeoAltImage() {
       newSelected.add(imageId);
     }
     setSelectedImages(newSelected);
+  };
+
+  const handleSeoScoreSortToggle = () => {
+    if (seoScoreSort === 'none') {
+      setSeoScoreSort('desc');
+    } else if (seoScoreSort === 'desc') {
+      setSeoScoreSort('asc');
+    } else {
+      setSeoScoreSort('none');
+    }
   };
 
   const handleGenerateForSelected = async (useVision = false) => {
@@ -909,7 +935,7 @@ export function SeoAltImage() {
                 <th className="px-4 py-3 text-left w-12">
                   <input
                     type="checkbox"
-                    checked={selectedImages.size === filteredImages.length && filteredImages.length > 0}
+                    checked={selectedImages.size === sortedImages.length && sortedImages.length > 0}
                     onChange={handleSelectAll}
                     className="rounded"
                   />
@@ -917,7 +943,17 @@ export function SeoAltImage() {
                 <th className="px-4 py-3 text-left font-semibold">Image</th>
                 <th className="px-4 py-3 text-left font-semibold">Produit</th>
                 <th className="px-4 py-3 text-left font-semibold">Texte ALT</th>
-                <th className="px-4 py-3 text-left font-semibold">Statut</th>
+                <th className="px-4 py-3 text-left font-semibold">
+                  <button
+                    onClick={handleSeoScoreSortToggle}
+                    className="flex items-center gap-1 hover:text-primary transition-colors"
+                  >
+                    Statut
+                    {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
+                    {seoScoreSort === 'asc' && <ArrowUp className="w-4 h-4" />}
+                    {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y">

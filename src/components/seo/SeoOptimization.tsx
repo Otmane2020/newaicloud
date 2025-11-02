@@ -190,13 +190,14 @@ export function SeoOptimization() {
     return true;
   });
 
-  // Apply SEO score sorting
+  // Apply SEO score sorting - FIXED to use correct calculation
   const sortedProducts = [...filteredProducts];
   if (seoScoreSort !== 'none') {
     sortedProducts.sort((a, b) => {
+      // Calculate scores using the same function as display
       const scoreA = calculateDetailedSeoScore(
-        a.seo_title,
-        a.seo_description,
+        a.seo_title || a.title,
+        a.seo_description || a.vendor,
         !!a.image_url,
         true,
         a.tags,
@@ -204,8 +205,8 @@ export function SeoOptimization() {
       ).score;
       
       const scoreB = calculateDetailedSeoScore(
-        b.seo_title,
-        b.seo_description,
+        b.seo_title || b.title,
+        b.seo_description || b.vendor,
         !!b.image_url,
         true,
         b.tags,
