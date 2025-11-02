@@ -48,10 +48,12 @@ Deno.serve(async (req: Request) => {
     console.log(`🏪 [IMPORT-COLLECTIONS] Store: ${connection.store_url}`);
 
     // Ensure URL has https:// protocol
-    let shopifyUrl = connection.store_url.replace(/\/$/, "");
-    if (!shopifyUrl.startsWith('http://') && !shopifyUrl.startsWith('https://')) {
-      shopifyUrl = `https://${shopifyUrl}`;
-    }
+    const storeUrl = connection.store_url.replace(/\/$/, "").trim();
+    const shopifyUrl = storeUrl.startsWith('http://') || storeUrl.startsWith('https://') 
+      ? storeUrl 
+      : `https://${storeUrl}`;
+    
+    console.log(`🔗 [IMPORT-COLLECTIONS] Using URL: ${shopifyUrl}`);
     const accessToken = connection.access_token;
 
     let allCollections: any[] = [];
