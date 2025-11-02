@@ -76,7 +76,7 @@ export default function Collections() {
       setCollections(collectionsWithCounts);
     } catch (error) {
       console.error('Error fetching collections:', error);
-      toast.error('Erreur lors du chargement des collections');
+      toast.error(t.collections.loadError);
     } finally {
       setLoading(false);
     }
@@ -120,11 +120,11 @@ export default function Collections() {
 
   const handleImportArticles = async () => {
     setImporting(true);
-    const toastId = toast.loading("Import des articles...");
+    const toastId = toast.loading(t.collections.import.importingArticles);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      if (!user) throw new Error(t.collections.import.notAuthenticated);
 
       const { data: storeData } = await supabase
         .from('shopify_connections')
@@ -134,11 +134,11 @@ export default function Collections() {
         .single();
 
       if (!storeData) {
-        toast.error("Aucune connexion Shopify active", { id: toastId });
+        toast.error(t.collections.import.noActiveConnection, { id: toastId });
         return;
       }
 
-      toast.loading("Import des articles en cours...", { id: toastId });
+      toast.loading(t.collections.import.importingArticlesInProgress, { id: toastId });
       const { data: articlesData, error: articlesError } = await supabase.functions.invoke('import-shopify-articles', {
         body: { 
           shopName: storeData.store_url.replace('.myshopify.com', ''),
@@ -149,7 +149,7 @@ export default function Collections() {
 
       if (articlesError) throw articlesError;
 
-      toast.loading("Import des images d'articles...", { id: toastId });
+      toast.loading(t.collections.import.importingArticleImages, { id: toastId });
       const { data: imagesData, error: imagesError } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['articles'] }
       });
@@ -158,10 +158,13 @@ export default function Collections() {
 
       const totalArticles = articlesData?.count || 0;
       const totalImages = imagesData?.totalImported || 0;
-      toast.success(`✅ ${totalArticles} articles et ${totalImages} images importés`, { id: toastId });
+      const message = t.collections.import.articlesAndImagesImported
+        .replace('{{totalArticles}}', String(totalArticles))
+        .replace('{{totalImages}}', String(totalImages));
+      toast.success(message, { id: toastId });
     } catch (error: any) {
       console.error('Error importing articles:', error);
-      toast.error(error.message || "Erreur lors de l'import", { id: toastId });
+      toast.error(error.message || t.collections.import.importError, { id: toastId });
     } finally {
       setImporting(false);
     }
@@ -169,11 +172,11 @@ export default function Collections() {
 
   const handleFullImport = async () => {
     setImporting(true);
-    const toastId = toast.loading("Import complet en cours...");
+    const toastId = toast.loading(t.collections.import.fullImportInProgress);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      if (!user) throw new Error(t.collections.import.notAuthenticated);
 
       const { data: storeData } = await supabase
         .from('shopify_connections')
@@ -183,7 +186,7 @@ export default function Collections() {
         .single();
 
       if (!storeData) {
-        toast.error("Aucune connexion Shopify active", { id: toastId });
+        toast.error(t.collections.import.noActiveConnection, { id: toastId });
         return;
       }
 
@@ -193,7 +196,7 @@ export default function Collections() {
       let pagesCount = 0;
 
       // Import collections
-      toast.loading("1/3 - Import des collections...", { id: toastId });
+      toast.loading(t.collections.import.step1, { id: toastId });
       const { data: collectionsData } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['collections'] }
       });
@@ -207,7 +210,7 @@ export default function Collections() {
       collectionsCount = colCount || 0;
 
       // Import articles
-      toast.loading("2/3 - Import des articles...", { id: toastId });
+      toast.loading(t.collections.import.step2, { id: toastId });
       await supabase.functions.invoke('import-shopify-articles', {
         body: { 
           shopName: storeData.store_url.replace('.myshopify.com', ''),
@@ -228,7 +231,7 @@ export default function Collections() {
       articlesCount = artCount || 0;
 
       // Import pages
-      toast.loading("3/3 - Import des pages...", { id: toastId });
+      toast.loading(t.collections.import.step3, { id: toastId });
       const { data: pagesData } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['pages'] }
       });
@@ -249,15 +252,15 @@ export default function Collections() {
       if (totalImages > 0) parts.push(`${totalImages} images`);
 
       if (parts.length === 0) {
-        toast.info("Aucun contenu trouvé sur Shopify", { id: toastId });
+        toast.info(t.collections.import.noContentFound, { id: toastId });
       } else {
-        toast.success(`✅ Import complet: ${parts.join(', ')}`, { id: toastId });
+        toast.success(t.collections.import.fullImportComplete.replace('{{parts}}', parts.join(', ')), { id: toastId });
       }
 
       await fetchCollections();
     } catch (error: any) {
       console.error('Error during full import:', error);
-      toast.error(error.message || "Erreur lors de l'import", { id: toastId });
+      toast.error(error.message || t.collections.import.importError, { id: toastId });
     } finally {
       setImporting(false);
     }
@@ -289,8 +292,8 @@ export default function Collections() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Collections</h1>
-          <p className="text-muted-foreground">Gérez vos collections de produits</p>
+          <h1 className="text-3xl font-bold">{t.collections.title}</h1>
+          <p className="text-muted-foreground">{t.collections.subtitle}</p>
         </div>
         
         <div className="flex gap-2">
@@ -306,7 +309,7 @@ export default function Collections() {
             </div>
             <div>
               <p className="text-2xl font-bold">{collections.length}</p>
-              <p className="text-sm text-muted-foreground">Collections</p>
+              <p className="text-sm text-muted-foreground">{t.collections.stats.collections}</p>
             </div>
           </div>
         </Card>
@@ -320,7 +323,7 @@ export default function Collections() {
               <p className="text-2xl font-bold">
                 {collections.reduce((sum, c) => sum + (c.image_count || 0), 0)}
               </p>
-              <p className="text-sm text-muted-foreground">Images totales</p>
+              <p className="text-sm text-muted-foreground">{t.collections.stats.totalImages}</p>
             </div>
           </div>
         </Card>
@@ -334,7 +337,7 @@ export default function Collections() {
               <p className="text-2xl font-bold">
                 {collections.reduce((sum, c) => sum + (c.product_count || 0), 0)}
               </p>
-              <p className="text-sm text-muted-foreground">Produits</p>
+              <p className="text-sm text-muted-foreground">{t.collections.stats.products}</p>
             </div>
           </div>
         </Card>
@@ -347,7 +350,7 @@ export default function Collections() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Rechercher des collections..."
+              placeholder={t.collections.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -372,9 +375,9 @@ export default function Collections() {
       {filteredCollections.length === 0 ? (
         <Card className="p-12 text-center">
           <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-lg font-medium mb-2">Aucune collection trouvée</p>
+          <p className="text-lg font-medium mb-2">{t.collections.noCollections}</p>
           <p className="text-muted-foreground">
-            Utilisez le bouton "Tout Importer" dans l'onglet Intégration pour importer vos collections depuis Shopify
+            {t.collections.empty.description}
           </p>
         </Card>
       ) : viewMode === 'grid' ? (
@@ -399,11 +402,11 @@ export default function Collections() {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                   <div className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
-                    <span>{collection.product_count || 0} produits</span>
+                    <span>{collection.product_count || 0} {t.collections.card.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <ImageIcon className="w-4 h-4" />
-                    <span>{collection.image_count || 0} images</span>
+                    <span>{collection.image_count || 0} {t.collections.card.images}</span>
                   </div>
                 </div>
                 {collection.body_html && (
@@ -439,15 +442,15 @@ export default function Collections() {
                     <h3 className="font-semibold text-lg">{collection.title}</h3>
                     <div className="flex gap-2">
                       <Badge variant="outline">
-                        {collection.product_count || 0} produits
+                        {collection.product_count || 0} {t.collections.card.products}
                       </Badge>
                       <Badge variant="outline">
-                        {collection.image_count || 0} images
+                        {collection.image_count || 0} {t.collections.card.images}
                       </Badge>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Handle: {collection.handle}
+                    {t.collections.card.handle}: {collection.handle}
                   </p>
                   {collection.body_html && (
                     <p 
