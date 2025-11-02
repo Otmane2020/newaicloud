@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Upload } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface ArticleSyncDialogProps {
   open: boolean;
@@ -17,25 +18,27 @@ interface ArticleSyncDialogProps {
 }
 
 export function ArticleSyncDialog({ open, onOpenChange, article, onConfirm, loading }: ArticleSyncDialogProps) {
+  const { t } = useTranslation();
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
-        <DialogTitle>Publier sur Shopify</DialogTitle>
+        <DialogTitle>{t.blog.submenu.articles}</DialogTitle>
         <DialogDescription>
-          Votre article est prêt à être publié sur votre boutique Shopify
+          {t.blog.description}
         </DialogDescription>
         
         <Card className="p-4">
           <h3 className="font-semibold text-lg mb-3">{article.title}</h3>
           {article.seo_title && (
             <div className="mt-3">
-              <Badge variant="outline" className="mb-1">Titre SEO</Badge>
+              <Badge variant="outline" className="mb-1">{t.productDetail.seoTitle}</Badge>
               <p className="text-sm text-muted-foreground">{article.seo_title}</p>
             </div>
           )}
           {article.seo_description && (
             <div className="mt-3">
-              <Badge variant="outline" className="mb-1">Description SEO</Badge>
+              <Badge variant="outline" className="mb-1">{t.productDetail.seoDescription}</Badge>
               <p className="text-sm text-muted-foreground">{article.seo_description}</p>
             </div>
           )}
@@ -48,7 +51,7 @@ export function ArticleSyncDialog({ open, onOpenChange, article, onConfirm, load
             className="flex-1"
             disabled={loading}
           >
-            Publier plus tard
+            {t.common.cancel}
           </Button>
           <Button 
             onClick={onConfirm} 
@@ -58,12 +61,12 @@ export function ArticleSyncDialog({ open, onOpenChange, article, onConfirm, load
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Publication...
+                {t.common.loading}
               </>
             ) : (
               <>
                 <Upload className="w-4 h-4" />
-                Publier sur Shopify
+                {t.articles.publish}
               </>
             )}
           </Button>

@@ -7,6 +7,7 @@ import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2 } from "lucide-react
 import { toast } from "sonner";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { TrialUpgradeDialog } from "@/components/TrialUpgradeDialog";
+import { useTranslation } from "@/lib/language";
 
 interface Opportunity {
   id: string;
@@ -35,6 +36,7 @@ export function BlogOpportunities() {
   const [regenerating, setRegenerating] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const initOpportunities = async () => {
@@ -194,8 +196,8 @@ export function BlogOpportunities() {
           <div className="absolute inset-0 w-12 h-12 rounded-full bg-primary/20 animate-ping" />
         </div>
         <div className="text-center space-y-2">
-          <p className="text-lg font-medium">Analyse du catalogue en cours...</p>
-          <p className="text-sm text-muted-foreground">Patience, cela peut prendre jusqu'à 30 secondes</p>
+          <p className="text-lg font-medium">{t.common.loading}</p>
+          <p className="text-sm text-muted-foreground">{t.modals.pleaseWait}</p>
         </div>
       </div>
     );
@@ -208,7 +210,7 @@ export function BlogOpportunities() {
           <CardContent className="py-12 text-center">
             <Lightbulb className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-muted-foreground mb-4">
-              Aucune opportunité détectée. Générez des opportunités basées sur votre catalogue.
+              {t.blog.submenu.opportunitiesDesc}
             </p>
             <Button
               onClick={handleRegenerate}
@@ -219,12 +221,12 @@ export function BlogOpportunities() {
               {regenerating ? (
                 <>
                   <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                  Analyse en cours...
+                  {t.common.loading}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 mr-2" />
-                  Générer opportunités IA
+                  {t.blog.createNew}
                 </>
               )}
             </Button>
@@ -238,9 +240,9 @@ export function BlogOpportunities() {
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h3 className="text-xl font-semibold">Opportunités de Contenu IA</h3>
+          <h3 className="text-xl font-semibold">{t.blog.submenu.opportunities}</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            {opportunities.length} opportunités détectées basées sur votre catalogue
+            {opportunities.length} {t.blog.submenu.opportunitiesDesc}
           </p>
         </div>
         <Button
@@ -252,12 +254,12 @@ export function BlogOpportunities() {
           {regenerating ? (
             <>
               <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-              Analyse en cours...
+              {t.common.loading}
             </>
           ) : (
             <>
               <Sparkles className="w-5 h-5 mr-2" />
-              Générer opportunités IA
+              {t.blog.createNew}
             </>
           )}
         </Button>
@@ -290,7 +292,7 @@ export function BlogOpportunities() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="text-sm">
-                    <span className="font-semibold">Catégorie:</span> {opp.category}
+                    <span className="font-semibold">{t.forms.category}:</span> {opp.category}
                     {opp.subCategory && ` > ${opp.subCategory}`}
                   </div>
                   
@@ -337,12 +339,12 @@ export function BlogOpportunities() {
                     {generating === opp.id ? (
                       <>
                         <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                        Génération...
+                        {t.common.loading}
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4 mr-2" />
-                        Créer cet article
+                        {t.blog.createNew}
                       </>
                     )}
                   </Button>

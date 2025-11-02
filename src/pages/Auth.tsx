@@ -9,11 +9,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Sparkles, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { loginSchema, signupSchema } from '@/lib/validationSchemas';
+import { useTranslation } from '@/lib/language';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
-  const referralCode = searchParams.get('ref'); // Get referral code from URL
+  const referralCode = searchParams.get('ref');
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +22,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const { signIn, signUp, user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -86,26 +88,25 @@ export default function Auth() {
           </div>
 
           <h1 className="text-3xl font-bold text-center mb-2">
-            {mode === 'login' ? 'Login' : 'Sign Up'}
+            {mode === 'login' ? t.auth.login : t.auth.signup}
           </h1>
           <p className="text-center text-muted-foreground mb-8">
             {mode === 'login'
-              ? 'Log in to your account'
+              ? t.auth.login
               : referralCode 
-                ? '🎁 Créez votre compte et obtenez 100 optimisations gratuites !'
-                : 'Create your account for free'}
+                ? t.toasts.welcomeBonusMessage
+                : t.auth.signup}
           </p>
 
-          {/* Referral Bonus Alert */}
           {mode === 'signup' && referralCode && (
             <Alert className="mb-6 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-2 border-purple-200 dark:border-purple-800">
               <Gift className="h-5 w-5 text-purple-600" />
               <AlertDescription className="text-sm">
                 <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">
-                  Bonus de bienvenue activé !
+                  {t.toasts.welcomeBonus}
                 </p>
                 <p className="text-purple-700 dark:text-purple-300">
-                  Vous recevrez <span className="font-bold">100 optimisations gratuites</span> après votre inscription
+                  {t.toasts.welcomeBonusMessage}
                 </p>
               </AlertDescription>
             </Alert>
@@ -114,7 +115,7 @@ export default function Auth() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">{t.account.profile.fullName}</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -124,7 +125,7 @@ export default function Auth() {
                     if (errors.fullName) setErrors({ ...errors, fullName: '' });
                   }}
                   required
-                  placeholder="John Doe"
+                  placeholder={t.account.profile.fullNamePlaceholder}
                   className={errors.fullName ? 'border-destructive' : ''}
                 />
                 {errors.fullName && (
@@ -134,7 +135,7 @@ export default function Auth() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t.auth.email}</Label>
               <Input
                 id="email"
                 type="email"
@@ -144,7 +145,7 @@ export default function Auth() {
                   if (errors.email) setErrors({ ...errors, email: '' });
                 }}
                 required
-                placeholder="you@example.com"
+                placeholder="name@example.com"
                 className={errors.email ? 'border-destructive' : ''}
               />
               {errors.email && (
@@ -154,14 +155,14 @@ export default function Auth() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t.auth.password}</Label>
                 {mode === 'login' && (
                   <button
                     type="button"
                     onClick={() => navigate('/reset-password')}
                     className="text-xs text-primary hover:underline"
                   >
-                    Forgot password?
+                    {t.auth.forgotPassword}
                   </button>
                 )}
               </div>
@@ -190,11 +191,11 @@ export default function Auth() {
             >
               {loading
                 ? mode === 'signup'
-                  ? 'Creating account...'
-                  : 'Connecting...'
+                  ? t.common.loading
+                  : t.common.loading
                 : mode === 'login'
-                ? 'Sign In'
-                : 'Sign Up'}
+                ? t.auth.login
+                : t.auth.signup}
             </Button>
           </form>
 
@@ -205,8 +206,8 @@ export default function Auth() {
               className="text-sm text-primary hover:underline"
             >
               {mode === 'login'
-                ? "No account yet? Sign up"
-                : 'Already have an account? Log in'}
+                ? t.auth.noAccount
+                : t.auth.haveAccount}
             </button>
           </div>
         </Card>

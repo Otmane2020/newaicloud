@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from '@/lib/language';
 import { 
   Check, 
   Sparkles, 
@@ -48,6 +49,7 @@ interface Plan {
 
 export default function Onboarding() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [plans, setPlans] = useState<Plan[]>([]);

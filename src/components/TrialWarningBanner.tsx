@@ -6,10 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 
 export function TrialWarningBanner() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, tf } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const { data: profile } = useQuery({
@@ -43,13 +45,13 @@ export function TrialWarningBanner() {
           <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-500 flex-shrink-0" />
           <div>
             <p className="font-medium text-orange-900 dark:text-orange-100">
-              Période d'essai - Version limitée
+              {t.trial.warningTitle}
               {daysLeft && daysLeft > 0 && (
-                <span className="ml-2 text-sm">({daysLeft} jours restants)</span>
+                <span className="ml-2 text-sm">({tf('trial.daysLeft', { days: daysLeft })})</span>
               )}
             </p>
             <p className="text-sm text-orange-700 dark:text-orange-300">
-              Libérez toutes les fonctionnalités en activant votre abonnement
+              {t.trial.activateSubscription}
             </p>
           </div>
         </div>
@@ -63,7 +65,7 @@ export function TrialWarningBanner() {
                 window.open(data.url, '_blank');
               }
             } catch (error) {
-              toast.error("Erreur lors de la création du paiement");
+              toast.error(t.errors.generic);
             } finally {
               setLoading(false);
             }
@@ -74,12 +76,12 @@ export function TrialWarningBanner() {
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Chargement...
+              {t.common.loading}
             </>
           ) : (
             <>
               <Sparkles className="w-4 h-4 mr-2" />
-              Activer mon abonnement
+              {t.trial.activateSubscription}
             </>
           )}
         </Button>

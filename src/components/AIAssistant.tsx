@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 
 interface Message {
   role: "user" | "assistant";
@@ -17,11 +18,12 @@ interface Message {
 
 export function AIAssistant() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Bonjour ! 👋 Je suis votre assistant virtuel. Comment puis-je vous aider aujourd'hui ?",
+      content: t.aiAssistant.welcome,
     },
   ]);
   const [input, setInput] = useState("");
@@ -114,7 +116,7 @@ export function AIAssistant() {
         ...prev,
         {
           role: "assistant",
-          content: "Désolé, une erreur s'est produite. Veuillez réessayer.",
+          content: t.aiAssistant.error,
         },
       ]);
     } finally {
@@ -150,8 +152,8 @@ export function AIAssistant() {
             <div className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
               <div>
-                <h3 className="font-semibold text-sm sm:text-base">Assistant AI</h3>
-                <p className="text-xs opacity-90">Toujours à votre service</p>
+                <h3 className="font-semibold text-sm sm:text-base">{t.aiAssistant.title}</h3>
+                <p className="text-xs opacity-90">{t.aiAssistant.subtitle}</p>
               </div>
             </div>
             <Button
@@ -202,7 +204,7 @@ export function AIAssistant() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Posez votre question..."
+                placeholder={t.aiAssistant.placeholder}
                 disabled={isLoading}
                 className="flex-1 text-sm"
               />
