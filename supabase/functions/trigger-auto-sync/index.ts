@@ -30,13 +30,10 @@ interface SyncHistory {
   status: string;
 }
 
-interface FunctionResult {
-  error?: any;
-  data?: {
-    totalImported?: number;
-    imported?: number;
-    count?: number;
-  };
+interface FunctionResultData {
+  totalImported?: number;
+  imported?: number;
+  count?: number;
 }
 
 serve(async (req) => {
@@ -161,15 +158,15 @@ serve(async (req) => {
       try {
         console.log(`📥 Importing ${type}...`);
 
-        let result: FunctionResult | undefined;
         const baseBody = {
           storeId: connection.id,
           shopName: cleanShopName,
         };
 
+        let result;
         switch (type) {
           case "products":
-            result = await supabase.functions.invoke("import-products", {
+            result = await supabase.functions.invoke<FunctionResultData>("import-products", {
               body: {
                 ...baseBody,
                 apiSecret: connection.access_token,
@@ -177,17 +174,17 @@ serve(async (req) => {
             });
             break;
           case "collections":
-            result = await supabase.functions.invoke("import-shopify-collections", {
+            result = await supabase.functions.invoke<FunctionResultData>("import-shopify-collections", {
               body: baseBody,
             });
             break;
           case "pages":
-            result = await supabase.functions.invoke("import-shopify-pages", {
+            result = await supabase.functions.invoke<FunctionResultData>("import-shopify-pages", {
               body: baseBody,
             });
             break;
           case "articles":
-            result = await supabase.functions.invoke("import-shopify-articles", {
+            result = await supabase.functions.invoke<FunctionResultData>("import-shopify-articles", {
               body: {
                 ...baseBody,
                 authToken: connection.access_token,
@@ -195,7 +192,7 @@ serve(async (req) => {
             });
             break;
           case "images":
-            result = await supabase.functions.invoke("import-content-images", {
+            result = await supabase.functions.invoke<FunctionResultData>("import-content-images", {
               body: {
                 storeId: connection.id,
                 types: ["collections", "pages", "articles", "homepage"],
@@ -207,14 +204,14 @@ serve(async (req) => {
             continue;
         }
 
-        if (result?.error) {
+        if (result.error) {
           const errorMsg = `Error importing ${type}: ${result.error.message || JSON.stringify(result.error)}`;
           console.error(`❌ ${errorMsg}`);
           errorMessages.push(errorMsg);
           hasErrors = true;
-        } else {
+        } else if (result.data) {
           // Safely count imported items
-          const importedCount = result?.data?.totalImported || result?.data?.imported || result?.data?.count || 0;
+          const importedCount = result.data.totalImported || result.data.imported || result.data.count || 0;
           totalImported += importedCount;
           console.log(`✅ ${type} import completed: ${importedCount} items`);
         }
