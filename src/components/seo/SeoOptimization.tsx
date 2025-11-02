@@ -143,8 +143,9 @@ export function SeoOptimization() {
   const optimizationRate = products.length > 0 ? Math.round((aiOptimized / products.length) * 100) : 0;
 
   // Calculate global SEO score with 30/70 weighting
-  const productsNotOptimized = products.filter(p => p.enrichment_status !== 'enriched');
-  const productsOptimized = products.filter(p => p.enrichment_status === 'enriched');
+  // Use optimization_count to identify AI-optimized products (persists across plans)
+  const productsNotOptimized = products.filter(p => (p.optimization_count || 0) === 0);
+  const productsOptimized = products.filter(p => (p.optimization_count || 0) > 0);
 
   // Score for non-optimized products (based on original Shopify data)
   const scoreWithoutAI = productsNotOptimized.length > 0
