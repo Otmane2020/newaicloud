@@ -92,8 +92,8 @@ export function SyncResultDialog({
               <Check className="w-4 h-4 text-green-500" />
               Rapport Détaillé
             </h4>
-            <ScrollArea className="h-[300px] border-2 rounded-lg shadow-inner bg-muted/5">
-              <div className="p-4 space-y-3">
+            <ScrollArea className="h-[300px] border rounded-lg bg-muted/30">
+              <div className="p-3 space-y-2">
                 {Object.entries(stats)
                   .filter(([_, data]) => data.imported > 0)
                   .map(([type, data]) => {
@@ -101,37 +101,26 @@ export function SyncResultDialog({
                     const Icon = config.icon;
                     
                     return (
-                      <Card key={type} className="border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
-                        <CardContent className="pt-4 pb-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 ring-2 ring-primary/20">
-                              <Icon className={`w-7 h-7 ${config.color}`} />
-                            </div>
-                            
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-bold text-base">{config.label}</span>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-3xl font-bold text-green-600 dark:text-green-400 tabular-nums">
-                                    +{data.imported}
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center gap-3 text-sm">
-                                <div className="px-3 py-1 bg-muted rounded-full">
-                                  <span className="font-medium text-muted-foreground">Avant: </span>
-                                  <span className="font-bold">{data.before}</span>
-                                </div>
-                                <div className="px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
-                                  <span className="font-medium text-muted-foreground">Après: </span>
-                                  <span className="font-bold text-primary">{data.after}</span>
-                                </div>
-                              </div>
-                            </div>
+                      <div key={type} className="flex items-center gap-3 p-3 bg-card border rounded-lg hover:shadow-md transition-all">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Icon className={`w-5 h-5 ${config.color}`} />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-sm truncate">{config.label}</span>
+                            <span className="text-xl font-bold text-green-600 dark:text-green-400 tabular-nums flex-shrink-0">
+                              +{data.imported}
+                            </span>
                           </div>
-                        </CardContent>
-                      </Card>
+                          
+                          <div className="flex items-center gap-2 text-xs mt-1">
+                            <span className="text-muted-foreground">
+                              {data.before} → <span className="font-bold text-primary">{data.after}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
               </div>

@@ -386,13 +386,42 @@ export function ShopifySyncSettings() {
         supabase.from('content_images').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
       ]);
 
-      setSyncStats(prev => ({
-        products: { ...prev.products, after: afterCounts[0].count || 0 },
-        collections: { ...prev.collections, after: afterCounts[1].count || 0 },
-        pages: { ...prev.pages, after: afterCounts[2].count || 0 },
-        articles: { ...prev.articles, after: afterCounts[3].count || 0 },
-        images: { ...prev.images, after: afterCounts[4].count || 0 },
-      }));
+      // Update final counts and recalculate imported
+      setSyncStats(prev => {
+        const newStats = {
+          products: { 
+            before: prev.products.before, 
+            after: afterCounts[0].count || 0,
+            imported: (afterCounts[0].count || 0) - prev.products.before
+          },
+          collections: { 
+            before: prev.collections.before, 
+            after: afterCounts[1].count || 0,
+            imported: (afterCounts[1].count || 0) - prev.collections.before
+          },
+          pages: { 
+            before: prev.pages.before, 
+            after: afterCounts[2].count || 0,
+            imported: (afterCounts[2].count || 0) - prev.pages.before
+          },
+          articles: { 
+            before: prev.articles.before, 
+            after: afterCounts[3].count || 0,
+            imported: (afterCounts[3].count || 0) - prev.articles.before
+          },
+          images: { 
+            before: prev.images.before, 
+            after: afterCounts[4].count || 0,
+            imported: (afterCounts[4].count || 0) - prev.images.before
+          },
+        };
+
+        // Recalculate total imported
+        const newTotal = Object.values(newStats).reduce((sum, stat) => sum + Math.max(0, stat.imported), 0);
+        setTotalImported(newTotal);
+
+        return newStats;
+      });
 
       // Hide progress, show result dialog
       setShowProgressDialog(false);
