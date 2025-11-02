@@ -38,20 +38,35 @@ Deno.serve(async (req) => {
     }
 
     console.log("📝 Syncing article:", article.title);
+    console.log("👤 Article user_id:", article.user_id);
 
-    const { data: store } = await supabase
+    const { data: store, error: storeError } = await supabase
       .from("shopify_connections")
       .select("*")
       .eq("user_id", article.user_id)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
+
+    if (storeError) {
+      console.error("❌ Error fetching Shopify connection:", storeError);
+      return new Response(JSON.stringify({ 
+        error: "Error fetching Shopify connection",
+        details: storeError.message 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
     if (!store) {
+      console.error("❌ No active Shopify connection found for user:", article.user_id);
       return new Response(JSON.stringify({ error: "No Shopify connection found" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
+
+    console.log("✅ Shopify connection found:", store.store_url);
 
     await supabase
       .from("blog_articles")
