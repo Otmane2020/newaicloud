@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, CreditCard, Calendar, Package } from 'lucide-react';
+import { Loader2, CreditCard, Calendar, Package, RefreshCw } from 'lucide-react';
+import { PlanUpgradeDialog } from './PlanUpgradeDialog';
 
 interface Plan {
   id: string;
@@ -23,6 +24,7 @@ export function CurrentPlanCard() {
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
 
   useEffect(() => {
     loadSubscriptionData();
@@ -158,24 +160,36 @@ export function CurrentPlanCard() {
             </Button>
           )}
 
-          <Button 
-            onClick={handleManageSubscription}
-            disabled={portalLoading}
-            variant="outline"
-            className="w-full"
-          >
-            {portalLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              <>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Manage Subscription
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setUpgradeDialogOpen(true)}
+              disabled={portalLoading}
+              variant="outline"
+              className="flex-1"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Change Plan
+            </Button>
+
+            <Button 
+              onClick={handleManageSubscription}
+              disabled={portalLoading}
+              variant="default"
+              className="flex-1"
+            >
+              {portalLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Manage Subscription
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="text-center py-4">
@@ -187,6 +201,13 @@ export function CurrentPlanCard() {
           </Button>
         </div>
       )}
+
+      <PlanUpgradeDialog
+        open={upgradeDialogOpen}
+        onOpenChange={setUpgradeDialogOpen}
+        currentPlanId={currentPlan?.id || null}
+        onSuccess={loadSubscriptionData}
+      />
     </Card>
   );
 }
