@@ -696,10 +696,10 @@ export function SeoOptimization() {
         
         <Card 
           className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setActiveTab('pending-sync');
-            toast.info(`Showing ${pendingSyncCount} products to synchronize`);
-          }}
+            onClick={() => {
+              setActiveTab('pending-sync');
+              toast.info(tf('seo.optimization.showingToSynchronize', { count: pendingSyncCount }));
+            }}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -991,7 +991,7 @@ export function SeoOptimization() {
                   />
                 </TableHead>
                 <TableHead className="w-20">{t.seo.optimization.image}</TableHead>
-                <TableHead>{t.common.title}</TableHead>
+                <TableHead>{t.products.title}</TableHead>
                 <TableHead className="min-w-[200px]">{t.seo.optimization.seoTitle}</TableHead>
                 <TableHead className="min-w-[250px]">{t.seo.optimization.seoDescription}</TableHead>
                 <TableHead className="w-32">
@@ -1054,7 +1054,7 @@ export function SeoOptimization() {
                           <p className="text-sm line-clamp-2">{product.seo_title}</p>
                         ) : (
                           <Badge variant="outline" className="text-xs">
-                            Not optimized
+                            {t.seo.optimization.notOptimizedBadge}
                           </Badge>
                         )}
                       </div>
@@ -1067,7 +1067,7 @@ export function SeoOptimization() {
                           </p>
                         ) : (
                           <Badge variant="outline" className="text-xs">
-                            Not optimized
+                            {t.seo.optimization.notOptimizedBadge}
                           </Badge>
                         )}
                       </div>
@@ -1083,11 +1083,11 @@ export function SeoOptimization() {
                           }`}>
                             {seoScore.score}%
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {seoScore.score >= 80 ? '✅ Excellent' : 
-                             seoScore.score >= 50 ? '👍 Bon' : 
-                             '⚠️ À améliorer'}
-                          </span>
+                           <span className="text-xs text-muted-foreground">
+                             {seoScore.score >= 80 ? t.seo.optimization.excellentEmoji : 
+                              seoScore.score >= 50 ? t.seo.optimization.goodEmoji : 
+                              t.seo.optimization.toImprove}
+                           </span>
                            </>
                          ) : (
                            <>
@@ -1109,7 +1109,7 @@ export function SeoOptimization() {
                                      }`}>
                                        {initialScore.score}%
                                      </div>
-                                     <span className="text-xs text-muted-foreground">Score initial</span>
+                                      <span className="text-xs text-muted-foreground">{t.seo.optimization.initialScore}</span>
                                   </>
                                );
                              })()}
@@ -1117,24 +1117,24 @@ export function SeoOptimization() {
                          )}
                        </div>
                      </TableCell>
-                    <TableCell>
-                      <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
-                        {product.enrichment_status === 'enriched' ? 'Optimized' : 'Pending'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {product.seo_synced_to_shopify ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Yes
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">
-                          <Clock className="w-3 h-3 mr-1" />
-                          No
-                        </Badge>
-                      )}
-                    </TableCell>
+                     <TableCell>
+                       <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
+                         {product.enrichment_status === 'enriched' ? t.seo.optimization.optimizedTab : t.seo.optimization.pending}
+                       </Badge>
+                     </TableCell>
+                     <TableCell>
+                       {product.seo_synced_to_shopify ? (
+                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                           <CheckCircle className="w-3 h-3 mr-1" />
+                           {t.seo.optimization.yes}
+                         </Badge>
+                       ) : (
+                         <Badge variant="outline">
+                           <Clock className="w-3 h-3 mr-1" />
+                           {t.seo.optimization.no}
+                         </Badge>
+                       )}
+                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Button
@@ -1143,38 +1143,38 @@ export function SeoOptimization() {
                           onClick={async () => {
                             setGenerating(true);
                             try {
-                              const { error } = await supabase.functions.invoke('generate-seo-with-deepseek', {
-                                body: { productId: product.id }
-                              });
-                              if (error) throw error;
-                              toast.success('Produit optimisé !');
-                              await fetchProducts();
-                              await refreshLimits();
-                            } catch (error: any) {
-                              toast.error(error.message || 'Erreur lors de l\'optimisation');
+                               const { error } = await supabase.functions.invoke('generate-seo-with-deepseek', {
+                                 body: { productId: product.id }
+                               });
+                               if (error) throw error;
+                               toast.success(t.seo.optimization.productOptimized);
+                               await fetchProducts();
+                               await refreshLimits();
+                             } catch (error: any) {
+                               toast.error(error.message || t.seo.optimization.optimizationError);
                             } finally {
                               setGenerating(false);
                             }
                           }}
-                          disabled={generating}
-                          title="Optimize"
-                          className="hover:bg-blue-50"
-                        >
-                          <Sparkles className="w-5 h-5 text-blue-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setProductsToSync([product]);
-                            setShowSyncDialog(true);
-                          }}
-                          disabled={!product.seo_title || !product.seo_description}
-                          title="View & Sync"
-                          className="hover:bg-gray-50"
-                        >
-                          <Eye className="w-5 h-5" />
-                        </Button>
+                           disabled={generating}
+                           title={t.seo.optimization.optimize}
+                           className="hover:bg-blue-50"
+                         >
+                           <Sparkles className="w-5 h-5 text-blue-600" />
+                         </Button>
+                         <Button
+                           variant="ghost"
+                           size="icon"
+                           onClick={() => {
+                             setProductsToSync([product]);
+                             setShowSyncDialog(true);
+                           }}
+                           disabled={!product.seo_title || !product.seo_description}
+                           title={t.seo.optimization.viewSync}
+                           className="hover:bg-gray-50"
+                         >
+                           <Eye className="w-5 h-5" />
+                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1229,29 +1229,29 @@ export function SeoOptimization() {
                   </div>
 
                   <div className="space-y-2">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">SEO Title</p>
-                      {product.seo_title ? (
-                        <p className="text-sm line-clamp-2">{product.seo_title}</p>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          Not optimized
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">SEO Description</p>
-                      {product.seo_description ? (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {product.seo_description}
-                        </p>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          Not optimized
-                        </Badge>
-                      )}
-                    </div>
+                   <div>
+                     <p className="text-xs font-medium text-muted-foreground mb-1">{t.seo.optimization.seoTitle}</p>
+                     {product.seo_title ? (
+                       <p className="text-sm line-clamp-2">{product.seo_title}</p>
+                     ) : (
+                       <Badge variant="outline" className="text-xs">
+                         {t.seo.optimization.notOptimizedBadge}
+                       </Badge>
+                     )}
+                   </div>
+                   
+                   <div>
+                     <p className="text-xs font-medium text-muted-foreground mb-1">{t.seo.optimization.seoDescription}</p>
+                     {product.seo_description ? (
+                       <p className="text-xs text-muted-foreground line-clamp-2">
+                         {product.seo_description}
+                       </p>
+                     ) : (
+                       <Badge variant="outline" className="text-xs">
+                         {t.seo.optimization.notOptimizedBadge}
+                       </Badge>
+                     )}
+                   </div>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1265,11 +1265,11 @@ export function SeoOptimization() {
                           }`}>
                             {seoScore.score}%
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {seoScore.score >= 70 ? '✅ Excellent' : 
-                             seoScore.score >= 50 ? '👍 Bon' : 
-                             '⚠️ À améliorer'}
-                          </span>
+                           <span className="text-xs text-muted-foreground">
+                             {seoScore.score >= 70 ? t.seo.optimization.excellentEmoji : 
+                              seoScore.score >= 50 ? t.seo.optimization.goodEmoji : 
+                              t.seo.optimization.toImprove}
+                           </span>
                         </>
                       ) : (
                         <>
@@ -1291,7 +1291,7 @@ export function SeoOptimization() {
                                   }`}>
                                     {initialScore.score}%
                                   </div>
-                                  <span className="text-xs text-muted-foreground">Score initial</span>
+                                  <span className="text-xs text-muted-foreground">{t.seo.optimization.initialScore}</span>
                                 </>
                               );
                             })()}
@@ -1306,11 +1306,11 @@ export function SeoOptimization() {
                         setProductsToSync([product]);
                         setShowSyncDialog(true);
                       }}
-                      disabled={!product.seo_title || !product.seo_description}
-                    >
-                      <Eye className="w-3 h-3 mr-1" />
-                      View
-                    </Button>
+                     disabled={!product.seo_title || !product.seo_description}
+                   >
+                     <Eye className="w-3 h-3 mr-1" />
+                     {t.seo.optimization.view}
+                   </Button>
                   </div>
                 </div>
               </Card>
