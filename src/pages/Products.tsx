@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ interface Product {
 export default function Products() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { limits } = useUsageLimits();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,7 +162,11 @@ export default function Products() {
           <div>
             <h1 className="text-xl font-bold">Products</h1>
             <p className="text-xs text-muted-foreground">
-              {products.length} product{products.length !== 1 ? "s" : ""} • {totalValue.toFixed(2)} €
+              {products.length} / {limits?.limits?.max_products || "..."} • {
+                limits 
+                  ? `${Math.max(0, (limits.limits.max_products || 0) - (limits.usage.products_count || 0))} slots available`
+                  : "Loading..."
+              }
             </p>
           </div>
           <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
