@@ -130,25 +130,22 @@ export function SeoAuditDashboard() {
     }
   };
 
-  // Palette de couleurs: vert (excellent), orange (moyen), rouge (faible)
+  // Palette de couleurs: vert (excellent), orange (bon), rouge (faible < 55)
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
-    if (score >= 60) return "text-[#FF8000]"; // Orange
-    if (score >= 40) return "text-[#FF8000]"; // Orange
-    return "text-[#FF3333]"; // Rouge
+    if (score >= 55) return "text-[#FF8000]"; // Orange pour bon
+    return "text-[#FF3333]"; // Rouge pour faible < 55
   };
 
   const getScoreBgColor = (score: number) => {
     if (score >= 80) return "bg-[#22c55e]/10 border-[#22c55e]/30";
-    if (score >= 60) return "bg-[#FF8000]/10 border-[#FF8000]/30";
-    if (score >= 40) return "bg-[#FF8000]/10 border-[#FF8000]/30";
+    if (score >= 55) return "bg-[#FF8000]/10 border-[#FF8000]/30";
     return "bg-[#FF3333]/10 border-[#FF3333]/30";
   };
 
   const getScoreGradient = (score: number) => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
-    if (score >= 60) return "from-[#FF8000]/20 to-[#FF8000]/5";
-    if (score >= 40) return "from-[#FF8000]/20 to-[#FF8000]/5";
+    if (score >= 55) return "from-[#FF8000]/20 to-[#FF8000]/5";
     return "from-[#FF3333]/20 to-[#FF3333]/5";
   };
 
@@ -161,15 +158,7 @@ export function SeoAuditDashboard() {
         dot: "bg-[#22c55e]",
         gradient: "from-[#22c55e]/20 to-[#22c55e]/5",
       };
-    if (value >= 60)
-      return {
-        text: "text-[#FF8000]",
-        bg: "bg-gradient-to-r from-[#FF8000] to-[#FF8000]",
-        glow: "0 0 10px #FF8000",
-        dot: "bg-[#FF8000]",
-        gradient: "from-[#FF8000]/20 to-[#FF8000]/5",
-      };
-    if (value >= 40)
+    if (value >= 55)
       return {
         text: "text-[#FF8000]",
         bg: "bg-gradient-to-r from-[#FF8000] to-[#FF8000]",
@@ -193,13 +182,7 @@ export function SeoAuditDashboard() {
         end: "#16a34a",
         glow: "bg-[#22c55e]/30",
       };
-    if (score >= 60)
-      return {
-        start: "#FF8000",
-        end: "#FF8000",
-        glow: "bg-[#FF8000]/30",
-      };
-    if (score >= 40)
+    if (score >= 55)
       return {
         start: "#FF8000",
         end: "#FF8000",
@@ -214,9 +197,9 @@ export function SeoAuditDashboard() {
 
   const getPriorityBadge = (priority: string) => {
     const variants = {
-      high: { variant: "destructive" as const, label: "🔴 Haute", icon: AlertCircle },
-      medium: { variant: "default" as const, label: "🟡 Moyenne", icon: AlertCircle },
-      low: { variant: "secondary" as const, label: "🟢 Basse", icon: CheckCircle2 },
+      high: { variant: "destructive" as const, label: t.seoAuditDashboard.issuesSection.high, icon: AlertCircle },
+      medium: { variant: "default" as const, label: t.seoAuditDashboard.issuesSection.medium, icon: AlertCircle },
+      low: { variant: "secondary" as const, label: t.seoAuditDashboard.issuesSection.low, icon: CheckCircle2 },
     };
     const config = variants[priority as keyof typeof variants] || variants.medium;
     const Icon = config.icon;
@@ -474,26 +457,22 @@ export function SeoAuditDashboard() {
                   <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10">
                     <TrendingUp className="w-7 h-7 text-primary" />
                   </div>
-                  Score SEO Global
+                  {t.seoAuditDashboard.overview.title}
                 </CardTitle>
                 <Badge
                   className={`text-lg px-5 py-2 ${
                     audit.global_score >= 80
                       ? "bg-[#22c55e] text-white"
-                      : audit.global_score >= 60
+                      : audit.global_score >= 55
                         ? "bg-[#FF8000] text-white"
-                  : audit.global_score >= 40
-                    ? "bg-[#FF8000] text-white"
-                    : "bg-[#FF3333] text-white"
+                        : "bg-[#FF3333] text-white"
                   }`}
                 >
                   {audit.global_score >= 80
-                    ? "🎯 Excellent"
-                    : audit.global_score >= 60
-                      ? "📈 Bon"
-                      : audit.global_score >= 40
-                        ? "⚠️ Moyen"
-                        : "🚨 Faible"}
+                    ? t.seoAuditDashboard.scoreLabel.excellent
+                    : audit.global_score >= 55
+                      ? t.seoAuditDashboard.scoreLabel.good
+                      : t.seoAuditDashboard.scoreLabel.low}
                 </Badge>
               </div>
             </CardHeader>
@@ -508,7 +487,7 @@ export function SeoAuditDashboard() {
                   </div>
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground font-medium">
-                      📅 Audit généré le{" "}
+                      📅 {t.seoAuditDashboard.overview.analysisDate}{" "}
                       {new Date(audit.created_at).toLocaleDateString("fr-FR", {
                         day: "numeric",
                         month: "long",
@@ -519,33 +498,29 @@ export function SeoAuditDashboard() {
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1">
-                        <div className="text-xs font-semibold text-muted-foreground mb-2">PROGRESSION</div>
+                        <div className="text-xs font-semibold text-muted-foreground mb-2">{t.seoAuditDashboard.overview.progression}</div>
                         <div className="relative h-4 bg-muted rounded-full overflow-hidden shadow-inner">
                           <div
                             className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
                               audit.global_score >= 80
                                 ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a]"
-                                : audit.global_score >= 60
+                                : audit.global_score >= 55
                                   ? "bg-gradient-to-r from-[#FF8000] to-[#FF8000]"
-                                  : audit.global_score >= 40
-                                    ? "bg-gradient-to-r from-[#FF8000] to-[#FF8000]"
-                                    : "bg-gradient-to-r from-[#FF3333] to-[#FF3333]"
+                                  : "bg-gradient-to-r from-[#FF3333] to-[#FF3333]"
                             }`}
                             style={{
                               width: `${audit.global_score}%`,
                               boxShadow:
                                 audit.global_score >= 80
                                   ? "0 0 10px #22c55e"
-                                  : audit.global_score >= 60
+                                  : audit.global_score >= 55
                                     ? "0 0 10px #FF8000"
-                                    : audit.global_score >= 40
-                                      ? "0 0 10px #FF8000"
-                                      : "0 0 10px #FF3333",
+                                    : "0 0 10px #FF3333",
                             }}
                           />
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-primary">{100 - audit.global_score} pts restants</span>
+                      <span className="text-sm font-bold text-primary">{tf('seoAuditDashboard.overview.pointsRemaining', { count: 100 - audit.global_score })}</span>
                     </div>
                   </div>
                 </div>
@@ -620,8 +595,8 @@ export function SeoAuditDashboard() {
                       <div className={`text-3xl font-black ${getScoreColor(audit.global_score)}`}>
                         {Math.round(audit.global_score / 16.67)}
                       </div>
-                      <div className="text-xs text-muted-foreground font-semibold">sur 6 catégories</div>
-                      <div className="text-xs text-muted-foreground">optimisées</div>
+                      <div className="text-xs text-muted-foreground font-semibold">{tf('seoAuditDashboard.overview.categoriesOptimized', { count: 6 })}</div>
+                      <div className="text-xs text-muted-foreground">{t.seoAuditDashboard.overview.optimized}</div>
                     </div>
                   </div>
                 </div>
@@ -632,21 +607,17 @@ export function SeoAuditDashboard() {
                 className={`mt-6 p-4 rounded-xl ${
                   audit.global_score >= 80
                     ? "bg-[#22c55e]/10 border-2 border-[#22c55e]/20"
-                    : audit.global_score >= 60
-                      ? "bg-[rgb(255,94,23)]/10 border-2 border-[rgb(255,94,23)]/20"
-                      : audit.global_score >= 40
-                        ? "bg-[rgb(255,94,23)]/10 border-2 border-[rgb(255,94,23)]/20"
-                        : "bg-[#b91c1c]/10 border-2 border-[#b91c1c]/20"
+                    : audit.global_score >= 55
+                      ? "bg-[#FF8000]/10 border-2 border-[#FF8000]/20"
+                      : "bg-[#FF3333]/10 border-2 border-[#FF3333]/20"
                 }`}
               >
                 <p className="text-sm font-semibold">
                   {audit.global_score >= 80
-                    ? "🎉 Excellent travail ! Votre boutique est très bien optimisée pour le SEO. Continuez ainsi !"
-                    : audit.global_score >= 60
-                      ? "👍 Bon score ! Quelques optimisations supplémentaires vous permettront d'atteindre l'excellence."
-                      : audit.global_score >= 40
-                        ? "💪 Score moyen ! Suivez nos recommandations pour améliorer significativement votre visibilité."
-                        : "🚨 Potentiel d'amélioration important ! Mettez en œuvre nos recommandations prioritaires pour booster votre SEO."}
+                    ? t.seoAuditDashboard.motivational.excellent
+                    : audit.global_score >= 55
+                      ? t.seoAuditDashboard.motivational.good
+                      : t.seoAuditDashboard.motivational.low}
                 </p>
               </div>
             </CardContent>
@@ -655,43 +626,55 @@ export function SeoAuditDashboard() {
           {/* Category Scores - Moved from categories tab */}
           <div>
             <div className="mb-6">
-              <h3 className="text-2xl font-bold mb-2">Détail par Catégorie</h3>
+              <h3 className="text-2xl font-bold mb-2">{t.seoAuditDashboard.categoryDetail.title}</h3>
               <p className="text-muted-foreground">
-                Cliquez sur une catégorie pour accéder aux optimisations correspondantes
+                {t.seoAuditDashboard.categoryDetail.subtitle}
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[
                 {
                   key: "homepage_score",
-                  label: "Homepage",
+                  label: t.seoAuditDashboard.categories.homepage,
                   icon: Home,
                   tab: "audit-dashboard",
                   subtab: "homepage",
-                  desc: "Titre et meta description",
+                  desc: t.seoAuditDashboard.categoryDescriptions.homepage,
                 },
                 {
                   key: "products_score",
-                  label: "Produits",
+                  label: t.seoAuditDashboard.categories.products,
                   icon: ShoppingBag,
                   tab: "products",
-                  desc: "Fiches produits SEO",
+                  desc: t.seoAuditDashboard.categoryDescriptions.products,
                 },
                 {
                   key: "collections_score",
-                  label: "Collections",
+                  label: t.seoAuditDashboard.categories.collections,
                   icon: Layers,
                   tab: "collections",
-                  desc: "Pages collections",
+                  desc: t.seoAuditDashboard.categoryDescriptions.collections,
                 },
-                { key: "blog_score", label: "Contenu", icon: FileText, tab: "articles", desc: "Articles et pages" },
-                { key: "images_score", label: "Images", icon: ImageIcon, tab: "alt", desc: "Textes alternatifs" },
+                { 
+                  key: "blog_score", 
+                  label: t.seoAuditDashboard.categories.content, 
+                  icon: FileText, 
+                  tab: "articles", 
+                  desc: t.seoAuditDashboard.categoryDescriptions.content 
+                },
+                { 
+                  key: "images_score", 
+                  label: t.seoAuditDashboard.categories.images, 
+                  icon: ImageIcon, 
+                  tab: "alt", 
+                  desc: t.seoAuditDashboard.categoryDescriptions.images 
+                },
                 {
                   key: "technical_score",
-                  label: "Technique",
+                  label: t.seoAuditDashboard.categories.technical,
                   icon: Sparkles,
                   tab: "products",
-                  desc: "Configuration Shopify",
+                  desc: t.seoAuditDashboard.categoryDescriptions.technical,
                 },
               ].map(({ key, label, icon: Icon, tab, subtab, desc }) => {
                 const categoryStats =
@@ -769,9 +752,9 @@ export function SeoAuditDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Home className="w-5 h-5" />
-                  Analyse Homepage SEO
+                  {t.seoAuditDashboard.homepageSection.title}
                 </CardTitle>
-                <CardDescription>Optimisation détaillée de votre page d'accueil</CardDescription>
+                <CardDescription>{t.seoAuditDashboard.homepageSection.subtitle}</CardDescription>
               </CardHeader>
               <CardContent>
                 <HomePageSeoAudit />
@@ -789,7 +772,7 @@ export function SeoAuditDashboard() {
                       <div className="p-3 rounded-xl bg-[#b91c1c]/10">
                         <AlertCircle className="w-6 h-6 text-[#b91c1c]" />
                       </div>
-                      Problèmes Détectés
+                      {t.seoAuditDashboard.issuesSection.title}
                     </CardTitle>
                     <CardDescription className="mt-2 text-base">
                       {audit.audit_results.issues.length} point{audit.audit_results.issues.length > 1 ? "s" : ""}{" "}

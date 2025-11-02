@@ -312,11 +312,13 @@ export const translations = {
     subtitle: "Complete analysis of your online visibility",
     currentScore: "CURRENT SCORE",
     categories: "SEO Categories",
-    excellent: "Excellent",
-    excellentCount: "{count}/6 Excellent",
-    priorityRecommendation: "💡 Priority Recommendation",
+    excellentCount: "{{count}}/6 Excellent",
+    priorityRecommendation: "Priority Recommendation",
     potentialImpact: "Potential impact:",
     points: "points",
+    excellent: "Excellent",
+    good: "Good",
+    needsImprovement: "Needs Improvement",
     categoryNames: {
       homepage: "Homepage",
       products: "Products",
@@ -327,19 +329,19 @@ export const translations = {
     },
     categoryDescriptions: {
       homepage: "Title and description of your homepage",
-      products: "SEO titles, descriptions and optimized tags",
-      collections: "Descriptions and images of your collections",
-      content: "Blog articles and optimized Shopify pages",
-      images: "Alternative texts (alt text) for images",
-      technical: "Shopify synchronization and configuration"
+      products: "Product page SEO",
+      collections: "Collection pages",
+      content: "Articles and pages",
+      images: "Alt texts",
+      technical: "Shopify configuration"
     },
     recommendations: {
-      homepage: "Optimize your homepage with an eye-catching SEO title and description. It's your store's showcase and can improve your score by +20 points!",
-      products: "Enrich your product pages with optimized SEO titles and detailed descriptions. Each optimized product can boost your visibility and global score by +20 points.",
-      collections: "Add complete SEO descriptions to your collections to improve their ranking. Well-optimized collections attract more qualified traffic.",
-      content: "Create and publish SEO-optimized blog articles to attract organic traffic. Quality content is the key to a successful SEO strategy!",
-      images: "Add descriptive alternative texts (alt text) to all your images. It's quick, easy and can improve your score by +15 points while making your site accessible.",
-      technical: "Check your technical configuration and ensure synchronization with Shopify works properly. A solid technical foundation is essential!"
+      homepage: "Optimize your homepage title and description to attract more qualified visitors. A good homepage SEO can increase your traffic by 20-30%.",
+      products: "Enrich your product pages with optimized titles and descriptions. Better product SEO directly increases conversion rates.",
+      collections: "Optimize your collections for better ranking on category searches. Collection pages are key entry points.",
+      content: "Create optimized content to attract organic traffic. Quality articles reinforce your topical authority.",
+      images: "Add descriptive alt texts to all your images. Images can represent up to 20% of organic traffic.",
+      technical: "Check your technical configuration and metadata. A good technical foundation is essential for SEO."
     }
   },
 
@@ -1461,6 +1463,79 @@ export const translations = {
       instant: "Instant Results",
       instantDesc: "Intelligent relevance scoring for optimal results",
     },
+  },
+
+  
+  seoAuditDashboard: {
+    scoreLabel: {
+      excellent: "🎯 Excellent",
+      good: "📈 Good", 
+      average: "⚠️ Average",
+      low: "🚨 Low"
+    },
+    overview: {
+      title: "Global SEO Score",
+      subtitle: "Complete analysis of your online visibility",
+      analysisDate: "Audit generated on",
+      progression: "PROGRESSION",
+      pointsRemaining: "{{count}} pts remaining",
+      categoriesOptimized: "on {{count}} categories",
+      optimized: "optimized"
+    },
+    motivational: {
+      excellent: "🎉 Excellent work! Your store is very well optimized for SEO. Keep it up!",
+      good: "👍 Good score! A few more optimizations will help you reach excellence.",
+      average: "💪 Average score! Follow our recommendations to significantly improve your visibility.",
+      low: "🚨 Significant improvement potential! Implement our priority recommendations to boost your SEO."
+    },
+    categoryDetail: {
+      title: "Category Breakdown",
+      subtitle: "Click on a category to access corresponding optimizations"
+    },
+    quickAccess: {
+      homepage: "Homepage",
+      homepageDesc: "Analyze and optimize your homepage",
+      issues: "Issues Detected",
+      issuesDesc: "{{count}} issues to fix",
+      actionPlan: "Action Plan",
+      actionPlanDesc: "{{count}} priority actions"
+    },
+    categories: {
+      homepage: "Homepage",
+      products: "Products",
+      collections: "Collections",
+      content: "Content",
+      images: "Images",
+      technical: "Technical"
+    },
+    categoryDescriptions: {
+      homepage: "Title and meta description",
+      products: "Product SEO pages",
+      collections: "Collection pages",
+      content: "Articles and pages",
+      images: "Alt texts",
+      technical: "Shopify configuration"
+    },
+    homepageSection: {
+      title: "Homepage SEO Analysis",
+      subtitle: "Detailed optimization of your home page"
+    },
+    issuesSection: {
+      title: "Issues Detected",
+      subtitle: "{{count}} issues requiring your attention",
+      priority: "Priority",
+      high: "🔴 High",
+      medium: "🟡 Medium",
+      low: "🟢 Low"
+    },
+    actionsSection: {
+      title: "Action Plan",
+      subtitle: "{{count}} recommended actions to improve your SEO",
+      status: "Status",
+      pending: "To do",
+      inProgress: "In progress",
+      completed: "Completed"
+    }
   },
 
   notifications: {

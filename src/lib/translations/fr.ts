@@ -312,13 +312,15 @@ export const translations = {
     subtitle: "Analyse complète de votre visibilité en ligne",
     currentScore: "SCORE ACTUEL",
     categories: "Catégories SEO",
-    excellent: "Excellentes",
-    excellentCount: "{count}/6 Excellentes",
-    priorityRecommendation: "💡 Recommandation Prioritaire",
+    excellentCount: "{{count}}/6 Excellent",
+    priorityRecommendation: "Recommandation prioritaire",
     potentialImpact: "Impact potentiel :",
     points: "points",
+    excellent: "Excellent",
+    good: "Bon",
+    needsImprovement: "À améliorer",
     categoryNames: {
-      homepage: "Homepage",
+      homepage: "Page d'accueil",
       products: "Produits",
       collections: "Collections",
       content: "Contenu",
@@ -327,19 +329,19 @@ export const translations = {
     },
     categoryDescriptions: {
       homepage: "Titre et description de votre page d'accueil",
-      products: "Titres SEO, descriptions et tags optimisés",
-      collections: "Descriptions et images de vos collections",
-      content: "Articles de blog et pages Shopify optimisés",
-      images: "Textes alternatifs (alt text) des images",
-      technical: "Synchronisation et configuration Shopify"
+      products: "Fiches produits SEO",
+      collections: "Pages collections",
+      content: "Articles et pages",
+      images: "Textes alternatifs",
+      technical: "Configuration Shopify"
     },
     recommendations: {
-      homepage: "Optimisez votre page d'accueil avec un titre et une description SEO accrocheurs. C'est la vitrine de votre boutique et peut améliorer votre score de +20 points !",
-      products: "Enrichissez vos fiches produits avec des titres SEO optimisés et des descriptions détaillées. Chaque produit optimisé peut booster votre visibilité et votre score global de +20 points.",
-      collections: "Ajoutez des descriptions SEO complètes à vos collections pour améliorer leur référencement. Les collections bien optimisées attirent plus de trafic qualifié.",
-      content: "Créez et publiez des articles de blog optimisés SEO pour attirer du trafic organique. Le contenu de qualité est la clé d'une stratégie SEO réussie !",
-      images: "Ajoutez des textes alternatifs (alt text) descriptifs à toutes vos images. C'est rapide, facile et peut améliorer votre score de +15 points tout en rendant votre site accessible.",
-      technical: "Vérifiez votre configuration technique et assurez-vous que la synchronisation avec Shopify fonctionne correctement. Une base technique solide est essentielle !"
+      homepage: "Optimisez le titre et la description de votre page d'accueil pour attirer plus de visiteurs qualifiés. Un bon SEO homepage peut augmenter votre trafic de 20-30%.",
+      products: "Enrichissez vos fiches produits avec des titres et descriptions optimisés. Un meilleur SEO produit augmente directement les conversions.",
+      collections: "Optimisez vos collections pour mieux ranker sur les recherches de catégories. Les pages collections sont des points d'entrée clés.",
+      content: "Créez du contenu optimisé pour attirer du trafic organique. Des articles de qualité renforcent votre autorité thématique.",
+      images: "Ajoutez des textes alternatifs descriptifs à toutes vos images. Les images peuvent représenter jusqu'à 20% du trafic organique.",
+      technical: "Vérifiez votre configuration technique et métadonnées. Une bonne base technique est essentielle pour le SEO."
     }
   },
 
@@ -955,6 +957,144 @@ export const translations = {
     feed: "Flux Shopping",
     optimize: "Optimiser pour Google",
     syncAll: "Synchroniser Tous les Produits",
+  },
+
+  
+  seoAuditDashboard: {
+    scoreLabel: {
+      excellent: "🎯 Excellent",
+      good: "📈 Bon",
+      average: "⚠️ Moyen",
+      low: "🚨 Faible"
+    },
+    overview: {
+      title: "Score SEO Global",
+      subtitle: "Analyse complète de votre visibilité en ligne",
+      analysisDate: "Audit généré le",
+      progression: "PROGRESSION",
+      pointsRemaining: "{{count}} pts restants",
+      categoriesOptimized: "sur {{count}} catégories",
+      optimized: "optimisées"
+    },
+    motivational: {
+      excellent: "🎉 Excellent travail ! Votre boutique est très bien optimisée pour le SEO. Continuez ainsi !",
+      good: "👍 Bon score ! Quelques optimisations supplémentaires vous permettront d'atteindre l'excellence.",
+      average: "💪 Score moyen ! Suivez nos recommandations pour améliorer significativement votre visibilité.",
+      low: "🚨 Potentiel d'amélioration important ! Mettez en œuvre nos recommandations prioritaires pour booster votre SEO."
+    },
+    categoryDetail: {
+      title: "Détail par Catégorie",
+      subtitle: "Cliquez sur une catégorie pour accéder aux optimisations correspondantes"
+    },
+    quickAccess: {
+      homepage: "Page d'accueil",
+      homepageDesc: "Analyser et optimiser votre page d'accueil",
+      issues: "Problèmes Détectés",
+      issuesDesc: "{{count}} problèmes à corriger",
+      actionPlan: "Plan d'action",
+      actionPlanDesc: "{{count}} actions prioritaires"
+    },
+    categories: {
+      homepage: "Page d'accueil",
+      products: "Produits",
+      collections: "Collections",
+      content: "Contenu",
+      images: "Images",
+      technical: "Technique"
+    },
+    categoryDescriptions: {
+      homepage: "Titre et meta description",
+      products: "Fiches produits SEO",
+      collections: "Pages collections",
+      content: "Articles et pages",
+      images: "Textes alternatifs",
+      technical: "Configuration Shopify"
+    },
+    homepageSection: {
+      title: "Analyse Homepage SEO",
+      subtitle: "Optimisation détaillée de votre page d'accueil"
+    },
+    issuesSection: {
+      title: "Problèmes Détectés",
+      subtitle: "{{count}} problèmes nécessitant votre attention",
+      priority: "Priorité",
+      high: "🔴 Haute",
+      medium: "🟡 Moyenne",
+      low: "🟢 Basse"
+    },
+    actionsSection: {
+      title: "Plan d'action",
+      subtitle: "{{count}} actions recommandées pour améliorer votre SEO",
+      status: "Statut",
+      pending: "À faire",
+      inProgress: "En cours",
+      completed: "Terminé"
+    }
+  },
+
+  notificationSettings: {
+    title: "Paramètres de Notification",
+      subtitle: "Analyse complète de votre visibilité en ligne",
+      analysisDate: "Audit généré le",
+      progression: "PROGRESSION",
+      pointsRemaining: "{{count}} pts restants",
+      categoriesOptimized: "sur {{count}} catégories",
+      optimized: "optimisées"
+    },
+    motivational: {
+      excellent: "🎉 Excellent travail ! Votre boutique est très bien optimisée pour le SEO. Continuez ainsi !",
+      good: "👍 Bon score ! Quelques optimisations supplémentaires vous permettront d'atteindre l'excellence.",
+      average: "💪 Score moyen ! Suivez nos recommandations pour améliorer significativement votre visibilité.",
+      low: "🚨 Potentiel d'amélioration important ! Mettez en œuvre nos recommandations prioritaires pour booster votre SEO."
+    },
+    categoryDetail: {
+      title: "Détail par Catégorie",
+      subtitle: "Cliquez sur une catégorie pour accéder aux optimisations correspondantes"
+    },
+    quickAccess: {
+      homepage: "Page d'accueil",
+      homepageDesc: "Analyser et optimiser votre page d'accueil",
+      issues: "Problèmes Détectés",
+      issuesDesc: "{{count}} problèmes à corriger",
+      actionPlan: "Plan d'action",
+      actionPlanDesc: "{{count}} actions prioritaires"
+    },
+    categories: {
+      homepage: "Page d'accueil",
+      products: "Produits",
+      collections: "Collections",
+      content: "Contenu",
+      images: "Images",
+      technical: "Technique"
+    },
+    categoryDescriptions: {
+      homepage: "Titre et meta description",
+      products: "Fiches produits SEO",
+      collections: "Pages collections",
+      content: "Articles et pages",
+      images: "Textes alternatifs",
+      technical: "Configuration Shopify"
+    },
+    homepageSection: {
+      title: "Analyse Homepage SEO",
+      subtitle: "Optimisation détaillée de votre page d'accueil"
+    },
+    issuesSection: {
+      title: "Problèmes Détectés",
+      subtitle: "{{count}} problèmes nécessitant votre attention",
+      priority: "Priorité",
+      high: "🔴 Haute",
+      medium: "🟡 Moyenne",
+      low: "🟢 Basse"
+    },
+    actionsSection: {
+      title: "Plan d'action",
+      subtitle: "{{count}} actions recommandées pour améliorer votre SEO",
+      status: "Statut",
+      pending: "À faire",
+      inProgress: "En cours",
+      completed: "Terminé"
+    }
   },
 
   notificationSettings: {
