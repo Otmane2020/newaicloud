@@ -957,7 +957,7 @@ export const translations = {
     syncAll: "Synchroniser Tous les Produits",
   },
 
-  notifications: {
+  notificationSettings: {
     title: "Paramètres de Notification",
     emailNotifications: "Notifications Email",
     pushNotifications: "Notifications Push",
@@ -1273,15 +1273,45 @@ export const translations = {
   },
 
   toasts: {
-    success: "Succès",
-    error: "Erreur",
-    warning: "Attention",
-    info: "Info",
+    success: {
+      saved: "Enregistré avec succès",
+      updated: "Mis à jour avec succès",
+      created: "Créé avec succès",
+      deleted: "Supprimé avec succès",
+      copied: "Copié !",
+      syncSuccess: "Synchronisé avec Shopify",
+      taskCompleted: "Tâche marquée comme complétée",
+      subscriptionActivated: "Abonnement activé !",
+      subscriptionActivatedMessage: "Votre abonnement est maintenant actif",
+      welcomeBonus: "Bonus de bienvenue !",
+      welcomeBonusMessage: "Crédits bonus ajoutés à votre compte"
+    },
+    error: {
+      generic: "Une erreur s'est produite",
+      loading: "Erreur lors du chargement",
+      saving: "Erreur lors de l'enregistrement",
+      updating: "Erreur lors de la mise à jour",
+      deleting: "Erreur lors de la suppression",
+      payment: "Erreur lors de la création du paiement",
+      sync: "Erreur de synchronisation",
+      portal: "Erreur lors de l'ouverture du portail d'abonnement"
+    },
+    info: {
+      processing: "Traitement en cours...",
+      importing: "Importation en cours...",
+      generating: "Génération en cours..."
+    },
+    warning: {
+      limitReached: "Limite atteinte",
+      trialExpired: "Essai expiré",
+      paymentCancelled: "Paiement annulé",
+      paymentCancelledMessage: "Votre paiement a été annulé"
+    },
     savedSuccessfully: "Enregistré avec succès",
     deletedSuccessfully: "Supprimé avec succès",
     updatedSuccessfully: "Mis à jour avec succès",
     createdSuccessfully: "Créé avec succès",
-    copiedToClipboard: "Copié dans le presse-papiers",
+    copiedToClipboard: "Copié dans le presse-papier",
     linkCopied: "Lien copié",
     imageCopied: "Image copiée",
     errorOccurred: "Une erreur est survenue",
