@@ -1045,10 +1045,25 @@ export function CollectionOptimization() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleSelectCollection(collection.id)}
+                            onClick={async () => {
+                              setOptimizing(true);
+                              try {
+                                const { error } = await supabase.functions.invoke('generate-collection-seo', {
+                                  body: { collectionIds: [collection.id] }
+                                });
+                                if (error) throw error;
+                                toast.success('Collection optimisée !');
+                                await fetchCollections();
+                              } catch (error: any) {
+                                toast.error(error.message || 'Erreur lors de l\'optimisation');
+                              } finally {
+                                setOptimizing(false);
+                              }
+                            }}
+                            disabled={optimizing}
                             title="Optimize"
                           >
-                            <Sparkles className="w-4 h-4" />
+                            <Sparkles className="w-5 h-5" />
                           </Button>
                           <Button
                             size="sm"
@@ -1059,7 +1074,7 @@ export function CollectionOptimization() {
                             }}
                             title="Add Image"
                           >
-                            <ImageIcon className="w-4 h-4" />
+                            <ImageIcon className="w-5 h-5" />
                           </Button>
                         </div>
                       </TableCell>

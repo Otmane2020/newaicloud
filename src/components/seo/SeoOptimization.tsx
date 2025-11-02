@@ -979,6 +979,30 @@ export function SeoOptimization() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={async () => {
+                            setGenerating(true);
+                            try {
+                              const { error } = await supabase.functions.invoke('generate-seo-with-deepseek', {
+                                body: { productId: product.id }
+                              });
+                              if (error) throw error;
+                              toast.success('Produit optimisé !');
+                              await fetchProducts();
+                              await refreshLimits();
+                            } catch (error: any) {
+                              toast.error(error.message || 'Erreur lors de l\'optimisation');
+                            } finally {
+                              setGenerating(false);
+                            }
+                          }}
+                          disabled={generating}
+                          title="Optimize"
+                        >
+                          <Sparkles className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => {
                             setProductsToSync([product]);
                             setShowSyncDialog(true);
@@ -986,7 +1010,7 @@ export function SeoOptimization() {
                           disabled={!product.seo_title || !product.seo_description}
                           title="View & Sync"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-5 h-5" />
                         </Button>
                       </div>
                     </TableCell>

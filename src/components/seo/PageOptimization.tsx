@@ -671,7 +671,7 @@ export function PageOptimization() {
                             disabled={optimizing}
                             title={page.optimized ? "Re-optimize" : "Optimize"}
                           >
-                            <Sparkles className="w-4 h-4" />
+                            <Sparkles className="w-5 h-5" />
                           </Button>
                           {page.optimized && (
                             <Button
@@ -681,7 +681,7 @@ export function PageOptimization() {
                               disabled={syncing}
                               title="Sync to Shopify"
                             >
-                              <Upload className="w-4 h-4" />
+                              <Upload className="w-5 h-5" />
                             </Button>
                           )}
                         </div>

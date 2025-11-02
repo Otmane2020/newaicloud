@@ -570,9 +570,32 @@ export function ArticleManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
+                          onClick={async () => {
+                            setOptimizing(true);
+                            try {
+                              const { error } = await supabase.functions.invoke('generate-article-seo', {
+                                body: { article_ids: [article.id] }
+                              });
+                              if (error) throw error;
+                              toast.success('Article optimisé !');
+                              await fetchArticles();
+                            } catch (error: any) {
+                              toast.error(error.message || 'Erreur lors de l\'optimisation');
+                            } finally {
+                              setOptimizing(false);
+                            }
+                          }}
+                          disabled={optimizing}
+                          title="Optimize"
+                        >
+                          <Sparkles className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-5 h-5" />
                         </Button>
                         {article.status === 'draft' && (
                           <Button
@@ -581,7 +604,7 @@ export function ArticleManagement() {
                             onClick={() => handleSyncArticle(article.id)}
                             disabled={syncing}
                           >
-                            <Upload className="w-4 h-4" />
+                            <Upload className="w-5 h-5" />
                           </Button>
                         )}
                       </div>
