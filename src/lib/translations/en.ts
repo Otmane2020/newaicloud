@@ -147,6 +147,93 @@ export const translations = {
       kpis: "KPIs & Stats",
       automation: "Automation",
     },
+    audit: {
+      title: "Complete SEO Audit",
+      description: "Get detailed analysis of your store's SEO performance",
+      generateAudit: "Launch Audit",
+      relaunchAudit: "Relaunch Audit",
+      analyzing: "Analyzing...",
+      lastAudit: "Last audit",
+      
+      subtabs: {
+        overview: "Overview",
+        homepage: "Homepage",
+        issues: "Issues",
+        actions: "Action Plan",
+      },
+      
+      quickAccess: {
+        title: "Quick Access",
+        homepage: "Homepage",
+        homepageDesc: "Homepage SEO analysis",
+        issues: "Issues",
+        issuesDesc: "{{count}} detected issues",
+        actions: "Action Plan",
+        actionsDesc: "{{count}} recommended actions",
+      },
+      
+      noAudit: {
+        title: "No audit yet",
+        description: "Launch your first comprehensive SEO audit to identify optimization opportunities",
+        benefits: {
+          title: "What will you get?",
+          comprehensive: "Comprehensive Analysis",
+          comprehensiveDesc: "Complete evaluation of your store's SEO",
+          opportunities: "Optimization Opportunities",
+          opportunitiesDesc: "Concrete recommendations to improve your ranking",
+          actionPlan: "Action Plan",
+          actionPlanDesc: "Prioritized steps for maximum impact",
+        },
+        cta: "Ready to optimize your SEO?",
+        ctaDesc: "Launch your first audit now",
+      },
+      
+      overview: {
+        title: "Audit Overview",
+        globalScore: "Global SEO Score",
+        categoryScores: "Category Scores",
+        viewDetails: "View Details",
+      },
+      
+      categories: {
+        homepage: "Homepage",
+        products: "Products",
+        collections: "Collections",
+        content: "Content",
+        images: "Images",
+        technical: "Technical",
+      },
+      
+      score: {
+        excellent: "Excellent",
+        good: "Good",
+        fair: "Fair",
+        poor: "Poor",
+        outOf: "out of",
+      },
+      
+      issues: {
+        title: "Detected Issues",
+        category: "Category",
+        priority: "Priority",
+        issue: "Issue",
+        impact: "Impact",
+        action: "Action",
+        fix: "Fix",
+        high: "High",
+        medium: "Medium",
+        low: "Low",
+      },
+      
+      actions: {
+        title: "Action Plan",
+        step: "Step",
+        priority: "Priority",
+        actions: "Actions",
+        ready: "Ready to optimize automatically?",
+        automate: "Automate Optimization",
+      },
+    },
   },
 
   blog: {
@@ -207,7 +294,30 @@ export const translations = {
       connections: "Connections",
       metadata: "Metadata",
     },
+    sync: {
+      progress: {
+        title: "Synchronization in Progress...",
+        importing: "Importing {{type}}",
+      },
+      result: {
+        title: "Synchronization Complete!",
+        description: "All data imported successfully",
+        totalImported: "Imported Items",
+        detailedReport: "Detailed Report",
+        close: "Close",
+        beforeAfter: "Before → After",
+        imported: "Imported",
+      },
+      types: {
+        products: "Products",
+        collections: "Collections",
+        pages: "Pages",
+        articles: "Articles",
+        images: "Images",
+      },
+    },
   },
+
 };
 
 export type Translations = typeof translations;

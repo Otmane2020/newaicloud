@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Package, Layers, FileText, Newspaper, Image, Check, TrendingUp } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/lib/language";
 
 interface SyncStats {
   products: { before: number; after: number; imported: number };
@@ -40,6 +41,7 @@ export function SyncResultDialog({
   stats,
   totalImported,
 }: SyncResultDialogProps) {
+  const { t } = useTranslation();
   const [displayedTotal, setDisplayedTotal] = useState(0);
 
   // Animate total counter
@@ -67,10 +69,10 @@ export function SyncResultDialog({
             <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
               <Check className="w-6 h-6 text-white" />
             </div>
-            Synchronisation Terminée !
+            {t.integration.sync.result.title}
           </DialogTitle>
           <DialogDescription>
-            Toutes vos données ont été importées avec succès
+            {t.integration.sync.result.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -82,7 +84,7 @@ export function SyncResultDialog({
               +{displayedTotal}
             </div>
             <p className="text-lg font-semibold text-green-900 dark:text-green-100">
-              Éléments Importés
+              {t.integration.sync.result.totalImported}
             </p>
           </div>
 
@@ -90,7 +92,7 @@ export function SyncResultDialog({
           <div className="flex-1 min-h-0 animate-fade-in">
             <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <Check className="w-4 h-4 text-green-500" />
-              Rapport Détaillé
+              {t.integration.sync.result.detailedReport}
             </h4>
             <ScrollArea className="h-[300px] border rounded-lg bg-muted/30">
               <div className="p-3 space-y-2">
@@ -99,6 +101,8 @@ export function SyncResultDialog({
                   .map(([type, data]) => {
                     const config = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG];
                     const Icon = config.icon;
+                    const typeKey = type as keyof typeof t.integration.sync.types;
+                    const typeLabel = t.integration.sync.types[typeKey] || config.label;
                     
                     return (
                       <div key={type} className="flex items-center gap-3 p-3 bg-card border rounded-lg hover:shadow-md transition-all">
@@ -108,7 +112,7 @@ export function SyncResultDialog({
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold text-sm truncate">{config.label}</span>
+                            <span className="font-semibold text-sm truncate">{typeLabel}</span>
                             <span className="text-xl font-bold text-green-600 dark:text-green-400 tabular-nums flex-shrink-0">
                               +{data.imported}
                             </span>
@@ -129,7 +133,7 @@ export function SyncResultDialog({
 
           {/* Close button */}
           <Button onClick={() => onOpenChange(false)} size="lg" className="w-full">
-            Fermer
+            {t.integration.sync.result.close}
           </Button>
         </div>
       </DialogContent>

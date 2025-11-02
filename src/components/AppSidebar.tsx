@@ -55,6 +55,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "@/lib/language";
 
 // Removed - now defined with seoSubItems
 
@@ -71,11 +72,11 @@ const seoSubItems = [
 ];
 
 const auditSubItems = [
-  { title: "Vue d'ensemble", url: "/seo?tab=audit-dashboard&subtab=overview", icon: BarChart3 },
-  { title: "Page d'accueil", url: "/seo?tab=audit-dashboard&subtab=homepage", icon: Home },
-  { title: "Problèmes", url: "/seo?tab=audit-dashboard&subtab=issues", icon: AlertCircle },
-  { title: "Plan d'action", url: "/seo?tab=audit-dashboard&subtab=actions", icon: Target },
-  { title: "Rapports", url: "/seo?tab=audit", icon: List },
+  { title: "Vue d'ensemble", url: "/seo?tab=audit-dashboard&subtab=overview", icon: BarChart3, translationKey: "overview" },
+  { title: "Page d'accueil", url: "/seo?tab=audit-dashboard&subtab=homepage", icon: Home, translationKey: "homepage" },
+  { title: "Problèmes", url: "/seo?tab=audit-dashboard&subtab=issues", icon: AlertCircle, translationKey: "issues" },
+  { title: "Plan d'action", url: "/seo?tab=audit-dashboard&subtab=actions", icon: Target, translationKey: "actions" },
+  { title: "Rapports", url: "/seo?tab=audit", icon: List, translationKey: "reports" },
 ];
 
 const mainMenuItems = [
@@ -124,6 +125,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { t } = useTranslation();
   const currentPath = location.pathname;
   const currentSearch = location.search;
   const [userPlan, setUserPlan] = useState<string | null>(null);
@@ -262,7 +264,9 @@ export function AppSidebar() {
                                 <SidebarMenuSubButton key={auditItem.title} asChild isActive={isActive(auditItem.url)} className="pl-2">
                                   <NavLink to={auditItem.url}>
                                     <auditItem.icon className="h-3 w-3" />
-                                    <span className="text-xs">{auditItem.title}</span>
+                                    <span className="text-xs">
+                                      {t.seo.audit.subtabs[auditItem.translationKey as keyof typeof t.seo.audit.subtabs] || auditItem.title}
+                                    </span>
                                   </NavLink>
                                 </SidebarMenuSubButton>
                               ))}

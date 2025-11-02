@@ -132,7 +132,7 @@ export const translations = {
   },
 
   seo: {
-    title: "SEO Optimisation",
+    title: "Optimisation SEO",
     description: "Optimisez votre boutique pour les moteurs de recherche avec des outils IA",
     submenu: {
       products: "Produits",
@@ -140,12 +140,99 @@ export const translations = {
       pages: "Pages",
       articles: "Articles",
       altImage: "ALT Image",
-      homepage: "Page d'Accueil",
+      homepage: "Page d'accueil",
       tags: "Tags",
       audit: "Audit SEO",
       reports: "Rapports",
       kpis: "KPIs & Stats",
-      automation: "Automation",
+      automation: "Automatisation",
+    },
+    audit: {
+      title: "Audit SEO Complet",
+      description: "Obtenez une analyse détaillée des performances SEO de votre boutique",
+      generateAudit: "Lancer l'audit",
+      relaunchAudit: "Relancer l'audit",
+      analyzing: "Analyse en cours...",
+      lastAudit: "Dernier audit",
+      
+      subtabs: {
+        overview: "Vue d'ensemble",
+        homepage: "Page d'accueil",
+        issues: "Problèmes",
+        actions: "Plan d'action",
+      },
+      
+      quickAccess: {
+        title: "Accès Rapide",
+        homepage: "Page d'accueil",
+        homepageDesc: "Analyse SEO de la page d'accueil",
+        issues: "Problèmes",
+        issuesDesc: "{{count}} problèmes détectés",
+        actions: "Plan d'action",
+        actionsDesc: "{{count}} actions recommandées",
+      },
+      
+      noAudit: {
+        title: "Aucun audit pour le moment",
+        description: "Lancez votre premier audit SEO complet pour identifier les opportunités d'optimisation",
+        benefits: {
+          title: "Qu'allez-vous obtenir ?",
+          comprehensive: "Analyse Complète",
+          comprehensiveDesc: "Évaluation complète du SEO de votre boutique",
+          opportunities: "Opportunités d'Optimisation",
+          opportunitiesDesc: "Recommandations concrètes pour améliorer votre classement",
+          actionPlan: "Plan d'Action",
+          actionPlanDesc: "Étapes prioritaires pour un impact maximal",
+        },
+        cta: "Prêt à optimiser votre SEO ?",
+        ctaDesc: "Lancez votre premier audit maintenant",
+      },
+      
+      overview: {
+        title: "Vue d'ensemble de l'audit",
+        globalScore: "Score SEO Global",
+        categoryScores: "Scores par Catégorie",
+        viewDetails: "Voir les détails",
+      },
+      
+      categories: {
+        homepage: "Page d'accueil",
+        products: "Produits",
+        collections: "Collections",
+        content: "Contenu",
+        images: "Images",
+        technical: "Technique",
+      },
+      
+      score: {
+        excellent: "Excellent",
+        good: "Bon",
+        fair: "Moyen",
+        poor: "Faible",
+        outOf: "sur",
+      },
+      
+      issues: {
+        title: "Problèmes Détectés",
+        category: "Catégorie",
+        priority: "Priorité",
+        issue: "Problème",
+        impact: "Impact",
+        action: "Action",
+        fix: "Corriger",
+        high: "Haute",
+        medium: "Moyenne",
+        low: "Basse",
+      },
+      
+      actions: {
+        title: "Plan d'Action",
+        step: "Étape",
+        priority: "Priorité",
+        actions: "Actions",
+        ready: "Prêt à optimiser automatiquement ?",
+        automate: "Automatiser l'Optimisation",
+      },
     },
   },
 
@@ -207,5 +294,28 @@ export const translations = {
       connections: "Connexions",
       metadata: "Métadonnées",
     },
+    sync: {
+      progress: {
+        title: "Synchronisation en cours...",
+        importing: "Import de {{type}}",
+      },
+      result: {
+        title: "Synchronisation Terminée !",
+        description: "Toutes vos données ont été importées avec succès",
+        totalImported: "Éléments Importés",
+        detailedReport: "Rapport Détaillé",
+        close: "Fermer",
+        beforeAfter: "Avant → Après",
+        imported: "Importé",
+      },
+      types: {
+        products: "Produits",
+        collections: "Collections",
+        pages: "Pages",
+        articles: "Articles",
+        images: "Images",
+      },
+    },
   },
+
 };

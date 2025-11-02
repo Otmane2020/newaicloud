@@ -5,28 +5,21 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/lib/language";
 
 interface SimpleSyncProgressProps {
   open: boolean;
   currentType: string;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  products: 'Produits',
-  collections: 'Collections',
-  pages: 'Pages',
-  articles: 'Articles',
-  images: 'Images',
-};
-
 export function SimpleSyncProgress({
   open,
   currentType,
 }: SimpleSyncProgressProps) {
+  const { t, tf } = useTranslation();
   const [animatedProgress, setAnimatedProgress] = useState(0);
 
   // Continuously animate progress bar
@@ -47,16 +40,21 @@ export function SimpleSyncProgress({
     return () => clearInterval(interval);
   }, [open]);
 
+  const getTypeLabel = (type: string) => {
+    const typeKey = type as keyof typeof t.integration.sync.types;
+    return t.integration.sync.types[typeKey] || type;
+  };
+
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="max-w-md [&>button]:hidden">
         <DialogHeader>
           <DialogTitle className="text-xl flex items-center gap-2">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            Synchronisation en cours...
+            {t.integration.sync.progress.title}
           </DialogTitle>
           <DialogDescription className="text-sm">
-            Import de {TYPE_LABELS[currentType] || currentType}
+            {tf('integration.sync.progress.importing', { type: getTypeLabel(currentType) })}
           </DialogDescription>
         </DialogHeader>
 

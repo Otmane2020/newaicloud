@@ -23,10 +23,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { HomePageSeoAudit } from "./HomePageSeoAudit";
+import { useTranslation } from "@/lib/language";
 
 export function SeoAuditDashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t, tf } = useTranslation();
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -106,7 +108,7 @@ export function SeoAuditDashboard() {
   const handleGenerateAudit = async () => {
     try {
       setGenerating(true);
-      toast.info("Analyse SEO en cours... Cela peut prendre quelques instants.");
+      toast.info(t.seo.audit.analyzing);
 
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -253,10 +255,9 @@ export function SeoAuditDashboard() {
                     Analyse IA Avancée
                   </Badge>
                 </div>
-                <h1 className="text-4xl font-black text-white mb-3">Audit SEO Complet</h1>
+                <h1 className="text-4xl font-black text-white mb-3">{t.seo.audit.title}</h1>
                 <p className="text-white/90 text-lg font-medium max-w-2xl leading-relaxed">
-                  Obtenez une analyse détaillée de votre boutique Shopify avec des recommandations actionnables pour
-                  améliorer votre visibilité en ligne et augmenter votre trafic organique.
+                  {t.seo.audit.description}
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
@@ -282,12 +283,12 @@ export function SeoAuditDashboard() {
                 {generating ? (
                   <>
                     <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                    Analyse en cours...
+                    {t.seo.audit.analyzing}
                   </>
                 ) : (
                   <>
                     <FileSearch className="w-5 h-5 mr-2" />
-                    {audit ? "Relancer l'audit" : "Lancer l'audit"}
+                    {audit ? t.seo.audit.relaunchAudit : t.seo.audit.generateAudit}
                   </>
                 )}
               </Button>
@@ -301,12 +302,11 @@ export function SeoAuditDashboard() {
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
                   <TrendingUp className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle className="text-lg">Pourquoi un audit SEO ?</CardTitle>
+                <CardTitle className="text-lg">{t.seo.audit.noAudit.benefits.comprehensive}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Un audit SEO identifie les opportunités d'amélioration pour augmenter votre visibilité sur Google et
-                  attirer plus de clients qualifiés vers votre boutique.
+                  {t.seo.audit.noAudit.benefits.comprehensiveDesc}
                 </p>
               </CardContent>
             </Card>
@@ -316,12 +316,11 @@ export function SeoAuditDashboard() {
                 <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-3">
                   <CheckCircle2 className="w-6 h-6 text-success" />
                 </div>
-                <CardTitle className="text-lg">Ce que vous obtenez</CardTitle>
+                <CardTitle className="text-lg">{t.seo.audit.noAudit.benefits.opportunities}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Une analyse complète de 6 catégories SEO avec un score détaillé, des problèmes identifiés et un plan
-                  d'action priorisé pour des résultats rapides.
+                  {t.seo.audit.noAudit.benefits.opportunitiesDesc}
                 </p>
               </CardContent>
             </Card>
@@ -331,12 +330,11 @@ export function SeoAuditDashboard() {
                 <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center mb-3">
                   <Sparkles className="w-6 h-6 text-warning" />
                 </div>
-                <CardTitle className="text-lg">Analyse IA avancée</CardTitle>
+                <CardTitle className="text-lg">{t.seo.audit.noAudit.benefits.actionPlan}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Notre IA analyse automatiquement vos produits, collections, contenus et images pour vous fournir des
-                  recommandations sur-mesure et actionnables.
+                  {t.seo.audit.noAudit.benefits.actionPlanDesc}
                 </p>
               </CardContent>
             </Card>
@@ -347,10 +345,9 @@ export function SeoAuditDashboard() {
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-dark mx-auto mb-6 flex items-center justify-center shadow-lg">
                   <FileSearch className="w-10 h-10 text-white" />
                 </div>
-                <h3 className="text-3xl font-bold mb-4">Prêt à booster votre SEO ?</h3>
+                <h3 className="text-3xl font-bold mb-4">{t.seo.audit.noAudit.cta}</h3>
                 <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                  Lancez votre premier audit SEO complet pour découvrir comment améliorer votre classement sur Google et
-                  attirer plus de clients. L'analyse prend environ 30 secondes.
+                  {t.seo.audit.noAudit.ctaDesc}
                 </p>
                 <Button
                   onClick={handleGenerateAudit}
@@ -359,7 +356,7 @@ export function SeoAuditDashboard() {
                   className="bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-lg px-8 py-6 shadow-xl"
                 >
                   <FileSearch className="w-6 h-6 mr-2" />
-                  Lancer mon audit gratuit
+                  {t.seo.audit.generateAudit}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-4">🔒 Analyse 100% automatique et sécurisée</p>
               </div>
@@ -384,10 +381,9 @@ export function SeoAuditDashboard() {
                       Analyse IA Avancée
                     </Badge>
                   </div>
-                  <h1 className="text-4xl font-black text-white mb-3">Audit SEO Complet</h1>
+                  <h1 className="text-4xl font-black text-white mb-3">{t.seo.audit.title}</h1>
                   <p className="text-white/90 text-lg font-medium max-w-2xl leading-relaxed">
-                    Obtenez une analyse détaillée de votre boutique Shopify avec des recommandations actionnables pour
-                    améliorer votre visibilité en ligne et augmenter votre trafic organique.
+                    {t.seo.audit.description}
                   </p>
                 </div>
                 <Button
@@ -399,12 +395,12 @@ export function SeoAuditDashboard() {
                   {generating ? (
                     <>
                       <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                      Analyse en cours...
+                      {t.seo.audit.analyzing}
                     </>
                   ) : (
                     <>
                       <FileSearch className="w-5 h-5 mr-2" />
-                      Relancer l'audit
+                      {t.seo.audit.relaunchAudit}
                     </>
                   )}
                 </Button>
@@ -427,8 +423,8 @@ export function SeoAuditDashboard() {
                       </div>
                       <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                     </div>
-                    <h3 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">Page d'accueil</h3>
-                    <p className="text-sm text-muted-foreground">Optimiser le titre et la description</p>
+                    <h3 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{t.seo.audit.quickAccess.homepage}</h3>
+                    <p className="text-sm text-muted-foreground">{t.seo.audit.quickAccess.homepageDesc}</p>
                   </CardContent>
                 </Card>
 
@@ -443,9 +439,9 @@ export function SeoAuditDashboard() {
                       </div>
                       <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-destructive group-hover:translate-x-1 transition-all" />
                     </div>
-                    <h3 className="font-bold text-lg mb-1 group-hover:text-destructive transition-colors">Problèmes</h3>
+                    <h3 className="font-bold text-lg mb-1 group-hover:text-destructive transition-colors">{t.seo.audit.quickAccess.issues}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {audit?.audit_results?.issues?.length || 0} points à corriger
+                      {tf('seo.audit.quickAccess.issuesDesc', { count: audit?.audit_results?.issues?.length || 0 })}
                     </p>
                   </CardContent>
                 </Card>
