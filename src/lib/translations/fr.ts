@@ -162,6 +162,7 @@ export const translations = {
   account: {
     title: "Paramètres du Compte",
     trial: "Essai",
+    upgrade: "Améliorer",
     tabs: {
       profile: "Profil",
       integrations: "Intégrations",

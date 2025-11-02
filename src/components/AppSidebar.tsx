@@ -411,10 +411,10 @@ export function AppSidebar() {
                   >
                     <Crown className="h-3.5 w-3.5 text-white shrink-0 group-hover:rotate-12 transition-transform" />
                     <span className="text-xs font-bold text-white uppercase tracking-wide">
-                      {userPlan || "Loading..."}
+                      {userPlan || t.common.loading}
                     </span>
                     <span className="text-xs text-white/90 font-medium">
-                      (Upgrade)
+                      ({t.account.upgrade})
                     </span>
                   </NavLink>
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -437,7 +437,7 @@ export function AppSidebar() {
             <SidebarMenuButton asChild>
               <Button variant="ghost" className="w-full justify-start text-xs sm:text-sm" onClick={signOut}>
                 <LogOut className="h-4 w-4" />
-                {state === "expanded" && <span>Logout</span>}
+                {state === "expanded" && <span>{t.navigation.logout}</span>}
               </Button>
             </SidebarMenuButton>
           </SidebarMenuItem>

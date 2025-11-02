@@ -162,6 +162,7 @@ export const translations = {
   account: {
     title: "Account Settings",
     trial: "Trial",
+    upgrade: "Upgrade",
     tabs: {
       profile: "Profile",
       integrations: "Integrations",
