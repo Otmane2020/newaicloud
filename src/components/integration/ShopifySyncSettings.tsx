@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { RefreshCw, Clock, Calendar, Download, Upload, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { SyncProgressDialog } from './SyncProgressDialog';
 
 interface SyncSettings {
   import_frequency: 'manual' | 'hourly' | 'daily' | 'weekly' | 'monthly';
@@ -60,6 +61,20 @@ export function ShopifySyncSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  
+  // Progress dialog state
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
+  const [syncPhase, setSyncPhase] = useState<'syncing' | 'complete'>('syncing');
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [currentSyncType, setCurrentSyncType] = useState('');
+  const [syncStats, setSyncStats] = useState({
+    products: { before: 0, after: 0, imported: 0 },
+    collections: { before: 0, after: 0, imported: 0 },
+    pages: { before: 0, after: 0, imported: 0 },
+    articles: { before: 0, after: 0, imported: 0 },
+    images: { before: 0, after: 0, imported: 0 },
+  });
+  const [totalImported, setTotalImported] = useState(0);
 
   useEffect(() => {
     loadSettings();
@@ -169,6 +184,19 @@ export function ShopifySyncSettings() {
   const handleSyncNow = async () => {
     if (!settings) return;
 
+    // Reset and open progress dialog
+    setProgressDialogOpen(true);
+    setSyncPhase('syncing');
+    setSyncProgress(0);
+    setTotalImported(0);
+    setSyncStats({
+      products: { before: 0, after: 0, imported: 0 },
+      collections: { before: 0, after: 0, imported: 0 },
+      pages: { before: 0, after: 0, imported: 0 },
+      articles: { before: 0, after: 0, imported: 0 },
+      images: { before: 0, after: 0, imported: 0 },
+    });
+
     setSyncing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -184,8 +212,27 @@ export function ShopifySyncSettings() {
 
       if (connectionError || !connection) {
         toast.error('Aucune connexion Shopify active trouvée');
+        setProgressDialogOpen(false);
         return;
       }
+
+      // Get initial counts (before)
+      const beforeCounts = await Promise.all([
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('shopify_collections').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('shopify_pages').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('blog_articles').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('content_images').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      ]);
+
+      const initialStats = {
+        products: { before: beforeCounts[0].count || 0, after: 0, imported: 0 },
+        collections: { before: beforeCounts[1].count || 0, after: 0, imported: 0 },
+        pages: { before: beforeCounts[2].count || 0, after: 0, imported: 0 },
+        articles: { before: beforeCounts[3].count || 0, after: 0, imported: 0 },
+        images: { before: beforeCounts[4].count || 0, after: 0, imported: 0 },
+      };
+      setSyncStats(initialStats);
 
       // Clean the shop name
       let cleanShopName = (connection.store_url || '')
@@ -208,14 +255,19 @@ export function ShopifySyncSettings() {
       if (historyError) throw historyError;
 
       const startTime = Date.now();
-      let totalImported = 0;
+      let totalItems = 0;
       let hasErrors = false;
 
       // Import based on selected types
       let collectionsImported = false;
       let productsImported = false;
+      const typesCount = settings.import_types.length;
       
-      for (const type of settings.import_types) {
+      for (let i = 0; i < settings.import_types.length; i++) {
+        const type = settings.import_types[i];
+        setCurrentSyncType(type);
+        setSyncProgress(Math.round((i / typesCount) * 100));
+
         try {
           let result;
           switch (type) {
@@ -255,16 +307,30 @@ export function ShopifySyncSettings() {
               break;
           }
 
+          let imported = 0;
           if (result?.error) {
             console.error(`Error importing ${type}:`, result.error);
             hasErrors = true;
           } else if (result?.data?.totalImported) {
-            totalImported += result.data.totalImported;
+            imported = result.data.totalImported;
           } else if (result?.data?.imported) {
-            totalImported += result.data.imported;
+            imported = result.data.imported;
           } else if (result?.data?.count) {
-            totalImported += result.data.count;
+            imported = result.data.count;
           }
+
+          totalItems += imported;
+          setTotalImported(totalItems);
+
+          // Update stats for this type
+          setSyncStats(prev => ({
+            ...prev,
+            [type]: {
+              ...prev[type as keyof typeof prev],
+              imported,
+              after: prev[type as keyof typeof prev].before + imported,
+            }
+          }));
         } catch (error) {
           console.error(`Error importing ${type}:`, error);
           hasErrors = true;
@@ -283,7 +349,8 @@ export function ShopifySyncSettings() {
           } else {
             console.log('✅ Product-collection relationships synchronized');
             if (syncResult?.data?.updated_count) {
-              totalImported += syncResult.data.updated_count;
+              totalItems += syncResult.data.updated_count;
+              setTotalImported(totalItems);
             }
           }
         } catch (error) {
@@ -292,6 +359,7 @@ export function ShopifySyncSettings() {
         }
       }
 
+      setSyncProgress(100);
       const duration = Date.now() - startTime;
 
       // Update history
@@ -299,7 +367,7 @@ export function ShopifySyncSettings() {
         .from('sync_history')
         .update({
           status: hasErrors ? 'failed' : 'success',
-          items_synced: totalImported,
+          items_synced: totalItems,
           duration_ms: duration,
           completed_at: new Date().toISOString(),
           error_message: hasErrors ? 'Some imports failed - check logs' : null
@@ -312,12 +380,35 @@ export function ShopifySyncSettings() {
         .update({ last_import_at: new Date().toISOString() })
         .eq('user_id', user.id);
 
-      toast.success(`Synchronisation terminée : ${totalImported} éléments importés`);
-      loadSettings();
-      loadHistory();
+      // Get final counts (after)
+      const afterCounts = await Promise.all([
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('shopify_collections').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('shopify_pages').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('blog_articles').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('content_images').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      ]);
+
+      setSyncStats(prev => ({
+        products: { ...prev.products, after: afterCounts[0].count || 0 },
+        collections: { ...prev.collections, after: afterCounts[1].count || 0 },
+        pages: { ...prev.pages, after: afterCounts[2].count || 0 },
+        articles: { ...prev.articles, after: afterCounts[3].count || 0 },
+        images: { ...prev.images, after: afterCounts[4].count || 0 },
+      }));
+
+      setSyncPhase('complete');
+      toast.success(`Synchronisation terminée : ${totalItems} éléments importés`);
+      
+      // Reload after a delay to see the complete state
+      setTimeout(() => {
+        loadSettings();
+        loadHistory();
+      }, 2000);
     } catch (error) {
       console.error('Error syncing:', error);
       toast.error('Erreur lors de la synchronisation');
+      setProgressDialogOpen(false);
     } finally {
       setSyncing(false);
     }
@@ -332,7 +423,18 @@ export function ShopifySyncSettings() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <SyncProgressDialog
+        open={progressDialogOpen}
+        onOpenChange={setProgressDialogOpen}
+        phase={syncPhase}
+        progress={syncProgress}
+        currentType={currentSyncType}
+        stats={syncStats}
+        totalImported={totalImported}
+      />
+      
+      <div className="space-y-6">
       {/* Import Settings */}
       <Card>
         <CardHeader>
@@ -587,6 +689,7 @@ export function ShopifySyncSettings() {
         </CardContent>
       </Card>
       */}
-    </div>
+      </div>
+    </>
   );
 }
