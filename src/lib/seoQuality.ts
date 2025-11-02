@@ -41,43 +41,43 @@ export function calculateTitleScore(
     return { score: 0, breakdown, maxScore: 100 };
   }
 
-  // 1. PRÉSENCE (18 points - reduced from 20)
-  breakdown.presence = 18;
+  // 1. PRÉSENCE (20 points - increased for easier 80%)
+  breakdown.presence = 20;
 
-  // 2. LONGUEUR 50-60 caractères = optimal (26 points max - reduced from 30) - More strict
+  // 2. LONGUEUR 50-60 caractères = optimal (28 points max - more generous)
   const titleLength = title.length;
   if (titleLength >= 50 && titleLength <= 60) {
-    breakdown.length = 26; // Perfect - optimal SEO
+    breakdown.length = 28; // Perfect - optimal SEO
   } else if (titleLength >= 45 && titleLength < 50) {
-    breakdown.length = 22; // Excellent
+    breakdown.length = 25; // Excellent
   } else if (titleLength > 60 && titleLength <= 65) {
-    breakdown.length = 22; // Excellent
+    breakdown.length = 25; // Excellent
   } else if (titleLength >= 40 && titleLength < 45) {
-    breakdown.length = 18; // Bon
+    breakdown.length = 22; // Bon
   } else if (titleLength > 65 && titleLength <= 70) {
-    breakdown.length = 16; // Bon
+    breakdown.length = 20; // Bon
   } else if (titleLength >= 35 && titleLength < 40) {
-    breakdown.length = 12; // Acceptable
+    breakdown.length = 16; // Acceptable
   } else if (titleLength > 70 && titleLength <= 75) {
-    breakdown.length = 10; // Acceptable
+    breakdown.length = 14; // Acceptable
   } else {
-    breakdown.length = 4; // Trop court ou trop long
+    breakdown.length = 8; // Trop court ou trop long
   }
 
-  // 3. CONTIENT MOTS-CLÉS (24 points max - reduced from 30) - More strict
+  // 3. CONTIENT MOTS-CLÉS (28 points max - more generous)
   const titleLower = title.toLowerCase();
   let keywordScore = 0;
   let keywordsFound = 0;
 
   // Check for category keywords
   if (category && titleLower.includes(category.toLowerCase())) {
-    keywordScore += 8;
+    keywordScore += 10;
     keywordsFound++;
   }
 
   // Check for style keywords
   if (style && titleLower.includes(style.toLowerCase())) {
-    keywordScore += 8;
+    keywordScore += 10;
     keywordsFound++;
   }
 
@@ -87,23 +87,23 @@ export function calculateTitleScore(
     keywordsFound++;
   }
 
-  // If no context provided, check for meaningful keywords (More strict)
+  // If no context provided, check for meaningful keywords (More generous)
   if (!category && !style && !color) {
     const meaningfulWords = title.split(/\s+/).filter(w => w.length > 3);
     if (meaningfulWords.length >= 5) {
-      keywordScore = 24; // Full score si 5+ mots
+      keywordScore = 28; // Full score si 5+ mots
     } else if (meaningfulWords.length >= 4) {
-      keywordScore = 20; // Très bon
+      keywordScore = 24; // Très bon
     } else if (meaningfulWords.length >= 3) {
-      keywordScore = 14; // Acceptable
+      keywordScore = 18; // Acceptable
     } else if (meaningfulWords.length >= 2) {
-      keywordScore = 8; // Faible
+      keywordScore = 12; // Faible
     }
   } else if (keywordsFound >= 2) {
     // Si au moins 2 keywords du contexte présents
-    keywordScore = Math.max(keywordScore, 20);
+    keywordScore = Math.max(keywordScore, 24);
   } else if (keywordsFound >= 1) {
-    keywordScore = Math.max(keywordScore, 14);
+    keywordScore = Math.max(keywordScore, 18);
   }
 
   breakdown.keywords = keywordScore;
@@ -165,43 +165,43 @@ export function calculateDescriptionScore(
     return { score: 0, breakdown, maxScore: 100 };
   }
 
-  // 1. PRÉSENCE (18 points - reduced from 20)
-  breakdown.presence = 18;
+  // 1. PRÉSENCE (20 points - increased for easier 80%)
+  breakdown.presence = 20;
 
-  // 2. LONGUEUR 130-155 caractères = optimal (26 points max - reduced from 30) - More strict
+  // 2. LONGUEUR 130-155 caractères = optimal (28 points max - more generous)
   const descLength = description.length;
   if (descLength >= 130 && descLength <= 155) {
-    breakdown.length = 26; // Perfect - optimal SEO
+    breakdown.length = 28; // Perfect - optimal SEO
   } else if (descLength >= 120 && descLength < 130) {
-    breakdown.length = 22; // Excellent
+    breakdown.length = 25; // Excellent
   } else if (descLength > 155 && descLength <= 165) {
-    breakdown.length = 22; // Excellent
+    breakdown.length = 25; // Excellent
   } else if (descLength >= 110 && descLength < 120) {
-    breakdown.length = 18; // Bon
+    breakdown.length = 22; // Bon
   } else if (descLength > 165 && descLength <= 180) {
-    breakdown.length = 16; // Bon
+    breakdown.length = 20; // Bon
   } else if (descLength >= 90 && descLength < 110) {
-    breakdown.length = 12; // Acceptable
+    breakdown.length = 16; // Acceptable
   } else if (descLength > 180 && descLength <= 200) {
-    breakdown.length = 10; // Acceptable
+    breakdown.length = 14; // Acceptable
   } else {
-    breakdown.length = 4; // Trop court ou trop long
+    breakdown.length = 8; // Trop court ou trop long
   }
 
-  // 3. CONTIENT MOTS-CLÉS (24 points max - reduced from 30) - More strict
+  // 3. CONTIENT MOTS-CLÉS (28 points max - more generous)
   const descLower = description.toLowerCase();
   let keywordScore = 0;
   let keywordsFound = 0;
 
   // Check for category/product keywords
   if (category && descLower.includes(category.toLowerCase())) {
-    keywordScore += 8;
+    keywordScore += 10;
     keywordsFound++;
   }
 
   // Check for style keywords
   if (style && descLower.includes(style.toLowerCase())) {
-    keywordScore += 8;
+    keywordScore += 10;
     keywordsFound++;
   }
 
@@ -211,22 +211,22 @@ export function calculateDescriptionScore(
     keywordsFound++;
   }
 
-  // If no context, check for descriptive content (More strict)
+  // If no context, check for descriptive content (More generous)
   if (!category && !style && !productName) {
     const meaningfulWords = description.split(/\s+/).filter(w => w.length > 3);
     if (meaningfulWords.length >= 18) {
-      keywordScore = 24; // Full score
+      keywordScore = 28; // Full score
     } else if (meaningfulWords.length >= 15) {
-      keywordScore = 20; // Très bon
+      keywordScore = 24; // Très bon
     } else if (meaningfulWords.length >= 12) {
-      keywordScore = 14; // Bon
+      keywordScore = 18; // Bon
     } else if (meaningfulWords.length >= 8) {
-      keywordScore = 8; // Acceptable
+      keywordScore = 12; // Acceptable
     }
   } else if (keywordsFound >= 2) {
-    keywordScore = Math.max(keywordScore, 20);
+    keywordScore = Math.max(keywordScore, 24);
   } else if (keywordsFound >= 1) {
-    keywordScore = Math.max(keywordScore, 14);
+    keywordScore = Math.max(keywordScore, 18);
   }
 
   breakdown.keywords = keywordScore;
@@ -324,9 +324,9 @@ export function calculateDetailedSeoScore(
     (hasUrl ? 6 : 0) // URL 6 points (reduced from 8)
   );
 
-  // Bonus +10 points pour contenu optimisé par IA
+  // Bonus +15 points pour contenu optimisé par IA (increased for easier 80%)
   if (optimizationCount && optimizationCount > 0) {
-    weightedScore = Math.min(95, weightedScore + 10);
+    weightedScore = Math.min(95, weightedScore + 15);
   }
 
   return {
@@ -427,7 +427,7 @@ export function calculateSeoConfidence(
  * Get confidence badge color based on score
  */
 export function getConfidenceBadgeColor(score: number): string {
-  if (score >= 70) return 'bg-green-500/10 text-green-500 border-green-500/20';
+  if (score >= 80) return 'bg-green-500/10 text-green-500 border-green-500/20';
   if (score >= 50) return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
   return 'bg-red-500/10 text-red-500 border-red-500/20';
 }
@@ -436,7 +436,7 @@ export function getConfidenceBadgeColor(score: number): string {
  * Get confidence label
  */
 export function getConfidenceLabel(score: number): string {
-  if (score >= 70) return 'Excellent';
+  if (score >= 80) return 'Excellent';
   if (score >= 50) return 'Bon';
   return 'À améliorer';
 }

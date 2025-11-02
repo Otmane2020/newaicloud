@@ -17,31 +17,31 @@ interface SeoScoreGaugeProps {
 export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGaugeProps) {
   // Nouvelle palette de couleurs rouge-orange
   const getScoreColor = () => {
-    if (score >= 70) return "text-[#22c55e]"; // Vert pour excellent
+    if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
     if (score >= 50) return "text-[#FF8000]"; // Orange
     return "text-[#FF3333]"; // Rouge
   };
 
   const getScoreGradient = () => {
-    if (score >= 70) return "from-[#22c55e]/20 to-[#22c55e]/5";
+    if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
     if (score >= 50) return "from-[#FF8000]/20 to-[#FF8000]/5";
     return "from-[#FF3333]/20 to-[#FF3333]/5";
   };
 
   const getScoreLabel = () => {
-    if (score >= 70) return "Excellent";
+    if (score >= 80) return "Excellent";
     if (score >= 50) return "Bon";
     return "À améliorer";
   };
 
   const getScoreIcon = () => {
-    if (score >= 70) return <Target className="w-5 h-5 text-[#22c55e]" />;
+    if (score >= 80) return <Target className="w-5 h-5 text-[#22c55e]" />;
     if (score >= 50) return <TrendingUp className="w-5 h-5 text-[#FF8000]" />;
     return <AlertTriangle className="w-5 h-5 text-[#FF3333]" />;
   };
 
   const getCategoryColor = (value: number) => {
-    if (value >= 70)
+    if (value >= 80)
       return {
         text: "text-[#22c55e]",
         bg: "bg-gradient-to-r from-[#22c55e] to-[#16a34a]",
@@ -64,7 +64,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
   };
 
   const getGaugeGradient = () => {
-    if (score >= 70)
+    if (score >= 80)
       return {
         start: "#22c55e",
         end: "#16a34a",

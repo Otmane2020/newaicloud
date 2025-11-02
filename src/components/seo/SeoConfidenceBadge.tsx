@@ -20,7 +20,7 @@ export function SeoConfidenceBadge({
   const label = getConfidenceLabel(confidence);
 
   const getIcon = () => {
-    if (confidence >= 70) return <Shield className="h-3 w-3" />;
+    if (confidence >= 80) return <Shield className="h-3 w-3" />;
     if (confidence >= 50) return <TrendingUp className="h-3 w-3" />;
     return <AlertTriangle className="h-3 w-3" />;
   };
