@@ -76,7 +76,9 @@ Deno.serve(async (req: Request) => {
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
         console.error(`❌ Failed to fetch pages page ${page}`);
+        console.error(`Status: ${response.status}, Error: ${errorText}`);
         break;
       }
 

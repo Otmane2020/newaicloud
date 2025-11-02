@@ -78,7 +78,9 @@ Deno.serve(async (req: Request) => {
       );
 
       if (!smartResponse.ok) {
+        const errorText = await smartResponse.text();
         console.error(`❌ Failed to fetch smart collections page ${smartPage}`);
+        console.error(`Status: ${smartResponse.status}, Error: ${errorText}`);
         break;
       }
 
@@ -114,7 +116,9 @@ Deno.serve(async (req: Request) => {
       );
 
       if (!customResponse.ok) {
+        const errorText = await customResponse.text();
         console.error(`❌ Failed to fetch custom collections page ${customPage}`);
+        console.error(`Status: ${customResponse.status}, Error: ${errorText}`);
         break;
       }
 
