@@ -73,14 +73,15 @@ export function CurrentPlanCard() {
   const handleUpgradeToFullPlan = async () => {
     setUpgradeLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('force-payment');
+      const { data, error } = await supabase.functions.invoke('activate-full-plan');
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
+      if (data?.success) {
+        toast.success('Abonnement activé avec succès !');
+        setTimeout(() => window.location.reload(), 1500);
       }
     } catch (error) {
-      console.error('Error creating payment:', error);
-      toast.error('Erreur lors de la création du paiement');
+      console.error('Error activating plan:', error);
+      toast.error('Erreur lors de l\'activation de l\'abonnement');
     } finally {
       setUpgradeLoading(false);
     }
@@ -146,12 +147,12 @@ export function CurrentPlanCard() {
               {upgradeLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Chargement...
+                  Activation...
                 </>
               ) : (
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Activer mon abonnement
+                  Activate Full Plan
                 </>
               )}
             </Button>
