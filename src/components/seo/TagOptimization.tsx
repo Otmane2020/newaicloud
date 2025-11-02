@@ -37,6 +37,13 @@ import {
   Filter,
   Clock
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Product {
   id: string;
@@ -51,6 +58,8 @@ interface Product {
 }
 
 type FilterType = 'all' | 'to_optimize' | 'tagged' | 'to_sync' | 'synced';
+type StatusFilter = 'all' | 'optimized' | 'not-optimized';
+type SyncFilter = 'all' | 'synced' | 'not-synced';
 
 export function TagOptimization() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -65,6 +74,8 @@ export function TagOptimization() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   
   // Workflow states
   const [showProgressDialog, setShowProgressDialog] = useState(false);
@@ -109,6 +120,14 @@ export function TagOptimization() {
     if (filter === 'tagged' && !product.tags) return false;
     if (filter === 'to_sync' && (product.seo_synced_to_shopify || !product.tags)) return false;
     if (filter === 'synced' && !product.seo_synced_to_shopify) return false;
+
+    // Status filter
+    if (statusFilter === 'optimized' && (!product.optimization_count || product.optimization_count === 0)) return false;
+    if (statusFilter === 'not-optimized' && product.optimization_count && product.optimization_count > 0) return false;
+
+    // Sync filter
+    if (syncFilter === 'synced' && !product.seo_synced_to_shopify) return false;
+    if (syncFilter === 'not-synced' && product.seo_synced_to_shopify) return false;
 
     // Category filter
     if (selectedCategory !== 'all' && product.product_type !== selectedCategory) return false;
@@ -636,6 +655,28 @@ export function TagOptimization() {
                 </option>
               ))}
             </select>
+
+            <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+              <SelectTrigger className="h-12 min-w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="optimized">Optimized</SelectItem>
+                <SelectItem value="not-optimized">Not Optimized</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
+              <SelectTrigger className="h-12 min-w-[180px]">
+                <SelectValue placeholder="Sync" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sync</SelectItem>
+                <SelectItem value="synced">Synced</SelectItem>
+                <SelectItem value="not-synced">Not Synced</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Action Buttons Row */}

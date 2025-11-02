@@ -134,11 +134,8 @@ export function calculateTitleScore(
   }
 
   breakdown.readability = Math.max(0, readabilityScore);
-
-  // Add realistic variability (±2 points)
-  const variability = Math.floor(Math.random() * 5) - 2; // -2 to +2
   
-  const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability + variability;
+  const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability;
 
   return {
     score: Math.min(95, Math.max(0, totalScore)), // Cap at 95 instead of 100
@@ -259,11 +256,8 @@ export function calculateDescriptionScore(
   }
 
   breakdown.readability = readabilityScore;
-
-  // Add realistic variability (±2 points)
-  const variability = Math.floor(Math.random() * 5) - 2; // -2 to +2
   
-  const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability + variability;
+  const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability;
 
   return {
     score: Math.min(95, Math.max(0, totalScore)), // Cap at 95 instead of 100
@@ -334,10 +328,6 @@ export function calculateDetailedSeoScore(
   if (optimizationCount && optimizationCount > 0) {
     weightedScore = Math.min(95, weightedScore + 10);
   }
-
-  // Add realistic variability (±2 points)
-  const variability = Math.floor(Math.random() * 5) - 2;
-  weightedScore += variability;
 
   return {
     score: Math.min(95, Math.max(0, weightedScore)), // Cap at 95 instead of 100

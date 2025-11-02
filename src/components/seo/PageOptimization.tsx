@@ -13,6 +13,13 @@ import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { Progress } from '@/components/ui/progress';
 import { VisionAIBanner } from './VisionAIBanner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ShopifyPage {
   id: string;
@@ -25,6 +32,9 @@ interface ShopifyPage {
   last_synced_at?: string | null;
 }
 
+type StatusFilter = 'all' | 'optimized' | 'not-optimized';
+type SyncFilter = 'all' | 'synced' | 'not-synced';
+
 export function PageOptimization() {
   const [pages, setPages] = useState<ShopifyPage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +43,8 @@ export function PageOptimization() {
   const [importingPages, setImportingPages] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
 
   useEffect(() => {
     fetchPages();
@@ -80,6 +92,14 @@ export function PageOptimization() {
   };
 
   const filteredPages = pages.filter((page) => {
+    // Status filter
+    if (statusFilter === 'optimized' && !page.optimized) return false;
+    if (statusFilter === 'not-optimized' && page.optimized) return false;
+
+    // Sync filter
+    if (syncFilter === 'synced' && !page.last_synced_at) return false;
+    if (syncFilter === 'not-synced' && page.last_synced_at) return false;
+
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return page.title.toLowerCase().includes(term);
@@ -532,15 +552,39 @@ export function PageOptimization() {
               </div>
             </div>
 
-            <div className="relative flex-1 mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search for a page..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="relative flex-1 mb-4 flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search for a page..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+                <SelectTrigger className="min-w-[150px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="optimized">Optimized</SelectItem>
+                  <SelectItem value="not-optimized">Not Optimized</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
+                <SelectTrigger className="min-w-[150px]">
+                  <SelectValue placeholder="Sync" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sync</SelectItem>
+                  <SelectItem value="synced">Synced</SelectItem>
+                  <SelectItem value="not-synced">Not Synced</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Table>

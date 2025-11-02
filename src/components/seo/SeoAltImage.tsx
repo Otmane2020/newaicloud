@@ -12,9 +12,9 @@ import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { calculateAltTextScore } from '@/lib/seoQuality';
-import {
-  Search,
-  RefreshCw,
+import { 
+  Search, 
+  RefreshCw, 
   Image as ImageIcon,
   Sparkles,
   Upload,
@@ -35,6 +35,13 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ProductImage {
   id: string;
@@ -72,6 +79,8 @@ interface ImageWithProduct extends ProductImage {
 type AltImageTab = 'all' | 'needs-alt' | 'has-alt' | 'to-sync';
 type ContentTypeFilter = 'all' | 'products' | 'collections' | 'pages' | 'articles' | 'homepage';
 type SeoScoreSort = 'none' | 'asc' | 'desc';
+type StatusFilter = 'all' | 'optimized' | 'not-optimized';
+type SyncFilter = 'all' | 'synced' | 'not-synced';
 
 export function SeoAltImage() {
   const [searchParams] = useSearchParams();
@@ -84,6 +93,8 @@ export function SeoAltImage() {
   const [contentTypeFilter, setContentTypeFilter] = useState<ContentTypeFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -246,6 +257,14 @@ export function SeoAltImage() {
     if (activeTab === 'needs-alt' && img.alt_text) return false;
     if (activeTab === 'has-alt' && !img.alt_text) return false;
     if (activeTab === 'to-sync' && !img.alt_text) return false;
+
+    // Status filter
+    if (statusFilter === 'optimized' && (!img.optimization_count || img.optimization_count === 0)) return false;
+    if (statusFilter === 'not-optimized' && img.optimization_count && img.optimization_count > 0) return false;
+
+    // Sync filter - images don't have direct sync tracking, so we check if alt_text exists as proxy
+    if (syncFilter === 'synced' && !img.last_optimization_at) return false;
+    if (syncFilter === 'not-synced' && img.last_optimization_at) return false;
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -768,8 +787,8 @@ export function SeoAltImage() {
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex-1 w-full sm:w-auto">
-          <div className="relative">
+        <div className="flex-1 w-full sm:w-auto flex gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               type="text"
@@ -779,6 +798,28 @@ export function SeoAltImage() {
               className="pl-10"
             />
           </div>
+
+          <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+            <SelectTrigger className="min-w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="optimized">Optimized</SelectItem>
+              <SelectItem value="not-optimized">Not Optimized</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
+            <SelectTrigger className="min-w-[150px]">
+              <SelectValue placeholder="Sync" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sync</SelectItem>
+              <SelectItem value="synced">Synced</SelectItem>
+              <SelectItem value="not-synced">Not Synced</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-2">
           <Button

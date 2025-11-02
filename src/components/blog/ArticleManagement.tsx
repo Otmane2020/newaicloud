@@ -38,6 +38,13 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { VisionAIBanner } from '../seo/VisionAIBanner';
 import { ArticleFeaturedImageDialog } from './ArticleFeaturedImageDialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Article {
   id: string;
@@ -59,6 +66,8 @@ interface Article {
 
 type QuickFilterTab = 'all' | 'draft' | 'published' | 'shopify-synced';
 type SeoScoreSort = 'none' | 'asc' | 'desc';
+type StatusFilter = 'all' | 'optimized' | 'not-optimized';
+type SyncFilter = 'all' | 'synced' | 'not-synced';
 
 export function ArticleManagement() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -67,6 +76,8 @@ export function ArticleManagement() {
   const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   const [syncing, setSyncing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [optimizing, setOptimizing] = useState(false);
@@ -344,6 +355,20 @@ export function ArticleManagement() {
         break;
     }
 
+    // Status filter
+    if (statusFilter === 'optimized') {
+      filtered = filtered.filter(a => a.optimization_count && a.optimization_count > 0);
+    } else if (statusFilter === 'not-optimized') {
+      filtered = filtered.filter(a => !a.optimization_count || a.optimization_count === 0);
+    }
+
+    // Sync filter
+    if (syncFilter === 'synced') {
+      filtered = filtered.filter(a => a.last_synced_at);
+    } else if (syncFilter === 'not-synced') {
+      filtered = filtered.filter(a => !a.last_synced_at);
+    }
+
     // Apply search
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -454,8 +479,8 @@ export function ArticleManagement() {
       {/* Toolbar */}
       <Card className="p-4">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex-1 w-full md:w-auto">
-            <div className="relative">
+          <div className="flex-1 w-full md:w-auto flex gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search articles..."
@@ -464,6 +489,28 @@ export function ArticleManagement() {
                 className="pl-10"
               />
             </div>
+
+            <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+              <SelectTrigger className="min-w-[150px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="optimized">Optimized</SelectItem>
+                <SelectItem value="not-optimized">Not Optimized</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
+              <SelectTrigger className="min-w-[150px]">
+                <SelectValue placeholder="Sync" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sync</SelectItem>
+                <SelectItem value="synced">Synced</SelectItem>
+                <SelectItem value="not-synced">Not Synced</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="flex gap-2 items-center w-full md:w-auto">

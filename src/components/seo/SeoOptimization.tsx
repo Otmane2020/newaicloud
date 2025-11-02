@@ -50,6 +50,13 @@ import {
   ArrowUp,
   ArrowDown
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import { ShopifySyncSuccessDialog } from './ShopifySyncSuccessDialog';
 import { VisionAIBanner } from './VisionAIBanner';
@@ -73,6 +80,8 @@ interface Product {
 
 type QuickFilterTab = 'all' | 'not-enriched' | 'enriched' | 'pending-sync' | 'synced';
 type SeoScoreSort = 'none' | 'asc' | 'desc';
+type StatusFilter = 'all' | 'optimized' | 'not-optimized';
+type SyncFilter = 'all' | 'synced' | 'not-synced';
 
 export function SeoOptimization() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -82,6 +91,8 @@ export function SeoOptimization() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -177,6 +188,14 @@ export function SeoOptimization() {
     if (activeTab === 'enriched' && product.enrichment_status !== 'enriched') return false;
     if (activeTab === 'pending-sync' && (product.enrichment_status !== 'enriched' || product.seo_synced_to_shopify)) return false;
     if (activeTab === 'synced' && !product.seo_synced_to_shopify) return false;
+
+    // Status filter
+    if (statusFilter === 'optimized' && product.enrichment_status !== 'enriched') return false;
+    if (statusFilter === 'not-optimized' && product.enrichment_status === 'enriched') return false;
+
+    // Sync filter
+    if (syncFilter === 'synced' && !product.seo_synced_to_shopify) return false;
+    if (syncFilter === 'not-synced' && product.seo_synced_to_shopify) return false;
 
     // Category filter
     if (selectedCategory !== 'all' && product.product_type !== selectedCategory) return false;
@@ -707,6 +726,28 @@ export function SeoOptimization() {
                 </option>
               ))}
             </select>
+
+            <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+              <SelectTrigger className="h-12 min-w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="optimized">Optimized</SelectItem>
+                <SelectItem value="not-optimized">Not Optimized</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
+              <SelectTrigger className="h-12 min-w-[180px]">
+                <SelectValue placeholder="Sync Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sync</SelectItem>
+                <SelectItem value="synced">Synced</SelectItem>
+                <SelectItem value="not-synced">Not Synced</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Action Buttons Row */}

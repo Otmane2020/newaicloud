@@ -47,6 +47,13 @@ import {
   ArrowUp,
   ArrowDown
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Collection {
   id: string;
@@ -68,6 +75,8 @@ interface Collection {
 
 type QuickFilterTab = 'all' | 'not-optimized' | 'optimized' | 'pending-sync' | 'synced';
 type SeoScoreSort = 'none' | 'asc' | 'desc';
+type StatusFilter = 'all' | 'optimized' | 'not-optimized';
+type SyncFilter = 'all' | 'synced' | 'not-synced';
 
 export function CollectionOptimization() {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -76,6 +85,8 @@ export function CollectionOptimization() {
   const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   const [syncing, setSyncing] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -158,6 +169,14 @@ export function CollectionOptimization() {
     if (activeTab === 'optimized' && (!collection.optimization_count || collection.optimization_count === 0)) return false;
     if (activeTab === 'pending-sync') return false; // No sync yet
     if (activeTab === 'synced') return false; // No sync yet
+
+    // Status filter
+    if (statusFilter === 'optimized' && (!collection.optimization_count || collection.optimization_count === 0)) return false;
+    if (statusFilter === 'not-optimized' && collection.optimization_count && collection.optimization_count > 0) return false;
+
+    // Sync filter
+    if (syncFilter === 'synced' && !collection.last_synced_at) return false;
+    if (syncFilter === 'not-synced' && collection.last_synced_at) return false;
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -790,6 +809,28 @@ export function CollectionOptimization() {
                 className="pl-12 h-12 text-lg"
               />
             </div>
+
+            <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+              <SelectTrigger className="h-12 min-w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous Statuts</SelectItem>
+                <SelectItem value="optimized">Optimisées</SelectItem>
+                <SelectItem value="not-optimized">Non Optimisées</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
+              <SelectTrigger className="h-12 min-w-[180px]">
+                <SelectValue placeholder="Sync" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes Sync</SelectItem>
+                <SelectItem value="synced">Synchronisées</SelectItem>
+                <SelectItem value="not-synced">Non Synchronisées</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Action Buttons Row */}
