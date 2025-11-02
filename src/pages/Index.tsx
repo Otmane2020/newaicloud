@@ -361,6 +361,11 @@ const Index = () => {
 
       </section>
 
+      {/* Referral Section - Before Footer */}
+      <section className="container mx-auto px-4 py-16">
+        <ReferralSystem />
+      </section>
+
       {/* CTA Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-dark" />

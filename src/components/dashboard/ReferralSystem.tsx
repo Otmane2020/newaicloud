@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Copy, Check, Gift, Users, Zap, Sparkles, X } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 interface Referral {
   id: string;
@@ -20,6 +21,7 @@ interface Referral {
 
 export function ReferralSystem() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [referralCode, setReferralCode] = useState<string>("");
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [totalReferrals, setTotalReferrals] = useState(0);
@@ -107,7 +109,7 @@ export function ReferralSystem() {
   const handleCopy = () => {
     navigator.clipboard.writeText(getReferralLink());
     setCopied(true);
-    toast.success("Lien copié !");
+    toast.success(t.referral.linkCopied);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -125,12 +127,12 @@ export function ReferralSystem() {
                   <Gift className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold mb-1">Gagnez 100+ optimisations</h3>
-                  <p className="text-sm text-muted-foreground">Parrainez vos amis et gagnez des optimisations gratuites</p>
+                  <h3 className="text-xl font-bold mb-1">{t.referral.title}</h3>
+                  <p className="text-sm text-muted-foreground">{t.referral.subtitle}</p>
                 </div>
               </div>
               <Button variant="default" size="lg" className="group-hover:scale-105 transition-transform">
-                Partager
+                {t.referral.shareButton}
                 <Sparkles className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -152,8 +154,8 @@ export function ReferralSystem() {
                   <Gift className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">Partagez et gagnez</h2>
-                  <p className="text-sm text-muted-foreground font-normal">et gagnez des optimisations gratuites</p>
+                  <h2 className="text-2xl font-bold">{t.referral.dialogTitle}</h2>
+                  <p className="text-sm text-muted-foreground font-normal">{t.referral.dialogSubtitle}</p>
                 </div>
               </div>
             </DialogTitle>
@@ -162,14 +164,14 @@ export function ReferralSystem() {
           <div className="space-y-6 mt-4">
             {/* How it works */}
             <div>
-              <h3 className="font-semibold mb-4">Comment ça marche :</h3>
+              <h3 className="font-semibold mb-4">{t.referral.howItWorks}</h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <p className="font-medium">Partagez votre lien d'invitation</p>
+                    <p className="font-medium">{t.referral.step1}</p>
                   </div>
                 </div>
 
@@ -179,7 +181,7 @@ export function ReferralSystem() {
                   </div>
                   <div>
                     <p className="font-medium">
-                      Ils s'inscrivent et reçoivent <span className="text-green-600 font-bold">100 optimisations gratuites</span>
+                      {t.referral.step2} <span className="text-green-600 font-bold">{t.referral.step2Credits}</span>
                     </p>
                   </div>
                 </div>
@@ -190,7 +192,7 @@ export function ReferralSystem() {
                   </div>
                   <div>
                     <p className="font-medium">
-                      Vous recevez <span className="text-purple-600 font-bold">100 optimisations</span> une fois qu'ils publient leur premier site
+                      {t.referral.step3} <span className="text-purple-600 font-bold">{t.referral.step3Credits}</span> {t.referral.step3Condition}
                     </p>
                   </div>
                 </div>
@@ -200,9 +202,9 @@ export function ReferralSystem() {
             {/* Referral Link */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="font-semibold">Votre lien d'invitation :</label>
+                <label className="font-semibold">{t.referral.linkTitle}</label>
                 <Badge variant="secondary">
-                  utilisé par <span className="font-bold">{totalReferrals}</span> utilisateur{totalReferrals !== 1 ? "s" : ""}
+                  {t.referral.usedBy} <span className="font-bold">{totalReferrals}</span> {totalReferrals !== 1 ? t.referral.users : t.referral.user}
                 </Badge>
               </div>
 
@@ -219,10 +221,10 @@ export function ReferralSystem() {
                   {copied ? (
                     <>
                       <Check className="w-4 h-4 mr-2" />
-                      Copié!
+                      {t.referral.copied}
                     </>
                   ) : (
-                    "Copier le lien"
+                    t.referral.copyButton
                   )}
                 </Button>
               </div>
@@ -232,11 +234,11 @@ export function ReferralSystem() {
             {totalReferrals > 0 && (
               <div className="grid grid-cols-2 gap-4">
                 <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Parrainages réussis</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t.referral.successfulReferrals}</p>
                   <p className="text-2xl font-bold">{totalReferrals}</p>
                 </Card>
                 <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Optimisations gagnées</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t.referral.creditsEarned}</p>
                   <p className="text-2xl font-bold text-green-600">{creditsEarned}</p>
                 </Card>
               </div>
@@ -245,7 +247,7 @@ export function ReferralSystem() {
             {/* Terms */}
             <p className="text-xs text-center text-muted-foreground">
               <a href="/terms" className="hover:underline">
-                Voir les Conditions Générales
+                {t.referral.viewTerms}
               </a>
             </p>
           </div>
