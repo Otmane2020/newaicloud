@@ -11,7 +11,8 @@ import { toast } from 'sonner';
 import { RefreshCw, Clock, Calendar, Download, Upload, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { SyncProgressDialog } from './SyncProgressDialog';
+import { SimpleSyncProgress } from './SyncProgressDialog';
+import { SyncResultDialog } from './SyncResultDialog';
 
 interface SyncSettings {
   import_frequency: 'manual' | 'hourly' | 'daily' | 'weekly' | 'monthly';
@@ -63,9 +64,8 @@ export function ShopifySyncSettings() {
   const [syncing, setSyncing] = useState(false);
   
   // Progress dialog state
-  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
-  const [syncPhase, setSyncPhase] = useState<'syncing' | 'complete'>('syncing');
-  const [syncProgress, setSyncProgress] = useState(0);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showResultDialog, setShowResultDialog] = useState(false);
   const [currentSyncType, setCurrentSyncType] = useState('');
   const [syncStats, setSyncStats] = useState({
     products: { before: 0, after: 0, imported: 0 },
@@ -184,10 +184,9 @@ export function ShopifySyncSettings() {
   const handleSyncNow = async () => {
     if (!settings) return;
 
-    // Reset and open progress dialog
-    setProgressDialogOpen(true);
-    setSyncPhase('syncing');
-    setSyncProgress(0);
+    // Reset and show progress dialog
+    setShowProgressDialog(true);
+    setShowResultDialog(false);
     setTotalImported(0);
     setSyncStats({
       products: { before: 0, after: 0, imported: 0 },
@@ -212,7 +211,7 @@ export function ShopifySyncSettings() {
 
       if (connectionError || !connection) {
         toast.error('Aucune connexion Shopify active trouvée');
-        setProgressDialogOpen(false);
+        setShowProgressDialog(false);
         return;
       }
 
@@ -266,7 +265,6 @@ export function ShopifySyncSettings() {
       for (let i = 0; i < settings.import_types.length; i++) {
         const type = settings.import_types[i];
         setCurrentSyncType(type);
-        setSyncProgress(Math.round((i / typesCount) * 100));
 
         try {
           let result;
@@ -359,7 +357,6 @@ export function ShopifySyncSettings() {
         }
       }
 
-      setSyncProgress(100);
       const duration = Date.now() - startTime;
 
       // Update history
@@ -397,18 +394,16 @@ export function ShopifySyncSettings() {
         images: { ...prev.images, after: afterCounts[4].count || 0 },
       }));
 
-      setSyncPhase('complete');
-      toast.success(`Synchronisation terminée : ${totalItems} éléments importés`);
+      // Hide progress, show result dialog
+      setShowProgressDialog(false);
+      setShowResultDialog(true);
       
-      // Reload after a delay to see the complete state
-      setTimeout(() => {
-        loadSettings();
-        loadHistory();
-      }, 2000);
+      loadSettings();
+      loadHistory();
     } catch (error) {
       console.error('Error syncing:', error);
       toast.error('Erreur lors de la synchronisation');
-      setProgressDialogOpen(false);
+      setShowProgressDialog(false);
     } finally {
       setSyncing(false);
     }
@@ -424,12 +419,14 @@ export function ShopifySyncSettings() {
 
   return (
     <>
-      <SyncProgressDialog
-        open={progressDialogOpen}
-        onOpenChange={setProgressDialogOpen}
-        phase={syncPhase}
-        progress={syncProgress}
+      <SimpleSyncProgress
+        open={showProgressDialog}
         currentType={currentSyncType}
+      />
+      
+      <SyncResultDialog
+        open={showResultDialog}
+        onOpenChange={setShowResultDialog}
         stats={syncStats}
         totalImported={totalImported}
       />
