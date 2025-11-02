@@ -28,6 +28,9 @@ import {
   Megaphone,
   FileSearch,
   RefreshCw,
+  AlertCircle,
+  Target,
+  List,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -63,10 +66,16 @@ const seoSubItems = [
   { title: "ALT Image", url: "/seo?tab=alt", icon: Image },
   { title: "Homepage", url: "/seo?tab=homepage", icon: Home },
   { title: "Tags", url: "/seo?tab=tags", icon: Tags },
-  { title: "Audit SEO", url: "/seo?tab=audit-dashboard", icon: FileSearch },
-  { title: "Rapports", url: "/seo?tab=audit", icon: BarChart3 },
   { title: "KPIs & Stats", url: "/seo?tab=kpis", icon: BarChart3 },
   { title: "Automation", url: "/seo?tab=automation", icon: Settings },
+];
+
+const auditSubItems = [
+  { title: "Vue d'ensemble", url: "/seo?tab=audit-dashboard&subtab=overview", icon: BarChart3 },
+  { title: "Page d'accueil", url: "/seo?tab=audit-dashboard&subtab=homepage", icon: Home },
+  { title: "Problèmes", url: "/seo?tab=audit-dashboard&subtab=issues", icon: AlertCircle },
+  { title: "Plan d'action", url: "/seo?tab=audit-dashboard&subtab=actions", icon: Target },
+  { title: "Rapports", url: "/seo?tab=audit", icon: List },
 ];
 
 const mainMenuItems = [
@@ -176,7 +185,8 @@ export function AppSidebar() {
     currentPath.startsWith("/chat") ||
     currentPath === "/product-source" ||
     chatSubItems.some((item) => isActive(item.url));
-  const isSeoActive = currentPath === "/seo" || seoSubItems.some((item) => isActive(item.url));
+  const isSeoActive = currentPath === "/seo" || seoSubItems.some((item) => isActive(item.url)) || auditSubItems.some((item) => isActive(item.url));
+  const isAuditActive = auditSubItems.some((item) => isActive(item.url));
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
   const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
   const isAccountActive = currentPath === "/account" || accountSubItems.some((item) => isActive(item.url));
@@ -235,6 +245,31 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
+                      
+                      {/* Nested Audit SEO submenu */}
+                      <Collapsible defaultOpen={isAuditActive} className="group/audit">
+                        <SidebarMenuSubItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuSubButton isActive={isAuditActive}>
+                              <FileSearch className="h-4 w-4" />
+                              <span>Audit SEO</span>
+                              <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/audit:rotate-90" />
+                            </SidebarMenuSubButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="ml-4 border-l-2 border-border pl-2 space-y-1">
+                              {auditSubItems.map((auditItem) => (
+                                <SidebarMenuSubButton key={auditItem.title} asChild isActive={isActive(auditItem.url)} className="pl-2">
+                                  <NavLink to={auditItem.url}>
+                                    <auditItem.icon className="h-3 w-3" />
+                                    <span className="text-xs">{auditItem.title}</span>
+                                  </NavLink>
+                                </SidebarMenuSubButton>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </SidebarMenuSubItem>
+                      </Collapsible>
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>

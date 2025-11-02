@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FileSearch,
   TrendingUp,
@@ -27,11 +26,14 @@ import { HomePageSeoAudit } from "./HomePageSeoAudit";
 
 export function SeoAuditDashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [stats, setStats] = useState<any>(null);
-  const [activeSubTab, setActiveSubTab] = useState("overview");
+  
+  // Get subtab from URL params, default to "overview"
+  const activeSubTab = searchParams.get("subtab") || "overview";
 
   useEffect(() => {
     loadLatestAudit();
@@ -364,34 +366,12 @@ export function SeoAuditDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-muted/50">
-            <TabsTrigger value="overview" className="flex items-center gap-2 py-3">
-              <BarChart3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Vue d'ensemble</span>
-              <span className="sm:hidden">Vue</span>
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2 py-3">
-              <Layers className="w-4 h-4" />
-              <span className="hidden sm:inline">Catégories</span>
-              <span className="sm:hidden">Cat.</span>
-            </TabsTrigger>
-            <TabsTrigger value="issues" className="flex items-center gap-2 py-3">
-              <AlertCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">Problèmes</span>
-              <span className="sm:hidden">Prob.</span>
-            </TabsTrigger>
-            <TabsTrigger value="actions" className="flex items-center gap-2 py-3">
-              <Target className="w-4 h-4" />
-              <span className="hidden sm:inline">Plan d'action</span>
-              <span className="sm:hidden">Plan</span>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* TAB: Vue d'ensemble */}
-          <TabsContent value="overview" className="space-y-8 mt-6">
-            {/* Global Score - Design premium avec jauge améliorée */}
-          <Card className="border-2 shadow-2xl bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden relative">
+        <div className="space-y-8">
+          {/* Content based on activeSubTab */}
+          {activeSubTab === "overview" && (
+            <>
+              {/* Global Score - Design premium avec jauge améliorée */}
+            <Card className="border-2 shadow-2xl bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
             <CardHeader className="relative z-10">
               <div className="flex items-center justify-between">
@@ -577,24 +557,7 @@ export function SeoAuditDashboard() {
             </CardContent>
           </Card>
 
-          {/* Homepage SEO Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Home className="w-5 h-5" />
-                Analyse Homepage SEO
-              </CardTitle>
-              <CardDescription>Optimisation détaillée de votre page d'accueil</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <HomePageSeoAudit />
-            </CardContent>
-          </Card>
-          </TabsContent>
-
-          {/* TAB: Catégories */}
-          <TabsContent value="categories" className="space-y-8 mt-6">
-            {/* Category Scores - Design cards premium avec couleurs améliorées */}
+          {/* Category Scores - Moved from categories tab */}
           <div>
             <div className="mb-6">
               <h3 className="text-2xl font-bold mb-2">Détail par Catégorie</h3>
@@ -608,7 +571,8 @@ export function SeoAuditDashboard() {
                   key: "homepage_score",
                   label: "Homepage",
                   icon: Home,
-                  tab: "homepage",
+                  tab: "audit-dashboard",
+                  subtab: "homepage",
                   desc: "Titre et meta description",
                 },
                 {
@@ -634,7 +598,7 @@ export function SeoAuditDashboard() {
                   tab: "products",
                   desc: "Configuration Shopify",
                 },
-              ].map(({ key, label, icon: Icon, tab, desc }) => {
+              ].map(({ key, label, icon: Icon, tab, subtab, desc }) => {
                 const categoryStats =
                   stats?.[
                     tab === "products"
@@ -654,7 +618,7 @@ export function SeoAuditDashboard() {
                   <Card
                     key={key}
                     className="group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 hover:border-primary/50 bg-gradient-to-br from-card to-muted/20 overflow-hidden relative"
-                    onClick={() => navigate(`/seo?tab=${tab}`)}
+                    onClick={() => navigate(subtab ? `/seo?tab=${tab}&subtab=${subtab}` : `/seo?tab=${tab}`)}
                   >
                     <div
                       className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl ${categoryColor.gradient} group-hover:blur-3xl transition-all`}
@@ -701,12 +665,27 @@ export function SeoAuditDashboard() {
               })}
             </div>
           </div>
-          </TabsContent>
+          </>
+          )}
 
-          {/* TAB: Problèmes */}
-          <TabsContent value="issues" className="space-y-8 mt-6">
-          {/* Issues - Design premium avec couleurs améliorées */}
-          {audit.audit_results?.issues && audit.audit_results.issues.length > 0 && (
+          {/* Homepage Section */}
+          {activeSubTab === "homepage" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Home className="w-5 h-5" />
+                  Analyse Homepage SEO
+                </CardTitle>
+                <CardDescription>Optimisation détaillée de votre page d'accueil</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <HomePageSeoAudit />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Issues Section */}
+          {activeSubTab === "issues" && (
             <Card className="border-2 shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[#b91c1c]/5 to-[#f59e0b]/5 border-b-2">
                 <div className="flex items-center justify-between">
@@ -823,12 +802,9 @@ export function SeoAuditDashboard() {
               </CardContent>
             </Card>
           )}
-          </TabsContent>
 
-          {/* TAB: Plan d'action */}
-          <TabsContent value="actions" className="space-y-8 mt-6">
-          {/* Recommendations - Design premium avec timeline et couleurs améliorées */}
-          {audit.recommendations && audit.recommendations.length > 0 && (
+          {/* Actions Section */}
+          {activeSubTab === "actions" && audit.recommendations && audit.recommendations.length > 0 && (
             <Card className="border-2 shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[#22c55e]/5 to-primary/5 border-b-2">
                 <div className="flex items-center justify-between">
@@ -920,8 +896,7 @@ export function SeoAuditDashboard() {
               </CardContent>
             </Card>
           )}
-          </TabsContent>
-        </Tabs>
+        </div>
       )}
     </div>
   );
