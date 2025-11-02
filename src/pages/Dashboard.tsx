@@ -213,20 +213,23 @@ export default function Dashboard() {
     {
       id: '1',
       type: 'optimization' as const,
-      title: `${stats.optimizedProducts} produits optimisés`,
-      timestamp: 'Aujourd\'hui'
+      title: tf('dashboard.recentActivity.productsOptimized', { count: stats.optimizedProducts }),
+      timestamp: t.dashboard.recentActivity.today
     },
     {
       id: '2',
       type: 'article' as const,
-      title: `${stats.totalArticles} articles publiés`,
-      timestamp: 'Cette semaine'
+      title: tf('dashboard.recentActivity.articlesPublished', { count: stats.totalArticles }),
+      timestamp: t.dashboard.recentActivity.thisWeek
     },
     {
       id: '3',
       type: 'connection' as const,
-      title: `${stats.connectedStores} boutique${stats.connectedStores > 1 ? 's' : ''} connectée${stats.connectedStores > 1 ? 's' : ''}`,
-      timestamp: 'Ce mois'
+      title: tf('dashboard.recentActivity.storesConnected', { 
+        count: stats.connectedStores, 
+        plural: stats.connectedStores > 1 ? 's' : '' 
+      }),
+      timestamp: t.dashboard.recentActivity.thisMonth
     }
   ].filter(a => {
     // Only show activities with non-zero values
@@ -356,54 +359,54 @@ export default function Dashboard() {
       {/* Métriques Clés - Focus sur l'Optimisation */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
         <MetricCard
-          title="Produits Optimisés IA"
+          title={t.dashboard.cards.aiOptimized}
           value={stats.optimizedProducts}
           icon={Sparkles}
           gradient="from-success to-success"
           iconBg="bg-success/10 text-success"
           badge={stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%'}
-          subtitle={`${stats.optimizedProducts}/${stats.totalProducts} produits`}
+          subtitle={`${stats.optimizedProducts}/${stats.totalProducts} ${t.dashboard.cards.products}`}
         />
         <MetricCard
-          title="À Optimiser"
+          title={t.dashboard.cards.toOptimize}
           value={stats.pendingOptimization}
           icon={Clock}
           gradient="from-warning to-warning"
           iconBg="bg-warning/10 text-warning"
-          badge={stats.pendingOptimization > 10 ? 'Action requise' : 'Bon'}
-          subtitle="Produits sans SEO"
+          badge={stats.pendingOptimization > 10 ? t.dashboard.cards.actionRequired : t.dashboard.quality.good}
+          subtitle={t.dashboard.cards.productsNoSeo}
         />
         <MetricCard
-          title="Score SEO Global"
+          title={t.dashboard.cards.seoScore}
           value={`${stats.seoScore}/100`}
           icon={Target}
           gradient="from-primary via-accent to-success"
           iconBg="bg-gradient-to-br from-primary/10 to-success/10 text-primary"
-          subtitle={stats.seoScore >= 80 ? 'Excellent' : stats.seoScore >= 60 ? 'Bon' : 'À améliorer'}
+          subtitle={stats.seoScore >= 80 ? t.dashboard.quality.excellent : stats.seoScore >= 60 ? t.dashboard.quality.good : t.dashboard.quality.improve}
         />
         <MetricCard
-          title="Articles Publiés"
+          title={t.dashboard.cards.articlesPublished}
           value={stats.totalArticles}
           icon={FileText}
           gradient="from-cyan-500 to-cyan-600"
           iconBg="bg-cyan-500/10 text-cyan-600"
-          subtitle="Contenu SEO"
+          subtitle={t.dashboard.cards.seoContent}
         />
         <MetricCard
-          title="Valeur Optimisée"
+          title={t.dashboard.cards.optimizedValue}
           value={formatCurrency(stats.totalValue * (stats.optimizedProducts / Math.max(stats.totalProducts, 1)))}
           icon={DollarSign}
           gradient="from-purple-500 to-purple-600"
           iconBg="bg-purple-500/10 text-purple-600"
-          subtitle={`${Math.round((stats.optimizedProducts / Math.max(stats.totalProducts, 1)) * 100)}% du catalogue`}
+          subtitle={`${Math.round((stats.optimizedProducts / Math.max(stats.totalProducts, 1)) * 100)}% ${t.dashboard.cards.ofCatalog}`}
         />
         <MetricCard
-          title="Boutiques Actives"
+          title={t.dashboard.cards.activeStores}
           value={stats.connectedStores}
           icon={Store}
           gradient="from-primary to-primary-dark"
           iconBg="bg-primary/10 text-primary"
-          subtitle={stats.connectedStores > 0 ? 'Synchronisées' : 'Non connecté'}
+          subtitle={stats.connectedStores > 0 ? t.dashboard.cards.synchronized : t.dashboard.cards.notConnected}
         />
       </div>
 
@@ -420,8 +423,8 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <QuickActionCard
-            title="Gérer Produits"
-            description="Catalogue complet"
+            title={t.dashboard.actions.manageProducts}
+            description={t.dashboard.actions.fullCatalog}
             icon={ShoppingBag}
             iconColor="text-primary"
             iconBg="bg-primary/10"
@@ -430,13 +433,13 @@ export default function Dashboard() {
             onClick={() => window.location.href = '/products'}
             counter={stats.totalProducts}
             badge={{
-              text: `${stats.optimizedProducts}/${stats.totalProducts} optimisés`,
+              text: tf('dashboard.actions.optimizedCount', { optimized: stats.optimizedProducts, total: stats.totalProducts }),
               variant: 'secondary'
             }}
           />
           <QuickActionCard
-            title="Optimiser SEO"
-            description="Produits en attente"
+            title={t.dashboard.actions.optimizeSeo}
+            description={t.dashboard.actions.pendingProducts}
             icon={Zap}
             iconColor="text-warning"
             iconBg="bg-warning/10"
@@ -445,13 +448,13 @@ export default function Dashboard() {
             onClick={() => window.location.href = '/seo?tab=optimization'}
             counter={stats.pendingOptimization}
             badge={stats.pendingOptimization > 5 ? {
-              text: 'Action requise',
+              text: t.dashboard.cards.actionRequired,
               variant: 'destructive'
             } : undefined}
           />
           <QuickActionCard
-            title="Créer Article"
-            description="Blog généré par IA"
+            title={t.dashboard.actions.createArticle}
+            description={t.dashboard.actions.aiGenerated}
             icon={FileText}
             iconColor="text-cyan-600"
             iconBg="bg-cyan-500/10"
@@ -460,13 +463,13 @@ export default function Dashboard() {
             onClick={() => window.location.href = '/blog?tab=articles'}
             counter={stats.totalArticles}
             badge={{
-              text: 'Nouveau',
+              text: t.badges.new,
               variant: 'default'
             }}
           />
           <QuickActionCard
-            title="Assistant IA"
-            description="Chat intelligent"
+            title={t.dashboard.actions.aiAssistant}
+            description={t.dashboard.actions.smartChat}
             icon={MessageSquare}
             iconColor="text-purple-600"
             iconBg="bg-purple-500/10"
@@ -474,13 +477,13 @@ export default function Dashboard() {
             hoverBg="hover:bg-purple-500/5"
             onClick={() => window.location.href = '/chat'}
             badge={{
-              text: 'En ligne',
+              text: t.dashboard.actions.online,
               variant: 'success'
             }}
           />
           <QuickActionCard
-            title="Analytics"
-            description="Suivez vos performances"
+            title={t.dashboard.actions.analytics}
+            description={t.dashboard.actions.trackPerformance}
             icon={BarChart3}
             iconColor="text-accent"
             iconBg="bg-accent/10"
@@ -489,8 +492,8 @@ export default function Dashboard() {
             onClick={() => window.location.href = '/products'}
           />
           <QuickActionCard
-            title="Connecter Shopify"
-            description={stats.connectedStores > 0 ? 'Gérer boutiques' : 'Connecter maintenant'}
+            title={stats.connectedStores > 0 ? t.dashboard.actions.connectShopify : t.dashboard.connectShopify}
+            description={stats.connectedStores > 0 ? t.dashboard.actions.manageStores : t.dashboard.actions.connectNow}
             icon={Store}
             iconColor="text-success"
             iconBg="bg-success/10"
@@ -499,16 +502,16 @@ export default function Dashboard() {
             onClick={() => window.location.href = '/integration'}
             counter={stats.connectedStores}
             badge={stats.connectedStores > 0 ? {
-              text: 'Connecté',
+              text: t.dashboard.actions.connected,
               variant: 'success'
             } : {
-              text: 'Connecter',
+              text: t.dashboard.actions.connect,
               variant: 'outline'
             }}
           />
           <QuickActionCard
-            title="Page d'Accueil"
-            description="Mettre à jour SEO"
+            title={t.dashboard.actions.homepage}
+            description={t.dashboard.actions.updateSeo}
             icon={Palette}
             iconColor="text-pink-600"
             iconBg="bg-pink-500/10"
@@ -517,8 +520,8 @@ export default function Dashboard() {
             onClick={() => window.location.href = '/seo?tab=homepage'}
           />
           <QuickActionCard
-            title="Campagnes Email"
-            description="Bientôt disponible"
+            title={t.dashboard.actions.emailCampaigns}
+            description={t.dashboard.actions.comingSoon}
             icon={Mail}
             iconColor="text-gray-600"
             iconBg="bg-gray-500/10"
@@ -526,7 +529,7 @@ export default function Dashboard() {
             hoverBg="hover:bg-gray-500/5"
             onClick={() => {}}
             badge={{
-              text: 'Beta',
+              text: t.badges.beta,
               variant: 'secondary'
             }}
           />
@@ -538,9 +541,9 @@ export default function Dashboard() {
         {stats.pendingOptimization > 0 && (
           <SmartBanner
             type="optimization"
-            title={`${stats.pendingOptimization} produits nécessitent une optimisation SEO`}
-            description={`Gain potentiel : +${Math.min(stats.pendingOptimization * 5, 30)} points de score SEO`}
-            actionLabel="Optimiser Maintenant"
+            title={tf('dashboard.banners.optimization.title', { count: stats.pendingOptimization })}
+            description={tf('dashboard.banners.optimization.description', { gain: Math.min(stats.pendingOptimization * 5, 30) })}
+            actionLabel={t.dashboard.banners.optimization.action}
             onAction={() => window.location.href = '/seo?tab=optimization'}
             count={stats.pendingOptimization}
           />
@@ -549,9 +552,9 @@ export default function Dashboard() {
         {stats.seoScore < 60 && stats.seoScore > 0 && (
           <SmartBanner
             type="low-score"
-            title="Votre score SEO peut être amélioré"
-            description="Optimisez vos titres, descriptions et images pour un meilleur référencement"
-            actionLabel="Voir Recommandations"
+            title={t.dashboard.banners.lowScore.title}
+            description={t.dashboard.banners.lowScore.description}
+            actionLabel={t.dashboard.banners.lowScore.action}
             onAction={() => window.location.href = '/seo?tab=optimization'}
           />
         )}
@@ -559,9 +562,9 @@ export default function Dashboard() {
         {stats.seoScore >= 80 && (
           <SmartBanner
             type="success"
-            title="Excellent travail ! Votre SEO est au top"
-            description="Continuez à maintenir ce niveau de qualité pour votre catalogue"
-            actionLabel="Voir Détails"
+            title={t.dashboard.banners.success.title}
+            description={t.dashboard.banners.success.description}
+            actionLabel={t.dashboard.banners.success.action}
             onAction={() => window.location.href = '/seo'}
           />
         )}
