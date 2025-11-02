@@ -262,14 +262,14 @@ export function SyncConfirmationDialog({
 
   const getDescription = () => {
     switch (type) {
-      case 'seo': return `${itemCount} produit${itemCount > 1 ? 's seront mis à jour' : ' sera mis à jour'} sur Shopify avec les nouveaux titres et descriptions SEO.`;
+      case 'seo': return `${itemCount} collection${itemCount > 1 ? 's seront mises à jour' : ' sera mise à jour'} sur Shopify avec les nouveaux titres et descriptions SEO.`;
       case 'tags': return `${itemCount} produit${itemCount > 1 ? 's seront mis à jour' : ' sera mis à jour'} sur Shopify avec les nouveaux tags.`;
       case 'alt': return `${itemCount} image${itemCount > 1 ? 's seront mises à jour' : ' sera mise à jour'} sur Shopify avec les nouveaux textes ALT.`;
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={loading ? undefined : onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">

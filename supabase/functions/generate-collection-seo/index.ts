@@ -111,7 +111,6 @@ Return ONLY a JSON object with:
               { role: "system", content: "You are an expert SEO copywriter for e-commerce." },
               { role: "user", content: prompt }
             ],
-            temperature: 0.7,
             max_tokens: 500,
           }),
         });
@@ -131,12 +130,19 @@ Return ONLY a JSON object with:
         try {
           const jsonMatch = content.match(/\{[\s\S]*\}/);
           seoData = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+          console.log(`📝 Generated SEO data for ${collection_id}:`, {
+            title_length: seoData.seo_title?.length || 0,
+            desc_length: seoData.seo_description?.length || 0
+          });
         } catch {
+          console.warn(`⚠️ Failed to parse AI response for ${collection_id}, using fallback`);
           seoData = {
             seo_title: collection.title.substring(0, 60),
             seo_description: (collection.body_html || '').substring(0, 160)
           };
         }
+
+        console.log(`💾 Updating collection ${collection_id} with SEO data...`);
 
         // Update collection with tracking
         const { error: updateError } = await supabase
@@ -156,6 +162,8 @@ Return ONLY a JSON object with:
           results.push({ collection_id, success: false, error: updateError.message });
           continue;
         }
+
+        console.log(`✅ Database updated for ${collection_id}`);
 
         // Track usage
         await supabase.rpc('increment_usage', {

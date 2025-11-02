@@ -274,10 +274,30 @@ export function CollectionOptimization() {
       })
     );
 
-    setOptimizedCollections(updatedCollections.filter(Boolean) as Collection[]);
+    const optimized = updatedCollections.filter(Boolean) as Collection[];
+    setOptimizedCollections(optimized);
     setShowProgressDialog(false);
-    setShowResultsDialog(true);
-    setSelectedCollections(new Set());
+    
+    // Check if auto-sync is enabled
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: syncSettings } = await supabase
+        .from('shopify_sync_settings')
+        .select('export_after_optimization')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (syncSettings?.export_after_optimization) {
+        // Auto-sync enabled - go directly to sync
+        setCollectionsToSync(optimized);
+        setShowSyncDialog(true);
+      } else {
+        // Show results dialog to let user decide
+        setShowResultsDialog(true);
+      }
+    } else {
+      setShowResultsDialog(true);
+    }
   };
 
   const handleOptimizeAllCollections = async () => {
@@ -325,6 +345,22 @@ export function CollectionOptimization() {
     setIsOptimizationComplete(true);
     await fetchCollections();
     await refreshLimits();
+
+    // Get updated collections
+    const updatedCollections = await Promise.all(
+      collectionsToOptimize.map(async (c) => {
+        const { data } = await supabase
+          .from('shopify_collections')
+          .select('*')
+          .eq('id', c.id)
+          .single();
+        return data;
+      })
+    );
+
+    setOptimizedCollections(updatedCollections.filter(Boolean) as Collection[]);
+    setShowProgressDialog(false);
+    setShowResultsDialog(true);
   };
 
   const handleSyncCollections = async () => {
@@ -333,6 +369,10 @@ export function CollectionOptimization() {
     try {
       setSyncing(true);
       setShowSyncDialog(false);
+      
+      // Small delay to ensure dialog closes smoothly
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       setShowProgressDialog(true);
       setProgress({ current: 0, total: collectionsToSync.length });
 
@@ -353,6 +393,10 @@ export function CollectionOptimization() {
       }
 
       setShowProgressDialog(false);
+      
+      // Small delay before showing success message
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       toast.success(`✅ ${successCount} collection(s) synchronisée(s) avec Shopify`);
       await fetchCollections();
     } catch (error: any) {
