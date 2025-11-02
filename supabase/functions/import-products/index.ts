@@ -296,14 +296,16 @@ Deno.serve(async (req: Request) => {
     
     const availableSlots = Math.max(0, maxProducts - currentProductsCount);
 
-    console.log(`User can import up to ${availableSlots} more products (current: ${currentProductsCount}/${maxProducts})`);
+    console.log(`📊 État des quotas:`);
+    console.log(`   - Produits actuels en DB: ${currentProductsCount}/${maxProducts}`);
+    console.log(`   - Slots disponibles pour import: ${availableSlots}`);
 
     let allProducts: ShopifyProduct[] = [];
     let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=50&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
     let pageCount = 0;
     let quotaReached = false;
 
-    console.log(`Starting import from ${cleanShopName} - Limited to ${availableSlots} products`);
+    console.log(`🚀 Starting import from ${cleanShopName}`);
 
     while (nextPageUrl && !quotaReached) {
       pageCount++;
@@ -335,13 +337,25 @@ Deno.serve(async (req: Request) => {
 
       console.log(`Page ${pageCount}: Fetched ${pageProducts.length} products`);
       
-      // Check if adding these products would exceed quota
-      if (allProducts.length + pageProducts.length > availableSlots) {
-        // Only take what we can
-        const remainingSlots = availableSlots - allProducts.length;
-        allProducts = allProducts.concat(pageProducts.slice(0, remainingSlots));
+      // Vérifier si l'ajout de ces produits dépasserait la limite TOTALE
+      const totalIfAdded = currentProductsCount + allProducts.length + pageProducts.length;
+      
+      console.log(`   📦 Produits sur cette page: ${pageProducts.length}`);
+      console.log(`   📥 Produits déjà récupérés: ${allProducts.length}`);
+      console.log(`   📊 Total si ajouté: ${totalIfAdded}/${maxProducts}`);
+      
+      if (totalIfAdded > maxProducts) {
+        // Calculer combien de produits on peut encore ajouter
+        const remainingSlots = Math.max(0, maxProducts - currentProductsCount - allProducts.length);
+        
+        if (remainingSlots > 0) {
+          allProducts = allProducts.concat(pageProducts.slice(0, remainingSlots));
+        }
+        
         quotaReached = true;
-        console.log(`Quota reached. Imported ${allProducts.length} products (limit: ${availableSlots})`);
+        console.log(`⚠️ Quota atteint. Total: ${currentProductsCount + allProducts.length}/${maxProducts}`);
+        console.log(`   - Produits existants: ${currentProductsCount}`);
+        console.log(`   - Produits importés: ${allProducts.length}`);
         break;
       }
       
