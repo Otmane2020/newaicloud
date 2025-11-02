@@ -670,8 +670,9 @@ export function PageOptimization() {
                             onClick={() => handleOptimizePage(page.id, page.optimized)}
                             disabled={optimizing}
                             title={page.optimized ? "Re-optimize" : "Optimize"}
+                            className="hover:bg-blue-50"
                           >
-                            <Sparkles className="w-5 h-5" />
+                            <Sparkles className="w-5 h-5 text-blue-600" />
                           </Button>
                           {page.optimized && (
                             <Button
@@ -680,8 +681,9 @@ export function PageOptimization() {
                               onClick={() => handleSyncPage(page.id)}
                               disabled={syncing}
                               title="Sync to Shopify"
+                              className="hover:bg-green-50"
                             >
-                              <Upload className="w-5 h-5" />
+                              <Upload className="w-5 h-5 text-green-600" />
                             </Button>
                           )}
                         </div>

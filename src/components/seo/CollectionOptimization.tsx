@@ -1062,8 +1062,9 @@ export function CollectionOptimization() {
                             }}
                             disabled={optimizing}
                             title="Optimize"
+                            className="hover:bg-blue-50"
                           >
-                            <Sparkles className="w-5 h-5" />
+                            <Sparkles className="w-5 h-5 text-blue-600" />
                           </Button>
                           <Button
                             size="sm"
@@ -1073,8 +1074,9 @@ export function CollectionOptimization() {
                               setShowImageDialog(true);
                             }}
                             title="Add Image"
+                            className="hover:bg-purple-50"
                           >
-                            <ImageIcon className="w-5 h-5" />
+                            <ImageIcon className="w-5 h-5 text-purple-600" />
                           </Button>
                         </div>
                       </TableCell>

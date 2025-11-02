@@ -587,13 +587,15 @@ export function ArticleManagement() {
                           }}
                           disabled={optimizing}
                           title="Optimize"
+                          className="hover:bg-blue-50"
                         >
-                          <Sparkles className="w-5 h-5" />
+                          <Sparkles className="w-5 h-5 text-blue-600" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => window.open(`/article-landing/${article.id}`, '_blank')}
+                          className="hover:bg-gray-50"
                         >
                           <Eye className="w-5 h-5" />
                         </Button>
@@ -603,8 +605,9 @@ export function ArticleManagement() {
                             variant="outline"
                             onClick={() => handleSyncArticle(article.id)}
                             disabled={syncing}
+                            className="hover:bg-green-50"
                           >
-                            <Upload className="w-5 h-5" />
+                            <Upload className="w-5 h-5 text-green-600" />
                           </Button>
                         )}
                       </div>

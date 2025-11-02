@@ -997,8 +997,9 @@ export function SeoOptimization() {
                           }}
                           disabled={generating}
                           title="Optimize"
+                          className="hover:bg-blue-50"
                         >
-                          <Sparkles className="w-5 h-5" />
+                          <Sparkles className="w-5 h-5 text-blue-600" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -1009,6 +1010,7 @@ export function SeoOptimization() {
                           }}
                           disabled={!product.seo_title || !product.seo_description}
                           title="View & Sync"
+                          className="hover:bg-gray-50"
                         >
                           <Eye className="w-5 h-5" />
                         </Button>
