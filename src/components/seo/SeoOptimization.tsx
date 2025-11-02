@@ -82,6 +82,7 @@ type QuickFilterTab = 'all' | 'not-enriched' | 'enriched' | 'pending-sync' | 'sy
 type SeoScoreSort = 'none' | 'asc' | 'desc';
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
 type SyncFilter = 'all' | 'synced' | 'not-synced';
+type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function SeoOptimization() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -93,6 +94,7 @@ export function SeoOptimization() {
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -196,6 +198,23 @@ export function SeoOptimization() {
     // Sync filter
     if (syncFilter === 'synced' && !product.seo_synced_to_shopify) return false;
     if (syncFilter === 'not-synced' && product.seo_synced_to_shopify) return false;
+
+    // Quality filter
+    if (qualityFilter !== 'all') {
+      const score = calculateDetailedSeoScore(
+        product.seo_title || product.title,
+        product.seo_description || product.vendor,
+        !!product.image_url,
+        true,
+        product.tags,
+        product.optimization_count || 0
+      ).score;
+
+      if (qualityFilter === 'excellent' && score < 80) return false;
+      if (qualityFilter === 'good' && (score < 60 || score >= 80)) return false;
+      if (qualityFilter === 'medium' && (score < 40 || score >= 60)) return false;
+      if (qualityFilter === 'poor' && score >= 40) return false;
+    }
 
     // Category filter
     if (selectedCategory !== 'all' && product.product_type !== selectedCategory) return false;
@@ -746,6 +765,19 @@ export function SeoOptimization() {
                 <SelectItem value="all">All Sync</SelectItem>
                 <SelectItem value="synced">Synced</SelectItem>
                 <SelectItem value="not-synced">Not Synced</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={qualityFilter} onValueChange={(value: QualityFilter) => setQualityFilter(value)}>
+              <SelectTrigger className="h-12 min-w-[180px]">
+                <SelectValue placeholder="SEO Quality" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Qualities</SelectItem>
+                <SelectItem value="excellent">Excellent (≥80)</SelectItem>
+                <SelectItem value="good">Good (60-79)</SelectItem>
+                <SelectItem value="medium">Medium (40-59)</SelectItem>
+                <SelectItem value="poor">Poor (&lt;40)</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -60,6 +60,7 @@ interface Product {
 type FilterType = 'all' | 'to_optimize' | 'tagged' | 'to_sync' | 'synced';
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
 type SyncFilter = 'all' | 'synced' | 'not-synced';
+type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function TagOptimization() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -76,6 +77,7 @@ export function TagOptimization() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
   
   // Workflow states
   const [showProgressDialog, setShowProgressDialog] = useState(false);
@@ -128,6 +130,33 @@ export function TagOptimization() {
     // Sync filter
     if (syncFilter === 'synced' && !product.seo_synced_to_shopify) return false;
     if (syncFilter === 'not-synced' && product.seo_synced_to_shopify) return false;
+
+    // Quality filter (for tags: max is 20 points)
+    if (qualityFilter !== 'all') {
+      const calculateTagsScore = (tags: string | null): number => {
+        if (!tags || tags.trim().length === 0) return 0;
+        const tagArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+        let score = 0;
+        if (tagArray.length > 0) score += 5;
+        if (tagArray.length >= 3 && tagArray.length <= 10) {
+          score += 10;
+        } else if (tagArray.length > 0) {
+          score += 5;
+        }
+        const qualityTags = tagArray.filter(t => t.length > 3);
+        if (qualityTags.length >= tagArray.length * 0.7) {
+          score += 5;
+        }
+        return Math.min(score, 20);
+      };
+
+      const score = calculateTagsScore(product.tags);
+
+      if (qualityFilter === 'excellent' && score < 16) return false;
+      if (qualityFilter === 'good' && (score < 12 || score >= 16)) return false;
+      if (qualityFilter === 'medium' && (score < 8 || score >= 12)) return false;
+      if (qualityFilter === 'poor' && score >= 8) return false;
+    }
 
     // Category filter
     if (selectedCategory !== 'all' && product.product_type !== selectedCategory) return false;
@@ -675,6 +704,19 @@ export function TagOptimization() {
                 <SelectItem value="all">All Sync</SelectItem>
                 <SelectItem value="synced">Synced</SelectItem>
                 <SelectItem value="not-synced">Not Synced</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={qualityFilter} onValueChange={(value: QualityFilter) => setQualityFilter(value)}>
+              <SelectTrigger className="h-12 min-w-[180px]">
+                <SelectValue placeholder="SEO Quality" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Qualities</SelectItem>
+                <SelectItem value="excellent">Excellent (≥16)</SelectItem>
+                <SelectItem value="good">Good (12-15)</SelectItem>
+                <SelectItem value="medium">Medium (8-11)</SelectItem>
+                <SelectItem value="poor">Poor (&lt;8)</SelectItem>
               </SelectContent>
             </Select>
           </div>

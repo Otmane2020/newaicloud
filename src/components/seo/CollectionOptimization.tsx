@@ -77,6 +77,7 @@ type QuickFilterTab = 'all' | 'not-optimized' | 'optimized' | 'pending-sync' | '
 type SeoScoreSort = 'none' | 'asc' | 'desc';
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
 type SyncFilter = 'all' | 'synced' | 'not-synced';
+type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function CollectionOptimization() {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -87,6 +88,7 @@ export function CollectionOptimization() {
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
   const [syncing, setSyncing] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -177,6 +179,16 @@ export function CollectionOptimization() {
     // Sync filter
     if (syncFilter === 'synced' && !collection.last_synced_at) return false;
     if (syncFilter === 'not-synced' && collection.last_synced_at) return false;
+
+    // Quality filter
+    if (qualityFilter !== 'all') {
+      const score = calculateCollectionSeoScore(collection);
+
+      if (qualityFilter === 'excellent' && score < 80) return false;
+      if (qualityFilter === 'good' && (score < 60 || score >= 80)) return false;
+      if (qualityFilter === 'medium' && (score < 40 || score >= 60)) return false;
+      if (qualityFilter === 'poor' && score >= 40) return false;
+    }
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -829,6 +841,19 @@ export function CollectionOptimization() {
                 <SelectItem value="all">Toutes Sync</SelectItem>
                 <SelectItem value="synced">Synchronisées</SelectItem>
                 <SelectItem value="not-synced">Non Synchronisées</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={qualityFilter} onValueChange={(value: QualityFilter) => setQualityFilter(value)}>
+              <SelectTrigger className="h-12 min-w-[180px]">
+                <SelectValue placeholder="Qualité SEO" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes Qualités</SelectItem>
+                <SelectItem value="excellent">Excellent (≥80)</SelectItem>
+                <SelectItem value="good">Bon (60-79)</SelectItem>
+                <SelectItem value="medium">Moyen (40-59)</SelectItem>
+                <SelectItem value="poor">Faible (&lt;40)</SelectItem>
               </SelectContent>
             </Select>
           </div>

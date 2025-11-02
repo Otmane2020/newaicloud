@@ -34,6 +34,7 @@ interface ShopifyPage {
 
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
 type SyncFilter = 'all' | 'synced' | 'not-synced';
+type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function PageOptimization() {
   const [pages, setPages] = useState<ShopifyPage[]>([]);
@@ -45,6 +46,7 @@ export function PageOptimization() {
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
 
   useEffect(() => {
     fetchPages();
@@ -99,6 +101,23 @@ export function PageOptimization() {
     // Sync filter
     if (syncFilter === 'synced' && !page.last_synced_at) return false;
     if (syncFilter === 'not-synced' && page.last_synced_at) return false;
+
+    // Quality filter
+    if (qualityFilter !== 'all') {
+      const score = calculateDetailedSeoScore(
+        page.seo_title || page.title,
+        page.seo_description || page.body_html?.substring(0, 160),
+        false,
+        !!page.handle,
+        undefined,
+        page.optimized ? 1 : 0
+      ).score;
+
+      if (qualityFilter === 'excellent' && score < 80) return false;
+      if (qualityFilter === 'good' && (score < 60 || score >= 80)) return false;
+      if (qualityFilter === 'medium' && (score < 40 || score >= 60)) return false;
+      if (qualityFilter === 'poor' && score >= 40) return false;
+    }
 
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
@@ -583,6 +602,19 @@ export function PageOptimization() {
                   <SelectItem value="all">All Sync</SelectItem>
                   <SelectItem value="synced">Synced</SelectItem>
                   <SelectItem value="not-synced">Not Synced</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={qualityFilter} onValueChange={(value: QualityFilter) => setQualityFilter(value)}>
+                <SelectTrigger className="min-w-[150px]">
+                  <SelectValue placeholder="SEO Quality" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Qualities</SelectItem>
+                  <SelectItem value="excellent">Excellent (≥80)</SelectItem>
+                  <SelectItem value="good">Good (60-79)</SelectItem>
+                  <SelectItem value="medium">Medium (40-59)</SelectItem>
+                  <SelectItem value="poor">Poor (&lt;40)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
