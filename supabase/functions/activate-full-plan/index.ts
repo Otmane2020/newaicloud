@@ -108,6 +108,22 @@ serve(async (req) => {
 
     logStep("Profile updated");
 
+    // Reset usage counters (except products and stores)
+    const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
+    await supabaseClient
+      .from('usage_tracking')
+      .update({
+        optimizations_count: 0,
+        articles_count: 0,
+        chat_responses_count: 0,
+        shopify_requests_count: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('seller_id', user.id)
+      .eq('month', currentMonth);
+
+    logStep("Usage counters reset (products and stores preserved)");
+
     return new Response(
       JSON.stringify({ 
         success: true,

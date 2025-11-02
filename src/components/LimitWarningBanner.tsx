@@ -10,6 +10,9 @@ export function LimitWarningBanner() {
 
   if (loading || !limits) return null;
 
+  // Hide banner if user has an active paid plan
+  if (limits.isPaid) return null;
+
   // Show banner if trial is active and approaching any limit (>80%)
   const shouldShowWarning = limits.isTrialing && (
     limits.usage.optimizations_count / limits.limits.max_optimizations > 0.8 ||
