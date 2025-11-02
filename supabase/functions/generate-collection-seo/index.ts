@@ -74,7 +74,9 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        console.log(`🔍 Generating SEO for: ${collection.title}`);
+        console.log(`🔍 Generating SEO for collection: ${collection.title} (ID: ${collection_id})`);
+        console.log(`📊 Current optimization count: ${collection.optimization_count || 0}`);
+        console.log(`📅 Last optimization: ${collection.last_optimization_at || 'never'}`);
 
         // Get products from this collection
         const { data: products } = await supabase
@@ -143,9 +145,11 @@ Return ONLY a JSON object with:
         }
 
         console.log(`💾 Updating collection ${collection_id} with SEO data...`);
+        console.log(`📝 SEO Title to save: "${seoData.seo_title}"`);
+        console.log(`📝 SEO Description to save: "${seoData.seo_description}"`);
 
         // Update collection with tracking
-        const { error: updateError } = await supabase
+        const { data: updateData, error: updateError } = await supabase
           .from("shopify_collections")
           .update({
             seo_title: seoData.seo_title,
@@ -154,7 +158,8 @@ Return ONLY a JSON object with:
             last_optimization_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
-          .eq("id", collection_id);
+          .eq("id", collection_id)
+          .select();
 
         if (updateError) {
           console.error(`❌ Update error for ${collection_id}:`, updateError);
@@ -164,6 +169,16 @@ Return ONLY a JSON object with:
         }
 
         console.log(`✅ Database updated for ${collection_id}`);
+        console.log(`✅ Updated data:`, updateData);
+        
+        // Verify the update
+        const { data: verifyData } = await supabase
+          .from("shopify_collections")
+          .select("seo_title, seo_description, optimization_count")
+          .eq("id", collection_id)
+          .single();
+          
+        console.log(`🔍 Verification - Stored data:`, verifyData);
 
         // Track usage
         await supabase.rpc('increment_usage', {

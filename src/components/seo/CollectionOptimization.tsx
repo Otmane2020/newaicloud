@@ -236,6 +236,16 @@ export function CollectionOptimization() {
       return;
     }
 
+    // Validate collection IDs are proper UUIDs
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const invalidIds = collectionsToOptimize.filter(c => !uuidRegex.test(c.id));
+    
+    if (invalidIds.length > 0) {
+      console.error('❌ Invalid collection IDs detected:', invalidIds.map(c => ({ id: c.id, title: c.title })));
+      toast.error('Erreur: IDs de collection invalides détectés. Veuillez rafraîchir la page.');
+      return;
+    }
+
     setOptimizing(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
@@ -251,20 +261,41 @@ export function CollectionOptimization() {
           }
         });
         
-        if (error) throw error;
+        if (error) {
+          console.error(`❌ Error optimizing collection ${collectionsToOptimize[i].id}:`, error);
+          toast.error(`Erreur: ${error.message || 'Échec de l\'optimisation'}`);
+          throw error;
+        }
         
         // Check if optimization was successful
         if (data?.results?.[0]?.success) {
           successCount++;
+        } else {
+          const errorMsg = data?.results?.[0]?.error || 'Échec de l\'optimisation';
+          console.warn(`⚠️ Collection ${collectionsToOptimize[i].id} - ${errorMsg}`);
+          toast.warning(`Collection "${collectionsToOptimize[i].title}": ${errorMsg}`);
         }
         
         setProgress({ current: i + 1, total: collectionsToOptimize.length });
       } catch (error: any) {
-        console.error('Error:', error);
+        console.error('❌ Error optimizing collection:', error);
+        
+        // Handle specific error types
         if (error.message?.includes('trial_limit_reached')) {
-          toast.error('Limite trial atteinte');
+          toast.error('Limite d\'essai atteinte. Passez à un plan payant pour continuer.');
           setShowUpgradeDialog(true);
-          break;
+          setShowProgressDialog(false);
+          setOptimizing(false);
+          return;
+        } else if (error.message?.includes('monthly_limit_reached')) {
+          toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+          setShowProgressDialog(false);
+          setOptimizing(false);
+          return;
+        } else if (error.message?.includes('already_optimized')) {
+          toast.info(`Collection "${collectionsToOptimize[i].title}" déjà optimisée.`);
+        } else {
+          toast.error(`Erreur: ${error.message || 'Échec de l\'optimisation'}`);
         }
       }
     }
@@ -304,21 +335,21 @@ export function CollectionOptimization() {
         .maybeSingle();
 
       if (syncSettings?.export_after_optimization) {
-        // Auto-sync enabled - show sync dialog after small delay
+        // Auto-sync enabled - show sync dialog after delay
         setTimeout(() => {
           setCollectionsToSync(optimized);
           setShowSyncDialog(true);
-        }, 500);
+        }, 800);
       } else {
         // Show results dialog to let user decide
         setTimeout(() => {
           setShowResultsDialog(true);
-        }, 500);
+        }, 800);
       }
     } else {
       setTimeout(() => {
         setShowResultsDialog(true);
-      }, 500);
+      }, 800);
     }
   };
 
@@ -359,10 +390,17 @@ export function CollectionOptimization() {
             successCount++;
           }
         } catch (error: any) {
-          console.error('Error:', error);
+          console.error('❌ Error:', error);
           if (error.message?.includes('trial_limit_reached')) {
-            toast.error('Limite trial atteinte');
+            toast.error('Limite d\'essai atteinte. Passez à un plan payant.');
             setShowUpgradeDialog(true);
+            setShowProgressDialog(false);
+            setOptimizing(false);
+            return;
+          } else if (error.message?.includes('monthly_limit_reached')) {
+            toast.error('Limite mensuelle atteinte. Passez à un plan supérieur.');
+            setShowProgressDialog(false);
+            setOptimizing(false);
             return;
           }
         }
@@ -396,10 +434,10 @@ export function CollectionOptimization() {
     
     toast.success(`✅ ${successCount} collection(s) optimisée(s)`);
     
-    // Show results dialog after a small delay
+    // Show results dialog after delay
     setTimeout(() => {
       setShowResultsDialog(true);
-    }, 500);
+    }, 800);
   };
 
   const handleSyncCollections = async () => {
