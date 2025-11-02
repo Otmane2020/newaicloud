@@ -293,7 +293,11 @@ export function CollectionOptimization() {
           setOptimizing(false);
           return;
         } else if (error.message?.includes('already_optimized')) {
-          toast.info(`Collection "${collectionsToOptimize[i].title}" déjà optimisée.`);
+          toast.error('Limite d\'essai atteinte. Cette collection est déjà optimisée.');
+          setShowUpgradeDialog(true);
+          setShowProgressDialog(false);
+          setOptimizing(false);
+          return;
         } else {
           toast.error(`Erreur: ${error.message || 'Échec de l\'optimisation'}`);
         }
@@ -399,6 +403,12 @@ export function CollectionOptimization() {
             return;
           } else if (error.message?.includes('monthly_limit_reached')) {
             toast.error('Limite mensuelle atteinte. Passez à un plan supérieur.');
+            setShowProgressDialog(false);
+            setOptimizing(false);
+            return;
+          } else if (error.message?.includes('already_optimized')) {
+            toast.error('Limite d\'essai atteinte. Certaines collections sont déjà optimisées.');
+            setShowUpgradeDialog(true);
             setShowProgressDialog(false);
             setOptimizing(false);
             return;
