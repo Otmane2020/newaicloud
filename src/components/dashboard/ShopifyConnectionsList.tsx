@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText } from "lucide-react";
+import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -11,6 +11,8 @@ import { ImportProgressDialog } from './ImportProgressDialog';
 import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { ImportConfirmDialog } from '@/components/integration/ImportConfirmDialog';
 import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ShopifySyncSettings } from '@/components/integration/ShopifySyncSettings';
 
 import {
   AlertDialog,
@@ -67,6 +69,9 @@ export function ShopifyConnectionsList() {
   // Import confirmation dialog state
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [storeToImport, setStoreToImport] = useState<ShopifyConnection | null>(null);
+  
+  // Sync settings dialog state
+  const [showSyncSettings, setShowSyncSettings] = useState(false);
 
   useEffect(() => {
     loadConnections();
@@ -548,6 +553,15 @@ export function ShopifyConnectionsList() {
                   <Button
                     size="sm"
                     variant="outline"
+                    onClick={() => setShowSyncSettings(true)}
+                    className="gap-2"
+                    title="Configurer la synchronisation automatique"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => importAllContent(store)}
                     disabled={importingStoreId === store.id}
                     className="gap-2"
@@ -577,6 +591,15 @@ export function ShopifyConnectionsList() {
           </Card>
         ))}
       </div>
+
+      <Dialog open={showSyncSettings} onOpenChange={setShowSyncSettings}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Paramètres de synchronisation automatique</DialogTitle>
+          </DialogHeader>
+          <ShopifySyncSettings />
+        </DialogContent>
+      </Dialog>
 
       <ImportConfirmDialog
         open={showImportConfirm}
