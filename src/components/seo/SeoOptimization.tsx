@@ -45,7 +45,10 @@ import {
   ExternalLink,
   Filter,
   Grid3x3,
-  List
+  List,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 
 import { ShopifySyncSuccessDialog } from './ShopifySyncSuccessDialog';
@@ -69,6 +72,7 @@ interface Product {
 }
 
 type QuickFilterTab = 'all' | 'not-enriched' | 'enriched' | 'pending-sync' | 'synced';
+type SeoScoreSort = 'none' | 'asc' | 'desc';
 
 export function SeoOptimization() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -77,6 +81,7 @@ export function SeoOptimization() {
   const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -185,6 +190,32 @@ export function SeoOptimization() {
     return true;
   });
 
+  // Apply SEO score sorting
+  const sortedProducts = [...filteredProducts];
+  if (seoScoreSort !== 'none') {
+    sortedProducts.sort((a, b) => {
+      const scoreA = calculateDetailedSeoScore(
+        a.seo_title,
+        a.seo_description,
+        !!a.image_url,
+        true,
+        a.tags,
+        a.optimization_count
+      ).score;
+      
+      const scoreB = calculateDetailedSeoScore(
+        b.seo_title,
+        b.seo_description,
+        !!b.image_url,
+        true,
+        b.tags,
+        b.optimization_count
+      ).score;
+      
+      return seoScoreSort === 'asc' ? scoreA - scoreB : scoreB - scoreA;
+    });
+  }
+
   const tabs = [
     { id: 'all' as QuickFilterTab, label: 'All Products', count: products.length },
     { id: 'not-enriched' as QuickFilterTab, label: 'To Optimize', count: notEnrichedCount },
@@ -221,10 +252,20 @@ export function SeoOptimization() {
   };
 
   const handleSelectAll = () => {
-    if (selectedProducts.size === filteredProducts.length) {
+    if (selectedProducts.size === sortedProducts.length) {
       setSelectedProducts(new Set());
     } else {
-      setSelectedProducts(new Set(filteredProducts.map((p) => p.id)));
+      setSelectedProducts(new Set(sortedProducts.map((p) => p.id)));
+    }
+  };
+
+  const handleSeoScoreSortToggle = () => {
+    if (seoScoreSort === 'none') {
+      setSeoScoreSort('desc'); // First click: highest to lowest
+    } else if (seoScoreSort === 'desc') {
+      setSeoScoreSort('asc'); // Second click: lowest to highest
+    } else {
+      setSeoScoreSort('none'); // Third click: reset
     }
   };
 
@@ -839,7 +880,7 @@ export function SeoOptimization() {
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
-                    checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                    checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
@@ -847,14 +888,24 @@ export function SeoOptimization() {
                 <TableHead>Title</TableHead>
                 <TableHead className="min-w-[200px]">SEO Title</TableHead>
                 <TableHead className="min-w-[250px]">SEO Description</TableHead>
-                <TableHead className="w-32">SEO Score</TableHead>
+                <TableHead className="w-32">
+                  <button
+                    onClick={handleSeoScoreSortToggle}
+                    className="flex items-center gap-1 hover:text-primary transition-colors"
+                  >
+                    SEO Score
+                    {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
+                    {seoScoreSort === 'asc' && <ArrowUp className="w-4 h-4" />}
+                    {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
+                  </button>
+                </TableHead>
                 <TableHead className="w-32">Status</TableHead>
                 <TableHead className="w-32">Synced</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => {
+              {sortedProducts.map((product) => {
                 const seoScore = calculateDetailedSeoScore(
                   product.seo_title,
                   product.seo_description,
