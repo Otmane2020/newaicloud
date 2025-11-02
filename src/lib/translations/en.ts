@@ -190,7 +190,7 @@ export const translations = {
   },
 
   seo: {
-    title: "SEO Optimisation",
+    title: "SEO Optimization",
     description: "Optimize your store for search engines with AI tools",
     submenu: {
       products: "Products",

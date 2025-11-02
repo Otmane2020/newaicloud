@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useTranslation } from '@/lib/language';
 
 interface Product {
@@ -162,6 +163,7 @@ export function ProductSearch() {
                   <p className="text-lg text-muted-foreground">{t.search.searchingInProgress}</p>
                 </div>
               </div>
+            ) : products.length > 0 ? (
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold">
