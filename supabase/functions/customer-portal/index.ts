@@ -85,22 +85,49 @@ serve(async (req) => {
       );
     }
 
-    if (!profile?.stripe_customer_id) {
-      logStep('ERROR: No Stripe customer ID found', { profile });
-      return new Response(
-        JSON.stringify({ error: 'No Stripe customer found. Please subscribe first.' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    let customerId = profile?.stripe_customer_id;
 
-    logStep('Found Stripe customer', { customerId: profile.stripe_customer_id });
+    // Fallback: If no customer ID in profile, search Stripe by email
+    if (!customerId) {
+      logStep('No customer ID in profile, searching Stripe by email', { email: user.email });
+      
+      const customers = await stripe.customers.list({
+        email: user.email,
+        limit: 1
+      });
+
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        logStep('Found Stripe customer by email', { customerId });
+
+        // Update profile with the customer ID
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', user.id);
+
+        if (updateError) {
+          logStep('WARNING: Failed to update profile with customer ID', { error: updateError.message });
+        } else {
+          logStep('Profile updated with Stripe customer ID');
+        }
+      } else {
+        logStep('ERROR: No Stripe customer found by email');
+        return new Response(
+          JSON.stringify({ error: 'No Stripe customer found. Please subscribe first.' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      logStep('Found Stripe customer ID in profile', { customerId });
+    }
 
     // Create portal session
     const origin = req.headers.get('origin') || 'http://localhost:8080';
-    logStep('Creating Stripe portal session', { customerId: profile.stripe_customer_id, returnUrl: `${origin}/account?tab=subscription` });
+    logStep('Creating Stripe portal session', { customerId, returnUrl: `${origin}/account?tab=subscription` });
     
     const portalSession = await stripe.billingPortal.sessions.create({
-      customer: profile.stripe_customer_id,
+      customer: customerId,
       return_url: `${origin}/account?tab=subscription`,
     });
 
