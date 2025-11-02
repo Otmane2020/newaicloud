@@ -42,29 +42,41 @@ export function ProgressDialog({
   current, 
   total 
 }: ProgressDialogProps) {
-  const targetPercentage = total > 0 ? (current / total) * 100 : 0;
-  const [animatedPercentage, setAnimatedPercentage] = useState(0);
+  const [animatedPercentage, setAnimatedPercentage] = useState(1);
+  const isComplete = current === total && total > 0;
 
-  // Animate percentage from 0 to target with smooth increments
+  // Simulate smooth progress animation
   useEffect(() => {
-    if (targetPercentage === 0) {
-      setAnimatedPercentage(0);
+    if (!open) {
+      setAnimatedPercentage(1);
       return;
     }
 
-    const increment = 1;
+    // If complete, jump to 100%
+    if (isComplete) {
+      setAnimatedPercentage(100);
+      return;
+    }
+
+    // Otherwise, animate smoothly from 1% to 95%
+    const targetMax = 95;
+    const duration = 3000; // 3 seconds to reach 95%
+    const steps = 100;
+    const increment = targetMax / steps;
+    const intervalTime = duration / steps;
+
     const interval = setInterval(() => {
       setAnimatedPercentage((prev) => {
-        if (prev >= targetPercentage) {
+        if (prev >= targetMax) {
           clearInterval(interval);
-          return targetPercentage;
+          return targetMax;
         }
-        return Math.min(prev + increment, targetPercentage);
+        return Math.min(prev + increment, targetMax);
       });
-    }, 30); // Update every 30ms for smooth animation
+    }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [targetPercentage]);
+  }, [open, isComplete]);
 
   const getTitle = () => {
     if (animatedPercentage === 100) {
