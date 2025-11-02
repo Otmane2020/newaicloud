@@ -768,7 +768,7 @@ export function SeoOptimization() {
               </SelectContent>
             </Select>
 
-            <Select value={qualityFilter} onValueChange={(value: QualityFilter) => setQualityFilter(value)}>
+            <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
               <SelectTrigger className="h-12 min-w-[180px]">
                 <SelectValue placeholder="SEO Quality" />
               </SelectTrigger>

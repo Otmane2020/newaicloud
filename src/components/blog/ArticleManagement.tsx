@@ -527,7 +527,7 @@ export function ArticleManagement() {
               </SelectContent>
             </Select>
 
-            <Select value={qualityFilter} onValueChange={(value: QualityFilter) => setQualityFilter(value)}>
+            <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
               <SelectTrigger className="min-w-[150px]">
                 <SelectValue placeholder="SEO Quality" />
               </SelectTrigger>
