@@ -29,6 +29,11 @@ export function ReferralSystem() {
   const [copied, setCopied] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+  // Safety check - don't render if translations aren't loaded
+  if (!t.referral) {
+    return null;
+  }
+
   useEffect(() => {
     if (user) {
       loadReferralData();
