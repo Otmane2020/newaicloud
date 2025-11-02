@@ -484,7 +484,8 @@ export function SeoOptimization() {
           body: { 
             productId: productsToSync[i].id,
             syncTags: true,
-            syncGoogleShopping: true
+            syncGoogleShopping: true,
+            force: true // Allow immediate sync after optimization
           }
         });
         
@@ -539,7 +540,8 @@ export function SeoOptimization() {
           body: { 
             productId: productIds[i],
             syncTags: true,
-            syncGoogleShopping: true
+            syncGoogleShopping: true,
+            force: true // Allow immediate sync after optimization
           }
         });
         

@@ -13,6 +13,7 @@ interface SyncRequest {
   syncTags?: boolean;
   syncAltText?: boolean;
   syncGoogleShopping?: boolean;
+  force?: boolean; // Bypass throttling check (for post-optimization sync)
 }
 
 Deno.serve(async (req: Request) => {
@@ -58,7 +59,7 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping }: SyncRequest = await req.json();
+    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, force }: SyncRequest = await req.json();
 
     // Sync product SEO data
     if (productId) {
@@ -88,8 +89,8 @@ Deno.serve(async (req: Request) => {
         throw new Error("Store connection not found");
       }
 
-      // Check if sync was done less than 1 hour ago
-      if (product.last_seo_sync_at) {
+      // Check if sync was done less than 1 hour ago (unless force is true)
+      if (!force && product.last_seo_sync_at) {
         const lastSync = new Date(product.last_seo_sync_at);
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
         
@@ -107,6 +108,10 @@ Deno.serve(async (req: Request) => {
             }
           );
         }
+      }
+      
+      if (force) {
+        console.log(`[SYNC] Force sync enabled - bypassing throttle check for product ${productId}`);
       }
 
       const shopUrl = storeConnection.store_url;
