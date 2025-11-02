@@ -53,7 +53,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const { trialStatus, showUpgradeDialog, setShowUpgradeDialog } = useTrialLimits();
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0,
@@ -269,7 +269,7 @@ export default function Dashboard() {
             {tf('dashboard.welcome', { name: user?.user_metadata?.full_name || 'User' })}
           </h1>
           <p className="text-white/80 text-lg mb-6">
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date().toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
           <div className="flex gap-3">
             <button

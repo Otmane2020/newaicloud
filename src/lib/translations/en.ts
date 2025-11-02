@@ -74,6 +74,53 @@ export const translations = {
     importProducts: "Import products",
     quickActions: "Quick Actions",
     quickActionsDesc: "Access key features directly",
+    items: "items",
+    activity: {
+      title: "Recent Activity",
+      empty: "No recent activity",
+    },
+    usage: {
+      title: "Usage Limits",
+      description: "Your usage this month",
+      remaining: "remaining optimizations",
+      labels: {
+        products: "Products",
+        stores: "Shopify Stores",
+        optimizations: "SEO Optimizations",
+        articles: "AI Articles",
+        shopifySearch: "AI Shopify Search",
+        chatResponses: "AI Chat Responses",
+        campaigns: "Auto Campaigns",
+      }
+    },
+    plans: {
+      title: "Choose Your Plan",
+      subtitle: "Select the perfect plan for your business needs",
+      monthly: "Monthly",
+      yearly: "Yearly",
+      save: "Save {{percent}}%",
+      currentPlan: "Current Plan",
+      upgrade: "Upgrade",
+      downgrade: "Downgrade",
+      changePlan: "Change Plan",
+      perMonth: "/month",
+      descriptions: {
+        starter: "Perfect for getting started",
+        pro: "For growing businesses",
+        enterprise: "For large operations",
+      },
+      features: {
+        products: "products",
+        optimizations: "optimizations/month",
+        articles: "articles/month",
+        campaigns: "campaigns",
+        chatResponses: "chat responses/month",
+      },
+      errors: {
+        missingConfig: "The \"{{planName}}\" plan must be configured in Stripe. Please create the prices in your Stripe dashboard.",
+        genericError: "Unable to process request",
+      }
+    },
     metrics: {
       totalProducts: "Total Products",
       optimized: "Optimized",
@@ -1109,6 +1156,7 @@ export const translations = {
 
   errors: {
     generic: "An error occurred",
+    error: "Error",
     networkError: "Network error. Please check your connection.",
     serverError: "Server error. Please try again later.",
     unauthorized: "You are not authorized to perform this action.",
@@ -1118,9 +1166,10 @@ export const translations = {
     invalidFormat: "Invalid format",
     tooShort: "Too short",
     tooLong: "Too long",
-    tryAgain: "Try Again",
-    goBack: "Go Back",
-    contactSupport: "Contact Support",
+    tryAgain: "Try again",
+    goBack: "Go back",
+    contactSupport: "Contact support",
+    missingConfiguration: "Missing Configuration",
   },
 
   forms: {

@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { useTranslation } from "@/lib/language";
 
 interface Plan {
   id: string;
@@ -35,6 +36,7 @@ export function SubscriptionPlans() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { limits } = useUsageLimits();
+  const { t, tf } = useTranslation();
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -127,8 +129,8 @@ export function SubscriptionPlans() {
         
         if (data?.success) {
           toast({
-            title: "Abonnement activé",
-            description: "Votre abonnement complet a été activé avec succès !",
+            title: t.account.subscription.activationSuccess,
+            description: t.toasts.subscriptionActivatedMessage,
           });
           setTimeout(() => window.location.reload(), 1500);
         }
@@ -143,8 +145,8 @@ export function SubscriptionPlans() {
         
         if (!stripePriceId || !stripePriceId.startsWith('price_')) {
           toast({
-            title: "Configuration manquante",
-            description: `Le plan "${selectedPlan?.name}" doit être configuré dans Stripe. Veuillez créer les prix dans votre tableau de bord Stripe.`,
+            title: t.errors.missingConfiguration,
+            description: tf('dashboard.plans.errors.missingConfig', { planName: selectedPlan?.name }),
             variant: "destructive"
           });
           setCheckoutLoading(null);
@@ -169,8 +171,8 @@ export function SubscriptionPlans() {
     } catch (error) {
       console.error('Error handling plan selection:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de traiter la demande",
+        title: t.errors.error,
+        description: t.dashboard.plans.errors.genericError,
         variant: "destructive"
       });
     } finally {
@@ -202,14 +204,14 @@ export function SubscriptionPlans() {
   };
   
   const getButtonText = (planId: string) => {
-    if (isCurrentPlan(planId)) return 'Plan actuel';
+    if (isCurrentPlan(planId)) return t.dashboard.plans.currentPlan;
     
     const currentLevel = getPlanLevel(currentPlanId || '');
     const targetLevel = getPlanLevel(planId);
     
-    if (targetLevel > currentLevel) return 'Upgrade';
-    if (targetLevel < currentLevel) return 'Downgrade';
-    return 'Changer de plan';
+    if (targetLevel > currentLevel) return t.dashboard.plans.upgrade;
+    if (targetLevel < currentLevel) return t.dashboard.plans.downgrade;
+    return t.dashboard.plans.changePlan;
   };
 
   // Group plans by category
@@ -230,19 +232,19 @@ export function SubscriptionPlans() {
   return (
     <div className="space-y-8">
       <div className="text-center space-y-4">
-        <h2 className="text-3xl font-bold">Choose Your Plan</h2>
+        <h2 className="text-3xl font-bold">{t.dashboard.plans.title}</h2>
         <p className="text-muted-foreground">
-          Select the perfect plan for your business needs
+          {t.dashboard.plans.subtitle}
         </p>
         
         <div className="flex justify-center">
           <Tabs value={billingPeriod} onValueChange={(value) => setBillingPeriod(value as 'monthly' | 'yearly')}>
             <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="monthly">Monthly</TabsTrigger>
+              <TabsTrigger value="monthly">{t.dashboard.plans.monthly}</TabsTrigger>
               <TabsTrigger value="yearly">
-                Yearly
+                {t.dashboard.plans.yearly}
                 <Badge variant="secondary" className="ml-2 bg-success/20 text-success">
-                  Save 20%
+                  {tf('dashboard.plans.save', { percent: '20' })}
                 </Badge>
               </TabsTrigger>
             </TabsList>
@@ -256,7 +258,7 @@ export function SubscriptionPlans() {
           <Card className={`p-8 relative flex flex-col ${isCurrentPlan(starterPlan.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
             {isCurrentPlan(starterPlan.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
-                Plan actuel
+                {t.dashboard.plans.currentPlan}
               </Badge>
             )}
             
@@ -266,36 +268,36 @@ export function SubscriptionPlans() {
                   <Sparkles className="w-6 h-6 text-primary" />
                   <h3 className="text-2xl font-bold">{starterPlan.name}</h3>
                 </div>
-                <p className="text-muted-foreground text-sm">{starterPlan.description}</p>
+                <p className="text-muted-foreground text-sm">{t.dashboard.plans.descriptions.starter}</p>
               </div>
               
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">${getPrice(starterPlan)}</span>
-                  <span className="text-muted-foreground">/mois</span>
+                  <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
               </div>
 
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-start gap-2 text-sm">
                   <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{starterPlan.max_products} produits</span>
+                  <span>{starterPlan.max_products} {t.dashboard.plans.features.products}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{starterPlan.max_optimizations_monthly} optimisations/mois</span>
+                  <span>{starterPlan.max_optimizations_monthly} {t.dashboard.plans.features.optimizations}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{starterPlan.max_articles_monthly} articles/mois</span>
+                  <span>{starterPlan.max_articles_monthly} {t.dashboard.plans.features.articles}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>0 campagnes</span>
+                  <span>0 {t.dashboard.plans.features.campaigns}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{starterPlan.max_chat_responses_monthly} réponses chat/mois</span>
+                  <span>{starterPlan.max_chat_responses_monthly} {t.dashboard.plans.features.chatResponses}</span>
                 </div>
               </div>
             </div>
@@ -320,7 +322,7 @@ export function SubscriptionPlans() {
           <Card className={`p-8 relative flex flex-col ${isCurrentPlan(selectedPro.id) ? 'border-2 border-primary shadow-primary' : 'border-2 border-primary/20'}`}>
             {isCurrentPlan(selectedPro.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
-                Plan actuel
+                {t.dashboard.plans.currentPlan}
               </Badge>
             )}
             
@@ -330,7 +332,7 @@ export function SubscriptionPlans() {
                   <Zap className="w-6 h-6 text-primary" />
                   <h3 className="text-2xl font-bold">Pro</h3>
                 </div>
-                <p className="text-muted-foreground text-sm">Pour les boutiques en croissance</p>
+                <p className="text-muted-foreground text-sm">{t.dashboard.plans.descriptions.pro}</p>
               </div>
               
               {proPlans.length > 1 && (
@@ -354,30 +356,30 @@ export function SubscriptionPlans() {
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">${getPrice(selectedPro)}</span>
-                  <span className="text-muted-foreground">/mois</span>
+                  <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
               </div>
 
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-start gap-2 text-sm">
                   <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_products.toLocaleString()} produits</span>
+                  <span>{selectedPro.max_products.toLocaleString()} {t.dashboard.plans.features.products}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_optimizations_monthly.toLocaleString()} optimisations/mois</span>
+                  <span>{selectedPro.max_optimizations_monthly.toLocaleString()} {t.dashboard.plans.features.optimizations}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_articles_monthly} articles/mois</span>
+                  <span>{selectedPro.max_articles_monthly} {t.dashboard.plans.features.articles}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_campaigns} campagnes</span>
+                  <span>{selectedPro.max_campaigns} {t.dashboard.plans.features.campaigns}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_chat_responses_monthly.toLocaleString()} réponses chat/mois</span>
+                  <span>{selectedPro.max_chat_responses_monthly.toLocaleString()} {t.dashboard.plans.features.chatResponses}</span>
                 </div>
               </div>
             </div>
@@ -402,7 +404,7 @@ export function SubscriptionPlans() {
           <Card className={`p-8 relative flex flex-col ${isCurrentPlan(selectedEnterprise.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
             {isCurrentPlan(selectedEnterprise.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
-                Plan actuel
+                {t.dashboard.plans.currentPlan}
               </Badge>
             )}
             
@@ -412,7 +414,7 @@ export function SubscriptionPlans() {
                   <Crown className="w-6 h-6 text-primary" />
                   <h3 className="text-2xl font-bold">Enterprise</h3>
                 </div>
-                <p className="text-muted-foreground text-sm">Pour les grandes opérations</p>
+                <p className="text-muted-foreground text-sm">{t.dashboard.plans.descriptions.enterprise}</p>
               </div>
               
               {enterprisePlans.length > 1 && (

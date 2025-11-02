@@ -1,5 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from '@/lib/language';
 
 interface QuickActionCardProps {
   title: string;
@@ -29,6 +30,8 @@ export function QuickActionCard({
   counter,
   badge
 }: QuickActionCardProps) {
+  const { t } = useTranslation();
+  
   return (
     <button
       onClick={onClick}
@@ -63,7 +66,7 @@ export function QuickActionCard({
             <p className="text-xs font-medium text-muted-foreground">
               <span className="text-lg font-bold text-foreground">{counter}</span>
               {typeof counter === 'number' && counter > 0 && (
-                <span className="ml-1">items</span>
+                <span className="ml-1">{t.dashboard.items}</span>
               )}
             </p>
           </div>

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Package, FileText, Zap, MessageSquare } from "lucide-react";
 import { formatLimit } from "@/lib/formatUtils";
+import { useTranslation } from "@/lib/language";
 
 interface UsageLimit {
   label: string;
@@ -17,6 +18,7 @@ interface UsageLimit {
 
 export function UsageLimits() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const { data: usage } = useQuery({
     queryKey: ['usage-tracking', user?.id],
@@ -80,49 +82,49 @@ export function UsageLimits() {
 
   const limits: UsageLimit[] = [
     {
-      label: "Produits",
+      label: t.dashboard.usage.labels.products,
       current: usage?.products_count || 0,
       limit: plan?.max_products || 0,
       icon: <Package className="h-4 w-4" />,
       color: "hsl(var(--primary))"
     },
     {
-      label: "Boutiques Shopify",
+      label: t.dashboard.usage.labels.stores,
       current: usage?.shopify_stores_count || 0,
       limit: plan?.max_shopify_stores || 0,
       icon: <Package className="h-4 w-4" />,
       color: "hsl(var(--chart-6))"
     },
     {
-      label: "Optimisations SEO",
+      label: t.dashboard.usage.labels.optimizations,
       current: usage?.optimizations_count || 0,
       limit: plan?.max_optimizations_monthly || 0,
       icon: <Zap className="h-4 w-4" />,
       color: "hsl(var(--chart-2))"
     },
     {
-      label: "Articles IA",
+      label: t.dashboard.usage.labels.articles,
       current: usage?.articles_count || 0,
       limit: plan?.max_articles_monthly || 0,
       icon: <FileText className="h-4 w-4" />,
       color: "hsl(var(--chart-3))"
     },
     {
-      label: "Recherche IA Shopify",
+      label: t.dashboard.usage.labels.shopifySearch,
       current: usage?.shopify_requests_count || 0,
       limit: plan?.max_shopify_requests_monthly || 0,
       icon: <Package className="h-4 w-4" />,
       color: "hsl(var(--chart-1))"
     },
     {
-      label: "Réponses Chat IA",
+      label: t.dashboard.usage.labels.chatResponses,
       current: usage?.chat_responses_count || 0,
       limit: plan?.max_chat_responses_monthly || 0,
       icon: <MessageSquare className="h-4 w-4" />,
       color: "hsl(var(--chart-4))"
     },
     {
-      label: "Campagnes auto",
+      label: t.dashboard.usage.labels.campaigns,
       current: usage?.campaigns_count || 0,
       limit: plan?.max_campaigns || 0,
       icon: <Zap className="h-4 w-4" />,
@@ -143,9 +145,9 @@ export function UsageLimits() {
       <CardHeader>
         <div className="flex items-center justify-between mb-2">
           <div>
-            <CardTitle>Limites d'utilisation</CardTitle>
+            <CardTitle>{t.dashboard.usage.title}</CardTitle>
             <CardDescription>
-              Votre utilisation ce mois-ci
+              {t.dashboard.usage.description}
             </CardDescription>
           </div>
           {plan && (
@@ -155,7 +157,7 @@ export function UsageLimits() {
               </Badge>
               {!isTrialPlan && (
                 <p className="text-sm text-muted-foreground">
-                  {optimizationsLeft} optimisations restantes
+                  {optimizationsLeft} {t.dashboard.usage.remaining}
                 </p>
               )}
             </div>

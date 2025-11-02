@@ -74,6 +74,53 @@ export const translations = {
     importProducts: "Importer produits",
     quickActions: "Actions Rapides",
     quickActionsDesc: "Accédez aux fonctionnalités clés directement",
+    items: "éléments",
+    activity: {
+      title: "Activité Récente",
+      empty: "Aucune activité récente",
+    },
+    usage: {
+      title: "Limites d'utilisation",
+      description: "Votre utilisation ce mois-ci",
+      remaining: "optimisations restantes",
+      labels: {
+        products: "Produits",
+        stores: "Boutiques Shopify",
+        optimizations: "Optimisations SEO",
+        articles: "Articles IA",
+        shopifySearch: "Recherche IA Shopify",
+        chatResponses: "Réponses Chat IA",
+        campaigns: "Campagnes auto",
+      }
+    },
+    plans: {
+      title: "Choisissez Votre Offre",
+      subtitle: "Sélectionnez l'offre parfaite pour votre entreprise",
+      monthly: "Mensuel",
+      yearly: "Annuel",
+      save: "Économisez {{percent}}%",
+      currentPlan: "Plan actuel",
+      upgrade: "Passer à l'offre",
+      downgrade: "Rétrograder",
+      changePlan: "Changer de plan",
+      perMonth: "/mois",
+      descriptions: {
+        starter: "Parfait pour débuter",
+        pro: "Pour les boutiques en croissance",
+        enterprise: "Pour les grandes opérations",
+      },
+      features: {
+        products: "produits",
+        optimizations: "optimisations/mois",
+        articles: "articles/mois",
+        campaigns: "campagnes",
+        chatResponses: "réponses chat/mois",
+      },
+      errors: {
+        missingConfig: "Le plan \"{{planName}}\" doit être configuré dans Stripe. Veuillez créer les prix dans votre tableau de bord Stripe.",
+        genericError: "Impossible de traiter la demande",
+      }
+    },
     metrics: {
       totalProducts: "Total Produits",
       optimized: "Optimisés",
@@ -1109,6 +1156,7 @@ export const translations = {
 
   errors: {
     generic: "Une erreur est survenue",
+    error: "Erreur",
     networkError: "Erreur réseau. Veuillez vérifier votre connexion.",
     serverError: "Erreur serveur. Veuillez réessayer plus tard.",
     unauthorized: "Vous n'êtes pas autorisé à effectuer cette action.",
@@ -1120,7 +1168,8 @@ export const translations = {
     tooLong: "Trop long",
     tryAgain: "Réessayer",
     goBack: "Retour",
-    contactSupport: "Contacter le Support",
+    contactSupport: "Contacter le support",
+    missingConfiguration: "Configuration manquante",
   },
 
   forms: {

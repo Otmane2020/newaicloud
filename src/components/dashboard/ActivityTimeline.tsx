@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, FileText, Store, Zap, Clock } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface Activity {
   id: string;
@@ -13,6 +14,8 @@ interface ActivityTimelineProps {
 }
 
 export function ActivityTimeline({ activities }: ActivityTimelineProps) {
+  const { t } = useTranslation();
+  
   const getActivityIcon = (type: Activity['type']) => {
     switch (type) {
       case 'optimization':
@@ -32,13 +35,13 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
         <CardHeader>
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <Clock className="w-5 h-5 text-muted-foreground" />
-            Activité Récente
+            {t.dashboard.activity.title}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <Clock className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">Aucune activité récente</p>
+            <p className="text-sm text-muted-foreground">{t.dashboard.activity.empty}</p>
           </div>
         </CardContent>
       </Card>
@@ -50,7 +53,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
       <CardHeader>
         <CardTitle className="text-lg font-bold flex items-center gap-2">
           <Clock className="w-5 h-5 text-muted-foreground" />
-          Activité Récente
+          {t.dashboard.activity.title}
         </CardTitle>
       </CardHeader>
       <CardContent>
