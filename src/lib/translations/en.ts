@@ -28,23 +28,23 @@ export const translations = {
   },
   
   navigation: {
+    main: "Navigation",
     dashboard: "Dashboard",
     products: "Products",
-    catalog: "Catalog",
-    seo: "SEO Optimisation",
-    seoBlog: "SEO Blog",
-    integration: "Integration",
+    seoOptimization: "SEO Optimization",
     blog: "Blog",
-    shopping: "Shopping",
-    account: "Account",
     aiSearch: "AI Search",
     googleShopping: "Google Shopping",
     googleMerchant: "Google Merchant",
     chat: "Chat",
+    account: "Account",
+    catalog: "Catalog",
+    seo: "SEO Optimisation",
+    seoBlog: "SEO Blog",
+    integration: "Integration",
     smartChat: "Smart Chat",
     logout: "Logout",
     collapse: "Collapse",
-    seoOptimization: "SEO Optimization",
     tagOptimization: "Tag Optimization",
     altImage: "ALT Image",
     articles: "Articles",
@@ -123,6 +123,12 @@ export const translations = {
       subscription: "Subscription",
       billing: "Billing Portal",
     },
+    submenu: {
+      profile: "My Profile",
+      integrations: "Integrations",
+      subscription: "Subscription",
+      billing: "Billing",
+    },
     profile: {
       title: "Personal Information",
       email: "Email",
@@ -194,10 +200,9 @@ export const translations = {
       altImage: "ALT Image",
       homepage: "Homepage",
       tags: "Tags",
-      audit: "SEO Audit",
-      reports: "Reports",
       kpis: "KPIs & Stats",
       automation: "Automation",
+      auditSeo: "SEO Audit",
     },
     audit: {
       title: "Complete SEO Audit",
@@ -362,6 +367,13 @@ export const translations = {
     thinking: "Thinking...",
     noHistory: "No chat history",
     deleteSession: "Delete Session",
+    submenu: {
+      assistant: "Chat Assistant",
+      robot: "AI Robot",
+      history: "History",
+      productSource: "Product Source",
+      settings: "Chat Settings",
+    },
     robot: {
       title: "Voice Assistant",
       startListening: "Start Listening",
@@ -415,6 +427,12 @@ export const translations = {
     lastSync: "Last Sync",
     totalProducts: "Total Products",
     status: "Status",
+    submenu: {
+      feed: "XML Feed",
+      settings: "Settings",
+      products: "Products",
+      sync: "Synchronization",
+    },
   },
 
   shopping: {
@@ -874,6 +892,30 @@ export const translations = {
     collectionsSynced: "Collections Synced",
     recentActivity: "Recent Activity",
     noActivity: "No recent activity",
+  },
+
+  search: {
+    title: "AI Product Search",
+    subtitle: "Intelligent search powered by AI - Find the perfect product in natural language",
+    placeholder: "E.g: blue Scandinavian sofa for living room under 500€",
+    button: "Search",
+    searching: "Searching...",
+    searchingInProgress: "Searching in progress...",
+    error: {
+      enterQuery: "Please enter a search query",
+      searchError: "Error during search",
+    },
+    noProducts: "No products found",
+    tryOtherKeywords: "Try with other keywords or a different description",
+    productsFound: "{{count}} product{{plural}} found",
+    features: {
+      advanced: "Advanced AI",
+      advancedDesc: "Understands natural language queries and purchase intent",
+      contextual: "Contextual Search",
+      contextualDesc: "Analyzes context to find the most relevant products",
+      instant: "Instant Results",
+      instantDesc: "Intelligent relevance scoring for optimal results",
+    },
   },
 };
 

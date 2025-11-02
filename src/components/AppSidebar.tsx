@@ -211,7 +211,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t.navigation.main}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems.map((item) => (
@@ -219,7 +219,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild isActive={isActive(item.url)}>
                   <NavLink to={item.url}>
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span>{t.navigation[item.title.toLowerCase() as keyof typeof t.navigation] || item.title}</span>
                   </NavLink>
                 </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -231,7 +231,7 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isSeoActive}>
                       <Sparkles className="h-4 w-4" />
-                      <span>SEO Optimisation</span>
+                      <span>{t.navigation.seoOptimization}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -242,7 +242,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
+                              <span>{t.seo.submenu[subItem.title.toLowerCase().replace(/\s+/g, '') as keyof typeof t.seo.submenu] || subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -254,7 +254,7 @@ export function AppSidebar() {
                           <CollapsibleTrigger asChild>
                             <SidebarMenuSubButton isActive={isAuditActive}>
                               <FileSearch className="h-4 w-4" />
-                              <span>Audit SEO</span>
+                              <span>{t.seo.submenu.auditSeo}</span>
                               <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/audit:rotate-90" />
                             </SidebarMenuSubButton>
                           </CollapsibleTrigger>
@@ -285,7 +285,7 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isBlogActive}>
                       <FileText className="h-4 w-4" />
-                      <span>Blog</span>
+                      <span>{t.navigation.blog}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -296,7 +296,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
+                              <span>{t.blog.submenu[subItem.title.toLowerCase().replace(/\s+/g, '') as keyof typeof t.blog.submenu] || subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -312,7 +312,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{item.title === "AI Search" ? t.navigation.aiSearch : t.navigation.googleShopping}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -324,7 +324,7 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isMerchantActive}>
                       <Package className="h-4 w-4" />
-                      <span>Google Merchant</span>
+                      <span>{t.navigation.googleMerchant}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -335,7 +335,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>
                               <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
+                              <span>{t.merchant.submenu[subItem.title.toLowerCase().replace(/\s+/g, '') === 'fluxxml' ? 'feed' : subItem.title.toLowerCase().replace(/\s+/g, '') as keyof typeof t.merchant.submenu] || subItem.title}</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -351,22 +351,31 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isChatActive}>
                       <MessageSquare className="h-4 w-4" />
-                      <span>Chat</span>
+                      <span>{t.navigation.chat}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {chatSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
-                              <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
+                      {chatSubItems.map((subItem) => {
+                        let key: keyof typeof t.chat.submenu = 'assistant';
+                        if (subItem.title === "Chat Assistant") key = 'assistant';
+                        else if (subItem.title === "AI Robot") key = 'robot';
+                        else if (subItem.title === "History") key = 'history';
+                        else if (subItem.title === "Product Source") key = 'productSource';
+                        else if (subItem.title === "Chat Settings") key = 'settings';
+                        
+                        return (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                              <NavLink to={subItem.url}>
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{t.chat.submenu[key]}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
@@ -378,22 +387,30 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isAccountActive}>
                       <User className="h-4 w-4" />
-                      <span>Account</span>
+                      <span>{t.navigation.account}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {accountSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                            <NavLink to={subItem.url}>
-                              <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
+                      {accountSubItems.map((subItem) => {
+                        let key: keyof typeof t.account.submenu = 'profile';
+                        if (subItem.title === "My Profile") key = 'profile';
+                        else if (subItem.title === "Integrations") key = 'integrations';
+                        else if (subItem.title === "Subscription") key = 'subscription';
+                        else if (subItem.title === "Billing") key = 'billing';
+                        
+                        return (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                              <NavLink to={subItem.url}>
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{t.account.submenu[key]}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
