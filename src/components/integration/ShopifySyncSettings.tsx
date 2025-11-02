@@ -508,7 +508,7 @@ export function ShopifySyncSettings() {
         </CardContent>
       </Card>
 
-      {/* Sync History */}
+      {/* Sync History - Hidden per user request
       <Card>
         <CardHeader>
           <CardTitle>Historique des synchronisations</CardTitle>
@@ -560,6 +560,7 @@ export function ShopifySyncSettings() {
           )}
         </CardContent>
       </Card>
+      */}
     </div>
   );
 }
