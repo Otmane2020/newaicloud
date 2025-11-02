@@ -329,6 +329,12 @@ export function SeoOptimization() {
       return;
     }
 
+    // Check if products are selected
+    if (selectedProducts.size === 0) {
+      toast.error('No products selected to optimize');
+      return;
+    }
+
     // Filter eligible products
     const productsToGenerate = products.filter(p => {
       if (!selectedProducts.has(p.id)) return false;
@@ -342,8 +348,14 @@ export function SeoOptimization() {
       return p.enrichment_status !== 'enriched';
     });
 
+    // Check if all selected products are already optimized
+    const selectedProductsList = products.filter(p => selectedProducts.has(p.id));
+    const allAlreadyOptimized = selectedProductsList.every(p => p.enrichment_status === 'enriched');
+
     if (productsToGenerate.length === 0) {
-      if (limits?.isTrialing) {
+      if (allAlreadyOptimized) {
+        toast.warning('Les produits sélectionnés sont déjà optimisés');
+      } else if (limits?.isTrialing) {
         // Show upgrade dialog instead of toast for better UX
         setShowUpgradeDialog(true);
       } else {
