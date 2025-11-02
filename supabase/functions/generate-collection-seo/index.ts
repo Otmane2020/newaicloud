@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { collection_ids }: { collection_ids: string[] } = await req.json();
+    const { collection_ids, force = false }: { collection_ids: string[], force?: boolean } = await req.json();
 
     console.log(`🎨 Starting SEO optimization for ${collection_ids.length} collections...`);
 
@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
           p_user_id: user.id,
           p_resource_type: 'collection',
           p_resource_id: collection_id,
-          p_force: false
+          p_force: force
         });
 
         if (!checkResult?.allowed) {

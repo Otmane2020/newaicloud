@@ -241,11 +241,23 @@ export function CollectionOptimization() {
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: collectionsToOptimize.length });
 
+    let successCount = 0;
     for (let i = 0; i < collectionsToOptimize.length; i++) {
       try {
-        await supabase.functions.invoke('generate-collection-seo', {
-          body: { collection_ids: [collectionsToOptimize[i].id] }
+        const { data, error } = await supabase.functions.invoke('generate-collection-seo', {
+          body: { 
+            collection_ids: [collectionsToOptimize[i].id],
+            force: true  // Allow re-optimization
+          }
         });
+        
+        if (error) throw error;
+        
+        // Check if optimization was successful
+        if (data?.results?.[0]?.success) {
+          successCount++;
+        }
+        
         setProgress({ current: i + 1, total: collectionsToOptimize.length });
       } catch (error: any) {
         console.error('Error:', error);
@@ -259,6 +271,9 @@ export function CollectionOptimization() {
 
     setOptimizing(false);
     setIsOptimizationComplete(true);
+    setShowProgressDialog(false);
+    
+    // Refresh data
     await fetchCollections();
     await refreshLimits();
 
@@ -276,7 +291,8 @@ export function CollectionOptimization() {
 
     const optimized = updatedCollections.filter(Boolean) as Collection[];
     setOptimizedCollections(optimized);
-    setShowProgressDialog(false);
+    
+    toast.success(`✅ ${successCount} collection(s) optimisée(s)`);
     
     // Check if auto-sync is enabled
     const { data: { user } } = await supabase.auth.getUser();
@@ -288,15 +304,21 @@ export function CollectionOptimization() {
         .maybeSingle();
 
       if (syncSettings?.export_after_optimization) {
-        // Auto-sync enabled - go directly to sync
-        setCollectionsToSync(optimized);
-        setShowSyncDialog(true);
+        // Auto-sync enabled - show sync dialog after small delay
+        setTimeout(() => {
+          setCollectionsToSync(optimized);
+          setShowSyncDialog(true);
+        }, 500);
       } else {
         // Show results dialog to let user decide
-        setShowResultsDialog(true);
+        setTimeout(() => {
+          setShowResultsDialog(true);
+        }, 500);
       }
     } else {
-      setShowResultsDialog(true);
+      setTimeout(() => {
+        setShowResultsDialog(true);
+      }, 500);
     }
   };
 
@@ -319,15 +341,23 @@ export function CollectionOptimization() {
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: collectionsToOptimize.length });
 
+    let successCount = 0;
     const BATCH_SIZE = 3;
     for (let i = 0; i < collectionsToOptimize.length; i += BATCH_SIZE) {
       const batch = collectionsToOptimize.slice(i, i + BATCH_SIZE);
       
       await Promise.all(batch.map(async (collection) => {
         try {
-          await supabase.functions.invoke('generate-collection-seo', {
-            body: { collection_ids: [collection.id] }
+          const { data, error } = await supabase.functions.invoke('generate-collection-seo', {
+            body: { 
+              collection_ids: [collection.id],
+              force: false  // Only optimize new ones
+            }
           });
+          
+          if (!error && data?.results?.[0]?.success) {
+            successCount++;
+          }
         } catch (error: any) {
           console.error('Error:', error);
           if (error.message?.includes('trial_limit_reached')) {
@@ -343,6 +373,9 @@ export function CollectionOptimization() {
 
     setOptimizing(false);
     setIsOptimizationComplete(true);
+    setShowProgressDialog(false);
+    
+    // Refresh data
     await fetchCollections();
     await refreshLimits();
 
@@ -358,9 +391,15 @@ export function CollectionOptimization() {
       })
     );
 
-    setOptimizedCollections(updatedCollections.filter(Boolean) as Collection[]);
-    setShowProgressDialog(false);
-    setShowResultsDialog(true);
+    const optimized = updatedCollections.filter(Boolean) as Collection[];
+    setOptimizedCollections(optimized);
+    
+    toast.success(`✅ ${successCount} collection(s) optimisée(s)`);
+    
+    // Show results dialog after a small delay
+    setTimeout(() => {
+      setShowResultsDialog(true);
+    }, 500);
   };
 
   const handleSyncCollections = async () => {
