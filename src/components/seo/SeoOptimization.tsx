@@ -639,7 +639,7 @@ export function SeoOptimization() {
                 size="lg"
                 onClick={handleGenerateAll}
                 disabled={generating || notEnrichedCount === 0}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
+                className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
               >
                 <Sparkles className="w-5 h-5" />
                 Start Optimization
@@ -842,7 +842,7 @@ export function SeoOptimization() {
               size="sm"
               onClick={handleGenerateForSelected}
               disabled={generating || selectedProducts.size === 0}
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
+              className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
             >
               <Zap className="w-4 h-4" />
               Optimize Selected ({selectedProducts.size})
@@ -853,7 +853,7 @@ export function SeoOptimization() {
               size="sm"
               onClick={handleGenerateAll}
               disabled={generating || notEnrichedCount === 0}
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
+              className="flex items-center gap-2 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 shadow-lg hover:shadow-accent/50 border-accent/30 text-accent-foreground font-semibold transition-all duration-300"
             >
               <Sparkles className="w-4 h-4" />
               Optimize All

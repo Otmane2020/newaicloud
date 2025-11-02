@@ -684,7 +684,7 @@ export function SeoAltImage() {
               size="lg"
               onClick={handleOptimizeAllImages}
               disabled={generating || imagesNeedingAlt === 0 || limitsLoading}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
+              className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
             >
               {generating ? (
                 <>
@@ -895,7 +895,7 @@ export function SeoAltImage() {
           <Button
             onClick={() => handleGenerateForSelected(true)}
             disabled={generating || selectedImages.size === 0}
-            className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
+            className="gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
           >
             {generating ? (
               <>

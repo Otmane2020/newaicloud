@@ -385,8 +385,8 @@ export function HomePageSeoAudit() {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="flex-1 space-y-3">
               <div className="flex items-center gap-2">
-                <Search className="w-6 h-6 text-purple-600" />
-                <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <Search className="w-6 h-6 text-primary" />
+                <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
                   SEO Audit & Optimization
                 </CardTitle>
               </div>
@@ -395,7 +395,7 @@ export function HomePageSeoAudit() {
               </CardDescription>
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <FileText className="w-4 h-4 text-purple-600" />
+                  <FileText className="w-4 h-4 text-primary" />
                   <span className="font-medium">Complete analysis</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -403,11 +403,11 @@ export function HomePageSeoAudit() {
                   <span className="font-medium">Score breakdown</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Sparkles className="w-4 h-4 text-pink-600" />
+                  <Sparkles className="w-4 h-4 text-accent" />
                   <span className="font-medium">AI optimization</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Upload className="w-4 h-4 text-orange-600" />
+                  <Upload className="w-4 h-4 text-secondary" />
                   <span className="font-medium">Shopify sync</span>
                 </div>
               </div>
@@ -416,7 +416,7 @@ export function HomePageSeoAudit() {
               size="lg"
               onClick={analyzeHomepage}
               disabled={isAnalyzing}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
+              className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary gap-2 shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
             >
               {isAnalyzing ? (
                 <>

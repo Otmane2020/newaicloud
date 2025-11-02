@@ -657,7 +657,7 @@ export function PageOptimization() {
                   onClick={handleOptimizeSelected}
                   disabled={optimizing || selectedPages.size === 0}
                   size="sm"
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg border-0"
+                  className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 border-0 text-primary-foreground font-semibold transition-all duration-300"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
                   Optimiser ({selectedPages.size})
