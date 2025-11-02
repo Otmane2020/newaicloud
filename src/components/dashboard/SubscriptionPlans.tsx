@@ -334,18 +334,22 @@ export function SubscriptionPlans() {
               </div>
               
               {proPlans.length > 1 && (
-                <Select value={selectedProPlan} onValueChange={setSelectedProPlan}>
-                  <SelectTrigger className="w-full bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background z-50">
-                    {proPlans.map((plan) => (
-                      <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly)}€/mois
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <Select value={selectedProPlan} onValueChange={setSelectedProPlan}>
+                <SelectTrigger className="w-full bg-card border-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-2 shadow-lg z-[100]">
+                  {proPlans.map((plan) => (
+                    <SelectItem 
+                      key={plan.id} 
+                      value={plan.id}
+                      className="hover:bg-accent cursor-pointer"
+                    >
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly)}€/mois
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               )}
               
               <div>
@@ -413,18 +417,22 @@ export function SubscriptionPlans() {
               </div>
               
               {enterprisePlans.length > 1 && (
-                <Select value={selectedEnterprisePlan} onValueChange={setSelectedEnterprisePlan}>
-                  <SelectTrigger className="w-full bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background z-50">
-                    {enterprisePlans.map((plan) => (
-                      <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly).toLocaleString()}€/mois
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <Select value={selectedEnterprisePlan} onValueChange={setSelectedEnterprisePlan}>
+                <SelectTrigger className="w-full bg-card border-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-2 shadow-lg z-[100]">
+                  {enterprisePlans.map((plan) => (
+                    <SelectItem 
+                      key={plan.id} 
+                      value={plan.id}
+                      className="hover:bg-accent cursor-pointer"
+                    >
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly).toLocaleString()}€/mois
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               )}
               
               <div>

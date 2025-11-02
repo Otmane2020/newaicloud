@@ -55,6 +55,8 @@ serve(async (req) => {
     }
 
     // Create portal session
+    // NOTE: To enable promotion codes, configure in Stripe Dashboard:
+    // Settings > Billing > Customer Portal > Enable promotion code redemption
     const origin = req.headers.get('origin') || 'http://localhost:8080';
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
