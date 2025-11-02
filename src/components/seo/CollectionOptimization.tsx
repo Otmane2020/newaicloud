@@ -1048,12 +1048,27 @@ export function CollectionOptimization() {
                             onClick={async () => {
                               setOptimizing(true);
                               try {
-                                const { error } = await supabase.functions.invoke('generate-collection-seo', {
+                                const { data, error } = await supabase.functions.invoke('generate-collection-seo', {
                                   body: { collection_ids: [collection.id] }
                                 });
+                                
                                 if (error) throw error;
-                                toast.success('Collection optimisée !');
+                                
+                                // Fetch updated collection
+                                const { data: updatedCollection } = await supabase
+                                  .from('shopify_collections')
+                                  .select('*')
+                                  .eq('id', collection.id)
+                                  .single();
+                                
+                                if (updatedCollection) {
+                                  setOptimizedCollections([updatedCollection]);
+                                  setShowResultsDialog(true);
+                                  toast.success('Collection optimisée !');
+                                }
+                                
                                 await fetchCollections();
+                                await refreshLimits();
                               } catch (error: any) {
                                 toast.error(error.message || 'Erreur lors de l\'optimisation');
                               } finally {
@@ -1195,6 +1210,7 @@ export function CollectionOptimization() {
           title: c.title,
           seo_title: c.seo_title || '',
           seo_description: c.seo_description || '',
+          body_html: c.body_html || '',
           image_url: c.image_url || ''
         }))}
         onSyncClick={() => {

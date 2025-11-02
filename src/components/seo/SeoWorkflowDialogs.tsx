@@ -15,6 +15,7 @@ export interface WorkflowItem {
   image_url?: string;
   seo_title?: string;
   seo_description?: string;
+  body_html?: string;
   alt_text?: string;
   tags?: string;
   shopify_image_id?: number | null;
@@ -168,22 +169,28 @@ export function ResultsDialog({
                       )}
                     </div>
                     
-                    {type === 'seo' && (
-                      <div className="space-y-2">
-                        {item.seo_title && (
-                          <div className="space-y-1">
-                            <Badge variant="outline" className="text-xs">Titre SEO</Badge>
-                            <p className="text-sm text-muted-foreground font-medium">{item.seo_title}</p>
+                        {type === 'seo' && (
+                          <div className="space-y-2">
+                            {item.seo_title && (
+                              <div className="space-y-1">
+                                <Badge variant="outline" className="text-xs">Titre SEO</Badge>
+                                <p className="text-sm text-muted-foreground font-medium">{item.seo_title}</p>
+                              </div>
+                            )}
+                            {item.seo_description && (
+                              <div className="space-y-1">
+                                <Badge variant="outline" className="text-xs">Meta Description</Badge>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{item.seo_description}</p>
+                              </div>
+                            )}
+                            {item.body_html && (
+                              <div className="space-y-1">
+                                <Badge variant="outline" className="text-xs">Description</Badge>
+                                <div className="text-sm text-muted-foreground line-clamp-3" dangerouslySetInnerHTML={{ __html: item.body_html }} />
+                              </div>
+                            )}
                           </div>
                         )}
-                        {item.seo_description && (
-                          <div className="space-y-1">
-                            <Badge variant="outline" className="text-xs">Description</Badge>
-                            <p className="text-sm text-muted-foreground line-clamp-2">{item.seo_description}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
 
                     {type === 'tags' && item.tags && (
                       <div className="space-y-1">

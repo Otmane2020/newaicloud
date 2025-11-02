@@ -88,17 +88,18 @@ Deno.serve(async (req: Request) => {
         const productTitles = products?.map(p => p.title).join(', ') || '';
 
         // Generate SEO with Lovable AI
-        const prompt = `Generate SEO-optimized meta title and description for this Shopify collection:
+        const prompt = `Generate SEO-optimized content for this Shopify collection:
 
 Title: ${collection.title}
 Handle: ${collection.handle}
-Description: ${collection.body_html ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 500) : 'No description'}
+Current Description: ${collection.body_html ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 500) : 'No description'}
 Products in collection: ${productTitles || 'No products yet'}
 
 Return ONLY a JSON object with:
 {
   "seo_title": "SEO optimized title (50-60 characters)",
-  "seo_description": "SEO optimized meta description (150-160 characters)"
+  "seo_description": "SEO optimized meta description (150-160 characters)",
+  "body_html": "Rich HTML description for the collection page (200-400 characters with <p> tags)"
 }`;
 
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -154,6 +155,7 @@ Return ONLY a JSON object with:
           .update({
             seo_title: seoData.seo_title,
             seo_description: seoData.seo_description,
+            body_html: seoData.body_html || collection.body_html,
             optimization_count: (collection.optimization_count || 0) + 1,
             last_optimization_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
