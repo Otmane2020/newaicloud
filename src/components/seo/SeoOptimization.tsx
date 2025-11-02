@@ -214,8 +214,8 @@ export function SeoOptimization() {
       ).score;
 
       if (qualityFilter === 'excellent' && score < 70) return false;
-      if (qualityFilter === 'good' && (score < 50 || score >= 70)) return false;
-      if (qualityFilter === 'poor' && score >= 50) return false;
+      if (qualityFilter === 'good' && (score < 55 || score >= 70)) return false;
+      if (qualityFilter === 'poor' && score >= 55) return false;
     }
 
     // Category filter

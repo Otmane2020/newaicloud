@@ -18,25 +18,25 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
   // Nouvelle palette de couleurs rouge-orange
   const getScoreColor = () => {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
-    if (score >= 50) return "text-[#FF8000]"; // Orange
+    if (score >= 55) return "text-[#FF8000]"; // Orange
     return "text-[#FF3333]"; // Rouge
   };
 
   const getScoreGradient = () => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
-    if (score >= 50) return "from-[#FF8000]/20 to-[#FF8000]/5";
+    if (score >= 55) return "from-[#FF8000]/20 to-[#FF8000]/5";
     return "from-[#FF3333]/20 to-[#FF3333]/5";
   };
 
   const getScoreLabel = () => {
     if (score >= 80) return "Excellent";
-    if (score >= 50) return "Bon";
+    if (score >= 55) return "Bon";
     return "À améliorer";
   };
 
   const getScoreIcon = () => {
     if (score >= 80) return <Target className="w-5 h-5 text-[#22c55e]" />;
-    if (score >= 50) return <TrendingUp className="w-5 h-5 text-[#FF8000]" />;
+    if (score >= 55) return <TrendingUp className="w-5 h-5 text-[#FF8000]" />;
     return <AlertTriangle className="w-5 h-5 text-[#FF3333]" />;
   };
 
@@ -48,7 +48,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
         glow: "0 0 10px #22c55e",
         dot: "bg-[#22c55e]",
       };
-    if (value >= 50)
+    if (value >= 55)
       return {
         text: "text-[#FF8000]",
         bg: "bg-gradient-to-r from-[#FF8000] to-[#FF8000]",
@@ -70,7 +70,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
         end: "#16a34a",
         glow: "bg-[#22c55e]/30",
       };
-    if (score >= 50)
+    if (score >= 55)
       return {
         start: "#FF8000",
         end: "#FF8000",
