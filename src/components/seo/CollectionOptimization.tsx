@@ -43,6 +43,9 @@ import {
   Grid3x3,
   List,
   Image as ImageIcon,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 
 interface Collection {
@@ -64,6 +67,7 @@ interface Collection {
 }
 
 type QuickFilterTab = 'all' | 'not-optimized' | 'optimized' | 'pending-sync' | 'synced';
+type SeoScoreSort = 'none' | 'asc' | 'desc';
 
 export function CollectionOptimization() {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -71,6 +75,7 @@ export function CollectionOptimization() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [syncing, setSyncing] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -165,6 +170,17 @@ export function CollectionOptimization() {
     return true;
   });
 
+  // Apply SEO score sorting
+  const sortedCollections = [...filteredCollections];
+  if (seoScoreSort !== 'none') {
+    sortedCollections.sort((a, b) => {
+      const scoreA = calculateCollectionSeoScore(a);
+      const scoreB = calculateCollectionSeoScore(b);
+      
+      return seoScoreSort === 'asc' ? scoreA - scoreB : scoreB - scoreA;
+    });
+  }
+
   const tabs = [
     { id: 'all' as QuickFilterTab, label: 'Toutes', count: collections.length },
     { id: 'not-optimized' as QuickFilterTab, label: 'À optimiser', count: notOptimizedCount },
@@ -194,10 +210,10 @@ export function CollectionOptimization() {
   };
 
   const handleSelectAll = () => {
-    if (selectedCollections.size === filteredCollections.length) {
+    if (selectedCollections.size === sortedCollections.length) {
       setSelectedCollections(new Set());
     } else {
-      setSelectedCollections(new Set(filteredCollections.map((c) => c.id)));
+      setSelectedCollections(new Set(sortedCollections.map((c) => c.id)));
     }
   };
 
@@ -209,6 +225,16 @@ export function CollectionOptimization() {
       newSelected.add(collectionId);
     }
     setSelectedCollections(newSelected);
+  };
+
+  const handleSeoScoreSortToggle = () => {
+    if (seoScoreSort === 'none') {
+      setSeoScoreSort('desc'); // First click: highest to lowest
+    } else if (seoScoreSort === 'desc') {
+      setSeoScoreSort('asc'); // Second click: lowest to highest
+    } else {
+      setSeoScoreSort('none'); // Third click: reset
+    }
   };
 
   const handleOptimizeSelected = async () => {
@@ -886,7 +912,7 @@ export function CollectionOptimization() {
         </div>
       )}
 
-      {!optimizing && !syncing && filteredCollections.length === 0 && (
+      {!optimizing && !syncing && sortedCollections.length === 0 && (
         <Card className="p-12 text-center">
           <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Aucune collection trouvée</h3>
@@ -896,7 +922,7 @@ export function CollectionOptimization() {
         </Card>
       )}
 
-      {!optimizing && !syncing && filteredCollections.length > 0 && viewMode === 'list' && (
+      {!optimizing && !syncing && sortedCollections.length > 0 && viewMode === 'list' && (
         <Card className="overflow-hidden">
           <div className="max-h-[600px] overflow-y-auto">
             <Table>
@@ -904,7 +930,7 @@ export function CollectionOptimization() {
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedCollections.size === filteredCollections.length}
+                      checked={selectedCollections.size === sortedCollections.length}
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
@@ -914,14 +940,24 @@ export function CollectionOptimization() {
                   <TableHead className="min-w-[200px]">Description</TableHead>
                   <TableHead className="min-w-[200px]">SEO Title</TableHead>
                   <TableHead className="min-w-[250px]">SEO Description</TableHead>
-                  <TableHead className="w-32">SEO Score</TableHead>
+                  <TableHead className="w-32">
+                    <button
+                      onClick={handleSeoScoreSortToggle}
+                      className="flex items-center gap-1 hover:text-primary transition-colors"
+                    >
+                      SEO Score
+                      {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
+                      {seoScoreSort === 'asc' && <ArrowUp className="w-4 h-4" />}
+                      {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
+                    </button>
+                  </TableHead>
                   <TableHead className="w-32">Status</TableHead>
                   <TableHead className="w-32">Synced</TableHead>
                   <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCollections.map((collection) => {
+                {sortedCollections.map((collection) => {
                   const seoScore = calculateCollectionSeoScore(collection);
                   const scoreBadge = getSeoScoreBadge(seoScore);
                   
@@ -1101,9 +1137,9 @@ export function CollectionOptimization() {
         </Card>
       )}
 
-      {!optimizing && !syncing && filteredCollections.length > 0 && viewMode === 'grid' && (
+      {!optimizing && !syncing && sortedCollections.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCollections.map((collection) => {
+          {sortedCollections.map((collection) => {
             const seoScore = calculateCollectionSeoScore(collection);
             const scoreBadge = getSeoScoreBadge(seoScore);
             

@@ -30,7 +30,10 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  ImageIcon
+  ImageIcon,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { VisionAIBanner } from '../seo/VisionAIBanner';
@@ -55,6 +58,7 @@ interface Article {
 }
 
 type QuickFilterTab = 'all' | 'draft' | 'published' | 'shopify-synced';
+type SeoScoreSort = 'none' | 'asc' | 'desc';
 
 export function ArticleManagement() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -62,6 +66,7 @@ export function ArticleManagement() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [syncing, setSyncing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [optimizing, setOptimizing] = useState(false);
@@ -296,10 +301,10 @@ export function ArticleManagement() {
   };
 
   const handleSelectAll = () => {
-    if (selectedArticles.size === filteredArticles.length) {
+    if (selectedArticles.size === sortedArticles.length) {
       setSelectedArticles(new Set());
     } else {
-      setSelectedArticles(new Set(filteredArticles.map(a => a.id)));
+      setSelectedArticles(new Set(sortedArticles.map(a => a.id)));
     }
   };
 
@@ -311,6 +316,16 @@ export function ArticleManagement() {
       newSelected.add(articleId);
     }
     setSelectedArticles(newSelected);
+  };
+
+  const handleSeoScoreSortToggle = () => {
+    if (seoScoreSort === 'none') {
+      setSeoScoreSort('desc'); // First click: highest to lowest
+    } else if (seoScoreSort === 'desc') {
+      setSeoScoreSort('asc'); // Second click: lowest to highest
+    } else {
+      setSeoScoreSort('none'); // Third click: reset
+    }
   };
 
   const getFilteredArticles = () => {
@@ -343,6 +358,17 @@ export function ArticleManagement() {
   };
 
   const filteredArticles = getFilteredArticles();
+
+  // Apply SEO score sorting
+  const sortedArticles = [...filteredArticles];
+  if (seoScoreSort !== 'none') {
+    sortedArticles.sort((a, b) => {
+      const scoreA = calculateArticleSeoScore(a);
+      const scoreB = calculateArticleSeoScore(b);
+      
+      return seoScoreSort === 'asc' ? scoreA - scoreB : scoreB - scoreA;
+    });
+  }
   
   // Calculate global SEO score
   const globalSeoScore = articles.length > 0
@@ -485,7 +511,7 @@ export function ArticleManagement() {
       </Card>
 
       {/* Articles Table/Grid */}
-      {filteredArticles.length === 0 ? (
+      {sortedArticles.length === 0 ? (
         <Card className="p-12 text-center">
           <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No articles found</h3>
@@ -502,21 +528,31 @@ export function ArticleManagement() {
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
-                    checked={selectedArticles.size === filteredArticles.length}
+                    checked={selectedArticles.size === sortedArticles.length}
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
                 <TableHead className="w-20">Image</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead className="min-w-[200px]">Meta Description</TableHead>
-                <TableHead className="w-32">SEO Score</TableHead>
+                <TableHead className="w-32">
+                  <button
+                    onClick={handleSeoScoreSortToggle}
+                    className="flex items-center gap-1 hover:text-primary transition-colors"
+                  >
+                    SEO Score
+                    {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
+                    {seoScoreSort === 'asc' && <ArrowUp className="w-4 h-4" />}
+                    {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
+                  </button>
+                </TableHead>
                 <TableHead className="w-32">Status</TableHead>
                 <TableHead className="w-40">Sync Status</TableHead>
                 <TableHead className="w-32 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredArticles.map((article) => {
+              {sortedArticles.map((article) => {
                 const seoScore = calculateArticleSeoScore(article);
                 const scoreBadge = getSeoScoreBadge(seoScore);
                 const truncatedTitle = article.title.length > 50 
@@ -668,7 +704,7 @@ export function ArticleManagement() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredArticles.map((article) => (
+          {sortedArticles.map((article) => (
             <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-all">
               <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                 <FileText className="w-16 h-16 text-primary" />
