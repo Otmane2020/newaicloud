@@ -425,7 +425,15 @@ MÉTA-DESCRIPTION (150-160 caractères):
     let seoResult: SeoResult;
 
     try {
-      const parsed = JSON.parse(seoContent);
+      // Strip markdown code blocks if present
+      let cleanedContent = seoContent.trim();
+      if (cleanedContent.startsWith("```json")) {
+        cleanedContent = cleanedContent.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+      } else if (cleanedContent.startsWith("```")) {
+        cleanedContent = cleanedContent.replace(/^```\s*/, "").replace(/\s*```$/, "");
+      }
+      
+      const parsed = JSON.parse(cleanedContent);
 
       // Validation du contenu généré
       const validation = validateSeoContent(parsed.seo_title, parsed.seo_description);
