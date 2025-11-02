@@ -170,9 +170,12 @@ export function TagOptimization() {
     return true;
   });
 
-  // Statistics
-  const productsWithTags = products.filter(p => p.tags).length;
-  const productsWithoutTags = products.length - productsWithTags;
+  // Statistics - distinguishing between existing data and AI-optimized data
+  const totalEmpty = products.filter(p => !p.tags).length;
+  const existingTags = products.filter(p => p.tags && (!p.optimization_count || p.optimization_count === 0)).length;
+  const aiOptimizedTags = products.filter(p => p.tags && p.optimization_count && p.optimization_count > 0).length;
+  const productsWithTags = existingTags + aiOptimizedTags;
+  const productsWithoutTags = totalEmpty;
   const productsToSyncCount = products.filter(p => p.tags && p.tags.length > 0 && !p.seo_synced_to_shopify).length;
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   
@@ -608,6 +611,9 @@ export function TagOptimization() {
             <div>
               <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Not Tagged</p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{productsWithoutTags}</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                Empty tags
+              </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
@@ -622,6 +628,11 @@ export function TagOptimization() {
             <div>
               <p className="text-sm font-medium text-green-700 dark:text-green-300">Tagged</p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{productsWithTags}</p>
+              <div className="flex gap-2 mt-1 text-xs text-green-600 dark:text-green-400">
+                <span>Shopify: {existingTags}</span>
+                <span>•</span>
+                <span>AI: {aiOptimizedTags}</span>
+              </div>
             </div>
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>

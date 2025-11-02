@@ -469,7 +469,10 @@ export function PageOptimization() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-3xl font-bold text-green-600 dark:text-green-400">{pages.filter(p => p.optimized).length}</p>
-              <p className="text-sm text-muted-foreground font-medium mt-1">Optimisées</p>
+              <p className="text-sm text-muted-foreground font-medium mt-1">Pages SEO</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                Titres & descriptions
+              </p>
             </div>
             <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
               <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -482,6 +485,9 @@ export function PageOptimization() {
             <div>
               <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{pages.filter(p => !p.optimized).length}</p>
               <p className="text-sm text-muted-foreground font-medium mt-1">À Optimiser</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                Vides ou Shopify
+              </p>
             </div>
             <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
               <Clock className="w-8 h-8 text-orange-600 dark:text-orange-400" />

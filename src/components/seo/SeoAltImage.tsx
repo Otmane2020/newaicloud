@@ -615,7 +615,9 @@ export function SeoAltImage() {
   }
 
   const imagesNeedingAlt = images.filter(img => !img.alt_text).length;
-  const imagesWithAlt = images.filter(img => img.alt_text).length;
+  const imagesWithExistingAlt = images.filter(img => img.alt_text && (!img.optimization_count || img.optimization_count === 0)).length;
+  const imagesWithAIAlt = images.filter(img => img.alt_text && img.optimization_count && img.optimization_count > 0).length;
+  const imagesWithAlt = imagesWithExistingAlt + imagesWithAIAlt;
   const altCompletionRate = images.length > 0 ? Math.round((imagesWithAlt / images.length) * 100) : 0;
   
   // Calculate ALT SEO score with Shopify vs AI weighting
@@ -740,7 +742,11 @@ export function SeoAltImage() {
             <Badge className="bg-green-600 text-white">{altCompletionRate}%</Badge>
           </div>
           <p className="text-4xl font-bold text-green-900 dark:text-green-100 mb-1">{imagesWithAlt}</p>
-          <p className="text-sm text-green-700 dark:text-green-300">Images accessibles</p>
+          <div className="flex gap-2 mt-1 text-xs text-green-700 dark:text-green-300">
+            <span>Shopify: {imagesWithExistingAlt}</span>
+            <span>•</span>
+            <span>AI: {imagesWithAIAlt}</span>
+          </div>
         </Card>
       </div>
 

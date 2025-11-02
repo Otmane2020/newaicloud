@@ -131,12 +131,15 @@ export function CollectionOptimization() {
     }
   };
 
-  // Statistics
-  const notOptimizedCount = collections.filter(c => !c.optimization_count || c.optimization_count === 0).length;
-  const optimizedCount = collections.filter(c => c.optimization_count && c.optimization_count > 0).length;
+  // Statistics - distinguishing between existing data and AI-optimized data
+  const totalEmpty = collections.filter(c => !c.seo_title && !c.seo_description).length;
+  const existingData = collections.filter(c => (c.seo_title || c.seo_description) && (!c.optimization_count || c.optimization_count === 0)).length;
+  const aiOptimized = collections.filter(c => c.optimization_count && c.optimization_count > 0).length;
+  const notOptimizedCount = totalEmpty + existingData;
+  const optimizedCount = aiOptimized;
   const pendingSyncCount = 0; // Collections don't have sync status yet
   const syncedCount = 0; // Collections don't have sync status yet
-  const optimizationRate = collections.length > 0 ? Math.round((optimizedCount / collections.length) * 100) : 0;
+  const optimizationRate = collections.length > 0 ? Math.round((aiOptimized / collections.length) * 100) : 0;
 
   // Calculate global SEO score with 30/70 weighting
   const collectionsNotOptimized = collections.filter(c => !c.optimization_count || c.optimization_count === 0);
@@ -754,8 +757,13 @@ export function CollectionOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Non optimisées</p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Non AI-optimisées</p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{notOptimizedCount}</p>
+              <div className="flex gap-2 mt-1 text-xs text-orange-600 dark:text-orange-400">
+                <span>Vides: {totalEmpty}</span>
+                <span>•</span>
+                <span>Shopify: {existingData}</span>
+              </div>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
@@ -768,10 +776,13 @@ export function CollectionOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">Optimisées</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-optimisées</p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{optimizedCount}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                Générées par IA
+              </p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-600" />
+            <Sparkles className="w-8 h-8 text-green-600" />
           </div>
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">Cliquer pour voir</p>
         </Card>
