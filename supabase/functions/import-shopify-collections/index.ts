@@ -12,6 +12,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     console.log("🏗️ [IMPORT-COLLECTIONS] Starting import...");
+    console.log("🔄 [IMPORT-COLLECTIONS] Version: 1.0.1"); // Force redeploy
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
