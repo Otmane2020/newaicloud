@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FileSearch,
   TrendingUp,
@@ -17,6 +18,9 @@ import {
   Home,
   Layers,
   ArrowRight,
+  Target,
+  List,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { HomePageSeoAudit } from "./HomePageSeoAudit";
@@ -27,6 +31,7 @@ export function SeoAuditDashboard() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [stats, setStats] = useState<any>(null);
+  const [activeSubTab, setActiveSubTab] = useState("overview");
 
   useEffect(() => {
     loadLatestAudit();
@@ -359,8 +364,33 @@ export function SeoAuditDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <>
-          {/* Global Score - Design premium avec jauge améliorée */}
+        <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-muted/50">
+            <TabsTrigger value="overview" className="flex items-center gap-2 py-3">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Vue d'ensemble</span>
+              <span className="sm:hidden">Vue</span>
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-2 py-3">
+              <Layers className="w-4 h-4" />
+              <span className="hidden sm:inline">Catégories</span>
+              <span className="sm:hidden">Cat.</span>
+            </TabsTrigger>
+            <TabsTrigger value="issues" className="flex items-center gap-2 py-3">
+              <AlertCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">Problèmes</span>
+              <span className="sm:hidden">Prob.</span>
+            </TabsTrigger>
+            <TabsTrigger value="actions" className="flex items-center gap-2 py-3">
+              <Target className="w-4 h-4" />
+              <span className="hidden sm:inline">Plan d'action</span>
+              <span className="sm:hidden">Plan</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* TAB: Vue d'ensemble */}
+          <TabsContent value="overview" className="space-y-8 mt-6">
+            {/* Global Score - Design premium avec jauge améliorée */}
           <Card className="border-2 shadow-2xl bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
             <CardHeader className="relative z-10">
@@ -547,7 +577,24 @@ export function SeoAuditDashboard() {
             </CardContent>
           </Card>
 
-          {/* Category Scores - Design cards premium avec couleurs améliorées */}
+          {/* Homepage SEO Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Home className="w-5 h-5" />
+                Analyse Homepage SEO
+              </CardTitle>
+              <CardDescription>Optimisation détaillée de votre page d'accueil</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HomePageSeoAudit />
+            </CardContent>
+          </Card>
+          </TabsContent>
+
+          {/* TAB: Catégories */}
+          <TabsContent value="categories" className="space-y-8 mt-6">
+            {/* Category Scores - Design cards premium avec couleurs améliorées */}
           <div>
             <div className="mb-6">
               <h3 className="text-2xl font-bold mb-2">Détail par Catégorie</h3>
@@ -654,21 +701,10 @@ export function SeoAuditDashboard() {
               })}
             </div>
           </div>
+          </TabsContent>
 
-          {/* Homepage SEO Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Home className="w-5 h-5" />
-                Analyse Homepage SEO
-              </CardTitle>
-              <CardDescription>Optimisation détaillée de votre page d'accueil</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <HomePageSeoAudit />
-            </CardContent>
-          </Card>
-
+          {/* TAB: Problèmes */}
+          <TabsContent value="issues" className="space-y-8 mt-6">
           {/* Issues - Design premium avec couleurs améliorées */}
           {audit.audit_results?.issues && audit.audit_results.issues.length > 0 && (
             <Card className="border-2 shadow-xl">
@@ -729,12 +765,39 @@ export function SeoAuditDashboard() {
                             </div>
                             <h4 className="font-bold text-lg mb-2">{issue.title}</h4>
                             <p className="text-sm text-muted-foreground leading-relaxed">{issue.description}</p>
-                          </div>
-                          {issue.count && (
-                            <Badge className="ml-4 bg-primary text-white text-base px-4 py-2">
-                              {issue.count} élément{issue.count > 1 ? "s" : ""}
-                            </Badge>
-                          )}
+                        </div>
+                        {issue.count && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="ml-4 bg-primary/10 hover:bg-primary/20 border-primary/30 font-semibold"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Détermine l'onglet et le filtre en fonction de la catégorie
+                              const categoryMap: Record<string, { tab: string; filter?: string }> = {
+                                'produits': { tab: 'products', filter: 'poor' },
+                                'products': { tab: 'products', filter: 'poor' },
+                                'collections': { tab: 'collections', filter: 'poor' },
+                                'images': { tab: 'alt', filter: 'poor' },
+                                'alt': { tab: 'alt', filter: 'poor' },
+                                'tags': { tab: 'tags', filter: 'poor' },
+                                'articles': { tab: 'articles', filter: 'poor' },
+                                'pages': { tab: 'pages', filter: 'poor' },
+                                'homepage': { tab: 'homepage' },
+                              };
+                              
+                              const mapping = categoryMap[issue.category?.toLowerCase()] || { tab: 'products' };
+                              const url = mapping.filter 
+                                ? `/seo?tab=${mapping.tab}&filter=${mapping.filter}`
+                                : `/seo?tab=${mapping.tab}`;
+                              
+                              navigate(url);
+                            }}
+                          >
+                            <ArrowRight className="w-4 h-4 mr-1" />
+                            {issue.count} élément{issue.count > 1 ? "s" : ""}
+                          </Button>
+                        )}
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-4 mt-4">
@@ -760,7 +823,10 @@ export function SeoAuditDashboard() {
               </CardContent>
             </Card>
           )}
+          </TabsContent>
 
+          {/* TAB: Plan d'action */}
+          <TabsContent value="actions" className="space-y-8 mt-6">
           {/* Recommendations - Design premium avec timeline et couleurs améliorées */}
           {audit.recommendations && audit.recommendations.length > 0 && (
             <Card className="border-2 shadow-xl">
@@ -854,7 +920,8 @@ export function SeoAuditDashboard() {
               </CardContent>
             </Card>
           )}
-        </>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
