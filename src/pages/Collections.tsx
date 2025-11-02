@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { 
+import { useTranslation } from '@/lib/language';
+import {
   Search, 
   Grid3x3, 
   List, 
@@ -37,6 +38,7 @@ export default function Collections() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [importing, setImporting] = useState(false);
+  const { t } = useTranslation();
 
   const fetchCollections = async () => {
     try {

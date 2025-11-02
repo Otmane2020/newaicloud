@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDescriptionScore, calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 
 export default function SEO() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,6 +28,7 @@ export default function SEO() {
   const [articlesSeoScore, setArticlesSeoScore] = useState<number>(0);
   const [pagesSeoScore, setPagesSeoScore] = useState<number>(0);
   const [loadingScores, setLoadingScores] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const tab = searchParams.get('tab');

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatNumber } from "@/lib/utils";
+import { useTranslation } from "@/lib/language";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +40,7 @@ export default function Products() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { limits } = useUsageLimits();
+  const { t, tf } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);

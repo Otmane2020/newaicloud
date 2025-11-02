@@ -14,7 +14,8 @@ import { SmartBanner } from '@/components/dashboard/SmartBanner';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
 import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
+import { useTranslation } from '@/lib/language';
+import {
   ShoppingBag, 
   Zap, 
   FileText, 
@@ -52,6 +53,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const { t, tf } = useTranslation();
   const { trialStatus, showUpgradeDialog, setShowUpgradeDialog } = useTrialLimits();
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0,
@@ -261,7 +263,7 @@ export default function Dashboard() {
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
         <div className="relative">
           <h1 className="text-4xl font-black text-white mb-2">
-            Bienvenue, {user?.user_metadata?.full_name || 'Utilisateur'} 👋
+            {tf('dashboard.welcome', { name: user?.user_metadata?.full_name || 'User' })}
           </h1>
           <p className="text-white/80 text-lg mb-6">
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -272,7 +274,7 @@ export default function Dashboard() {
               className="px-6 py-3 bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
-              Lancer l'Audit SEO
+              {t.dashboard.launchAudit}
             </button>
             {stats.pendingOptimization > 0 && (
               <button
@@ -280,7 +282,7 @@ export default function Dashboard() {
                 className="px-6 py-3 bg-accent/90 backdrop-blur-md hover:bg-accent text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
               >
                 <Zap className="w-5 h-5" />
-                Optimiser {stats.pendingOptimization} produits
+                {tf('dashboard.optimizeProducts', { count: stats.pendingOptimization })}
               </button>
             )}
           </div>
@@ -305,9 +307,9 @@ export default function Dashboard() {
                 <ShoppingBag className="w-6 h-6 text-accent" />
               </div>
               <div className="text-left flex-1">
-                <div className="font-bold text-foreground">Optimiser Produits</div>
+                <div className="font-bold text-foreground">{t.dashboard.actions.optimizeSeo}</div>
                 <div className="text-sm text-muted-foreground">
-                  {stats.optimizedProducts}/{stats.totalProducts} optimisés
+                  {tf('dashboard.actions.optimizedCount', { optimized: stats.optimizedProducts, total: stats.totalProducts })}
                 </div>
               </div>
             </div>
@@ -322,9 +324,9 @@ export default function Dashboard() {
                 <FileText className="w-6 h-6 text-cyan-600" />
               </div>
               <div className="text-left flex-1">
-                <div className="font-bold text-foreground">Créer Articles</div>
+                <div className="font-bold text-foreground">{t.dashboard.actions.createArticle}</div>
                 <div className="text-sm text-muted-foreground">
-                  {stats.totalArticles} articles publiés
+                  {tf('dashboard.actions.published', { count: stats.totalArticles })}
                 </div>
               </div>
             </div>
@@ -340,10 +342,10 @@ export default function Dashboard() {
               </div>
               <div className="text-left flex-1">
                 <div className="font-bold text-foreground">
-                  {stats.connectedStores > 0 ? 'Gérer Boutiques' : 'Connecter Shopify'}
+                  {stats.connectedStores > 0 ? t.dashboard.actions.manageStores : t.dashboard.connectShopify}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {stats.connectedStores > 0 ? `${stats.connectedStores} boutique(s)` : 'Importer produits'}
+                  {stats.connectedStores > 0 ? tf('dashboard.actions.stores', { count: stats.connectedStores }) : t.dashboard.importProducts}
                 </div>
               </div>
             </div>
@@ -413,8 +415,8 @@ export default function Dashboard() {
       {/* Quick Actions - 8 actions */}
       <div className="space-y-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
         <div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Actions Rapides</h2>
-          <p className="text-muted-foreground">Accédez aux fonctionnalités clés directement</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">{t.dashboard.quickActions}</h2>
+          <p className="text-muted-foreground">{t.dashboard.quickActionsDesc}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <QuickActionCard

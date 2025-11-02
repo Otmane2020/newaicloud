@@ -15,10 +15,12 @@ import { BlogOpportunities } from '@/components/blog/BlogOpportunities';
 import { CampaignWizard } from '@/components/blog/CampaignWizard';
 import { ArticleManagement } from '@/components/blog/ArticleManagement';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/language';
 
 export default function Blog() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation();
   const [activeSubtab, setActiveSubtab] = useState(searchParams.get('subtab') || 'articles');
   const [articles, setArticles] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
