@@ -1073,14 +1073,20 @@ export function SeoOptimization() {
                        <div className="flex flex-col gap-1">
                          {product.enrichment_status === 'enriched' ? (
                            <>
-                             <div className={`text-2xl font-bold ${
-                               seoScore.score >= 80 ? 'text-green-600' : 
-                               seoScore.score >= 70 ? 'text-orange-600' : 
-                               'text-red-600'
-                             }`}>
-                               {seoScore.score}
-                             </div>
-                             <span className="text-xs text-muted-foreground">AI-optimized</span>
+                              <div className={`text-2xl font-bold ${
+                                seoScore.score >= 85 ? 'text-green-600' : 
+                                seoScore.score >= 70 ? 'text-blue-600' : 
+                                seoScore.score >= 60 ? 'text-orange-600' : 
+                                'text-red-600'
+                              }`}>
+                                {seoScore.score}%
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {seoScore.score >= 85 ? '🎯 Excellent' : 
+                                 seoScore.score >= 70 ? '✨ Très bon' :
+                                 seoScore.score >= 60 ? '👍 Bon' : 
+                                 '⚠️ À améliorer'}
+                              </span>
                            </>
                          ) : (
                            <>
@@ -1094,16 +1100,17 @@ export function SeoOptimization() {
                                   product.optimization_count
                                 );
                                return (
-                                 <>
-                                   <div className={`text-2xl font-bold ${
-                                     initialScore.score >= 80 ? 'text-green-600' : 
-                                     initialScore.score >= 70 ? 'text-orange-600' : 
-                                     'text-red-600'
-                                   }`}>
-                                     {initialScore.score}
-                                   </div>
-                                   <span className="text-xs text-muted-foreground">Initial score</span>
-                                 </>
+                                  <>
+                                    <div className={`text-2xl font-bold ${
+                                      initialScore.score >= 85 ? 'text-green-600' : 
+                                      initialScore.score >= 70 ? 'text-blue-600' : 
+                                      initialScore.score >= 60 ? 'text-orange-600' : 
+                                      'text-red-600'
+                                    }`}>
+                                      {initialScore.score}%
+                                    </div>
+                                    <span className="text-xs text-muted-foreground">Score initial</span>
+                                  </>
                                );
                              })()}
                            </>
