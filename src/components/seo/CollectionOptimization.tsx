@@ -137,8 +137,8 @@ export function CollectionOptimization() {
   const aiOptimized = collections.filter(c => c.optimization_count && c.optimization_count > 0).length;
   const notOptimizedCount = totalEmpty + existingData;
   const optimizedCount = aiOptimized;
-  const pendingSyncCount = 0; // Collections don't have sync status yet
-  const syncedCount = 0; // Collections don't have sync status yet
+  const pendingSyncCount = collections.filter(c => c.optimization_count && c.optimization_count > 0 && !c.last_synced_at).length;
+  const syncedCount = collections.filter(c => c.last_synced_at).length;
   const optimizationRate = collections.length > 0 ? Math.round((aiOptimized / collections.length) * 100) : 0;
 
   // Calculate global SEO score with 30/70 weighting
@@ -757,7 +757,7 @@ export function CollectionOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Non AI-optimisées</p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">To Optimize</p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{notOptimizedCount}</p>
               <div className="flex gap-2 mt-1 text-xs text-orange-600 dark:text-orange-400">
                 <span>Vides: {totalEmpty}</span>
@@ -776,7 +776,7 @@ export function CollectionOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-optimisées</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{optimizedCount}</p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
                 Générées par IA
@@ -795,7 +795,7 @@ export function CollectionOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">À Synchroniser</p>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
               <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pendingSyncCount}</p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
                 AI-optimisées seulement
@@ -806,19 +806,24 @@ export function CollectionOptimization() {
           <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Bientôt disponible</p>
         </Card>
         
-        <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow">
+        <Card 
+          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setSyncFilter('synced');
+            toast.info(`${syncedCount} collections synchronisées`);
+          }}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Avec images</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                {collections.filter(c => c.image_url).length}
-              </p>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{syncedCount}</p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                Collections illustrées
+                Synced to Shopify
               </p>
             </div>
-            <ImageIcon className="w-8 h-8 text-blue-600" />
+            <CheckCircle className="w-8 h-8 text-blue-600" />
           </div>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Cliquer pour voir</p>
         </Card>
       </div>
 

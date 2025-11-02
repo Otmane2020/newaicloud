@@ -451,8 +451,91 @@ export function PageOptimization() {
       {/* Vision AI Banner */}
       <VisionAIBanner />
 
-      {/* Stats Cards - Enhanced Design */}
+      {/* Stats Cards - 4 cartes cliquables */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card 
+          className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setStatusFilter('not-optimized');
+            toast.info(`${pages.filter(p => !p.optimized).length} pages à optimiser`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">To Optimize</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{pages.filter(p => !p.optimized).length}</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                Empty or Shopify
+              </p>
+            </div>
+            <Clock className="w-8 h-8 text-orange-600" />
+          </div>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setStatusFilter('optimized');
+            toast.info(`${pages.filter(p => p.optimized).length} pages AI-optimisées`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{pages.filter(p => p.optimized).length}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                AI-generated
+              </p>
+            </div>
+            <Sparkles className="w-8 h-8 text-green-600" />
+          </div>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setSyncFilter('not-synced');
+            toast.info(`${pages.filter(p => p.optimized && !p.last_synced_at).length} pages à synchroniser`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pages.filter(p => p.optimized && !p.last_synced_at).length}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                AI-optimized only
+              </p>
+            </div>
+            <Clock className="w-8 h-8 text-purple-600" />
+          </div>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setSyncFilter('synced');
+            toast.info(`${pages.filter(p => p.last_synced_at).length} pages synchronisées`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{pages.filter(p => p.last_synced_at).length}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                Synced to Shopify
+              </p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-blue-600" />
+          </div>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
+        </Card>
+      </div>
+
+      {/* Stats Cards - Enhanced Design */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 hidden">
         <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-2 border-blue-200 hover:shadow-xl transition-all hover:scale-105 transform duration-200">
           <div className="flex items-center justify-between">
             <div>

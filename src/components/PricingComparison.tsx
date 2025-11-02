@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, X } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
+import React from 'react';
 
 const PricingComparison = () => {
   const isMobile = useIsMobile();
@@ -141,8 +142,8 @@ const PricingComparison = () => {
           </thead>
           <tbody>
             {features.map((category, categoryIndex) => (
-              <>
-                <tr key={`cat-${categoryIndex}`} className="bg-muted/30">
+              <React.Fragment key={`cat-${categoryIndex}`}>
+                <tr className="bg-muted/30">
                   <td colSpan={4} className="p-3 font-semibold text-sm">
                     {category.category}
                   </td>
@@ -155,7 +156,7 @@ const PricingComparison = () => {
                     <td className="p-4 text-center">{renderValue(item.enterprise)}</td>
                   </tr>
                 ))}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>

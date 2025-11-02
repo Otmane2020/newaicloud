@@ -609,7 +609,7 @@ export function TagOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Not Tagged</p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">To Optimize</p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{productsWithoutTags}</p>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
                 Empty tags
@@ -626,13 +626,11 @@ export function TagOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">Tagged</p>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{productsWithTags}</p>
-              <div className="flex gap-2 mt-1 text-xs text-green-600 dark:text-green-400">
-                <span>Shopify: {existingTags}</span>
-                <span>•</span>
-                <span>AI: {aiOptimizedTags}</span>
-              </div>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{aiOptimizedTags}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                AI-generated tags
+              </p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>

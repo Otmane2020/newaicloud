@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Image as ImageIcon, Wand2, AlertCircle, ChevronDown, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Wand2, AlertCircle, ChevronDown, ChevronRight, Sparkles, RefreshCw, Clock, Upload, CheckCircle } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -387,8 +387,100 @@ export function SeoAltImageList() {
 
   return (
     <div className="space-y-6">
+      {/* Stats Cards - 4 cartes cliquables */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card 
+          className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setFilterStatus('empty');
+            toast.info(`${stats.empty} images sans ALT text`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">To Optimize</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.empty}</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                Empty ALT text
+              </p>
+            </div>
+            <Clock className="w-8 h-8 text-orange-600" />
+          </div>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            setFilterStatus('filled');
+            toast.info(`${stats.filled} images AI-optimisées`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.filled}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                With ALT text
+              </p>
+            </div>
+            <Sparkles className="w-8 h-8 text-green-600" />
+          </div>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            toast.info(`${allImages.filter(img => img.alt_text && !img.last_synced_at).length} images à synchroniser`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{allImages.filter(img => img.alt_text && !img.last_synced_at).length}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                AI-optimized only
+              </p>
+            </div>
+            <Upload className="w-8 h-8 text-purple-600" />
+          </div>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to view</p>
+        </Card>
+        
+        <Card 
+          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            toast.info(`${allImages.filter(img => img.last_synced_at).length} images synchronisées`);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{allImages.filter(img => img.last_synced_at).length}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                Synced to Shopify
+              </p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-blue-600" />
+          </div>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
+        </Card>
+      </div>
+
+      {/* Filter Tabs - HIDDEN NOW */}
+      <div className="hidden">
+      <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+        <TabsList>
+          <TabsTrigger value="all">Toutes ({stats.total})</TabsTrigger>
+          <TabsTrigger value="empty">Sans ALT ({stats.empty})</TabsTrigger>
+          <TabsTrigger value="filled">Avec ALT ({stats.filled})</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      </div>
+
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 hidden">
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <ImageIcon className="w-8 h-8 text-muted-foreground" />
@@ -417,15 +509,6 @@ export function SeoAltImageList() {
           </div>
         </Card>
       </div>
-
-      {/* Filter Tabs */}
-      <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
-        <TabsList>
-          <TabsTrigger value="all">Toutes ({stats.total})</TabsTrigger>
-          <TabsTrigger value="empty">Sans ALT ({stats.empty})</TabsTrigger>
-          <TabsTrigger value="filled">Avec ALT ({stats.filled})</TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       {/* Actions - Sticky */}
       <Card className="sticky top-0 z-10 bg-background">
