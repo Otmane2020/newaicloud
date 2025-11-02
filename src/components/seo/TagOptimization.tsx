@@ -661,8 +661,11 @@ export function TagOptimization() {
             <div>
               <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{productsSynced}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                Synced to Shopify
+              </p>
             </div>
-            <Upload className="w-8 h-8 text-blue-600" />
+            <CheckCircle className="w-8 h-8 text-blue-600" />
           </div>
           <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
         </Card>

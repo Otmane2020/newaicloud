@@ -499,7 +499,17 @@ export function ArticleManagement() {
       </div>
 
       {/* AI Optimization Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Total Articles</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.total}</p>
+            </div>
+            <FileText className="w-8 h-8 text-blue-600" />
+          </div>
+        </Card>
+
         <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -528,16 +538,16 @@ export function ArticleManagement() {
           </div>
         </Card>
         
-        <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow">
+        <Card className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronisés</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.synced}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">Synchronisés</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{stats.synced}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
                 Sur Shopify
               </p>
             </div>
-            <Upload className="w-8 h-8 text-blue-600" />
+            <Upload className="w-8 h-8 text-purple-600" />
           </div>
         </Card>
       </div>

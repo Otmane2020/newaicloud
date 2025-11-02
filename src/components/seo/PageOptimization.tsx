@@ -452,7 +452,7 @@ export function PageOptimization() {
       <VisionAIBanner />
 
       {/* Stats Cards - Enhanced Design */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-2 border-blue-200 hover:shadow-xl transition-all hover:scale-105 transform duration-200">
           <div className="flex items-center justify-between">
             <div>
@@ -461,6 +461,21 @@ export function PageOptimization() {
             </div>
             <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-xl">
               <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+        </Card>
+        
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-2 border-orange-200 hover:shadow-xl transition-all hover:scale-105 transform duration-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{pages.filter(p => !p.optimized).length}</p>
+              <p className="text-sm text-muted-foreground font-medium mt-1">À Optimiser</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                Vides ou Shopify
+              </p>
+            </div>
+            <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
+              <Clock className="w-8 h-8 text-orange-600 dark:text-orange-400" />
             </div>
           </div>
         </Card>
@@ -480,17 +495,17 @@ export function PageOptimization() {
           </div>
         </Card>
         
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-2 border-orange-200 hover:shadow-xl transition-all hover:scale-105 transform duration-200">
+        <Card className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-2 border-purple-200 hover:shadow-xl transition-all hover:scale-105 transform duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{pages.filter(p => !p.optimized).length}</p>
-              <p className="text-sm text-muted-foreground font-medium mt-1">À Optimiser</p>
-              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                Vides ou Shopify
+              <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{pages.filter(p => p.last_synced_at).length}</p>
+              <p className="text-sm text-muted-foreground font-medium mt-1">Synchronisées</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                Sur Shopify
               </p>
             </div>
-            <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
-              <Clock className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+            <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-xl">
+              <Upload className="w-8 h-8 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
         </Card>

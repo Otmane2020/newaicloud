@@ -704,7 +704,7 @@ export function SeoAltImage() {
       </Card>
 
       {/* Dashboard Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -747,6 +747,19 @@ export function SeoAltImage() {
             <span>•</span>
             <span>AI: {imagesWithAIAlt}</span>
           </div>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-xl">
+                <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="font-semibold text-purple-900 dark:text-purple-100">AI-optimisées</h3>
+            </div>
+          </div>
+          <p className="text-4xl font-bold text-purple-900 dark:text-purple-100 mb-1">{imagesWithAIAlt}</p>
+          <p className="text-sm text-purple-700 dark:text-purple-300">Générées par IA</p>
         </Card>
       </div>
 

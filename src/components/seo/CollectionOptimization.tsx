@@ -750,7 +750,7 @@ export function CollectionOptimization() {
       <VisionAIBanner />
 
       {/* Clickable Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card 
           className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleNotOptimizedClick}
@@ -787,17 +787,38 @@ export function CollectionOptimization() {
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">Cliquer pour voir</p>
         </Card>
         
-        <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200">
+        <Card 
+          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
+          onClick={() => {
+            toast.info('Fonction de synchronisation à venir');
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">À Synchroniser</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pendingSyncCount}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                AI-optimisées seulement
+              </p>
+            </div>
+            <Upload className="w-8 h-8 text-purple-600" />
+          </div>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Bientôt disponible</p>
+        </Card>
+        
+        <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Avec images</p>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
                 {collections.filter(c => c.image_url).length}
               </p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                Collections illustrées
+              </p>
             </div>
             <ImageIcon className="w-8 h-8 text-blue-600" />
           </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Collections illustrées</p>
         </Card>
       </div>
 
