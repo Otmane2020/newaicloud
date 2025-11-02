@@ -420,7 +420,14 @@ export function ArticleManagement() {
     draft: articles.filter(a => a.status === 'draft').length,
     published: articles.filter(a => a.status === 'published').length,
     synced: articles.filter(a => a.shopify_blog_id).length,
+    // AI optimization stats
+    totalEmpty: articles.filter(a => !a.meta_description || a.meta_description.trim().length === 0).length,
+    existingData: articles.filter(a => a.meta_description && a.meta_description.trim().length > 0 && (!a.optimization_count || a.optimization_count === 0)).length,
+    aiOptimized: articles.filter(a => a.optimization_count && a.optimization_count > 0).length,
   };
+
+  const notOptimizedCount = stats.totalEmpty + stats.existingData;
+  const optimizedCount = stats.aiOptimized;
 
   const quickFilters = [
     { id: 'all' as QuickFilterTab, label: 'All', count: stats.total, icon: FileText },
@@ -489,6 +496,50 @@ export function ArticleManagement() {
             </Card>
           );
         })}
+      </div>
+
+      {/* AI Optimization Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Non AI-optimisés</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{notOptimizedCount}</p>
+              <div className="flex gap-2 mt-1 text-xs text-orange-600 dark:text-orange-400">
+                <span>Vides: {stats.totalEmpty}</span>
+                <span>•</span>
+                <span>Shopify: {stats.existingData}</span>
+              </div>
+            </div>
+            <Clock className="w-8 h-8 text-orange-600" />
+          </div>
+        </Card>
+        
+        <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-optimisés</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{optimizedCount}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                Générés par IA
+              </p>
+            </div>
+            <Sparkles className="w-8 h-8 text-green-600" />
+          </div>
+        </Card>
+        
+        <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronisés</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.synced}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                Sur Shopify
+              </p>
+            </div>
+            <Upload className="w-8 h-8 text-blue-600" />
+          </div>
+        </Card>
       </div>
 
       {/* Toolbar */}
