@@ -217,6 +217,10 @@ Deno.serve(async (req: Request) => {
                              plainText.substring(0, 160) || 
                              `Lisez ${article.title}`;
 
+      // Extract first image as featured image
+      const images = extractImagesFromHtml(article.body_html || '');
+      const featuredImage = images.length > 0 ? images[0].src : null;
+
       return {
         user_id: user.id,
         store_id: storeId,
@@ -229,6 +233,7 @@ Deno.serve(async (req: Request) => {
         shopify_article_id: article.id.toString(),
         shopify_blog_id: article.blog_id.toString(),
         source: 'shopify_import',
+        featured_image: featuredImage,
         created_at: new Date().toISOString(),
         updated_at: article.updated_at,
       };
