@@ -780,7 +780,7 @@ export function SeoAuditDashboard() {
           )}
 
           {/* Issues Section */}
-          {activeSubTab === "issues" && (
+          {activeSubTab === "issues" && audit?.audit_results?.issues && audit.audit_results.issues.length > 0 && (
             <Card className="border-2 shadow-xl">
               <CardHeader className="bg-gradient-to-r from-[#b91c1c]/5 to-[#f59e0b]/5 border-b-2">
                 <div className="flex items-center justify-between">
@@ -792,19 +792,19 @@ export function SeoAuditDashboard() {
                       Problèmes Détectés
                     </CardTitle>
                     <CardDescription className="mt-2 text-base">
-                      {(audit?.audit_results?.issues || []).length} point{(audit?.audit_results?.issues || []).length > 1 ? "s" : ""}{" "}
-                      d'amélioration identifié{(audit?.audit_results?.issues || []).length > 1 ? "s" : ""} par l'analyse IA
+                      {audit.audit_results.issues.length} point{audit.audit_results.issues.length > 1 ? "s" : ""}{" "}
+                      d'amélioration identifié{audit.audit_results.issues.length > 1 ? "s" : ""} par l'analyse IA
                     </CardDescription>
                   </div>
                   <Badge className="bg-[#b91c1c] text-white text-lg px-4 py-2">
-                    {(audit?.audit_results?.issues || []).filter((i: any) => i.priority === "high").length} prioritaire
-                    {(audit?.audit_results?.issues || []).filter((i: any) => i.priority === "high").length > 1 ? "s" : ""}
+                    {audit.audit_results.issues.filter((i: any) => i.priority === "high").length} prioritaire
+                    {audit.audit_results.issues.filter((i: any) => i.priority === "high").length > 1 ? "s" : ""}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-6">
-                  {(audit?.audit_results?.issues || []).map((issue: any, index: number) => {
+                  {audit.audit_results.issues.map((issue: any, index: number) => {
                     const issueColor =
                       issue.priority === "high"
                         ? {
@@ -916,7 +916,7 @@ export function SeoAuditDashboard() {
                     </CardDescription>
                   </div>
                   <Badge className="bg-primary text-white text-lg px-4 py-2">
-                    {(audit?.recommendations || []).length} étapes
+                    {audit.recommendations.length} étapes
                   </Badge>
                 </div>
               </CardHeader>
@@ -925,7 +925,7 @@ export function SeoAuditDashboard() {
                   {/* Timeline line */}
                   <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary/20" />
 
-                  {(audit?.recommendations || []).map((rec: any, index: number) => (
+                  {audit.recommendations.map((rec: any, index: number) => (
                     <div key={index} className="relative pl-16">
                       {/* Timeline dot avec couleurs améliorées */}
                       <div
