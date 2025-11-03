@@ -18,7 +18,8 @@ import {
   Calculator,
   ArrowUpDown,
   RefreshCw,
-  Info
+  Info,
+  Truck
 } from 'lucide-react';
 import {
   Select,
@@ -179,10 +180,11 @@ export function SmartPricingAI() {
   const calculateNetMargin = (price: number | null, costPrice: number | null, shippingCost: number | null = null) => {
     if (!price) return { value: 0, percentage: 0 };
     
-    const grossMargin = calculateMarginValue(price, costPrice, shippingCost);
-    const taxAmount = price * (taxRate / 100);
-    const netMarginValue = grossMargin - taxAmount;
-    const netMarginPercentage = (netMarginValue / price) * 100;
+    // Formule : (prix de vente - prix de livraison) / (1 + TVA%) - prix de revient = marge nette
+    const priceAfterShipping = price - (shippingCost || 0);
+    const priceBeforeTax = priceAfterShipping / (1 + taxRate / 100);
+    const netMarginValue = priceBeforeTax - (costPrice || 0);
+    const netMarginPercentage = costPrice && costPrice > 0 ? (netMarginValue / costPrice) * 100 : 0;
     
     return {
       value: netMarginValue,
@@ -298,6 +300,73 @@ export function SmartPricingAI() {
       await fetchData();
     } catch (error: any) {
       console.error('Import costs error:', error);
+      toast.error('❌ Erreur lors de l\'import', {
+        description: error.message || 'Une erreur inattendue est survenue'
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const importShippingCosts = async () => {
+    try {
+      setImporting(true);
+      const toastId = toast.loading('🚚 Import des frais de livraison...', {
+        description: 'Estimation basée sur le poids des produits'
+      });
+
+      // Get first store (for now, assuming single store)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Utilisateur non connecté', { id: toastId });
+        return;
+      }
+
+      const { data: stores, error: storesError } = await supabase
+        .from('shopify_connections')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (storesError || !stores || stores.length === 0) {
+        toast.error('Aucune boutique Shopify connectée', { id: toastId });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('import-shipping-costs', {
+        body: { storeId: stores[0].id }
+      });
+
+      if (error) {
+        if (error.message.includes('not found') || error.message.includes('FunctionsRelayError')) {
+          toast.error(
+            '❌ La fonction d\'import n\'est pas encore déployée',
+            {
+              id: toastId,
+              description: 'Veuillez patienter quelques instants et réessayer.'
+            }
+          );
+          return;
+        }
+        throw error;
+      }
+
+      if (!data.success) {
+        toast.error(`❌ ${data.error}`, { id: toastId });
+        return;
+      }
+
+      toast.success(
+        `✅ ${data.updated} frais de livraison estimés`,
+        {
+          id: toastId,
+          description: 'Basé sur le poids des produits'
+        }
+      );
+      
+      await fetchData();
+    } catch (error: any) {
+      console.error('Import shipping error:', error);
       toast.error('❌ Erreur lors de l\'import', {
         description: error.message || 'Une erreur inattendue est survenue'
       });
@@ -670,7 +739,7 @@ export function SmartPricingAI() {
                       ) : (
                         <Download className="w-4 h-4" />
                       )}
-                      Importer Coûts Shopify
+                      Importer Coûts
                     </Button>
                   </TooltipTrigger>
                 </AlertDialogTrigger>
@@ -715,6 +784,19 @@ export function SmartPricingAI() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          <Button
+            variant="outline"
+            onClick={importShippingCosts}
+            disabled={importing || syncing || products.length === 0}
+            className="gap-2"
+          >
+            {importing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <TrendingUp className="w-4 h-4" />
+            )}
+            Importer Livraison
+          </Button>
           <Button
             variant="outline"
             onClick={() => syncToShopify(true)}

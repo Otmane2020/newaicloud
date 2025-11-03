@@ -155,3 +155,12 @@ verify_jwt = false
 
 [functions.scheduled-sync]
 verify_jwt = false
+
+[functions.import-costs-from-shopify]
+verify_jwt = true
+
+[functions.import-shipping-costs]
+verify_jwt = true
+
+[functions.analyze-competitor-pricing]
+verify_jwt = true
