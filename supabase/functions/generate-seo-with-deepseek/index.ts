@@ -418,59 +418,17 @@ Deno.serve(async (req: Request) => {
       console.warn("[SEO-GENERATION] Validation issues:", validation.issues);
     }
 
+    const seoResult: SeoResult = {
+      seo_title: seo_title,
+      seo_description: seo_description,
+      keywords: productKeywords,
+      character_count: {
+        title: seo_title.length,
+        description: seo_description.length,
+      },
+    };
+
     console.log("[SEO-GENERATION] SEO généré avec succès");
-        {
-          role: "user",
-          content: enhancedSeoPrompt,
-        },
-      ],
-      400,
-    ); // Augmentation des tokens pour plus de qualité
-
-    const seoContent = seoResponse.choices[0].message.content;
-    console.log("[SEO-GENERATION] Réponse DeepSeek reçue");
-
-    let seoResult: SeoResult;
-
-    try {
-      // Strip markdown code blocks if present
-      let cleanedContent = seoContent.trim();
-      if (cleanedContent.startsWith("```json")) {
-        cleanedContent = cleanedContent.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-      } else if (cleanedContent.startsWith("```")) {
-        cleanedContent = cleanedContent.replace(/^```\s*/, "").replace(/\s*```$/, "");
-      }
-      
-      const parsed = JSON.parse(cleanedContent);
-
-      // Validation du contenu généré
-      const validation = validateSeoContent(parsed.seo_title, parsed.seo_description);
-
-      if (!validation.isValid) {
-        console.warn("[SEO-GENERATION] Problèmes de validation SEO:", validation.issues);
-        // On continue malgré les warnings, mais on les log
-      }
-
-      seoResult = {
-        seo_title: parsed.seo_title || product.title.substring(0, 60),
-        seo_description: parsed.seo_description || product.description?.substring(0, 160) || "",
-        keywords: productKeywords,
-        character_count: {
-          title: parsed.seo_title?.length || 0,
-          description: parsed.seo_description?.length || 0,
-        },
-      };
-    } catch (e) {
-      console.error("[SEO-GENERATION] Échec parsing JSON:", seoContent);
-      // Fallback basique
-      seoResult = {
-        seo_title: product.title.substring(0, 60),
-        seo_description:
-          product.description?.substring(0, 160) ||
-          "Découvrez ce produit de qualité. Livraison rapide et service client exceptionnel.",
-        keywords: productKeywords,
-      };
-    }
 
     // Enhanced product update with more metadata
     const updateData: any = {
