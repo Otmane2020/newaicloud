@@ -190,40 +190,26 @@ export function BillingPortal() {
           <div className="space-y-2">
             {hasActivePaidPlan ? (
               <>
-                {subscriptionStatus.hasStripeSubscription ? (
-                  <Button 
-                    onClick={handleOpenPortal}
-                    disabled={loading}
-                    className="w-full"
-                    variant="default"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Chargement...
-                      </>
-                    ) : (
-                      <>
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Gérer mon abonnement Stripe
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handleActivatePlan}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Changer de plan
-                  </Button>
-                )}
+                <Button 
+                  onClick={handleOpenPortal}
+                  disabled={loading}
+                  className="w-full"
+                  variant="default"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Chargement...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Accéder au portail de facturation Stripe
+                    </>
+                  )}
+                </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  {subscriptionStatus.hasStripeSubscription 
-                    ? "Gérez votre abonnement, moyens de paiement et factures via Stripe"
-                    : "Consultez les plans disponibles pour évoluer"
-                  }
+                  Gérez votre abonnement, moyens de paiement et factures via Stripe
                 </p>
               </>
             ) : (
