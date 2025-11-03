@@ -76,7 +76,16 @@ Deno.serve(async (req) => {
 
 async function generateSingleArticle(requestData: any, supabaseClient: any, apiKey: string, authHeader?: string) {
   try {
-    const { user_id, category = "Guide", keywords = [], title, articleLength = "2000" } = requestData;
+    const { 
+      user_id, 
+      category = "Guide", 
+      keywords = [], 
+      title, 
+      articleLength = "2000",
+      language = "fr",
+      collectionTitle = "",
+      productIds = []
+    } = requestData;
 
     if (!user_id) {
       throw new Error("user_id is required");
@@ -110,7 +119,24 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     // Recherche des produits
     let products: any[] = [];
 
-    if (category && category !== "Guide" && category !== "Tous produits") {
+    // Si des IDs de produits spécifiques sont fournis
+    if (productIds && productIds.length > 0) {
+      console.log(`Récupération des produits sélectionnés: ${productIds.length}`);
+      const { data } = await supabaseClient
+        .from("shopify_products")
+        .select(
+          "id, title, handle, price, category, description, product_type, vendor, tags, image_url, compare_at_price, inventory_quantity, store_id, images",
+        )
+        .eq("seller_id", user_id)
+        .in("id", productIds);
+
+      if (data && data.length > 0) {
+        products = data;
+        console.log(`${products.length} produits spécifiques trouvés`);
+      }
+    }
+    // Sinon recherche par catégorie
+    else if (category && category !== "Guide" && category !== "Tous produits") {
       console.log(`Recherche produits avec catégorie: ${category}`);
       const { data } = await supabaseClient
         .from("shopify_products")
@@ -131,7 +157,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     // Fallback si aucun produit trouvé
     if (products.length === 0) {
-      console.log(`Aucun produit trouvé pour "${category}", utilisation de tous les produits`);
+      console.log(`Aucun produit trouvé, utilisation de tous les produits`);
       const { data } = await supabaseClient
         .from("shopify_products")
         .select(
@@ -231,13 +257,78 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     // Génération du contenu HTML complet avec présentation améliorée
     const wordCountTarget = parseInt(articleLength);
-    const prompt = `Tu es un rédacteur expert en e-commerce. Crée un article professionnel en français d'environ ${wordCountTarget} mots.
+    
+    // Configuration de la langue pour le prompt
+    const languageConfig: Record<string, { name: string; toc: string; intro: string; criteria: string; selection: string; comparison: string; advice: string; faq: string; conclusion: string }> = {
+      fr: { 
+        name: "français", 
+        toc: "Table des matières",
+        intro: "Introduction",
+        criteria: "Critères essentiels de choix",
+        selection: "Notre sélection de produits",
+        comparison: "Guide d'achat comparatif",
+        advice: "Conseils d'experts",
+        faq: "Questions Fréquentes",
+        conclusion: "Conclusion"
+      },
+      en: { 
+        name: "English", 
+        toc: "Table of Contents",
+        intro: "Introduction",
+        criteria: "Essential Selection Criteria",
+        selection: "Our Product Selection",
+        comparison: "Buyer's Guide & Comparison",
+        advice: "Expert Tips",
+        faq: "Frequently Asked Questions",
+        conclusion: "Conclusion"
+      },
+      es: { 
+        name: "español", 
+        toc: "Tabla de contenidos",
+        intro: "Introducción",
+        criteria: "Criterios esenciales de selección",
+        selection: "Nuestra selección de productos",
+        comparison: "Guía de compra comparativa",
+        advice: "Consejos de expertos",
+        faq: "Preguntas Frecuentes",
+        conclusion: "Conclusión"
+      },
+      de: { 
+        name: "Deutsch", 
+        toc: "Inhaltsverzeichnis",
+        intro: "Einführung",
+        criteria: "Wesentliche Auswahlkriterien",
+        selection: "Unsere Produktauswahl",
+        comparison: "Kaufratgeber & Vergleich",
+        advice: "Expertentipps",
+        faq: "Häufig gestellte Fragen",
+        conclusion: "Fazit"
+      },
+      it: { 
+        name: "italiano", 
+        toc: "Sommario",
+        intro: "Introduzione",
+        criteria: "Criteri essenziali di scelta",
+        selection: "La nostra selezione di prodotti",
+        comparison: "Guida all'acquisto comparativa",
+        advice: "Consigli degli esperti",
+        faq: "Domande Frequenti",
+        conclusion: "Conclusione"
+      }
+    };
+    
+    const lang = languageConfig[language] || languageConfig.fr;
+    const topicInfo = collectionTitle ? `Collection: ${collectionTitle}` : category;
+    
+    const prompt = `Tu es un rédacteur expert en e-commerce. Crée un article professionnel en ${lang.name} d'environ ${wordCountTarget} mots.
 
+SUJET : ${topicInfo}
+MOTS-CLÉS : ${targetKeywords.join(", ")}
 ${
   hasProducts
-    ? `PRODUITS DISPONIBLES :
-${products.map((p: any) => `- ${p.title} (${p.price}€) : ${p.description?.substring(0, 100) || "Description non disponible"}`).join("\n")}`
-    : `SUJET : ${targetKeywords.join(", ")} - Article informatif sans produits spécifiques`
+    ? `PRODUITS SÉLECTIONNÉS (${products.length}) :
+${products.map((p: any) => `- ${p.title} (${p.price}€)${p.category ? ` - Catégorie: ${p.category}` : ""} : ${p.description?.substring(0, 100) || "Description non disponible"}`).join("\n")}`
+    : `Article informatif générique sur ${topicInfo}`
 }
 
 STRUCTURE HTML À SUIVRE :
@@ -681,28 +772,28 @@ STRUCTURE HTML À SUIVRE :
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
         <path d="M3 9h14V7H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm16 0h2v-2h-2v2zm0-10v2h2V7h-2zm0 6h2v-2h-2v2z"/>
       </svg>
-      Table des matières
+      ${lang.toc}
     </div>
     <div class="toc-list">
       <ol>
-        <li><a href="#introduction">Introduction</a></li>
-        <li><a href="#criteres">Critères de sélection</a></li>
-        <li><a href="#produits">Notre sélection</a></li>
-        <li><a href="#comparaison">Guide d'achat</a></li>
-        <li><a href="#conseils">Conseils experts</a></li>
-        <li><a href="#faq">Questions fréquentes</a></li>
-        <li><a href="#conclusion">Conclusion</a></li>
+        <li><a href="#introduction">${lang.intro}</a></li>
+        <li><a href="#criteres">${lang.criteria}</a></li>
+        <li><a href="#produits">${lang.selection}</a></li>
+        <li><a href="#comparaison">${lang.comparison}</a></li>
+        <li><a href="#conseils">${lang.advice}</a></li>
+        <li><a href="#faq">${lang.faq}</a></li>
+        <li><a href="#conclusion">${lang.conclusion}</a></li>
       </ol>
     </div>
   </nav>
 
   <section id="introduction" class="article-section">
-    <h2 class="section-title">Introduction</h2>
-    <p>[Introduction engageante de 200-250 mots présentant le sujet et intégrant naturellement les mots-clés : ${targetKeywords.join(", ")}]</p>
+    <h2 class="section-title">${lang.intro}</h2>
+    <p>[${lang.intro} engageante de 200-250 mots présentant ${topicInfo} et intégrant naturellement les mots-clés : ${targetKeywords.join(", ")}]</p>
   </section>
 
   <section id="criteres" class="article-section">
-    <h2 class="section-title">Critères essentiels de choix</h2>
+    <h2 class="section-title">${lang.criteria}</h2>
     
     <h3 class="subsection-title">Qualité et durabilité</h3>
     <p>[Détail des aspects qualité à considérer - 150 mots]</p>
@@ -718,7 +809,7 @@ STRUCTURE HTML À SUIVRE :
     hasProducts
       ? `
   <section id="produits" class="products-section">
-    <h2 class="section-title">Notre sélection de produits</h2>
+    <h2 class="section-title">${lang.selection}${collectionTitle ? ` - ${collectionTitle}` : ""}</h2>
     
     <div class="view-toggle">
       <button class="view-btn active" data-view="grid">
@@ -845,18 +936,18 @@ STRUCTURE HTML À SUIVRE :
   }
 
   <section id="comparaison" class="article-section">
-    <h2 class="section-title">Guide d'achat comparatif</h2>
-    <p>[Section détaillée de comparaison et d'analyse - 400 mots]</p>
+    <h2 class="section-title">${lang.comparison}</h2>
+    <p>[Section détaillée de comparaison et d'analyse des produits ${collectionTitle || topicInfo} - 400 mots]</p>
   </section>
 
   <section id="conseils" class="article-section">
-    <h2 class="section-title">Conseils d'experts</h2>
-    <p>[Recommandations et astuces pratiques - 300 mots]</p>
+    <h2 class="section-title">${lang.advice}</h2>
+    <p>[Recommandations et astuces pratiques pour ${collectionTitle || topicInfo} - 300 mots]</p>
   </section>
 
   <!-- Section FAQ -->
   <section id="faq" class="faq-section">
-    <h2 class="faq-title">Questions Fréquentes</h2>
+    <h2 class="faq-title">${lang.faq}</h2>
     
     <div class="faq-item">
       <div class="faq-question">
@@ -939,8 +1030,8 @@ STRUCTURE HTML À SUIVRE :
   </div>
 
   <section id="conclusion" class="article-section">
-    <h2 class="section-title">Conclusion</h2>
-    <p>[Synthèse et recommandation finale - 200 mots]</p>
+    <h2 class="section-title">${lang.conclusion}</h2>
+    <p>[Synthèse et recommandation finale sur ${collectionTitle || topicInfo} - 200 mots]</p>
   </section>
 </article>
 
@@ -992,12 +1083,17 @@ STRUCTURE HTML À SUIVRE :
 </html>
 
 RÈGLES DE CRÉATION :
+- LANGUE: Tout le contenu doit être rédigé en ${lang.name}
 - Structure HTML complète et responsive
+- Collection/Catégorie: ${collectionTitle || category}
 - Intégration naturelle des mots-clés : ${targetKeywords.join(", ")}
 - Longueur totale : ${wordCountTarget} mots environ
-- Ton professionnel et engageant
-- ${hasProducts ? `Utilisation des ${products.length} produits fournis avec liens cliquables` : "Guide informatif générique"}
-- FAQ complète avec 4-6 questions pertinentes
+- Ton professionnel et engageant en ${lang.name}
+- ${hasProducts ? `Utilisation des ${products.length} produits sélectionnés avec liens cliquables vers la boutique` : "Guide informatif générique"}
+- FAQ complète avec 4-6 questions pertinentes en ${lang.name}
+- Tables des matières (H1-H5) bien structurée en ${lang.name}
+- Tags SEO optimisés pour ${collectionTitle || category}
+- Galerie d'images produits avec liens cliquables
 - Retourne le code HTML complet et fonctionnel`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

@@ -91,6 +91,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     keywords: '',
     productCount: 3,
     articleLength: '700' as '700' | '2000' | '4000',
+    language: 'fr' as 'fr' | 'en' | 'es' | 'de' | 'it',
   });
   const [collectionSearchOpen, setCollectionSearchOpen] = useState(false);
 
@@ -230,9 +231,11 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         body: {
           user_id: user.id,
           collection_id: formData.collection_id,
+          collectionTitle: formData.collectionTitle,
           keywords: finalKeywords,
           productIds: selectedProducts.map(p => p.id),
           articleLength: formData.articleLength,
+          language: formData.language,
         }
       });
 
@@ -363,6 +366,32 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           <div className="mb-8">
             {currentStep === 1 && (
               <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Langue de l'article</label>
+                  <div className="grid grid-cols-5 gap-3">
+                    {[
+                      { code: 'fr', label: '🇫🇷 Français', name: 'Français' },
+                      { code: 'en', label: '🇬🇧 English', name: 'Anglais' },
+                      { code: 'es', label: '🇪🇸 Español', name: 'Espagnol' },
+                      { code: 'de', label: '🇩🇪 Deutsch', name: 'Allemand' },
+                      { code: 'it', label: '🇮🇹 Italiano', name: 'Italien' }
+                    ].map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, language: lang.code as any })}
+                        className={`px-4 py-3 border rounded-lg text-center transition-all ${
+                          formData.language === lang.code
+                            ? 'bg-primary text-white border-primary' 
+                            : 'bg-white border-gray-300 hover:border-primary'
+                        }`}
+                      >
+                        <div className="font-semibold text-sm">{lang.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium mb-2">Collection</label>
                   <Popover open={collectionSearchOpen} onOpenChange={setCollectionSearchOpen}>
