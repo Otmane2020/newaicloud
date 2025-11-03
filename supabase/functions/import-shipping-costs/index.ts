@@ -28,12 +28,31 @@ serve(async (req) => {
     if (userError || !user) throw new Error('Unauthorized');
 
     const { storeId } = await req.json();
+    console.log('📋 Received storeId:', storeId);
+    console.log('👤 User ID:', user.id);
 
     if (!storeId) {
       throw new Error('Store ID is required');
     }
 
-    // Get Shopify connection
+    // Get Shopify connection - check what stores exist for this user
+    const { data: allStores, error: allStoresError } = await supabase
+      .from('shopify_connections')
+      .select('id, shop_domain')
+      .eq('user_id', user.id);
+
+    console.log('🏪 All stores for user:', allStores);
+
+    if (allStoresError) {
+      console.error('❌ Error fetching stores:', allStoresError);
+      throw new Error(`Database error: ${allStoresError.message}`);
+    }
+
+    if (!allStores || allStores.length === 0) {
+      throw new Error('No Shopify stores connected. Please connect a store first.');
+    }
+
+    // Get the specific connection
     const { data: connection, error: connectionError } = await supabase
       .from('shopify_connections')
       .select('shop_domain, encrypted_access_token')
@@ -41,8 +60,15 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    if (connectionError || !connection) {
-      throw new Error('Shopify connection not found');
+    console.log('🔍 Connection found:', connection ? 'Yes' : 'No');
+
+    if (connectionError) {
+      console.error('❌ Connection error:', connectionError);
+      throw new Error(`Connection error: ${connectionError.message}`);
+    }
+
+    if (!connection) {
+      throw new Error(`Store with ID ${storeId} not found. Available stores: ${allStores.map(s => s.id).join(', ')}`);
     }
 
     // Decrypt token
