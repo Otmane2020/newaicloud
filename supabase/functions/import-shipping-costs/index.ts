@@ -55,7 +55,7 @@ serve(async (req) => {
     // Get the specific connection
     const { data: connection, error: connectionError } = await supabase
       .from('shopify_connections')
-      .select('store_url, encrypted_token, token_iv')
+      .select('store_url, access_token, encrypted_token, token_iv')
       .eq('id', storeId)
       .eq('user_id', user.id)
       .single();
@@ -71,10 +71,12 @@ serve(async (req) => {
       throw new Error(`Store with ID ${storeId} not found. Available stores: ${allStores.map(s => s.id).join(', ')}`);
     }
 
-    // Decrypt token if encrypted
+    // Get access token (support both encrypted and plain text for backward compatibility)
     let accessToken: string;
     
     if (connection.encrypted_token && connection.token_iv) {
+      // Token is encrypted, decrypt it
+      console.log('🔐 Decrypting token...');
       const { data: decryptData, error: decryptError } = await supabase.functions.invoke(
         'encrypt-shopify-token',
         {
@@ -92,8 +94,13 @@ serve(async (req) => {
       }
 
       accessToken = decryptData.token;
+      console.log('✅ Token decrypted successfully');
+    } else if (connection.access_token) {
+      // Token is stored in plain text (legacy)
+      console.log('📝 Using plain text token');
+      accessToken = connection.access_token;
     } else {
-      throw new Error('No encrypted token found for this store');
+      throw new Error('No access token found for this store (neither encrypted nor plain text)');
     }
 
     // Get products with variants
