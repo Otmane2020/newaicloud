@@ -243,29 +243,34 @@ export function ArticleFeaturedImageDialog({
 
       if (altError) throw altError;
 
-      // Sync to Shopify if article has shopify_article_id
-      const { data: articleData } = await supabase
-        .from("blog_articles")
-        .select("shopify_article_id")
-        .eq("id", article.id)
-        .single();
-
-      if (articleData?.shopify_article_id) {
-        const { error: syncError } = await supabase.functions.invoke("sync-blog-to-shopify", {
-          body: { articleId: article.id },
-        });
-
-        if (syncError) throw syncError;
-        toast.success(t.blog.dialogs.featuredImage.altGenerated);
-      } else {
-        toast.success(t.blog.dialogs.featuredImage.altOptimized);
-      }
+      toast.success(t.blog.dialogs.featuredImage.altGenerated);
 
       setShowSuccessDialog(false);
       onImageUpdated();
     } catch (err: any) {
       console.error("Error:", err);
       toast.error(err.message || t.blog.dialogs.featuredImage.errorOptimize);
+    } finally {
+      setProcessingAlt(false);
+    }
+  };
+
+  const handleSyncToShopify = async () => {
+    try {
+      setProcessingAlt(true);
+      
+      const { error: syncError } = await supabase.functions.invoke("sync-blog-to-shopify", {
+        body: { articleId: article.id },
+      });
+
+      if (syncError) throw syncError;
+      
+      toast.success("Article synchronisé avec Shopify avec succès");
+      setShowSuccessDialog(false);
+      onImageUpdated();
+    } catch (err: any) {
+      console.error("Error:", err);
+      toast.error(err.message || "Erreur lors de la synchronisation");
     } finally {
       setProcessingAlt(false);
     }
@@ -556,29 +561,46 @@ export function ArticleFeaturedImageDialog({
             <Button
               onClick={handleOptimizeAndSync}
               disabled={processingAlt}
-              className="w-full h-14 text-lg font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 shadow-lg"
+              variant="outline"
+              className="w-full h-12"
               size="lg"
             >
               {processingAlt ? (
                 <>
-                  <Loader2 className="w-6 h-6 mr-2 animate-spin" />
-                  Optimisation en cours...
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Génération ALT...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-6 h-6 mr-2" />
-                  Générer ALT & Synchroniser avec Shopify
-                  <Zap className="w-6 h-6 ml-2" />
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Optimiser le texte ALT
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleSyncToShopify}
+              disabled={processingAlt}
+              className="w-full h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              size="lg"
+            >
+              {processingAlt ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Synchronisation...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-5 h-5 mr-2" />
+                  Publier sur Shopify
                 </>
               )}
             </Button>
             <Button
               onClick={() => setShowSuccessDialog(false)}
-              variant="outline"
-              className="w-full h-12 text-base"
-              size="lg"
+              variant="ghost"
+              className="w-full h-10"
             >
-              Je le ferai plus tard
+              Plus tard
             </Button>
           </div>
         </DialogContent>

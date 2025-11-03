@@ -24,22 +24,26 @@ import { fr } from 'date-fns/locale';
 import { BlogWizard } from '@/components/blog/BlogWizard';
 import { ResultsDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { useAuth } from '@/contexts/AuthContext';
-import { calculateDetailedSeoScore, getConfidenceBadgeColor } from '@/lib/seoQuality';
+import { calculateArticleSeoScore, getConfidenceBadgeColor } from '@/lib/seoQuality';
 import { ArticleFeaturedImageDialog } from '@/components/blog/ArticleFeaturedImageDialog';
 
 interface Article {
   id: string;
   title: string;
   content: string;
+  seo_title: string | null;
+  seo_description: string | null;
   meta_description: string | null;
   keywords: string[] | null;
   status: string;
   published_at: string | null;
   shopify_blog_id: string | null;
+  shopify_article_id: string | null;
   created_at: string;
   updated_at: string;
   source: string | null;
   featured_image: string | null;
+  optimization_count: number;
 }
 
 export default function ArticleManagement() {
@@ -491,18 +495,18 @@ export default function ArticleManagement() {
                       </td>
                       <td className="p-3 hidden xl:table-cell">
                         {(() => {
-                          const seoScore = article.meta_description 
-                            ? calculateDetailedSeoScore(article.title, article.meta_description).score
-                            : 0;
-                          const badgeColor = getConfidenceBadgeColor(seoScore);
-                          
+                          const seoScore = calculateArticleSeoScore(
+                            article.title,
+                            article.seo_title,
+                            article.seo_description,
+                            article.keywords,
+                            !!article.featured_image,
+                            !!article.shopify_article_id,
+                            article.optimization_count || 0
+                          );
                           return (
-                            <Badge 
-                              variant="outline" 
-                              className={`${badgeColor} text-xs border`}
-                            >
-                              <Sparkles className="w-3 h-3 mr-1" />
-                              {seoScore}/100
+                            <Badge className={getConfidenceBadgeColor(seoScore.score)}>
+                              {seoScore.score}%
                             </Badge>
                           );
                         })()}

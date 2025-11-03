@@ -14,6 +14,12 @@ interface SeoScoreDetails {
   maxScore: number;
 }
 
+interface ArticleSeoScoreDetails {
+  score: number;
+  breakdown: string[];
+  maxScore: number;
+}
+
 interface AltTextScoreDetails {
   score: number;
   weight: number; // 0.3 for Shopify, 1.0 for AI Vision
@@ -468,4 +474,98 @@ export function calculateFeaturedImageBonus(
   }
 
   return { bonus, breakdown };
+}
+
+/**
+ * Calculate comprehensive SEO score for blog articles
+ */
+export function calculateArticleSeoScore(
+  title: string | null | undefined,
+  seoTitle: string | null | undefined,
+  seoDescription: string | null | undefined,
+  keywords: string[] | null | undefined,
+  hasFeaturedImage: boolean = false,
+  isPublished: boolean = false,
+  optimizationCount: number = 0
+): ArticleSeoScoreDetails {
+  const breakdown: string[] = [];
+  let score = 0;
+  const maxScore = 100;
+
+  // Title score (20 points max)
+  const titleToCheck = seoTitle || title;
+  if (titleToCheck) {
+    const titleLen = titleToCheck.length;
+    if (titleLen >= 40 && titleLen <= 70) {
+      score += 20;
+      breakdown.push('✓ Title optimal length (+20)');
+    } else if (titleLen >= 20 && titleLen <= 100) {
+      score += 15;
+      breakdown.push('⚠ Title acceptable (+15)');
+    } else {
+      score += 5;
+      breakdown.push('✗ Title needs optimization (+5)');
+    }
+  } else {
+    breakdown.push('✗ No SEO title');
+  }
+
+  // Description score (30 points max)
+  if (seoDescription) {
+    const descLen = seoDescription.length;
+    if (descLen >= 120 && descLen <= 160) {
+      score += 30;
+      breakdown.push('✓ Description optimal length (+30)');
+    } else if (descLen >= 50 && descLen <= 200) {
+      score += 20;
+      breakdown.push('⚠ Description acceptable (+20)');
+    } else {
+      score += 10;
+      breakdown.push('✗ Description needs optimization (+10)');
+    }
+  } else {
+    breakdown.push('✗ No SEO description');
+  }
+
+  // Keywords/Tags score (20 points)
+  if (keywords && keywords.length > 0) {
+    const keywordCount = keywords.length;
+    if (keywordCount >= 3 && keywordCount <= 10) {
+      score += 20;
+      breakdown.push(`✓ Keywords optimized (${keywordCount}) (+20)`);
+    } else if (keywordCount > 0) {
+      score += 10;
+      breakdown.push(`⚠ Keywords: ${keywordCount} (target 3-10) (+10)`);
+    }
+  } else {
+    breakdown.push('✗ No keywords');
+  }
+
+  // Featured image (15 points)
+  if (hasFeaturedImage) {
+    score += 15;
+    breakdown.push('✓ Featured image (+15)');
+  } else {
+    breakdown.push('✗ No featured image');
+  }
+
+  // Publication status (10 points)
+  if (isPublished) {
+    score += 10;
+    breakdown.push('✓ Published on Shopify (+10)');
+  } else {
+    breakdown.push('✗ Not published');
+  }
+
+  // AI optimization bonus (5 points)
+  if (optimizationCount > 0) {
+    score += 5;
+    breakdown.push(`✓ AI optimized ${optimizationCount}x (+5)`);
+  }
+
+  return {
+    score: Math.min(score, maxScore),
+    breakdown,
+    maxScore
+  };
 }

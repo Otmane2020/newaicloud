@@ -126,15 +126,46 @@ Deno.serve(async (req) => {
 
     if (!blogId) throw new Error("No blog ID available");
 
-    const articleData = {
+    // Get featured image if exists
+    const { data: featuredImage } = await supabase
+      .from("content_images")
+      .select("src, alt_text")
+      .eq("content_type", "article")
+      .eq("content_id", articleId)
+      .eq("position", 0)
+      .maybeSingle();
+
+    const articleData: any = {
       article: {
-        title: article.title,
+        title: article.seo_title || article.title,
         body_html: article.content || "",
         author: "Newsai.sale",
         tags: Array.isArray(article.keywords) ? article.keywords.join(", ") : "",
         published: true,
+        metafields: [
+          {
+            namespace: "global",
+            key: "title_tag",
+            value: article.seo_title || article.title,
+            type: "single_line_text_field"
+          },
+          {
+            namespace: "global",
+            key: "description_tag",
+            value: article.seo_description || "",
+            type: "single_line_text_field"
+          }
+        ]
       },
     };
+
+    // Add featured image if exists
+    if (featuredImage?.src) {
+      articleData.article.image = {
+        src: featuredImage.src,
+        alt: featuredImage.alt_text || article.title
+      };
+    }
 
     console.log("📤 Publishing article to blog:", blogId);
 
@@ -160,7 +191,7 @@ Deno.serve(async (req) => {
       .update({
         status: "published",
         published_at: new Date().toISOString(),
-        shopify_blog_id: created.article?.id?.toString(),
+        shopify_article_id: created.article?.id?.toString(),
         last_synced_at: new Date().toISOString()
       })
       .eq("id", articleId);
