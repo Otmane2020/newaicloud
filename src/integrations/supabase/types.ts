@@ -1912,6 +1912,7 @@ export type Database = {
           seo_sync_error: string | null
           seo_synced_to_shopify: boolean | null
           seo_title: string | null
+          shipping_cost: number | null
           shop_name: string | null
           shopify_id: number | null
           smart_depth: number | null
@@ -2021,6 +2022,7 @@ export type Database = {
           seo_sync_error?: string | null
           seo_synced_to_shopify?: boolean | null
           seo_title?: string | null
+          shipping_cost?: number | null
           shop_name?: string | null
           shopify_id?: number | null
           smart_depth?: number | null
@@ -2130,6 +2132,7 @@ export type Database = {
           seo_sync_error?: string | null
           seo_synced_to_shopify?: boolean | null
           seo_title?: string | null
+          shipping_cost?: number | null
           shop_name?: string | null
           shopify_id?: number | null
           smart_depth?: number | null

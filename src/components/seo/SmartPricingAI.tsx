@@ -34,6 +34,8 @@ interface ProductPricing {
   price: number | null;
   compare_at_price: number | null;
   cost_price: number | null;
+  shipping_cost: number | null;
+  sku: string | null;
   shopify_product_id: string | null;
   selected: boolean;
 }
@@ -76,10 +78,13 @@ export function SmartPricingAI() {
 
       setCollections(collectionsData || []);
 
-      // Fetch products with collection names
+      // Fetch products with collection names and variants (for SKU)
       const { data: productsData, error: productsError } = await supabase
         .from('shopify_products')
-        .select('*')
+        .select(`
+          *,
+          product_variants!inner(sku)
+        `)
         .eq('seller_id', user.id);
 
       if (productsError) {
@@ -93,6 +98,8 @@ export function SmartPricingAI() {
           const collectionNames = (product.collection_ids || [])
             .map(id => collectionsData?.find(c => c.id === id)?.title)
             .filter(Boolean) as string[];
+          
+          const firstVariant = (product as any).product_variants?.[0];
 
           return {
             id: product.id,
@@ -103,6 +110,8 @@ export function SmartPricingAI() {
             price: typeof product.price === 'number' ? product.price : null,
             compare_at_price: typeof product.compare_at_price === 'number' ? product.compare_at_price : null,
             cost_price: null,
+            shipping_cost: typeof product.shipping_cost === 'number' ? product.shipping_cost : null,
+            sku: firstVariant?.sku || null,
             shopify_product_id: product.shopify_id ? String(product.shopify_id) : null,
             selected: false,
           };
@@ -128,7 +137,7 @@ export function SmartPricingAI() {
     return Math.round(((price - costPrice) / price) * 100);
   };
 
-  const updateProductPrice = (productId: string, field: 'price' | 'compare_at_price' | 'cost_price', value: string) => {
+  const updateProductPrice = (productId: string, field: 'price' | 'compare_at_price' | 'cost_price' | 'shipping_cost', value: string) => {
     const numValue = parseFloat(value) || null;
     setProducts(prev =>
       prev.map(p =>
@@ -401,11 +410,13 @@ export function SmartPricingAI() {
                   />
                 </th>
                 <th className="p-4 text-left">Produit</th>
+                <th className="p-4 text-left">SKU</th>
                 <th className="p-4 text-left">Collection(s)</th>
                 <th className="p-4 text-right">Prix</th>
                 <th className="p-4 text-right">Prix comparé</th>
                 <th className="p-4 text-center">Remise</th>
                 <th className="p-4 text-right">Prix de revient</th>
+                <th className="p-4 text-right">Frais livraison</th>
                 <th className="p-4 text-center">Marge</th>
               </tr>
             </thead>
@@ -439,6 +450,9 @@ export function SmartPricingAI() {
                           <p className="font-medium line-clamp-2 text-sm">{product.title}</p>
                         </div>
                       </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm text-muted-foreground font-mono">{product.sku || '-'}</span>
                     </td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
@@ -486,6 +500,17 @@ export function SmartPricingAI() {
                         step="0.01"
                         value={product.cost_price || ''}
                         onChange={(e) => updateProductPrice(product.id, 'cost_price', e.target.value)}
+                        className="w-24 text-right"
+                        placeholder="0.00"
+                      />
+                    </td>
+                    <td className="p-4 text-right">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={product.shipping_cost || ''}
+                        onChange={(e) => updateProductPrice(product.id, 'shipping_cost', e.target.value)}
                         className="w-24 text-right"
                         placeholder="0.00"
                       />

@@ -72,12 +72,12 @@ export function AppSidebar() {
   const seoSubItems = [
     { title: t.seo.submenu.products, url: "/seo?tab=products", icon: ShoppingBag, key: "products" },
     { title: t.seo.submenu.collections, url: "/seo?tab=collections", icon: Package, key: "collections" },
-    { title: "Smart Pricing AI", url: "/seo?tab=pricing", icon: CreditCard, key: "pricing" },
     { title: t.seo.submenu.pages, url: "/seo?tab=pages", icon: FileText, key: "pages" },
     { title: t.seo.submenu.articles, url: "/seo?tab=articles", icon: FileText, key: "articles" },
     { title: t.seo.submenu.altimage, url: "/seo?tab=alt", icon: Image, key: "altimage" },
     { title: t.seo.submenu.homepage, url: "/seo?tab=homepage", icon: Home, key: "homepage" },
     { title: t.seo.submenu.tags, url: "/seo?tab=tags", icon: Tags, key: "tags" },
+    { title: "Smart Pricing AI", url: "/seo?tab=pricing", icon: CreditCard, key: "pricing" },
     { title: t.seo.submenu.kpisStats, url: "/seo?tab=kpis", icon: BarChart3, key: "kpisStats" },
     { title: t.seo.submenu.automation, url: "/seo?tab=automation", icon: Settings, key: "automation" },
   ];

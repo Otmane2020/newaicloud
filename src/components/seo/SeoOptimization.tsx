@@ -79,6 +79,7 @@ export function SeoOptimization() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<QuickFilterTab>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [skuFilter, setSkuFilter] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>("none");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -106,7 +107,11 @@ export function SeoOptimization() {
       setLoading(true);
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("*, optimization_count")
+        .select(`
+          *, 
+          optimization_count,
+          product_variants!inner(sku)
+        `)
         .order("imported_at", { ascending: false });
 
       if (error) throw error;
@@ -239,6 +244,12 @@ export function SeoOptimization() {
 
       // Category and search filters
       if (selectedCategory !== "all" && product_type !== selectedCategory) return false;
+
+      // SKU filter
+      if (skuFilter) {
+        const productSku = (product as any).product_variants?.[0]?.sku || '';
+        if (!productSku.toLowerCase().includes(skuFilter.toLowerCase())) return false;
+      }
 
       if (searchTerm) {
         return title?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
@@ -867,6 +878,15 @@ export function SeoOptimization() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-12 h-12 text-lg"
+              />
+            </div>
+
+            <div className="relative flex-1 sm:flex-initial sm:w-[200px]">
+              <Input
+                placeholder="Filtrer par SKU..."
+                value={skuFilter}
+                onChange={(e) => setSkuFilter(e.target.value)}
+                className="h-12"
               />
             </div>
 
