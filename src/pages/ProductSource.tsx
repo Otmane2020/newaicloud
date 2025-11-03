@@ -147,6 +147,19 @@ const ProductSource = () => {
       if (data?.success) {
         toast.success(t.seo.productSource.success.productEnriched);
         await loadProducts();
+        
+        // Update selected product if it's the one being enriched
+        if (selectedProduct?.id === productId) {
+          const { data: updatedProduct, error: fetchError } = await supabase
+            .from("shopify_products")
+            .select("*")
+            .eq("id", productId)
+            .single();
+          
+          if (!fetchError && updatedProduct) {
+            setSelectedProduct(updatedProduct);
+          }
+        }
       } else {
         throw new Error(data?.error || t.seo.productSource.errors.enrichProduct);
       }

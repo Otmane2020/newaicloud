@@ -153,37 +153,93 @@ Deno.serve(async (req: Request) => {
 
     // Build AI prompt to detect attributes (NOT SEO fields)
     const prompt = `
-Tu es un expert en analyse de produits e-commerce. Analyse ce produit et extrait UNIQUEMENT les attributs suivants (PAS de SEO).
+Tu es un expert en analyse de produits e-commerce. Analyse ce produit et extrait TOUS les attributs suivants (PAS de SEO).
 
 PRODUIT:
 - Titre: ${product.title || ''}
 - Description: ${product.description || ''}
 - Type: ${product.product_type || ''}
-- Catégorie: ${product.category || ''}
+- Catégorie existante: ${product.category || ''}
+- Vendor: ${product.vendor || ''}
 
 INSTRUCTIONS:
-1. Identifie la COULEUR principale (ex: "noir", "blanc", "bois naturel", "transparent")
-2. Identifie le MATÉRIAU principal (ex: "bois", "métal", "verre", "tissu", "cuir")
-3. Identifie la FORME (ex: "rectangulaire", "rond", "carré", "ovale")
-4. Estime le POIDS approximatif en kg (ex: 15.5)
-5. Identifie le VOLUME approximatif en L ou m³ si pertinent
-6. Détermine si assemblage requis (true/false)
-7. Identifie les instructions d'entretien si mentionnées
-8. Si l'information n'est pas disponible, utilise null
+Analyse le produit et fournis les informations suivantes:
 
-IMPORTANT: Ne génère PAS de titre SEO, meta description, tags ou alt text.
+ATTRIBUTS VISUELS:
+1. ai_color: Couleur principale (ex: "noir", "blanc", "bois naturel")
+2. ai_material: Matériau principal (ex: "bois", "métal", "verre", "tissu")
+3. ai_shape: Forme (ex: "rectangulaire", "rond", "carré")
+4. ai_texture: Texture (ex: "lisse", "rugueux", "mat")
+5. ai_pattern: Motif si applicable (ex: "uni", "rayé", "fleuri")
+6. ai_finish: Finition (ex: "vernis", "mat", "brillant")
+7. ai_design_elements: Éléments de design notables
+
+ANALYSE VISION (estime basé sur description):
+8. ai_vision_analysis: Analyse détaillée du produit (2-3 phrases)
+9. ai_presentation_quality: Note de qualité de présentation /10
+10. ai_craftsmanship_level: Niveau d'artisanat ("standard", "premium", "luxe")
+11. ai_lighting_type: Type d'éclairage apparent ("naturel", "studio", "mixte")
+12. ai_background_style: Style du fond ("neutre", "contextualisé", "lifestyle")
+13. ai_condition_notes: Notes sur l'état si mentionné
+
+DIMENSIONS (estime des dimensions typiques pour ce type de produit):
+14. smart_length, smart_length_unit: Longueur (cm ou m)
+15. smart_width, smart_width_unit: Largeur
+16. smart_height, smart_height_unit: Hauteur
+17. smart_diameter, smart_diameter_unit: Diamètre si applicable
+18. smart_depth, smart_depth_unit: Profondeur si applicable
+19. smart_weight, smart_weight_unit: Poids (kg)
+20. smart_seat_height, smart_seat_height_unit: Hauteur d'assise si meuble
+
+CATÉGORISATION:
+21. category: Catégorie principale (ex: "Meuble", "Décoration")
+22. sub_category: Sous-catégorie (ex: "Chaise", "Lampe")
+23. style: Style (ex: "Moderne", "Vintage", "Industriel")
+24. room: Pièce (ex: "Salon", "Chambre", "Bureau")
+25. functionality: Fonctionnalité principale
+26. characteristics: Caractéristiques notables (string)
+
+AUTRES:
+27. chat_text: Description conversationnelle pour le chatbot (2-3 phrases naturelles)
+
+Si une information n'est pas disponible ou applicable, utilise null.
 
 Réponds UNIQUEMENT en JSON valide:
 {
-  "ai_color": "couleur_principale",
-  "ai_material": "matériau_principal",
-  "ai_shape": "forme",
-  "ai_weight": 15.5,
-  "ai_weight_unit": "kg",
-  "ai_volume": 0.5,
-  "ai_volume_unit": "m3",
-  "ai_assembly_required": false,
-  "ai_care_instructions": "instructions"
+  "ai_color": "string ou null",
+  "ai_material": "string ou null",
+  "ai_shape": "string ou null",
+  "ai_texture": "string ou null",
+  "ai_pattern": "string ou null",
+  "ai_finish": "string ou null",
+  "ai_design_elements": "string ou null",
+  "ai_vision_analysis": "string ou null",
+  "ai_presentation_quality": 8,
+  "ai_craftsmanship_level": "string ou null",
+  "ai_lighting_type": "string ou null",
+  "ai_background_style": "string ou null",
+  "ai_condition_notes": "string ou null",
+  "smart_length": 120,
+  "smart_length_unit": "cm",
+  "smart_width": 60,
+  "smart_width_unit": "cm",
+  "smart_height": 80,
+  "smart_height_unit": "cm",
+  "smart_diameter": null,
+  "smart_diameter_unit": null,
+  "smart_depth": 45,
+  "smart_depth_unit": "cm",
+  "smart_weight": 15.5,
+  "smart_weight_unit": "kg",
+  "smart_seat_height": null,
+  "smart_seat_height_unit": null,
+  "category": "string ou null",
+  "sub_category": "string ou null",
+  "style": "string ou null",
+  "room": "string ou null",
+  "functionality": "string ou null",
+  "characteristics": "string ou null",
+  "chat_text": "string ou null"
 }`;
 
     console.log('🤖 Calling DeepSeek API for attribute detection...');
@@ -191,13 +247,13 @@ Réponds UNIQUEMENT en JSON valide:
     const aiResponse = await callDeepSeek([
       {
         role: 'system',
-        content: 'Tu es un expert en analyse de produits. Réponds UNIQUEMENT en JSON valide.'
+        content: 'Tu es un expert en analyse de produits e-commerce. Réponds UNIQUEMENT en JSON valide sans commentaires.'
       },
       {
         role: 'user',
         content: prompt
       }
-    ], 400);
+    ], 1500);
 
     console.log('✅ AI response received');
 
@@ -209,19 +265,58 @@ Réponds UNIQUEMENT en JSON valide:
 
     console.log('📝 Parsed attributes:', parsedData);
 
-    // Update ONLY AI attributes (not SEO fields)
+    // Update ALL AI attributes and dimensions
     const { error: updateError } = await supabase
       .from('shopify_products')
       .update({
+        // Visual attributes
         ai_color: parsedData.ai_color || null,
         ai_material: parsedData.ai_material || null,
         ai_shape: parsedData.ai_shape || null,
-        ai_weight: parsedData.ai_weight || null,
-        ai_weight_unit: parsedData.ai_weight_unit || null,
-        ai_volume: parsedData.ai_volume || null,
-        ai_volume_unit: parsedData.ai_volume_unit || null,
-        ai_assembly_required: parsedData.ai_assembly_required || false,
-        ai_care_instructions: parsedData.ai_care_instructions || null,
+        ai_texture: parsedData.ai_texture || null,
+        ai_pattern: parsedData.ai_pattern || null,
+        ai_finish: parsedData.ai_finish || null,
+        ai_design_elements: parsedData.ai_design_elements || null,
+        
+        // Vision AI analysis
+        ai_vision_analysis: parsedData.ai_vision_analysis || null,
+        ai_vision_model: 'deepseek-chat',
+        ai_vision_timestamp: new Date().toISOString(),
+        ai_vision_confidence: parsedData.ai_presentation_quality ? parsedData.ai_presentation_quality * 10 : 80,
+        ai_presentation_quality: parsedData.ai_presentation_quality || null,
+        ai_craftsmanship_level: parsedData.ai_craftsmanship_level || null,
+        ai_lighting_type: parsedData.ai_lighting_type || null,
+        ai_background_style: parsedData.ai_background_style || null,
+        ai_condition_notes: parsedData.ai_condition_notes || null,
+        
+        // Dimensions
+        smart_length: parsedData.smart_length || null,
+        smart_length_unit: parsedData.smart_length_unit || null,
+        smart_width: parsedData.smart_width || null,
+        smart_width_unit: parsedData.smart_width_unit || null,
+        smart_height: parsedData.smart_height || null,
+        smart_height_unit: parsedData.smart_height_unit || null,
+        smart_diameter: parsedData.smart_diameter || null,
+        smart_diameter_unit: parsedData.smart_diameter_unit || null,
+        smart_depth: parsedData.smart_depth || null,
+        smart_depth_unit: parsedData.smart_depth_unit || null,
+        smart_weight: parsedData.smart_weight || null,
+        smart_weight_unit: parsedData.smart_weight_unit || null,
+        smart_seat_height: parsedData.smart_seat_height || null,
+        smart_seat_height_unit: parsedData.smart_seat_height_unit || null,
+        
+        // Categorization
+        category: parsedData.category || product.category || null,
+        sub_category: parsedData.sub_category || null,
+        style: parsedData.style || null,
+        room: parsedData.room || null,
+        functionality: parsedData.functionality || null,
+        characteristics: parsedData.characteristics || null,
+        
+        // Chat text
+        chat_text: parsedData.chat_text || null,
+        
+        // Status
         enrichment_status: 'enriched',
         last_enriched_at: new Date().toISOString(),
         optimization_count: (product.optimization_count || 0) + 1
@@ -250,17 +345,7 @@ Réponds UNIQUEMENT en JSON valide:
     return new Response(
       JSON.stringify({
         success: true,
-        attributes: {
-          ai_color: parsedData.ai_color,
-          ai_material: parsedData.ai_material,
-          ai_shape: parsedData.ai_shape,
-          ai_weight: parsedData.ai_weight,
-          ai_weight_unit: parsedData.ai_weight_unit,
-          ai_volume: parsedData.ai_volume,
-          ai_volume_unit: parsedData.ai_volume_unit,
-          ai_assembly_required: parsedData.ai_assembly_required,
-          ai_care_instructions: parsedData.ai_care_instructions,
-        }
+        attributes: parsedData
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
