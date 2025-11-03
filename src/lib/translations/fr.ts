@@ -473,8 +473,8 @@ export const translations = {
         generic: "Une erreur est survenue. Réessayez."
       },
       fallback: "Désolé, je rencontre un problème technique. Veuillez réessayer.",
-      title: "Assistant Commercial",
-      subtitle: "Votre conseiller commercial",
+      title: "AI Smart Chat",
+      subtitle: "Votre conseiller commercial intelligent",
       productsAvailable: "{{count}} produits disponibles",
       poweredByAI: "Propulsé par IA",
       codeEmbed: "Code Embed",

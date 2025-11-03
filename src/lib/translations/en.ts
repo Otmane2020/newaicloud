@@ -473,8 +473,8 @@ export const translations = {
         generic: "An error occurred. Please try again."
       },
       fallback: "Sorry, I'm experiencing technical issues. Please try again.",
-      title: "Sales Assistant",
-      subtitle: "Your sales advisor",
+      title: "AI Smart Chat",
+      subtitle: "Your intelligent sales advisor",
       productsAvailable: "{{count}} products available",
       poweredByAI: "Powered by AI",
       codeEmbed: "Embed Code",
