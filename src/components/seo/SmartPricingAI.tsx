@@ -919,7 +919,6 @@ export function SmartPricingAI() {
                 <th className="p-4 text-right">Marge Nette (€)</th>
                 <th className="p-4 text-center">Marge Nette (%)</th>
                 <th className="p-4 text-right">Market Price</th>
-                <th className="p-4 text-center">Prix Concurrents</th>
                 <th className="p-4 text-right">Smart Price</th>
               </tr>
             </thead>
@@ -1100,40 +1099,46 @@ export function SmartPricingAI() {
                     </td>
                     <td className="p-4 text-right">
                       {product.market_price ? (
-                        <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                          {product.market_price.toFixed(2)} {currencySymbol}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">Non analysé</span>
-                      )}
-                    </td>
-                    <td className="p-4 text-center">
-                      {product.competitors && product.competitors.length > 0 ? (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Badge variant="outline" className="cursor-help gap-1 hover:bg-muted">
-                                <Info className="w-3 h-3" />
-                                {product.competitors.length} prix
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-md">
-                              <div className="space-y-2">
-                                <p className="font-semibold text-xs mb-2">Prix concurrents trouvés:</p>
-                                <div className="space-y-1 max-h-60 overflow-y-auto">
-                                  {product.competitors.slice(0, 10).map((comp, idx) => (
-                                    <div key={idx} className="text-xs flex justify-between gap-4 py-1 border-b border-border last:border-0">
-                                      <span className="font-medium truncate">{comp.source}</span>
-                                      <span className="font-semibold whitespace-nowrap">{comp.price.toFixed(2)}€</span>
-                                    </div>
-                                  ))}
-                                </div>
+                              <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+                                {product.market_price.toFixed(2)} {currencySymbol}
                               </div>
-                            </TooltipContent>
+                            </TooltipTrigger>
+                            {product.competitors && product.competitors.length > 0 && (
+                              <TooltipContent className="max-w-md p-4">
+                                <div className="space-y-2">
+                                  <p className="font-semibold text-xs mb-2">🔗 Sources utilisées pour le calcul ({product.competitors.length} trouvées):</p>
+                                  <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                                    {product.competitors.slice(0, 10).map((comp, idx) => (
+                                      <a
+                                        key={idx}
+                                        href={comp.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex flex-col gap-0.5 p-2 rounded hover:bg-muted/50 transition-colors border border-border text-left"
+                                      >
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="text-xs font-medium text-primary truncate">{comp.source}</span>
+                                          <span className="text-xs font-bold whitespace-nowrap">{comp.price.toFixed(2)} {comp.currency}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          <span className="truncate">{comp.title}</span>
+                                          <Badge variant="outline" className="text-xs px-1 py-0">
+                                            {Math.round(comp.similarity * 100)}% similaire
+                                          </Badge>
+                                        </div>
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            )}
                           </Tooltip>
                         </TooltipProvider>
                       ) : (
-                        <span className="text-muted-foreground text-xs">-</span>
+                        <span className="text-muted-foreground text-xs">Non analysé</span>
                       )}
                     </td>
                     <td className="p-4 text-right">
