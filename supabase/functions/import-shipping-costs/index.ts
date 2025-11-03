@@ -62,14 +62,17 @@ serve(async (req) => {
 
     const accessToken = decryptData.token;
 
-    // Get products with variants
+    // Get products with variants - use correct foreign key relationship
     const { data: products, error: productsError } = await supabase
       .from('shopify_products')
       .select(`
         id,
         shopify_product_id,
         title,
-        product_variants(shopify_variant_id, weight)
+        product_variants!product_id(
+          shopify_variant_id,
+          weight
+        )
       `)
       .eq('store_id', storeId);
 

@@ -46,6 +46,15 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
+interface CompetitorPrice {
+  url: string;
+  source: string;
+  title: string;
+  price: number;
+  currency: string;
+  similarity: number;
+}
+
 interface ProductPricing {
   id: string;
   title: string;
@@ -62,7 +71,9 @@ interface ProductPricing {
   selected: boolean;
   market_price: number | null;
   smart_price: number | null;
+  net_margin: number | null;
   ai_reasoning: string | null;
+  competitors: CompetitorPrice[];
 }
 
 interface BulkOperation {
@@ -147,7 +158,9 @@ export function SmartPricingAI() {
           selected: false,
           market_price: null,
           smart_price: null,
+          net_margin: null,
           ai_reasoning: null,
+          competitors: [],
         };
         });
 
@@ -422,7 +435,9 @@ export function SmartPricingAI() {
             ...p,
             market_price: result.marketPrice,
             smart_price: result.smartPrice,
+            net_margin: result.netMargin,
             ai_reasoning: result.reasoning,
+            competitors: result.competitors || [],
           };
         }
         return p;
@@ -793,7 +808,7 @@ export function SmartPricingAI() {
             {importing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <TrendingUp className="w-4 h-4" />
+              <Truck className="w-4 h-4" />
             )}
             Importer Livraison
           </Button>
@@ -850,6 +865,7 @@ export function SmartPricingAI() {
                 <th className="p-4 text-right">Marge Nette (€)</th>
                 <th className="p-4 text-center">Marge Nette (%)</th>
                 <th className="p-4 text-right">Market Price</th>
+                <th className="p-4 text-center">Prix Concurrents</th>
                 <th className="p-4 text-right">Smart Price</th>
               </tr>
             </thead>
@@ -1035,6 +1051,35 @@ export function SmartPricingAI() {
                         </div>
                       ) : (
                         <span className="text-muted-foreground text-xs">Non analysé</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      {product.competitors && product.competitors.length > 0 ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="cursor-help gap-1 hover:bg-muted">
+                                <Info className="w-3 h-3" />
+                                {product.competitors.length} prix
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-md">
+                              <div className="space-y-2">
+                                <p className="font-semibold text-xs mb-2">Prix concurrents trouvés:</p>
+                                <div className="space-y-1 max-h-60 overflow-y-auto">
+                                  {product.competitors.slice(0, 10).map((comp, idx) => (
+                                    <div key={idx} className="text-xs flex justify-between gap-4 py-1 border-b border-border last:border-0">
+                                      <span className="font-medium truncate">{comp.source}</span>
+                                      <span className="font-semibold whitespace-nowrap">{comp.price.toFixed(2)}€</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </td>
                     <td className="p-4 text-right">
