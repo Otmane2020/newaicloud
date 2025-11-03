@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Shield, Users, TrendingUp, TrendingDown, RefreshCw, Languages, MoreVertical } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useTranslation } from '@/lib/language';
 
 interface UserProfile {
   id: string;
@@ -27,6 +28,7 @@ interface SubscriptionPlan {
 
 export default function Admin() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +62,7 @@ export default function Admin() {
       setPlans(plansData || []);
     } catch (error) {
       console.error('Error loading data:', error);
-      toast.error('Error loading data');
+      toast.error(t.admin.errors.loadData);
     } finally {
       setLoading(false);
     }
@@ -77,11 +79,11 @@ export default function Admin() {
 
       if (error) throw error;
 
-      toast.success('Plan updated successfully');
+      toast.success(t.admin.success.planUpdated);
       loadData();
     } catch (error) {
       console.error('Error updating plan:', error);
-      toast.error('Error updating plan');
+      toast.error(t.admin.errors.updatePlan);
     } finally {
       setUpdating(null);
     }
@@ -98,11 +100,11 @@ export default function Admin() {
 
       if (error) throw error;
 
-      toast.success('Status updated successfully');
+      toast.success(t.admin.success.statusUpdated);
       loadData();
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error('Error updating status');
+      toast.error(t.admin.errors.updateStatus);
     } finally {
       setUpdating(null);
     }

@@ -1058,8 +1058,8 @@ export const translations = {
   },
 
   onboarding: {
-    title: "Welcome to SeoSprint",
-    subtitle: "Choose your plan to get started",
+    title: "Choose your NewAI plan",
+    subtitle: "Choose the plan that fits your needs • Immediate access to all features",
     monthly: "Monthly",
     yearly: "Yearly",
     save: "Save {{percent}}%",
@@ -1070,6 +1070,51 @@ export const translations = {
     startTrial: "Start Free Trial",
     features: "Features",
     allFeatures: "All Features",
+    billing: {
+      monthly: "Monthly",
+      yearly: "Yearly",
+      save: "Save up to 20%"
+    },
+    trial: {
+      available: "💳 Free trial available on Starter plan",
+      freeTrial: "🎁 {{days}} days free trial",
+      startTrial: "Start free trial",
+      cardRequired: "💳 Card required • First payment on {{date}}"
+    },
+    verification: {
+      title: "Verifying your subscription",
+      checking: "We're verifying your payment with Stripe...",
+      verifyNow: "Verify now",
+      success: "Subscription verified successfully!",
+      activated: "Your subscription has been activated successfully!"
+    },
+    errors: {
+      loadingPlans: "Error loading plans",
+      mustBeConnected: "You must be logged in",
+      noActiveSubscription: "No active subscription found. Please contact support.",
+      paymentError: "Error creating payment"
+    },
+    planFeatures: {
+      unlimited: "Unlimited",
+      products: "products",
+      optimizations: "optimizations/month",
+      articles: "articles/month",
+      campaigns: "campaigns",
+      chatResponses: "chat responses/month",
+      subscribe: "Subscribe now",
+      perMonth: "/month",
+      mostPopular: "Most Popular",
+      bestValue: "Best Value",
+      forGrowth: "For growing stores",
+      forEnterprise: "For large stores and agencies",
+      chooseTier: "Choose a tier"
+    },
+    infoFooter: {
+      starterOnly: "✨ Starter Plan only: 14 days free trial with reduced limits",
+      cardRequired: "💳 Credit card required • Cancel anytime during trial at no cost",
+      proEnterprise: "💡 Pro and Enterprise plans: immediate payment, no free trial",
+      cancelAnytime: "🔒 Cancel anytime before the end of the trial"
+    }
   },
 
   merchant: {
@@ -1118,6 +1163,15 @@ export const translations = {
     totalUsers: "Total Users",
     activeSubscriptions: "Active Subscriptions",
     revenue: "Revenue",
+    errors: {
+      loadData: "Error loading data",
+      updatePlan: "Error updating plan",
+      updateStatus: "Error updating status"
+    },
+    success: {
+      planUpdated: "Plan updated successfully",
+      statusUpdated: "Status updated successfully"
+    }
   },
 
   articles: {

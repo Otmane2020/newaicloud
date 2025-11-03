@@ -49,7 +49,7 @@ interface Plan {
 
 export default function Onboarding() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -168,7 +168,7 @@ export default function Onboarding() {
       }
     } catch (error) {
       console.error('Error loading plans:', error);
-      toast.error('Erreur lors du chargement des forfaits');
+      toast.error(t.onboarding.errors.loadingPlans);
     } finally {
       setLoadingPlans(false);
     }
@@ -195,21 +195,21 @@ export default function Onboarding() {
         console.log('✅ Fix result:', fixData);
         
         if (fixData?.fixed > 0) {
-          toast.success('Votre abonnement a été activé avec succès !');
+          toast.success(t.onboarding.verification.activated);
           setTimeout(() => navigate('/dashboard'), 1500);
           return;
         }
       }
       
       if (data?.subscribed) {
-        toast.success('Abonnement vérifié avec succès !');
+        toast.success(t.onboarding.verification.success);
         setTimeout(() => navigate('/dashboard'), 1500);
       } else {
-        toast.error('Aucun abonnement actif trouvé. Veuillez contacter le support.');
+        toast.error(t.onboarding.errors.noActiveSubscription);
       }
     } catch (error) {
       console.error('💥 Error checking subscription:', error);
-      toast.error('Erreur lors de la vérification de l\'abonnement');
+      toast.error(t.onboarding.errors.paymentError);
     } finally {
       setCheckingSubscription(false);
     }
@@ -217,7 +217,7 @@ export default function Onboarding() {
 
   const handleSelectPlan = async (planId: string) => {
     if (!user) {
-      toast.error('Vous devez être connecté');
+      toast.error(t.onboarding.errors.mustBeConnected);
       return;
     }
 
@@ -269,7 +269,7 @@ export default function Onboarding() {
       }
     } catch (error) {
       console.error('💥 Error creating checkout:', error);
-      toast.error('Erreur lors de la création du paiement');
+      toast.error(t.onboarding.errors.paymentError);
     } finally {
       setLoading(false);
     }
@@ -294,7 +294,7 @@ export default function Onboarding() {
   };
 
   const formatLimit = (value: number) => {
-    if (value === -1) return 'Illimité';
+    if (value === -1) return t.onboarding.planFeatures.unlimited;
     if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
     return value.toString();
   };
@@ -323,12 +323,12 @@ export default function Onboarding() {
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-8">
         <Card className="p-8 max-w-md text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold mb-2">Vérification de votre abonnement</h2>
+          <h2 className="text-2xl font-bold mb-2">{t.onboarding.verification.title}</h2>
           <p className="text-muted-foreground mb-6">
-            Nous vérifions votre paiement avec Stripe...
+            {t.onboarding.verification.checking}
           </p>
           <Button onClick={handleCheckSubscription} disabled={checkingSubscription}>
-            Vérifier maintenant
+            {t.onboarding.verification.verifyNow}
           </Button>
         </Card>
       </div>
@@ -343,17 +343,17 @@ export default function Onboarding() {
         {plans.some(p => p.trial_days > 0) && (
           <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
             <Shield className="w-4 h-4 mr-2" />
-            💳 Essai gratuit disponible sur le plan Starter
+            {t.onboarding.trial.available}
           </Badge>
         )}
         <h1 className="text-4xl md:text-6xl font-bold mb-4">
-          Choisissez votre{' '}
+          {t.onboarding.title.split('NewAI')[0]}
           <span className="bg-gradient-primary bg-clip-text text-transparent">
-            forfait NewAI
+            NewAI
           </span>
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Choisissez le forfait adapté à vos besoins • Accès immédiat à toutes les fonctionnalités
+          {t.onboarding.subtitle}
         </p>
       </div>
 
@@ -365,16 +365,16 @@ export default function Onboarding() {
               onClick={() => setBillingCycle('monthly')}
               className="rounded-full"
             >
-              Mensuel
+              {t.onboarding.billing.monthly}
             </Button>
             <Button
               variant={billingCycle === 'yearly' ? 'default' : 'ghost'}
               onClick={() => setBillingCycle('yearly')}
               className="rounded-full"
             >
-              Annuel
+              {t.onboarding.billing.yearly}
               <Badge className="ml-2 bg-green-500">
-                Économisez jusqu'à 20%
+                {t.onboarding.billing.save}
               </Badge>
             </Button>
           </div>
@@ -401,7 +401,7 @@ export default function Onboarding() {
                 <h3 className="text-2xl font-bold mb-2">{starterPlan.name}</h3>
                 {starterPlan.trial_days > 0 && (
                   <Badge variant="outline" className="mb-3 bg-success/10 text-success border-success/30">
-                    🎁 Essai gratuit de {starterPlan.trial_days} jours
+                    {tf('onboarding.trial.freeTrial', { days: starterPlan.trial_days })}
                   </Badge>
                 )}
                 <p className="text-muted-foreground mb-6">{starterPlan.description}</p>
@@ -423,23 +423,23 @@ export default function Onboarding() {
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_products)} produits</span>
+                    <span className="text-sm">{formatLimit(starterPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_optimizations_monthly)} optimisations/mois</span>
+                    <span className="text-sm">{formatLimit(starterPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_articles_monthly)} articles/mois</span>
+                    <span className="text-sm">{formatLimit(starterPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_campaigns)} campagnes</span>
+                    <span className="text-sm">{formatLimit(starterPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_chat_responses_monthly)} réponses chat/mois</span>
+                    <span className="text-sm">{formatLimit(starterPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
                   </div>
                 </div>
 
@@ -467,15 +467,16 @@ export default function Onboarding() {
                   ) : (
                     <>
                       <Shield className="w-5 h-5 mr-2" />
-                      {starterPlan.trial_days > 0 ? "Commencer l'essai gratuit" : "S'abonner maintenant"}
+                      {starterPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}
                     </>
                   )}
                 </Button>
                 
                 {starterPlan.trial_days > 0 && (
                   <p className="text-xs text-muted-foreground text-center mt-3">
-                    💳 Carte requise • Premier paiement le{' '}
-                    {new Date(Date.now() + starterPlan.trial_days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}
+                    {tf('onboarding.trial.cardRequired', { 
+                      date: new Date(Date.now() + starterPlan.trial_days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
+                    })}
                   </p>
                 )}
               </Card>
@@ -507,7 +508,7 @@ export default function Onboarding() {
                 {isPopular && (
                   <Badge className="mb-4 bg-primary">
                     <Star className="w-3 h-3 mr-1" />
-                    Plus populaire
+                    {t.onboarding.planFeatures.mostPopular}
                   </Badge>
                 )}
 
@@ -516,18 +517,18 @@ export default function Onboarding() {
                 </div>
 
                 <h3 className="text-2xl font-bold mb-2">Pro</h3>
-                <p className="text-muted-foreground mb-4">Pour les boutiques en croissance</p>
+                <p className="text-muted-foreground mb-4">{t.onboarding.planFeatures.forGrowth}</p>
 
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-4">
                   <Select value={selectedProTier} onValueChange={setSelectedProTier}>
                     <SelectTrigger className="w-full bg-background z-50">
-                      <SelectValue placeholder="Choisir un tier" />
+                      <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
                     <SelectContent className="bg-background z-50">
                       {proPlans.map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.max_optimizations_monthly.toLocaleString()} optimisations / mois
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -543,7 +544,7 @@ export default function Onboarding() {
                           : `$${selectedPlan.price_monthly.toFixed(2)}`
                         }
                       </span>
-                      <span className="text-muted-foreground">/mois</span>
+                      <span className="text-muted-foreground">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
                   </div>
                 </div>
@@ -551,23 +552,23 @@ export default function Onboarding() {
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_products)} produits</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} optimisations/mois</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} articles/mois</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} campagnes</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} réponses chat/mois</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
                   </div>
                 </div>
 
@@ -595,7 +596,7 @@ export default function Onboarding() {
                   ) : (
                     <>
                       <Shield className="w-5 h-5 mr-2" />
-                      {selectedPlan.trial_days > 0 ? "Commencer l'essai gratuit" : "S'abonner maintenant"}
+                      {selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}
                     </>
                   )}
                 </Button>
@@ -624,7 +625,7 @@ export default function Onboarding() {
                 {isBestValue && (
                   <Badge className="mb-4 bg-green-500">
                     <Zap className="w-3 h-3 mr-1" />
-                    Meilleur rapport
+                    {t.onboarding.planFeatures.bestValue}
                   </Badge>
                 )}
 
@@ -633,18 +634,18 @@ export default function Onboarding() {
                 </div>
 
                 <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
-                <p className="text-muted-foreground mb-4">Pour les grandes boutiques et agences</p>
+                <p className="text-muted-foreground mb-4">{t.onboarding.planFeatures.forEnterprise}</p>
 
                 {/* Dropdown pour choisir le tier */}
                 <div className="mb-4">
                   <Select value={selectedEnterpriseTier} onValueChange={setSelectedEnterpriseTier}>
                     <SelectTrigger className="w-full bg-background z-50">
-                      <SelectValue placeholder="Choisir un tier" />
+                      <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
                     <SelectContent className="bg-background z-50">
                       {enterprisePlans.map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.max_optimizations_monthly.toLocaleString()} optimisations / mois
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -660,7 +661,7 @@ export default function Onboarding() {
                           : `$${selectedPlan.price_monthly.toFixed(2)}`
                         }
                       </span>
-                      <span className="text-muted-foreground">/mois</span>
+                      <span className="text-muted-foreground">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
                   </div>
                 </div>
@@ -668,23 +669,23 @@ export default function Onboarding() {
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_products)} produits</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} optimisations/mois</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} articles/mois</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} campagnes</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} réponses chat/mois</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
                   </div>
                 </div>
 
@@ -712,7 +713,7 @@ export default function Onboarding() {
                   ) : (
                     <>
                       <Shield className="w-5 h-5 mr-2" />
-                      {selectedPlan.trial_days > 0 ? "Commencer l'essai gratuit" : "S'abonner maintenant"}
+                      {selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}
                     </>
                   )}
                 </Button>
@@ -724,16 +725,16 @@ export default function Onboarding() {
         {/* Info footer */}
         <div className="text-center mt-8 space-y-2">
           <p className="text-sm text-muted-foreground">
-            ✨ <strong>Plan Starter uniquement</strong> : 14 jours d'essai gratuit avec limites réduites
+            {t.onboarding.infoFooter.starterOnly}
           </p>
           <p className="text-xs text-muted-foreground">
-            💳 Carte bancaire requise • Annulez à tout moment sans frais pendant l'essai
+            {t.onboarding.infoFooter.cardRequired}
           </p>
           <p className="text-xs text-muted-foreground">
-            💡 Plans Pro et Enterprise : paiement immédiat, pas d'essai gratuit
+            {t.onboarding.infoFooter.proEnterprise}
           </p>
           <p className="text-xs text-muted-foreground">
-            🔒 Annulation à tout moment avant la fin de l'essai
+            {t.onboarding.infoFooter.cancelAnytime}
           </p>
         </div>
       </div>

@@ -1058,8 +1058,8 @@ export const translations = {
   },
 
   onboarding: {
-    title: "Bienvenue sur SeoSprint",
-    subtitle: "Choisissez votre plan pour commencer",
+    title: "Choisissez votre forfait NewAI",
+    subtitle: "Choisissez le forfait adapté à vos besoins • Accès immédiat à toutes les fonctionnalités",
     monthly: "Mensuel",
     yearly: "Annuel",
     save: "Économisez {{percent}}%",
@@ -1070,6 +1070,51 @@ export const translations = {
     startTrial: "Commencer l'Essai Gratuit",
     features: "Fonctionnalités",
     allFeatures: "Toutes les Fonctionnalités",
+    billing: {
+      monthly: "Mensuel",
+      yearly: "Annuel",
+      save: "Économisez jusqu'à 20%"
+    },
+    trial: {
+      available: "💳 Essai gratuit disponible sur le plan Starter",
+      freeTrial: "🎁 Essai gratuit de {{days}} jours",
+      startTrial: "Commencer l'essai gratuit",
+      cardRequired: "💳 Carte requise • Premier paiement le {{date}}"
+    },
+    verification: {
+      title: "Vérification de votre abonnement",
+      checking: "Nous vérifions votre paiement avec Stripe...",
+      verifyNow: "Vérifier maintenant",
+      success: "Abonnement vérifié avec succès !",
+      activated: "Votre abonnement a été activé avec succès !"
+    },
+    errors: {
+      loadingPlans: "Erreur lors du chargement des forfaits",
+      mustBeConnected: "Vous devez être connecté",
+      noActiveSubscription: "Aucun abonnement actif trouvé. Veuillez contacter le support.",
+      paymentError: "Erreur lors de la création du paiement"
+    },
+    planFeatures: {
+      unlimited: "Illimité",
+      products: "produits",
+      optimizations: "optimisations/mois",
+      articles: "articles/mois",
+      campaigns: "campagnes",
+      chatResponses: "réponses chat/mois",
+      subscribe: "S'abonner maintenant",
+      perMonth: "/mois",
+      mostPopular: "Plus populaire",
+      bestValue: "Meilleur rapport",
+      forGrowth: "Pour les boutiques en croissance",
+      forEnterprise: "Pour les grandes boutiques et agences",
+      chooseTier: "Choisir un tier"
+    },
+    infoFooter: {
+      starterOnly: "✨ Plan Starter uniquement : 14 jours d'essai gratuit avec limites réduites",
+      cardRequired: "💳 Carte bancaire requise • Annulez à tout moment sans frais pendant l'essai",
+      proEnterprise: "💡 Plans Pro et Enterprise : paiement immédiat, pas d'essai gratuit",
+      cancelAnytime: "🔒 Annulation à tout moment avant la fin de l'essai"
+    }
   },
 
   merchant: {
@@ -1191,6 +1236,15 @@ export const translations = {
     totalUsers: "Total Utilisateurs",
     activeSubscriptions: "Abonnements Actifs",
     revenue: "Revenu",
+    errors: {
+      loadData: "Erreur lors du chargement des données",
+      updatePlan: "Erreur lors de la mise à jour du plan",
+      updateStatus: "Erreur lors de la mise à jour du statut"
+    },
+    success: {
+      planUpdated: "Plan mis à jour avec succès",
+      statusUpdated: "Statut mis à jour avec succès"
+    }
   },
 
   articles: {
