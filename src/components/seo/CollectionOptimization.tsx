@@ -1266,13 +1266,24 @@ export function CollectionOptimization() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={scoreBadge.variant} className="text-xs">
-                            {seoScore}/100
-                          </Badge>
-                          {collection.optimization_count && collection.optimization_count > 0 && (
-                            <Sparkles className="w-3 h-3 text-primary" />
-                          )}
+                        <div className="flex flex-col items-start gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-2xl font-bold ${
+                              seoScore >= 80 ? 'text-green-600' :
+                              seoScore >= 55 ? 'text-blue-600' :
+                              seoScore >= 30 ? 'text-orange-600' :
+                              'text-red-600'
+                            }`}>
+                              {Math.round(seoScore)}%
+                            </span>
+                            {collection.optimization_count && collection.optimization_count > 0 && (
+                              <Sparkles className="w-3 h-3 text-primary" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3 text-green-600" />
+                            <span className="text-xs text-muted-foreground">{scoreBadge.label}</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -1403,9 +1414,20 @@ export function CollectionOptimization() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Score SEO</span>
-                    <Badge variant={scoreBadge.variant} className="text-xs">
-                      {seoScore}/100
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`text-xl font-bold ${
+                        seoScore >= 80 ? 'text-green-600' :
+                        seoScore >= 55 ? 'text-blue-600' :
+                        seoScore >= 30 ? 'text-orange-600' :
+                        'text-red-600'
+                      }`}>
+                        {Math.round(seoScore)}%
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3 text-green-600" />
+                        <span className="text-xs text-muted-foreground">{scoreBadge.label}</span>
+                      </div>
+                    </div>
                   </div>
                   
                   {collection.seo_title && (

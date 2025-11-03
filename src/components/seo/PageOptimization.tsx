@@ -883,9 +883,20 @@ export function PageOptimization() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={scoreBadge.variant} className="text-xs">
-                          {seoScore.score}/100
-                        </Badge>
+                        <div className="flex flex-col items-start gap-1">
+                          <span className={`text-2xl font-bold ${
+                            seoScore.score >= 80 ? 'text-green-600' :
+                            seoScore.score >= 55 ? 'text-blue-600' :
+                            seoScore.score >= 30 ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {Math.round(seoScore.score)}%
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3 text-green-600" />
+                            <span className="text-xs text-muted-foreground">{scoreBadge.label}</span>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={page.optimized ? 'default' : 'secondary'}>
