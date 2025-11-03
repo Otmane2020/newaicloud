@@ -147,9 +147,9 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">{t.dialogs.limit.upgradeRequired}</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">{t.dialogs.limit.upgradeRequired}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg">
@@ -166,7 +166,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
           {availablePlans.length > 0 && (
             <>
               <div className="space-y-3">
-                <p className="text-muted-foreground font-medium">
+                <p className="text-muted-foreground font-medium text-sm sm:text-base">
                   Choisissez le nombre d'optimisations par mois:
                 </p>
                 
@@ -177,7 +177,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
                   <SelectContent className="bg-popover z-50">
                     {availablePlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly} optimisations - {plan.price_monthly}€/mois
+                        <span className="text-sm">{plan.max_optimizations_monthly} optimisations - {plan.price_monthly}€/mois</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -185,38 +185,38 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
               </div>
               
               {selectedPlan && (
-                <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 p-4 rounded-lg border border-primary/30">
-                  <h3 className="font-semibold mb-3 text-lg">
+                <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 p-3 sm:p-4 rounded-lg border border-primary/30">
+                  <h3 className="font-semibold mb-2 sm:mb-3 text-base sm:text-lg">
                     {selectedPlan.name} - {selectedPlan.price_monthly}€/mois
                   </h3>
-                  <ul className="space-y-2">
+                  <ul className="space-y-1.5 sm:space-y-2">
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-sm">{selectedPlan.max_products === -1 ? 'Produits illimités' : `${selectedPlan.max_products} produits`}</span>
+                      <span className="text-xs sm:text-sm">{selectedPlan.max_products === -1 ? 'Produits illimités' : `${selectedPlan.max_products} produits`}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-sm">{selectedPlan.max_optimizations_monthly} optimisations SEO/mois</span>
+                      <span className="text-xs sm:text-sm">{selectedPlan.max_optimizations_monthly} optimisations SEO/mois</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-sm">{selectedPlan.max_articles_monthly} articles blog/mois</span>
+                      <span className="text-xs sm:text-sm">{selectedPlan.max_articles_monthly} articles blog/mois</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-sm">{selectedPlan.max_chat_responses_monthly} réponses chat/mois</span>
+                      <span className="text-xs sm:text-sm">{selectedPlan.max_chat_responses_monthly} réponses chat/mois</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-sm">{selectedPlan.max_shopify_stores} boutique(s) Shopify</span>
+                      <span className="text-xs sm:text-sm">{selectedPlan.max_shopify_stores} boutique(s) Shopify</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-sm">Automatisation SEO</span>
+                      <span className="text-xs sm:text-sm">Automatisation SEO</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-sm">Support prioritaire</span>
+                      <span className="text-xs sm:text-sm">Support prioritaire</span>
                     </li>
                   </ul>
                 </div>
@@ -235,7 +235,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
             ) : (
               <CreditCard className="w-5 h-5 mr-2" />
             )}
-            {loading ? t.dialogs.upgrade.loading : 'Passer à Stripe'}
+            {loading ? t.dialogs.upgrade.loading : 'Activer ce plan'}
           </Button>
           
           <Button 
