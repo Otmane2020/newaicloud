@@ -320,14 +320,17 @@ const Subscription = () => {
 
             <Button 
               className="w-full mt-6" 
-              variant={isCurrentPlan(starterPlan.id) ? "outline" : "default"}
+              variant={isCurrentPlan(starterPlan.id) ? "secondary" : "default"}
               disabled={isCurrentPlan(starterPlan.id) || checkoutLoading === starterPlan.id}
               onClick={() => handleSelectPlan(starterPlan.id)}
             >
               {checkoutLoading === starterPlan.id ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isCurrentPlan(starterPlan.id) ? (
-                'Selected Plan'
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Plan actuel
+                </>
               ) : (
                 'Select Plan'
               )}
@@ -408,14 +411,17 @@ const Subscription = () => {
 
             <Button 
               className="w-full mt-6" 
-              variant={isCurrentPlan(selectedProTier) ? "outline" : "default"}
+              variant={isCurrentPlan(selectedProTier) ? "secondary" : "default"}
               disabled={isCurrentPlan(selectedProTier) || checkoutLoading === selectedProTier}
               onClick={() => handleSelectPlan(selectedProTier)}
             >
               {checkoutLoading === selectedProTier ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isCurrentPlan(selectedProTier) ? (
-                'Selected Plan'
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Plan actuel
+                </>
               ) : (
                 'Upgrade Now'
               )}
@@ -501,14 +507,17 @@ const Subscription = () => {
 
             <Button 
               className="w-full mt-6" 
-              variant={isCurrentPlan(selectedEnterpriseTier) ? "outline" : "default"}
+              variant={isCurrentPlan(selectedEnterpriseTier) ? "secondary" : "default"}
               disabled={isCurrentPlan(selectedEnterpriseTier) || checkoutLoading === selectedEnterpriseTier}
               onClick={() => handleSelectPlan(selectedEnterpriseTier)}
             >
               {checkoutLoading === selectedEnterpriseTier ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isCurrentPlan(selectedEnterpriseTier) ? (
-                'Selected Plan'
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Plan actuel
+                </>
               ) : (
                 'Upgrade Now'
               )}
