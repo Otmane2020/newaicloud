@@ -40,7 +40,7 @@ serve(async (req) => {
     const { data: connections, error: connectionsError } = await supabaseClient
       .from('shopify_connections')
       .select('*')
-      .eq('seller_id', user.id);
+      .eq('user_id', user.id);
 
     if (connectionsError) throw connectionsError;
     if (!connections || connections.length === 0) {
