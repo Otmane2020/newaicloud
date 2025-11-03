@@ -148,7 +148,7 @@ export function CollectionImportSelector() {
         const { data: existingCollection } = await supabase
           .from('shopify_collections')
           .select('id')
-          .eq('shopify_collection_id', collection.id.toString())
+          .eq('shopify_collection_id', collection.id)
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -161,8 +161,8 @@ export function CollectionImportSelector() {
           .from('shopify_collections')
           .insert({
             user_id: user.id,
-            shopify_connection_id: connection.id,
-            shopify_collection_id: collection.id.toString(),
+            store_id: connection.id,
+            shopify_collection_id: collection.id,
             title: collection.title,
             handle: collection.handle,
             image_url: collection.image?.src,
