@@ -1329,7 +1329,7 @@ export function CollectionOptimization() {
                         <div className="flex gap-1">
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="default"
                             onClick={async () => {
                               setOptimizing(true);
                               try {
@@ -1362,9 +1362,9 @@ export function CollectionOptimization() {
                             }}
                             disabled={optimizing}
                             title="Optimize"
-                            className="hover:bg-blue-50"
+                            className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >
-                            <Sparkles className="w-5 h-5 text-blue-600" />
+                            <Zap className="w-4 h-4" />
                           </Button>
                           <Button
                             size="sm"
