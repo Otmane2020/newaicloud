@@ -12,6 +12,7 @@ import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { Progress } from '@/components/ui/progress';
 import { VisionAIBanner } from './VisionAIBanner';
+import { SeoHeroBanner } from './SeoHeroBanner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
@@ -376,72 +377,21 @@ export function PageOptimization() {
   return (
     <div className="space-y-6">
       {/* Hero Banner with Stats - Modern Design */}
-      <Card className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-2 border-indigo-200 dark:border-indigo-800 p-8">
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-                <FileText className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-indigo-900 dark:text-indigo-100">
-                  Pages SEO
-                </h2>
-                <p className="text-indigo-700 dark:text-indigo-300 text-sm">Optimisation intelligente IA</p>
-              </div>
-            </div>
-            <p className="text-indigo-800 dark:text-indigo-200 text-lg max-w-2xl leading-relaxed">
-              Transformez vos pages Shopify en machines de conversion SEO. IA génère des meta titles et descriptions optimisés pour maximiser votre visibilité.
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white border border-white/20">
-                <Sparkles className="w-4 h-4" />
-                <span className="font-medium text-sm">SEO Automatisé</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white border border-white/20">
-                <CheckCircle className="w-4 h-4" />
-                <span className="font-medium text-sm">Pages Complètes</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white border border-white/20">
-                <Upload className="w-4 h-4" />
-                <span className="font-medium text-sm">Sync Shopify</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-4 items-center bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-            <div className="text-center">
-              <div className={`text-5xl font-bold ${
-                globalPageSeoScore >= 70 ? 'text-green-300' : 
-                globalPageSeoScore >= 40 ? 'text-yellow-300' : 
-                'text-red-300'
-              }`}>
-                {globalPageSeoScore}
-              </div>
-              <div className="text-white/80 text-sm font-medium">Score SEO Global</div>
-              <Progress value={globalPageSeoScore} className="mt-2 h-2 bg-white/20" />
-            </div>
-            <Button
-              size="lg"
-              onClick={handleOptimizeAll}
-              disabled={optimizing || pages.filter(p => !p.optimized).length === 0}
-              className="bg-white text-purple-600 hover:bg-white/90 gap-2 shadow-xl font-semibold px-6 py-3 text-base"
-            >
-              {optimizing ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Optimisation...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5" />
-                  Optimiser Tout
-                  <FileText className="w-5 h-5" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </Card>
+      <SeoHeroBanner
+        icon={FileText}
+        title="Pages SEO"
+        subtitle="Optimisation intelligente IA"
+        description="Transformez vos pages Shopify en machines de conversion SEO. IA génère des meta titles et descriptions optimisés pour maximiser votre visibilité."
+        globalScore={globalPageSeoScore}
+        optimizing={optimizing}
+        onOptimizeAll={handleOptimizeAll}
+        canOptimize={pages.filter(p => !p.optimized).length > 0}
+        features={[
+          { label: 'SEO Automatisé', icon: Sparkles },
+          { label: 'Pages Complètes', icon: CheckCircle },
+          { label: 'Sync Shopify', icon: Upload }
+        ]}
+      />
 
       {/* Vision AI Banner */}
       <VisionAIBanner />

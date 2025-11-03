@@ -18,6 +18,8 @@ import {
   SuccessDialog,
   WorkflowItem 
 } from './SeoWorkflowDialogs';
+import { SeoHeroBanner } from './SeoHeroBanner';
+import { VisionAIBanner } from './VisionAIBanner';
 
 interface ProductImage {
   id: string;
@@ -379,6 +381,11 @@ export function SeoAltImageList() {
     filled: allImages.filter(img => !!img.alt_text).length
   };
 
+  // Calculate global score for ALT images
+  const globalAltScore = stats.total > 0 
+    ? Math.round((stats.filled / stats.total) * 100) 
+    : 0;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -389,6 +396,37 @@ export function SeoAltImageList() {
 
   return (
     <div className="space-y-6">
+      {/* Hero Banner */}
+      <SeoHeroBanner
+        icon={ImageIcon}
+        title="ALT Images SEO"
+        subtitle="Optimisation intelligente IA"
+        description="Optimisez vos images produits avec l'IA. Générez des textes ALT descriptifs et optimisés pour améliorer votre référencement et l'accessibilité."
+        globalScore={globalAltScore}
+        optimizing={currentOperation === 'optimizing' && showProgressDialog}
+        onOptimizeAll={async () => {
+          const imagesToGenerate = allImages.filter(img => !img.alt_text);
+          if (imagesToGenerate.length === 0) {
+            toast.info(t.seo.altImage.noEmptyAlt);
+            return;
+          }
+          // Select all images without ALT
+          setSelectedImages(new Set(imagesToGenerate.map(img => img.id)));
+          // Trigger generation
+          await handleGenerateForSelected();
+        }}
+        canOptimize={stats.empty > 0}
+        features={[
+          { label: 'ALT Automatisé', icon: Sparkles },
+          { label: 'Images Complètes', icon: CheckCircle },
+          { label: 'Sync Shopify', icon: Upload }
+        ]}
+        badge={{ text: 'Vision AI' }}
+      />
+
+      {/* Vision AI Banner */}
+      <VisionAIBanner />
+
       {/* Stats Cards - 4 cartes cliquables */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card 
