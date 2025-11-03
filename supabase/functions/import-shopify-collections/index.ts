@@ -169,9 +169,10 @@ Deno.serve(async (req: Request) => {
           handle: collection.handle,
           body_html: collection.body_html || null,
           seo_title: collection.title, // Default to title
-          seo_description: collection.body_html?.replace(/<[^>]*>/g, '').substring(0, 160) || null,
+          seo_description: collection.body_html?.replace(/<[^>]*>/g, '').substring(0, 160) || `Collection ${collection.title}`,
           image_url: collection.image?.src || null,
           image_alt: collection.image?.alt || collection.title,
+          shopify_image_id: collection.image?.id || null,
           updated_at: new Date().toISOString(),
         };
 

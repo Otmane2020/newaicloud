@@ -145,18 +145,31 @@ Deno.serve(async (req: Request) => {
         try {
           const jsonMatch = content.match(/\{[\s\S]*\}/);
           seoData = JSON.parse(jsonMatch ? jsonMatch[0] : content);
-        console.log(`📝 Generated SEO data for ${collection_id}:`, {
-          title_length: seoData.seo_title?.length || 0,
-          desc_length: seoData.seo_description?.length || 0,
-          has_title: !!seoData.seo_title,
-          has_description: !!seoData.seo_description,
-          has_body_html: !!seoData.body_html
-        });
-        } catch {
-          console.warn(`⚠️ Failed to parse AI response for ${collection_id}, using fallback`);
+          console.log(`📝 Generated SEO data for ${collection_id}:`, {
+            title_length: seoData.seo_title?.length || 0,
+            desc_length: seoData.seo_description?.length || 0,
+            has_title: !!seoData.seo_title,
+            has_description: !!seoData.seo_description,
+            has_body_html: !!seoData.body_html
+          });
+          
+          // Ensure we have all required fields
+          if (!seoData.seo_description || seoData.seo_description.length < 50) {
+            console.warn(`⚠️ AI generated insufficient description, creating fallback`);
+            const fallbackDesc = collection.body_html 
+              ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) 
+              : `Découvrez notre collection ${collection.title} avec ${productTitles || 'nos meilleurs produits'}`;
+            seoData.seo_description = fallbackDesc;
+          }
+        } catch (parseError) {
+          console.warn(`⚠️ Failed to parse AI response for ${collection_id}, using fallback`, parseError);
+          const fallbackDesc = collection.body_html 
+            ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) 
+            : `Découvrez notre collection ${collection.title} avec ${productTitles || 'nos meilleurs produits'}`;
+          
           seoData = {
             seo_title: collection.title.substring(0, 60),
-            seo_description: (collection.body_html || collection.title).substring(0, 160),
+            seo_description: fallbackDesc,
             body_html: collection.body_html || `<p>${collection.title}</p>`
           };
         }

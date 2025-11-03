@@ -84,7 +84,7 @@ export default function Collections() {
 
   const handleImportCollections = async () => {
     setImporting(true);
-    const toastId = toast.loading(t.collections.import.importing);
+    const toastId = toast.loading('Import des collections en cours...');
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -102,13 +102,25 @@ export default function Collections() {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('import-content-images', {
+      // Import collections from Shopify
+      toast.loading('Import des collections depuis Shopify...', { id: toastId });
+      const { data: collectionsData, error: collectionsError } = await supabase.functions.invoke('import-shopify-collections');
+
+      if (collectionsError) throw collectionsError;
+
+      const importedCount = collectionsData?.imported || 0;
+
+      // Import collection images
+      toast.loading('Import des images des collections...', { id: toastId });
+      const { data: imagesData, error: imagesError } = await supabase.functions.invoke('import-content-images', {
         body: { storeId: storeData.id, types: ['collections'] }
       });
 
-      if (error) throw error;
+      if (imagesError) throw imagesError;
 
-      toast.success(t.collections.import.imagesImported.replace('{{count}}', String(data.totalImported || 0)), { id: toastId });
+      const imagesCount = imagesData?.totalImported || 0;
+
+      toast.success(`✅ ${importedCount} collection(s) et ${imagesCount} image(s) importées`, { id: toastId });
       await fetchCollections();
     } catch (error: any) {
       console.error('Error importing collections:', error);
@@ -297,6 +309,23 @@ export default function Collections() {
         </div>
         
         <div className="flex gap-2">
+          <Button
+            onClick={handleImportCollections}
+            disabled={importing}
+            variant="outline"
+          >
+            {importing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {t.collections.import.importing}
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4 mr-2" />
+                Importer Collections
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
