@@ -80,6 +80,8 @@ Deno.serve(async (req: Request) => {
     };
 
     let totalImported = 0;
+    const breakdown = { collections: 0, pages: 0, articles: 0, homepage: 0 };
+    const filtered = { total: 0, excluded: 0, reasons: [] as string[] };
 
     // Import Collections (both custom and smart)
     if (types.includes('collections')) {
@@ -175,6 +177,7 @@ Deno.serve(async (req: Request) => {
                 });
 
               totalImported++;
+              breakdown.collections++;
             }
           }
         }
@@ -229,6 +232,7 @@ Deno.serve(async (req: Request) => {
                 });
 
               totalImported++;
+              breakdown.pages++;
             }
           }
         }
@@ -295,6 +299,7 @@ Deno.serve(async (req: Request) => {
                     });
 
                   totalImported++;
+                  breakdown.articles++;
                 }
               }
             }
@@ -322,18 +327,38 @@ Deno.serve(async (req: Request) => {
           
           console.log(`[HOMEPAGE] Found ${homepageImages.length} total images from HTML`);
           
+          // Track filtering stats
+          const filterReasons = { favicon: 0, dataUrl: 0, tooShort: 0 };
+          
           // More lenient filtering - only skip obvious non-content images
           const validImages = homepageImages.filter(img => {
             const src = img.src.toLowerCase();
-            const isValid = !src.startsWith('data:') && 
-              !src.includes('favicon') &&
-              src.length > 15;
             
-            if (!isValid) {
-              console.log(`[HOMEPAGE] Filtered out: ${img.src.substring(0, 100)}`);
+            if (src.startsWith('data:')) {
+              filterReasons.dataUrl++;
+              filtered.excluded++;
+              return false;
             }
-            return isValid;
+            
+            if (src.includes('favicon')) {
+              filterReasons.favicon++;
+              filtered.excluded++;
+              return false;
+            }
+            
+            if (src.length <= 15) {
+              filterReasons.tooShort++;
+              filtered.excluded++;
+              return false;
+            }
+            
+            return true;
           });
+          
+          filtered.total = homepageImages.length;
+          if (filterReasons.favicon > 0) filtered.reasons.push(`favicon (${filterReasons.favicon})`);
+          if (filterReasons.dataUrl > 0) filtered.reasons.push(`data URLs (${filterReasons.dataUrl})`);
+          if (filterReasons.tooShort > 0) filtered.reasons.push(`URLs trop courtes (${filterReasons.tooShort})`);
           
           console.log(`[HOMEPAGE] ${validImages.length} valid images after filtering`);
 
@@ -369,10 +394,11 @@ Deno.serve(async (req: Request) => {
             } else {
               console.log(`[HOMEPAGE] ✅ Successfully upserted image ${i + 1}`);
               totalImported++;
+              breakdown.homepage++;
             }
           }
           
-          console.log(`[HOMEPAGE] ✅ Completed homepage import: ${totalImported} images saved`);
+          console.log(`[HOMEPAGE] ✅ Completed homepage import: ${breakdown.homepage} images saved`);
         } else {
           console.error(`[HOMEPAGE] Failed to fetch homepage: ${homepageResponse.status} ${homepageResponse.statusText}`);
         }
@@ -382,12 +408,15 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`[IMPORT-CONTENT-IMAGES] ✅ Import complete: ${totalImported} images`);
+    console.log(`[IMPORT-CONTENT-IMAGES] Breakdown:`, breakdown);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: `Successfully imported ${totalImported} images`,
-        totalImported
+        totalImported,
+        breakdown,
+        filtered: filtered.excluded > 0 ? filtered : undefined
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

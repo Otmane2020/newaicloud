@@ -27,7 +27,8 @@ import {
   Upload,
   ExternalLink,
   Store,
-  Target
+  Target,
+  Download
 } from 'lucide-react';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { SeoTasksList } from './SeoTasksList';
@@ -77,6 +78,7 @@ export function HomePageSeoAudit() {
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importingImages, setImportingImages] = useState(false);
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
   const { toast } = useToast();
@@ -261,6 +263,66 @@ export function HomePageSeoAudit() {
       sonnerToast.error(error.message || t.homepageAudit.toasts.importError);
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleImportContentImages = async () => {
+    if (!hasConnection) {
+      sonnerToast.error(t.homepageAudit.toasts.connectShopify);
+      return;
+    }
+
+    setImportingImages(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Get active store
+      const { data: store, error: storeError } = await supabase
+        .from('shopify_connections')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
+
+      if (storeError || !store) {
+        throw new Error('No active Shopify store found');
+      }
+
+      const { data, error } = await supabase.functions.invoke('import-content-images', {
+        body: { 
+          storeId: store.id,
+          types: ['homepage']
+        }
+      });
+
+      if (error) throw error;
+
+      const stats = data?.breakdown || {};
+      const totalImages = data?.totalImported || 0;
+
+      sonnerToast.success('Images homepage importées', {
+        description: (
+          <div className="space-y-1 text-sm">
+            <p>✅ {totalImages} images importées</p>
+            {stats.homepage && <p>🏠 Homepage: {stats.homepage} images</p>}
+            {data?.filtered?.total > 0 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                ({data.filtered.excluded} images filtrées : {data.filtered.reasons?.join(', ')})
+              </p>
+            )}
+          </div>
+        ),
+        duration: 8000
+      });
+
+      // Re-analyze to update score
+      await analyzeHomepage();
+    } catch (error: any) {
+      console.error('Error importing images:', error);
+      sonnerToast.error(error.message || 'Erreur lors de l\'importation des images');
+    } finally {
+      setImportingImages(false);
     }
   };
 
@@ -782,6 +844,32 @@ export function HomePageSeoAudit() {
                 </Alert>
 
                 <div className="space-y-4">
+                  {/* Import Homepage Images Button */}
+                  <div className="space-y-2">
+                    <Label>Images Homepage</Label>
+                    <Button
+                      onClick={handleImportContentImages}
+                      disabled={importingImages}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {importingImages ? (
+                        <>
+                          <Loader2 className="animate-spin" />
+                          Importation en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Download />
+                          Importer les images homepage
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Extrait toutes les images de votre page d'accueil pour optimisation SEO
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="seo-title">{t.homepageAudit.elements.seoTitle}</Label>
                     <Input

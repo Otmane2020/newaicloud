@@ -6,8 +6,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Loader2, Image as ImageIcon, Wand2, AlertCircle, ChevronDown, ChevronRight, Sparkles, RefreshCw, Clock, Upload, CheckCircle } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Wand2, AlertCircle, ChevronDown, ChevronRight, Sparkles, RefreshCw, Clock, Upload, CheckCircle, Download, BookOpen, EyeOff } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -20,6 +21,7 @@ import {
 } from './SeoWorkflowDialogs';
 import { SeoHeroBanner } from './SeoHeroBanner';
 import { VisionAIBanner } from './VisionAIBanner';
+import { HomepageAltGuide } from './HomepageAltGuide';
 
 interface ProductImage {
   id: string;
@@ -57,6 +59,7 @@ export function SeoAltImageList() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [optimizedItems, setOptimizedItems] = useState<WorkflowItem[]>([]);
   const [imagesToSync, setImagesToSync] = useState<ProductImage[]>([]);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     fetchImages();
@@ -362,6 +365,39 @@ export function SeoAltImageList() {
     setOptimizedItems([]);
     toast.success('Synchronisation terminée !', {
       description: `${progress.current} image${progress.current > 1 ? 's synchronisées' : ' synchronisée'} avec succès`
+    });
+  };
+
+  const exportHomepageAlts = () => {
+    const homepageImages = products
+      .find(p => p.id === 'homepage')
+      ?.images || [];
+
+    if (homepageImages.length === 0) {
+      toast.info('Aucune image homepage à exporter');
+      return;
+    }
+
+    const csvContent = [
+      ['Image URL', 'ALT Actuel', 'ALT Recommandé', 'Section Thème'].join(','),
+      ...homepageImages.map(img => [
+        img.src,
+        img.alt_text || '-',
+        img.alt_text || '(Générer d\'abord avec l\'IA)',
+        'homepage-section'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `homepage-alt-texts-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast.success('Export CSV réussi', {
+      description: `${homepageImages.length} images exportées`
     });
   };
 
@@ -682,7 +718,66 @@ export function SeoAltImageList() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredProducts.map((product) => {
+            {/* Homepage Images Section - Special treatment */}
+            {products.find(p => p.id === 'homepage') && (
+              <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/50">
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="text-orange-600" />
+                      <h3 className="font-semibold">Images Homepage ({products.find(p => p.id === 'homepage')?.images.length || 0})</h3>
+                      <Badge variant="outline" className="ml-2 text-orange-600 border-orange-600">
+                        ⚠️ Modification manuelle requise
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={exportHomepageAlts}>
+                        <Download className="w-4 h-4 mr-1" />
+                        Exporter CSV
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => setShowGuide(true)}>
+                        <BookOpen className="w-4 h-4 mr-1" />
+                        Voir le guide
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {products.find(p => p.id === 'homepage')?.images.map(img => (
+                      <div key={img.id} className="flex items-center gap-4 p-3 bg-white dark:bg-gray-900 rounded border">
+                        <img src={img.src} className="w-16 h-16 object-cover rounded" alt={img.alt_text || ''} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{img.alt_text || <span className="text-muted-foreground">Aucun ALT</span>}</p>
+                          <p className="text-xs text-muted-foreground truncate">{img.src}</p>
+                        </div>
+                        {img.alt_text ? (
+                          <Badge variant="default" className="flex-shrink-0 bg-green-100 text-green-700 border-green-300">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            ALT généré
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="flex-shrink-0 text-gray-600 border-gray-300">
+                            <EyeOff className="w-3 h-3 mr-1" />
+                            Sans ALT
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-sm">
+                      <strong>Note :</strong> Les images de homepage ne peuvent pas être synchronisées automatiquement via l'API Shopify. 
+                      Utilisez l'export CSV et suivez le guide pour modifier manuellement les ALT texts dans votre thème.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </Card>
+            )}
+
+            {/* Product Images */}
+            {filteredProducts.filter(p => p.id !== 'homepage').map((product) => {
               const isExpanded = expandedProducts.has(product.id);
               const mainImage = product.images.find(img => img.position === 0) || product.images[0];
               const imagesWithAlt = product.images.filter(img => img.alt_text).length;
@@ -844,6 +939,12 @@ export function SeoAltImageList() {
         count={progress.total}
         items={optimizedItems}
         onClose={handleCloseSuccess}
+      />
+
+      {/* Homepage ALT Guide Dialog */}
+      <HomepageAltGuide 
+        open={showGuide}
+        onOpenChange={setShowGuide}
       />
     </div>
   );
