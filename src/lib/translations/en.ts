@@ -557,7 +557,7 @@ export const translations = {
       allOptimized: "All products are already optimized",
       noSelected: "No product selected",
       alreadyOptimized: "{{count}} product{{s}} {{have}} already been optimized",
-      trialCanRegenerate: "In trial period, you can still regenerate them",
+      trialCanRegenerate: "With your current plan, you can still regenerate them",
       regenerate: "Regenerate",
       haveTags: "{{count}} product{{s}} {{have}} already tags",
       wantRegenerate: "Do you want to regenerate them?",
@@ -774,8 +774,8 @@ export const translations = {
       allProductsOptimized: "All products are already optimized",
       optimizationError: "Error during optimization",
       loadError: "Failed to load products",
-      trialLimitReached: "Trial limit reached for SEO optimizations",
-      someAlreadyOptimized: "Some products have already been optimized during your trial.",
+      trialLimitReached: "Current plan limit reached for SEO optimizations",
+      someAlreadyOptimized: "Some products have already been optimized this month with your current plan.",
       noOptimizedProductsSelected: "No optimized products selected for sync",
       allOptimizedSynced: "All optimized products are already synced",
       noProductsToSynchronize: "No products to synchronize"
@@ -1151,9 +1151,9 @@ export const translations = {
         optimizationError: "Error: {{message}}",
         optimizationFailed: "Optimization failed",
         collectionError: "Collection \"{{title}}\": {{message}}",
-        trialLimitReached: "Trial limit reached. Upgrade to a paid plan to continue.",
+        trialLimitReached: "Current plan limit reached. Upgrade to a higher plan to continue.",
         monthlyLimitReached: "Monthly optimization limit reached. Upgrade to a higher plan.",
-        alreadyOptimizedTrial: "Trial limit reached. This collection is already optimized.",
+        alreadyOptimizedTrial: "Current plan limit reached. This collection is already optimized.",
         invalidIds: "Error: Invalid collection IDs detected. Please refresh.",
         syncSuccess: "Successfully synced to Shopify",
         syncError: "Failed to sync to Shopify"
@@ -1444,9 +1444,9 @@ export const translations = {
   },
 
   trial: {
-    limitReached: "Trial limit reached",
-    usageMessage: "You've used {{usage}} of {{limit}} {{resourceType}}. Upgrade to continue.",
-    activateMyPlan: "Activate My Plan",
+    limitReached: "Current plan limit reached",
+    usageMessage: "You've used {{usage}} of {{limit}} {{resourceType}} on your current plan. Upgrade to continue.",
+    activateMyPlan: "Upgrade to Higher Plan",
     warningTitle: "Trial ending soon",
     daysLeft: "{{days}} days left in your trial",
     activateSubscription: "Activate Subscription",
@@ -1691,7 +1691,7 @@ export const translations = {
     },
     warning: {
       limitReached: "Limit reached",
-      trialExpired: "Trial expired",
+      trialExpired: "Limit reached",
       paymentCancelled: "Payment cancelled",
       paymentCancelledMessage: "Your payment was cancelled"
     },
@@ -1982,8 +1982,8 @@ export const translations = {
         description: "You've reached the {{limitType}} limit of the free plan. Upgrade to the Starter plan now to continue (immediate payment)."
       },
       trialExpired: {
-        title: "⏰ Trial Expired",
-        description: "Your free trial period has ended. Activate the Starter plan to continue (immediate payment)."
+        title: "⏰ Limit Reached",
+        description: "You've reached the limit of your current plan. Upgrade to the Starter plan to continue."
       },
       activateNow: "Activate Now",
       manageSub: "Manage Subscription",
@@ -2022,8 +2022,8 @@ export const translations = {
       maybeLater: "Maybe Later"
     },
     trialLimit: {
-      title: "🚀 Activate your Starter subscription",
-      description: "You have reached your free trial limit:",
+      title: "🚀 Upgrade to higher plan",
+      description: "You have reached the limit of your current plan:",
       usageFormat: "{{limitType}}: {{currentUsage}}/{{maxUsage}} used"
     }
   },

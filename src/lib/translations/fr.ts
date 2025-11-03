@@ -557,7 +557,7 @@ export const translations = {
       allOptimized: "Tous les produits sont déjà optimisés",
       noSelected: "Aucun produit sélectionné",
       alreadyOptimized: "{{count}} produit{{s}} {{ont}} déjà été optimisé{{s}}",
-      trialCanRegenerate: "En période d'essai, vous pouvez quand même les régénérer",
+      trialCanRegenerate: "Avec votre plan actuel, vous pouvez quand même les régénérer",
       regenerate: "Régénérer",
       haveTags: "{{count}} produit{{s}} {{ont}} déjà des tags",
       wantRegenerate: "Voulez-vous les régénérer ?",
@@ -774,8 +774,8 @@ export const translations = {
       allProductsOptimized: "Tous les produits sont déjà optimisés",
       optimizationError: "Erreur lors de l'optimisation",
       loadError: "Échec du chargement des produits",
-      trialLimitReached: "Limite d'essai atteinte pour les optimisations SEO",
-      someAlreadyOptimized: "Certains produits ont déjà été optimisés pendant votre essai.",
+      trialLimitReached: "Limite du plan actuel atteinte pour les optimisations SEO",
+      someAlreadyOptimized: "Certains produits ont déjà été optimisés ce mois-ci avec votre plan actuel.",
       noOptimizedProductsSelected: "Aucun produit optimisé sélectionné pour la synchronisation",
       allOptimizedSynced: "Tous les produits optimisés sont déjà synchronisés",
       noProductsToSynchronize: "Aucun produit à synchroniser"
@@ -1151,9 +1151,9 @@ export const translations = {
         optimizationError: "Erreur : {{message}}",
         optimizationFailed: "Échec de l'optimisation",
         collectionError: "Collection \"{{title}}\": {{message}}",
-        trialLimitReached: "Limite d'essai atteinte. Passez à un plan payant pour continuer.",
+        trialLimitReached: "Limite du plan actuel atteinte. Passez à un plan supérieur pour continuer.",
         monthlyLimitReached: "Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur.",
-        alreadyOptimizedTrial: "Limite d'essai atteinte. Cette collection est déjà optimisée.",
+        alreadyOptimizedTrial: "Limite du plan actuel atteinte. Cette collection est déjà optimisée.",
         invalidIds: "Erreur: IDs de collection invalides détectés. Veuillez rafraîchir la page.",
         syncSuccess: "Synchronisation réussie vers Shopify",
         syncError: "Échec de la synchronisation vers Shopify"
@@ -1534,9 +1534,9 @@ export const translations = {
   },
 
   trial: {
-    limitReached: "Limite d'essai atteinte",
-    usageMessage: "Vous avez utilisé {{usage}} sur {{limit}} {{resourceType}}. Passez au plan supérieur pour continuer.",
-    activateMyPlan: "Activer Mon Plan",
+    limitReached: "Limite du plan actuel atteinte",
+    usageMessage: "Vous avez utilisé {{usage}} sur {{limit}} {{resourceType}} de votre plan actuel. Passez au plan supérieur pour continuer.",
+    activateMyPlan: "Passer au Plan Supérieur",
     warningTitle: "Essai bientôt terminé",
     daysLeft: "{{days}} jours restants dans votre essai",
     activateSubscription: "Activer l'Abonnement",
@@ -1982,8 +1982,8 @@ export const translations = {
         description: "Vous avez atteint la limite {{limitType}} du plan gratuit. Passez au plan Starter maintenant pour continuer (paiement immédiat)."
       },
       trialExpired: {
-        title: "⏰ Essai Expiré",
-        description: "Votre période d'essai gratuite est terminée. Activez le plan Starter pour continuer (paiement immédiat)."
+        title: "⏰ Limite Atteinte",
+        description: "Vous avez atteint la limite de votre plan actuel. Passez au plan Starter pour continuer."
       },
       activateNow: "Activer maintenant",
       manageSub: "Gérer l'abonnement",
@@ -2022,8 +2022,8 @@ export const translations = {
       maybeLater: "Plus tard"
     },
     trialLimit: {
-      title: "🚀 Activez votre abonnement Starter",
-      description: "Vous avez atteint votre limite d'essai gratuit :",
+      title: "🚀 Passez au plan supérieur",
+      description: "Vous avez atteint la limite de votre plan actuel :",
       usageFormat: "{{limitType}} : {{currentUsage}}/{{maxUsage}} utilisés"
     }
   },
