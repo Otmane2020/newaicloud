@@ -26,6 +26,7 @@ import BlogNewAI from "./pages/BlogNewAI";
 import SEO from "./pages/SEO";
 import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
+import ChatWithTabs from "./pages/ChatWithTabs";
 import ProductEnrichment from "./pages/ProductEnrichment";
 import ProductSource from "./pages/ProductSource";
 import ProductLanding from "./pages/ProductLanding";
