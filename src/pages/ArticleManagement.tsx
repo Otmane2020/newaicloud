@@ -150,7 +150,9 @@ export default function ArticleManagement() {
 
   const optimizeArticles = async (articleIds: string[]) => {
     try {
-      toast.info('SEO optimization in progress...');
+      const loadingToast = toast.loading('🤖 Optimisation SEO en cours...', {
+        description: `Analyse de ${articleIds.length} article(s) par l'IA`
+      });
       
       const { data, error } = await supabase.functions.invoke('generate-article-seo', {
         body: { article_ids: articleIds }
@@ -161,42 +163,65 @@ export default function ArticleManagement() {
       // Get optimized articles from database
       const { data: articles, error: articlesError } = await supabase
         .from('blog_articles')
-        .select('id, title, meta_description')
+        .select('id, title, seo_title, meta_description, keywords, featured_image, shopify_article_id, optimization_count')
         .in('id', articleIds);
 
       if (articlesError) throw articlesError;
 
+      toast.dismiss(loadingToast);
+      
       // Show dialog with results
       setOptimizedArticles(articles || []);
       setShowOptimizationResults(true);
       
-      toast.success(`${data.success_count || articleIds.length} article(s) optimized!`);
       loadArticles();
     } catch (error) {
       console.error('Error optimizing:', error);
-      toast.error('Error during optimization');
+      toast.error('❌ Erreur lors de l\'optimisation', {
+        description: 'Veuillez réessayer'
+      });
     }
   };
 
   const syncToShopify = async (articleIds: string[]) => {
+    const loadingToast = toast.loading('📤 Synchronisation Shopify', {
+      description: `Publication de ${articleIds.length} article(s)...`
+    });
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
     for (const articleId of articleIds) {
       try {
-        toast.loading(`📤 Syncing article ${articleId.substring(0, 8)}...`, { id: `sync-${articleId}` });
-        
         const { error } = await supabase.functions.invoke('sync-blog-to-shopify', {
           body: { articleId }
         });
 
         if (error) {
-          toast.error(`Sync error ${articleId.substring(0, 8)}`, { id: `sync-${articleId}` });
+          errorCount++;
         } else {
-          toast.success(`✅ Article synced!`, { id: `sync-${articleId}` });
+          successCount++;
         }
       } catch (error) {
         console.error('Error syncing:', error);
-        toast.error(`Sync error ${articleId.substring(0, 8)}`, { id: `sync-${articleId}` });
+        errorCount++;
       }
     }
+    
+    toast.dismiss(loadingToast);
+    
+    if (successCount > 0) {
+      toast.success(`✅ ${successCount} article(s) publié(s)`, {
+        description: errorCount > 0 ? `${errorCount} erreur(s)` : 'Synchronisation réussie'
+      });
+    }
+    
+    if (errorCount > 0 && successCount === 0) {
+      toast.error('❌ Échec de la synchronisation', {
+        description: 'Vérifiez votre connexion Shopify'
+      });
+    }
+    
     loadArticles();
     setSelectedArticles([]);
   };
@@ -504,8 +529,16 @@ export default function ArticleManagement() {
                             !!article.shopify_article_id,
                             article.optimization_count || 0
                           );
+                          const colorClass = seoScore.score >= 90 
+                            ? 'bg-success text-success-foreground border-success' 
+                            : seoScore.score >= 70 
+                            ? 'bg-warning text-warning-foreground border-warning' 
+                            : seoScore.score >= 50
+                            ? 'bg-orange-500 text-white border-orange-500'
+                            : 'bg-destructive text-destructive-foreground border-destructive';
+                          
                           return (
-                            <Badge className={getConfidenceBadgeColor(seoScore.score)}>
+                            <Badge className={colorClass}>
                               {seoScore.score}%
                             </Badge>
                           );

@@ -17,7 +17,7 @@ interface SeoScoreDetails {
 interface ArticleSeoScoreDetails {
   score: number;
   breakdown: string[];
-  maxScore: number;
+  quality: 'poor' | 'average' | 'good' | 'excellent';
 }
 
 interface AltTextScoreDetails {
@@ -492,80 +492,83 @@ export function calculateArticleSeoScore(
   let score = 0;
   const maxScore = 100;
 
-  // Title score (20 points max)
-  const titleToCheck = seoTitle || title;
-  if (titleToCheck) {
-    const titleLen = titleToCheck.length;
-    if (titleLen >= 40 && titleLen <= 70) {
-      score += 20;
-      breakdown.push('✓ Title optimal length (+20)');
-    } else if (titleLen >= 20 && titleLen <= 100) {
+  // SEO Title (25 points max)
+  if (seoTitle) {
+    const titleLen = seoTitle.length;
+    if (titleLen >= 30 && titleLen <= 60) {
+      score += 25;
+      breakdown.push('✓ Titre SEO optimisé (+25)');
+    } else if (titleLen >= 20 && titleLen <= 70) {
       score += 15;
-      breakdown.push('⚠ Title acceptable (+15)');
+      breakdown.push('⚠ Titre SEO acceptable (+15)');
     } else {
-      score += 5;
-      breakdown.push('✗ Title needs optimization (+5)');
+      score += 8;
+      breakdown.push('✗ Titre SEO à améliorer (+8)');
     }
   } else {
-    breakdown.push('✗ No SEO title');
+    breakdown.push('✗ Titre SEO manquant (0)');
   }
 
-  // Description score (30 points max)
+  // SEO Description (30 points max)
   if (seoDescription) {
     const descLen = seoDescription.length;
     if (descLen >= 120 && descLen <= 160) {
       score += 30;
-      breakdown.push('✓ Description optimal length (+30)');
-    } else if (descLen >= 50 && descLen <= 200) {
+      breakdown.push('✓ Description SEO optimale (+30)');
+    } else if (descLen >= 80 && descLen <= 180) {
       score += 20;
-      breakdown.push('⚠ Description acceptable (+20)');
+      breakdown.push('⚠ Description SEO acceptable (+20)');
     } else {
       score += 10;
-      breakdown.push('✗ Description needs optimization (+10)');
+      breakdown.push('✗ Description SEO à optimiser (+10)');
     }
   } else {
-    breakdown.push('✗ No SEO description');
+    breakdown.push('✗ Description SEO manquante (0)');
   }
 
-  // Keywords/Tags score (20 points)
+  // Keywords/Tags (20 points max)
   if (keywords && keywords.length > 0) {
     const keywordCount = keywords.length;
-    if (keywordCount >= 3 && keywordCount <= 10) {
+    if (keywordCount >= 5) {
       score += 20;
-      breakdown.push(`✓ Keywords optimized (${keywordCount}) (+20)`);
-    } else if (keywordCount > 0) {
-      score += 10;
-      breakdown.push(`⚠ Keywords: ${keywordCount} (target 3-10) (+10)`);
+      breakdown.push(`✓ Mots-clés optimisés (${keywordCount}) (+20)`);
+    } else if (keywordCount >= 3) {
+      score += 15;
+      breakdown.push(`⚠ Mots-clés: ${keywordCount} (+15)`);
+    } else {
+      score += 8;
+      breakdown.push(`✗ Ajoutez plus de mots-clés (${keywordCount}) (+8)`);
     }
   } else {
-    breakdown.push('✗ No keywords');
+    breakdown.push('✗ Mots-clés manquants (0)');
   }
 
   // Featured image (15 points)
   if (hasFeaturedImage) {
     score += 15;
-    breakdown.push('✓ Featured image (+15)');
+    breakdown.push('✓ Image de couverture (+15)');
   } else {
-    breakdown.push('✗ No featured image');
+    breakdown.push('✗ Image de couverture manquante (0)');
   }
 
   // Publication status (10 points)
   if (isPublished) {
     score += 10;
-    breakdown.push('✓ Published on Shopify (+10)');
+    breakdown.push('✓ Publié sur Shopify (+10)');
   } else {
-    breakdown.push('✗ Not published');
+    breakdown.push('⚠ Non publié (0)');
   }
 
-  // AI optimization bonus (5 points)
-  if (optimizationCount > 0) {
-    score += 5;
-    breakdown.push(`✓ AI optimized ${optimizationCount}x (+5)`);
-  }
+  // Determine quality level
+  let quality: 'poor' | 'average' | 'good' | 'excellent';
+  if (score >= 90) quality = 'excellent';
+  else if (score >= 70) quality = 'good';
+  else if (score >= 50) quality = 'average';
+  else quality = 'poor';
 
   return {
-    score: Math.min(score, maxScore),
+    score,
     breakdown,
-    maxScore
+    quality
   };
 }
