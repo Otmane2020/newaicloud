@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
-import { calculateDescriptionScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
+import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
 import { 
   ProgressDialog, 
   ResultsDialog, 
@@ -150,9 +150,15 @@ export function CollectionOptimization() {
   const scoreWithoutAI = collectionsNotOptimized.length > 0
     ? Math.round(
         collectionsNotOptimized.reduce((sum, c) => {
-          const titleScore = calculateDescriptionScore(c.title);
-          const descScore = calculateDescriptionScore(c.body_html?.substring(0, 160) || '');
-          return sum + (titleScore.score + descScore.score) / 2;
+          const score = calculateDetailedSeoScore(
+            c.title,
+            c.body_html?.substring(0, 160) || '',
+            !!c.image_url,
+            true,
+            undefined,
+            0
+          );
+          return sum + score.score;
         }, 0) / collectionsNotOptimized.length
       )
     : 0;
@@ -160,9 +166,15 @@ export function CollectionOptimization() {
   const scoreWithAI = collectionsOptimized.length > 0
     ? Math.round(
         collectionsOptimized.reduce((sum, c) => {
-          const titleScore = calculateDescriptionScore(c.seo_title || c.title);
-          const descScore = calculateDescriptionScore(c.seo_description || c.body_html?.substring(0, 160) || '');
-          return sum + (titleScore.score + descScore.score) / 2;
+          const score = calculateDetailedSeoScore(
+            c.seo_title || c.title,
+            c.seo_description || c.body_html?.substring(0, 160) || '',
+            !!c.image_url,
+            true,
+            undefined,
+            c.optimization_count || 0
+          );
+          return sum + score.score;
         }, 0) / collectionsOptimized.length
       )
     : 0;
@@ -173,18 +185,17 @@ export function CollectionOptimization() {
 
   // Define helper function before using it
   const calculateCollectionSeoScore = (collection: Collection): number => {
-    const titleScore = calculateDescriptionScore(collection.seo_title || collection.title);
-    const descScore = calculateDescriptionScore(collection.seo_description || collection.body_html?.substring(0, 160) || '');
+    // Use detailed SEO score calculation like products
+    const seoScore = calculateDetailedSeoScore(
+      collection.seo_title || collection.title,
+      collection.seo_description || collection.body_html?.substring(0, 160) || '',
+      !!collection.image_url,
+      true,
+      undefined, // No tags for collections
+      collection.optimization_count || 0
+    );
     
-    // Base score from title and description
-    let score = Math.round((titleScore.score + descScore.score) / 2);
-    
-    // Bonus for AI optimization
-    if (collection.optimization_count && collection.optimization_count > 0) {
-      score = Math.min(100, score + 10); // +10 bonus for AI optimization
-    }
-    
-    return score;
+    return seoScore.score;
   };
 
   const filteredCollections = collections.filter((collection) => {

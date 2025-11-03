@@ -82,12 +82,20 @@ Handle: ${data.handle}
 Description actuelle: ${data.body_html ? data.body_html.replace(/<[^>]*>/g, '').substring(0, 500) : 'Pas de description'}
 Produits dans la collection: ${data.productTitles || 'Pas encore de produits'}
 
-Retournez UNIQUEMENT un objet JSON avec:
+**VOUS DEVEZ GÉNÉRER LES 3 CHAMPS OBLIGATOIREMENT:**
+
+1. seo_title: Titre SEO optimisé de 50-60 caractères avec mots-clés principaux
+2. seo_description: Meta description SEO de 150-160 caractères, engageante avec appel à l'action
+3. body_html: Description HTML enrichie de 200-400 caractères avec balises <p> pour la page de collection
+
+**FORMAT JSON OBLIGATOIRE (tous les champs requis):**
 {
-  "seo_title": "Titre SEO optimisé (50-60 caractères)",
-  "seo_description": "Meta description SEO optimisée (150-160 caractères)",
-  "body_html": "Description HTML enrichie pour la page de collection (200-400 caractères avec balises <p>)"
-}`,
+  "seo_title": "Titre SEO optimisé ici",
+  "seo_description": "Meta description optimisée ici",
+  "body_html": "<p>Description HTML enrichie ici</p>"
+}
+
+NE PAS OUBLIER le champ seo_description, c'est crucial pour le SEO !`,
 
     pageHomepage: (data: PageData) => `Tu es un expert SEO français spécialisé en e-commerce Shopify.
 
@@ -229,12 +237,20 @@ Handle: ${data.handle}
 Current Description: ${data.body_html ? data.body_html.replace(/<[^>]*>/g, '').substring(0, 500) : 'No description'}
 Products in collection: ${data.productTitles || 'No products yet'}
 
-Return ONLY a JSON object with:
+**YOU MUST GENERATE ALL 3 FIELDS MANDATORY:**
+
+1. seo_title: SEO optimized title of 50-60 characters with main keywords
+2. seo_description: SEO meta description of 150-160 characters, engaging with call-to-action
+3. body_html: Rich HTML description of 200-400 characters with <p> tags for the collection page
+
+**REQUIRED JSON FORMAT (all fields mandatory):**
 {
-  "seo_title": "SEO optimized title (50-60 characters)",
-  "seo_description": "SEO optimized meta description (150-160 characters)",
-  "body_html": "Rich HTML description for the collection page (200-400 characters with <p> tags)"
-}`,
+  "seo_title": "SEO optimized title here",
+  "seo_description": "SEO optimized meta description here",
+  "body_html": "<p>Rich HTML description here</p>"
+}
+
+DO NOT FORGET the seo_description field, it's crucial for SEO!`,
 
     pageHomepage: (data: PageData) => `You are an expert SEO specialist for Shopify e-commerce.
 
