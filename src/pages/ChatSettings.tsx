@@ -31,12 +31,30 @@ import {
   Shield
 } from 'lucide-react';
 
+interface ChatSettings {
+  assistant_style: string;
+  tone: string;
+  default_language: string;
+  response_length: string;
+  custom_instructions: string;
+  save_history: boolean;
+  embed_enabled: boolean;
+  embed_position: string;
+  embed_welcome_message: string;
+  embed_primary_color: string;
+  embed_button_text: string;
+  embed_avatar: string;
+  embed_sales_focus: boolean;
+  embed_product_recommendations: boolean;
+  embed_order_support: boolean;
+}
+
 export default function ChatSettings() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('behavior');
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<ChatSettings>({
     assistant_style: 'professional',
     tone: 'professional',
     default_language: 'fr',
@@ -69,7 +87,16 @@ export default function ChatSettings() {
       if (error && error.code !== 'PGRST116') throw error;
       
       if (data) {
-        setSettings(data);
+        // Fusionner les données avec les valeurs par défaut
+        setSettings(prev => ({
+          ...prev,
+          ...data,
+          // Assurer que les nouveaux champs ont des valeurs par défaut
+          embed_avatar: data.embed_avatar || 'professional',
+          embed_sales_focus: data.embed_sales_focus !== undefined ? data.embed_sales_focus : true,
+          embed_product_recommendations: data.embed_product_recommendations !== undefined ? data.embed_product_recommendations : true,
+          embed_order_support: data.embed_order_support !== undefined ? data.embed_order_support : true,
+        }));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
