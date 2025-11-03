@@ -183,96 +183,86 @@ export function SeoOptimization() {
   // Get unique categories
   const uniqueCategories = Array.from(new Set(products.map((p) => p.product_type).filter(Boolean))).sort();
 
+  // Helper function for SEO score calculation with memoization
+  const getSeoScore = (() => {
+    const cache = new Map();
+
+    return (product) => {
+      const cacheKey = `${product.seo_title}_${product.seo_description}_${product.image_url}_${product.tags}_${product.optimization_count}`;
+
+      if (cache.has(cacheKey)) {
+        return cache.get(cacheKey);
+      }
+
+      const score = calculateDetailedSeoScore(
+        product.seo_title,
+        product.seo_description,
+        !!product.image_url,
+        true,
+        product.tags,
+        product.optimization_count || 0,
+      ).score;
+
+      cache.set(cacheKey, score);
+      return score;
+    };
+  })();
+
   const filteredProducts = products
     .filter((product) => {
       const { enrichment_status, seo_synced_to_shopify, product_type, title } = product;
 
-      // Tab filtering
-      switch (activeTab) {
-        case "not-enriched":
-          if (enrichment_status === "enriched") return false;
-          break;
-        case "enriched":
-          if (enrichment_status !== "enriched") return false;
-          break;
-        case "pending-sync":
-          if (enrichment_status !== "enriched" || seo_synced_to_shopify) return false;
-          break;
-        case "synced":
-          if (!seo_synced_to_shopify) return false;
-          break;
-      }
+      // Early exclusion for tab filters
+      const tabExclusions = {
+        "not-enriched": enrichment_status === "enriched",
+        enriched: enrichment_status !== "enriched",
+        "pending-sync": enrichment_status !== "enriched" || seo_synced_to_shopify,
+        synced: !seo_synced_to_shopify,
+      };
 
-      // Status filter
-      if (statusFilter === "optimized" && enrichment_status !== "enriched") return false;
-      if (statusFilter === "not-optimized" && enrichment_status === "enriched") return false;
+      if (tabExclusions[activeTab]) return false;
 
-      // Sync filter
-      if (syncFilter === "synced" && !seo_synced_to_shopify) return false;
-      if (syncFilter === "not-synced" && seo_synced_to_shopify) return false;
+      // Status and sync filters
+      if (
+        (statusFilter === "optimized" && enrichment_status !== "enriched") ||
+        (statusFilter === "not-optimized" && enrichment_status === "enriched") ||
+        (syncFilter === "synced" && !seo_synced_to_shopify) ||
+        (syncFilter === "not-synced" && seo_synced_to_shopify)
+      )
+        return false;
 
       // Quality filter
       if (qualityFilter !== "all") {
-        const score = calculateDetailedSeoScore(
-          product.seo_title,
-          product.seo_description,
-          !!product.image_url,
-          true,
-          product.tags,
-          product.optimization_count || 0,
-        ).score;
-
-        switch (qualityFilter) {
-          case "excellent":
-            if (score < 70) return false;
-            break;
-          case "good":
-            if (score < 55 || score >= 70) return false;
-            break;
-          case "poor":
-            if (score >= 55) return false;
-            break;
-        }
+        const score = getSeoScore(product);
+        const qualityConditions = {
+          excellent: score < 70,
+          good: score < 55 || score >= 70,
+          poor: score >= 55,
+        };
+        if (qualityConditions[qualityFilter]) return false;
       }
 
-      // Category filter
+      // Category and search filters
       if (selectedCategory !== "all" && product_type !== selectedCategory) return false;
 
-      // Search filter
       if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const titleLower = title?.toLowerCase() || "";
-        return titleLower.includes(searchLower);
+        return title?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
       }
 
       return true;
     })
     .sort((a, b) => {
-      // Priority 1: Non-synced products first (most important for action)
+      // Multi-level sorting for better UX
+      const statusPriority = { enriched: 1, "not-enriched": 2 };
+      const priorityA = statusPriority[a.enrichment_status] || 3;
+      const priorityB = statusPriority[b.enrichment_status] || 3;
+
+      if (priorityA !== priorityB) return priorityA - priorityB;
       if (a.seo_synced_to_shopify !== b.seo_synced_to_shopify) {
         return a.seo_synced_to_shopify ? 1 : -1;
       }
 
-      // Priority 2: SEO score (highest first)
-      const scoreA = calculateDetailedSeoScore(
-        a.seo_title,
-        a.seo_description,
-        !!a.image_url,
-        true,
-        a.tags,
-        a.optimization_count || 0,
-      ).score;
-
-      const scoreB = calculateDetailedSeoScore(
-        b.seo_title,
-        b.seo_description,
-        !!b.image_url,
-        true,
-        b.tags,
-        b.optimization_count || 0,
-      ).score;
-
-      return scoreB - scoreA; // Descending order
+      return getSeoScore(b) - getSeoScore(a);
     });
 
   // Apply SEO score sorting
