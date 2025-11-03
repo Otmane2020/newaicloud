@@ -59,6 +59,9 @@ interface ProductPricing {
   shopify_product_id: string | null;
   currency: string;
   selected: boolean;
+  market_price: number | null;
+  smart_price: number | null;
+  ai_reasoning: string | null;
 }
 
 interface BulkOperation {
@@ -74,6 +77,7 @@ export function SmartPricingAI() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [analyzingPrices, setAnalyzingPrices] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -140,6 +144,9 @@ export function SmartPricingAI() {
           shopify_product_id: product.shopify_id ? String(product.shopify_id) : null,
           currency: product.currency || 'EUR',
           selected: false,
+          market_price: null,
+          smart_price: null,
+          ai_reasoning: null,
         };
         });
 
@@ -297,6 +304,98 @@ export function SmartPricingAI() {
     } finally {
       setImporting(false);
     }
+  };
+
+  const analyzeCompetitorPrices = async (selectedOnly: boolean) => {
+    try {
+      setAnalyzingPrices(true);
+      const productsToAnalyze = selectedOnly
+        ? products.filter(p => p.selected)
+        : products;
+
+      if (productsToAnalyze.length === 0) {
+        toast.error('Aucun produit sélectionné');
+        return;
+      }
+
+      const toastId = toast.loading(`🤖 Analyse IA de ${productsToAnalyze.length} produit(s)...`, {
+        description: 'Recherche des prix concurrents et calcul des prix optimaux'
+      });
+
+      const { data, error } = await supabase.functions.invoke('analyze-competitor-pricing', {
+        body: { 
+          productIds: productsToAnalyze.map(p => p.id),
+          taxRate
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('not found') || error.message.includes('FunctionsRelayError')) {
+          toast.error('❌ Fonction d\'analyse non déployée', {
+            id: toastId,
+            description: 'Veuillez réessayer dans quelques instants.'
+          });
+          return;
+        }
+        throw error;
+      }
+
+      if (!data.success) {
+        toast.error(`❌ ${data.error}`, { id: toastId });
+        return;
+      }
+
+      // Update products with AI results
+      setProducts(prev => prev.map(p => {
+        const result = data.results.find((r: any) => r.productId === p.id);
+        if (result && !result.error) {
+          return {
+            ...p,
+            market_price: result.marketPrice,
+            smart_price: result.smartPrice,
+            ai_reasoning: result.reasoning,
+          };
+        }
+        return p;
+      }));
+
+      toast.success(`✅ Analyse terminée : ${data.results.length} produit(s)`, {
+        id: toastId,
+        description: 'Prix intelligents calculés avec succès'
+      });
+
+    } catch (error: any) {
+      console.error('Price analysis error:', error);
+      toast.error('❌ Erreur lors de l\'analyse', {
+        description: error.message || 'Une erreur inattendue est survenue'
+      });
+    } finally {
+      setAnalyzingPrices(false);
+    }
+  };
+
+  const applySmartPrices = (selectedOnly: boolean) => {
+    const productsToUpdate = selectedOnly
+      ? products.filter(p => p.selected && p.smart_price)
+      : products.filter(p => p.smart_price);
+
+    if (productsToUpdate.length === 0) {
+      toast.error('Aucun prix intelligent à appliquer');
+      return;
+    }
+
+    setProducts(prev => prev.map(p => {
+      if (productsToUpdate.find(pt => pt.id === p.id)) {
+        return {
+          ...p,
+          compare_at_price: p.price, // Old price becomes compare price
+          price: p.smart_price,
+        };
+      }
+      return p;
+    }));
+
+    toast.success(`✅ Prix intelligents appliqués à ${productsToUpdate.length} produit(s)`);
   };
 
   const syncToShopify = async (selectedOnly: boolean) => {
@@ -534,6 +633,28 @@ export function SmartPricingAI() {
           )}
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="default"
+            onClick={() => analyzeCompetitorPrices(true)}
+            disabled={analyzingPrices || syncing || selectedCount === 0}
+            className="gap-2 bg-purple-600 hover:bg-purple-700"
+          >
+            {analyzingPrices ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Calculator className="w-4 h-4" />
+            )}
+            🤖 Analyser Prix IA
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => applySmartPrices(true)}
+            disabled={syncing || products.filter(p => p.selected && p.smart_price).length === 0}
+            className="gap-2"
+          >
+            <CheckCheck className="w-4 h-4" />
+            Appliquer Smart Price
+          </Button>
           <TooltipProvider>
             <Tooltip>
               <AlertDialog open={showImportDialog} onOpenChange={setShowImportDialog}>
@@ -646,6 +767,8 @@ export function SmartPricingAI() {
                 <th className="p-4 text-center">Marge Brute (%)</th>
                 <th className="p-4 text-right">Marge Nette (€)</th>
                 <th className="p-4 text-center">Marge Nette (%)</th>
+                <th className="p-4 text-right">Market Price</th>
+                <th className="p-4 text-right">Smart Price</th>
               </tr>
             </thead>
             <tbody>
@@ -821,6 +944,33 @@ export function SmartPricingAI() {
                         </Badge>
                       ) : (
                         <span className="text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      {product.market_price ? (
+                        <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                          {product.market_price.toFixed(2)} {currencySymbol}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Non analysé</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      {product.smart_price ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="text-sm font-bold text-purple-600 dark:text-purple-400 cursor-help">
+                                {product.smart_price.toFixed(2)} {currencySymbol}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-xs">{product.ai_reasoning}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Non calculé</span>
                       )}
                     </td>
                   </tr>
