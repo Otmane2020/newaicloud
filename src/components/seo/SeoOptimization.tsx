@@ -110,7 +110,7 @@ export function SeoOptimization() {
         .select(`
           *, 
           optimization_count,
-          product_variants!inner(sku)
+          product_variants(sku)
         `)
         .order("imported_at", { ascending: false });
 

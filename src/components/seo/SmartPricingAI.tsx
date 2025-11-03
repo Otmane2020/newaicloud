@@ -83,7 +83,7 @@ export function SmartPricingAI() {
         .from('shopify_products')
         .select(`
           *,
-          product_variants!inner(sku)
+          product_variants(sku)
         `)
         .eq('seller_id', user.id);
 
