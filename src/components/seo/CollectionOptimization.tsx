@@ -81,7 +81,7 @@ type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function CollectionOptimization() {
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -314,7 +314,7 @@ export function CollectionOptimization() {
         
         if (error) {
           console.error(`❌ Error optimizing collection ${collectionsToOptimize[i].id}:`, error);
-          toast.error(`Erreur: ${error.message || 'Échec de l\'optimisation'}`);
+          toast.error(tf('collections.optimization.messages.optimizationError', { message: error.message || t.collections.optimization.messages.optimizationFailed }));
           throw error;
         }
         
@@ -322,9 +322,9 @@ export function CollectionOptimization() {
         if (data?.results?.[0]?.success) {
           successCount++;
         } else {
-          const errorMsg = data?.results?.[0]?.error || 'Échec de l\'optimisation';
+          const errorMsg = data?.results?.[0]?.error || t.collections.optimization.messages.optimizationFailed;
           console.warn(`⚠️ Collection ${collectionsToOptimize[i].id} - ${errorMsg}`);
-          toast.warning(`Collection "${collectionsToOptimize[i].title}": ${errorMsg}`);
+          toast.warning(tf('collections.optimization.messages.collectionError', { title: collectionsToOptimize[i].title, message: errorMsg }));
         }
         
         setProgress({ current: i + 1, total: collectionsToOptimize.length });
@@ -333,24 +333,24 @@ export function CollectionOptimization() {
         
         // Handle specific error types
         if (error.message?.includes('trial_limit_reached')) {
-          toast.error('Limite d\'essai atteinte. Passez à un plan payant pour continuer.');
+          toast.error(t.collections.optimization.messages.trialLimitReached);
           setShowUpgradeDialog(true);
           setShowProgressDialog(false);
           setOptimizing(false);
           return;
         } else if (error.message?.includes('monthly_limit_reached')) {
-          toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+          toast.error(t.collections.optimization.messages.monthlyLimitReached);
           setShowProgressDialog(false);
           setOptimizing(false);
           return;
         } else if (error.message?.includes('already_optimized')) {
-          toast.error('Limite d\'essai atteinte. Cette collection est déjà optimisée.');
+          toast.error(t.collections.optimization.messages.alreadyOptimizedTrial);
           setShowUpgradeDialog(true);
           setShowProgressDialog(false);
           setOptimizing(false);
           return;
         } else {
-          toast.error(`Erreur: ${error.message || 'Échec de l\'optimisation'}`);
+          toast.error(tf('collections.optimization.messages.optimizationError', { message: error.message || t.collections.optimization.messages.optimizationFailed }));
         }
       }
     }
@@ -447,18 +447,18 @@ export function CollectionOptimization() {
         } catch (error: any) {
           console.error('❌ Error:', error);
           if (error.message?.includes('trial_limit_reached')) {
-            toast.error('Limite d\'essai atteinte. Passez à un plan payant.');
+            toast.error(t.collections.optimization.messages.trialLimitReached);
             setShowUpgradeDialog(true);
             setShowProgressDialog(false);
             setOptimizing(false);
             return;
           } else if (error.message?.includes('monthly_limit_reached')) {
-            toast.error('Limite mensuelle atteinte. Passez à un plan supérieur.');
+            toast.error(t.collections.optimization.messages.monthlyLimitReached);
             setShowProgressDialog(false);
             setOptimizing(false);
             return;
           } else if (error.message?.includes('already_optimized')) {
-            toast.error('Limite d\'essai atteinte. Certaines collections sont déjà optimisées.');
+            toast.error(t.collections.optimization.messages.alreadyOptimizedTrial);
             setShowUpgradeDialog(true);
             setShowProgressDialog(false);
             setOptimizing(false);

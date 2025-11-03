@@ -124,7 +124,7 @@ export function SeoOptimization() {
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Failed to load products');
+      toast.error(t.seo.optimization.loadError);
     } finally {
       setLoading(false);
     }
@@ -325,14 +325,14 @@ export function SeoOptimization() {
   const handleGenerateForSelected = async () => {
     // Check usage limits first (only check optimization-specific limits)
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
-      toast.error('Trial limit reached for SEO optimizations');
+      toast.error(t.seo.optimization.trialLimitReached);
       setShowUpgradeDialog(true);
       return;
     }
 
     // Check if products are selected
     if (selectedProducts.size === 0) {
-      toast.error('No products selected to optimize');
+      toast.error(t.seo.optimization.noProductsSelected);
       return;
     }
 
@@ -380,13 +380,13 @@ export function SeoOptimization() {
         console.error('Error generating SEO:', error);
         
         if (error.message?.includes('trial_product_already_optimized')) {
-          toast.warning('Some products have already been optimized during your trial.');
+          toast.warning(t.seo.optimization.someAlreadyOptimized);
         } else if (error.message?.includes('trial_limit_reached')) {
-          toast.error('Trial limit reached.');
+          toast.error(t.seo.optimization.trialLimitReached);
           setShowUpgradeDialog(true);
           break;
         } else {
-          toast.error('Error during optimization');
+          toast.error(t.seo.optimization.optimizationError);
         }
       }
     }
@@ -416,7 +416,7 @@ export function SeoOptimization() {
   const handleGenerateAllSeo = async () => {
     // Check usage limits first (only check optimization-specific limits)
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
-      toast.error('Trial limit reached for SEO optimizations');
+      toast.error(t.seo.optimization.trialLimitReached);
       setShowUpgradeDialog(true);
       return;
     }
@@ -445,7 +445,7 @@ export function SeoOptimization() {
         } catch (error: any) {
           console.error('Error generating SEO:', error);
           if (error.message?.includes('trial_limit_reached')) {
-            toast.error('Trial limit reached.');
+            toast.error(t.seo.optimization.trialLimitReached);
             setShowUpgradeDialog(true);
             return;
           }
