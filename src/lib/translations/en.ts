@@ -357,6 +357,7 @@ export const translations = {
       homepageCannotSync: "Homepage images cannot be synced to Shopify",
       homepageIgnored: "{{count}} homepage image(s) ignored",
       onlyProducts: "Only product images will be synced",
+      unknownContent: "Unknown content",
       stats: {
         toOptimize: "To Optimize",
         emptyAlt: "Empty ALT text",
