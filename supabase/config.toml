@@ -141,6 +141,9 @@ verify_jwt = true
 [functions.sync-collection-image-to-shopify]
 verify_jwt = true
 
+[functions.sync-pricing-to-shopify]
+verify_jwt = true
+
 [functions.sync-shopify-to-feed]
 verify_jwt = true
 
