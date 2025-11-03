@@ -461,8 +461,8 @@ export const translations = {
       }
     },
     chat: {
-      greeting: "Bonjour ! Je suis Nicolas, votre conseiller commercial. Comment puis-je vous aider aujourd'hui ?",
-      welcome: "Bienvenue ! Je suis Nicolas, prêt à vous conseiller.",
+      greeting: "Bonjour ! Je suis votre conseiller commercial. Comment puis-je vous aider aujourd'hui ?",
+      welcome: "Bienvenue ! Je suis prêt à vous conseiller.",
       errors: {
         sendMessage: "Erreur lors de l'envoi du message",
         connection: "Erreur de connexion",
@@ -473,7 +473,7 @@ export const translations = {
         generic: "Une erreur est survenue. Réessayez."
       },
       fallback: "Désolé, je rencontre un problème technique. Veuillez réessayer.",
-      title: "Chat avec Nicolas",
+      title: "Assistant Commercial",
       subtitle: "Votre conseiller commercial",
       productsAvailable: "{{count}} produits disponibles",
       poweredByAI: "Propulsé par IA",
@@ -1206,6 +1206,28 @@ export const translations = {
       stopListening: "Arrêter l'Écoute",
       speaking: "En train de parler...",
     },
+    settingsPage: {
+      title: "Paramètres du Chat",
+      description: "Configurez le style et le comportement de votre assistant IA",
+      assistantName: {
+        title: "Nom de l'assistant",
+        description: "Personnalisez le nom de votre conseiller commercial",
+        label: "Nom de l'assistant",
+        placeholder: "Nicolas",
+        hint: "Ce nom sera affiché dans le chat et utilisé dans les conversations"
+      },
+      assistantStyle: {
+        title: "Style de l'assistant",
+        description: "Choisissez la personnalité de votre assistant"
+      },
+      responseSettings: {
+        title: "Paramètres de réponse",
+        description: "Personnalisez le ton et la longueur"
+      },
+      save: "Sauvegarder les paramètres",
+      saved: "Paramètres sauvegardés avec succès !",
+      error: "Erreur lors de la sauvegarde"
+    }
   },
 
   auth: {

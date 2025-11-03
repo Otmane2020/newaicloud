@@ -645,6 +645,7 @@ export type Database = {
       }
       chat_settings: {
         Row: {
+          assistant_name: string | null
           assistant_style: string | null
           created_at: string | null
           custom_instructions: string | null
@@ -662,6 +663,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          assistant_name?: string | null
           assistant_style?: string | null
           created_at?: string | null
           custom_instructions?: string | null
@@ -679,6 +681,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          assistant_name?: string | null
           assistant_style?: string | null
           created_at?: string | null
           custom_instructions?: string | null

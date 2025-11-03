@@ -8,15 +8,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/lib/language';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Save, Smile, Briefcase, GraduationCap, Sparkles, Copy, Check } from 'lucide-react';
 
 export default function ChatSettings() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [settings, setSettings] = useState({
+    assistant_name: 'Nicolas',
     assistant_style: 'friendly',
     tone: 'informal',
     default_language: 'fr',
@@ -63,10 +66,10 @@ export default function ChatSettings() {
         });
 
       if (error) throw error;
-      toast.success('Paramètres sauvegardés avec succès !');
+      toast.success(t.chat.settingsPage.saved);
     } catch (error: any) {
       console.error('Error saving settings:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error(t.chat.settingsPage.error);
     } finally {
       setLoading(false);
     }
@@ -99,16 +102,38 @@ export default function ChatSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Paramètres du Chat</h1>
-        <p className="text-muted-foreground">Configurez le style et le comportement de votre assistant IA</p>
+        <h1 className="text-3xl font-bold mb-2">{t.chat.settingsPage.title}</h1>
+        <p className="text-muted-foreground">{t.chat.settingsPage.description}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Nom de l'assistant */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>{t.chat.settingsPage.assistantName.title}</CardTitle>
+            <CardDescription>{t.chat.settingsPage.assistantName.description}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div>
+              <Label htmlFor="assistant_name">{t.chat.settingsPage.assistantName.label}</Label>
+              <Input
+                id="assistant_name"
+                placeholder={t.chat.settingsPage.assistantName.placeholder}
+                value={settings.assistant_name}
+                onChange={(e) => setSettings({ ...settings, assistant_name: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                {t.chat.settingsPage.assistantName.hint}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Style de l'assistant */}
         <Card>
           <CardHeader>
-            <CardTitle>Style de l'assistant</CardTitle>
-            <CardDescription>Choisissez la personnalité de votre assistant</CardDescription>
+            <CardTitle>{t.chat.settingsPage.assistantStyle.title}</CardTitle>
+            <CardDescription>{t.chat.settingsPage.assistantStyle.description}</CardDescription>
           </CardHeader>
           <CardContent>
             <RadioGroup
@@ -140,8 +165,8 @@ export default function ChatSettings() {
         {/* Paramètres de réponse */}
         <Card>
           <CardHeader>
-            <CardTitle>Paramètres de réponse</CardTitle>
-            <CardDescription>Personnalisez le ton et la longueur</CardDescription>
+            <CardTitle>{t.chat.settingsPage.responseSettings.title}</CardTitle>
+            <CardDescription>{t.chat.settingsPage.responseSettings.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -306,7 +331,7 @@ export default function ChatSettings() {
       <div className="flex justify-end">
         <Button size="lg" onClick={handleSave} disabled={loading}>
           <Save className="w-5 h-5 mr-2" />
-          Sauvegarder les paramètres
+          {t.chat.settingsPage.save}
         </Button>
       </div>
     </div>

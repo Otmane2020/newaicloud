@@ -55,6 +55,7 @@ export default function Chat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [storeName, setStoreName] = useState<string>();
+  const [assistantName, setAssistantName] = useState<string>('Nicolas');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Chat embed configuration
@@ -66,6 +67,7 @@ export default function Chat() {
       loadProducts();
       createSession();
       loadStoreName();
+      loadAssistantName();
     }
   }, [user]);
 
@@ -90,6 +92,24 @@ export default function Chat() {
       }
     } catch (err) {
       console.error('Error loading store name:', err);
+    }
+  };
+
+  const loadAssistantName = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data } = await supabase
+        .from('chat_settings')
+        .select('assistant_name')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data?.assistant_name) {
+        setAssistantName(data.assistant_name);
+      }
+    } catch (err) {
+      console.error('Error loading assistant name:', err);
     }
   };
 
@@ -706,7 +726,7 @@ export default function Chat() {
             <div className="flex items-center gap-3">
               <StoreAvatar storeName={storeName} />
               <div>
-                <h3 className="font-bold text-lg">{t.seo.chat.title}</h3>
+                <h3 className="font-bold text-lg">{assistantName}</h3>
                 <p className="text-xs text-white/90 flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                   En ligne • Prêt à vous aider

@@ -461,8 +461,8 @@ export const translations = {
       }
     },
     chat: {
-      greeting: "Hello! I'm Nicolas, your sales advisor. How can I help you today?",
-      welcome: "Welcome! I'm Nicolas, ready to assist you.",
+      greeting: "Hello! I'm your sales advisor. How can I help you today?",
+      welcome: "Welcome! I'm ready to assist you.",
       errors: {
         sendMessage: "Error sending message",
         connection: "Connection error",
@@ -473,7 +473,7 @@ export const translations = {
         generic: "An error occurred. Please try again."
       },
       fallback: "Sorry, I'm experiencing technical issues. Please try again.",
-      title: "Chat with Nicolas",
+      title: "Sales Assistant",
       subtitle: "Your sales advisor",
       productsAvailable: "{{count}} products available",
       poweredByAI: "Powered by AI",
@@ -1206,6 +1206,28 @@ export const translations = {
       stopListening: "Stop Listening",
       speaking: "Speaking...",
     },
+    settingsPage: {
+      title: "Chat Settings",
+      description: "Configure your AI assistant's style and behavior",
+      assistantName: {
+        title: "Assistant name",
+        description: "Customize your sales advisor's name",
+        label: "Assistant name",
+        placeholder: "Nicolas",
+        hint: "This name will be displayed in the chat and used in conversations"
+      },
+      assistantStyle: {
+        title: "Assistant style",
+        description: "Choose your assistant's personality"
+      },
+      responseSettings: {
+        title: "Response settings",
+        description: "Customize tone and length"
+      },
+      save: "Save settings",
+      saved: "Settings saved successfully!",
+      error: "Error saving settings"
+    }
   },
 
   auth: {
