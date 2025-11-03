@@ -46,6 +46,8 @@ const Subscription = () => {
   const [selectedProTier, setSelectedProTier] = useState<string>('');
   const [selectedEnterpriseTier, setSelectedEnterpriseTier] = useState<string>('');
 
+  const isUpgradeFlow = searchParams.get('upgrade') === 'true';
+
   useEffect(() => {
     const status = searchParams.get('checkout');
     if (status === 'success') {
@@ -188,6 +190,21 @@ const Subscription = () => {
   const selectedProPlan = proPlans.find(p => p.id === selectedProTier);
   const selectedEnterprisePlan = enterprisePlans.find(p => p.id === selectedEnterpriseTier);
 
+  // Determine recommended upgrade plan
+  const getRecommendedPlan = () => {
+    if (!isUpgradeFlow || !currentPlan) return null;
+    
+    if (currentPlan.id === 'starter') return 'pro';
+    if (currentPlan.id.startsWith('pro')) return 'enterprise';
+    if (currentPlan.id.startsWith('enterprise')) {
+      const currentIndex = enterprisePlans.findIndex(p => p.id === currentPlan.id);
+      return currentIndex < enterprisePlans.length - 1 ? 'enterprise' : null;
+    }
+    return null;
+  };
+
+  const recommendedPlanType = getRecommendedPlan();
+
   if (loading) {
     return (
       <div className="container mx-auto p-8 flex items-center justify-center min-h-screen">
@@ -275,6 +292,11 @@ const Subscription = () => {
                 Plan actuel
               </Badge>
             )}
+            {!(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) && isUpgradeFlow && recommendedPlanType === 'pro' && (
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
+                Plan recommandé
+              </Badge>
+            )}
             <div className="space-y-6 flex-1">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -358,7 +380,12 @@ const Subscription = () => {
                 Plan actuel
               </Badge>
             )}
-            {enterprisePlans[0]?.best_value && !currentPlan?.id.startsWith('enterprise-') && (
+            {!currentPlan?.id.startsWith('enterprise-') && isUpgradeFlow && recommendedPlanType === 'enterprise' && (
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
+                Plan recommandé
+              </Badge>
+            )}
+            {!currentPlan?.id.startsWith('enterprise-') && !isUpgradeFlow && enterprisePlans[0]?.best_value && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
                 Meilleur rapport qualité-prix
               </Badge>
