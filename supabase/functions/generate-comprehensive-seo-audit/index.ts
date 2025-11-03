@@ -222,11 +222,19 @@ function auditHomepage(store: any) {
 
 function auditProducts(products: any[]) {
   const issues = [];
-  let score = 100;
+  let totalScore = 0;
 
   if (products.length === 0) {
     return { issues: [], score: 100 };
   }
+
+  // Calculate SEO score for each product using the same method as SeoOptimization
+  products.forEach(p => {
+    const score = calculateSeoScore(p.seo_title, p.seo_description, !!p.image_url, p.tags, p.optimization_count);
+    totalScore += score;
+  });
+  
+  const avgScore = Math.round(totalScore / products.length);
 
   // Check for duplicate titles
   const titleMap = new Map();
@@ -246,7 +254,6 @@ function auditProducts(products: any[]) {
       action: 'Rendre chaque titre unique',
       count: duplicates.length
     });
-    score -= Math.min(30, duplicates.length * 2);
   }
 
   // Check for missing SEO descriptions
@@ -261,7 +268,6 @@ function auditProducts(products: any[]) {
       action: 'Ajouter des meta descriptions de 150-160 caractères',
       count: missingDesc.length
     });
-    score -= Math.min(20, (missingDesc.length / products.length) * 20);
   }
 
   // Check for missing SEO titles
@@ -276,19 +282,76 @@ function auditProducts(products: any[]) {
       action: 'Créer des titres SEO uniques avec mots-clés',
       count: missingSeoTitle.length
     });
-    score -= Math.min(15, (missingSeoTitle.length / products.length) * 15);
   }
 
-  return { issues, score: Math.max(0, score) };
+  return { issues, score: avgScore };
+}
+
+// Helper function to calculate SEO score (must match frontend calculation)
+function calculateSeoScore(
+  title: string | null,
+  description: string | null,
+  hasImage: boolean,
+  tags: string | null,
+  optimizationCount: number
+): number {
+  let score = 0;
+  
+  // Title score (35 points)
+  if (title) {
+    const titleLength = title.length;
+    if (titleLength >= 50 && titleLength <= 60) {
+      score += 35;
+    } else if (titleLength >= 40 && titleLength <= 70) {
+      score += 28;
+    } else if (titleLength >= 30) {
+      score += 20;
+    } else {
+      score += 10;
+    }
+  }
+  
+  // Description score (35 points)
+  if (description) {
+    const descLength = description.length;
+    if (descLength >= 120 && descLength <= 160) {
+      score += 35;
+    } else if (descLength >= 100 && descLength <= 200) {
+      score += 28;
+    } else if (descLength >= 70) {
+      score += 20;
+    } else {
+      score += 10;
+    }
+  }
+  
+  // Image score (10 points)
+  if (hasImage) score += 10;
+  
+  // Tags score (10 points)
+  if (tags && tags.length > 0) score += 10;
+  
+  // Optimization bonus (10 points)
+  if (optimizationCount > 0) score += 10;
+  
+  return Math.min(100, score);
 }
 
 function auditCollections(collections: any[]) {
   const issues = [];
-  let score = 100;
+  let totalScore = 0;
 
   if (collections.length === 0) {
     return { issues: [], score: 100 };
   }
+
+  // Calculate SEO score for each collection
+  collections.forEach(c => {
+    const score = calculateSeoScore(c.seo_title, c.seo_description, !!c.image_url, null, c.optimization_count || 0);
+    totalScore += score;
+  });
+  
+  const avgScore = Math.round(totalScore / collections.length);
 
   // Check for missing descriptions
   const missingDesc = collections.filter(c => !c.seo_description || c.seo_description.length < 50);
@@ -302,7 +365,6 @@ function auditCollections(collections: any[]) {
       action: 'Ajouter des descriptions uniques et persuasives',
       count: missingDesc.length
     });
-    score -= Math.min(25, (missingDesc.length / collections.length) * 25);
   }
 
   // Check for missing images alt
@@ -317,16 +379,15 @@ function auditCollections(collections: any[]) {
       action: 'Ajouter des descriptions alt aux images',
       count: missingAlt.length
     });
-    score -= Math.min(10, (missingAlt.length / collections.length) * 10);
   }
 
-  return { issues, score: Math.max(0, score) };
+  return { issues, score: avgScore };
 }
 
 function auditContent(articles: any[], pages: any[]) {
   const issues = [];
-  let articleScore = 100;
-  let pageScore = 100;
+  let articleTotalScore = 0;
+  let pageTotalScore = 0;
 
   // ARTICLES AUDIT
   if (articles.length === 0) {
@@ -339,8 +400,13 @@ function auditContent(articles: any[], pages: any[]) {
       action: 'Créer des articles de blog optimisés SEO',
       count: 0
     });
-    articleScore = 0;
   } else {
+    // Calculate average score for articles
+    articles.forEach(a => {
+      const score = calculateSeoScore(a.title, a.meta_description || a.seo_description, !!a.featured_image, null, a.optimization_count || 0);
+      articleTotalScore += score;
+    });
+    
     // Check for published articles
     const published = articles.filter(a => a.status === 'published');
     if (published.length === 0) {
@@ -353,15 +419,7 @@ function auditContent(articles: any[], pages: any[]) {
         action: 'Publier des articles optimisés',
         count: articles.length
       });
-      articleScore = 20; // Points for having drafts
     } else {
-      // Articles are published, check optimization
-      const optimizedArticles = published.filter(a => 
-        a.meta_description && 
-        a.meta_description.length >= 120 &&
-        a.optimization_count > 0
-      );
-      
       // Check for articles without featured image
       const missingFeaturedImage = published.filter(a => !a.featured_image);
       if (missingFeaturedImage.length > 0) {
@@ -374,10 +432,13 @@ function auditContent(articles: any[], pages: any[]) {
           action: 'Ajouter une image à la une pour chaque article',
           count: missingFeaturedImage.length
         });
-        articleScore -= Math.min(15, (missingFeaturedImage.length / published.length) * 15);
       }
       
-      articleScore = Math.round((optimizedArticles.length / published.length) * articleScore);
+      const optimizedArticles = published.filter(a => 
+        a.meta_description && 
+        a.meta_description.length >= 120 &&
+        a.optimization_count > 0
+      );
       
       if (optimizedArticles.length < published.length) {
         issues.push({
@@ -404,8 +465,13 @@ function auditContent(articles: any[], pages: any[]) {
       action: 'Créer des pages optimisées (À propos, Contact, etc.)',
       count: 0
     });
-    pageScore = 0;
   } else {
+    // Calculate average score for pages
+    pages.forEach(p => {
+      const score = calculateSeoScore(p.seo_title || p.title, p.seo_description, false, null, p.optimization_count || 0);
+      pageTotalScore += score;
+    });
+    
     // Check for optimized pages
     const optimizedPages = pages.filter(p => 
       p.seo_title && 
@@ -413,8 +479,6 @@ function auditContent(articles: any[], pages: any[]) {
       p.seo_description.length >= 120 &&
       p.optimization_count > 0
     );
-    
-    pageScore = Math.round((optimizedPages.length / pages.length) * 100);
     
     if (optimizedPages.length < pages.length) {
       issues.push({
@@ -429,17 +493,18 @@ function auditContent(articles: any[], pages: any[]) {
     }
   }
 
-  // Combined score for articles and pages
-  // If one category has 0 items, use only the other category's score
+  // Combined score
   let finalScore;
   if (articles.length === 0 && pages.length === 0) {
     finalScore = 0;
   } else if (articles.length === 0) {
-    finalScore = pageScore;
+    finalScore = Math.round(pageTotalScore / pages.length);
   } else if (pages.length === 0) {
-    finalScore = articleScore;
+    finalScore = Math.round(articleTotalScore / articles.length);
   } else {
-    finalScore = Math.round((articleScore + pageScore) / 2);
+    const avgArticleScore = Math.round(articleTotalScore / articles.length);
+    const avgPageScore = Math.round(pageTotalScore / pages.length);
+    finalScore = Math.round((avgArticleScore + avgPageScore) / 2);
   }
   
   return { issues, score: Math.max(0, finalScore) };
