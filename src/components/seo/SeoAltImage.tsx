@@ -368,17 +368,29 @@ export function SeoAltImage() {
     let successCount = 0;
     let errorCount = 0;
 
-    for (let i = 0; i < imagesToGenerate.length; i++) {
+      for (let i = 0; i < imagesToGenerate.length; i++) {
       try {
         const img = imagesToGenerate[i];
         const imageType = img.image_type || 'product';
         
-        const { error } = await supabase.functions.invoke(functionName, {
+        const { data, error } = await supabase.functions.invoke(functionName, {
           body: { 
             imageId: img.id,
             imageType: useVision ? imageType : undefined
           }
         });
+        
+        // Check for 403 error (limit reached)
+        if (error && (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403'))) {
+          toast.error('Limite d\'optimisations atteinte', {
+            description: 'Passez à un plan supérieur pour continuer.'
+          });
+          setGenerating(false);
+          setShowProgressDialog(false);
+          setShowUpgradeDialog(true);
+          await fetchImages();
+          return;
+        }
         
         if (error) {
           console.error('Error generating ALT text:', error);

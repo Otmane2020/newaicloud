@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { 
   ProgressDialog, 
@@ -73,6 +74,7 @@ export function TagOptimization() {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [editTags, setEditTags] = useState('');
   const [saving, setSaving] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [filter, setFilter] = useState<FilterType>('all');
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -91,7 +93,7 @@ export function TagOptimization() {
   const [optimizedItems, setOptimizedItems] = useState<WorkflowItem[]>([]);
   const [itemsToSync, setItemsToSync] = useState<WorkflowItem[]>([]);
   
-  const { limits, loading: limitsLoading } = useUsageLimits();
+  const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
 
   const fetchProducts = async () => {
     try {
@@ -280,6 +282,56 @@ export function TagOptimization() {
     setEditTags('');
   };
 
+  const handleOptimizeProduct = async (productId: string) => {
+    // Check limits before optimizing
+    if (!canDoAction('optimizations')) {
+      toast.error('Limite d\'optimisations atteinte');
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    try {
+      setOptimizing(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No active session');
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-tags`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productId, force: false }),
+      });
+
+      const result = await response.json();
+      
+      // Check for 403 error (limit reached)
+      if (response.status === 403 || result.error === 'limite_optimisations_atteinte') {
+        toast.error('Limite d\'optimisations atteinte', {
+          description: result.message || 'Passez à un plan supérieur pour continuer.'
+        });
+        setShowUpgradeDialog(true);
+        await refreshLimits();
+        return;
+      }
+
+      if (response.ok && result.success) {
+        toast.success('Tags optimisés avec succès');
+        await fetchProducts();
+        await refreshLimits();
+      } else {
+        throw new Error(result.error || 'Failed to generate tags');
+      }
+    } catch (error: any) {
+      console.error('Error optimizing tags:', error);
+      toast.error(error.message || 'Erreur lors de l\'optimisation');
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
   const handleSelectAll = () => {
     if (selectedProducts.size === filteredProducts.length) {
       setSelectedProducts(new Set());
@@ -395,6 +447,17 @@ export function TagOptimization() {
         });
 
         const result = await response.json();
+        
+        // Check for 403 error (limit reached)
+        if (response.status === 403 || result.error === 'limite_optimisations_atteinte') {
+          toast.error('Limite d\'optimisations atteinte', {
+            description: result.message || 'Passez à un plan supérieur pour continuer.'
+          });
+          setShowProgressDialog(false);
+          setShowUpgradeDialog(true);
+          await fetchProducts();
+          return;
+        }
         
         if (response.ok && result.success) {
           if (result.skipped) {
@@ -836,7 +899,7 @@ export function TagOptimization() {
                 disabled={showProgressDialog || productsNotOptimized === 0}
                 className="flex items-center gap-2"
               >
-                <Sparkles className="w-4 h-4" />
+                <Zap className="w-4 h-4" />
                 <span className="hidden sm:inline">Optimize All</span>
               </Button>
               
@@ -960,7 +1023,7 @@ export function TagOptimization() {
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{product.title}</h3>
                   <p className="text-sm text-muted-foreground">{product.vendor}</p>
-                  {product.tags ? (
+                   {product.tags ? (
                     editingProduct === product.id ? (
                       <div className="flex items-center gap-2 mt-2">
                         <Input
@@ -979,11 +1042,16 @@ export function TagOptimization() {
                     ) : (
                       <div className="flex items-center gap-2 mt-2">
                         <div className="flex flex-wrap gap-1">
-                          {product.tags.split(',').map((tag, i) => (
-                            <Badge key={i} variant="secondary">
+                          {product.tags.split(',').slice(0, 5).map((tag, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
                               {tag.trim()}
                             </Badge>
                           ))}
+                          {product.tags.split(',').length > 5 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{product.tags.split(',').length - 5}
+                            </Badge>
+                          )}
                         </div>
                         <Button
                           size="sm"
@@ -997,15 +1065,33 @@ export function TagOptimization() {
                   ) : (
                     <Badge variant="outline" className="mt-2">No tags</Badge>
                   )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {product.seo_synced_to_shopify && (
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Synced
-                    </Badge>
-                  )}
-                </div>
+                 </div>
+                 <div className="flex items-center gap-2">
+                   <TooltipProvider>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <Button
+                           size="sm"
+                           variant="default"
+                           onClick={() => handleOptimizeProduct(product.id)}
+                           disabled={optimizing || !canDoAction('optimizations')}
+                           className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
+                         >
+                           <Zap className="w-4 h-4" />
+                         </Button>
+                       </TooltipTrigger>
+                       <TooltipContent>
+                         <p>Optimiser les tags</p>
+                       </TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
+                   {product.seo_synced_to_shopify && (
+                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                       <CheckCircle className="w-3 h-3 mr-1" />
+                       Synced
+                     </Badge>
+                   )}
+                 </div>
               </div>
             </Card>
           ))}

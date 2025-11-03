@@ -33,7 +33,8 @@ import {
   ImageIcon,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Zap
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { VisionAIBanner } from '../seo/VisionAIBanner';
@@ -147,16 +148,34 @@ export function ArticleManagement() {
   };
 
   const handleOptimizeArticle = async (articleId: string) => {
+    // Check limits before optimizing
+    if (!canDoAction('articles')) {
+      toast.error('Limite d\'articles atteinte');
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     setOptimizing(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-article-seo', {
         body: { article_ids: [articleId] }
       });
       
+      // Check for 403 error (limit reached)
+      if (error && (error.message?.includes('limite') || error.message?.includes('403'))) {
+        toast.error('Limite d\'optimisations atteinte', {
+          description: 'Passez à un plan supérieur pour continuer.'
+        });
+        setShowUpgradeDialog(true);
+        await refreshLimits();
+        return;
+      }
+      
       if (error) throw error;
       
       toast.success(t.blog.management.messages.optimizationSuccess);
       await fetchArticles();
+      await refreshLimits();
       
       // Get updated article
       const { data: updatedArticle } = await supabase
@@ -838,13 +857,13 @@ export function ArticleManagement() {
                       <div className="flex justify-end gap-1">
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="default"
                           onClick={() => handleOptimizeArticle(article.id)}
-                          disabled={optimizing}
+                          disabled={optimizing || !canDoAction('articles')}
                           title="Optimize"
-                          className="hover:bg-blue-50"
+                          className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                         >
-                          <Sparkles className="w-5 h-5 text-blue-600" />
+                          <Zap className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"
