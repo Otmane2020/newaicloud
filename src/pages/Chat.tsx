@@ -6,13 +6,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/language';
-import { MessageSquare, Send, Bot, User, ShoppingCart, Sparkles, Code, Copy, Check, Settings as SettingsIcon } from 'lucide-react';
+import { MessageSquare, Send, Bot, User, ShoppingCart, Sparkles, Code, Copy, Check, Settings as SettingsIcon, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { useNavigate } from 'react-router-dom';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -40,6 +42,7 @@ const StoreAvatar = ({ storeName }: StoreAvatarProps) => {
 export default function Chat() {
   const { user } = useAuth();
   const { t, tf } = useTranslation();
+  const navigate = useNavigate();
   const { limits, refresh: refreshLimits } = useUsageLimits();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -56,6 +59,7 @@ export default function Chat() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [storeName, setStoreName] = useState<string>();
   const [assistantName, setAssistantName] = useState<string>('Nicolas');
+  const [enrichmentPercentage, setEnrichmentPercentage] = useState<number>(100);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Chat embed configuration
@@ -153,6 +157,13 @@ export default function Chat() {
 
       if (error) throw error;
       setProducts(data || []);
+      
+      // Calculate enrichment percentage
+      if (data && data.length > 0) {
+        const enrichedCount = data.filter(p => p.enrichment_status === 'enriched').length;
+        const percentage = Math.round((enrichedCount / data.length) * 100);
+        setEnrichmentPercentage(percentage);
+      }
     } catch (error) {
       console.error('Error loading products:', error);
     }
@@ -734,6 +745,33 @@ export default function Chat() {
               </div>
             </div>
           </div>
+
+          {/* Enrichment Warning */}
+          {enrichmentPercentage < 100 && products.length > 0 && (
+            <div className="mx-6 mt-4">
+              <Alert className="bg-warning/10 border-warning">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertDescription className="text-sm">
+                  <div className="flex flex-col gap-2">
+                    <p className="font-semibold">
+                      {t.seo.chat.enrichmentWarning.title}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {tf('seo.chat.enrichmentWarning.description', { percentage: enrichmentPercentage })}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => navigate('/product-source')}
+                      className="w-fit mt-2"
+                    >
+                      {t.seo.chat.enrichmentWarning.action}
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-background">

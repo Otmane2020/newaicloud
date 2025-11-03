@@ -12,7 +12,7 @@ export default function ChatWithTabs() {
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              <span>Chat</span>
+              <span>AI SMART Chat</span>
             </TabsTrigger>
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <Package className="h-4 w-4" />

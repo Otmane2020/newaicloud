@@ -505,7 +505,12 @@ export const translations = {
       },
       copiedToClipboard: "Code copié dans le presse-papier !",
       you: "Vous",
-      assistant: "Assistant"
+      assistant: "Assistant",
+      enrichmentWarning: {
+        title: "Améliorez la fonction chat en intégrant vos produits",
+        description: "Enrichissement actuel : {{percentage}}%. Enrichissez vos produits pour des recommandations plus précises.",
+        action: "Commencer l'enrichissement"
+      }
     },
     chatRobot: {
       title: "NewAI Robot",
