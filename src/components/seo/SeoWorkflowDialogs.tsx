@@ -223,23 +223,23 @@ export function ResultsDialog({
                     </div>
                     
                         {type === 'seo' && (
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {item.seo_title && (
                               <div className="space-y-1">
-                                <Badge variant="outline" className="text-xs">Titre SEO</Badge>
-                                <p className="text-sm text-muted-foreground font-medium">{item.seo_title}</p>
+                                <Badge variant="outline" className="text-xs font-semibold">Titre SEO</Badge>
+                                <p className="text-sm font-medium">{item.seo_title}</p>
                               </div>
                             )}
                             {item.seo_description && (
                               <div className="space-y-1">
-                                <Badge variant="outline" className="text-xs">Meta Description</Badge>
-                                <p className="text-sm text-muted-foreground line-clamp-2">{item.seo_description}</p>
+                                <Badge variant="outline" className="text-xs font-semibold">Meta Description SEO</Badge>
+                                <p className="text-sm">{item.seo_description}</p>
                               </div>
                             )}
                             {item.body_html && (
                               <div className="space-y-1">
-                                <Badge variant="outline" className="text-xs">Description</Badge>
-                                <div className="text-sm text-muted-foreground line-clamp-3" dangerouslySetInnerHTML={{ __html: item.body_html }} />
+                                <Badge variant="outline" className="text-xs font-semibold">Description HTML</Badge>
+                                <div className="text-sm line-clamp-3" dangerouslySetInnerHTML={{ __html: item.body_html }} />
                               </div>
                             )}
                           </div>
