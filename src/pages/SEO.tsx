@@ -184,25 +184,25 @@ export default function SEO() {
                 <div className="flex-1 space-y-3">
                   <div className="flex items-center gap-2">
                     <FileText className="w-6 h-6 text-purple-600" />
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                      Pages SEO Management
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      {t.seo.banners.pages.title}
                     </h2>
                   </div>
                   <p className="text-muted-foreground text-lg max-w-2xl">
-                    Optimize your Shopify pages with AI-powered SEO. Improve meta tags and boost your search rankings.
+                    {t.seo.banners.pages.description}
                   </p>
                   <div className="flex flex-wrap gap-3 pt-2">
                     <div className="flex items-center gap-2 text-sm">
                       <FileText className="w-4 h-4 text-purple-600" />
-                      <span className="font-medium">SEO Optimized</span>
+                      <span className="font-medium">{t.seo.banners.pages.seoOptimized}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <TrendingUp className="w-4 h-4 text-green-600" />
-                      <span className="font-medium">Better Rankings</span>
+                      <span className="font-medium">{t.seo.banners.pages.betterRankings}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Sparkles className="w-4 h-4 text-pink-600" />
-                      <span className="font-medium">AI Enhanced</span>
+                      <span className="font-medium">{t.seo.banners.pages.aiEnhanced}</span>
                     </div>
                   </div>
                 </div>
@@ -217,7 +217,7 @@ export default function SEO() {
                     }`}>
                       {loadingScores ? '...' : `${pagesSeoScore}/100`}
                     </div>
-                    <div className="text-sm text-muted-foreground">SEO Score</div>
+                    <div className="text-sm text-muted-foreground">{t.seo.banners.pages.seoScore}</div>
                   </div>
                   <Button
                     size="lg"
@@ -225,7 +225,7 @@ export default function SEO() {
                     className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
                   >
                     <Sparkles className="w-5 h-5" />
-                    Optimize Pages
+                    {t.seo.banners.pages.optimizeBtn}
                     <FileText className="w-5 h-5" />
                   </Button>
                 </div>
@@ -243,24 +243,24 @@ export default function SEO() {
                   <div className="flex items-center gap-2">
                     <PenSquare className="w-6 h-6 text-blue-600" />
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                      Articles SEO Management
+                      {t.seo.banners.articles.title}
                     </h2>
                   </div>
                   <p className="text-muted-foreground text-lg max-w-2xl">
-                    Optimize your blog articles with AI-powered SEO. Improve titles, meta descriptions, and boost your organic traffic by 40%.
+                    {t.seo.banners.articles.description}
                   </p>
                   <div className="flex flex-wrap gap-3 pt-2">
                     <div className="flex items-center gap-2 text-sm">
                       <FileText className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium">SEO Optimized</span>
+                      <span className="font-medium">{t.seo.banners.articles.seoOptimized}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <TrendingUp className="w-4 h-4 text-green-600" />
-                      <span className="font-medium">+40% Traffic</span>
+                      <span className="font-medium">{t.seo.banners.articles.trafficBoost}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Sparkles className="w-4 h-4 text-purple-600" />
-                      <span className="font-medium">AI Enhanced</span>
+                      <span className="font-medium">{t.seo.banners.articles.aiEnhanced}</span>
                     </div>
                   </div>
                 </div>
@@ -275,7 +275,7 @@ export default function SEO() {
                     }`}>
                       {loadingScores ? '...' : `${articlesSeoScore}/100`}
                     </div>
-                    <div className="text-sm text-muted-foreground">SEO Score</div>
+                    <div className="text-sm text-muted-foreground">{t.seo.banners.articles.seoScore}</div>
                   </div>
                   <Button
                     size="lg"
@@ -283,7 +283,7 @@ export default function SEO() {
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 gap-2 shadow-lg"
                   >
                     <Sparkles className="w-5 h-5" />
-                    Optimize Articles
+                    {t.seo.banners.articles.optimizeBtn}
                     <FileText className="w-5 h-5" />
                   </Button>
                 </div>

@@ -349,6 +349,73 @@ export const translations = {
     title: "Optimisation SEO",
     description: "Optimisez votre boutique pour les moteurs de recherche avec des outils IA",
     clearCache: "Vider le cache",
+    altImage: {
+      homepage: "🏠 Page d'accueil",
+      loadError: "Erreur lors du chargement des images",
+      noEmptyAlt: "Aucune image sans ALT text sélectionnée",
+      noSyncable: "Aucune image synchronisable",
+      homepageCannotSync: "Les images de homepage ne peuvent pas être synchronisées avec Shopify",
+      homepageIgnored: "{{count}} image(s) de homepage ignorée(s)",
+      onlyProducts: "Seules les images de produits seront synchronisées",
+      stats: {
+        toOptimize: "À optimiser",
+        emptyAlt: "Texte ALT vide",
+        aiOptimized: "Optimisé par IA",
+        withAlt: "Avec texte ALT",
+        toSync: "À synchroniser",
+        aiOptimizedOnly: "Optimisé IA uniquement",
+        synchronized: "Synchronisé",
+        syncedToShopify: "Synchronisé avec Shopify",
+        clickToView: "Cliquez pour voir"
+      },
+      info: {
+        emptyImages: "{{count}} images sans ALT text",
+        aiOptimizedImages: "{{count}} images AI-optimisées",
+        toSyncImages: "{{count}} images à synchroniser",
+        syncedImages: "{{count}} images synchronisées"
+      }
+    },
+    tags: {
+      loadError: "Erreur lors du chargement des produits",
+      showing: "Affichage de {{count}} produits à taguer",
+      allHaveTags: "Tous les produits ont déjà des tags",
+      noSelected: "Aucun produit sélectionné",
+      alreadyOptimized: "{{count}} produit{{s}} {{ont}} déjà été optimisé{{s}}",
+      trialCanRegenerate: "En période d'essai, vous pouvez quand même les régénérer",
+      regenerate: "Régénérer",
+      haveTags: "{{count}} produit{{s}} {{ont}} déjà des tags",
+      wantRegenerate: "Voulez-vous les régénérer ?",
+      limitReached: "Limite atteinte. Seulement {{count}} produit{{s}} sera{{ront}} optimisé{{s}}.",
+      noToSync: "Aucun produit à synchroniser",
+      allSynced: "Tous les produits sont synchronisés",
+      filters: {
+        all: "Tous les produits",
+        toTag: "À taguer",
+        tagged: "Tagué",
+        toSync: "À synchroniser",
+        synced: "Synchronisé"
+      }
+    },
+    banners: {
+      pages: {
+        title: "Gestion SEO des Pages",
+        description: "Optimisez vos pages Shopify avec le SEO propulsé par l'IA. Améliorez vos balises méta et boostez votre classement.",
+        seoOptimized: "Optimisé SEO",
+        betterRankings: "Meilleur Classement",
+        aiEnhanced: "Amélioré par IA",
+        seoScore: "Score SEO",
+        optimizeBtn: "Optimiser Pages"
+      },
+      articles: {
+        title: "Gestion SEO des Articles",
+        description: "Optimisez vos articles de blog avec le SEO propulsé par l'IA. Améliorez titres, méta descriptions, et boostez votre trafic organique de 40%.",
+        seoOptimized: "Optimisé SEO",
+        trafficBoost: "+40% Trafic",
+        aiEnhanced: "Amélioré par IA",
+        seoScore: "Score SEO",
+        optimizeBtn: "Optimiser Articles"
+      }
+    },
     submenu: {
       products: "Produits",
       collections: "Collections",

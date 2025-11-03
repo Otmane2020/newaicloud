@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/language';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -63,6 +64,7 @@ type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function TagOptimization() {
+  const { t, tf } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export function TagOptimization() {
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Failed to load products');
+      toast.error(t.seo.tags.loadError);
     } finally {
       setLoading(false);
     }
@@ -189,17 +191,17 @@ export function TagOptimization() {
     : 0;
 
   const filters = [
-    { id: 'all' as FilterType, label: 'All Products', count: products.length },
-    { id: 'to_optimize' as FilterType, label: 'To Tag', count: productsWithoutTags },
-    { id: 'tagged' as FilterType, label: 'Tagged', count: productsWithTags },
-    { id: 'to_sync' as FilterType, label: 'To Synchronize', count: productsToSyncCount },
-    { id: 'synced' as FilterType, label: 'Synchronized', count: productsSynced },
+    { id: 'all' as FilterType, label: t.seo.tags.filters.all, count: products.length },
+    { id: 'to_optimize' as FilterType, label: t.seo.tags.filters.toTag, count: productsWithoutTags },
+    { id: 'tagged' as FilterType, label: t.seo.tags.filters.tagged, count: productsWithTags },
+    { id: 'to_sync' as FilterType, label: t.seo.tags.filters.toSync, count: productsToSyncCount },
+    { id: 'synced' as FilterType, label: t.seo.tags.filters.synced, count: productsSynced },
   ];
 
   // Clickable stats handlers
   const handleToOptimizeClick = () => {
     setFilter('to_optimize');
-    toast.info(`Showing ${productsWithoutTags} products to tag`);
+    toast.info(tf('seo.tags.showing', { count: productsWithoutTags }));
   };
 
   const handleTaggedClick = () => {
@@ -219,7 +221,7 @@ export function TagOptimization() {
 
   const handleGenerateAll = () => {
     if (productsWithoutTags === 0) {
-      toast.info('All products already have tags');
+      toast.info(t.seo.tags.allHaveTags);
       return;
     }
     setFilter('to_optimize');
@@ -231,7 +233,7 @@ export function TagOptimization() {
   const handleGenerateAllTags = async () => {
     const productsToGenerate = products.filter(p => !p.tags);
     if (productsToGenerate.length === 0) {
-      toast.info('All products already have tags');
+      toast.info(t.seo.tags.allHaveTags);
       return;
     }
 
@@ -303,7 +305,7 @@ export function TagOptimization() {
 
   const handleGenerateSelected = async (force = false) => {
     if (selectedProducts.size === 0) {
-      toast.info('Aucun produit sélectionné');
+      toast.info(t.seo.tags.noSelected);
       return;
     }
 
@@ -323,12 +325,14 @@ export function TagOptimization() {
       });
 
       if (alreadyOptimized.length > 0) {
+        const s = alreadyOptimized.length > 1 ? 's' : '';
+        const ont = alreadyOptimized.length > 1 ? 'ont' : 'a';
         toast.info(
-          `${alreadyOptimized.length} produit${alreadyOptimized.length > 1 ? 's ont' : ' a'} déjà été optimisé${alreadyOptimized.length > 1 ? 's' : ''}`,
+          tf('seo.tags.alreadyOptimized', { count: alreadyOptimized.length, s, ont }),
           {
-            description: 'En période d\'essai, vous pouvez quand même les régénérer',
+            description: t.seo.tags.trialCanRegenerate,
             action: {
-              label: 'Régénérer',
+              label: t.seo.tags.regenerate,
               onClick: () => handleGenerateSelected(true)
             }
           }
@@ -339,12 +343,14 @@ export function TagOptimization() {
 
     // Si force n'est pas activé et que tous les produits ont déjà des tags
     if (!force && productsWithTags.length > 0 && productsWithoutTags.length === 0) {
+      const s = productsWithTags.length > 1 ? 's' : '';
+      const ont = productsWithTags.length > 1 ? 'ont' : 'a';
       toast.info(
-        `${productsWithTags.length} produit${productsWithTags.length > 1 ? 's ont' : ' a'} déjà des tags`,
+        tf('seo.tags.haveTags', { count: productsWithTags.length, s, ont }),
         {
-          description: 'Voulez-vous les régénérer ?',
+          description: t.seo.tags.wantRegenerate,
           action: {
-            label: 'Régénérer',
+            label: t.seo.tags.regenerate,
             onClick: () => handleGenerateSelected(true)
           }
         }
@@ -360,7 +366,9 @@ export function TagOptimization() {
         setShowUpgradeDialog(true);
         return;
       } else {
-        toast.warning(`Limite atteinte. Seulement ${remainingLimit} produit${remainingLimit > 1 ? 's seront optimisés' : ' sera optimisé'}.`);
+        const s = remainingLimit > 1 ? 's' : '';
+        const ront = remainingLimit > 1 ? 'ront' : '';
+        toast.warning(tf('seo.tags.limitReached', { count: remainingLimit, s, ront }));
         await handleBulkGenerate(productsToGenerate.slice(0, remainingLimit), force);
         return;
       }
@@ -450,7 +458,7 @@ export function TagOptimization() {
   const handleSyncAll = async () => {
     const productsToSync = products.filter(p => p.tags && !p.seo_synced_to_shopify);
     if (productsToSync.length === 0) {
-      toast.info('All products are synchronized');
+      toast.info(t.seo.tags.allSynced);
       return;
     }
     await handleBulkSync(productsToSync.map(p => p.id));
@@ -462,7 +470,7 @@ export function TagOptimization() {
       return product && product.tags && !product.seo_synced_to_shopify;
     });
     if (productsToSync.length === 0) {
-      toast.info('No products to synchronize');
+      toast.info(t.seo.tags.noToSync);
       return;
     }
     await handleBulkSync(productsToSync);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from '@/lib/language';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -38,6 +39,7 @@ interface ProductWithImages {
 
 export function SeoAltImageList() {
   const { user } = useAuth();
+  const { t, tf } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<ProductWithImages[]>([]);
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
@@ -123,7 +125,7 @@ export function SeoAltImageList() {
       if (homepageImagesData && homepageImagesData.length > 0) {
         productsMap.set('homepage', {
           id: 'homepage',
-          title: '🏠 Page d\'accueil',
+          title: t.seo.altImage.homepage,
           handle: 'homepage',
           images: homepageImagesData.map((img: any) => ({
             id: img.id,
@@ -140,7 +142,7 @@ export function SeoAltImageList() {
       setProducts(Array.from(productsMap.values()));
     } catch (error) {
       console.error('Error fetching images:', error);
-      toast.error('Erreur lors du chargement des images');
+      toast.error(t.seo.altImage.loadError);
     } finally {
       setLoading(false);
     }
@@ -173,7 +175,7 @@ export function SeoAltImageList() {
     );
 
     if (imagesToGenerate.length === 0) {
-      toast.info('Aucune image sans ALT text sélectionnée');
+      toast.info(t.seo.altImage.noEmptyAlt);
       return;
     }
 
@@ -253,8 +255,8 @@ export function SeoAltImageList() {
     const filteredCount = imagesToSync.length - syncableImages.length;
     
     if (syncableImages.length === 0) {
-      toast.error('Aucune image synchronisable', {
-        description: 'Les images de homepage ne peuvent pas être synchronisées avec Shopify.'
+      toast.error(t.seo.altImage.noSyncable, {
+        description: t.seo.altImage.homepageCannotSync
       });
       setShowResultsDialog(false);
       setShowSyncDialog(false);
@@ -262,8 +264,8 @@ export function SeoAltImageList() {
     }
     
     if (filteredCount > 0) {
-      toast.info(`${filteredCount} image(s) de homepage ignorée(s)`, {
-        description: 'Seules les images de produits seront synchronisées.'
+      toast.info(tf('seo.altImage.homepageIgnored', { count: filteredCount }), {
+        description: t.seo.altImage.onlyProducts
       });
     }
 
@@ -393,78 +395,78 @@ export function SeoAltImageList() {
           className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setFilterStatus('empty');
-            toast.info(`${stats.empty} images sans ALT text`);
+            toast.info(tf('seo.altImage.info.emptyImages', { count: stats.empty }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">To Optimize</p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">{t.seo.altImage.stats.toOptimize}</p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.empty}</p>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                Empty ALT text
+                {t.seo.altImage.stats.emptyAlt}
               </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Click to view</p>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
         
         <Card 
           className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setFilterStatus('filled');
-            toast.info(`${stats.filled} images AI-optimisées`);
+            toast.info(tf('seo.altImage.info.aiOptimizedImages', { count: stats.filled }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">{t.seo.altImage.stats.aiOptimized}</p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.filled}</p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                With ALT text
+                {t.seo.altImage.stats.withAlt}
               </p>
             </div>
             <Sparkles className="w-8 h-8 text-green-600" />
           </div>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to view</p>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
         
         <Card 
           className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
-            toast.info(`${allImages.filter(img => img.alt_text && !img.last_synced_at).length} images à synchroniser`);
+            toast.info(tf('seo.altImage.info.toSyncImages', { count: allImages.filter(img => img.alt_text && !img.last_synced_at).length }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">{t.seo.altImage.stats.toSync}</p>
               <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{allImages.filter(img => img.alt_text && !img.last_synced_at).length}</p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                AI-optimized only
+                {t.seo.altImage.stats.aiOptimizedOnly}
               </p>
             </div>
             <Upload className="w-8 h-8 text-purple-600" />
           </div>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to view</p>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
         
         <Card 
           className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
-            toast.info(`${allImages.filter(img => img.last_synced_at).length} images synchronisées`);
+            toast.info(tf('seo.altImage.info.syncedImages', { count: allImages.filter(img => img.last_synced_at).length }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t.seo.altImage.stats.synchronized}</p>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{allImages.filter(img => img.last_synced_at).length}</p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                Synced to Shopify
+                {t.seo.altImage.stats.syncedToShopify}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-blue-600" />
           </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
       </div>
 
