@@ -12,11 +12,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔄 [SYNC-IMAGE] Starting collection image sync...');
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { collection_id } = await req.json();
+    console.log(`📦 [SYNC-IMAGE] Collection ID: ${collection_id}`);
 
     // Get collection data with user info
     const { data: collection, error: collectionError } = await supabase
@@ -26,14 +29,36 @@ serve(async (req) => {
       .single();
 
     if (collectionError) {
-      console.error('Collection error:', collectionError);
+      console.error('❌ [SYNC-IMAGE] Collection fetch error:', collectionError);
       throw collectionError;
     }
 
-    if (!collection.shopify_collection_id) {
-      console.log('Collection not synced to Shopify yet');
+    console.log(`🔍 [SYNC-IMAGE] Collection data:`, {
+      shopify_id: collection.shopify_collection_id,
+      has_image: !!collection.image_url,
+      image_url_preview: collection.image_url?.substring(0, 80) + '...'
+    });
+
+    // ✅ CRITICAL: Validate image URL format
+    if (collection.image_url?.startsWith('data:')) {
+      console.error('❌ [SYNC-IMAGE] Base64 image detected - Shopify cannot process base64');
       return new Response(
-        JSON.stringify({ message: 'Collection not synced to Shopify' }),
+        JSON.stringify({ 
+          success: false,
+          error: 'Base64 images not supported',
+          message: 'L\'image doit être une URL publique HTTP, pas du base64'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!collection.shopify_collection_id) {
+      console.log('⚠️ [SYNC-IMAGE] Collection not synced to Shopify yet');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          message: 'Collection not synced to Shopify' 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -60,15 +85,20 @@ serve(async (req) => {
     }
     
     if (!storeData) {
-      console.log('No store found for this collection');
+      console.error('❌ [SYNC-IMAGE] No store connection found');
       return new Response(
-        JSON.stringify({ message: 'No store connected' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false,
+          message: 'No store connected' 
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log(`🏪 [SYNC-IMAGE] Store: ${storeData.store_url}`);
+
     // Try custom collection first
-    console.log(`Attempting to sync as custom_collection: ${collection.shopify_collection_id}`);
+    console.log(`🔄 [SYNC-IMAGE] Attempting sync as custom_collection...`);
     let shopifyResponse = await fetch(
       `https://${storeData.store_url}/admin/api/2025-01/custom_collections/${collection.shopify_collection_id}.json`,
       {
@@ -91,7 +121,7 @@ serve(async (req) => {
 
     // If 404, try smart collection
     if (shopifyResponse.status === 404) {
-      console.log(`Not a custom collection, trying as smart_collection: ${collection.shopify_collection_id}`);
+      console.log(`⚠️ [SYNC-IMAGE] Not a custom collection, trying smart_collection...`);
       shopifyResponse = await fetch(
         `https://${storeData.store_url}/admin/api/2025-01/smart_collections/${collection.shopify_collection_id}.json`,
         {
@@ -115,21 +145,40 @@ serve(async (req) => {
 
     if (!shopifyResponse.ok) {
       const errorText = await shopifyResponse.text();
-      console.error('Shopify API error:', shopifyResponse.status, errorText);
-      throw new Error(`Shopify API error: ${shopifyResponse.status}`);
+      console.error(`❌ [SYNC-IMAGE] Shopify API error: ${shopifyResponse.status}`);
+      console.error(`Response: ${errorText}`);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Shopify API error: ${shopifyResponse.status}`,
+          details: errorText
+        }),
+        { status: shopifyResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Collection image synced to Shopify successfully');
+    const responseData = await shopifyResponse.json();
+    console.log('✅ [SYNC-IMAGE] Collection image synced to Shopify successfully');
+    console.log(`📸 [SYNC-IMAGE] Shopify response:`, JSON.stringify(responseData).substring(0, 200));
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true,
+        message: 'Image synchronisée avec Shopify',
+        shopify_response: responseData
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error syncing collection image:', error);
+    console.error('❌ [SYNC-IMAGE] Fatal error:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ 
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        message: 'Erreur lors de la synchronisation avec Shopify'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -149,6 +149,19 @@ export function CollectionImageDialog({
   };
 
   const updateCollectionImage = async (imageUrl: string) => {
+    // ✅ CRITICAL: Validate URL format - reject base64 data URLs
+    if (imageUrl.startsWith('data:')) {
+      toast.error('❌ Erreur: Format base64 détecté. L\'image doit être une URL publique HTTP.');
+      throw new Error('Base64 URLs are not supported. Image must be uploaded to storage first.');
+    }
+
+    if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+      toast.error('❌ URL invalide. L\'image doit commencer par http:// ou https://');
+      throw new Error('Invalid URL format');
+    }
+
+    console.log('✅ Valid public URL detected:', imageUrl);
+
     const { error } = await supabase
       .from('shopify_collections')
       .update({ 
@@ -160,13 +173,26 @@ export function CollectionImageDialog({
 
     if (error) throw error;
 
-    // Trigger auto-sync with Shopify
+    // ✅ Trigger Shopify sync and wait for response
+    toast.loading('Synchronisation avec Shopify en cours...', { id: 'shopify-sync' });
+    
     try {
-      await supabase.functions.invoke('sync-collection-image-to-shopify', {
-        body: { collection_id: collection.id }
-      });
+      const { data: syncResult, error: syncError } = await supabase.functions.invoke(
+        'sync-collection-image-to-shopify',
+        { body: { collection_id: collection.id } }
+      );
+
+      if (syncError) {
+        console.error('Shopify sync error:', syncError);
+        toast.error('⚠️ Image enregistrée mais synchronisation Shopify échouée', { id: 'shopify-sync' });
+      } else if (syncResult?.success) {
+        toast.success('✅ Image synchronisée avec Shopify', { id: 'shopify-sync' });
+      } else {
+        toast.warning('⚠️ Image enregistrée (sync Shopify incomplète)', { id: 'shopify-sync' });
+      }
     } catch (syncError) {
       console.error('Sync error (non-blocking):', syncError);
+      toast.warning('⚠️ Image enregistrée localement (erreur sync Shopify)', { id: 'shopify-sync' });
     }
 
     onImageUpdated();

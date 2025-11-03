@@ -322,7 +322,23 @@ export default function Collections() {
             ) : (
               <>
                 <Upload className="w-4 h-4 mr-2" />
-                Importer Collections
+                Importer Collections + Images
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={handleFullImport}
+            disabled={importing}
+          >
+            {importing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Import complet...
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4 mr-2" />
+                Import Complet
               </>
             )}
           </Button>

@@ -161,6 +161,18 @@ Deno.serve(async (req: Request) => {
 
     for (const collection of allCollections) {
       try {
+        // ✅ Extract Shopify image data
+        const imageUrl = collection.image?.src || null;
+        const imageAlt = collection.image?.alt || collection.title;
+        const shopifyImageId = collection.image?.id ? String(collection.image.id) : null;
+
+        console.log(`📸 [IMPORT-COLLECTIONS] Image data for "${collection.title}":`, {
+          has_image: !!imageUrl,
+          image_url: imageUrl?.substring(0, 60) + '...',
+          has_alt: !!imageAlt,
+          shopify_image_id: shopifyImageId
+        });
+
         const collectionData = {
           user_id: user.id,
           store_id: connection.id,
@@ -170,9 +182,9 @@ Deno.serve(async (req: Request) => {
           body_html: collection.body_html || null,
           seo_title: collection.title, // Default to title
           seo_description: collection.body_html?.replace(/<[^>]*>/g, '').substring(0, 160) || `Collection ${collection.title}`,
-          image_url: collection.image?.src || null,
-          image_alt: collection.image?.alt || collection.title,
-          shopify_image_id: collection.image?.id || null,
+          image_url: imageUrl,
+          image_alt: imageAlt,
+          shopify_image_id: shopifyImageId,
           updated_at: new Date().toISOString(),
         };
 
