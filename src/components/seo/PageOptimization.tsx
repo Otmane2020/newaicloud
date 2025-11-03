@@ -883,8 +883,8 @@ export function PageOptimization() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={scoreBadge.variant}>
-                          <span className={scoreBadge.color}>{seoScore.score}/100</span>
+                        <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
+                          {scoreBadge.label} - {Math.round(seoScore.score)}%
                         </Badge>
                       </TableCell>
                       <TableCell>

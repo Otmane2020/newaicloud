@@ -1267,8 +1267,8 @@ export function CollectionOptimization() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Badge variant={scoreBadge.variant}>
-                            <span className={scoreBadge.color}>{seoScore}/100</span>
+                          <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
+                            {scoreBadge.label} - {Math.round(seoScore)}%
                           </Badge>
                           {collection.optimization_count && collection.optimization_count > 0 && (
                             <Sparkles className="w-3 h-3 text-primary" />
@@ -1403,8 +1403,8 @@ export function CollectionOptimization() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Score SEO</span>
-                    <Badge variant={scoreBadge.variant}>
-                      <span className={scoreBadge.color}>{seoScore}/100</span>
+                    <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
+                      {scoreBadge.label} - {Math.round(seoScore)}%
                     </Badge>
                   </div>
                   

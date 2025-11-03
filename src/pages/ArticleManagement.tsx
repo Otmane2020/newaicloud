@@ -643,7 +643,7 @@ export default function ArticleManagement() {
                           
                           return (
                             <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
-                              {seoScore.score}%
+                              {scoreBadge.label} - {Math.round(seoScore.score)}%
                             </Badge>
                           );
                         })()}

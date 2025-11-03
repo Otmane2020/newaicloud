@@ -1358,59 +1358,14 @@ export function SeoOptimization() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      {product.enrichment_status === "enriched" ? (
-                        <>
-                          <div
-                            className={`text-2xl font-bold ${
-                              seoScore.score >= 70
-                                ? "text-green-600"
-                                : seoScore.score >= 50
-                                  ? "text-orange-600"
-                                  : "text-red-600"
-                            }`}
-                          >
-                            {seoScore.score}%
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {seoScore.score >= 70
-                              ? t.seo.optimization.excellentEmoji
-                              : seoScore.score >= 50
-                                ? t.seo.optimization.goodEmoji
-                                : t.seo.optimization.toImprove}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          {(() => {
-                            const initialScore = calculateDetailedSeoScore(
-                              product.title,
-                              product.vendor,
-                              !!product.image_url,
-                              true,
-                              product.tags,
-                              product.optimization_count,
-                            );
-                            return (
-                              <>
-                                <div
-                                  className={`text-2xl font-bold ${
-                                    initialScore.score >= 70
-                                      ? "text-green-600"
-                                      : initialScore.score >= 50
-                                        ? "text-orange-600"
-                                        : "text-red-600"
-                                  }`}
-                                >
-                                  {initialScore.score}%
-                                </div>
-                                <span className="text-xs text-muted-foreground">{t.seo.optimization.initialScore}</span>
-                              </>
-                            );
-                          })()}
-                        </>
-                      )}
-                    </div>
+                    {(() => {
+                      const scoreBadge = getSeoScoreBadge(seoScore.score);
+                      return (
+                        <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
+                          {scoreBadge.label} - {Math.round(seoScore.score)}%
+                        </Badge>
+                      );
+                    })()}
 
                     <Button
                       size="sm"
