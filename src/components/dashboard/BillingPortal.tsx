@@ -188,7 +188,7 @@ export function BillingPortal() {
 
           {/* Action Buttons */}
           <div className="space-y-2">
-            {hasActivePaidPlan ? (
+            {hasActivePaidPlan && subscriptionStatus.hasStripeSubscription ? (
               <>
                 <Button 
                   onClick={handleOpenPortal}
@@ -204,12 +204,26 @@ export function BillingPortal() {
                   ) : (
                     <>
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      Accéder au portail de facturation Stripe
+                      Facturation
                     </>
                   )}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Gérez votre abonnement, moyens de paiement et factures via Stripe
+                  Gérez vos moyens de paiement et consultez vos factures
+                </p>
+              </>
+            ) : hasActivePaidPlan && !subscriptionStatus.hasStripeSubscription ? (
+              <>
+                <Button 
+                  onClick={handleActivatePlan}
+                  className="w-full"
+                  variant="default"
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Configurer le paiement
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Configurez votre méthode de paiement pour accéder à la facturation
                 </p>
               </>
             ) : (
