@@ -13,9 +13,10 @@ interface UpgradeDialogProps {
   limitType: 'optimizations' | 'articles' | 'chat' | 'shopifySearch';
   usage?: number;
   limit?: number;
+  currentPlan?: string;
 }
 
-export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: UpgradeDialogProps) {
+export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, currentPlan = "Trial" }: UpgradeDialogProps) {
   const [loading, setLoading] = useState(false);
   const { t, tf } = useTranslation();
 
@@ -59,16 +60,20 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit }: U
           <DialogTitle className="text-xl">{t.dialogs.limit.upgradeRequired}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <p className="text-muted-foreground">
-            {t.dialogs.limit.reachedLimit}
-          </p>
           <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg">
-            <p className="font-medium text-orange-900 dark:text-orange-100">
+            <p className="font-medium text-orange-900 dark:text-orange-100 mb-1">
+              You've reached the limit of your {currentPlan} plan
+            </p>
+            <p className="text-sm text-orange-800 dark:text-orange-200">
               {limitTitle}: {limitMessage}
             </p>
           </div>
           
           <Separator />
+          
+          <p className="text-muted-foreground font-medium">
+            Upgrade to <span className="text-blue-600 dark:text-blue-400">{t.dialogs.upgrade.starter.title}</span> to unlock:
+          </p>
           
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
             <h3 className="font-semibold mb-3 text-lg">{t.dialogs.upgrade.starter.title} - {t.dialogs.upgrade.starter.price}{t.dialogs.upgrade.starter.perMonth}</h3>
