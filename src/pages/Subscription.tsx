@@ -224,6 +224,26 @@ const Subscription = () => {
 
       {!isUpgradeFlow && <CurrentPlanCard />}
 
+      {isUpgradeFlow && currentPlan && (
+        <Card className="p-6 mb-8 bg-muted/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold mb-1">Votre plan actuel</h3>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{getPlanIcon(currentPlan.id)}</span>
+                <div>
+                  <p className="text-xl font-bold">{currentPlan.name}</p>
+                  <p className="text-muted-foreground text-sm">{currentPlan.price_monthly}€/mois</p>
+                </div>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-lg px-4 py-2">
+              Plan actuel
+            </Badge>
+          </div>
+        </Card>
+      )}
+
       <div className="grid md:grid-cols-3 gap-8">
         {starterPlan && (
           <Card className={`p-8 relative flex flex-col ${isCurrentPlan(starterPlan.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
