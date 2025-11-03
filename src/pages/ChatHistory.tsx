@@ -34,7 +34,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   created_at: string;
   session_id: string;
-  products?: any[]; // Ajout des produits dans les messages
+  products?: any[];
 }
 
 interface Product {
@@ -46,7 +46,6 @@ interface Product {
   category?: string;
 }
 
-// Interface pour les données brutes de la base
 interface RawChatMessage {
   id: string;
   content: string;
@@ -120,11 +119,10 @@ export default function ChatHistory() {
 
       if (error) throw error;
       
-      // Conversion des rôles et gestion des produits
       const formattedMessages: ChatMessage[] = (data || []).map((msg: RawChatMessage) => ({
         ...msg,
-        role: (msg.role === 'user' || msg.role === 'assistant') ? msg.role : 'assistant', // Fallback safe
-        products: msg.products || [] // Utilisation directe du champ products
+        role: (msg.role === 'user' || msg.role === 'assistant') ? msg.role : 'assistant',
+        products: msg.products || []
       }));
       
       setMessages(formattedMessages);
@@ -357,7 +355,7 @@ export default function ChatHistory() {
                         )}
                       </Button>
                     </div>
-                  </CardContent>
+                  </CardHeader>
                   <CardContent className="pt-0">
                     {session.last_message && (
                       <p className="text-sm text-muted-foreground text-left leading-relaxed">
