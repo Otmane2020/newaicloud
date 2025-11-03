@@ -175,8 +175,9 @@ Deno.serve(async (req: Request) => {
         }
 
         console.log(`💾 Updating collection ${collection_id} with SEO data...`);
-        console.log(`📝 SEO Title to save: "${seoData.seo_title}"`);
-        console.log(`📝 SEO Description to save: "${seoData.seo_description}"`);
+        console.log(`📝 SEO Title (${seoData.seo_title?.length || 0} chars): "${seoData.seo_title?.substring(0, 60)}..."`);
+        console.log(`📝 SEO Description (${seoData.seo_description?.length || 0} chars): "${seoData.seo_description?.substring(0, 80)}..."`);
+        console.log(`📝 Body HTML: ${seoData.body_html ? 'Yes' : 'No'}`);
 
         // Update collection with tracking
         const { data: updateData, error: updateError } = await supabase

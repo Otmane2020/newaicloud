@@ -75,11 +75,44 @@ serve(async (req) => {
       throw new Error('No image generated');
     }
 
-    console.log("Image generated successfully");
+    console.log("Image generated successfully, uploading to Supabase Storage...");
+
+    // Upload to Supabase Storage if collection_id or article_id is provided
+    let publicUrl = imageUrl;
+    
+    if (collection_id || article_id) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Convert base64 to blob
+      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      
+      const filename = `${collection_id || article_id}_${Date.now()}.png`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('generated-images')
+        .upload(filename, buffer, {
+          contentType: 'image/png',
+          upsert: true
+        });
+      
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+      } else {
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('generated-images')
+          .getPublicUrl(filename);
+        
+        publicUrl = urlData.publicUrl;
+        console.log("Image uploaded to storage:", publicUrl);
+      }
+    }
 
     return new Response(
       JSON.stringify({ 
-        image_url: imageUrl,
+        image_url: publicUrl,
         success: true 
       }),
       { 
