@@ -47,7 +47,15 @@ serve(async (req) => {
     // Fetch products to sync
     const { data: products, error: productsError } = await supabase
       .from('shopify_products')
-      .select('id, shopify_id, title, price, compare_at_price')
+      .select(`
+        id, 
+        shopify_id, 
+        title, 
+        price, 
+        compare_at_price,
+        cost_price,
+        product_variants(id, shopify_variant_id, cost_price)
+      `)
       .in('id', product_ids);
 
     if (productsError) throw productsError;
@@ -118,7 +126,46 @@ serve(async (req) => {
           throw new Error(`Shopify API error: ${updateResponse.status}`);
         }
 
-        console.log(`✅ [SYNC-PRICING] Successfully synced "${product.title}"`);
+        console.log(`✅ [SYNC-PRICING] Successfully synced pricing for "${product.title}"`);
+
+        // Sync cost_price to inventory_item if available
+        const variants = (product as any).product_variants || [];
+        if (variants.length > 0 && variants[0].cost_price !== null) {
+          const variant = variants[0];
+          
+          // Inventory item ID is already in the variant data we fetched
+          const inventoryItemId = productData.product?.variants?.[0]?.inventory_item_id;
+
+          if (inventoryItemId && variant.cost_price) {
+            try {
+              const inventoryUpdateResponse = await fetch(
+                `${storeUrl}/admin/api/2025-01/inventory_items/${inventoryItemId}.json`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    'X-Shopify-Access-Token': connection.access_token,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    inventory_item: {
+                      id: inventoryItemId,
+                      cost: variant.cost_price.toString()
+                    }
+                  })
+                }
+              );
+
+              if (inventoryUpdateResponse.ok) {
+                console.log(`✅ [SYNC-PRICING] Cost synced: ${variant.cost_price} for "${product.title}"`);
+              } else {
+                console.warn(`⚠️ [SYNC-PRICING] Failed to sync cost: ${inventoryUpdateResponse.status}`);
+              }
+            } catch (costError) {
+              console.error(`❌ [SYNC-PRICING] Error syncing cost:`, costError);
+            }
+          }
+        }
+
         successCount++;
 
         // Rate limiting

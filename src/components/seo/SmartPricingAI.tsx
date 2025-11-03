@@ -12,10 +12,12 @@ import {
   Package,
   Loader2,
   Upload,
+  Download,
   CheckCheck,
   Percent,
   Calculator,
-  ArrowUpDown
+  ArrowUpDown,
+  RefreshCw
 } from 'lucide-react';
 import {
   Select,
@@ -37,6 +39,7 @@ interface ProductPricing {
   shipping_cost: number | null;
   sku: string | null;
   shopify_product_id: string | null;
+  currency: string;
   selected: boolean;
 }
 
@@ -52,7 +55,9 @@ export function SmartPricingAI() {
   const [collections, setCollections] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [bulkOperation, setBulkOperation] = useState<BulkOperation>({
     type: 'discount',
     method: 'percentage',
@@ -83,7 +88,7 @@ export function SmartPricingAI() {
         .from('shopify_products')
         .select(`
           *,
-          product_variants(sku)
+          product_variants(sku, cost_price)
         `)
         .eq('seller_id', user.id);
 
@@ -101,20 +106,21 @@ export function SmartPricingAI() {
           
           const firstVariant = (product as any).product_variants?.[0];
 
-          return {
-            id: product.id,
-            title: product.title || '',
-            image_url: product.image_url || null,
-            collection_ids: (product.collection_ids || []) as string[],
-            collection_names: collectionNames,
-            price: typeof product.price === 'number' ? product.price : null,
-            compare_at_price: typeof product.compare_at_price === 'number' ? product.compare_at_price : null,
-            cost_price: null,
-            shipping_cost: typeof product.shipping_cost === 'number' ? product.shipping_cost : null,
-            sku: firstVariant?.sku || null,
-            shopify_product_id: product.shopify_id ? String(product.shopify_id) : null,
-            selected: false,
-          };
+        return {
+          id: product.id,
+          title: product.title || '',
+          image_url: product.image_url || null,
+          collection_ids: (product.collection_ids || []) as string[],
+          collection_names: collectionNames,
+          price: typeof product.price === 'number' ? product.price : null,
+          compare_at_price: typeof product.compare_at_price === 'number' ? product.compare_at_price : null,
+          cost_price: typeof product.cost_price === 'number' ? product.cost_price : firstVariant?.cost_price || null,
+          shipping_cost: typeof product.shipping_cost === 'number' ? product.shipping_cost : null,
+          sku: firstVariant?.sku || null,
+          shopify_product_id: product.shopify_id ? String(product.shopify_id) : null,
+          currency: product.currency || 'EUR',
+          selected: false,
+        };
         });
 
         setProducts(enrichedProducts);
@@ -135,6 +141,11 @@ export function SmartPricingAI() {
   const calculateMargin = (price: number, costPrice: number | null) => {
     if (!costPrice || costPrice === 0) return 0;
     return Math.round(((price - costPrice) / price) * 100);
+  };
+
+  const calculateMarginValue = (price: number | null, costPrice: number | null) => {
+    if (!price || !costPrice) return 0;
+    return price - costPrice;
   };
 
   const updateProductPrice = (productId: string, field: 'price' | 'compare_at_price' | 'cost_price' | 'shipping_cost', value: string) => {
@@ -202,6 +213,29 @@ export function SmartPricingAI() {
     toast.success('💰 Modification appliquée avec succès');
   };
 
+  const importCostsFromShopify = async () => {
+    try {
+      setImporting(true);
+      const toastId = toast.loading('Import des coûts depuis Shopify...');
+
+      const { data, error } = await supabase.functions.invoke('import-costs-from-shopify');
+
+      if (error) throw error;
+
+      toast.success(
+        `✅ ${data.imported} coûts importés (${data.errors} erreurs)`, 
+        { id: toastId }
+      );
+      
+      await fetchData();
+    } catch (error: any) {
+      console.error('Import costs error:', error);
+      toast.error(error.message || 'Erreur lors de l\'import des coûts');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const syncToShopify = async (selectedOnly: boolean) => {
     try {
       setSyncing(true);
@@ -254,9 +288,21 @@ export function SmartPricingAI() {
     }
   };
 
-  const filteredProducts = selectedCollection === 'all'
-    ? products
-    : products.filter(p => p.collection_ids.includes(selectedCollection));
+  const filteredProducts = products.filter(product => {
+    const matchesCollection = selectedCollection === 'all' || product.collection_ids.includes(selectedCollection);
+    const matchesSearch = !searchQuery || 
+      product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCollection && matchesSearch;
+  });
+
+  const currency = products[0]?.currency || 'EUR';
+  const currencySymbol = currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '€';
+
+  const formatPrice = (price: number | null) => {
+    if (!price) return '-';
+    return `${price.toFixed(2)} ${currencySymbol}`;
+  };
 
   if (loading) {
     return (
@@ -351,7 +397,14 @@ export function SmartPricingAI() {
 
       {/* Actions Bar */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1">
+          <Input
+            type="text"
+            placeholder="🔍 Rechercher par titre ou SKU..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-md"
+          />
           <Select value={selectedCollection} onValueChange={setSelectedCollection}>
             <SelectTrigger className="w-[250px]">
               <SelectValue placeholder="Filtrer par collection" />
@@ -369,6 +422,19 @@ export function SmartPricingAI() {
           )}
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={importCostsFromShopify}
+            disabled={importing || syncing}
+            className="gap-2"
+          >
+            {importing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            Importer Coûts
+          </Button>
           <Button
             variant="outline"
             onClick={() => syncToShopify(true)}
@@ -464,24 +530,30 @@ export function SmartPricingAI() {
                       </div>
                     </td>
                     <td className="p-4 text-right">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={product.price || ''}
-                        onChange={(e) => updateProductPrice(product.id, 'price', e.target.value)}
-                        className="w-24 text-right"
-                      />
+                      <div className="flex items-center gap-1 justify-end">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={product.price || ''}
+                          onChange={(e) => updateProductPrice(product.id, 'price', e.target.value)}
+                          className="w-24 text-right"
+                        />
+                        <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
+                      </div>
                     </td>
                     <td className="p-4 text-right">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={product.compare_at_price || ''}
-                        onChange={(e) => updateProductPrice(product.id, 'compare_at_price', e.target.value)}
-                        className="w-24 text-right"
-                      />
+                      <div className="flex items-center gap-1 justify-end">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={product.compare_at_price || ''}
+                          onChange={(e) => updateProductPrice(product.id, 'compare_at_price', e.target.value)}
+                          className="w-24 text-right"
+                        />
+                        <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
+                      </div>
                     </td>
                     <td className="p-4 text-center">
                       {discount > 0 ? (
@@ -494,42 +566,53 @@ export function SmartPricingAI() {
                       )}
                     </td>
                     <td className="p-4 text-right">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={product.cost_price || ''}
-                        onChange={(e) => updateProductPrice(product.id, 'cost_price', e.target.value)}
-                        className="w-24 text-right"
-                        placeholder="0.00"
-                      />
+                      <div className="flex items-center gap-1 justify-end">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={product.cost_price || ''}
+                          onChange={(e) => updateProductPrice(product.id, 'cost_price', e.target.value)}
+                          className="w-24 text-right"
+                          placeholder="0.00"
+                        />
+                        <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
+                      </div>
                     </td>
                     <td className="p-4 text-right">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={product.shipping_cost || ''}
-                        onChange={(e) => updateProductPrice(product.id, 'shipping_cost', e.target.value)}
-                        className="w-24 text-right"
-                        placeholder="0.00"
-                      />
+                      <div className="flex items-center gap-1 justify-end">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={product.shipping_cost || ''}
+                          onChange={(e) => updateProductPrice(product.id, 'shipping_cost', e.target.value)}
+                          className="w-24 text-right"
+                          placeholder="0.00"
+                        />
+                        <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
+                      </div>
                     </td>
                     <td className="p-4 text-center">
-                      {margin > 0 ? (
-                        <Badge
-                          variant="outline"
-                          className={`gap-1 ${
-                            margin >= 40
-                              ? 'bg-green-50 text-green-700 border-green-200'
-                              : margin >= 20
-                              ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                              : 'bg-red-50 text-red-700 border-red-200'
-                          }`}
-                        >
-                          <TrendingUp className="w-3 h-3" />
-                          {margin}%
-                        </Badge>
+                      {margin > 0 && product.cost_price ? (
+                        <div className="space-y-1">
+                          <Badge
+                            variant="outline"
+                            className={`gap-1 ${
+                              margin >= 40
+                                ? 'bg-green-50 text-green-700 border-green-200'
+                                : margin >= 20
+                                ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                : 'bg-red-50 text-red-700 border-red-200'
+                            }`}
+                          >
+                            <TrendingUp className="w-3 h-3" />
+                            {margin}%
+                          </Badge>
+                          <div className="text-xs text-muted-foreground font-mono">
+                            +{calculateMarginValue(product.price, product.cost_price).toFixed(2)} {currencySymbol}
+                          </div>
+                        </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}

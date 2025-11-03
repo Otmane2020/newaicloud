@@ -1018,6 +1018,7 @@ export type Database = {
           ai_vision_timestamp: string | null
           barcode: string | null
           compare_at_price: number | null
+          cost_price: number | null
           created_at: string
           currency: string | null
           id: string
@@ -1052,6 +1053,7 @@ export type Database = {
           ai_vision_timestamp?: string | null
           barcode?: string | null
           compare_at_price?: number | null
+          cost_price?: number | null
           created_at?: string
           currency?: string | null
           id?: string
@@ -1086,6 +1088,7 @@ export type Database = {
           ai_vision_timestamp?: string | null
           barcode?: string | null
           compare_at_price?: number | null
+          cost_price?: number | null
           created_at?: string
           currency?: string | null
           id?: string
@@ -1862,6 +1865,7 @@ export type Database = {
           chat_text: string | null
           collection_ids: string[] | null
           compare_at_price: number | null
+          cost_price: number | null
           created_at: string
           currency: string | null
           description: string | null
@@ -1972,6 +1976,7 @@ export type Database = {
           chat_text?: string | null
           collection_ids?: string[] | null
           compare_at_price?: number | null
+          cost_price?: number | null
           created_at?: string
           currency?: string | null
           description?: string | null
@@ -2082,6 +2087,7 @@ export type Database = {
           chat_text?: string | null
           collection_ids?: string[] | null
           compare_at_price?: number | null
+          cost_price?: number | null
           created_at?: string
           currency?: string | null
           description?: string | null
