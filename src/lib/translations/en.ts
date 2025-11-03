@@ -461,15 +461,15 @@ export const translations = {
       }
     },
     chat: {
-      greeting: "Hello! How can I help you today?",
-      welcome: "Hello! How can I help you?",
+      greeting: "Hello! I'm Sophie, your sales consultant. How can I help you today?",
+      welcome: "Welcome! I'm Sophie, ready to assist you.",
       errors: {
         sendMessage: "Error sending message",
         connection: "Connection error"
       },
       fallback: "Sorry, I'm experiencing technical issues. Please try again.",
-      title: "💬 Smart AI Chat",
-      subtitle: "Intelligent assistant connected to your Shopify catalog",
+      title: "💬 Sophie - Smart AI Chat",
+      subtitle: "Sophie, your sales consultant connected to your Shopify catalog",
       productsAvailable: "{{count}} products available",
       poweredByAI: "Powered by AI",
       codeEmbed: "Embed Code",

@@ -248,7 +248,7 @@ export default function Chat() {
   };
 
   // Generate embed code
-  const embedCode = `<!-- Chat Intelligent Shopify - Powered by IA -->
+  const embedCode = `<!-- Sophie - Assistant Commercial IA -->
 <div id="smart-chat-widget"></div>
 
 <script>
@@ -257,7 +257,8 @@ export default function Chat() {
     sellerId: '${user?.id || 'YOUR_SELLER_ID'}',
     position: '${chatPosition}',
     welcomeMessage: '${welcomeMessage}',
-    apiUrl: 'https://votre-api.com/chat'
+    apiUrl: '${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-smart',
+    apiKey: '${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}'
   };
 
   const positions = {
@@ -278,43 +279,76 @@ export default function Chat() {
 
   widget.innerHTML = \`
     <button id="chat-toggle" style="
-      width: 60px;
-      height: 60px;
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
       background: linear-gradient(135deg, #3b82f6, #8b5cf6);
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 8px 20px rgba(59,130,246,0.4);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s;
-    " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+      transition: all 0.3s ease;
+      position: relative;
+    " onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 12px 30px rgba(59,130,246,0.5)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 8px 20px rgba(59,130,246,0.4)'">
       <svg width="32" height="32" fill="white" viewBox="0 0 24 24">
         <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
       </svg>
+      <span id="unread-badge" style="
+        display: none;
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #ef4444;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+        font-weight: bold;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid white;
+      ">1</span>
     </button>
     <div id="chat-window" style="
       display: none;
-      width: 380px;
-      height: 500px;
+      width: 400px;
+      height: 600px;
       background: white;
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
       flex-direction: column;
       overflow: hidden;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     ">
-      <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 20px;">
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600;">💬 Assistant IA</h3>
-        <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">\${config.welcomeMessage}</p>
-      </div>
-      <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 16px;"></div>
-      <div style="padding: 16px; border-top: 1px solid #e5e5e5;">
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="chat-input" placeholder="Votre message..." style="flex: 1; padding: 10px; border: 1px solid #e5e5e5; border-radius: 8px; outline: none;" />
-          <button id="chat-send" style="padding: 10px 16px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border: none; border-radius: 8px; cursor: pointer;">Envoyer</button>
+      <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: white/20; backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; font-size: 24px;">
+            👋
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 20px; font-weight: 700;">Sophie</h3>
+            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Votre conseillère commerciale</p>
+          </div>
         </div>
+        <p style="margin: 0; font-size: 14px; opacity: 0.95; line-height: 1.5;">\${config.welcomeMessage}</p>
+      </div>
+      <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; background: linear-gradient(to bottom, #f9fafb, #ffffff);"></div>
+      <div style="padding: 20px; border-top: 2px solid #e5e7eb; background: white;">
+        <div id="typing-indicator" style="display: none; padding: 8px 0; color: #6b7280; font-size: 13px;">
+          <span style="animation: pulse 1.5s infinite;">Sophie est en train d'écrire...</span>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <input type="text" id="chat-input" placeholder="Tapez votre message..." style="flex: 1; padding: 14px 16px; border: 2px solid #e5e7eb; border-radius: 12px; outline: none; font-size: 14px; transition: border-color 0.2s;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'" />
+          <button id="chat-send" style="padding: 14px 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s; box-shadow: 0 2px 8px rgba(59,130,246,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(59,130,246,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(59,130,246,0.3)'">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+            </svg>
+          </button>
+        </div>
+        <p style="margin: 12px 0 0 0; font-size: 11px; color: #9ca3af; text-align: center;">Propulsé par IA • Réponses instantanées</p>
       </div>
     </div>
   \`;
@@ -327,51 +361,166 @@ export default function Chat() {
   const send = document.getElementById('chat-send');
   const messages = document.getElementById('chat-messages');
 
+  const badge = document.getElementById('unread-badge');
+  const typing = document.getElementById('typing-indicator');
+  let history = [];
+  
+  // Show welcome message and badge after 2s
+  setTimeout(() => {
+    if (window.style.display === 'none') {
+      badge.style.display = 'flex';
+    }
+  }, 2000);
+
   toggle.onclick = () => {
-    window.style.display = window.style.display === 'none' ? 'flex' : 'none';
+    const isOpen = window.style.display === 'flex';
+    window.style.display = isOpen ? 'none' : 'flex';
+    if (!isOpen) {
+      badge.style.display = 'none';
+      input.focus();
+    }
   };
 
   send.onclick = sendMessage;
   input.onkeypress = (e) => {
-    if (e.key === 'Enter') sendMessage();
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
 
-  function sendMessage() {
+  async function sendMessage() {
     const message = input.value.trim();
     if (!message) return;
 
     addMessage('user', message);
+    history.push({ role: 'user', content: message });
     input.value = '';
+    input.disabled = true;
+    send.disabled = true;
+    typing.style.display = 'block';
 
-    // Call API
-    fetch(config.apiUrl + '?seller_id=' + config.sellerId, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
-    })
-    .then(r => r.json())
-    .then(data => {
-      addMessage('assistant', data.response || 'Désolé, je n\\'ai pas compris.');
-    })
-    .catch(() => {
-      addMessage('assistant', 'Erreur de connexion. Veuillez réessayer.');
-    });
+    try {
+      const response = await fetch(config.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + config.apiKey
+        },
+        body: JSON.stringify({
+          userMessage: message,
+          history: history.slice(-5),
+          sellerId: config.sellerId,
+          context: {
+            includeKnowledge: true,
+            includeProducts: true,
+            includeOrders: true,
+            includePages: true
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error('Network error');
+      if (!response.body) throw new Error('No response');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let assistantMessage = '';
+      let messageDiv = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim() || line === 'data: [DONE]') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.content) {
+              assistantMessage += data.content;
+              if (!messageDiv) {
+                messageDiv = addMessage('assistant', assistantMessage);
+              } else {
+                messageDiv.textContent = assistantMessage;
+              }
+            }
+          } catch (e) {
+            console.error('Parse error:', e);
+          }
+        }
+      }
+
+      if (assistantMessage) {
+        history.push({ role: 'assistant', content: assistantMessage });
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      addMessage('assistant', 'Désolée, j\\'ai rencontré un problème technique. Pouvez-vous réessayer ?');
+    } finally {
+      typing.style.display = 'none';
+      input.disabled = false;
+      send.disabled = false;
+      input.focus();
+    }
   }
 
   function addMessage(role, content) {
     const div = document.createElement('div');
+    const isUser = role === 'user';
+    
     div.style.cssText = \`
-      margin-bottom: 12px;
-      padding: 10px 14px;
-      border-radius: 12px;
-      \${role === 'user' ? 'background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; margin-left: 40px;' : 'background: #f3f4f6; margin-right: 40px;'}
-      font-size: 14px;
-      line-height: 1.5;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      \${isUser ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}
+      animation: slideIn 0.3s ease;
     \`;
-    div.textContent = content;
+    
+    const avatar = document.createElement('div');
+    avatar.style.cssText = \`
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      \${isUser ? 'background: linear-gradient(135deg, #3b82f6, #8b5cf6);' : 'background: linear-gradient(135deg, #f3f4f6, #e5e7eb);'}
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+    \`;
+    avatar.textContent = isUser ? '👤' : '👩‍💼';
+    
+    const bubble = document.createElement('div');
+    bubble.style.cssText = \`
+      padding: 12px 16px;
+      border-radius: 16px;
+      \${isUser ? 'background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border-radius: 16px 16px 4px 16px;' : 'background: #f3f4f6; color: #1f2937; border-radius: 16px 16px 16px 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'}
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 280px;
+      word-wrap: break-word;
+    \`;
+    bubble.textContent = content;
+    
+    div.appendChild(avatar);
+    div.appendChild(bubble);
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
+    
+    return bubble;
   }
+  
+  // Add initial greeting
+  setTimeout(() => {
+    addMessage('assistant', config.welcomeMessage || 'Bonjour ! Je suis Sophie, votre conseillère commerciale. Comment puis-je vous aider aujourd\\'hui ?');
+  }, 500);
 })();
 </script>`;
 
@@ -496,14 +645,14 @@ export default function Chat() {
           {/* Header du chat avec design moderne */}
           <div className="px-6 py-5 border-b-2 bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-white">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <Bot className="w-7 h-7 text-white" />
+              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg text-2xl">
+                👩‍💼
               </div>
               <div>
-                <h3 className="font-bold text-lg">🤖 Assistant IA Intelligent</h3>
+                <h3 className="font-bold text-lg">Sophie - Votre Conseillère</h3>
                 <p className="text-xs text-white/90 flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                  En ligne • Prêt à vous aider
+                  En ligne • Prête à vous aider
                 </p>
               </div>
             </div>
@@ -519,8 +668,8 @@ export default function Chat() {
                 }`}
               >
                 {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-5 h-5 text-primary" />
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-lg">
+                    👩‍💼
                   </div>
                 )}
                 
