@@ -150,7 +150,7 @@ window.chatWidgetConfig = {
   const avatarOptions = [
     { value: 'professional', label: 'Avatar Professionnel', desc: 'Représentation corporate' },
     { value: 'friendly', label: 'Avatar Amical', desc: 'Approche service client' },
-    { value: 'ai', label: 'Icône IA Moderne', desc: Style moderne et technologique' },
+    { value: 'ai', label: 'Icône IA Moderne', desc: 'Style moderne et technologique' },
     { value: 'brand', label: 'Logo Marque', desc: 'Identité visuelle de la marque' },
   ];
 
