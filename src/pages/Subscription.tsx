@@ -120,14 +120,23 @@ const Subscription = () => {
         .eq('status', 'active')
         .maybeSingle();
 
-      if (subscription?.plan_id) {
-        const currentPlanData = validPlans.find((p: Plan) => p.id === subscription.plan_id);
+      // Also check the profiles table for current_plan_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_plan_id')
+        .eq('id', user.id)
+        .single();
+
+      const activePlanId = subscription?.plan_id || profile?.current_plan_id;
+
+      if (activePlanId) {
+        const currentPlanData = validPlans.find((p: Plan) => p.id === activePlanId);
         setCurrentPlan(currentPlanData || null);
         
-        if (subscription.plan_id === 'professional' || subscription.plan_id.startsWith('pro')) {
-          setSelectedProTier(subscription.plan_id);
-        } else if (subscription.plan_id.startsWith('enterprise')) {
-          setSelectedEnterpriseTier(subscription.plan_id);
+        if (activePlanId === 'professional' || activePlanId.startsWith('pro')) {
+          setSelectedProTier(activePlanId);
+        } else if (activePlanId.startsWith('enterprise')) {
+          setSelectedEnterpriseTier(activePlanId);
         }
       }
     } catch (error) {
@@ -301,19 +310,19 @@ const Subscription = () => {
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_optimizations_monthly} optimizations/month</span>
+                  <span>{starterPlan.max_optimizations_monthly} optimisations/mois</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_articles_monthly} articles/month</span>
+                  <span>{starterPlan.max_articles_monthly} articles/mois</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_chat_responses_monthly} chat responses/month</span>
+                  <span>{starterPlan.max_chat_responses_monthly} réponses chat/mois</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_shopify_stores} Shopify store(s)</span>
+                  <span>{starterPlan.max_shopify_stores} boutique(s) Shopify</span>
                 </div>
               </div>
             </div>
@@ -332,7 +341,7 @@ const Subscription = () => {
                   Plan actuel
                 </>
               ) : (
-                'Select Plan'
+                'Sélectionner ce plan'
               )}
             </Button>
           </Card>
@@ -367,7 +376,7 @@ const Subscription = () => {
                   <SelectContent>
                     {proPlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly} optimizations - {plan.price_monthly}€/mois
+                        {plan.max_optimizations_monthly} optimisations - {plan.price_monthly}€/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -386,23 +395,23 @@ const Subscription = () => {
                   <div className="space-y-3 pt-6 border-t">
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_optimizations_monthly} optimizations/month</span>
+                      <span>{selectedProPlan.max_optimizations_monthly} optimisations/mois</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_articles_monthly} articles/month</span>
+                      <span>{selectedProPlan.max_articles_monthly} articles/mois</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_chat_responses_monthly} chat responses/month</span>
+                      <span>{selectedProPlan.max_chat_responses_monthly} réponses chat/mois</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_shopify_stores} Shopify store(s)</span>
+                      <span>{selectedProPlan.max_shopify_stores} boutique(s) Shopify</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_products.toLocaleString()} products</span>
+                      <span>{selectedProPlan.max_products.toLocaleString()} produits</span>
                     </div>
                   </div>
                 </>
@@ -423,7 +432,7 @@ const Subscription = () => {
                   Plan actuel
                 </>
               ) : (
-                'Upgrade Now'
+                'Mettre à niveau'
               )}
             </Button>
           </Card>
@@ -463,7 +472,7 @@ const Subscription = () => {
                   <SelectContent>
                     {enterprisePlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly.toLocaleString()} optimizations - {plan.price_monthly.toLocaleString()}€/mois
+                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - {plan.price_monthly.toLocaleString()}€/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -482,23 +491,23 @@ const Subscription = () => {
                   <div className="space-y-3 pt-6 border-t">
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_optimizations_monthly.toLocaleString()} optimizations/month</span>
+                      <span>{selectedEnterprisePlan.max_optimizations_monthly.toLocaleString()} optimisations/mois</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_articles_monthly} articles/month</span>
+                      <span>{selectedEnterprisePlan.max_articles_monthly} articles/mois</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_chat_responses_monthly.toLocaleString()} chat responses/month</span>
+                      <span>{selectedEnterprisePlan.max_chat_responses_monthly.toLocaleString()} réponses chat/mois</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_shopify_stores} Shopify store(s)</span>
+                      <span>{selectedEnterprisePlan.max_shopify_stores} boutique(s) Shopify</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_products.toLocaleString()} products</span>
+                      <span>{selectedEnterprisePlan.max_products.toLocaleString()} produits</span>
                     </div>
                   </div>
                 </>
@@ -519,7 +528,7 @@ const Subscription = () => {
                   Plan actuel
                 </>
               ) : (
-                'Upgrade Now'
+                'Mettre à niveau'
               )}
             </Button>
           </Card>
