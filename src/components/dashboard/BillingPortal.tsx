@@ -37,23 +37,30 @@ export function BillingPortal() {
     try {
       setCheckingSubscription(true);
       
-      // Check both Stripe subscription and Supabase profile
-      const [stripeResult, profileResult] = await Promise.all([
-        supabase.functions.invoke('check-subscription'),
-        supabase
-          .from('profiles')
-          .select('current_plan_id, subscription_status, trial_ends_at')
-          .single()
-      ]);
+      // Check Supabase profile for plan status
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('current_plan_id, subscription_status, trial_ends_at, stripe_customer_id')
+        .single();
       
-      if (stripeResult.error) throw stripeResult.error;
-      if (profileResult.error) throw profileResult.error;
+      if (profileError) throw profileError;
+      
+      const hasActivePaidPlan = profileData?.subscription_status === 'active' && 
+        profileData?.current_plan_id && 
+        profileData?.current_plan_id !== 'free';
+      
+      // Only check Stripe if we have a customer ID
+      let hasStripeSubscription = false;
+      if (profileData?.stripe_customer_id) {
+        const stripeResult = await supabase.functions.invoke('check-subscription');
+        hasStripeSubscription = stripeResult.data?.subscribed === true;
+      }
       
       setSubscriptionStatus({
-        hasStripeSubscription: stripeResult.data?.subscribed === true,
-        currentPlan: profileResult.data?.current_plan_id || null,
-        subscriptionStatus: profileResult.data?.subscription_status || null,
-        trialEndsAt: profileResult.data?.trial_ends_at || null,
+        hasStripeSubscription,
+        currentPlan: profileData?.current_plan_id || null,
+        subscriptionStatus: profileData?.subscription_status || null,
+        trialEndsAt: profileData?.trial_ends_at || null,
       });
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -114,6 +121,10 @@ export function BillingPortal() {
 
   const isTrialing = subscriptionStatus.subscriptionStatus === 'trialing' || 
     (subscriptionStatus.trialEndsAt && new Date(subscriptionStatus.trialEndsAt) > new Date());
+  
+  const hasActivePaidPlan = subscriptionStatus.subscriptionStatus === 'active' && 
+    subscriptionStatus.currentPlan && 
+    subscriptionStatus.currentPlan !== 'free';
 
   return (
     <div className="space-y-4">
@@ -122,13 +133,16 @@ export function BillingPortal() {
           <div className="flex items-center justify-between">
             <CardTitle>{t.account.billing.title}</CardTitle>
             {subscriptionStatus.currentPlan && (
-              <Badge variant={subscriptionStatus.hasStripeSubscription ? "default" : "secondary"}>
+              <Badge variant={hasActivePaidPlan ? "default" : "secondary"}>
                 {subscriptionStatus.currentPlan}
               </Badge>
             )}
           </div>
           <CardDescription>
-            Gérez votre abonnement et consultez votre historique de paiement
+            {hasActivePaidPlan 
+              ? "Votre plan est actif et opérationnel"
+              : "Gérez votre abonnement et consultez votre historique de paiement"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -139,11 +153,20 @@ export function BillingPortal() {
               <AlertDescription>
                 <div className="space-y-1">
                   <p className="font-medium">
-                    Plan actuel : <span className="capitalize">{subscriptionStatus.currentPlan}</span>
+                    {hasActivePaidPlan ? (
+                      <>Plan actif : <span className="capitalize">{subscriptionStatus.currentPlan}</span></>
+                    ) : (
+                      <>Plan actuel : <span className="capitalize">{subscriptionStatus.currentPlan}</span></>
+                    )}
                   </p>
-                  {isTrialing && subscriptionStatus.trialEndsAt && (
+                  {isTrialing && !hasActivePaidPlan && subscriptionStatus.trialEndsAt && (
                     <p className="text-sm text-muted-foreground">
                       Période d'essai jusqu'au {new Date(subscriptionStatus.trialEndsAt).toLocaleDateString('fr-FR')}
+                    </p>
+                  )}
+                  {hasActivePaidPlan && (
+                    <p className="text-sm text-muted-foreground">
+                      Votre plan complet est activé et tous les services sont disponibles
                     </p>
                   )}
                 </div>
@@ -151,13 +174,13 @@ export function BillingPortal() {
             </Alert>
           )}
 
-          {/* Stripe Subscription Status */}
-          {!subscriptionStatus.hasStripeSubscription && subscriptionStatus.currentPlan && (
+          {/* Trial Warning - only show if still in trial and NOT paid */}
+          {!hasActivePaidPlan && isTrialing && subscriptionStatus.currentPlan && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <p className="text-sm">
-                  Votre abonnement est en période d'essai. Activez votre plan payant pour continuer après l'essai.
+                  Vous êtes en période d'essai. Activez votre plan payant pour continuer après l'essai.
                 </p>
               </AlertDescription>
             </Alert>
@@ -165,40 +188,58 @@ export function BillingPortal() {
 
           {/* Action Buttons */}
           <div className="space-y-2">
-            {subscriptionStatus.hasStripeSubscription ? (
-              <Button 
-                onClick={handleOpenPortal}
-                disabled={loading}
-                className="w-full"
-                variant="default"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Chargement...
-                  </>
+            {hasActivePaidPlan ? (
+              <>
+                {subscriptionStatus.hasStripeSubscription ? (
+                  <Button 
+                    onClick={handleOpenPortal}
+                    disabled={loading}
+                    className="w-full"
+                    variant="default"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Chargement...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Gérer mon abonnement Stripe
+                      </>
+                    )}
+                  </Button>
                 ) : (
-                  <>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Accéder au portail Stripe
-                  </>
+                  <Button 
+                    onClick={handleActivatePlan}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Changer de plan
+                  </Button>
                 )}
-              </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  {subscriptionStatus.hasStripeSubscription 
+                    ? "Gérez votre abonnement, moyens de paiement et factures via Stripe"
+                    : "Consultez les plans disponibles pour évoluer"
+                  }
+                </p>
+              </>
             ) : (
-              <Button 
-                onClick={handleActivatePlan}
-                className="w-full"
-                variant="default"
-              >
-                <CreditCard className="mr-2 h-4 w-4" />
-                {subscriptionStatus.currentPlan ? 'Activer mon abonnement payant' : 'Choisir un plan'}
-              </Button>
-            )}
-
-            {subscriptionStatus.hasStripeSubscription && (
-              <p className="text-xs text-muted-foreground text-center">
-                Le portail Stripe vous permet de gérer votre abonnement, vos moyens de paiement et consulter vos factures
-              </p>
+              <>
+                <Button 
+                  onClick={handleActivatePlan}
+                  className="w-full"
+                  variant="default"
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  {subscriptionStatus.currentPlan ? 'Activer mon abonnement payant' : 'Choisir un plan'}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Activez votre plan pour continuer à utiliser tous les services
+                </p>
+              </>
             )}
           </div>
         </CardContent>
