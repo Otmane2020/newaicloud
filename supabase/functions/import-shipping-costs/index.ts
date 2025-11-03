@@ -106,7 +106,7 @@ serve(async (req) => {
     // Get products with variants
     const { data: products, error: productsError } = await supabase
       .from('shopify_products')
-      .select('id, shopify_product_id, title, store_id')
+      .select('id, shopify_id, title, store_id')
       .eq('store_id', storeId);
 
     if (productsError) {

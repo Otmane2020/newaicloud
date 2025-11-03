@@ -94,6 +94,7 @@ export function SmartPricingAI() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [taxRate, setTaxRate] = useState<number>(20); // Taux de TVA par défaut: 20%
+  const [lastAnalysisTime, setLastAnalysisTime] = useState<Date | null>(null);
   const [bulkOperation, setBulkOperation] = useState<BulkOperation>({
     type: 'discount',
     method: 'percentage',
@@ -448,6 +449,9 @@ export function SmartPricingAI() {
         description: 'Prix intelligents calculés avec succès'
       });
 
+      // Update last analysis time
+      setLastAnalysisTime(new Date());
+
     } catch (error: any) {
       console.error('Price analysis error:', error);
       toast.error('❌ Erreur lors de l\'analyse', {
@@ -548,6 +552,25 @@ export function SmartPricingAI() {
   const formatPrice = (price: number | null) => {
     if (!price) return '-';
     return `${price.toFixed(2)} ${currencySymbol}`;
+  };
+
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "à l'instant";
+    if (diffMins < 60) return `il y a ${diffMins} minute${diffMins > 1 ? 's' : ''}`;
+    if (diffHours < 24) return `il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+    return `il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+  };
+
+  const isAnalysisOld = () => {
+    if (!lastAnalysisTime) return false;
+    const diffMs = new Date().getTime() - lastAnalysisTime.getTime();
+    return diffMs > 3600000; // older than 1 hour
   };
 
   const estimatedTime = Math.ceil(products.length * 0.5); // ~0.5 sec per product
@@ -689,6 +712,37 @@ export function SmartPricingAI() {
           </div>
         </div>
       </Card>
+
+      {/* Last Analysis Banner */}
+      {lastAnalysisTime && (
+        <Card className={`p-4 ${isAnalysisOld() ? 'bg-orange-50 dark:bg-orange-950 border-orange-200' : 'bg-green-50 dark:bg-green-950 border-green-200'}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Info className={`w-5 h-5 ${isAnalysisOld() ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'} flex-shrink-0`} />
+              <div>
+                <p className={`text-sm font-semibold ${isAnalysisOld() ? 'text-orange-900 dark:text-orange-100' : 'text-green-900 dark:text-green-100'}`}>
+                  Dernière analyse IA : {getTimeAgo(lastAnalysisTime)}
+                </p>
+                {isAnalysisOld() && (
+                  <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                    ⚠️ Les prix du marché peuvent avoir évolué. Relancez une analyse pour obtenir les données à jour.
+                  </p>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => analyzeCompetitorPrices(false)}
+              disabled={analyzingPrices}
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${analyzingPrices ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Actions Bar */}
       <div className="flex items-center justify-between">
@@ -1091,8 +1145,40 @@ export function SmartPricingAI() {
                                 {product.smart_price.toFixed(2)} {currencySymbol}
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p className="text-xs">{product.ai_reasoning}</p>
+                            <TooltipContent className="max-w-md p-4">
+                              <div className="space-y-3">
+                                <div>
+                                  <p className="text-xs font-semibold mb-1">🤖 Raisonnement IA :</p>
+                                  <p className="text-xs text-muted-foreground">{product.ai_reasoning}</p>
+                                </div>
+                                {product.competitors && product.competitors.length > 0 && (
+                                  <div className="border-t pt-3">
+                                    <p className="text-xs font-semibold mb-2">🔗 Top 10 Concurrents :</p>
+                                    <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                                      {product.competitors.slice(0, 10).map((comp, idx) => (
+                                        <a
+                                          key={idx}
+                                          href={comp.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex flex-col gap-0.5 p-2 rounded hover:bg-muted/50 transition-colors border border-border text-left"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-medium text-primary truncate">{comp.source}</span>
+                                            <span className="text-xs font-bold whitespace-nowrap">{comp.price.toFixed(2)} {comp.currency}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <span className="truncate">{comp.title}</span>
+                                            <Badge variant="outline" className="text-xs px-1 py-0">
+                                              {Math.round(comp.similarity * 100)}% similaire
+                                            </Badge>
+                                          </div>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
