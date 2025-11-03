@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,7 @@ interface Article {
 
 export default function ArticleManagement() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
@@ -69,7 +71,9 @@ export default function ArticleManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [syncFilter, setSyncFilter] = useState('all');
-  const [qualityFilter, setQualityFilter] = useState<'all' | 'excellent' | 'good' | 'medium' | 'poor'>('all');
+  const [qualityFilter, setQualityFilter] = useState<'all' | 'excellent' | 'good' | 'medium' | 'poor'>(
+    (searchParams.get("filter") as 'all' | 'excellent' | 'good' | 'medium' | 'poor') || 'all'
+  );
   
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 

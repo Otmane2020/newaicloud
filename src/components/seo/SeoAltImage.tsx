@@ -97,7 +97,9 @@ export function SeoAltImage() {
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
-  const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
+    (searchParams.get("filter") as QualityFilter) || "all"
+  );
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });

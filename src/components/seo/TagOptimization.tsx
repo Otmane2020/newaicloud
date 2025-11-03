@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/language';
@@ -65,6 +66,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function TagOptimization() {
   const { t, tf } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,9 @@ export function TagOptimization() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
-  const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
+    (searchParams.get("filter") as QualityFilter) || "all"
+  );
   
   // Workflow states
   const [showProgressDialog, setShowProgressDialog] = useState(false);

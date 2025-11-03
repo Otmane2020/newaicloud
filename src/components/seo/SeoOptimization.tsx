@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +77,7 @@ type QualityFilter = "all" | "excellent" | "good" | "medium" | "poor";
 export function SeoOptimization() {
   const { t, tf } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -86,7 +88,9 @@ export function SeoOptimization() {
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>("none");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [syncFilter, setSyncFilter] = useState<SyncFilter>("all");
-  const [qualityFilter, setQualityFilter] = useState<QualityFilter>("all");
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
+    (searchParams.get("filter") as QualityFilter) || "all"
+  );
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });

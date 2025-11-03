@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +65,7 @@ type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function PageOptimization() {
+  const [searchParams] = useSearchParams();
   const [pages, setPages] = useState<ShopifyPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
@@ -73,7 +75,9 @@ export function PageOptimization() {
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
-  const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
+    (searchParams.get("filter") as QualityFilter) || "all"
+  );
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
