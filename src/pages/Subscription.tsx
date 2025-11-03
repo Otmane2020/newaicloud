@@ -234,7 +234,7 @@ const Subscription = () => {
       {!isUpgradeFlow && <CurrentPlanCard />}
 
       {isUpgradeFlow && currentPlan && (
-        <Card className="p-6 mb-8 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20 border-2 border-orange-200 dark:border-orange-800">
+        <Card className="p-6 mb-8 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 border-2 border-primary/30 dark:border-primary/50">
           <div className="space-y-4">
             {/* En-tête avec plan actuel */}
             <div className="flex items-center justify-between">
@@ -248,19 +248,19 @@ const Subscription = () => {
                   </div>
                 </div>
               </div>
-              <Badge variant="outline" className="text-lg px-4 py-2 border-orange-400 dark:border-orange-600">
+              <Badge variant="outline" className="text-lg px-4 py-2 border-primary">
                 Plan actuel
               </Badge>
             </div>
 
             {/* Limites du plan actuel */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-orange-200 dark:border-orange-800">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-border">
               <div className="text-center">
                 <p className="text-2xl font-bold text-primary">{currentPlan.max_optimizations_monthly}</p>
                 <p className="text-xs text-muted-foreground">Optimisations/mois</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{currentPlan.max_products}</p>
+                <p className="text-2xl font-bold text-primary">{currentPlan.max_products === -1 ? '∞' : currentPlan.max_products}</p>
                 <p className="text-xs text-muted-foreground">Produits</p>
               </div>
               <div className="text-center">
@@ -274,8 +274,8 @@ const Subscription = () => {
             </div>
 
             {/* Message d'upgrade basé sur le contexte */}
-            <div className="bg-card p-4 rounded-lg border border-orange-200 dark:border-orange-800">
-              <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+            <div className="bg-card p-4 rounded-lg border border-border">
+              <p className="text-sm font-medium text-primary">
                 💡 Vous avez atteint les limites de votre plan actuel. Choisissez un plan supérieur ci-dessous pour continuer.
               </p>
             </div>
@@ -411,7 +411,7 @@ const Subscription = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_products.toLocaleString()} produits</span>
+                      <span>{selectedProPlan.max_products === -1 ? 'Produits illimités' : `${selectedProPlan.max_products.toLocaleString()} produits`}</span>
                     </div>
                   </div>
                 </>
@@ -507,7 +507,7 @@ const Subscription = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_products.toLocaleString()} produits</span>
+                      <span>{selectedEnterprisePlan.max_products === -1 ? 'Produits illimités' : `${selectedEnterprisePlan.max_products.toLocaleString()} produits`}</span>
                     </div>
                   </div>
                 </>
