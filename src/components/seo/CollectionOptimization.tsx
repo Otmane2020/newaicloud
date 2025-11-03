@@ -171,6 +171,22 @@ export function CollectionOptimization() {
     ? Math.round((0.3 * scoreWithoutAI) + (0.7 * scoreWithAI))
     : 0;
 
+  // Define helper function before using it
+  const calculateCollectionSeoScore = (collection: Collection): number => {
+    const titleScore = calculateDescriptionScore(collection.seo_title || collection.title);
+    const descScore = calculateDescriptionScore(collection.seo_description || collection.body_html?.substring(0, 160) || '');
+    
+    // Base score from title and description
+    let score = Math.round((titleScore.score + descScore.score) / 2);
+    
+    // Bonus for AI optimization
+    if (collection.optimization_count && collection.optimization_count > 0) {
+      score = Math.min(100, score + 10); // +10 bonus for AI optimization
+    }
+    
+    return score;
+  };
+
   const filteredCollections = collections.filter((collection) => {
     if (activeTab === 'not-optimized' && collection.optimization_count && collection.optimization_count > 0) return false;
     if (activeTab === 'optimized' && (!collection.optimization_count || collection.optimization_count === 0)) return false;
@@ -695,21 +711,6 @@ export function CollectionOptimization() {
     setShowResultsDialog(false);
     setOptimizedCollections([]);
     setSelectedCollections(new Set());
-  };
-
-  const calculateCollectionSeoScore = (collection: Collection): number => {
-    const titleScore = calculateDescriptionScore(collection.seo_title || collection.title);
-    const descScore = calculateDescriptionScore(collection.seo_description || collection.body_html?.substring(0, 160) || '');
-    
-    // Base score from title and description
-    let score = Math.round((titleScore.score + descScore.score) / 2);
-    
-    // Bonus for AI optimization
-    if (collection.optimization_count && collection.optimization_count > 0) {
-      score = Math.min(100, score + 10); // +10 bonus for AI optimization
-    }
-    
-    return score;
   };
 
   if (loading) {
