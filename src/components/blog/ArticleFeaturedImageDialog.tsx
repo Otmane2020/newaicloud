@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ImageIcon, Upload, Sparkles, Loader2, CheckCircle, Eye, Zap } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "@/lib/language";
 
 interface ArticleFeaturedImageDialogProps {
   open: boolean;
@@ -36,6 +37,7 @@ export function ArticleFeaturedImageDialog({
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>("");
   const [generatedImageId, setGeneratedImageId] = useState<string>("");
   const [processingAlt, setProcessingAlt] = useState(false);
+  const { t } = useTranslation();
 
   const MAX_PROMPT_LENGTH = 500;
 
@@ -114,17 +116,17 @@ export function ArticleFeaturedImageDialog({
           <div className="flex items-start gap-3">
             <img src={publicUrl} alt="Generated" className="w-16 h-16 rounded object-cover" />
             <div>
-              <p className="font-semibold">Image générée avec succès</p>
+              <p className="font-semibold">{t.blog.dialogs.featuredImage.success}</p>
               <p className="text-xs text-muted-foreground">Image mise à jour</p>
             </div>
           </div>,
         );
       } else {
-        throw new Error("Aucune URL d'image reçue");
+        throw new Error(t.blog.dialogs.featuredImage.noUrl);
       }
     } catch (error: any) {
       console.error("Error:", error);
-      const errorMessage = error.message || "Erreur lors de la génération de l'image";
+      const errorMessage = error.message || t.blog.dialogs.featuredImage.errorGenerate;
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -138,19 +140,19 @@ export function ArticleFeaturedImageDialog({
       setError(null);
 
       if (!customImageUrl) {
-        setError("Veuillez entrer une URL d'image");
+        setError(t.blog.dialogs.featuredImage.enterUrl);
         return;
       }
 
       if (!isValidImageUrl(customImageUrl)) {
-        setError("URL d'image invalide. Utilisez une URL directe vers une image (JPG, PNG, WebP, GIF, SVG, BMP)");
+        setError(t.blog.dialogs.featuredImage.invalidUrl);
         return;
       }
 
       await updateArticleImage(customImageUrl);
     } catch (error: any) {
       console.error("Error:", error);
-      const errorMessage = error.message || "Erreur lors de la mise à jour de l'image";
+      const errorMessage = error.message || t.blog.dialogs.featuredImage.errorUpdate;
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -204,7 +206,7 @@ export function ArticleFeaturedImageDialog({
 
     if (updateArticleError) {
       console.error('Failed to update article featured_image:', updateArticleError);
-      toast.warning('Image enregistrée mais article non mis à jour');
+      toast.warning(t.blog.dialogs.featuredImage.imageSaved);
     }
 
     // Store image info for success dialog
@@ -254,16 +256,16 @@ export function ArticleFeaturedImageDialog({
         });
 
         if (syncError) throw syncError;
-        toast.success("✨ ALT généré et synchronisé avec Shopify!");
+        toast.success(t.blog.dialogs.featuredImage.altGenerated);
       } else {
-        toast.success("✨ ALT optimisé généré avec succès!");
+        toast.success(t.blog.dialogs.featuredImage.altOptimized);
       }
 
       setShowSuccessDialog(false);
       onImageUpdated();
     } catch (err: any) {
       console.error("Error:", err);
-      toast.error(err.message || "Erreur lors de l'optimisation");
+      toast.error(err.message || t.blog.dialogs.featuredImage.errorOptimize);
     } finally {
       setProcessingAlt(false);
     }
@@ -287,7 +289,7 @@ export function ArticleFeaturedImageDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5" />
-            Ajouter une image de couverture
+            {t.blog.dialogs.featuredImage.title}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
             Article: <span className="font-medium">{article.title}</span>
@@ -410,7 +412,7 @@ export function ArticleFeaturedImageDialog({
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Génération...
+                        {t.blog.dialogs.featuredImage.generating}
                       </>
                     ) : (
                       <>

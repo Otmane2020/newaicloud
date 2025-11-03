@@ -806,6 +806,47 @@ export const translations = {
         count: "Articles",
         seoReady: "Prêt pour le SEO"
       }
+    },
+    dialogs: {
+      featuredImage: {
+        title: "Ajouter une image de couverture",
+        generating: "Génération...",
+        success: "Image générée avec succès",
+        noUrl: "Aucune URL d'image reçue",
+        errorGenerate: "Erreur lors de la génération de l'image",
+        enterUrl: "Veuillez entrer une URL d'image",
+        invalidUrl: "URL d'image invalide. Utilisez une URL directe vers une image (JPG, PNG, WebP, GIF, SVG, BMP)",
+        errorUpdate: "Erreur lors de la mise à jour de l'image",
+        imageSaved: "Image enregistrée mais article non mis à jour",
+        altGenerated: "✨ ALT généré et synchronisé avec Shopify!",
+        altOptimized: "✨ ALT optimisé généré avec succès!",
+        errorOptimize: "Erreur lors de l'optimisation"
+      },
+      opportunities: {
+        errorLoading: "Erreur lors du chargement initial des opportunités",
+        errorApi: "Erreur API: {{message}}",
+        invalidResponse: "Format de réponse invalide de l'API",
+        errorDatabase: "Erreur base de données: {{message}}",
+        noProducts: "Aucun produit trouvé. Importez des produits pour générer des opportunités.",
+        detected: "✅ {{count}} opportunités détectées",
+        errorAnalysis: "Erreur lors de l'analyse du catalogue: {{message}}",
+        generating: "Génération de l'article...",
+        generated: 'Article "{{title}}" généré avec succès !',
+        errorGenerate: "Erreur lors de la génération de l'article",
+        analyzing: "Analyse du catalogue en cours...",
+        patience: "Patience, cela peut prendre jusqu'à 30 secondes"
+      },
+      netlinking: {
+        errorLoading: "Erreur lors du chargement",
+        extracted: "✅ {{count}} liens extraits de {{articles}} article(s)",
+        errorAnalysis: "Erreur lors de l'analyse des articles",
+        csvExported: "Export CSV téléchargé !",
+        analyzing: "Analyse en cours...",
+        analyzeAll: "Analyser tous les articles",
+        loading: "Chargement...",
+        noLinks: "Aucun lien détecté",
+        autoDetect: "Les liens seront automatiquement détectés lors de la génération d'articles"
+      }
     }
   },
 
@@ -1278,6 +1319,32 @@ export const translations = {
     errorDescription: "Veuillez réessayer",
     newConversation: "Nouvelle Conversation",
     clearHistory: "Effacer l'Historique",
+  },
+
+  shopify: {
+    connection: {
+      imported: "{{count}} produits importés avec succès !",
+      errorImport: "Erreur lors de l'import",
+      allFieldsRequired: "Tous les champs sont requis",
+      secretKeyInvalid: "La clé secrète doit commencer par shpss_ ou shpat_",
+      connectionSaved: "Connexion Shopify enregistrée avec succès",
+      errorAutoImport: "Erreur lors de l'import automatique",
+      autoImportImpossible: "Import automatique impossible",
+      credentialsNotReloaded: "Les credentials n'ont pas pu être rechargés. Veuillez réessayer dans quelques secondes.",
+      errorSaving: "Erreur lors de l'enregistrement de la connexion",
+      confirmDelete: "Êtes-vous sûr de vouloir supprimer cette connexion ? Vous devrez la recréer pour importer des produits.",
+      connectionDeleted: "Connexion supprimée avec succès",
+      errorDeleting: "Erreur lors de la suppression",
+      connectFirst: "Veuillez d'abord connecter votre boutique",
+      cannotLoadData: "Impossible de charger les données de connexion",
+      credentialsMissing: "Credentials manquants",
+      reconnectRequired: "Votre connexion Shopify doit être mise à jour. Veuillez supprimer cette connexion et la recréer avec vos identifiants API.",
+      apiKeyMissing: "API Key manquante",
+      apiKeyRequired: "Votre connexion doit être mise à jour. Veuillez la recréer avec vos identifiants API complets.",
+      invalidToken: "Token API invalide ou manquant. Veuillez reconnecter votre boutique Shopify.",
+      authError: "Erreur d'authentification. Veuillez vérifier votre token API.",
+      errorImporting: "Erreur lors de l'import des produits"
+    }
   },
 
   adminPanel: {

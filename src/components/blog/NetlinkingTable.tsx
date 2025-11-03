@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sparkles, FileText, Link, Download, ExternalLink, TrendingUp, Search, Settings, Rocket, Eye } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface NetlinkingEntry {
   id: string;
@@ -33,6 +34,7 @@ export function NetlinkingTable() {
     external: 0,
     totalClicks: 0,
   });
+  const { t, tf } = useTranslation();
 
   useEffect(() => {
     if (user) {
@@ -123,7 +125,7 @@ export function NetlinkingTable() {
       setStats({ total, internal, external, totalClicks });
     } catch (error) {
       console.error('Error loading netlinking:', error);
-      toast.error('Erreur lors du chargement');
+      toast.error(t.blog.dialogs.netlinking.errorLoading);
     } finally {
       setLoading(false);
     }
@@ -140,11 +142,11 @@ export function NetlinkingTable() {
 
       if (error) throw error;
 
-      toast.success(`✅ ${data.count} liens extraits de ${data.articles_processed} article(s)`);
+      toast.success(tf('blog.dialogs.netlinking.extracted', { count: data.count, articles: data.articles_processed }));
       await loadNetlinking(); // Reload the table
     } catch (error) {
       console.error('Error analyzing articles:', error);
-      toast.error('Erreur lors de l\'analyse des articles');
+      toast.error(t.blog.dialogs.netlinking.errorAnalysis);
     } finally {
       setAnalyzing(false);
     }
@@ -171,7 +173,7 @@ export function NetlinkingTable() {
     a.href = url;
     a.download = `netlinking-${Date.now()}.csv`;
     a.click();
-    toast.success('Export CSV téléchargé !');
+    toast.success(t.blog.dialogs.netlinking.csvExported);
   };
 
   return (
@@ -187,12 +189,12 @@ export function NetlinkingTable() {
           {analyzing ? (
             <>
               <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-              Analyse en cours...
+              {t.blog.dialogs.netlinking.analyzing}
             </>
           ) : (
             <>
               <Link className="w-5 h-5 mr-2" />
-              Analyser tous les articles
+              {t.blog.dialogs.netlinking.analyzeAll}
             </>
           )}
         </Button>
@@ -256,12 +258,12 @@ export function NetlinkingTable() {
   </CardHeader>
   <CardContent>
     {loading ? (
-      <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+      <div className="text-center py-8 text-muted-foreground">{t.blog.dialogs.netlinking.loading}</div>
     ) : entries.length === 0 ? (
       <div className="text-center py-12">
         <Link className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-        <p className="text-muted-foreground mb-2">Aucun lien détecté</p>
-        <p className="text-sm text-muted-foreground">Les liens seront automatiquement détectés lors de la génération d'articles</p>
+        <p className="text-muted-foreground mb-2">{t.blog.dialogs.netlinking.noLinks}</p>
+        <p className="text-sm text-muted-foreground">{t.blog.dialogs.netlinking.autoDetect}</p>
       </div>
     ) : (
       <div className="overflow-x-auto">

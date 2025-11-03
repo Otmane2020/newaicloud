@@ -12,6 +12,7 @@ import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { calculateAltTextScore } from '@/lib/seoQuality';
+import { useTranslation } from '@/lib/language';
 import { 
   Search, 
   RefreshCw, 
@@ -107,6 +108,7 @@ export function SeoAltImage() {
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedImages, setOptimizedImages] = useState<ImageWithProduct[]>([]);
   const { limits, loading: limitsLoading } = useUsageLimits();
+  const { t } = useTranslation();
 
   const IMAGES_PER_PAGE = 50;
 
@@ -147,7 +149,7 @@ export function SeoAltImage() {
       // Map content images and fetch their content details
       const contentImages = await Promise.all(
         (contentImagesData || []).map(async (img) => {
-          let product: Product = { id: img.content_id, title: 'Contenu inconnu' };
+          let product: Product = { id: img.content_id, title: t.seo.altImage.unknownContent };
 
           // Fetch content details based on type
           if (img.content_type === 'collection') {

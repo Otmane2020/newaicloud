@@ -806,6 +806,47 @@ export const translations = {
         count: "Articles",
         seoReady: "SEO Ready"
       }
+    },
+    dialogs: {
+      featuredImage: {
+        title: "Add Cover Image",
+        generating: "Generating...",
+        success: "Image generated successfully",
+        noUrl: "No image URL received",
+        errorGenerate: "Error generating image",
+        enterUrl: "Please enter an image URL",
+        invalidUrl: "Invalid image URL. Use a direct URL to an image (JPG, PNG, WebP, GIF, SVG, BMP)",
+        errorUpdate: "Error updating image",
+        imageSaved: "Image saved but article not updated",
+        altGenerated: "✨ ALT generated and synced with Shopify!",
+        altOptimized: "✨ Optimized ALT generated successfully!",
+        errorOptimize: "Error during optimization"
+      },
+      opportunities: {
+        errorLoading: "Error loading initial opportunities",
+        errorApi: "API Error: {{message}}",
+        invalidResponse: "Invalid API response format",
+        errorDatabase: "Database error: {{message}}",
+        noProducts: "No products found. Import products to generate opportunities.",
+        detected: "✅ {{count}} opportunities detected",
+        errorAnalysis: "Error analyzing catalog: {{message}}",
+        generating: "Generating article...",
+        generated: 'Article "{{title}}" generated successfully!',
+        errorGenerate: "Error generating article",
+        analyzing: "Analyzing catalog...",
+        patience: "Patience, this can take up to 30 seconds"
+      },
+      netlinking: {
+        errorLoading: "Error loading",
+        extracted: "✅ {{count}} links extracted from {{articles}} article(s)",
+        errorAnalysis: "Error analyzing articles",
+        csvExported: "CSV export downloaded!",
+        analyzing: "Analysis in progress...",
+        analyzeAll: "Analyze all articles",
+        loading: "Loading...",
+        noLinks: "No links detected",
+        autoDetect: "Links will be automatically detected when generating articles"
+      }
     }
   },
 
@@ -1205,6 +1246,32 @@ export const translations = {
     errorDescription: "Please try again",
     newConversation: "New Conversation",
     clearHistory: "Clear History",
+  },
+
+  shopify: {
+    connection: {
+      imported: "{{count}} products imported successfully!",
+      errorImport: "Error during import",
+      allFieldsRequired: "All fields are required",
+      secretKeyInvalid: "Secret key must start with shpss_ or shpat_",
+      connectionSaved: "Shopify connection saved successfully",
+      errorAutoImport: "Error during automatic import",
+      autoImportImpossible: "Automatic import impossible",
+      credentialsNotReloaded: "Credentials could not be reloaded. Please retry in a few seconds.",
+      errorSaving: "Error saving connection",
+      confirmDelete: "Are you sure you want to delete this connection? You will need to recreate it to import products.",
+      connectionDeleted: "Connection deleted successfully",
+      errorDeleting: "Error deleting",
+      connectFirst: "Please connect your store first",
+      cannotLoadData: "Cannot load connection data",
+      credentialsMissing: "Missing credentials",
+      reconnectRequired: "Your Shopify connection must be updated. Please delete this connection and recreate it with your API credentials.",
+      apiKeyMissing: "Missing API Key",
+      apiKeyRequired: "Your connection must be updated. Please recreate it with complete API credentials.",
+      invalidToken: "Invalid or missing API token. Please reconnect your Shopify store.",
+      authError: "Authentication error. Please verify your API token.",
+      errorImporting: "Error importing products"
+    }
   },
 
   adminPanel: {

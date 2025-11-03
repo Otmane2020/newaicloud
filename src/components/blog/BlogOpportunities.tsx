@@ -36,7 +36,7 @@ export function BlogOpportunities() {
   const [regenerating, setRegenerating] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
 
   useEffect(() => {
     const initOpportunities = async () => {
@@ -44,7 +44,7 @@ export function BlogOpportunities() {
         await loadOpportunities();
       } catch (error) {
         console.error("Error initializing opportunities:", error);
-        toast.error("Erreur lors du chargement initial des opportunités");
+        toast.error(t.blog.dialogs.opportunities.errorLoading);
       }
     };
     initOpportunities();
@@ -58,11 +58,11 @@ export function BlogOpportunities() {
 
       if (error) {
         console.error('❌ Error from edge function:', error);
-        throw new Error(`Erreur API: ${error.message || 'Erreur inconnue'}`);
+        throw new Error(tf('blog.dialogs.opportunities.errorApi', { message: error.message || 'Erreur inconnue' }));
       }
 
       if (!data || !data.opportunities) {
-        throw new Error('Format de réponse invalide de l\'API');
+        throw new Error(t.blog.dialogs.opportunities.invalidResponse);
       }
 
       console.log(`✅ Generated ${data.opportunities.length} opportunities`);
@@ -87,13 +87,13 @@ export function BlogOpportunities() {
 
       if (productsError) {
         console.error('❌ Error fetching products:', productsError);
-        throw new Error(`Erreur base de données: ${productsError.message}`);
+        throw new Error(tf('blog.dialogs.opportunities.errorDatabase', { message: productsError.message }));
       }
 
       if (!products || products.length === 0) {
         console.log('⚠️ No products found');
         setOpportunities([]);
-        toast.info('Aucun produit trouvé. Importez des produits pour générer des opportunités.');
+        toast.info(t.blog.dialogs.opportunities.noProducts);
         return;
       }
 
@@ -101,12 +101,12 @@ export function BlogOpportunities() {
       
       const opportunities = await analyzeAndGenerateOpportunities(products, authUser?.id || '');
       setOpportunities(opportunities);
-      toast.success(`✅ ${opportunities.length} opportunités détectées`);
+      toast.success(tf('blog.dialogs.opportunities.detected', { count: opportunities.length }));
       
     } catch (error) {
       console.error('❌ Error loading opportunities:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      toast.error(`Erreur lors de l'analyse du catalogue: ${errorMessage}`);
+      toast.error(tf('blog.dialogs.opportunities.errorAnalysis', { message: errorMessage }));
       setOpportunities([]);
     } finally {
       setLoading(false);
@@ -127,7 +127,7 @@ export function BlogOpportunities() {
 
     try {
       setGenerating(opp.id);
-      toast.info("Génération de l'article...");
+      toast.info(t.blog.dialogs.opportunities.generating);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
 
@@ -151,11 +151,11 @@ export function BlogOpportunities() {
 
       if (error) throw error;
 
-      toast.success(`Article "${opp.title}" généré avec succès !`);
+      toast.success(tf('blog.dialogs.opportunities.generated', { title: opp.title }));
       await refreshLimits();
       window.location.href = "/blog?tab=articles";
     } catch (error: any) {
-      toast.error(error.message || "Erreur lors de la génération de l'article");
+      toast.error(error.message || t.blog.dialogs.opportunities.errorGenerate);
     } finally {
       setGenerating(null);
     }
@@ -163,8 +163,8 @@ export function BlogOpportunities() {
 
   const handleRegenerate = async () => {
     setRegenerating(true);
-    toast.info('Analyse du catalogue en cours...', {
-      description: 'Patience, cela peut prendre jusqu\'à 30 secondes',
+    toast.info(t.blog.dialogs.opportunities.analyzing, {
+      description: t.blog.dialogs.opportunities.patience,
       duration: 5000
     });
     await loadOpportunities();
