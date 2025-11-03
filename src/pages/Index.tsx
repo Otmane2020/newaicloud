@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { ProgressDialog, ResultsDialog, SyncConfirmationDialog, SuccessDialog } from './SeoWorkflowDialogs';
+import { ProgressDialog, ResultsDialog, SyncConfirmationDialog, SuccessDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -1165,3 +1165,5 @@ export function SeoAltImage() {
     </div>
   );
 }
+
+export default SeoAltImage;
