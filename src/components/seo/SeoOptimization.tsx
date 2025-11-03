@@ -364,7 +364,7 @@ export function SeoOptimization() {
 
   const handleGenerateForSelected = async () => {
     // Check usage limits first (only check optimization-specific limits)
-    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+    if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
       toast.error(t.seo.optimization.trialLimitReached);
       setShowUpgradeDialog(true);
       return;
@@ -462,7 +462,7 @@ export function SeoOptimization() {
 
   const handleGenerateAllSeo = async () => {
     // Check usage limits first (only check optimization-specific limits)
-    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+    if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
       toast.error(t.seo.optimization.trialLimitReached);
       setShowUpgradeDialog(true);
       return;
@@ -646,7 +646,7 @@ export function SeoOptimization() {
 
   return (
     <div className="space-y-6">
-      {limits.limitReached && !limits.canUseOptimizations && (
+      {limits?.limitReached && !limits?.canUseOptimizations && (
         <TrialLimitBanner
           resourceType="optimisations"
           usage={limits.usage.optimizations_count}
@@ -799,7 +799,7 @@ export function SeoOptimization() {
       {limits && limits.isTrialing && (
         <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
           <AlertDescription className="text-sm">
-            {limits.limitReached.optimizations ? (
+            {limits.limitReached?.optimizations ? (
               <span className="text-orange-900 dark:text-orange-100 font-medium">
                 ⚠️ Trial limit reached: {limits.usage.optimizations_count}/{limits.limits.max_optimizations}{" "}
                 optimizations used
