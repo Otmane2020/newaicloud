@@ -67,8 +67,9 @@ serve(async (req) => {
       );
     }
 
-    // Sync image to Shopify using Admin API
-    const shopifyResponse = await fetch(
+    // Try custom collection first
+    console.log(`Attempting to sync as custom_collection: ${collection.shopify_collection_id}`);
+    let shopifyResponse = await fetch(
       `https://${storeData.store_url}/admin/api/2025-01/custom_collections/${collection.shopify_collection_id}.json`,
       {
         method: 'PUT',
@@ -88,9 +89,33 @@ serve(async (req) => {
       }
     );
 
+    // If 404, try smart collection
+    if (shopifyResponse.status === 404) {
+      console.log(`Not a custom collection, trying as smart_collection: ${collection.shopify_collection_id}`);
+      shopifyResponse = await fetch(
+        `https://${storeData.store_url}/admin/api/2025-01/smart_collections/${collection.shopify_collection_id}.json`,
+        {
+          method: 'PUT',
+          headers: {
+            'X-Shopify-Access-Token': storeData.access_token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            smart_collection: {
+              id: collection.shopify_collection_id,
+              image: {
+                src: collection.image_url,
+                alt: collection.image_alt || ''
+              }
+            }
+          })
+        }
+      );
+    }
+
     if (!shopifyResponse.ok) {
       const errorText = await shopifyResponse.text();
-      console.error('Shopify API error:', errorText);
+      console.error('Shopify API error:', shopifyResponse.status, errorText);
       throw new Error(`Shopify API error: ${shopifyResponse.status}`);
     }
 
