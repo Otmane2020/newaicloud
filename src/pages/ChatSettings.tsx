@@ -49,6 +49,29 @@ interface ChatSettings {
   embed_order_support: boolean;
 }
 
+// Interface pour les données brutes de la base
+interface RawChatSettings {
+  assistant_name?: string;
+  assistant_style: string;
+  created_at: string;
+  custom_instructions: string;
+  default_language: string;
+  embed_button_text: string;
+  embed_enabled: boolean;
+  embed_position: string;
+  embed_primary_color: string;
+  embed_welcome_message: string;
+  response_length: string;
+  save_history: boolean;
+  tone: string;
+  user_id: string;
+  // Champs optionnels qui peuvent ne pas exister dans la base
+  embed_avatar?: string;
+  embed_sales_focus?: boolean;
+  embed_product_recommendations?: boolean;
+  embed_order_support?: boolean;
+}
+
 export default function ChatSettings() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -87,16 +110,26 @@ export default function ChatSettings() {
       if (error && error.code !== 'PGRST116') throw error;
       
       if (data) {
+        const rawData = data as RawChatSettings;
+        
         // Fusionner les données avec les valeurs par défaut
-        setSettings(prev => ({
-          ...prev,
-          ...data,
-          // Assurer que les nouveaux champs ont des valeurs par défaut
-          embed_avatar: data.embed_avatar || 'professional',
-          embed_sales_focus: data.embed_sales_focus !== undefined ? data.embed_sales_focus : true,
-          embed_product_recommendations: data.embed_product_recommendations !== undefined ? data.embed_product_recommendations : true,
-          embed_order_support: data.embed_order_support !== undefined ? data.embed_order_support : true,
-        }));
+        setSettings({
+          assistant_style: rawData.assistant_style || 'professional',
+          tone: rawData.tone || 'professional',
+          default_language: rawData.default_language || 'fr',
+          response_length: rawData.response_length || 'medium',
+          custom_instructions: rawData.custom_instructions || '',
+          save_history: rawData.save_history !== undefined ? rawData.save_history : true,
+          embed_enabled: rawData.embed_enabled !== undefined ? rawData.embed_enabled : false,
+          embed_position: rawData.embed_position || 'bottom-right',
+          embed_welcome_message: rawData.embed_welcome_message || 'Bonjour ! Je suis votre assistant commercial. Comment puis-je vous aider aujourd\'hui ?',
+          embed_primary_color: rawData.embed_primary_color || '#2563eb',
+          embed_button_text: rawData.embed_button_text || 'Assistance Commerciale',
+          embed_avatar: rawData.embed_avatar || 'professional',
+          embed_sales_focus: rawData.embed_sales_focus !== undefined ? rawData.embed_sales_focus : true,
+          embed_product_recommendations: rawData.embed_product_recommendations !== undefined ? rawData.embed_product_recommendations : true,
+          embed_order_support: rawData.embed_order_support !== undefined ? rawData.embed_order_support : true,
+        });
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -110,7 +143,21 @@ export default function ChatSettings() {
         .from('chat_settings')
         .upsert({
           user_id: user?.id,
-          ...settings,
+          assistant_style: settings.assistant_style,
+          tone: settings.tone,
+          default_language: settings.default_language,
+          response_length: settings.response_length,
+          custom_instructions: settings.custom_instructions,
+          save_history: settings.save_history,
+          embed_enabled: settings.embed_enabled,
+          embed_position: settings.embed_position,
+          embed_welcome_message: settings.embed_welcome_message,
+          embed_primary_color: settings.embed_primary_color,
+          embed_button_text: settings.embed_button_text,
+          embed_avatar: settings.embed_avatar,
+          embed_sales_focus: settings.embed_sales_focus,
+          embed_product_recommendations: settings.embed_product_recommendations,
+          embed_order_support: settings.embed_order_support,
           updated_at: new Date().toISOString(),
         });
 
