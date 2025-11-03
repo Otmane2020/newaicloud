@@ -1,34 +1,27 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
-import { useTranslation } from '@/lib/language';
-import { 
-  ProgressDialog, 
-  ResultsDialog, 
-  SyncConfirmationDialog, 
-  SuccessDialog,
-  WorkflowItem 
-} from './SeoWorkflowDialogs';
-import { useUsageLimits } from '@/hooks/useUsageLimits';
-import { UpgradeDialog } from '@/components/UpgradeDialog';
-import { TrialLimitDialog } from '@/components/TrialLimitDialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { SeoConfidenceBadge } from './SeoConfidenceBadge';
-import { calculateDetailedSeoScore } from '@/lib/seoQuality';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  ProgressDialog,
+  ResultsDialog,
+  SyncConfirmationDialog,
+  SuccessDialog,
+  WorkflowItem,
+} from "./SeoWorkflowDialogs";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { TrialLimitDialog } from "@/components/TrialLimitDialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SeoConfidenceBadge } from "./SeoConfidenceBadge";
+import { calculateDetailedSeoScore } from "@/lib/seoQuality";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Search,
   RefreshCw,
@@ -49,18 +42,12 @@ import {
   List,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
-} from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  ArrowDown,
+} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { ShopifySyncSuccessDialog } from './ShopifySyncSuccessDialog';
-import { VisionAIBanner } from './VisionAIBanner';
+import { ShopifySyncSuccessDialog } from "./ShopifySyncSuccessDialog";
+import { VisionAIBanner } from "./VisionAIBanner";
 
 interface Product {
   id: string;
@@ -79,24 +66,24 @@ interface Product {
   product_type: string;
 }
 
-type QuickFilterTab = 'all' | 'not-enriched' | 'enriched' | 'pending-sync' | 'synced';
-type SeoScoreSort = 'none' | 'asc' | 'desc';
-type StatusFilter = 'all' | 'optimized' | 'not-optimized';
-type SyncFilter = 'all' | 'synced' | 'not-synced';
-type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
+type QuickFilterTab = "all" | "not-enriched" | "enriched" | "pending-sync" | "synced";
+type SeoScoreSort = "none" | "asc" | "desc";
+type StatusFilter = "all" | "optimized" | "not-optimized";
+type SyncFilter = "all" | "synced" | "not-synced";
+type QualityFilter = "all" | "excellent" | "good" | "medium" | "poor";
 
 export function SeoOptimization() {
   const { t, tf } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
-  const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
+  const [activeTab, setActiveTab] = useState<QuickFilterTab>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>("none");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [syncFilter, setSyncFilter] = useState<SyncFilter>("all");
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>("all");
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -107,23 +94,25 @@ export function SeoOptimization() {
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [productsToSync, setProductsToSync] = useState<Product[]>([]);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [syncedItems, setSyncedItems] = useState<Array<{ id: string; title: string; shopifyUrl: string; resourceType: 'product' }>>([]);
+  const [syncedItems, setSyncedItems] = useState<
+    Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }>
+  >([]);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('shopify_products')
-        .select('*, optimization_count')
-        .order('imported_at', { ascending: false });
+        .from("shopify_products")
+        .select("*, optimization_count")
+        .order("imported_at", { ascending: false });
 
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error("Error fetching products:", error);
       toast.error(t.seo.optimization.loadError);
     } finally {
       setLoading(false);
@@ -135,106 +124,150 @@ export function SeoOptimization() {
   }, []);
 
   // Statistics - distinguishing between existing data and AI-optimized data
-  const totalEmpty = products.filter(p => !p.seo_title && !p.seo_description).length;
-  const existingData = products.filter(p => (p.seo_title || p.seo_description) && p.enrichment_status !== 'enriched').length;
-  const aiOptimized = products.filter(p => p.enrichment_status === 'enriched').length;
+  const totalEmpty = products.filter((p) => !p.seo_title && !p.seo_description).length;
+  const existingData = products.filter(
+    (p) => (p.seo_title || p.seo_description) && p.enrichment_status !== "enriched",
+  ).length;
+  const aiOptimized = products.filter((p) => p.enrichment_status === "enriched").length;
   const notEnrichedCount = totalEmpty + existingData;
   const enrichedCount = aiOptimized;
-  const pendingSyncCount = products.filter(p => p.enrichment_status === 'enriched' && !p.seo_synced_to_shopify).length;
-  const syncedCount = products.filter(p => p.seo_synced_to_shopify && p.enrichment_status === 'enriched').length;
+  const pendingSyncCount = products.filter(
+    (p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify,
+  ).length;
+  const syncedCount = products.filter((p) => p.seo_synced_to_shopify && p.enrichment_status === "enriched").length;
   const optimizationRate = products.length > 0 ? Math.round((aiOptimized / products.length) * 100) : 0;
 
   // Calculate global SEO score with 30/70 weighting
-  const productsNotOptimized = products.filter(p => p.enrichment_status !== 'enriched');
-  const productsOptimized = products.filter(p => p.enrichment_status === 'enriched');
+  const productsNotOptimized = products.filter((p) => p.enrichment_status !== "enriched");
+  const productsOptimized = products.filter((p) => p.enrichment_status === "enriched");
 
   // Score for non-optimized products (based on original Shopify data)
-  const scoreWithoutAI = productsNotOptimized.length > 0
-    ? Math.round(
-        productsNotOptimized.reduce((sum, p) => {
-           const score = calculateDetailedSeoScore(
-            p.title,        // Original Shopify title
-            p.vendor,       // Using vendor as description proxy for non-enriched
-            !!p.image_url,
-            true,
-            p.tags,         // Shopify tags
-            p.optimization_count  // Pass optimization count
-          );
-          return sum + score.score;
-        }, 0) / productsNotOptimized.length
-      )
-    : 0;
+  const scoreWithoutAI =
+    productsNotOptimized.length > 0
+      ? Math.round(
+          productsNotOptimized.reduce((sum, p) => {
+            const score = calculateDetailedSeoScore(
+              p.title, // Original Shopify title
+              p.vendor, // Using vendor as description proxy for non-enriched
+              !!p.image_url,
+              true,
+              p.tags, // Shopify tags
+              p.optimization_count, // Pass optimization count
+            );
+            return sum + score.score;
+          }, 0) / productsNotOptimized.length,
+        )
+      : 0;
 
   // Score for AI-optimized products
-  const scoreWithAI = productsOptimized.length > 0
-    ? Math.round(
-        productsOptimized.reduce((sum, p) => {
-          const score = calculateDetailedSeoScore(
-            p.seo_title,       // AI-generated title
-            p.seo_description, // AI-generated description
-            !!p.image_url,
-            true,
-            p.tags,            // Tags
-            p.optimization_count  // Pass optimization count
-          );
-          return sum + score.score;
-        }, 0) / productsOptimized.length
-      )
-    : 0;
+  const scoreWithAI =
+    productsOptimized.length > 0
+      ? Math.round(
+          productsOptimized.reduce((sum, p) => {
+            const score = calculateDetailedSeoScore(
+              p.seo_title, // AI-generated title
+              p.seo_description, // AI-generated description
+              !!p.image_url,
+              true,
+              p.tags, // Tags
+              p.optimization_count, // Pass optimization count
+            );
+            return sum + score.score;
+          }, 0) / productsOptimized.length,
+        )
+      : 0;
 
   // Apply 30/70 weighting
-  const globalSeoScore = products.length > 0
-    ? Math.round((0.3 * scoreWithoutAI) + (0.7 * scoreWithAI))
-    : 0;
+  const globalSeoScore = products.length > 0 ? Math.round(0.3 * scoreWithoutAI + 0.7 * scoreWithAI) : 0;
 
   // Get unique categories
-  const uniqueCategories = Array.from(new Set(products.map(p => p.product_type).filter(Boolean))).sort();
+  const uniqueCategories = Array.from(new Set(products.map((p) => p.product_type).filter(Boolean))).sort();
 
-  const filteredProducts = products.filter((product) => {
-    if (activeTab === 'not-enriched' && product.enrichment_status === 'enriched') return false;
-    if (activeTab === 'enriched' && product.enrichment_status !== 'enriched') return false;
-    if (activeTab === 'pending-sync' && (product.enrichment_status !== 'enriched' || product.seo_synced_to_shopify)) return false;
-    if (activeTab === 'synced' && !product.seo_synced_to_shopify) return false;
+  // Helper function for SEO score calculation with memoization
+  const getSeoScore = (() => {
+    const cache = new Map();
 
-    // Status filter
-    if (statusFilter === 'optimized' && product.enrichment_status !== 'enriched') return false;
-    if (statusFilter === 'not-optimized' && product.enrichment_status === 'enriched') return false;
+    return (product) => {
+      const cacheKey = `${product.seo_title}_${product.seo_description}_${product.image_url}_${product.tags}_${product.optimization_count}`;
 
-    // Sync filter
-    if (syncFilter === 'synced' && !product.seo_synced_to_shopify) return false;
-    if (syncFilter === 'not-synced' && product.seo_synced_to_shopify) return false;
+      if (cache.has(cacheKey)) {
+        return cache.get(cacheKey);
+      }
 
-    // Quality filter
-    if (qualityFilter !== 'all') {
       const score = calculateDetailedSeoScore(
         product.seo_title,
         product.seo_description,
         !!product.image_url,
         true,
         product.tags,
-        product.optimization_count || 0
+        product.optimization_count || 0,
       ).score;
 
-      if (qualityFilter === 'excellent' && score < 70) return false;
-      if (qualityFilter === 'good' && (score < 55 || score >= 70)) return false;
-      if (qualityFilter === 'poor' && score >= 55) return false;
-    }
+      cache.set(cacheKey, score);
+      return score;
+    };
+  })();
 
-    // Category filter
-    if (selectedCategory !== 'all' && product.product_type !== selectedCategory) return false;
+  const filteredProducts = products
+    .filter((product) => {
+      const { enrichment_status, seo_synced_to_shopify, product_type, title } = product;
 
-    // Search filter (only by title now)
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      return product.title?.toLowerCase().includes(term);
-    }
+      // Early exclusion for tab filters
+      const tabExclusions = {
+        "not-enriched": enrichment_status === "enriched",
+        enriched: enrichment_status !== "enriched",
+        "pending-sync": enrichment_status !== "enriched" || seo_synced_to_shopify,
+        synced: !seo_synced_to_shopify,
+      };
 
-    return true;
-  });
+      if (tabExclusions[activeTab]) return false;
+
+      // Status and sync filters
+      if (
+        (statusFilter === "optimized" && enrichment_status !== "enriched") ||
+        (statusFilter === "not-optimized" && enrichment_status === "enriched") ||
+        (syncFilter === "synced" && !seo_synced_to_shopify) ||
+        (syncFilter === "not-synced" && seo_synced_to_shopify)
+      )
+        return false;
+
+      // Quality filter
+      if (qualityFilter !== "all") {
+        const score = getSeoScore(product);
+        const qualityConditions = {
+          excellent: score < 70,
+          good: score < 55 || score >= 70,
+          poor: score >= 55,
+        };
+        if (qualityConditions[qualityFilter]) return false;
+      }
+
+      // Category and search filters
+      if (selectedCategory !== "all" && product_type !== selectedCategory) return false;
+
+      if (searchTerm) {
+        return title?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Multi-level sorting for better UX
+      const statusPriority = { enriched: 1, "not-enriched": 2 };
+      const priorityA = statusPriority[a.enrichment_status] || 3;
+      const priorityB = statusPriority[b.enrichment_status] || 3;
+
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      if (a.seo_synced_to_shopify !== b.seo_synced_to_shopify) {
+        return a.seo_synced_to_shopify ? 1 : -1;
+      }
+
+      return getSeoScore(b) - getSeoScore(a);
+    });
 
   // Apply SEO score sorting
   const sortedProducts = [...filteredProducts];
-  if (seoScoreSort !== 'none') {
+  if (seoScoreSort !== "none") {
     sortedProducts.sort((a, b) => {
       // Calculate scores using the same values as display
       const scoreA = calculateDetailedSeoScore(
@@ -243,44 +276,44 @@ export function SeoOptimization() {
         !!a.image_url,
         true,
         a.tags,
-        a.optimization_count
+        a.optimization_count,
       ).score;
-      
+
       const scoreB = calculateDetailedSeoScore(
         b.seo_title,
         b.seo_description,
         !!b.image_url,
         true,
         b.tags,
-        b.optimization_count
+        b.optimization_count,
       ).score;
-      
-      return seoScoreSort === 'asc' ? scoreA - scoreB : scoreB - scoreA;
+
+      return seoScoreSort === "asc" ? scoreA - scoreB : scoreB - scoreA;
     });
   }
 
   const tabs = [
-    { id: 'all' as QuickFilterTab, label: t.seo.optimization.allProducts, count: products.length },
-    { id: 'not-enriched' as QuickFilterTab, label: t.seo.optimization.toOptimize, count: notEnrichedCount },
-    { id: 'enriched' as QuickFilterTab, label: t.seo.optimization.optimizedTab, count: enrichedCount },
-    { id: 'pending-sync' as QuickFilterTab, label: t.seo.optimization.toSynchronizeTab, count: pendingSyncCount },
-    { id: 'synced' as QuickFilterTab, label: t.seo.optimization.synchronizedTab, count: syncedCount }
+    { id: "all" as QuickFilterTab, label: t.seo.optimization.allProducts, count: products.length },
+    { id: "not-enriched" as QuickFilterTab, label: t.seo.optimization.toOptimize, count: notEnrichedCount },
+    { id: "enriched" as QuickFilterTab, label: t.seo.optimization.optimizedTab, count: enrichedCount },
+    { id: "pending-sync" as QuickFilterTab, label: t.seo.optimization.toSynchronizeTab, count: pendingSyncCount },
+    { id: "synced" as QuickFilterTab, label: t.seo.optimization.synchronizedTab, count: syncedCount },
   ];
 
   // Clickable stats handlers
   const handleNotOptimizedClick = () => {
-    setActiveTab('not-enriched');
-    toast.info(tf('seo.optimization.showingToOptimize', { count: notEnrichedCount }));
+    setActiveTab("not-enriched");
+    toast.info(tf("seo.optimization.showingToOptimize", { count: notEnrichedCount }));
   };
 
   const handleOptimizedClick = () => {
-    setActiveTab('enriched');
-    toast.info(tf('seo.optimization.showingOptimized', { count: enrichedCount }));
+    setActiveTab("enriched");
+    toast.info(tf("seo.optimization.showingOptimized", { count: enrichedCount }));
   };
 
   const handleSyncedClick = () => {
-    setActiveTab('synced');
-    toast.info(tf('seo.optimization.showingSynchronized', { count: syncedCount }));
+    setActiveTab("synced");
+    toast.info(tf("seo.optimization.showingSynchronized", { count: syncedCount }));
   };
 
   const handleGenerateAll = () => {
@@ -288,7 +321,7 @@ export function SeoOptimization() {
       toast.info(t.seo.optimization.allProductsOptimized);
       return;
     }
-    setActiveTab('not-enriched');
+    setActiveTab("not-enriched");
     setTimeout(() => {
       handleGenerateAllSeo();
     }, 100);
@@ -303,12 +336,12 @@ export function SeoOptimization() {
   };
 
   const handleSeoScoreSortToggle = () => {
-    if (seoScoreSort === 'none') {
-      setSeoScoreSort('desc'); // First click: highest to lowest
-    } else if (seoScoreSort === 'desc') {
-      setSeoScoreSort('asc'); // Second click: lowest to highest
+    if (seoScoreSort === "none") {
+      setSeoScoreSort("desc"); // First click: highest to lowest
+    } else if (seoScoreSort === "desc") {
+      setSeoScoreSort("asc"); // Second click: lowest to highest
     } else {
-      setSeoScoreSort('none'); // Third click: reset
+      setSeoScoreSort("none"); // Third click: reset
     }
   };
 
@@ -337,21 +370,21 @@ export function SeoOptimization() {
     }
 
     // Filter eligible products
-    const productsToGenerate = products.filter(p => {
+    const productsToGenerate = products.filter((p) => {
       if (!selectedProducts.has(p.id)) return false;
-      
+
       // If in trial, exclude already optimized products
       if (limits?.isTrialing && (p.optimization_count || 0) >= 1) {
         return false;
       }
-      
+
       // Otherwise, only products not yet enriched
-      return p.enrichment_status !== 'enriched';
+      return p.enrichment_status !== "enriched";
     });
 
     // Check if all selected products are already optimized
-    const selectedProductsList = products.filter(p => selectedProducts.has(p.id));
-    const allAlreadyOptimized = selectedProductsList.every(p => p.enrichment_status === 'enriched');
+    const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
+    const allAlreadyOptimized = selectedProductsList.every((p) => p.enrichment_status === "enriched");
 
     if (productsToGenerate.length === 0) {
       if (allAlreadyOptimized) {
@@ -372,21 +405,21 @@ export function SeoOptimization() {
 
     for (let i = 0; i < productsToGenerate.length; i++) {
       try {
-        await supabase.functions.invoke('generate-seo-with-deepseek', {
-          body: { productId: productsToGenerate[i].id }
+        await supabase.functions.invoke("generate-seo-with-deepseek", {
+          body: { productId: productsToGenerate[i].id },
         });
         setProgress({ current: i + 1, total: productsToGenerate.length });
       } catch (error: any) {
-        console.error('Error generating SEO:', error);
-        
-        if (error.message?.includes('trial_product_already_optimized')) {
+        console.error("Error generating SEO:", error);
+
+        if (error.message?.includes("trial_product_already_optimized")) {
           toast.warning(t.seo.optimization.someAlreadyOptimized);
-        } else if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
+        } else if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached")) {
           // Afficher le bon message selon le statut de l'utilisateur
           if (limits?.isTrialing) {
             toast.error(t.seo.optimization.trialLimitReached);
           } else if (limits?.isPaid) {
-            toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+            toast.error("Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur.");
           } else {
             toast.error(t.seo.optimization.trialLimitReached);
           }
@@ -407,12 +440,12 @@ export function SeoOptimization() {
     const updatedProducts = await Promise.all(
       productsToGenerate.map(async (p) => {
         const { data } = await supabase
-          .from('shopify_products')
-          .select('id, title, seo_title, seo_description, image_url')
-          .eq('id', p.id)
+          .from("shopify_products")
+          .select("id, title, seo_title, seo_description, image_url")
+          .eq("id", p.id)
           .single();
         return data;
-      })
+      }),
     );
 
     setOptimizedProducts(updatedProducts.filter(Boolean) as Product[]);
@@ -428,7 +461,7 @@ export function SeoOptimization() {
       return;
     }
 
-    const productsToGenerate = products.filter(p => !p.seo_title || !p.seo_description);
+    const productsToGenerate = products.filter((p) => !p.seo_title || !p.seo_description);
 
     if (productsToGenerate.length === 0) {
       toast.info(t.seo.optimization.allProductsOptimized);
@@ -443,28 +476,30 @@ export function SeoOptimization() {
     const BATCH_SIZE = 3;
     for (let i = 0; i < productsToGenerate.length; i += BATCH_SIZE) {
       const batch = productsToGenerate.slice(i, i + BATCH_SIZE);
-      
-      await Promise.all(batch.map(async (product) => {
-        try {
-          await supabase.functions.invoke('generate-seo-with-deepseek', {
-            body: { productId: product.id }
-          });
-        } catch (error: any) {
-          console.error('Error generating SEO:', error);
-          if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
-            // Afficher le bon message selon le statut de l'utilisateur
-            if (limits?.isTrialing) {
-              toast.error(t.seo.optimization.trialLimitReached);
-            } else if (limits?.isPaid) {
-              toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
-            } else {
-              toast.error(t.seo.optimization.trialLimitReached);
+
+      await Promise.all(
+        batch.map(async (product) => {
+          try {
+            await supabase.functions.invoke("generate-seo-with-deepseek", {
+              body: { productId: product.id },
+            });
+          } catch (error: any) {
+            console.error("Error generating SEO:", error);
+            if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached")) {
+              // Afficher le bon message selon le statut de l'utilisateur
+              if (limits?.isTrialing) {
+                toast.error(t.seo.optimization.trialLimitReached);
+              } else if (limits?.isPaid) {
+                toast.error("Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur.");
+              } else {
+                toast.error(t.seo.optimization.trialLimitReached);
+              }
+              setShowUpgradeDialog(true);
+              return;
             }
-            setShowUpgradeDialog(true);
-            return;
           }
-        }
-      }));
+        }),
+      );
 
       setProgress({ current: Math.min(i + BATCH_SIZE, productsToGenerate.length), total: productsToGenerate.length });
     }
@@ -476,9 +511,7 @@ export function SeoOptimization() {
   };
 
   const handleSyncSelected = async () => {
-    const productsToSync = products.filter(
-      p => selectedProducts.has(p.id) && p.enrichment_status === 'enriched'
-    );
+    const productsToSync = products.filter((p) => selectedProducts.has(p.id) && p.enrichment_status === "enriched");
 
     if (productsToSync.length === 0) {
       toast.info(t.seo.optimization.noProductsToSynchronize);
@@ -492,40 +525,40 @@ export function SeoOptimization() {
     setIsOptimizationComplete(false);
     setProgress({ current: 0, total: productsToSync.length });
 
-    const syncedItems: Array<{ id: string; title: string; shopifyUrl: string; resourceType: 'product' }> = [];
+    const syncedItems: Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }> = [];
 
     for (let i = 0; i < productsToSync.length; i++) {
       try {
-        const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: { 
+        const { data, error } = await supabase.functions.invoke("sync-seo-to-shopify", {
+          body: {
             productId: productsToSync[i].id,
             syncTags: true,
             syncGoogleShopping: true,
-            force: true // Allow immediate sync after optimization
-          }
+            force: true, // Allow immediate sync after optimization
+          },
         });
-        
+
         if (error) throw error;
-        
+
         if (data?.success && data?.shopifyUrl) {
           syncedItems.push({
             id: productsToSync[i].id,
             title: productsToSync[i].title,
             shopifyUrl: data.shopifyUrl,
-            resourceType: 'product'
+            resourceType: "product",
           });
         }
-        
+
         setProgress({ current: i + 1, total: productsToSync.length });
       } catch (error) {
-        console.error('Error syncing:', error);
+        console.error("Error syncing:", error);
       }
     }
 
     setSyncing(false);
     setIsOptimizationComplete(true);
     setSelectedProducts(new Set());
-    
+
     await fetchProducts();
     await refreshLimits();
 
@@ -552,25 +585,25 @@ export function SeoOptimization() {
 
     for (let i = 0; i < productIds.length; i++) {
       try {
-        await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: { 
+        await supabase.functions.invoke("sync-seo-to-shopify", {
+          body: {
             productId: productIds[i],
             syncTags: true,
             syncGoogleShopping: true,
-            force: true // Allow immediate sync after optimization
-          }
+            force: true, // Allow immediate sync after optimization
+          },
         });
-        
+
         successCount++;
         setProgress({ current: i + 1, total: productIds.length });
       } catch (error) {
-        console.error('Error syncing:', error);
+        console.error("Error syncing:", error);
       }
     }
 
     setSyncing(false);
     setIsOptimizationComplete(true);
-    
+
     await fetchProducts();
     await refreshLimits();
   };
@@ -580,11 +613,11 @@ export function SeoOptimization() {
       const successCount = progress.current;
       if (successCount > 0) {
         toast.success(t.seo.optimization.syncCompleted, {
-          description: tf('seo.optimization.productsSynced', { count: successCount })
+          description: tf("seo.optimization.productsSynced", { count: successCount }),
         });
       }
     }
-    
+
     setShowProgressDialog(false);
     setIsOptimizationComplete(false);
     setSelectedProducts(new Set());
@@ -618,9 +651,7 @@ export function SeoOptimization() {
                 {t.seo.optimization.title}
               </h1>
             </div>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              {t.seo.optimization.subtitle}
-            </p>
+            <p className="text-muted-foreground text-lg max-w-2xl">{t.seo.optimization.subtitle}</p>
             <div className="flex flex-wrap gap-4 pt-2">
               <div className="flex items-center gap-2 text-sm">
                 <Target className="w-4 h-4 text-blue-600" />
@@ -636,34 +667,34 @@ export function SeoOptimization() {
               </div>
             </div>
           </div>
-            <div className="flex flex-col gap-4 items-center">
-              <div className="text-center">
-                <div className={`text-3xl md:text-4xl font-bold ${
-                  globalSeoScore >= 70 ? 'text-green-600' : 
-                  globalSeoScore >= 50 ? 'text-orange-600' : 
-                  'text-red-600'
-                }`}>
-                  {globalSeoScore}/100
-                </div>
-                <div className="text-sm text-muted-foreground">{t.seo.optimization.globalScore}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  30% {t.seo.optimization.notOptimized} + 70% {t.seo.optimization.aiOptimized}
-                </div>
-                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  {optimizationRate}% {t.seo.optimization.optimized}
-                </div>
-              </div>
-              <Button
-                size="lg"
-                onClick={handleGenerateAll}
-                disabled={generating || notEnrichedCount === 0}
-                className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
+          <div className="flex flex-col gap-4 items-center">
+            <div className="text-center">
+              <div
+                className={`text-3xl md:text-4xl font-bold ${
+                  globalSeoScore >= 70 ? "text-green-600" : globalSeoScore >= 50 ? "text-orange-600" : "text-red-600"
+                }`}
               >
-                <Sparkles className="w-5 h-5" />
-                {t.seo.optimization.startOptimization}
-                <ArrowRight className="w-5 h-5" />
-              </Button>
+                {globalSeoScore}/100
+              </div>
+              <div className="text-sm text-muted-foreground">{t.seo.optimization.globalScore}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                30% {t.seo.optimization.notOptimized} + 70% {t.seo.optimization.aiOptimized}
+              </div>
+              <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                {optimizationRate}% {t.seo.optimization.optimized}
+              </div>
             </div>
+            <Button
+              size="lg"
+              onClick={handleGenerateAll}
+              disabled={generating || notEnrichedCount === 0}
+              className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
+            >
+              <Sparkles className="w-5 h-5" />
+              {t.seo.optimization.startOptimization}
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -672,63 +703,69 @@ export function SeoOptimization() {
 
       {/* Clickable Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card 
+        <Card
           className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleNotOptimizedClick}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">{t.seo.optimization.notAiOptimized}</p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                {t.seo.optimization.notAiOptimized}
+              </p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{notEnrichedCount}</p>
               <div className="flex gap-2 mt-1 text-xs text-orange-600 dark:text-orange-400">
-                <span>{t.seo.optimization.empty}: {totalEmpty}</span>
+                <span>
+                  {t.seo.optimization.empty}: {totalEmpty}
+                </span>
                 <span>•</span>
-                <span>{t.seo.optimization.existing}: {existingData}</span>
+                <span>
+                  {t.seo.optimization.existing}: {existingData}
+                </span>
               </div>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
           <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">{t.seo.optimization.clickToView}</p>
         </Card>
-        
-        <Card 
+
+        <Card
           className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleOptimizedClick}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">{t.seo.optimization.aiOptimizedLabel}</p>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{enrichedCount}</p>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                {t.seo.optimization.generatedByAI}
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                {t.seo.optimization.aiOptimizedLabel}
               </p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{enrichedCount}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">{t.seo.optimization.generatedByAI}</p>
             </div>
             <Sparkles className="w-8 h-8 text-green-600" />
           </div>
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.optimization.clickToView}</p>
         </Card>
-        
-        <Card 
+
+        <Card
           className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-            onClick={() => {
-              setActiveTab('pending-sync');
-              toast.info(tf('seo.optimization.showingToSynchronize', { count: pendingSyncCount }));
-            }}
+          onClick={() => {
+            setActiveTab("pending-sync");
+            toast.info(tf("seo.optimization.showingToSynchronize", { count: pendingSyncCount }));
+          }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">{t.seo.optimization.toSynchronize}</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pendingSyncCount}</p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                {t.seo.optimization.aiOptimizedOnly}
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                {t.seo.optimization.toSynchronize}
               </p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pendingSyncCount}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{t.seo.optimization.aiOptimizedOnly}</p>
             </div>
             <Upload className="w-8 h-8 text-purple-600" />
           </div>
           <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">{t.seo.optimization.clickToView}</p>
         </Card>
-        
-        <Card 
+
+        <Card
           className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleSyncedClick}
         >
@@ -736,9 +773,7 @@ export function SeoOptimization() {
             <div>
               <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t.seo.optimization.synchronized}</p>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{syncedCount}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {t.seo.optimization.aiOptimizedSynced}
-              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{t.seo.optimization.aiOptimizedSynced}</p>
             </div>
             <CheckCircle className="w-8 h-8 text-blue-600" />
           </div>
@@ -746,14 +781,14 @@ export function SeoOptimization() {
         </Card>
       </div>
 
-
       {/* Usage limits alert */}
       {limits && limits.isTrialing && (
         <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
           <AlertDescription className="text-sm">
             {limits.limitReached.optimizations ? (
               <span className="text-orange-900 dark:text-orange-100 font-medium">
-                ⚠️ Trial limit reached: {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimizations used
+                ⚠️ Trial limit reached: {limits.usage.optimizations_count}/{limits.limits.max_optimizations}{" "}
+                optimizations used
               </span>
             ) : (
               <span>
@@ -768,7 +803,7 @@ export function SeoOptimization() {
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
         <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Checkbox 
+            <Checkbox
               checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
               onCheckedChange={handleSelectAll}
             />
@@ -780,13 +815,9 @@ export function SeoOptimization() {
               )}
             </span>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button
-              onClick={handleGenerateForSelected}
-              disabled={selectedProducts.size === 0 || generating}
-              size="sm"
-            >
+            <Button onClick={handleGenerateForSelected} disabled={selectedProducts.size === 0 || generating} size="sm">
               <Sparkles className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Optimiser</span>
             </Button>
@@ -810,7 +841,9 @@ export function SeoOptimization() {
             </Button>
             <Button
               onClick={() => {
-                const toSync = products.filter(p => p.enrichment_status === 'enriched' && !p.seo_synced_to_shopify).map(p => p.id);
+                const toSync = products
+                  .filter((p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify)
+                  .map((p) => p.id);
                 handleSyncProducts(toSync);
               }}
               disabled={syncing || pendingSyncCount === 0}
@@ -820,13 +853,8 @@ export function SeoOptimization() {
               <Upload className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Synchroniser tout</span>
             </Button>
-            <Button
-              onClick={fetchProducts}
-              disabled={loading}
-              variant="ghost"
-              size="sm"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <Button onClick={fetchProducts} disabled={loading} variant="ghost" size="sm">
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
         </div>
@@ -846,7 +874,7 @@ export function SeoOptimization() {
                 className="pl-12 h-12 text-lg"
               />
             </div>
-            
+
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
@@ -898,18 +926,19 @@ export function SeoOptimization() {
 
           {/* Action Buttons Row */}
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="flex items-center gap-2"
-            >
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
                 className="flex items-center gap-2"
               >
-                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
-                <span className="hidden sm:inline">{viewMode === 'grid' ? t.seo.optimization.list : t.seo.optimization.grid}</span>
+                {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
+                <span className="hidden sm:inline">
+                  {viewMode === "grid" ? t.seo.optimization.list : t.seo.optimization.grid}
+                </span>
               </Button>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -923,75 +952,72 @@ export function SeoOptimization() {
 
             {/* Bulk Actions */}
             <div className="flex flex-wrap gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleGenerateForSelected}
-              disabled={generating || selectedProducts.size === 0}
-              className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
-            >
-              <Zap className="w-4 h-4" />
-              {tf('seo.optimization.optimizeSelected', { count: selectedProducts.size })}
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateAll}
-              disabled={generating || notEnrichedCount === 0}
-              className="flex items-center gap-2 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 shadow-lg hover:shadow-accent/50 border-accent/30 text-accent-foreground font-semibold transition-all duration-300"
-            >
-              <Sparkles className="w-4 h-4" />
-              {t.seo.optimization.optimizeAll}
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const toSync = products.filter(p => 
-                  selectedProducts.has(p.id) && 
-                  p.seo_title && 
-                  p.seo_description
-                );
-                if (toSync.length === 0) {
-                  toast.error(t.seo.optimization.noOptimizedProductsSelected);
-                  return;
-                }
-                setProductsToSync(toSync);
-                setShowSyncDialog(true);
-              }}
-              disabled={syncing || selectedProducts.size === 0}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              {tf('seo.optimization.syncSelection', { count: selectedProducts.size })}
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const toSync = products.filter(p => 
-                  p.enrichment_status === 'enriched' && 
-                  p.seo_title && 
-                  p.seo_description &&
-                  !p.seo_synced_to_shopify
-                );
-                if (toSync.length === 0) {
-                  toast.info(t.seo.optimization.allOptimizedSynced);
-                  return;
-                }
-                setProductsToSync(toSync);
-                setShowSyncDialog(true);
-              }}
-              disabled={syncing || pendingSyncCount === 0}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">{tf('seo.optimization.syncAll', { count: pendingSyncCount })}</span>
-            </Button>
-            
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleGenerateForSelected}
+                disabled={generating || selectedProducts.size === 0}
+                className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
+              >
+                <Zap className="w-4 h-4" />
+                {tf("seo.optimization.optimizeSelected", { count: selectedProducts.size })}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateAll}
+                disabled={generating || notEnrichedCount === 0}
+                className="flex items-center gap-2 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 shadow-lg hover:shadow-accent/50 border-accent/30 text-accent-foreground font-semibold transition-all duration-300"
+              >
+                <Sparkles className="w-4 h-4" />
+                {t.seo.optimization.optimizeAll}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const toSync = products.filter((p) => selectedProducts.has(p.id) && p.seo_title && p.seo_description);
+                  if (toSync.length === 0) {
+                    toast.error(t.seo.optimization.noOptimizedProductsSelected);
+                    return;
+                  }
+                  setProductsToSync(toSync);
+                  setShowSyncDialog(true);
+                }}
+                disabled={syncing || selectedProducts.size === 0}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                {tf("seo.optimization.syncSelection", { count: selectedProducts.size })}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const toSync = products.filter(
+                    (p) =>
+                      p.enrichment_status === "enriched" &&
+                      p.seo_title &&
+                      p.seo_description &&
+                      !p.seo_synced_to_shopify,
+                  );
+                  if (toSync.length === 0) {
+                    toast.info(t.seo.optimization.allOptimizedSynced);
+                    return;
+                  }
+                  setProductsToSync(toSync);
+                  setShowSyncDialog(true);
+                }}
+                disabled={syncing || pendingSyncCount === 0}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">{tf("seo.optimization.syncAll", { count: pendingSyncCount })}</span>
+              </Button>
+
               <Button variant="outline" size="icon" onClick={fetchProducts}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
@@ -1009,14 +1035,12 @@ export function SeoOptimization() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center justify-between p-3 rounded-md text-sm font-medium transition ${
                     activeTab === tab.id
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-background text-muted-foreground hover:bg-muted'
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-background text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   {tab.label}
-                  <Badge variant={activeTab === tab.id ? 'secondary' : 'outline'}>
-                    {tab.count}
-                  </Badge>
+                  <Badge variant={activeTab === tab.id ? "secondary" : "outline"}>{tab.count}</Badge>
                 </button>
               ))}
             </div>
@@ -1032,14 +1056,12 @@ export function SeoOptimization() {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition flex-1 justify-center ${
               activeTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-muted'
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted"
             }`}
           >
             {tab.label}
-            <Badge variant={activeTab === tab.id ? 'secondary' : 'outline'}>
-              {tab.count}
-            </Badge>
+            <Badge variant={activeTab === tab.id ? "secondary" : "outline"}>{tab.count}</Badge>
           </button>
         ))}
       </div>
@@ -1060,210 +1082,218 @@ export function SeoOptimization() {
       )}
 
       {/* Products Table */}
-      {viewMode === 'list' ? (
+      {viewMode === "list" ? (
         <Card className="overflow-hidden">
           <div className="max-h-[600px] overflow-y-auto">
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </TableHead>
-                <TableHead className="w-20">{t.seo.optimization.image}</TableHead>
-                <TableHead>{t.products.title}</TableHead>
-                <TableHead className="min-w-[200px]">{t.seo.optimization.seoTitle}</TableHead>
-                <TableHead className="min-w-[250px]">{t.seo.optimization.seoDescription}</TableHead>
-                <TableHead className="w-32">
-                  <button
-                    onClick={handleSeoScoreSortToggle}
-                    className="flex items-center gap-1 hover:text-primary transition-colors"
-                  >
-                    {t.seo.optimization.seoScore}
-                    {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
-                    {seoScoreSort === 'asc' && <ArrowUp className="w-4 h-4" />}
-                    {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
-                  </button>
-                </TableHead>
-                <TableHead className="w-32">{t.seo.optimization.status}</TableHead>
-                <TableHead className="w-32">{t.seo.optimization.synced}</TableHead>
-                <TableHead className="w-24">{t.seo.optimization.actions}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedProducts.map((product) => {
-                const seoScore = calculateDetailedSeoScore(
-                  product.seo_title,
-                  product.seo_description,
-                  !!product.image_url,
-                  true,
-                  product.tags,
-                  product.optimization_count
-                );
-                
-                return (
-                  <TableRow key={product.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedProducts.has(product.id)}
-                        onCheckedChange={() => handleSelectProduct(product.id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.title}
-                          className="w-16 h-16 object-cover rounded"
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead className="w-20">{t.seo.optimization.image}</TableHead>
+                  <TableHead>{t.products.title}</TableHead>
+                  <TableHead className="min-w-[200px]">{t.seo.optimization.seoTitle}</TableHead>
+                  <TableHead className="min-w-[250px]">{t.seo.optimization.seoDescription}</TableHead>
+                  <TableHead className="w-32">
+                    <button
+                      onClick={handleSeoScoreSortToggle}
+                      className="flex items-center gap-1 hover:text-primary transition-colors"
+                    >
+                      {t.seo.optimization.seoScore}
+                      {seoScoreSort === "none" && <ArrowUpDown className="w-4 h-4" />}
+                      {seoScoreSort === "asc" && <ArrowUp className="w-4 h-4" />}
+                      {seoScoreSort === "desc" && <ArrowDown className="w-4 h-4" />}
+                    </button>
+                  </TableHead>
+                  <TableHead className="w-32">{t.seo.optimization.status}</TableHead>
+                  <TableHead className="w-32">{t.seo.optimization.synced}</TableHead>
+                  <TableHead className="w-24">{t.seo.optimization.actions}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedProducts.map((product) => {
+                  const seoScore = calculateDetailedSeoScore(
+                    product.seo_title,
+                    product.seo_description,
+                    !!product.image_url,
+                    true,
+                    product.tags,
+                    product.optimization_count,
+                  );
+
+                  return (
+                    <TableRow key={product.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedProducts.has(product.id)}
+                          onCheckedChange={() => handleSelectProduct(product.id)}
                         />
-                      ) : (
-                        <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
-                          <Package className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-[200px]">
-                        <p className="font-medium line-clamp-2">{product.title}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{product.vendor}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-[200px]">
-                        {product.seo_title ? (
-                          <p className="text-sm line-clamp-2">{product.seo_title}</p>
+                      </TableCell>
+                      <TableCell>
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.title} className="w-16 h-16 object-cover rounded" />
                         ) : (
-                          <Badge variant="outline" className="text-xs">
-                            {t.seo.optimization.notOptimizedBadge}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-[250px]">
-                        {product.seo_description ? (
-                          <p className="text-xs text-muted-foreground line-clamp-3">
-                            {product.seo_description}
-                          </p>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">
-                            {t.seo.optimization.notOptimizedBadge}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                     <TableCell>
-                       <div className="flex flex-col gap-1">
-                         {product.enrichment_status === 'enriched' ? (
-                           <>
-                          <div className={`text-2xl font-bold ${
-                            seoScore.score >= 80 ? 'text-green-600' : 
-                            seoScore.score >= 50 ? 'text-orange-600' : 
-                            'text-red-600'
-                          }`}>
-                            {seoScore.score}%
+                          <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                            <Package className="w-6 h-6 text-muted-foreground" />
                           </div>
-                           <span className="text-xs text-muted-foreground">
-                             {seoScore.score >= 80 ? t.seo.optimization.excellentEmoji : 
-                              seoScore.score >= 50 ? t.seo.optimization.goodEmoji : 
-                              t.seo.optimization.toImprove}
-                           </span>
-                           </>
-                         ) : (
-                           <>
-                             {(() => {
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          <p className="font-medium line-clamp-2">{product.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{product.vendor}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          {product.seo_title ? (
+                            <p className="text-sm line-clamp-2">{product.seo_title}</p>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              {t.seo.optimization.notOptimizedBadge}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[250px]">
+                          {product.seo_description ? (
+                            <p className="text-xs text-muted-foreground line-clamp-3">{product.seo_description}</p>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              {t.seo.optimization.notOptimizedBadge}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {product.enrichment_status === "enriched" ? (
+                            <>
+                              <div
+                                className={`text-2xl font-bold ${
+                                  seoScore.score >= 80
+                                    ? "text-green-600"
+                                    : seoScore.score >= 50
+                                      ? "text-orange-600"
+                                      : "text-red-600"
+                                }`}
+                              >
+                                {seoScore.score}%
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {seoScore.score >= 80
+                                  ? t.seo.optimization.excellentEmoji
+                                  : seoScore.score >= 50
+                                    ? t.seo.optimization.goodEmoji
+                                    : t.seo.optimization.toImprove}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              {(() => {
                                 const initialScore = calculateDetailedSeoScore(
                                   product.title,
                                   product.vendor,
                                   !!product.image_url,
                                   true,
                                   product.tags,
-                                  product.optimization_count
+                                  product.optimization_count,
                                 );
-                               return (
+                                return (
                                   <>
-                                     <div className={`text-2xl font-bold ${
-                                        initialScore.score >= 80 ? 'text-green-600' : 
-                                        initialScore.score >= 50 ? 'text-orange-600' :
-                                       'text-red-600'
-                                     }`}>
-                                       {initialScore.score}%
-                                     </div>
-                                      <span className="text-xs text-muted-foreground">{t.seo.optimization.initialScore}</span>
+                                    <div
+                                      className={`text-2xl font-bold ${
+                                        initialScore.score >= 80
+                                          ? "text-green-600"
+                                          : initialScore.score >= 50
+                                            ? "text-orange-600"
+                                            : "text-red-600"
+                                      }`}
+                                    >
+                                      {initialScore.score}%
+                                    </div>
+                                    <span className="text-xs text-muted-foreground">
+                                      {t.seo.optimization.initialScore}
+                                    </span>
                                   </>
-                               );
-                             })()}
-                           </>
-                         )}
-                       </div>
-                     </TableCell>
-                     <TableCell>
-                       <Badge variant={product.enrichment_status === 'enriched' ? 'default' : 'secondary'}>
-                         {product.enrichment_status === 'enriched' ? t.seo.optimization.optimizedTab : t.seo.optimization.pending}
-                       </Badge>
-                     </TableCell>
-                     <TableCell>
-                       {product.seo_synced_to_shopify ? (
-                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                           <CheckCircle className="w-3 h-3 mr-1" />
-                           {t.seo.optimization.yes}
-                         </Badge>
-                       ) : (
-                         <Badge variant="outline">
-                           <Clock className="w-3 h-3 mr-1" />
-                           {t.seo.optimization.no}
-                         </Badge>
-                       )}
-                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={async () => {
-                            setGenerating(true);
-                            try {
-                               const { error } = await supabase.functions.invoke('generate-seo-with-deepseek', {
-                                 body: { productId: product.id }
-                               });
-                               if (error) throw error;
-                               toast.success(t.seo.optimization.productOptimized);
-                               await fetchProducts();
-                               await refreshLimits();
-                             } catch (error: any) {
-                               toast.error(error.message || t.seo.optimization.optimizationError);
-                            } finally {
-                              setGenerating(false);
-                            }
-                          }}
-                           disabled={generating}
-                           title={t.seo.optimization.optimize}
-                           className="hover:bg-blue-50"
-                         >
-                           <Sparkles className="w-5 h-5 text-blue-600" />
-                         </Button>
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={() => {
-                             setProductsToSync([product]);
-                             setShowSyncDialog(true);
-                           }}
-                           disabled={!product.seo_title || !product.seo_description}
-                           title={t.seo.optimization.viewSync}
-                           className="hover:bg-gray-50"
-                         >
-                           <Eye className="w-5 h-5" />
-                         </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                                );
+                              })()}
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={product.enrichment_status === "enriched" ? "default" : "secondary"}>
+                          {product.enrichment_status === "enriched"
+                            ? t.seo.optimization.optimizedTab
+                            : t.seo.optimization.pending}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {product.seo_synced_to_shopify ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            {t.seo.optimization.yes}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {t.seo.optimization.no}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={async () => {
+                              setGenerating(true);
+                              try {
+                                const { error } = await supabase.functions.invoke("generate-seo-with-deepseek", {
+                                  body: { productId: product.id },
+                                });
+                                if (error) throw error;
+                                toast.success(t.seo.optimization.productOptimized);
+                                await fetchProducts();
+                                await refreshLimits();
+                              } catch (error: any) {
+                                toast.error(error.message || t.seo.optimization.optimizationError);
+                              } finally {
+                                setGenerating(false);
+                              }
+                            }}
+                            disabled={generating}
+                            title={t.seo.optimization.optimize}
+                            className="hover:bg-blue-50"
+                          >
+                            <Sparkles className="w-5 h-5 text-blue-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setProductsToSync([product]);
+                              setShowSyncDialog(true);
+                            }}
+                            disabled={!product.seo_title || !product.seo_description}
+                            title={t.seo.optimization.viewSync}
+                            className="hover:bg-gray-50"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         </Card>
       ) : (
@@ -1276,18 +1306,14 @@ export function SeoOptimization() {
               !!product.image_url,
               true,
               product.tags,
-              product.optimization_count
+              product.optimization_count,
             );
-            
+
             return (
               <Card key={product.id} className="overflow-hidden hover:shadow-md transition">
                 <div className="aspect-square bg-muted relative">
                   {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.title}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Package className="w-12 h-12 text-muted-foreground" />
@@ -1301,7 +1327,7 @@ export function SeoOptimization() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="p-4 space-y-3">
                   <div>
                     <h3 className="font-semibold line-clamp-2 mb-1">{product.title}</h3>
@@ -1311,47 +1337,53 @@ export function SeoOptimization() {
                   </div>
 
                   <div className="space-y-2">
-                   <div>
-                     <p className="text-xs font-medium text-muted-foreground mb-1">{t.seo.optimization.seoTitle}</p>
-                     {product.seo_title ? (
-                       <p className="text-sm line-clamp-2">{product.seo_title}</p>
-                     ) : (
-                       <Badge variant="outline" className="text-xs">
-                         {t.seo.optimization.notOptimizedBadge}
-                       </Badge>
-                     )}
-                   </div>
-                   
-                   <div>
-                     <p className="text-xs font-medium text-muted-foreground mb-1">{t.seo.optimization.seoDescription}</p>
-                     {product.seo_description ? (
-                       <p className="text-xs text-muted-foreground line-clamp-2">
-                         {product.seo_description}
-                       </p>
-                     ) : (
-                       <Badge variant="outline" className="text-xs">
-                         {t.seo.optimization.notOptimizedBadge}
-                       </Badge>
-                     )}
-                   </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">{t.seo.optimization.seoTitle}</p>
+                      {product.seo_title ? (
+                        <p className="text-sm line-clamp-2">{product.seo_title}</p>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          {t.seo.optimization.notOptimizedBadge}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                        {t.seo.optimization.seoDescription}
+                      </p>
+                      {product.seo_description ? (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{product.seo_description}</p>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          {t.seo.optimization.notOptimizedBadge}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
-                      {product.enrichment_status === 'enriched' ? (
+                      {product.enrichment_status === "enriched" ? (
                         <>
-                          <div className={`text-2xl font-bold ${
-                            seoScore.score >= 70 ? 'text-green-600' : 
-                            seoScore.score >= 50 ? 'text-orange-600' :
-                            'text-red-600'
-                          }`}>
+                          <div
+                            className={`text-2xl font-bold ${
+                              seoScore.score >= 70
+                                ? "text-green-600"
+                                : seoScore.score >= 50
+                                  ? "text-orange-600"
+                                  : "text-red-600"
+                            }`}
+                          >
                             {seoScore.score}%
                           </div>
-                           <span className="text-xs text-muted-foreground">
-                             {seoScore.score >= 70 ? t.seo.optimization.excellentEmoji : 
-                              seoScore.score >= 50 ? t.seo.optimization.goodEmoji : 
-                              t.seo.optimization.toImprove}
-                           </span>
+                          <span className="text-xs text-muted-foreground">
+                            {seoScore.score >= 70
+                              ? t.seo.optimization.excellentEmoji
+                              : seoScore.score >= 50
+                                ? t.seo.optimization.goodEmoji
+                                : t.seo.optimization.toImprove}
+                          </span>
                         </>
                       ) : (
                         <>
@@ -1362,24 +1394,28 @@ export function SeoOptimization() {
                               !!product.image_url,
                               true,
                               product.tags,
-                                product.optimization_count
-                              );
-                              return (
-                                <>
-                                  <div className={`text-2xl font-bold ${
-                                    initialScore.score >= 70 ? 'text-green-600' : 
-                                    initialScore.score >= 50 ? 'text-orange-600' : 
-                                    'text-red-600'
-                                  }`}>
-                                    {initialScore.score}%
-                                  </div>
-                                  <span className="text-xs text-muted-foreground">{t.seo.optimization.initialScore}</span>
-                                </>
-                              );
-                            })()}
-                          </>
-                        )}
-                      </div>
+                              product.optimization_count,
+                            );
+                            return (
+                              <>
+                                <div
+                                  className={`text-2xl font-bold ${
+                                    initialScore.score >= 70
+                                      ? "text-green-600"
+                                      : initialScore.score >= 50
+                                        ? "text-orange-600"
+                                        : "text-red-600"
+                                  }`}
+                                >
+                                  {initialScore.score}%
+                                </div>
+                                <span className="text-xs text-muted-foreground">{t.seo.optimization.initialScore}</span>
+                              </>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
 
                     <Button
                       size="sm"
@@ -1388,11 +1424,11 @@ export function SeoOptimization() {
                         setProductsToSync([product]);
                         setShowSyncDialog(true);
                       }}
-                     disabled={!product.seo_title || !product.seo_description}
-                   >
-                     <Eye className="w-3 h-3 mr-1" />
-                     {t.seo.optimization.view}
-                   </Button>
+                      disabled={!product.seo_title || !product.seo_description}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      {t.seo.optimization.view}
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -1414,7 +1450,7 @@ export function SeoOptimization() {
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
         type="seo"
-        operation={syncing ? 'syncing' : 'optimizing'}
+        operation={syncing ? "syncing" : "optimizing"}
         current={progress.current}
         total={progress.total}
       />
@@ -1426,7 +1462,7 @@ export function SeoOptimization() {
         items={optimizedProducts}
         onSyncClick={() => {
           setShowResultsDialog(false);
-          const productsWithSeo = optimizedProducts.filter(p => p.seo_title || p.seo_description);
+          const productsWithSeo = optimizedProducts.filter((p) => p.seo_title || p.seo_description);
           if (productsWithSeo.length > 0) {
             setProductsToSync(productsWithSeo);
             setShowSyncDialog(true);
@@ -1443,7 +1479,7 @@ export function SeoOptimization() {
         itemCount={productsToSync.length}
         onConfirm={async () => {
           setSyncing(true);
-          const productIds = productsToSync.map(p => p.id);
+          const productIds = productsToSync.map((p) => p.id);
           await handleSyncProducts(productIds);
           setShowSyncDialog(false);
           setProductsToSync([]);
@@ -1453,11 +1489,8 @@ export function SeoOptimization() {
       />
 
       {/* Shopify Sync Success Dialog */}
-      <ShopifySyncSuccessDialog
-        items={syncedItems}
-        onClose={() => setSyncedItems([])}
-      />
-      
+      <ShopifySyncSuccessDialog items={syncedItems} onClose={() => setSyncedItems([])} />
+
       {limits?.shouldForcePayment ? (
         <TrialLimitDialog
           open={showUpgradeDialog}
