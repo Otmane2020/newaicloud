@@ -1362,6 +1362,65 @@ export type Database = {
         }
         Relationships: []
       }
+      seo_audit_history: {
+        Row: {
+          analyzed_url: string | null
+          breakdown: Json | null
+          created_at: string | null
+          elements: Json | null
+          grade: string | null
+          id: string
+          issues: Json | null
+          recommendations: Json | null
+          score: number
+          store_id: string | null
+          strengths: Json | null
+          updated_at: string | null
+          user_id: string
+          warnings: Json | null
+        }
+        Insert: {
+          analyzed_url?: string | null
+          breakdown?: Json | null
+          created_at?: string | null
+          elements?: Json | null
+          grade?: string | null
+          id?: string
+          issues?: Json | null
+          recommendations?: Json | null
+          score: number
+          store_id?: string | null
+          strengths?: Json | null
+          updated_at?: string | null
+          user_id: string
+          warnings?: Json | null
+        }
+        Update: {
+          analyzed_url?: string | null
+          breakdown?: Json | null
+          created_at?: string | null
+          elements?: Json | null
+          grade?: string | null
+          id?: string
+          issues?: Json | null
+          recommendations?: Json | null
+          score?: number
+          store_id?: string | null
+          strengths?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          warnings?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_audit_history_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seo_audit_reports: {
         Row: {
           audit_results: Json | null

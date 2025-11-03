@@ -830,10 +830,11 @@ async function storeAuditResult(supabaseClient: any, userId: string, result: any
         grade: result.grade,
         analyzed_url: result.analyzedUrl,
         breakdown: result.breakdown,
-        critical_issues: result.criticalIssues,
+        issues: result.criticalIssues,
         warnings: result.warnings,
         strengths: result.strengths,
         recommendations: result.recommendations,
+        elements: result.elements,
       });
     
     if (error) {
