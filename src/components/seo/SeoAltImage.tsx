@@ -223,4 +223,59 @@ export function SeoAltImage() {
 
       // Import all types including homepage
       const { data, error } = await supabase.functions.invoke('import-content-images', {
-        body: { storeId: stores.id, types: ['collections', 'pages', 'articles', '
+        body: { storeId: stores.id, types: ['collections', 'pages', 'articles', 'homepage'] }
+      });
+
+      if (error) throw error;
+
+      const totalImported = data?.totalImported || 0;
+      toast.success(`✅ ${totalImported} images importées avec succès`);
+      await fetchImages();
+    } catch (error) {
+      console.error('Error importing images:', error);
+      toast.error("Erreur lors de l'importation des images");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchImages();
+  }, []);
+
+  return (
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-6">Images ALT</h1>
+      
+      <div className="flex gap-4 mb-6">
+        <Button
+          onClick={fetchImages}
+          disabled={loading}
+          variant="outline"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Actualiser
+        </Button>
+        
+        <Button
+          onClick={handleImportContentImages}
+          disabled={importing}
+        >
+          {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          <Upload className="w-4 h-4 mr-2" />
+          Importer les images
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      ) : (
+        <div className="text-muted-foreground">
+          Total: {images.length} images
+        </div>
+      )}
+    </div>
+  );
+}
