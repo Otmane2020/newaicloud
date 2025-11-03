@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -30,7 +31,8 @@ interface Plan {
 export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, currentPlan = "Trial" }: UpgradeDialogProps) {
   const [loading, setLoading] = useState(false);
   const [currentPlanData, setCurrentPlanData] = useState<Plan | null>(null);
-  const [upgradePlanData, setUpgradePlanData] = useState<Plan | null>(null);
+  const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const { t, tf } = useTranslation();
 
   const limitTitle = t.dialogs.limit.limitTypes[limitType];
@@ -79,17 +81,25 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
             max_chat_responses_monthly: 20,
             max_shopify_stores: 1
           });
-          setUpgradePlanData(current as Plan);
+          
+          // Tous les plans sont disponibles pour upgrade depuis trial
+          setAvailablePlans(allPlans as Plan[]);
+          setSelectedPlanId(allPlans[0].id);
         } else {
           setCurrentPlanData(current as Plan);
           
-          // Trouver le plan suivant (supérieur)
+          // Trouver les plans supérieurs au plan actuel
           const currentIndex = allPlans.findIndex(p => p.id === currentPlanId);
-          const nextPlan = currentIndex < allPlans.length - 1 
-            ? allPlans[currentIndex + 1] 
-            : allPlans[currentIndex]; // Si déjà au max, proposer le même
+          const upgradePlans = allPlans.slice(currentIndex + 1);
           
-          setUpgradePlanData(nextPlan as Plan);
+          if (upgradePlans.length > 0) {
+            setAvailablePlans(upgradePlans as Plan[]);
+            setSelectedPlanId(upgradePlans[0].id);
+          } else {
+            // Si déjà au max, proposer quand même le plan actuel
+            setAvailablePlans([current] as Plan[]);
+            setSelectedPlanId(current.id);
+          }
         }
       } catch (error) {
         console.error('Error loading plan data:', error);
@@ -102,12 +112,18 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   }, [open]);
 
   const handleActivate = async () => {
+    if (!selectedPlanId) {
+      toast.error('Veuillez sélectionner un plan');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('force-payment', {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
-          success_url: `${window.location.origin}/dashboard?payment=success`,
-          cancel_url: `${window.location.origin}/dashboard?payment=cancelled`,
+          plan_id: selectedPlanId,
+          billing_period: 'monthly',
+          force_immediate_payment: true
         },
       });
 
@@ -127,6 +143,8 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
     }
   };
 
+  const selectedPlan = availablePlans.find(p => p.id === selectedPlanId);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -145,62 +163,79 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
           
           <Separator />
           
-          {upgradePlanData && (
+          {availablePlans.length > 0 && (
             <>
-              <p className="text-muted-foreground font-medium">
-                Passez à <span className="text-blue-600 dark:text-blue-400 font-bold">{upgradePlanData.name}</span> pour débloquer:
-              </p>
-              
-              <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                <h3 className="font-semibold mb-3 text-lg">
-                  {upgradePlanData.name} - {upgradePlanData.price_monthly}€/mois
-                </h3>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                    <span className="text-sm">{upgradePlanData.max_products} produits</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                    <span className="text-sm">{upgradePlanData.max_optimizations_monthly} optimisations SEO/mois</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                    <span className="text-sm">{upgradePlanData.max_articles_monthly} articles blog/mois</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                    <span className="text-sm">{upgradePlanData.max_chat_responses_monthly} réponses chat/mois</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                    <span className="text-sm">{upgradePlanData.max_shopify_stores} boutique(s) Shopify</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                    <span className="text-sm">Automatisation SEO</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                    <span className="text-sm">Support prioritaire</span>
-                  </li>
-                </ul>
+              <div className="space-y-3">
+                <p className="text-muted-foreground font-medium">
+                  Choisissez le nombre d'optimisations par mois:
+                </p>
+                
+                <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionnez un plan" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {availablePlans.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id}>
+                        {plan.max_optimizations_monthly} optimisations - {plan.price_monthly}€/mois
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              
+              {selectedPlan && (
+                <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 p-4 rounded-lg border border-primary/30">
+                  <h3 className="font-semibold mb-3 text-lg">
+                    {selectedPlan.name} - {selectedPlan.price_monthly}€/mois
+                  </h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                      <span className="text-sm">{selectedPlan.max_products === -1 ? 'Produits illimités' : `${selectedPlan.max_products} produits`}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                      <span className="text-sm">{selectedPlan.max_optimizations_monthly} optimisations SEO/mois</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                      <span className="text-sm">{selectedPlan.max_articles_monthly} articles blog/mois</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                      <span className="text-sm">{selectedPlan.max_chat_responses_monthly} réponses chat/mois</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                      <span className="text-sm">{selectedPlan.max_shopify_stores} boutique(s) Shopify</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                      <span className="text-sm">Automatisation SEO</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
+                      <span className="text-sm">Support prioritaire</span>
+                    </li>
+                  </ul>
+                </div>
+              )}
             </>
           )}
           
           <Button 
             onClick={handleActivate} 
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
             size="lg"
-            disabled={loading}
+            disabled={loading || !selectedPlanId}
           >
             {loading ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
             ) : (
               <CreditCard className="w-5 h-5 mr-2" />
             )}
-            {loading ? t.dialogs.upgrade.loading : t.dialogs.limit.activatePlan}
+            {loading ? t.dialogs.upgrade.loading : 'Passer à Stripe'}
           </Button>
           
           <Button 
