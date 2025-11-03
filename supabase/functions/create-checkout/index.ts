@@ -230,6 +230,25 @@ serve(async (req) => {
         .eq('id', user.id);
     }
 
+    // Annuler les anciens abonnements avant de créer un nouveau
+    console.log('🔍 Checking for existing subscriptions to cancel...');
+    const existingSubscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      limit: 100,
+    });
+    
+    // Annuler tous les abonnements actifs, trialing, past_due ou unpaid
+    const cancelableStatuses = ['active', 'trialing', 'past_due', 'unpaid'];
+    for (const sub of existingSubscriptions.data) {
+      if (cancelableStatuses.includes(sub.status)) {
+        console.log(`🗑️ Cancelling existing subscription: ${sub.id} (status: ${sub.status})`);
+        await stripe.subscriptions.cancel(sub.id, {
+          prorate: true,
+        });
+      }
+    }
+    
     console.log('🎫 Creating Stripe checkout session...');
 
     const origin = req.headers.get('origin') || 'http://localhost:8080';

@@ -379,21 +379,45 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     console.log('📋 Subscription:', subscription.id);
     console.log('💳 Customer:', customer);
 
+    // Vérifier s'il y a d'autres abonnements actifs pour ce customer
+    let hasOtherActiveSubscription = false;
+    if (customer && typeof customer === 'string') {
+      console.log('🔍 Checking for other active subscriptions...');
+      const activeSubscriptions = await stripe.subscriptions.list({
+        customer: customer,
+        status: 'active',
+        limit: 10,
+      });
+      
+      // Exclure l'abonnement actuel qui est en cours de suppression
+      hasOtherActiveSubscription = activeSubscriptions.data.some(
+        (sub: Stripe.Subscription) => sub.id !== subscription.id
+      );
+      
+      console.log('📊 Other active subscriptions:', hasOtherActiveSubscription);
+    }
+
     if (userId) {
       console.log('👤 Updating profile for user:', userId);
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          subscription_status: 'cancelled',
-          current_plan_id: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+      
+      // Ne réinitialiser le profil que s'il n'y a pas d'autre abonnement actif
+      if (!hasOtherActiveSubscription) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            subscription_status: 'cancelled',
+            current_plan_id: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
 
-      if (profileError) {
-        console.error('❌ Error updating profile:', profileError);
+        if (profileError) {
+          console.error('❌ Error updating profile:', profileError);
+        } else {
+          console.log('✅ Profile updated to cancelled (no other active subscriptions)');
+        }
       } else {
-        console.log('✅ Profile updated');
+        console.log('ℹ️ Keeping profile unchanged (other active subscription exists)');
       }
     } else if (customer && typeof customer === 'string') {
       console.log('⚠️ No user_id, trying customer_id lookup');
@@ -405,7 +429,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
       if (profileError) {
         console.error('❌ Error finding profile:', profileError);
-      } else if (profile) {
+      } else if (profile && !hasOtherActiveSubscription) {
         console.log('👤 Found profile:', profile.id);
         await supabase
           .from('profiles')
@@ -416,6 +440,8 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
           })
           .eq('id', profile.id);
         console.log('✅ Profile updated via customer lookup');
+      } else if (profile && hasOtherActiveSubscription) {
+        console.log('ℹ️ Keeping profile unchanged (other active subscription exists)');
       }
     }
 

@@ -86,6 +86,24 @@ serve(async (req) => {
 
     logStep("Found payment method", { paymentMethodId: paymentMethods.data[0].id });
 
+    // Annuler les anciens abonnements avant de créer un nouveau
+    logStep('Checking for existing subscriptions to cancel');
+    const existingSubscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      limit: 100,
+    });
+
+    const cancelableStatuses = ['active', 'trialing', 'past_due', 'unpaid'];
+    for (const sub of existingSubscriptions.data) {
+      if (cancelableStatuses.includes(sub.status)) {
+        logStep('Cancelling existing subscription', { subscriptionId: sub.id, status: sub.status });
+        await stripe.subscriptions.cancel(sub.id, {
+          prorate: true,
+        });
+      }
+    }
+
     // Create subscription
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
