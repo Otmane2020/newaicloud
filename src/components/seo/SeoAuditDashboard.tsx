@@ -158,7 +158,7 @@ export function SeoAuditDashboard() {
         dot: "bg-[#22c55e]",
         gradient: "from-[#22c55e]/20 to-[#22c55e]/5",
       };
-    if (value >= 55)
+    if (value >= 60)
       return {
         text: "text-[#FF8000]",
         bg: "bg-gradient-to-r from-[#FF8000] to-[#FF8000]",

@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     // Fetch products
     const { data: products, error: productsError } = await supabaseClient
       .from("shopify_products")
-      .select("id, title, seo_title, seo_description, description")
+      .select("id, title, seo_title, seo_description, description, enrichment_status")
       .eq("seller_id", user.id);
 
     if (productsError) throw productsError;
@@ -77,8 +77,29 @@ Deno.serve(async (req) => {
     const articlesTotal = articles?.length || 0;
     const blogScore = articlesTotal > 0 ? Math.round((articlesOptimized / articlesTotal) * 100) : 0;
 
-    // Calculate Homepage/Global Score (simplified)
-    const globalScore = Math.round((productsScore + collectionsScore + blogScore) / 3);
+    // Calculate Images Score
+    const { data: images } = await supabaseClient
+      .from('product_images')
+      .select('id, alt_text')
+      .in('product_id', products?.map(p => p.id) || []);
+    
+    const imagesOptimized = images?.filter(img => img.alt_text && img.alt_text.length > 0).length || 0;
+    const imagesTotal = images?.length || 0;
+    const imagesScore = imagesTotal > 0 ? Math.round((imagesOptimized / imagesTotal) * 100) : 0;
+
+    // Calculate Pages/Homepage Score
+    const pagesOptimized = pages?.filter(p => p.seo_title && p.seo_description).length || 0;
+    const pagesTotal = pages?.length || 0;
+    const homepageScore = pagesTotal > 0 ? Math.round((pagesOptimized / pagesTotal) * 100) : 0;
+
+    // Calculate Technical Score (based on products enrichment)
+    const productsEnriched = products?.filter(p => p.enrichment_status === 'enriched').length || 0;
+    const technicalScore = productsTotal > 0 ? Math.round((productsEnriched / productsTotal) * 100) : 0;
+
+    // ✅ CORRECT Global Score - Average of 6 categories
+    const globalScore = Math.round(
+      (homepageScore + productsScore + collectionsScore + blogScore + imagesScore + technicalScore) / 6
+    );
 
     // Build audit results
     const auditResults = {
@@ -166,7 +187,9 @@ Deno.serve(async (req) => {
         products_score: productsScore,
         collections_score: collectionsScore,
         blog_score: blogScore,
-        homepage_score: globalScore,
+        homepage_score: homepageScore,
+        images_score: imagesScore,
+        technical_score: technicalScore,
         audit_results: auditResults,
         recommendations: auditResults.homepage.recommendations,
       });

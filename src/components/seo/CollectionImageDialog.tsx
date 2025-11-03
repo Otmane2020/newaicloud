@@ -103,13 +103,42 @@ export function CollectionImageDialog({
       if (error) throw error;
 
       if (data?.image_url) {
-        await updateCollectionImage(data.image_url);
+        let imageUrl = data.image_url;
+        
+        // ✅ CRITICAL: Convert base64 to public URL for Shopify compatibility
+        if (imageUrl.startsWith('data:')) {
+          console.log('🔄 Converting base64 image to public URL...');
+          
+          // Convert base64 to blob
+          const base64Data = imageUrl.split(',')[1];
+          const byteCharacters = atob(base64Data);
+          const byteArray = new Uint8Array([...byteCharacters].map(c => c.charCodeAt(0)));
+          const blob = new Blob([byteArray], { type: 'image/png' });
+          
+          // Upload to Supabase Storage
+          const fileName = `collection-${collection.id}-${Date.now()}.png`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('generated-images')
+            .upload(fileName, blob, { contentType: 'image/png', upsert: true });
+          
+          if (uploadError) throw uploadError;
+          
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('generated-images')
+            .getPublicUrl(fileName);
+          
+          imageUrl = publicUrl;
+          console.log('✅ Image uploaded to storage:', publicUrl);
+        }
+        
+        await updateCollectionImage(imageUrl);
         
         // Show success with image preview
         toast.success(
           <div className="flex items-start gap-3">
             <img 
-              src={data.image_url} 
+              src={imageUrl} 
               alt="Generated" 
               className="w-16 h-16 rounded object-cover"
             />

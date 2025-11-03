@@ -202,16 +202,16 @@ export function SeoAuditReports() {
 
   const getScoreColor = (score: number, maxScore: number) => {
     const percentage = (score / maxScore) * 100;
-    if (percentage >= 80) return 'text-green-600';
-    if (percentage >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (percentage >= 80) return 'text-[#22c55e]';
+    if (percentage >= 60) return 'text-[#FF8000]';
+    return 'text-[#FF3333]';
   };
 
   const getScoreBgColor = (score: number, maxScore: number) => {
     const percentage = (score / maxScore) * 100;
-    if (percentage >= 80) return 'bg-green-100 dark:bg-green-950';
-    if (percentage >= 60) return 'bg-yellow-100 dark:bg-yellow-950';
-    return 'bg-red-100 dark:bg-red-950';
+    if (percentage >= 80) return 'bg-[#22c55e]/10 border-[#22c55e]/30';
+    if (percentage >= 60) return 'bg-[#FF8000]/10 border-[#FF8000]/30';
+    return 'bg-[#FF3333]/10 border-[#FF3333]/30';
   };
 
   // Use real data from latestReport instead of mock data
