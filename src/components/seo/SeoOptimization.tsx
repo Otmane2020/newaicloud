@@ -185,22 +185,75 @@ export function SeoOptimization() {
 
   const filteredProducts = products
     .filter((product) => {
-      // [Votre logique de filtrage existante reste identique]
-      // ... (le même code de filtrage que ci-dessus)
+      const { enrichment_status, seo_synced_to_shopify, product_type, title } = product;
+
+      // Tab filtering
+      switch (activeTab) {
+        case "not-enriched":
+          if (enrichment_status === "enriched") return false;
+          break;
+        case "enriched":
+          if (enrichment_status !== "enriched") return false;
+          break;
+        case "pending-sync":
+          if (enrichment_status !== "enriched" || seo_synced_to_shopify) return false;
+          break;
+        case "synced":
+          if (!seo_synced_to_shopify) return false;
+          break;
+      }
+
+      // Status filter
+      if (statusFilter === "optimized" && enrichment_status !== "enriched") return false;
+      if (statusFilter === "not-optimized" && enrichment_status === "enriched") return false;
+
+      // Sync filter
+      if (syncFilter === "synced" && !seo_synced_to_shopify) return false;
+      if (syncFilter === "not-synced" && seo_synced_to_shopify) return false;
+
+      // Quality filter
+      if (qualityFilter !== "all") {
+        const score = calculateDetailedSeoScore(
+          product.seo_title,
+          product.seo_description,
+          !!product.image_url,
+          true,
+          product.tags,
+          product.optimization_count || 0,
+        ).score;
+
+        switch (qualityFilter) {
+          case "excellent":
+            if (score < 70) return false;
+            break;
+          case "good":
+            if (score < 55 || score >= 70) return false;
+            break;
+          case "poor":
+            if (score >= 55) return false;
+            break;
+        }
+      }
+
+      // Category filter
+      if (selectedCategory !== "all" && product_type !== selectedCategory) return false;
+
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const titleLower = title?.toLowerCase() || "";
+        return titleLower.includes(searchLower);
+      }
+
+      return true;
     })
     .sort((a, b) => {
-      // Priority 1: Sync status (non-synced first)
-      if (!a.seo_synced_to_shopify && b.seo_synced_to_shopify) return -1;
-      if (a.seo_synced_to_shopify && !b.seo_synced_to_shopify) return 1;
+      // Priority 1: Non-synced products first (most important for action)
+      if (a.seo_synced_to_shopify !== b.seo_synced_to_shopify) {
+        return a.seo_synced_to_shopify ? 1 : -1;
+      }
 
-      // Priority 2: Enrichment status (enriched first)
-      const enrichmentPriority = { enriched: 1, pending: 2, "not-enriched": 3 };
-      const priorityA = enrichmentPriority[a.enrichment_status] || 4;
-      const priorityB = enrichmentPriority[b.enrichment_status] || 4;
-
-      if (priorityA !== priorityB) return priorityA - priorityB;
-
-      // Priority 3: SEO score (highest first)
+      // Priority 2: SEO score (highest first)
       const scoreA = calculateDetailedSeoScore(
         a.seo_title,
         a.seo_description,
@@ -219,12 +272,7 @@ export function SeoOptimization() {
         b.optimization_count || 0,
       ).score;
 
-      return scoreB - scoreA;
-
-      // Priority 4: Alphabetical as final tiebreaker
-      if (scoreA === scoreB) {
-        return a.title.localeCompare(b.title);
-      }
+      return scoreB - scoreA; // Descending order
     });
 
   // Apply SEO score sorting
