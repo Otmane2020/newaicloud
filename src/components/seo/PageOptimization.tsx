@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 import {
   Search,
   RefreshCw,
@@ -53,6 +55,7 @@ interface ShopifyPage {
   seo_description: string | null;
   optimized: boolean;
   last_synced_at?: string | null;
+  optimization_count?: number;
 }
 
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
@@ -70,6 +73,9 @@ export function PageOptimization() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  
+  const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   useEffect(() => {
     fetchPages();
@@ -224,6 +230,17 @@ export function PageOptimization() {
   };
 
   const handleOptimizeSelected = async () => {
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
     if (selectedPages.size === 0) return;
     
     setOptimizing(true);
@@ -248,7 +265,8 @@ export function PageOptimization() {
     
     setOptimizing(false);
     setSelectedPages(new Set());
-    fetchPages();
+    await fetchPages();
+    await refreshLimits();
     
     if (successCount === pageIds.length) {
       toast.success('🎉 All pages optimized!');
@@ -258,6 +276,17 @@ export function PageOptimization() {
   };
 
   const handleOptimizeAll = async () => {
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
     const pagesToOptimize = pages.filter(p => !p.optimized);
     if (pagesToOptimize.length === 0) {
       toast.info('All pages are already optimized');
@@ -282,13 +311,14 @@ export function PageOptimization() {
     
     setOptimizing(false);
     toast.success(`${successCount}/${pagesToOptimize.length} pages optimized!`);
-    fetchPages();
+    await fetchPages();
+    await refreshLimits();
   };
 
   const handleSyncAll = async () => {
-    const pagesToSync = pages.filter(p => p.optimized);
+    const pagesToSync = pages.filter(p => p.optimized && (p.optimization_count || 0) > 0);
     if (pagesToSync.length === 0) {
-      toast.info('No optimized pages to sync');
+      toast.info('No AI-optimized pages to sync');
       return;
     }
     
@@ -316,11 +346,20 @@ export function PageOptimization() {
   const handleSyncSelected = async () => {
     if (selectedPages.size === 0) return;
     
-    const pageIds = Array.from(selectedPages);
+    const pagesToSync = Array.from(selectedPages).filter(pageId => {
+      const page = pages.find(p => p.id === pageId);
+      return page && page.optimized && (page.optimization_count || 0) > 0;
+    });
+    
+    if (pagesToSync.length === 0) {
+      toast.info('Aucune page AI-optimisée à synchroniser');
+      return;
+    }
+    
     setSyncing(true);
     let successCount = 0;
     
-    for (const pageId of pageIds) {
+    for (const pageId of pagesToSync) {
       try {
         const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
           body: { pageId }
@@ -335,11 +374,22 @@ export function PageOptimization() {
     
     setSyncing(false);
     setSelectedPages(new Set());
-    toast.success(`${successCount}/${pageIds.length} pages synchronized!`);
+    toast.success(`${successCount}/${pagesToSync.length} pages synchronized!`);
     fetchPages();
   };
 
   const handleOptimizePage = async (pageId: string, forceReoptimize = false) => {
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
     try {
       setOptimizing(true);
       const { error } = await supabase.functions.invoke('generate-page-seo', {
@@ -348,7 +398,8 @@ export function PageOptimization() {
       
       if (error) throw error;
       toast.success('Page optimized!');
-      fetchPages();
+      await fetchPages();
+      await refreshLimits();
     } catch (error: any) {
       toast.error(error.message || 'Error');
     } finally {
@@ -357,6 +408,12 @@ export function PageOptimization() {
   };
 
   const handleSyncPage = async (pageId: string) => {
+    const page = pages.find(p => p.id === pageId);
+    if (!page || !page.optimized || (page.optimization_count || 0) === 0) {
+      toast.error('Seules les pages AI-optimisées peuvent être synchronisées');
+      return;
+    }
+    
     try {
       setSyncing(true);
       const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
@@ -381,19 +438,45 @@ export function PageOptimization() {
     );
   }
 
-  // Calculate global SEO score for pages
-  const globalPageSeoScore = pages.length > 0 
+  // Calculate global SEO score with 30/70 weighting
+  const pagesNotOptimized = pages.filter(p => !p.optimized || (p.optimization_count || 0) === 0);
+  const pagesOptimized = pages.filter(p => p.optimized && (p.optimization_count || 0) > 0);
+
+  // Score for non-optimized pages (Shopify data)
+  const scoreWithoutAI = pagesNotOptimized.length > 0
     ? Math.round(
-        pages.reduce((sum, p) => {
+        pagesNotOptimized.reduce((sum, p) => {
           const score = calculateDetailedSeoScore(
-            p.seo_title,
-            p.seo_description,
+            p.title, // Shopify title
+            p.body_html?.substring(0, 160) || '',
             false,
-            true
+            !!p.handle
           );
           return sum + score.score;
-        }, 0) / pages.length
+        }, 0) / pagesNotOptimized.length
       )
+    : 0;
+
+  // Score for AI-optimized pages
+  const scoreWithAI = pagesOptimized.length > 0
+    ? Math.round(
+        pagesOptimized.reduce((sum, p) => {
+          const score = calculateDetailedSeoScore(
+            p.seo_title || p.title,
+            p.seo_description || p.body_html?.substring(0, 160) || '',
+            false,
+            !!p.handle,
+            undefined,
+            p.optimization_count || 0
+          );
+          return sum + score.score;
+        }, 0) / pagesOptimized.length
+      )
+    : 0;
+
+  // Apply 30/70 weighting
+  const globalPageSeoScore = pages.length > 0
+    ? Math.round((0.3 * scoreWithoutAI) + (0.7 * scoreWithAI))
     : 0;
 
   return (
@@ -891,6 +974,13 @@ export function PageOptimization() {
           </div>
         </Card>
       )}
+      
+      {/* Upgrade Dialog */}
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+      />
     </div>
   );
 }

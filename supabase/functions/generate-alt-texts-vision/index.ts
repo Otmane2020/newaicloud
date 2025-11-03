@@ -207,6 +207,25 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // Get authorization header for user authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'No authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'User not authenticated' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { imageId, imageType = 'product' }: AltTextVisionRequest = await req.json();
 
     if (!imageId) {
@@ -216,6 +235,33 @@ Deno.serve(async (req: Request) => {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
+      );
+    }
+
+    // Check optimization limits using RPC
+    const { data: checkResult, error: checkError } = await supabaseClient
+      .rpc('check_optimization_allowed', {
+        p_user_id: user.id,
+        p_resource_type: 'image',
+        p_resource_id: imageId,
+        p_force: false
+      });
+
+    if (checkError) {
+      console.error('Error checking optimization limits:', checkError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to check optimization limits' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!checkResult.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: checkResult.reason,
+          message: checkResult.message
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

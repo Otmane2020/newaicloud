@@ -27,6 +27,8 @@ import { ResultsDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateArticleSeoScore, getConfidenceBadgeColor } from '@/lib/seoQuality';
 import { ArticleFeaturedImageDialog } from '@/components/blog/ArticleFeaturedImageDialog';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 
 interface Article {
   id: string;
@@ -58,12 +60,15 @@ export default function ArticleManagement() {
   const [optimizedArticles, setOptimizedArticles] = useState<any[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedArticleForImage, setSelectedArticleForImage] = useState<Article | null>(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [syncFilter, setSyncFilter] = useState('all');
+  
+  const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   useEffect(() => {
     loadArticles();
@@ -150,6 +155,17 @@ export default function ArticleManagement() {
   };
 
   const optimizeArticles = async (articleIds: string[]) => {
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
     try {
       const loadingToast = toast.loading('🤖 Optimisation SEO en cours...', {
         description: `Analyse de ${articleIds.length} article(s) par l'IA`
@@ -175,7 +191,8 @@ export default function ArticleManagement() {
       setOptimizedArticles(articles || []);
       setShowOptimizationResults(true);
       
-      loadArticles();
+      await loadArticles();
+      await refreshLimits();
     } catch (error) {
       console.error('Error optimizing:', error);
       toast.error('❌ Erreur lors de l\'optimisation', {
@@ -718,6 +735,13 @@ export default function ArticleManagement() {
           onImageUpdated={loadArticles}
         />
       )}
+      
+      {/* Upgrade Dialog */}
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+      />
     </div>
   );
 }

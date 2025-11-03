@@ -347,32 +347,30 @@ export function SeoAltImage() {
       return;
     }
 
-    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
-    let finalImagesToGenerate = imagesToGenerate;
-    
-    if (imagesToGenerate.length > remainingLimit) {
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
-        setShowUpgradeDialog(true);
-        return;
-      } else {
-        toast.warning(tf('seo.altImage.limitReached', { count: remainingLimit }));
-        finalImagesToGenerate = imagesToGenerate.slice(0, remainingLimit);
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
       }
+      setShowUpgradeDialog(true);
+      return;
     }
 
     setGenerating(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: finalImagesToGenerate.length });
+    setProgress({ current: 0, total: imagesToGenerate.length });
 
     const functionName = useVision ? 'generate-alt-texts-vision' : 'generate-alt-texts';
 
     let successCount = 0;
     let errorCount = 0;
 
-    for (let i = 0; i < finalImagesToGenerate.length; i++) {
+    for (let i = 0; i < imagesToGenerate.length; i++) {
       try {
-        const img = finalImagesToGenerate[i];
+        const img = imagesToGenerate[i];
         const imageType = img.image_type || 'product';
         
         const { error } = await supabase.functions.invoke(functionName, {
@@ -389,7 +387,7 @@ export function SeoAltImage() {
           successCount++;
         }
         
-        setProgress({ current: i + 1, total: finalImagesToGenerate.length });
+        setProgress({ current: i + 1, total: imagesToGenerate.length });
       } catch (error) {
         console.error('Error generating ALT text:', error);
         errorCount++;
@@ -406,7 +404,7 @@ export function SeoAltImage() {
 
     // Show results dialog with refreshed images including image_url
     const refreshedImages = images.filter(img => 
-      finalImagesToGenerate.some(genImg => genImg.id === img.id)
+      imagesToGenerate.some(genImg => genImg.id === img.id)
     ).map(img => ({
       ...img,
       image_url: img.src // Map src to image_url for ResultsDialog
@@ -425,47 +423,28 @@ export function SeoAltImage() {
       return;
     }
 
-    // Check usage limits
-    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
-    
-    if (remainingLimit <= 0) {
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
-        toast.error(tf('seo.altImage.quotaReached', { used: limits?.usage.optimizations_count, max: limits?.limits.max_optimizations }));
-        setShowUpgradeDialog(true);
-        return;
-      } else {
-        toast.error(t.seo.altImage.monthlyLimitReached);
-        return;
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
       }
-    }
-
-    let finalImagesToOptimize = imagesToOptimize;
-    const willHitLimit = imagesToOptimize.length > remainingLimit;
-    
-    if (willHitLimit) {
-      if (limits?.isTrialing) {
-        // Trial users: show upgrade dialog
-        toast.warning(tf('seo.altImage.quotaLimited', { remaining: remainingLimit, total: imagesToOptimize.length }));
-        toast.info(t.seo.altImage.upgradeForMore, { duration: 5000 });
-        finalImagesToOptimize = imagesToOptimize.slice(0, remainingLimit);
-      } else {
-        // Paid users: just notify
-        toast.warning(tf('seo.altImage.limitReachedThisMonth', { remaining: remainingLimit, total: imagesToOptimize.length }));
-        finalImagesToOptimize = imagesToOptimize.slice(0, remainingLimit);
-      }
+      setShowUpgradeDialog(true);
+      return;
     }
 
     setGenerating(true);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: finalImagesToOptimize.length });
+    setProgress({ current: 0, total: imagesToOptimize.length });
 
     let successCount = 0;
     let errorCount = 0;
 
-    for (let i = 0; i < finalImagesToOptimize.length; i++) {
+    for (let i = 0; i < imagesToOptimize.length; i++) {
       try {
-        const img = finalImagesToOptimize[i];
+        const img = imagesToOptimize[i];
         const imageType = img.image_type || 'product';
         
         const { error } = await supabase.functions.invoke('generate-alt-texts-vision', {
@@ -482,45 +461,23 @@ export function SeoAltImage() {
           successCount++;
         }
         
-        setProgress({ current: i + 1, total: finalImagesToOptimize.length });
+        setProgress({ current: i + 1, total: imagesToOptimize.length });
       } catch (error) {
         console.error('Error generating ALT text:', error);
         errorCount++;
       }
     }
 
-    const remainingImages = imagesToOptimize.length - finalImagesToOptimize.length;
-
-    if (remainingImages > 0 && limits?.isTrialing) {
-      toast.info(
-        tf('seo.altImage.optimizedWithRemaining', { success: successCount, remaining: remainingImages }),
-        { duration: 6000 }
-      );
-      setTimeout(() => setShowUpgradeDialog(true), 1500);
-    } else if (remainingImages > 0) {
-      toast.info(tf('seo.altImage.optimizedWaitingNext', { success: successCount, remaining: remainingImages }));
-    } else if (errorCount > 0) {
+    if (errorCount > 0) {
       toast.warning(tf('seo.altImage.generatedWithErrors', { success: successCount, errors: errorCount }));
     } else {
-      toast.success(`Toutes les images ont été optimisées avec succès! 🎉`);
+      toast.success(tf('seo.altImage.allGenerated', { count: successCount }));
     }
 
     setGenerating(false);
     setIsOptimizationComplete(true);
-    
-    // Refresh images to get updated alt texts  
     await fetchImages();
-
-    // Show results with refreshed images including image_url
-    const refreshedImages = images.filter(img => 
-      finalImagesToOptimize.some(genImg => genImg.id === img.id)
-    ).map(img => ({
-      ...img,
-      image_url: img.src // Map src to image_url for ResultsDialog
-    }));
-    setOptimizedImages(refreshedImages as any);
     setShowProgressDialog(false);
-    setShowResultsDialog(true);
   };
 
   const handleSyncSelected = async () => {

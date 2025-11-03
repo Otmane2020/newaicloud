@@ -234,17 +234,15 @@ export function TagOptimization() {
       return;
     }
 
-    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
-    
-    if (productsToGenerate.length > remainingLimit) {
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
-        setShowUpgradeDialog(true);
-        return;
-      } else {
-        toast.warning(`Limit reached. Only ${remainingLimit} products will be optimized.`);
-        await handleBulkGenerate(productsToGenerate.slice(0, remainingLimit).map(p => p.id));
-        return;
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
       }
+      setShowUpgradeDialog(true);
+      return;
     }
 
     await handleBulkGenerate(productsToGenerate.map(p => p.id));
@@ -306,6 +304,17 @@ export function TagOptimization() {
       return;
     }
 
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     const allSelectedProducts = Array.from(selectedProducts);
     const productsWithTags = allSelectedProducts.filter(id => 
       products.find(p => p.id === id)?.tags
@@ -355,23 +364,7 @@ export function TagOptimization() {
       return;
     }
 
-    const productsToGenerate = force ? allSelectedProducts : productsWithoutTags;
-    const remainingLimit = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
-    
-    if (productsToGenerate.length > remainingLimit) {
-      if (limits?.isTrialing) {
-        setShowUpgradeDialog(true);
-        return;
-      } else {
-        const s = remainingLimit > 1 ? 's' : '';
-        const ront = remainingLimit > 1 ? 'ront' : '';
-        toast.warning(tf('seo.tags.limitReached', { count: remainingLimit, s, ront }));
-        await handleBulkGenerate(productsToGenerate.slice(0, remainingLimit), force);
-        return;
-      }
-    }
-
-    await handleBulkGenerate(productsToGenerate, force);
+    await handleBulkGenerate(force ? allSelectedProducts : productsWithoutTags, force);
   };
 
   const handleBulkGenerate = async (productIds: string[], force = false) => {
