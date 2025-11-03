@@ -77,6 +77,7 @@ export function SmartPricingAI() {
   const [selectedCollection, setSelectedCollection] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [taxRate, setTaxRate] = useState<number>(20); // Taux de TVA par défaut: 20%
   const [bulkOperation, setBulkOperation] = useState<BulkOperation>({
     type: 'discount',
     method: 'percentage',
@@ -162,9 +163,24 @@ export function SmartPricingAI() {
     return Math.round(((price - costPrice) / price) * 100);
   };
 
-  const calculateMarginValue = (price: number | null, costPrice: number | null) => {
-    if (!price || !costPrice) return 0;
-    return price - costPrice;
+  const calculateMarginValue = (price: number | null, costPrice: number | null, shippingCost: number | null = null) => {
+    if (!price) return 0;
+    const totalCost = (costPrice || 0) + (shippingCost || 0);
+    return price - totalCost;
+  };
+
+  const calculateNetMargin = (price: number | null, costPrice: number | null, shippingCost: number | null = null) => {
+    if (!price) return { value: 0, percentage: 0 };
+    
+    const grossMargin = calculateMarginValue(price, costPrice, shippingCost);
+    const taxAmount = price * (taxRate / 100);
+    const netMarginValue = grossMargin - taxAmount;
+    const netMarginPercentage = (netMarginValue / price) * 100;
+    
+    return {
+      value: netMarginValue,
+      percentage: netMarginPercentage
+    };
   };
 
   const updateProductPrice = (productId: string, field: 'price' | 'compare_at_price' | 'cost_price' | 'shipping_cost', value: string) => {
@@ -376,6 +392,39 @@ export function SmartPricingAI() {
             <p className="text-muted-foreground">
               Gérez vos prix, remises et marges par collection avec synchronisation Shopify instantanée
             </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Tax Rate Configuration */}
+      <Card className="p-6 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-purple-500 rounded-xl">
+            <Percent className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold mb-2">Configuration des Taxes</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Définissez le taux de taxe (TVA) pour calculer automatiquement les marges nettes
+            </p>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium">Taux de taxe :</label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={taxRate}
+                  onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                  className="w-24 text-right"
+                />
+                <span className="text-sm font-semibold">%</span>
+              </div>
+              <Badge variant="outline" className="ml-2">
+                {taxRate}% appliqué aux calculs de marge nette
+              </Badge>
+            </div>
           </div>
         </div>
       </Card>
@@ -593,13 +642,18 @@ export function SmartPricingAI() {
                 <th className="p-4 text-center">Remise</th>
                 <th className="p-4 text-right">Prix de revient</th>
                 <th className="p-4 text-right">Frais livraison</th>
-                <th className="p-4 text-center">Marge</th>
+                <th className="p-4 text-right">Marge Brute (€)</th>
+                <th className="p-4 text-center">Marge Brute (%)</th>
+                <th className="p-4 text-right">Marge Nette (€)</th>
+                <th className="p-4 text-center">Marge Nette (%)</th>
               </tr>
             </thead>
             <tbody>
               {filteredProducts.map((product) => {
                 const discount = calculateDiscount(product.price || 0, product.compare_at_price);
-                const margin = calculateMargin(product.price || 0, product.cost_price);
+                const grossMarginValue = calculateMarginValue(product.price, product.cost_price, product.shipping_cost);
+                const grossMarginPercent = calculateMargin(product.price || 0, (product.cost_price || 0) + (product.shipping_cost || 0));
+                const netMargin = calculateNetMargin(product.price, product.cost_price, product.shipping_cost);
 
                 return (
                   <tr key={product.id} className="border-b hover:bg-muted/30 transition-colors">
@@ -703,26 +757,68 @@ export function SmartPricingAI() {
                         <span className="text-xs text-muted-foreground font-semibold">{currencySymbol}</span>
                       </div>
                     </td>
-                    <td className="p-4 text-center">
-                      {margin > 0 && product.cost_price ? (
-                        <div className="space-y-1">
-                          <Badge
-                            variant="outline"
-                            className={`gap-1 ${
-                              margin >= 40
-                                ? 'bg-green-50 text-green-700 border-green-200'
-                                : margin >= 20
-                                ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                                : 'bg-red-50 text-red-700 border-red-200'
-                            }`}
-                          >
-                            <TrendingUp className="w-3 h-3" />
-                            {margin}%
-                          </Badge>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            +{calculateMarginValue(product.price, product.cost_price).toFixed(2)} {currencySymbol}
-                          </div>
+                    <td className="p-4 text-right">
+                      {product.price && (product.cost_price || product.shipping_cost) ? (
+                        <div className="text-sm font-semibold">
+                          {grossMarginValue >= 0 ? '+' : ''}{grossMarginValue.toFixed(2)} {currencySymbol}
                         </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      {product.price && (product.cost_price || product.shipping_cost) ? (
+                        <Badge
+                          variant="outline"
+                          className={`gap-1 ${
+                            grossMarginPercent >= 40
+                              ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300'
+                              : grossMarginPercent >= 20
+                              ? 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300'
+                              : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300'
+                          }`}
+                        >
+                          <TrendingUp className="w-3 h-3" />
+                          {grossMarginPercent.toFixed(1)}%
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      {product.price ? (
+                        <div className={`text-sm font-bold ${
+                          netMargin.value >= 0 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {netMargin.value >= 0 ? '+' : ''}{netMargin.value.toFixed(2)} {currencySymbol}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      {product.price ? (
+                        <Badge
+                          variant="outline"
+                          className={`gap-1 font-semibold ${
+                            netMargin.percentage >= 20
+                              ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300'
+                              : netMargin.percentage >= 10
+                              ? 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300'
+                              : netMargin.percentage >= 0
+                              ? 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300'
+                              : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300'
+                          }`}
+                        >
+                          {netMargin.percentage >= 0 ? (
+                            <TrendingUp className="w-3 h-3" />
+                          ) : (
+                            <TrendingUp className="w-3 h-3 rotate-180" />
+                          )}
+                          {netMargin.percentage.toFixed(1)}%
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
