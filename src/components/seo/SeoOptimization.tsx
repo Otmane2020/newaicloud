@@ -1278,7 +1278,7 @@ export function SeoOptimization() {
                             title={t.seo.optimization.optimize}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >
-                            <Zap className="w-4 h-4" />
+                            <Sparkles className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
