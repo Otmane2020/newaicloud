@@ -492,15 +492,15 @@ export function PageOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">To Optimize</p>
-              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{pages.filter(p => !p.optimized).length}</p>
+              <p className="text-sm font-medium text-orange-600 dark:text-orange-300">To Optimize</p>
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-100">{pages.filter(p => !p.optimized).length}</p>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
                 Empty or Shopify
               </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Click to view</p>
+          <p className="text-xs text-orange-600 dark:text-orange-300 mt-2">Click to view</p>
         </Card>
         
         <Card 

@@ -802,8 +802,8 @@ export function CollectionOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">To Optimize</p>
-              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{notOptimizedCount}</p>
+              <p className="text-sm font-medium text-orange-600 dark:text-orange-300">To Optimize</p>
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-100">{notOptimizedCount}</p>
               <div className="flex gap-2 mt-1 text-xs text-orange-600 dark:text-orange-400">
                 <span>Vides: {totalEmpty}</span>
                 <span>•</span>
@@ -812,7 +812,7 @@ export function CollectionOptimization() {
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Cliquer pour voir</p>
+          <p className="text-xs text-orange-600 dark:text-orange-300 mt-2">Cliquer pour voir</p>
         </Card>
         
         <Card 
@@ -877,7 +877,7 @@ export function CollectionOptimization() {
         <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
           <AlertDescription className="text-sm">
             {limits.limitReached.optimizations ? (
-              <span className="text-orange-900 dark:text-orange-100 font-medium">
+              <span className="text-orange-600 dark:text-orange-100 font-medium">
                 ⚠️ Limite trial atteinte: {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimisations utilisées
               </span>
             ) : (
