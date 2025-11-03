@@ -38,7 +38,7 @@ serve(async (req) => {
     // Get Shopify connection - check what stores exist for this user
     const { data: allStores, error: allStoresError } = await supabase
       .from('shopify_connections')
-      .select('id, shop_domain')
+      .select('id, store_url, store_name')
       .eq('user_id', user.id);
 
     console.log('🏪 All stores for user:', allStores);
@@ -55,7 +55,7 @@ serve(async (req) => {
     // Get the specific connection
     const { data: connection, error: connectionError } = await supabase
       .from('shopify_connections')
-      .select('shop_domain, encrypted_access_token')
+      .select('store_url, encrypted_token, token_iv')
       .eq('id', storeId)
       .eq('user_id', user.id)
       .single();
@@ -71,22 +71,30 @@ serve(async (req) => {
       throw new Error(`Store with ID ${storeId} not found. Available stores: ${allStores.map(s => s.id).join(', ')}`);
     }
 
-    // Decrypt token
-    const { data: decryptData, error: decryptError } = await supabase.functions.invoke(
-      'encrypt-shopify-token',
-      {
-        body: {
-          action: 'decrypt',
-          encryptedToken: connection.encrypted_access_token
+    // Decrypt token if encrypted
+    let accessToken: string;
+    
+    if (connection.encrypted_token && connection.token_iv) {
+      const { data: decryptData, error: decryptError } = await supabase.functions.invoke(
+        'encrypt-shopify-token',
+        {
+          body: {
+            action: 'decrypt',
+            encrypted: connection.encrypted_token,
+            iv: connection.token_iv
+          }
         }
+      );
+
+      if (decryptError || !decryptData?.token) {
+        console.error('❌ Decryption error:', decryptError);
+        throw new Error('Failed to decrypt access token');
       }
-    );
 
-    if (decryptError || !decryptData?.token) {
-      throw new Error('Failed to decrypt access token');
+      accessToken = decryptData.token;
+    } else {
+      throw new Error('No encrypted token found for this store');
     }
-
-    const accessToken = decryptData.token;
 
     // Get products with variants
     const { data: products, error: productsError } = await supabase
