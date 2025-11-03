@@ -235,7 +235,7 @@ export function SeoAuditDashboard() {
                     <FileSearch className="w-8 h-8 text-white" />
                   </div>
                   <Badge className="bg-white/20 text-white border-white/30 px-4 py-1.5 text-sm font-semibold">
-                    Analyse IA Avancée
+                    {t.seoAuditDashboard.advancedAI}
                   </Badge>
                 </div>
                 <h1 className="text-4xl font-black text-white mb-3">{t.seo.audit.title}</h1>
@@ -245,15 +245,15 @@ export function SeoAuditDashboard() {
                 <div className="mt-6 flex flex-wrap gap-3">
                   <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
                     <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span className="text-sm font-semibold text-white">6 Catégories analysées</span>
+                    <span className="text-sm font-semibold text-white">{t.seoAuditDashboard.categoriesAnalyzed}</span>
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
                     <TrendingUp className="w-4 h-4 text-white" />
-                    <span className="text-sm font-semibold text-white">Scoring intelligent</span>
+                    <span className="text-sm font-semibold text-white">{t.seoAuditDashboard.intelligentScoring}</span>
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm">
                     <Sparkles className="w-4 h-4 text-white" />
-                    <span className="text-sm font-semibold text-white">Plan d'action personnalisé</span>
+                    <span className="text-sm font-semibold text-white">{t.seoAuditDashboard.personalizedPlan}</span>
                   </div>
                 </div>
               </div>
@@ -341,7 +341,7 @@ export function SeoAuditDashboard() {
                   <FileSearch className="w-6 h-6 mr-2" />
                   {t.seo.audit.generateAudit}
                 </Button>
-                <p className="text-xs text-muted-foreground mt-4">🔒 Analyse 100% automatique et sécurisée</p>
+                <p className="text-xs text-muted-foreground mt-4">{t.seoAuditDashboard.secureAnalysis}</p>
               </div>
             </CardContent>
           </Card>
@@ -361,7 +361,7 @@ export function SeoAuditDashboard() {
                       <FileSearch className="w-8 h-8 text-white" />
                     </div>
                     <Badge className="bg-white/20 text-white border-white/30 px-4 py-1.5 text-sm font-semibold">
-                      Analyse IA Avancée
+                      {t.seoAuditDashboard.advancedAI}
                     </Badge>
                   </div>
                   <h1 className="text-4xl font-black text-white mb-3">{t.seo.audit.title}</h1>
@@ -440,9 +440,9 @@ export function SeoAuditDashboard() {
                       </div>
                       <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-success group-hover:translate-x-1 transition-all" />
                     </div>
-                    <h3 className="font-bold text-lg mb-1 group-hover:text-success transition-colors">Plan d'action</h3>
+                    <h3 className="font-bold text-lg mb-1 group-hover:text-success transition-colors">{t.seoAuditDashboard.actionsSection.actionPlan}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {audit?.audit_results?.action_plan?.length || 0} actions prioritaires
+                      {tf('seoAuditDashboard.actionsSection.priorityActions', { count: audit?.audit_results?.action_plan?.length || 0 })}
                     </p>
                   </CardContent>
                 </Card>
@@ -775,13 +775,17 @@ export function SeoAuditDashboard() {
                       {t.seoAuditDashboard.issuesSection.title}
                     </CardTitle>
                     <CardDescription className="mt-2 text-base">
-                      {audit.audit_results.issues.length} point{audit.audit_results.issues.length > 1 ? "s" : ""}{" "}
-                      d'amélioration identifié{audit.audit_results.issues.length > 1 ? "s" : ""} par l'analyse IA
+                      {audit.audit_results.issues.length === 1 
+                        ? tf('seoAuditDashboard.issuesSection.issueFound', { count: audit.audit_results.issues.length })
+                        : tf('seoAuditDashboard.issuesSection.issueFoundPlural', { count: audit.audit_results.issues.length })
+                      }
                     </CardDescription>
                   </div>
                   <Badge className="bg-[#b91c1c] text-white text-lg px-4 py-2">
-                    {audit.audit_results.issues.filter((i: any) => i.priority === "high").length} prioritaire
-                    {audit.audit_results.issues.filter((i: any) => i.priority === "high").length > 1 ? "s" : ""}
+                    {audit.audit_results.issues.filter((i: any) => i.priority === "high").length === 1
+                      ? tf('seoAuditDashboard.issuesSection.highPriority', { count: audit.audit_results.issues.filter((i: any) => i.priority === "high").length })
+                      : tf('seoAuditDashboard.issuesSection.highPriorityPlural', { count: audit.audit_results.issues.filter((i: any) => i.priority === "high").length })
+                    }
                   </Badge>
                 </div>
               </CardHeader>

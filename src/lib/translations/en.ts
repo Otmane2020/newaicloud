@@ -1849,6 +1849,11 @@ export const translations = {
 
   
   seoAuditDashboard: {
+    advancedAI: "Advanced AI Analysis",
+    categoriesAnalyzed: "6 Categories Analyzed",
+    intelligentScoring: "Intelligent Scoring",
+    personalizedPlan: "Personalized Action Plan",
+    secureAnalysis: "🔒 100% Automatic and Secure Analysis",
     scoreLabel: {
       excellent: "🎯 Excellent",
       good: "📈 Good", 
@@ -1908,7 +1913,11 @@ export const translations = {
       priority: "Priority",
       high: "🔴 High",
       medium: "🟡 Medium",
-      low: "🟢 Low"
+      low: "🟢 Low",
+      issueFound: "{{count}} improvement point identified by AI analysis",
+      issueFoundPlural: "{{count}} improvement points identified by AI analysis",
+      highPriority: "{{count}} high priority",
+      highPriorityPlural: "{{count}} high priorities",
     },
     actionsSection: {
       title: "Action Plan",
@@ -1916,7 +1925,9 @@ export const translations = {
       status: "Status",
       pending: "To do",
       inProgress: "In progress",
-      completed: "Completed"
+      completed: "Completed",
+      actionPlan: "Action Plan",
+      priorityActions: "{{count}} priority actions",
     }
   },
 
