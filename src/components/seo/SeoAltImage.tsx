@@ -35,7 +35,6 @@ import {
   ChevronDown,
   ChevronRight,
   Play,
-  Sync,
   EyeOff,
 } from "lucide-react";
 
@@ -148,7 +147,7 @@ export function SeoAltImage() {
       "to-sync": {
         variant: "outline" as const,
         className: "border-orange-300 text-orange-700 bg-orange-50",
-        icon: Sync,
+        icon: RefreshCw,
         label: "À synchroniser",
       },
       synced: {
@@ -1130,7 +1129,7 @@ export function SeoAltImage() {
                             {syncingSingleImage === mainImage.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                              <Sync className="w-4 h-4" />
+                              <RefreshCw className="w-4 h-4" />
                             )}
                           </Button>
                         )}
@@ -1196,7 +1195,7 @@ export function SeoAltImage() {
                                 {syncingSingleImage === img.id ? (
                                   <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
-                                  <Sync className="w-4 h-4" />
+                                  <RefreshCw className="w-4 h-4" />
                                 )}
                               </Button>
                             )}
