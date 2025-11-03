@@ -10,7 +10,6 @@ import { HomePageSeoAudit } from '@/components/seo/HomePageSeoAudit';
 import { SeoAuditReports } from '@/components/seo/SeoAuditReports';
 import { SeoKPIs } from '@/components/seo/SeoKPIs';
 import { CollectionOptimization } from '@/components/seo/CollectionOptimization';
-import { SmartPricingAI } from '@/components/seo/SmartPricingAI';
 import ArticleManagement from '@/pages/ArticleManagement';
 import { AdsCampaign } from '@/components/seo/AdsCampaign';
 import { SeoAuditDashboard } from '@/components/seo/SeoAuditDashboard';
@@ -33,7 +32,7 @@ export default function SEO() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'automation', 'kpis', 'ads-campaign', 'pricing'].includes(tab)) {
+    if (tab && ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'automation', 'kpis', 'ads-campaign'].includes(tab)) {
       // Redirect old 'optimization' tab to 'products'
       if (tab === 'optimization') {
         setActiveTab('products');
@@ -294,7 +293,6 @@ export default function SEO() {
           </>
         )}
         {activeTab === 'collections' && <CollectionOptimization />}
-        {activeTab === 'pricing' && <SmartPricingAI />}
         {activeTab === 'homepage' && <HomePageSeoAudit />}
         {activeTab === 'audit' && <SeoAuditReports />}
         {activeTab === 'audit-dashboard' && <SeoAuditDashboard />}

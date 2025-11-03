@@ -46,6 +46,7 @@ import Terms from "./pages/Terms";
 import PerformanceMonitor from "./pages/PerformanceMonitor";
 import Documentation from "./pages/Documentation";
 import NotificationSettings from "./pages/NotificationSettings";
+import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient();
 
@@ -173,6 +174,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Merchant />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/pricing"
+              element={
+                <ProtectedLayout>
+                  <Pricing />
                 </ProtectedLayout>
               }
             />

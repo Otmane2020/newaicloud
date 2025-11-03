@@ -77,7 +77,6 @@ export function AppSidebar() {
     { title: t.seo.submenu.altimage, url: "/seo?tab=alt", icon: Image, key: "altimage" },
     { title: t.seo.submenu.homepage, url: "/seo?tab=homepage", icon: Home, key: "homepage" },
     { title: t.seo.submenu.tags, url: "/seo?tab=tags", icon: Tags, key: "tags" },
-    { title: "Smart Pricing AI", url: "/seo?tab=pricing", icon: CreditCard, key: "pricing" },
     { title: t.seo.submenu.kpisStats, url: "/seo?tab=kpis", icon: BarChart3, key: "kpisStats" },
     { title: t.seo.submenu.automation, url: "/seo?tab=automation", icon: Settings, key: "automation" },
   ];
@@ -190,6 +189,7 @@ export function AppSidebar() {
   const isAuditActive = auditSubItems.some((item) => isActive(item.url));
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
   const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
+  const isPricingActive = currentPath === "/pricing";
   const isAccountActive = currentPath === "/account" || accountSubItems.some((item) => isActive(item.url));
 
   return (
@@ -368,6 +368,16 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+
+              {/* Smart Pricing AI - Main Menu Item */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isPricingActive}>
+                  <NavLink to="/pricing">
+                    <CreditCard className="h-4 w-4" />
+                    <span>Smart Pricing AI</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
 
               {/* Account Menu with Submenu */}
               <Collapsible defaultOpen={isAccountActive} className="group/collapsible">
