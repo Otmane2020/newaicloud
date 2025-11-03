@@ -72,14 +72,24 @@ export default function Chat() {
   const loadStoreName = async () => {
     if (!user?.id) return;
     
-    const { data } = await supabase
-      .from('shopify_connections')
-      .select('store_name')
-      .eq('seller_id', user.id)
-      .limit(1) as any;
-    
-    if (data?.[0]?.store_name) {
-      setStoreName(data[0].store_name);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/shopify_connections?seller_id=eq.${user.id}&select=store_name&limit=1`,
+        {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          }
+        }
+      );
+      
+      const data = await response.json();
+      
+      if (data?.[0]?.store_name) {
+        setStoreName(data[0].store_name);
+      }
+    } catch (err) {
+      console.error('Error loading store name:', err);
     }
   };
 
