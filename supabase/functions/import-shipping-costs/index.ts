@@ -62,34 +62,56 @@ serve(async (req) => {
 
     const accessToken = decryptData.token;
 
-    // Get products with variants - use correct foreign key relationship
+    // Get products with variants
     const { data: products, error: productsError } = await supabase
       .from('shopify_products')
-      .select(`
-        id,
-        shopify_product_id,
-        title,
-        product_variants!product_id(
-          shopify_variant_id,
-          weight
-        )
-      `)
+      .select('id, shopify_product_id, title, store_id')
       .eq('store_id', storeId);
 
-    if (productsError) throw productsError;
+    if (productsError) {
+      console.error('❌ Error fetching products:', productsError);
+      throw new Error(`Failed to fetch products: ${productsError.message}`);
+    }
 
-    console.log(`📦 Found ${products?.length || 0} products to update`);
+    if (!products || products.length === 0) {
+      console.log('ℹ️ No products found for store');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          updated: 0,
+          total: 0,
+          message: 'No products found'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log(`📦 Found ${products.length} products to update`);
 
     let updatedCount = 0;
 
-    for (const product of products || []) {
+    for (const product of products) {
       try {
-        const variants = (product as any).product_variants || [];
-        
-        if (variants.length === 0) continue;
+        // Get variants for this product
+        const { data: variants, error: variantsError } = await supabase
+          .from('product_variants')
+          .select('weight')
+          .eq('product_id', product.id);
+
+        if (variantsError) {
+          console.error(`❌ Error fetching variants for ${product.id}:`, variantsError);
+          continue;
+        }
+
+        if (!variants || variants.length === 0) {
+          console.log(`⚠️ No variants found for product ${product.title}`);
+          continue;
+        }
 
         // Calculate average weight
-        const avgWeight = variants.reduce((sum: number, v: any) => sum + (v.weight || 0), 0) / variants.length;
+        const avgWeight = variants.reduce((sum, v) => sum + (v.weight || 0), 0) / variants.length;
 
         // Estimate shipping cost based on weight (simple estimation)
         // TODO: Replace with actual Shopify shipping rates API
