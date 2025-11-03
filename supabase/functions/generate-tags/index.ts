@@ -117,7 +117,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags, seller_id, optimization_count")
+      .select("id, title, description, product_type, vendor, category, sub_category, ai_color, ai_material, tags, seller_id, optimization_count, store_id")
       .eq("id", productId)
       .maybeSingle();
 

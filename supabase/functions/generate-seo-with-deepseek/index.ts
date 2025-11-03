@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

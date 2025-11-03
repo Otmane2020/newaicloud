@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,15 +111,18 @@ Deno.serve(async (req) => {
 
     let pageTitle = '';
     let textContent = '';
+    let connection: any = null;
 
     if (isHomepage) {
       // Pour la page d'accueil, récupérer les infos complètes de la boutique
-      const { data: connection } = await supabaseClient
+      const { data: connData } = await supabaseClient
         .from('shopify_connections')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .single();
+
+      connection = connData;
 
       if (connection) {
         // Fetch and analyze real homepage content
