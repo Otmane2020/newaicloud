@@ -32,9 +32,9 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
   };
 
   const getScoreLabel = () => {
-    if (score >= 80) return "Excellent";
-    if (score >= 55) return "Bon";
-    return "À améliorer";
+    if (score >= 80) return t.seoGauge.scoreLabels.excellent;
+    if (score >= 55) return t.seoGauge.scoreLabels.good;
+    return t.seoGauge.scoreLabels.needsImprovement;
   };
 
   const getScoreIcon = () => {

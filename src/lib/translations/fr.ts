@@ -316,9 +316,11 @@ export const translations = {
     priorityRecommendation: "Recommandation prioritaire",
     potentialImpact: "Impact potentiel :",
     points: "points",
-    excellent: "Excellent",
-    good: "Bon",
-    needsImprovement: "À améliorer",
+    scoreLabels: {
+      excellent: "Excellent",
+      good: "Bon",
+      needsImprovement: "À améliorer"
+    },
     categoryNames: {
       homepage: "Page d'accueil",
       products: "Produits",
