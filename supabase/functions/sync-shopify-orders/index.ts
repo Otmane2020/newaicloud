@@ -166,10 +166,25 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
+    let errorMessage = "Unknown error";
+    let errorDetails: any = {};
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = { message: error.message, stack: error.stack };
+    } else {
+      try {
+        errorMessage = JSON.stringify(error);
+        errorDetails = error;
+      } catch {
+        errorMessage = String(error);
+        errorDetails = { raw: String(error) };
+      }
+    }
+    
+    logStep("ERROR", errorDetails);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: errorMessage, details: errorDetails }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
