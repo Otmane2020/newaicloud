@@ -69,77 +69,14 @@ async function searchCompetitorPrices(
   const queries = await generateSearchQueries(productTitle);
   console.log(`📝 Generated queries:`, queries);
 
-  // Use AI to simulate web search results (in production, use SerpAPI or similar)
-  const searchPrompt = `Tu es un expert en recherche de prix e-commerce. Pour le produit "${productTitle}", 
-simule une recherche web réaliste et trouve 10 produits concurrents avec leurs prix.
-
-IMPORTANT: Génère des données RÉALISTES basées sur des boutiques françaises réelles (Amazon, Cdiscount, Fnac, etc.)
-
-Réponds UNIQUEMENT avec un JSON (sans markdown):
-{
-  "competitors": [
-    {
-      "url": "https://...",
-      "source": "Nom boutique",
-      "title": "Titre produit",
-      "price": nombre,
-      "currency": "EUR",
-      "similarity": 0.X (entre 0.7 et 1.0)
-    }
-  ]
-}`;
-
-  try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: searchPrompt }],
-      }),
-    });
-
-    if (!response.ok) throw new Error(`Search failed: ${response.status}`);
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    
-    let jsonStr = content;
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[0];
-    }
-
-    const result = JSON.parse(jsonStr);
-    
-    // Validate and return competitors
-    if (result.competitors && Array.isArray(result.competitors)) {
-      return result.competitors.slice(0, 10);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error("Web search error:", error);
-    // Fallback: generate realistic simulated data
-    return generateFallbackPrices(productTitle);
-  }
-}
-
-function generateFallbackPrices(productTitle: string): CompetitorPrice[] {
-  const sources = ['Amazon.fr', 'Cdiscount', 'Fnac', 'Rue du Commerce', 'Boulanger', 'Darty', 'LDLC', 'eBay.fr', 'Rakuten', 'ManoMano'];
-  const basePrice = 50 + Math.random() * 200;
+  // IMPORTANT: Cette fonction ne peut pas faire de vraies recherches web sans API externe
+  // Pour de vrais résultats, intégrer SerpAPI ou API Google Search
+  // Pour l'instant, on retourne un tableau vide si pas d'API de recherche
+  console.warn("⚠️ Aucune API de recherche web configurée - impossible de trouver de vrais concurrents");
   
-  return sources.map((source, i) => ({
-    url: `https://${source.toLowerCase().replace(/\./g, '')}.com/product`,
-    source,
-    title: productTitle,
-    price: Math.round((basePrice + (Math.random() - 0.5) * 50) * 100) / 100,
-    currency: 'EUR',
-    similarity: 0.75 + Math.random() * 0.2,
-  }));
+  // Sans API de recherche réelle, retourner tableau vide
+  // L'analyse ne sera faite QUE si des concurrents sont trouvés manuellement
+  return [];
 }
 
 async function compareProductImages(
@@ -206,9 +143,20 @@ async function analyzeWithAI(
   shippingCost: number,
   competitorPrices: CompetitorPrice[],
   taxRate: number
-): Promise<{ marketPrice: number; smartPrice: number; reasoning: string; competitors: CompetitorPrice[] }> {
+): Promise<{ marketPrice: number | null; smartPrice: number | null; reasoning: string; competitors: CompetitorPrice[] }> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+  // CRITICAL: Ne calculer un prix QUE si on a de vrais concurrents
+  if (!competitorPrices || competitorPrices.length < 3) {
+    console.warn(`⚠️ Pas assez de concurrents trouvés (${competitorPrices.length}/3 minimum)`);
+    return {
+      marketPrice: null,
+      smartPrice: null,
+      reasoning: "Analyse impossible: aucune donnée concurrente trouvée. Intégrez une API de recherche web (SerpAPI) pour obtenir des prix réels.",
+      competitors: []
+    };
+  }
 
   // Sort by similarity and take top 10
   const top10Competitors = competitorPrices
@@ -286,16 +234,11 @@ Réponds UNIQUEMENT avec un objet JSON (sans markdown):
     };
   } catch (error) {
     console.error("AI Analysis error:", error);
-    // Fallback: calculate smart price based on net margin formula
-    const minNetMargin = productCost * 0.15; // 15% minimum margin
-    const minPrice = (productCost + minNetMargin + shippingCost) * (1 + taxRate / 100);
-    const targetPrice = avgCompetitorPrice * 0.95; // 5% below market
-    const smartPrice = Math.max(minPrice, targetPrice);
-    
+    // PLUS DE FALLBACK - Si l'analyse échoue, on retourne null
     return {
-      marketPrice: avgCompetitorPrice,
-      smartPrice: Math.round(smartPrice * 100) / 100,
-      reasoning: "Prix calculé automatiquement: 5% sous la moyenne marché avec marge minimale de 15%",
+      marketPrice: null,
+      smartPrice: null,
+      reasoning: `Erreur d'analyse IA: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
       competitors: top10Competitors
     };
   }
@@ -382,13 +325,10 @@ serve(async (req) => {
           taxRate || 20
         );
 
-        // Calculate net margin with smart price
-        const netMargin = calculateNetMargin(
-          analysis.smartPrice,
-          avgCost,
-          shippingCost,
-          taxRate || 20
-        );
+        // Calculate net margin SEULEMENT si smartPrice existe
+        const netMargin = analysis.smartPrice 
+          ? calculateNetMargin(analysis.smartPrice, avgCost, shippingCost, taxRate || 20)
+          : null;
 
         results.push({
           productId: product.id,
@@ -398,13 +338,17 @@ serve(async (req) => {
           shippingCost,
           marketPrice: analysis.marketPrice,
           smartPrice: analysis.smartPrice,
-          netMargin: Math.round(netMargin * 100) / 100,
+          netMargin: netMargin ? Math.round(netMargin * 100) / 100 : null,
           reasoning: analysis.reasoning,
           competitors: analysis.competitors,
           competitorCount: analysis.competitors.length,
         });
 
-        console.log(`✅ ${product.title}: ${analysis.smartPrice}€ (marché: ${analysis.marketPrice.toFixed(2)}€, marge: ${netMargin.toFixed(2)}€)`);
+        if (analysis.smartPrice) {
+          console.log(`✅ ${product.title}: ${analysis.smartPrice}€ (marché: ${analysis.marketPrice?.toFixed(2)}€, marge: ${netMargin?.toFixed(2)}€)`);
+        } else {
+          console.log(`⚠️ ${product.title}: Analyse impossible - pas de concurrents trouvés`);
+        }
 
         // Small delay to respect rate limits
         await new Promise(resolve => setTimeout(resolve, 1000));
