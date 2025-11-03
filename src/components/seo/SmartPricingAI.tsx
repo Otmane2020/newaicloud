@@ -17,7 +17,8 @@ import {
   Percent,
   Calculator,
   ArrowUpDown,
-  RefreshCw
+  RefreshCw,
+  Info
 } from 'lucide-react';
 import {
   Select,
@@ -26,6 +27,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface ProductPricing {
   id: string;
@@ -58,6 +76,7 @@ export function SmartPricingAI() {
   const [importing, setImporting] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [bulkOperation, setBulkOperation] = useState<BulkOperation>({
     type: 'discount',
     method: 'percentage',
@@ -216,21 +235,49 @@ export function SmartPricingAI() {
   const importCostsFromShopify = async () => {
     try {
       setImporting(true);
-      const toastId = toast.loading('Import des coûts depuis Shopify...');
+      setShowImportDialog(false);
+      const toastId = toast.loading('🔄 Import des coûts en cours...', {
+        description: 'Cette opération peut prendre plusieurs minutes'
+      });
 
       const { data, error } = await supabase.functions.invoke('import-costs-from-shopify');
 
-      if (error) throw error;
+      if (error) {
+        // Handle edge function not deployed error
+        if (error.message.includes('not found') || error.message.includes('FunctionsRelayError')) {
+          toast.error(
+            '❌ La fonction d\'import n\'est pas encore déployée',
+            {
+              id: toastId,
+              description: 'Veuillez patienter quelques instants et réessayer.'
+            }
+          );
+          return;
+        }
+        throw error;
+      }
+
+      if (!data.success) {
+        toast.error(`❌ ${data.error}`, { id: toastId });
+        return;
+      }
 
       toast.success(
-        `✅ ${data.imported} coûts importés (${data.errors} erreurs)`, 
-        { id: toastId }
+        `✅ Import terminé : ${data.imported} coûts importés`,
+        {
+          id: toastId,
+          description: data.errors > 0 
+            ? `⚠️ ${data.errors} produits n'ont pas pu être importés`
+            : 'Tous les coûts ont été récupérés avec succès'
+        }
       );
       
       await fetchData();
     } catch (error: any) {
       console.error('Import costs error:', error);
-      toast.error(error.message || 'Erreur lors de l\'import des coûts');
+      toast.error('❌ Erreur lors de l\'import', {
+        description: error.message || 'Une erreur inattendue est survenue'
+      });
     } finally {
       setImporting(false);
     }
@@ -303,6 +350,8 @@ export function SmartPricingAI() {
     if (!price) return '-';
     return `${price.toFixed(2)} ${currencySymbol}`;
   };
+
+  const estimatedTime = Math.ceil(products.length * 0.5); // ~0.5 sec per product
 
   if (loading) {
     return (
@@ -395,6 +444,20 @@ export function SmartPricingAI() {
         </div>
       </Card>
 
+      {/* Info Banner about shipping costs */}
+      <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-900 dark:text-blue-100">
+            <strong>À propos des frais de livraison :</strong>
+            <p className="mt-1 text-blue-700 dark:text-blue-300">
+              Les frais de livraison doivent être saisis manuellement. 
+              Shopify ne stocke pas cette information par produit. Seuls les prix de revient peuvent être importés.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       {/* Actions Bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 flex-1">
@@ -422,19 +485,66 @@ export function SmartPricingAI() {
           )}
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={importCostsFromShopify}
-            disabled={importing || syncing}
-            className="gap-2"
-          >
-            {importing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Upload className="w-4 h-4" />
-            )}
-            Importer Coûts
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <AlertDialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+                <AlertDialogTrigger asChild>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={importing || syncing || products.length === 0}
+                      className="gap-2"
+                    >
+                      {importing ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                      Importer Coûts Shopify
+                    </Button>
+                  </TooltipTrigger>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Importer les coûts depuis Shopify ?</AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-3">
+                      <p>
+                        Cette opération va récupérer les prix de revient de tous vos produits depuis Shopify.
+                      </p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">⏱️ Temps estimé :</span>
+                          <span>{estimatedTime} secondes</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">📦 Produits à traiter :</span>
+                          <span>{products.length}</span>
+                        </div>
+                      </div>
+                      <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                        <p className="text-xs text-yellow-900 dark:text-yellow-100">
+                          <strong>Note :</strong> Les frais de livraison ne seront pas importés 
+                          car Shopify ne les stocke pas par produit. Seuls les prix de revient seront synchronisés.
+                        </p>
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={importCostsFromShopify}>
+                      Lancer l'import
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <TooltipContent>
+                <p>Importe les prix de revient depuis Shopify</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ⚠️ Peut prendre plusieurs minutes
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button
             variant="outline"
             onClick={() => syncToShopify(true)}
