@@ -1,17 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   MessageSquare, 
   Trash2, 
   Clock, 
   ChevronRight,
-  AlertCircle 
+  AlertCircle,
+  Loader2,
+  Search,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Input } from '@/components/ui/input';
 
 interface ChatSession {
   id: string;
@@ -22,21 +27,47 @@ interface ChatSession {
   updated_at: string;
 }
 
+interface ChatMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  created_at: string;
+}
+
 export default function ChatHistory() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [filteredSessions, setFilteredSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [deletingSessions, setDeletingSessions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadSessions();
   }, []);
 
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredSessions(sessions);
+    } else {
+      const filtered = sessions.filter(session =>
+        session.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        session.last_message?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredSessions(filtered);
+    }
+  }, [sessions, searchTerm]);
+
   const loadSessions = async () => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        toast.error('Vous devez être connecté pour voir votre historique');
+        return;
+      }
 
       const { data, error } = await supabase
         .from('chat_sessions')
@@ -55,7 +86,10 @@ export default function ChatHistory() {
   };
 
   const loadMessages = async (sessionId: string) => {
+    if (selectedSession === sessionId) return;
+
     try {
+      setLoadingMessages(true);
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -68,13 +102,17 @@ export default function ChatHistory() {
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error('Erreur lors du chargement des messages');
+    } finally {
+      setLoadingMessages(false);
     }
   };
 
   const deleteSession = async (sessionId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette session ?')) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette conversation ?')) return;
 
     try {
+      setDeletingSessions(prev => new Set(prev).add(sessionId));
+      
       const { error } = await supabase
         .from('chat_sessions')
         .delete()
@@ -82,8 +120,9 @@ export default function ChatHistory() {
 
       if (error) throw error;
       
-      toast.success('Session supprimée');
-      setSessions(sessions.filter(s => s.id !== sessionId));
+      toast.success('Conversation supprimée');
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      
       if (selectedSession === sessionId) {
         setSelectedSession(null);
         setMessages([]);
@@ -91,123 +130,248 @@ export default function ChatHistory() {
     } catch (error) {
       console.error('Error deleting session:', error);
       toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeletingSessions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(sessionId);
+        return newSet;
+      });
     }
   };
 
+  const clearAllSessions = async () => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer toutes vos conversations ? Cette action est irréversible.')) return;
+
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      toast.success('Toutes les conversations ont été supprimées');
+      setSessions([]);
+      setSelectedSession(null);
+      setMessages([]);
+    } catch (error) {
+      console.error('Error clearing all sessions:', error);
+      toast.error('Erreur lors de la suppression des conversations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatLastMessage = useCallback((message: string | null) => {
+    if (!message) return '';
+    return message.length > 100 ? `${message.substring(0, 100)}...` : message;
+  }, []);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Chargement de l'historique...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Historique des conversations</h1>
-        <p className="text-muted-foreground">Retrouvez toutes vos conversations avec l'assistant IA</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Historique des conversations</h1>
+            <p className="text-muted-foreground">
+              {sessions.length} conversation{sessions.length !== 1 ? 's' : ''} au total
+            </p>
+          </div>
+          {sessions.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={clearAllSessions}
+              disabled={loading}
+              className="text-destructive border-destructive hover:bg-destructive hover:text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Tout supprimer
+            </Button>
+          )}
+        </div>
+
+        {sessions.length > 0 && (
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Rechercher dans les conversations..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        )}
       </div>
 
       {sessions.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <MessageSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">Aucune conversation enregistrée</p>
+        <Card className="text-center">
+          <CardContent className="py-16">
+            <MessageSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">Aucune conversation</h3>
+            <p className="text-muted-foreground mb-6">
+              Vos conversations avec l'assistant IA apparaîtront ici
+            </p>
+            <Button onClick={loadSessions} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Actualiser
+            </Button>
+          </CardContent>
+        </Card>
+      ) : filteredSessions.length === 0 ? (
+        <Card className="text-center">
+          <CardContent className="py-16">
+            <Search className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">Aucun résultat</h3>
+            <p className="text-muted-foreground">
+              Aucune conversation ne correspond à votre recherche
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Liste des sessions */}
-          <div className="lg:col-span-1 space-y-2">
-            {sessions.map((session) => (
-              <Card
-                key={session.id}
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  selectedSession === session.id ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => loadMessages(session.id)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base truncate">
-                        {session.title || 'Conversation sans titre'}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        {format(new Date(session.updated_at), 'Pp', { locale: fr })}
+          <div className="lg:col-span-1 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Conversations</h2>
+              <Badge variant="secondary">{filteredSessions.length}</Badge>
+            </div>
+            
+            <div className="space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto">
+              {filteredSessions.map((session) => (
+                <Card
+                  key={session.id}
+                  className={`cursor-pointer transition-all hover:shadow-md border-2 ${
+                    selectedSession === session.id 
+                      ? 'border-primary shadow-md' 
+                      : 'border-transparent hover:border-muted-foreground/20'
+                  }`}
+                  onClick={() => loadMessages(session.id)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base truncate text-left">
+                          {session.title || 'Conversation sans titre'}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {formatDistanceToNow(new Date(session.updated_at), { 
+                              addSuffix: true, 
+                              locale: fr 
+                            })}
+                          </span>
+                        </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteSession(session.id);
+                        }}
+                        disabled={deletingSessions.has(session.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                      >
+                        {deletingSessions.has(session.id) ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteSession(session.id);
-                      }}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {session.last_message && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {session.last_message}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-muted-foreground">
-                      {session.message_count} message{session.message_count > 1 ? 's' : ''}
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {session.last_message && (
+                      <p className="text-sm text-muted-foreground text-left leading-relaxed">
+                        {formatLastMessage(session.last_message)}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between mt-3">
+                      <Badge variant="outline" className="text-xs">
+                        {session.message_count} message{session.message_count > 1 ? 's' : ''}
+                      </Badge>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
 
           {/* Messages de la session sélectionnée */}
           <div className="lg:col-span-2">
             {selectedSession ? (
-              <Card className="h-[calc(100vh-12rem)]">
-                <CardHeader>
-                  <CardTitle>Messages</CardTitle>
+              <Card className="h-[calc(100vh-12rem)] flex flex-col">
+                <CardHeader className="pb-4 border-b">
+                  <CardTitle className="flex items-center gap-2">
+                    {loadingMessages && (
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    )}
+                    Messages de la conversation
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="h-full overflow-y-auto">
-                  <div className="space-y-4">
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
+                <CardContent className="flex-1 overflow-y-auto p-6">
+                  {messages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-muted-foreground">Aucun message dans cette conversation</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {messages.map((message) => (
                         <div
-                          className={`max-w-[80%] rounded-lg p-4 ${
-                            message.role === 'user'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
+                          key={message.id}
+                          className={`flex ${
+                            message.role === 'user' ? 'justify-end' : 'justify-start'
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                          <p className="text-xs mt-2 opacity-70">
-                            {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
-                          </p>
+                          <div
+                            className={`max-w-[85%] rounded-2xl p-4 transition-all ${
+                              message.role === 'user'
+                                ? 'bg-primary text-primary-foreground rounded-br-none'
+                                : 'bg-muted border rounded-bl-none'
+                            }`}
+                          >
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                              {message.content}
+                            </p>
+                            <p
+                              className={`text-xs mt-2 ${
+                                message.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                              }`}
+                            >
+                              {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ) : (
               <Card className="h-[calc(100vh-12rem)] flex items-center justify-center">
                 <CardContent className="text-center">
-                  <AlertCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <AlertCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">Aucune conversation sélectionnée</h3>
                   <p className="text-muted-foreground">
-                    Sélectionnez une conversation pour voir les messages
+                    Cliquez sur une conversation pour afficher les messages
                   </p>
                 </CardContent>
               </Card>
