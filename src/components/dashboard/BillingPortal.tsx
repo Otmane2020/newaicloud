@@ -79,34 +79,22 @@ export function BillingPortal() {
     try {
       setLoading(true);
       
-      // Vérifier d'abord s'il y a un abonnement Stripe actif
-      const { data: checkData } = await supabase.functions.invoke('check-subscription');
-      
-      if (!checkData?.subscribed) {
-        toast({
-          title: "Aucun abonnement Stripe",
-          description: "Vous devez d'abord souscrire à un plan via Stripe pour accéder au portail de facturation.",
-          variant: "destructive"
-        });
-        setLoading(false);
-        navigate('/subscription');
-        return;
-      }
-
       const { data, error } = await supabase.functions.invoke('customer-portal');
 
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'accéder au portail de facturation pour le moment.",
+          variant: "destructive"
+        });
+        throw error;
+      }
 
       if (data?.url) {
         window.open(data.url, '_blank');
       }
     } catch (error) {
-      console.error('Error opening billing portal:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'accéder au portail de facturation",
-        variant: "destructive"
-      });
+      console.error('Erreur lors de l\'ouverture du portail:', error);
     } finally {
       setLoading(false);
     }

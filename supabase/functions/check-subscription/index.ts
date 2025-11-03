@@ -81,15 +81,27 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep('Found Stripe customer', { customerId });
 
+    logStep('Fetching subscriptions for customer');
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: 'all',
       limit: 10,
     });
     
-    // Check for active or trialing subscriptions
+    logStep('Subscriptions found', { 
+      count: subscriptions.data.length,
+      subscriptions: subscriptions.data.map((s: Stripe.Subscription) => ({ 
+        id: s.id, 
+        status: s.status,
+        created: new Date(s.created * 1000).toISOString(),
+        current_period_end: new Date(s.current_period_end * 1000).toISOString()
+      }))
+    });
+    
+    // Accept more subscription statuses: active, trialing, past_due, unpaid
+    const validStatuses = ['active', 'trialing', 'past_due', 'unpaid'];
     const activeSubscription = subscriptions.data.find(
-      (sub: Stripe.Subscription) => sub.status === 'active' || sub.status === 'trialing'
+      (sub: Stripe.Subscription) => validStatuses.includes(sub.status)
     );
     
     const hasActiveSub = !!activeSubscription;
@@ -128,7 +140,33 @@ serve(async (req) => {
       
       logStep('Profile updated with subscription status');
     } else {
-      logStep('No active subscription found');
+      logStep('No active subscription found in Stripe, checking Supabase profile');
+      
+      // Fallback: check if user has active plan in Supabase
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('subscription_status, current_plan_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile?.subscription_status === 'active' && profile.current_plan_id) {
+        logStep('Found active plan in Supabase, returning as subscribed', {
+          plan_id: profile.current_plan_id,
+          status: profile.subscription_status
+        });
+        
+        return new Response(JSON.stringify({
+          subscribed: true,
+          status: 'active',
+          plan_id: profile.current_plan_id,
+          source: 'supabase_fallback'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+      
+      logStep('No active subscription found anywhere');
     }
 
     return new Response(JSON.stringify({
