@@ -279,7 +279,8 @@ export default function Chat() {
         await supabase.from('chat_messages').insert({
           session_id: sessionId,
           role: 'assistant',
-          content: assistantContent
+          content: assistantContent,
+          products: assistantProducts.length > 0 ? assistantProducts : null
         });
 
         await supabase
@@ -515,7 +516,9 @@ export default function Chat() {
       const decoder = new TextDecoder();
       let buffer = '';
       let assistantMessage = '';
+      let assistantProducts = [];
       let messageDiv = null;
+      let productsContainer = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -531,12 +534,96 @@ export default function Chat() {
 
           try {
             const data = JSON.parse(line.slice(6));
+            
             if (data.content) {
               assistantMessage += data.content;
               if (!messageDiv) {
                 messageDiv = addMessage('assistant', assistantMessage);
               } else {
                 messageDiv.textContent = assistantMessage;
+              }
+            }
+
+            if (data.products && data.products.length > 0) {
+              assistantProducts = data.products;
+              
+              // Add products display in embed
+              if (!productsContainer && messageDiv) {
+                productsContainer = document.createElement('div');
+                productsContainer.style.cssText = 'margin-top: 12px; display: flex; flex-direction: column; gap: 8px;';
+                messageDiv.parentElement.appendChild(productsContainer);
+              }
+
+              if (productsContainer) {
+                productsContainer.innerHTML = '';
+                data.products.forEach(product => {
+                  const productCard = document.createElement('div');
+                  productCard.style.cssText = \`
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px;
+                    background: white;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                  \`;
+                  
+                  productCard.onmouseover = () => {
+                    productCard.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                    productCard.style.transform = 'translateY(-2px)';
+                  };
+                  productCard.onmouseout = () => {
+                    productCard.style.boxShadow = 'none';
+                    productCard.style.transform = 'translateY(0)';
+                  };
+                  
+                  if (product.image_url) {
+                    const img = document.createElement('img');
+                    img.src = product.image_url;
+                    img.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 8px;';
+                    productCard.appendChild(img);
+                  }
+                  
+                  const info = document.createElement('div');
+                  info.style.cssText = 'flex: 1;';
+                  info.innerHTML = \`
+                    <p style="font-weight: 600; color: #1f2937; margin: 0;">\${product.title}</p>
+                    <p style="font-size: 14px; color: #6b7280; margin: 4px 0 0 0;">\${product.price} \${product.currency || 'EUR'}</p>
+                  \`;
+                  productCard.appendChild(info);
+                  
+                  const btn = document.createElement('button');
+                  btn.innerHTML = '🛒';
+                  btn.style.cssText = \`
+                    padding: 8px 12px;
+                    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 16px;
+                  \`;
+                  btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const shopUrl = product.shop_name?.includes('.myshopify.com') 
+                      ? product.shop_name 
+                      : \`\${product.shop_name}.myshopify.com\`;
+                    if (product.shop_name && product.handle) {
+                      window.open(\`https://\${shopUrl}/products/\${product.handle}\`, '_blank');
+                    }
+                  };
+                  productCard.appendChild(btn);
+                  
+                  productCard.onclick = () => {
+                    if (product.id) {
+                      window.open(\`\${window.location.origin}/product-landing/\${product.id}\`, '_blank');
+                    }
+                  };
+                  
+                  productsContainer.appendChild(productCard);
+                });
               }
             }
           } catch (e) {
@@ -546,7 +633,11 @@ export default function Chat() {
       }
 
       if (assistantMessage) {
-        history.push({ role: 'assistant', content: assistantMessage });
+        history.push({ 
+          role: 'assistant', 
+          content: assistantMessage,
+          products: assistantProducts.length > 0 ? assistantProducts : undefined
+        });
       }
     } catch (err) {
       console.error('Error:', err);
@@ -624,6 +715,31 @@ export default function Chat() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-8">
       <div className="container mx-auto max-w-6xl">
+        {/* Enrichment Warning - TOP OF PAGE */}
+        {enrichmentPercentage < 100 && products.length > 0 && (
+          <Alert className="mb-6 bg-warning/10 border-warning">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <AlertDescription className="text-sm">
+              <div className="flex flex-col gap-2">
+                <p className="font-semibold">
+                  {t.seo.chat.enrichmentWarning.title}
+                </p>
+                <p className="text-muted-foreground">
+                  {tf('seo.chat.enrichmentWarning.description', { percentage: enrichmentPercentage })}
+                </p>
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => navigate('/product-source')}
+                  className="w-fit mt-2"
+                >
+                  {t.seo.chat.enrichmentWarning.action}
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
@@ -745,33 +861,6 @@ export default function Chat() {
               </div>
             </div>
           </div>
-
-          {/* Enrichment Warning */}
-          {enrichmentPercentage < 100 && products.length > 0 && (
-            <div className="mx-6 mt-4">
-              <Alert className="bg-warning/10 border-warning">
-                <AlertTriangle className="h-4 w-4 text-warning" />
-                <AlertDescription className="text-sm">
-                  <div className="flex flex-col gap-2">
-                    <p className="font-semibold">
-                      {t.seo.chat.enrichmentWarning.title}
-                    </p>
-                    <p className="text-muted-foreground">
-                      {tf('seo.chat.enrichmentWarning.description', { percentage: enrichmentPercentage })}
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => navigate('/product-source')}
-                      className="w-fit mt-2"
-                    >
-                      {t.seo.chat.enrichmentWarning.action}
-                    </Button>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-background">

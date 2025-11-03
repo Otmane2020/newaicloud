@@ -55,9 +55,9 @@ interface ProductSearchFilters {
 interface ChatResponse {
   role: "assistant";
   content: string;
-  intent: "simple_chat" | "product_chat" | "product_show" | "conversation" | "product_details" | "product_comparison" | "product_recommendation";
+  intent: "simple_chat" | "product_chat" | "product_show";
   products: Product[];
-  mode: "conversation" | "product_show" | "details" | "comparison";
+  mode: "conversation" | "product_show" | "product_chat";
   sector: string;
   follow_up_questions?: string[];
 }
@@ -368,8 +368,8 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
   return filters;
 }
 
-// SYSTÈME DE DÉTECTION D'INTENT AMÉLIORÉ
-async function detectIntent(userMessage: string, history: ChatMessage[] = []): Promise<"simple_chat" | "product_chat" | "product_show" | "product_details" | "product_comparison" | "product_recommendation"> {
+// SYSTÈME DE DÉTECTION D'INTENT - 3 TYPES PRINCIPAUX
+async function detectIntent(userMessage: string, history: ChatMessage[] = []): Promise<"simple_chat" | "product_chat" | "product_show"> {
   const msg = normalizeText(userMessage);
   const context = extractContextFromHistory(history);
   const fullContext = context + " " + msg;
@@ -380,13 +380,10 @@ async function detectIntent(userMessage: string, history: ChatMessage[] = []): P
   let scores = { 
     simple_chat: 0, 
     product_chat: 0, 
-    product_show: 0,
-    product_details: 0,
-    product_comparison: 0,
-    product_recommendation: 0
+    product_show: 0
   };
 
-  // Mots-clés pour chaque intent (SYSTÈME COMPLET)
+  // Mots-clés pour chaque intent - SIMPLIFIÉ À 3 TYPES
   const intentKeywords = {
     simple_chat: [
       "bonjour", "salut", "hello", "coucou", "hey", "hi", "bonsoir",
@@ -404,7 +401,8 @@ async function detectIntent(userMessage: string, history: ChatMessage[] = []): P
       "selection", "je cherche", "je veux", "j'ai besoin", "je voudrais",
       "trouver", "acheter", "commander", "panier", "budget", "plusieurs",
       "quelques", "des", "tous les", "toutes les", "ce que vous avez",
-      "vos produits", "votre catalogue", "disponible", "en stock"
+      "vos produits", "votre catalogue", "disponible", "en stock", "ajouter au panier",
+      "voir les produits", "proposer", "visualiser"
     ],
 
     product_chat: [
@@ -417,33 +415,9 @@ async function detectIntent(userMessage: string, history: ChatMessage[] = []): P
       "populaire", "best-seller", "nouveau", "actualite", "promotion", "promo",
       "solde", "offre", "prix", "coute", "combien", "dimension", "taille",
       "couleur", "matériau", "style", "caracteristique", "fonctionnalite",
-      "avantage", "inconvenient", "pourquoi", "comment", "est-ce que"
-    ],
-
-    product_details: [
-      "detail", "détail", "specification", "spécification", "fiche technique",
-      "caracteristiques", "caractéristiques", "description complete",
-      "en savoir plus", "plus d'info", "plus d'informations", "info produit",
-      "qu'est-ce que", "c'est quoi", "explique", "décris", "presente",
-      "caractéristique", "fonction", "utilisation", "montre les details",
-      "fiche produit", "description détaillée"
-    ],
-
-    product_comparison: [
-      "comparer", "comparaison", "difference", "différence", "vs", "contre",
-      "oppose", "opposé", "lequel choisir", "quelle difference", "différences",
-      "avantages", "inconvenients", "inconvénients", "pour et contre",
-      "points forts", "points faibles", "comparatif", "mieux", "meilleur",
-      "comparaison entre", "vs", "ou", "choix entre", "hésite entre"
-    ],
-
-    product_recommendation: [
-      "recommandez", "recommande", "suggere", "suggère", "conseille",
-      "propose", "idee", "idée", "inspiration", "trouve moi", "aide moi",
-      "que me conseillez", "quel produit", "quelle marque", "pour mon",
-      "pour ma", "pour mes", "adapté à", "adapte a", "correspond à",
-      "correspond a", "recommandation", "suggestion", "conseil personnalise",
-      "selon mes besoins", "pour débutant", "pour expert", "premium", "entree de gamme"
+      "avantage", "inconvenient", "pourquoi", "comment", "est-ce que",
+      "detail", "détail", "specification", "comparer", "comparaison", "vs",
+      "recommandez", "conseille", "suggere", "idée", "pour mon", "pour ma"
     ]
   };
 
@@ -469,36 +443,24 @@ async function detectIntent(userMessage: string, history: ChatMessage[] = []): P
     if (msg.includes(word)) {
       scores.product_show += 8;
       scores.product_chat += 6;
-      scores.product_recommendation += 4;
     }
   });
 
-  // DÉTECTION DE PHRASES SPÉCIFIQUES
+  // DÉTECTION DE PHRASES SPÉCIFIQUES - SIMPLIFIÉ À 3 TYPES
   const specificPatterns = [
-    // Product Show patterns
+    // Product Show patterns (afficher, voir des produits)
     { pattern: /(montre|voir|affiche).*(table|chaise|canape|fauteuil|meuble|armoire|lit)/i, intent: "product_show", score: 50 },
     { pattern: /je (cherche|veux|voudrais).*(armoire|canape|table|chaise)/i, intent: "product_show", score: 40 },
     { pattern: /quels?.*(produits|articles).*avez.*vous/i, intent: "product_show", score: 35 },
+    { pattern: /(liste|catalogue|collection|voir).*(produits|articles)/i, intent: "product_show", score: 45 },
     
-    // Product Chat patterns
+    // Product Chat patterns (discuter, informations, conseils)
     { pattern: /(combien|prix|cout|coût).*(coute|coûte)/i, intent: "product_chat", score: 40 },
     { pattern: /(quelle|quel).*(couleur|matériau|style|taille)/i, intent: "product_chat", score: 35 },
     { pattern: /(livraison|garantie|retour|delai)/i, intent: "product_chat", score: 30 },
-    
-    // Product Details patterns
-    { pattern: /(detail|détail|specification).*(produit|article)/i, intent: "product_details", score: 45 },
-    { pattern: /(decris|décris|presente|présente).*(produit|article)/i, intent: "product_details", score: 40 },
-    { pattern: /(fiche technique|caracteristiques)/i, intent: "product_details", score: 50 },
-    
-    // Comparison patterns
-    { pattern: /(comparer|comparaison).*(et|avec|ou)/i, intent: "product_comparison", score: 60 },
-    { pattern: /(difference|différence).*(entre|de)/i, intent: "product_comparison", score: 55 },
-    { pattern: /(lequel|quelle).*(choisir|prendre)/i, intent: "product_comparison", score: 50 },
-    
-    // Recommendation patterns
-    { pattern: /(recommandez|conseillez).*(produit|article)/i, intent: "product_recommendation", score: 60 },
-    { pattern: /(quel|quelle).*(conseillez|recommandez)/i, intent: "product_recommendation", score: 55 },
-    { pattern: /(pour|adapté).*(salon|chambre|cuisine)/i, intent: "product_recommendation", score: 45 },
+    { pattern: /(detail|détail|specification|caracteristiques)/i, intent: "product_chat", score: 45 },
+    { pattern: /(comparer|comparaison|difference|vs)/i, intent: "product_chat", score: 50 },
+    { pattern: /(recommandez|conseillez|suggere|idée)/i, intent: "product_chat", score: 55 },
   ];
 
   specificPatterns.forEach(({ pattern, intent, score }) => {
@@ -515,13 +477,12 @@ async function detectIntent(userMessage: string, history: ChatMessage[] = []): P
     // Si l'historique contient des discussions sur des produits spécifiques
     if (productKeywords.some(word => lastNormalized.includes(word))) {
       scores.product_chat += 20;
-      scores.product_details += 15;
     }
 
     // Si l'utilisateur vient de demander à voir des produits
     if (lastNormalized.includes("montre") || lastNormalized.includes("voir")) {
-      scores.product_details += 25;
-      scores.product_comparison += 20;
+      scores.product_show += 25;
+      scores.product_chat += 15;
     }
   }
 
@@ -539,7 +500,7 @@ async function detectIntent(userMessage: string, history: ChatMessage[] = []): P
 
   console.log("📊 Detailed intent scores:", scores);
 
-  // DÉCISION FINALE AVEC SEUILS INTELLIGENTS
+  // DÉCISION FINALE - 3 TYPES PRINCIPAUX
   const maxScore = Math.max(...Object.values(scores));
   const threshold = 30;
 
@@ -548,33 +509,18 @@ async function detectIntent(userMessage: string, history: ChatMessage[] = []): P
     return "simple_chat";
   }
 
-  // Priorité des intents
-  if (scores.product_comparison === maxScore && scores.product_comparison > 50) {
-    console.log("🎯 Decision: PRODUCT_COMPARISON (strong comparison intent)");
-    return "product_comparison";
-  }
-
-  if (scores.product_recommendation === maxScore && scores.product_recommendation > 50) {
-    console.log("🎯 Decision: PRODUCT_RECOMMENDATION (recommendation request)");
-    return "product_recommendation";
-  }
-
-  if (scores.product_details === maxScore && scores.product_details > 45) {
-    console.log("🎯 Decision: PRODUCT_DETAILS (detailed information request)");
-    return "product_details";
-  }
-
+  // Priorité: product_show > product_chat > simple_chat
   if (scores.product_show === maxScore && scores.product_show > 40) {
-    console.log("🎯 Decision: PRODUCT_SHOW (show products intent)");
+    console.log("🎯 Decision: PRODUCT_SHOW (show products and add to cart)");
     return "product_show";
   }
 
   if (scores.product_chat === maxScore && scores.product_chat > 35) {
-    console.log("🎯 Decision: PRODUCT_CHAT (product information conversation)");
+    console.log("🎯 Decision: PRODUCT_CHAT (discuss products, info, recommendations)");
     return "product_chat";
   }
 
-  console.log("🎯 Decision: SIMPLE_CHAT (conversation intent)");
+  console.log("🎯 Decision: SIMPLE_CHAT (general conversation)");
   return "simple_chat";
 }
 
@@ -598,38 +544,34 @@ async function* OmnIAChat(
     const intentDuration = Date.now() - intentStart;
     console.log(`🎯 Final intent: ${intent} (${intentDuration}ms)`);
 
-    // Gestion spécifique pour "je cherche une armoire"
+    // Handle product_chat and product_show intents
     if (intent === "product_chat" || intent === "product_show") {
       const searchFilters = extractFiltersFromQuery(userMessage, history);
       console.log("🔍 Extracted filters for product search:", searchFilters);
 
-      // Pour "je cherche une armoire", on veut engager une conversation
-      if (searchFilters.query === "armoire" && 
-          !searchFilters.color && 
-          !searchFilters.material && 
-          !searchFilters.style) {
-        
+      // Product_chat: discuss product without showing full list
+      if (intent === "product_chat") {
         const followUpQuestions = [
-          "Quelle couleur préférez-vous pour votre armoire ?",
-          "Avez-vous une préférence de matériau (bois, métal, verre...) ?",
-          "Quel style recherchez-vous (moderne, classique, rustique...) ?",
-          "Pour quelle pièce est destinée cette armoire ?",
+          "Quelle couleur préférez-vous ?",
+          "Avez-vous une préférence de matériau ?",
+          "Quel style recherchez-vous ?",
+          "Pour quelle pièce ?",
           "Avez-vous un budget en tête ?"
         ];
 
         yield {
           role: "assistant",
-          content: `Je vois que vous cherchez une armoire ! Pour vous proposer les meilleures options, pourriez-vous me préciser :
+          content: `Je vois que vous vous intéressez à ${searchFilters.query || 'nos produits'} ! Pour vous proposer les meilleures options, pourriez-vous me préciser :
 
 • La couleur que vous préférez
-• Le matériau souhaité (bois, métal, verre...)
-• Le style que vous aimez (moderne, classique, etc.)
-• La pièce où elle sera placée
+• Le matériau souhaité
+• Le style que vous aimez
+• La pièce où ce sera placé
 
-Cela m'aidera à vous trouver l'armoire parfaite ! 🎯`,
+Cela m'aidera à vous trouver le produit parfait ! 🎯`,
           intent: "product_chat",
           products: [],
-          mode: "conversation",
+          mode: "product_chat",
           sector: "mobilier",
           follow_up_questions: followUpQuestions
         };
@@ -644,7 +586,7 @@ Cela m'aidera à vous trouver l'armoire parfaite ! 🎯`,
     yield {
       role: "assistant",
       content: "Je suis désolé, je rencontre un problème technique. Pouvez-vous réessayer dans un instant ?",
-      intent: "conversation",
+      intent: "simple_chat",
       products: [],
       mode: "conversation",
       sector: "général",
