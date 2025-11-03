@@ -277,7 +277,7 @@ const Subscription = () => {
               {checkoutLoading === starterPlan.id ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isCurrentPlan(starterPlan.id) ? (
-                'Current Plan'
+                'Selected Plan'
               ) : (
                 'Select Plan'
               )}
@@ -365,7 +365,7 @@ const Subscription = () => {
               {checkoutLoading === selectedProTier ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isCurrentPlan(selectedProTier) ? (
-                'Current Plan'
+                'Selected Plan'
               ) : (
                 'Upgrade Now'
               )}
@@ -458,7 +458,7 @@ const Subscription = () => {
               {checkoutLoading === selectedEnterpriseTier ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isCurrentPlan(selectedEnterpriseTier) ? (
-                'Current Plan'
+                'Selected Plan'
               ) : (
                 'Upgrade Now'
               )}
