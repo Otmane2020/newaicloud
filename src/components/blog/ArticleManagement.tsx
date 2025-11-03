@@ -146,50 +146,51 @@ export function ArticleManagement() {
     return { variant: 'outline' as const, label: t.blog.management.score.poor, color: 'bg-red-500' };
   };
 
-  const handleOptimizeArticle = async (articleId: string) => {
-    // Check limits before optimizing
-    if (!canDoAction('articles')) {
-      toast.error('Limite d\'articles atteinte');
+const handleOptimizeArticle = async (articleId: string) => {
+    // Check limits BEFORE optimizing
+    if (!canDoAction('optimizations')) {
+      toast.error('Limite d\'optimisations atteinte', {
+        description: limits?.isTrialing 
+          ? 'Passez à un plan payant pour continuer.'
+          : 'Limite mensuelle atteinte. Passez à un plan supérieur.'
+      });
       setShowUpgradeDialog(true);
       return;
     }
 
-    setOptimizing(true);
     try {
+      setOptimizing(true);
+      const toastId = toast.loading('Optimisation en cours...');
+
       const { data, error } = await supabase.functions.invoke('generate-article-seo', {
         body: { article_ids: [articleId] }
       });
-      
-      // Check for 403 error (limit reached)
-      if (error && (error.message?.includes('limite') || error.message?.includes('403'))) {
-        toast.error('Limite d\'optimisations atteinte', {
-          description: 'Passez à un plan supérieur pour continuer.'
-        });
-        setShowUpgradeDialog(true);
-        await refreshLimits();
-        return;
+
+      if (error) {
+        // Gérer erreur 403 limite atteinte
+        if (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
+          toast.error('Limite d\'optimisations atteinte', { id: toastId });
+          setShowUpgradeDialog(true);
+          return;
+        }
+        throw error;
       }
-      
-      if (error) throw error;
-      
-      toast.success(t.blog.management.messages.optimizationSuccess);
-      await fetchArticles();
-      await refreshLimits();
-      
-      // Get updated article
-      const { data: updatedArticle } = await supabase
-        .from('blog_articles')
-        .select('*')
-        .eq('id', articleId)
-        .single();
-      
-      if (updatedArticle) {
-        setOptimizedArticle(updatedArticle);
+
+      if (data?.success_count > 0) {
+        const article = articles.find(a => a.id === articleId);
+        setOptimizedArticle(article || null);
+        toast.success('Article optimisé avec succès', { id: toastId });
+        await fetchArticles();
+        await refreshLimits();
+        
+        // Afficher le dialogue de résultats
         setShowResultsDialog(true);
+      } else {
+        throw new Error(data?.results?.[0]?.error || 'Erreur d\'optimisation');
       }
     } catch (error: any) {
-      console.error('Error:', error);
-      toast.error(error.message || t.blog.management.messages.optimizationError);
+      console.error('Error optimizing article:', error);
+      toast.error(error.message || 'Erreur lors de l\'optimisation');
     } finally {
       setOptimizing(false);
     }

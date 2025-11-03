@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Smile, Briefcase, GraduationCap, Zap, Copy, Check } from 'lucide-react';
+import { Save, Smile, Briefcase, GraduationCap, Sparkles, Copy, Check } from 'lucide-react';
 
 export default function ChatSettings() {
   const { user } = useAuth();
@@ -93,7 +93,7 @@ export default function ChatSettings() {
     { value: 'friendly', label: 'Amical', icon: Smile, desc: 'Convivial, chaleureux, émojis' },
     { value: 'professional', label: 'Professionnel', icon: Briefcase, desc: 'Formel, précis, sans émojis' },
     { value: 'expert', label: 'Expert', icon: GraduationCap, desc: 'Technique, détaillé, jargon' },
-    { value: 'casual', label: 'Décontracté', icon: Zap, desc: 'Casual, familier, moderne' },
+    { value: 'casual', label: 'Décontracté', icon: Sparkles, desc: 'Casual, familier, moderne' },
   ];
 
   return (

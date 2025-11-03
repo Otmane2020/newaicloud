@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ImageIcon, Upload, Sparkles, Loader2, CheckCircle, Eye, Zap } from "lucide-react";
+import { ImageIcon, Upload, Sparkles, Loader2, CheckCircle, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/lib/language";
@@ -546,7 +546,7 @@ export function ArticleFeaturedImageDialog({
                   <span><strong>Texte ALT optimisé</strong> généré par intelligence artificielle</span>
                 </p>
                 <p className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-purple-600" />
+                  <Sparkles className="w-5 h-5 text-purple-600" />
                   <span><strong>Synchronisation automatique</strong> avec votre boutique Shopify</span>
                 </p>
                 <p className="flex items-center gap-2">

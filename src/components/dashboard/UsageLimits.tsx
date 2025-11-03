@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Package, FileText, Zap, MessageSquare } from "lucide-react";
+import { Package, FileText, Sparkles, MessageSquare } from "lucide-react";
 import { formatLimit } from "@/lib/formatUtils";
 import { useTranslation } from "@/lib/language";
 
@@ -99,7 +99,7 @@ export function UsageLimits() {
       label: t.dashboard.usage.labels.optimizations,
       current: usage?.optimizations_count || 0,
       limit: plan?.max_optimizations_monthly || 0,
-      icon: <Zap className="h-4 w-4" />,
+      icon: <Sparkles className="h-4 w-4" />,
       color: "hsl(var(--chart-2))"
     },
     {
@@ -127,7 +127,7 @@ export function UsageLimits() {
       label: t.dashboard.usage.labels.campaigns,
       current: usage?.campaigns_count || 0,
       limit: plan?.max_campaigns || 0,
-      icon: <Zap className="h-4 w-4" />,
+      icon: <Sparkles className="h-4 w-4" />,
       color: "hsl(var(--chart-5))"
     }
   ];

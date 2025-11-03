@@ -3,7 +3,6 @@ import {
   LayoutDashboard, 
   ShoppingBag, 
   FileText,
-  Zap,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -55,7 +54,7 @@ export function Navigation() {
     { 
       path: '/seo', 
       label: t.navigation.seo, 
-      icon: Zap,
+      icon: Sparkles,
       subItems: [
         { path: '/seo?tab=optimization', label: t.navigation.seoOptimization, icon: Sparkles },
         { path: '/seo?tab=tags', label: t.navigation.tagOptimization, icon: Tag },

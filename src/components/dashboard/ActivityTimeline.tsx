@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, FileText, Store, Zap, Clock } from 'lucide-react';
+import { CheckCircle2, FileText, Store, Sparkles, Clock } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 
 interface Activity {
@@ -19,7 +19,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
   const getActivityIcon = (type: Activity['type']) => {
     switch (type) {
       case 'optimization':
-        return { icon: Zap, color: 'text-warning', bg: 'bg-warning/10' };
+        return { icon: Sparkles, color: 'text-warning', bg: 'bg-warning/10' };
       case 'article':
         return { icon: FileText, color: 'text-primary', bg: 'bg-primary/10' };
       case 'connection':

@@ -17,7 +17,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/language';
 import {
   ShoppingBag, 
-  Zap, 
   FileText, 
   CheckCircle2,
   Clock,
@@ -284,7 +283,7 @@ export default function Dashboard() {
                 onClick={() => window.location.href = '/seo?tab=products'}
                 className="px-6 py-3 bg-accent/90 backdrop-blur-md hover:bg-accent text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
               >
-                <Zap className="w-5 h-5" />
+                <Sparkles className="w-5 h-5" />
                 {tf('dashboard.optimizeProducts', { count: stats.pendingOptimization })}
               </button>
             )}
@@ -440,7 +439,7 @@ export default function Dashboard() {
           <QuickActionCard
             title={t.dashboard.actions.optimizeSeo}
             description={t.dashboard.actions.pendingProducts}
-            icon={Zap}
+            icon={Sparkles}
             iconColor="text-warning"
             iconBg="bg-warning/10"
             borderColor="border-warning/20"

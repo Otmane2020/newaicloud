@@ -35,7 +35,6 @@ import {
   Grid3x3,
   List,
   Upload,
-  Zap,
   Filter,
   Clock
 } from 'lucide-react';
@@ -899,7 +898,7 @@ export function TagOptimization() {
                 disabled={showProgressDialog || productsNotOptimized === 0}
                 className="flex items-center gap-2"
               >
-                <Zap className="w-4 h-4" />
+                <Sparkles className="w-4 h-4" />
                 <span className="hidden sm:inline">Optimize All</span>
               </Button>
               
@@ -910,7 +909,7 @@ export function TagOptimization() {
                 disabled={showProgressDialog || selectedProducts.size === 0}
                 className="flex items-center gap-2"
               >
-                <Zap className="w-4 h-4" />
+                <Sparkles className="w-4 h-4" />
                 <span className="hidden sm:inline">Optimize ({selectedProducts.size})</span>
               </Button>
               
@@ -1077,7 +1076,7 @@ export function TagOptimization() {
                            disabled={optimizing || !canDoAction('optimizations')}
                            className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                          >
-                           <Zap className="w-4 h-4" />
+                           <Sparkles className="w-4 h-4" />
                          </Button>
                        </TooltipTrigger>
                        <TooltipContent>
