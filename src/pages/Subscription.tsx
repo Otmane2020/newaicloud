@@ -225,21 +225,51 @@ const Subscription = () => {
       {!isUpgradeFlow && <CurrentPlanCard />}
 
       {isUpgradeFlow && currentPlan && (
-        <Card className="p-6 mb-8 bg-muted/50">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold mb-1">Votre plan actuel</h3>
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{getPlanIcon(currentPlan.id)}</span>
-                <div>
-                  <p className="text-xl font-bold">{currentPlan.name}</p>
-                  <p className="text-muted-foreground text-sm">{currentPlan.price_monthly}€/mois</p>
+        <Card className="p-6 mb-8 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20 border-2 border-orange-200 dark:border-orange-800">
+          <div className="space-y-4">
+            {/* En-tête avec plan actuel */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold mb-1">Votre plan actuel</h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{getPlanIcon(currentPlan.id)}</span>
+                  <div>
+                    <p className="text-xl font-bold">{currentPlan.name}</p>
+                    <p className="text-muted-foreground text-sm">{currentPlan.price_monthly}€/mois</p>
+                  </div>
                 </div>
               </div>
+              <Badge variant="outline" className="text-lg px-4 py-2 border-orange-400 dark:border-orange-600">
+                Plan actuel
+              </Badge>
             </div>
-            <Badge variant="outline" className="text-lg px-4 py-2">
-              Plan actuel
-            </Badge>
+
+            {/* Limites du plan actuel */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-orange-200 dark:border-orange-800">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{currentPlan.max_optimizations_monthly}</p>
+                <p className="text-xs text-muted-foreground">Optimisations/mois</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{currentPlan.max_products}</p>
+                <p className="text-xs text-muted-foreground">Produits</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{currentPlan.max_articles_monthly}</p>
+                <p className="text-xs text-muted-foreground">Articles/mois</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{currentPlan.max_shopify_stores}</p>
+                <p className="text-xs text-muted-foreground">Boutiques</p>
+              </div>
+            </div>
+
+            {/* Message d'upgrade basé sur le contexte */}
+            <div className="bg-card p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+              <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                💡 Vous avez atteint les limites de votre plan actuel. Choisissez un plan supérieur ci-dessous pour continuer.
+              </p>
+            </div>
           </div>
         </Card>
       )}
