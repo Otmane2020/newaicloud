@@ -1170,8 +1170,8 @@ export function SeoOptimization() {
                           {(() => {
                             const scoreBadge = getSeoScoreBadge(seoScore.score);
                             return (
-                              <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
-                                {scoreBadge.label} - {Math.round(seoScore.score)}%
+                              <Badge variant={scoreBadge.variant} className="text-xs">
+                                {seoScore.score}/100
                               </Badge>
                             );
                           })()}
@@ -1181,7 +1181,7 @@ export function SeoOptimization() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={product.enrichment_status === "enriched" ? "default" : "secondary"}>
+                        <Badge variant={product.enrichment_status === "enriched" ? "default" : "secondary"} className="text-xs">
                           {product.enrichment_status === "enriched" ? (
                             <>
                               <CheckCircle className="w-3 h-3 mr-1" />
@@ -1197,12 +1197,12 @@ export function SeoOptimization() {
                       </TableCell>
                       <TableCell>
                         {product.seo_synced_to_shopify ? (
-                          <Badge variant="default" className="bg-green-600 text-white">
+                          <Badge variant="default" className="bg-green-600 text-white text-xs">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             {t.seo.optimization.yes}
                           </Badge>
                         ) : (
-                          <Badge variant="secondary">
+                          <Badge variant="secondary" className="text-xs">
                             <Clock className="w-3 h-3 mr-1" />
                             {t.seo.optimization.no}
                           </Badge>
@@ -1327,8 +1327,8 @@ export function SeoOptimization() {
                     {(() => {
                       const scoreBadge = getSeoScoreBadge(seoScore.score);
                       return (
-                        <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
-                          {scoreBadge.label} - {Math.round(seoScore.score)}%
+                        <Badge variant={scoreBadge.variant} className="text-xs">
+                          {seoScore.score}/100
                         </Badge>
                       );
                     })()}

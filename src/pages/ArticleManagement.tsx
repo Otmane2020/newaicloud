@@ -642,8 +642,8 @@ export default function ArticleManagement() {
                           const scoreBadge = getSeoScoreBadge(seoScore.score);
                           
                           return (
-                            <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
-                              {scoreBadge.label} - {Math.round(seoScore.score)}%
+                            <Badge variant={scoreBadge.variant} className="text-xs">
+                              {seoScore.score}/100
                             </Badge>
                           );
                         })()}
