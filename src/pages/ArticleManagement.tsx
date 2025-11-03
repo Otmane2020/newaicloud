@@ -25,7 +25,7 @@ import { fr } from 'date-fns/locale';
 import { BlogWizard } from '@/components/blog/BlogWizard';
 import { ResultsDialog } from '@/components/seo/SeoWorkflowDialogs';
 import { useAuth } from '@/contexts/AuthContext';
-import { calculateArticleSeoScore, getConfidenceBadgeColor } from '@/lib/seoQuality';
+import { calculateArticleSeoScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
 import { ArticleFeaturedImageDialog } from '@/components/blog/ArticleFeaturedImageDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
@@ -67,6 +67,7 @@ export default function ArticleManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [syncFilter, setSyncFilter] = useState('all');
+  const [qualityFilter, setQualityFilter] = useState<'all' | 'excellent' | 'good' | 'medium' | 'poor'>('all');
   
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
@@ -123,7 +124,21 @@ export default function ArticleManagement() {
       (syncFilter === 'synced' && article.shopify_blog_id) ||
       (syncFilter === 'not_synced' && !article.shopify_blog_id);
     
-    return matchesSearch && matchesStatus && matchesSource && matchesSync;
+    // Quality filter
+    const matchesQuality = qualityFilter === 'all' || (() => {
+      const seoScore = calculateArticleSeoScore(
+        article.title,
+        article.seo_title || '',
+        article.meta_description || '',
+        article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
+        !!article.featured_image,
+        article.status === 'published',
+        article.optimization_count || 0
+      );
+      return passesQualityFilter(seoScore.score, qualityFilter);
+    })();
+    
+    return matchesSearch && matchesStatus && matchesSource && matchesSync && matchesQuality;
   });
 
   const stats = {
@@ -446,6 +461,22 @@ export default function ArticleManagement() {
                   <SelectItem value="not_synced">Not synced</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Select 
+                value={qualityFilter} 
+                onValueChange={(value) => setQualityFilter(value as 'all' | 'excellent' | 'good' | 'medium' | 'poor')}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="SEO Score" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All scores</SelectItem>
+                  <SelectItem value="excellent">Excellent (≥80%)</SelectItem>
+                  <SelectItem value="good">Good (55-79%)</SelectItem>
+                  <SelectItem value="medium">Medium (40-54%)</SelectItem>
+                  <SelectItem value="poor">Poor (&lt;40%)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -605,19 +636,13 @@ export default function ArticleManagement() {
                             article.seo_description,
                             article.keywords,
                             !!article.featured_image,
-                            !!article.shopify_article_id,
+                            article.status === 'published',
                             article.optimization_count || 0
                           );
-                          const colorClass = seoScore.score >= 90 
-                            ? 'bg-success text-success-foreground border-success' 
-                            : seoScore.score >= 70 
-                            ? 'bg-warning text-warning-foreground border-warning' 
-                            : seoScore.score >= 50
-                            ? 'bg-orange-500 text-white border-orange-500'
-                            : 'bg-destructive text-destructive-foreground border-destructive';
+                          const scoreBadge = getSeoScoreBadge(seoScore.score);
                           
                           return (
-                            <Badge className={colorClass}>
+                            <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
                               {seoScore.score}%
                             </Badge>
                           );

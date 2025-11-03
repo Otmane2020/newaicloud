@@ -19,7 +19,7 @@ import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { TrialLimitDialog } from "@/components/TrialLimitDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SeoConfidenceBadge } from "./SeoConfidenceBadge";
-import { calculateDetailedSeoScore } from "@/lib/seoQuality";
+import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from "@/lib/seoQuality";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -234,12 +234,7 @@ export function SeoOptimization() {
       // Quality filter
       if (qualityFilter !== "all") {
         const score = getSeoScore(product);
-        const qualityConditions = {
-          excellent: score < 70,
-          good: score < 55 || score >= 70,
-          poor: score >= 55,
-        };
-        if (qualityConditions[qualityFilter]) return false;
+        if (!passesQualityFilter(score, qualityFilter)) return false;
       }
 
       // Category and search filters

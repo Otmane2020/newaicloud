@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
-import { calculateDescriptionScore } from '@/lib/seoQuality';
+import { calculateDescriptionScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
 import { 
   ProgressDialog, 
   ResultsDialog, 
@@ -188,11 +188,7 @@ export function CollectionOptimization() {
     // Quality filter
     if (qualityFilter !== 'all') {
       const score = calculateCollectionSeoScore(collection);
-
-      if (qualityFilter === 'excellent' && score < 80) return false;
-      if (qualityFilter === 'good' && (score < 60 || score >= 80)) return false;
-      if (qualityFilter === 'medium' && (score < 40 || score >= 60)) return false;
-      if (qualityFilter === 'poor' && score >= 40) return false;
+      if (!passesQualityFilter(score, qualityFilter)) return false;
     }
 
     if (searchTerm) {
@@ -714,13 +710,6 @@ export function CollectionOptimization() {
     }
     
     return score;
-  };
-
-  const getSeoScoreBadge = (score: number) => {
-    if (score >= 80) return { variant: 'default' as const, label: 'Excellent', color: 'text-green-600' };
-    if (score >= 60) return { variant: 'secondary' as const, label: 'Bon', color: 'text-blue-600' };
-    if (score >= 40) return { variant: 'outline' as const, label: 'Moyen', color: 'text-yellow-600' };
-    return { variant: 'outline' as const, label: 'Faible', color: 'text-red-600' };
   };
 
   if (loading) {

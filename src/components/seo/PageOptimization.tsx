@@ -34,7 +34,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
-import { calculateDetailedSeoScore } from '@/lib/seoQuality';
+import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from '@/lib/seoQuality';
 import { Progress } from '@/components/ui/progress';
 import { VisionAIBanner } from './VisionAIBanner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -139,13 +139,10 @@ export function PageOptimization() {
         false,
         !!page.handle,
         undefined,
-        page.optimized ? 1 : 0
+        page.optimization_count || 0
       ).score;
 
-      if (qualityFilter === 'excellent' && score < 80) return false;
-      if (qualityFilter === 'good' && (score < 60 || score >= 80)) return false;
-      if (qualityFilter === 'medium' && (score < 40 || score >= 60)) return false;
-      if (qualityFilter === 'poor' && score >= 40) return false;
+      if (!passesQualityFilter(score, qualityFilter)) return false;
     }
 
     if (!searchTerm) return true;
@@ -847,12 +844,6 @@ export function PageOptimization() {
                     false,
                     true
                   );
-                  const getSeoScoreBadge = (score: number) => {
-                    if (score >= 80) return { variant: 'default' as const, color: 'text-green-600' };
-                    if (score >= 60) return { variant: 'secondary' as const, color: 'text-blue-600' };
-                    if (score >= 40) return { variant: 'outline' as const, color: 'text-yellow-600' };
-                    return { variant: 'outline' as const, color: 'text-red-600' };
-                  };
                   const scoreBadge = getSeoScoreBadge(seoScore.score);
                   
                   return (

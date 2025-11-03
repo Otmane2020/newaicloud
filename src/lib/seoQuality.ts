@@ -448,6 +448,70 @@ export function getConfidenceLabel(score: number): string {
 }
 
 /**
+ * Get SEO score badge configuration
+ */
+export function getSeoScoreBadge(score: number): {
+  variant: 'default' | 'secondary' | 'outline';
+  label: string;
+  color: string;
+  textColor: string;
+} {
+  if (score >= 80) {
+    return { 
+      variant: 'default', 
+      label: 'Excellent', 
+      color: 'bg-green-500/10 text-green-600 border-green-500/20',
+      textColor: 'text-green-600'
+    };
+  }
+  if (score >= 55) {
+    return { 
+      variant: 'secondary', 
+      label: 'Bon', 
+      color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+      textColor: 'text-yellow-600'
+    };
+  }
+  if (score >= 40) {
+    return { 
+      variant: 'outline', 
+      label: 'Moyen', 
+      color: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+      textColor: 'text-orange-600'
+    };
+  }
+  return { 
+    variant: 'outline', 
+    label: 'Faible', 
+    color: 'bg-red-500/10 text-red-600 border-red-500/20',
+    textColor: 'text-red-600'
+  };
+}
+
+/**
+ * Check if score passes quality filter
+ */
+export function passesQualityFilter(
+  score: number, 
+  filter: 'all' | 'excellent' | 'good' | 'medium' | 'poor'
+): boolean {
+  if (filter === 'all') return true;
+  
+  switch (filter) {
+    case 'excellent':
+      return score >= 80;
+    case 'good':
+      return score >= 55 && score < 80;
+    case 'medium':
+      return score >= 40 && score < 55;
+    case 'poor':
+      return score < 40;
+    default:
+      return true;
+  }
+}
+
+/**
  * Calculate bonus score for featured images in articles/collections
  * Returns bonus points if image exists and has been synced to Shopify
  */
