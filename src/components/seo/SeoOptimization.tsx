@@ -1168,14 +1168,14 @@ export function SeoOptimization() {
                       <TableCell>
                         <div className="flex flex-col items-start gap-1">
                           <div className="flex items-center gap-2">
-                            <span className={`text-2xl font-bold ${
-                              seoScore.score >= 80 ? 'text-green-600' :
-                              seoScore.score >= 55 ? 'text-blue-600' :
-                              seoScore.score >= 30 ? 'text-orange-600' :
-                              'text-red-600'
-                            }`}>
-                              {Math.round(seoScore.score)}%
-                            </span>
+                            {(() => {
+                              const scoreBadge = getSeoScoreBadge(seoScore.score);
+                              return (
+                                <span className={`text-2xl font-bold ${scoreBadge.color}`}>
+                                  {Math.round(seoScore.score)}%
+                                </span>
+                              );
+                            })()}
                             {product.optimization_count && product.optimization_count > 0 && (
                               <Sparkles className="w-3 h-3 text-primary" />
                             )}
@@ -1337,14 +1337,14 @@ export function SeoOptimization() {
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
-                        <span className={`text-xl font-bold ${
-                          seoScore.score >= 80 ? 'text-green-600' :
-                          seoScore.score >= 55 ? 'text-blue-600' :
-                          seoScore.score >= 30 ? 'text-orange-600' :
-                          'text-red-600'
-                        }`}>
-                          {Math.round(seoScore.score)}%
-                        </span>
+                        {(() => {
+                          const scoreBadge = getSeoScoreBadge(seoScore.score);
+                          return (
+                            <span className={`text-xl font-bold ${scoreBadge.color}`}>
+                              {Math.round(seoScore.score)}%
+                            </span>
+                          );
+                        })()}
                       </div>
                       {(() => {
                         const scoreBadge = getSeoScoreBadge(seoScore.score);
