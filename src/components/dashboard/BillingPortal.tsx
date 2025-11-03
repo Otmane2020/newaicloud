@@ -78,6 +78,21 @@ export function BillingPortal() {
   const handleOpenPortal = async () => {
     try {
       setLoading(true);
+      
+      // Vérifier d'abord s'il y a un abonnement Stripe actif
+      const { data: checkData } = await supabase.functions.invoke('check-subscription');
+      
+      if (!checkData?.subscribed) {
+        toast({
+          title: "Aucun abonnement Stripe",
+          description: "Vous devez d'abord souscrire à un plan via Stripe pour accéder au portail de facturation.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        navigate('/subscription');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('customer-portal');
 
       if (error) throw error;
