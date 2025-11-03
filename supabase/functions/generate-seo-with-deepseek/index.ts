@@ -354,63 +354,71 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Get store language
+    let storeLanguage = 'fr';
+    if (product.store_id) {
+      const { data: storeData } = await supabaseClient
+        .from('shopify_connections')
+        .select('store_language')
+        .eq('id', product.store_id)
+        .single();
+      
+      if (storeData?.store_language) {
+        storeLanguage = storeData.store_language;
+      }
+    }
+
+    console.log(`[SEO-GENERATION] Using language: ${storeLanguage}`);
+
     // Enhanced SEO prompt generation
     const productKeywords = extractProductKeywords(product);
     const visionContext = buildVisionContext(visionData);
 
-    const enhancedSeoPrompt = `En tant qu'expert SEO e-commerce français, générez un titre et une méta-description optimisés pour ce produit:
+    const enhancedSeoPrompt = getSeoPrompt(storeLanguage, 'product', {
+      title: product.title,
+      description: product.description,
+      product_type: product.product_type,
+      category: product.category,
+      sub_category: product.sub_category,
+      ai_color: product.ai_color,
+      ai_material: product.ai_material,
+      style: product.style,
+      vendor: product.vendor,
+      tags: product.tags,
+      keywords: productKeywords,
+      visionContext: visionContext
+    });
 
-**INFORMATIONS DU PRODUIT:**
-- Titre: ${product.title}
-- Description: ${product.description || "Non fournie"}
-- Type: ${product.product_type || "Non spécifié"}
-- Catégorie: ${product.category || "Non spécifié"}
-- Sous-catégorie: ${product.sub_category || "Non spécifié"}
-- Couleur: ${product.ai_color || "Non spécifié"}
-- Matériau: ${product.ai_material || "Non spécifié"}
-- Style: ${product.style || "Non spécifié"}
-- Marque: ${product.vendor || "Non spécifié"}
-- Tags: ${product.tags || "Non spécifié"}
-- Mots-clés extraits: ${productKeywords.slice(0, 10).join(", ")}
-${visionContext}
-
-**EXIGENCES STRICTES SEO:**
-
-TITRE (55-65 caractères):
-- Inclure le mot-clé principal (type de produit)
-- Ajouter 1-2 attributs clés (couleur, matériau, style)
-- Rendre accrocheur et naturel
-- SANS nom de marque à la fin
-- Langue française uniquement
-
-MÉTA-DESCRIPTION (150-160 caractères):
-- Intégrer mots-clés principaux et secondaires naturellement
-- Mettre en avant bénéfices et caractéristiques uniques
-- Inclure appel à l'action subtil
-- Description engageante et descriptive
-- Langue française uniquement
-
-**FORMAT DE RÉPONSE EXCLUSIF (JSON uniquement):**
-{
-  "seo_title": "Votre titre SEO optimisé ici",
-  "seo_description": "Votre méta-description optimisée ici"
-}
-
-**EXEMPLE POUR UN CANAPÉ:**
-{
-  "seo_title": "Canapé Tissu Gris 3 Places Design Moderne et Confortable",
-  "seo_description": "Découvrez notre canapé 3 places en tissu gris, alliant design moderne et confort optimal. Structure robuste, assise généreuse. Parfait pour votre salon. Livraison offerte."
-}`;
-
-    console.log("[SEO-GENERATION] Appel à DeepSeek...");
-
-    const seoResponse = await callDeepSeek(
+    const systemRole = getSystemRole(storeLanguage, 'product');
+    
+    const response = await callDeepSeek(
       [
-        {
-          role: "system",
-          content:
-            "Vous êtes un expert SEO e-commerce français. Générez des titres et descriptions optimisés, percutants et naturels. Répondez UNIQUEMENT en JSON valide sans commentaires.",
-        },
+        { role: "system", content: systemRole },
+        { role: "user", content: enhancedSeoPrompt }
+      ],
+      1000,
+      3
+    );
+
+    let seoContent = response.choices[0].message.content;
+    
+    // Clean JSON response
+    if (seoContent.startsWith('```json')) {
+      seoContent = seoContent.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '');
+    } else if (seoContent.startsWith('```')) {
+      seoContent = seoContent.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '');
+    }
+
+    const parsed = JSON.parse(seoContent);
+    const { seo_title, seo_description } = parsed;
+
+    // Validate
+    const validation = validateSeoContent(seo_title, seo_description);
+    if (!validation.isValid) {
+      console.warn("[SEO-GENERATION] Validation issues:", validation.issues);
+    }
+
+    console.log("[SEO-GENERATION] SEO généré avec succès");
         {
           role: "user",
           content: enhancedSeoPrompt,

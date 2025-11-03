@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,37 +136,54 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Generate SEO using AI with Vision context
-        let visionContext = '';
-        if (visionData?.visualAttributes) {
-          const attrs = visionData.visualAttributes;
-          visionContext = `
-
-ANALYSE VISUELLE DE L'IMAGE (Utilise ces données pour enrichir le SEO) :
-- Couleur dominante : ${attrs.primaryColor}
-- Couleurs secondaires : ${attrs.secondaryColors?.join(', ')}
-- Style visuel : ${attrs.style}
-- Ambiance : ${attrs.mood}
-- Contexte : ${attrs.room || 'N/A'}
-- Détails techniques : ${attrs.technicalDetails?.join(', ')}
-
-Intègre ces éléments visuels naturellement dans le titre et la description pour les rendre plus descriptifs et précis.`;
+        // Get store language
+        let storeLanguage = 'fr';
+        if (article.store_id) {
+          const { data: storeData } = await supabase
+            .from('shopify_connections')
+            .select('store_language')
+            .eq('id', article.store_id)
+            .single();
+          
+          if (storeData?.store_language) {
+            storeLanguage = storeData.store_language;
+          }
         }
 
-        const prompt = `Génère un titre SEO optimisé et une meta description pour cet article de blog:
+        console.log(`Using language: ${storeLanguage} for article ${article_id}`);
 
-Titre actuel: ${article.title}
-Contenu: ${article.content.substring(0, 500)}...
-${visionContext}
+        // Generate SEO using AI with Vision context
+        let visionContextText = '';
+        if (visionData?.visualAttributes) {
+          const attrs = visionData.visualAttributes;
+          const visionLabels: Record<string, any> = {
+            fr: { dominant: 'Couleur dominante', secondary: 'Couleurs secondaires', style: 'Style visuel', mood: 'Ambiance', context: 'Contexte', technical: 'Détails techniques', instruction: 'Intègre ces éléments visuels naturellement dans le titre et la description pour les rendre plus descriptifs et précis.' },
+            en: { dominant: 'Dominant color', secondary: 'Secondary colors', style: 'Visual style', mood: 'Mood', context: 'Context', technical: 'Technical details', instruction: 'Integrate these visual elements naturally into the title and description to make them more descriptive and precise.' },
+            de: { dominant: 'Dominante Farbe', secondary: 'Sekundärfarben', style: 'Visueller Stil', mood: 'Stimmung', context: 'Kontext', technical: 'Technische Details', instruction: 'Integrieren Sie diese visuellen Elemente auf natürliche Weise in den Titel und die Beschreibung, um sie beschreibender und präziser zu machen.' },
+            es: { dominant: 'Color dominante', secondary: 'Colores secundarios', style: 'Estilo visual', mood: 'Ambiente', context: 'Contexto', technical: 'Detalles técnicos', instruction: 'Integra estos elementos visuales de forma natural en el título y la descripción para hacerlos más descriptivos y precisos.' },
+            it: { dominant: 'Colore dominante', secondary: 'Colori secondari', style: 'Stile visivo', mood: 'Atmosfera', context: 'Contesto', technical: 'Dettagli tecnici', instruction: 'Integra questi elementi visivi in modo naturale nel titolo e nella descrizione per renderli più descrittivi e precisi.' }
+          };
+          const labels = visionLabels[storeLanguage] || visionLabels.fr;
+          
+          visionContextText = `
 
-Retourne uniquement un JSON avec:
-{
-  "seo_title": "titre optimisé pour le SEO (max 60 caractères)",
-  "meta_description": "description optimisée (max 160 caractères)",
-  "keywords": ["mot-clé1", "mot-clé2", "mot-clé3"]
-}
+${labels.dominant}: ${attrs.primaryColor}
+${labels.secondary}: ${attrs.secondaryColors?.join(', ')}
+${labels.style}: ${attrs.style}
+${labels.mood}: ${attrs.mood}
+${labels.context}: ${attrs.room || 'N/A'}
+${labels.technical}: ${attrs.technicalDetails?.join(', ')}
 
-${visionData ? 'Utilise les données visuelles pour enrichir le contenu.' : ''}`;
+${labels.instruction}`;
+        }
+
+        const prompt = getSeoPrompt(storeLanguage, 'article', {
+          title: article.title,
+          content: article.content + visionContextText,
+          keywords: article.keywords
+        });
+
+        const systemRole = getSystemRole(storeLanguage, 'article');
 
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -176,7 +194,7 @@ ${visionData ? 'Utilise les données visuelles pour enrichir le contenu.' : ''}`
           body: JSON.stringify({
             model: "google/gemini-2.5-flash",
             messages: [
-              { role: "system", content: "Tu es un expert SEO. Réponds uniquement en JSON valide." },
+              { role: "system", content: systemRole },
               { role: "user", content: prompt }
             ]
           })

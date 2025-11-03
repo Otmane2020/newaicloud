@@ -78,6 +78,22 @@ Deno.serve(async (req: Request) => {
         console.log(`📊 Current optimization count: ${collection.optimization_count || 0}`);
         console.log(`📅 Last optimization: ${collection.last_optimization_at || 'never'}`);
 
+        // Get store language
+        let storeLanguage = 'fr';
+        if (collection.store_id) {
+          const { data: storeData } = await supabase
+            .from('shopify_connections')
+            .select('store_language')
+            .eq('id', collection.store_id)
+            .single();
+          
+          if (storeData?.store_language) {
+            storeLanguage = storeData.store_language;
+          }
+        }
+
+        console.log(`Using language: ${storeLanguage} for collection ${collection_id}`);
+
         // Get products from this collection
         const { data: products } = await supabase
           .from('shopify_products')
@@ -88,19 +104,14 @@ Deno.serve(async (req: Request) => {
         const productTitles = products?.map(p => p.title).join(', ') || '';
 
         // Generate SEO with Lovable AI
-        const prompt = `Generate SEO-optimized content for this Shopify collection:
+        const prompt = getSeoPrompt(storeLanguage, 'collection', {
+          title: collection.title,
+          handle: collection.handle,
+          body_html: collection.body_html,
+          productTitles: productTitles
+        });
 
-Title: ${collection.title}
-Handle: ${collection.handle}
-Current Description: ${collection.body_html ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 500) : 'No description'}
-Products in collection: ${productTitles || 'No products yet'}
-
-Return ONLY a JSON object with:
-{
-  "seo_title": "SEO optimized title (50-60 characters)",
-  "seo_description": "SEO optimized meta description (150-160 characters)",
-  "body_html": "Rich HTML description for the collection page (200-400 characters with <p> tags)"
-}`;
+        const systemRole = getSystemRole(storeLanguage, 'collection');
 
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -111,7 +122,7 @@ Return ONLY a JSON object with:
           body: JSON.stringify({
             model: "google/gemini-2.5-flash",
             messages: [
-              { role: "system", content: "You are an expert SEO copywriter for e-commerce." },
+              { role: "system", content: systemRole },
               { role: "user", content: prompt }
             ],
             max_tokens: 500,

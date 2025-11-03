@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -153,44 +154,39 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`Generating tags with DeepSeek for product: ${product.title}`);
+    // Get store language
+    let storeLanguage = 'fr';
+    if (product.store_id) {
+      const { data: storeData } = await supabaseClient
+        .from('shopify_connections')
+        .select('store_language')
+        .eq('id', product.store_id)
+        .single();
+      
+      if (storeData?.store_language) {
+        storeLanguage = storeData.store_language;
+      }
+    }
 
-    const tagPrompt = `Generate SEO-optimized product tags for this item:
+    console.log(`Generating tags with DeepSeek for product: ${product.title} (language: ${storeLanguage})`);
 
-Product Information:
-- Title: ${product.title}
-- Description: ${product.description || "Not provided"}
-- Type: ${product.product_type || "Not specified"}
-- Vendor: ${product.vendor || "Not specified"}
-- Category: ${product.category || "Not specified"}
-- Sub-Category: ${product.sub_category || "Not specified"}
-- Color: ${product.ai_color || "Not specified"}
-- Material: ${product.ai_material || "Not specified"}
+    const tagPrompt = getSeoPrompt(storeLanguage, 'tags', {
+      title: product.title,
+      description: product.description,
+      product_type: product.product_type,
+      vendor: product.vendor,
+      category: product.category,
+      sub_category: product.sub_category,
+      ai_color: product.ai_color,
+      ai_material: product.ai_material
+    });
 
-Generate 8-15 relevant tags that:
-1. Include the product type, category, and material
-2. Include color if applicable
-3. Include style descriptors (modern, classic, rustic, etc.)
-4. Include use cases or room types
-5. Are single words or short phrases (2-3 words max)
-6. Are in lowercase
-7. Are SEO-friendly and searchable
-8. Don't repeat the same information
-
-Provide response as a comma-separated list in JSON format:
-{
-  "tags": "tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8"
-}
-
-Example for a wooden coffee table:
-{
-  "tags": "table basse, bois, salon, meuble, design moderne, rangement, naturel, scandinave"
-}`;
+    const systemRole = getSystemRole(storeLanguage, 'tags');
 
     const tagResponse = await callDeepSeek([
       {
         role: "system",
-        content: "You are a product tagging expert. Generate relevant, SEO-optimized tags. Always respond with valid JSON only.",
+        content: systemRole,
       },
       {
         role: "user",

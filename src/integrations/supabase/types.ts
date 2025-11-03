@@ -1647,6 +1647,7 @@ export type Database = {
           store_category: string | null
           store_description: string | null
           store_label: string | null
+          store_language: string | null
           store_name: string | null
           store_phone: string | null
           store_url: string
@@ -1670,6 +1671,7 @@ export type Database = {
           store_category?: string | null
           store_description?: string | null
           store_label?: string | null
+          store_language?: string | null
           store_name?: string | null
           store_phone?: string | null
           store_url: string
@@ -1693,6 +1695,7 @@ export type Database = {
           store_category?: string | null
           store_description?: string | null
           store_label?: string | null
+          store_language?: string | null
           store_name?: string | null
           store_phone?: string | null
           store_url?: string

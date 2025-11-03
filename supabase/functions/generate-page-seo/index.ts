@@ -205,40 +205,41 @@ ${elements.bodyText}
       console.log(`Generating SEO for page: ${pageTitle}`);
     }
 
+    // Get store language
+    let storeLanguage = 'fr';
+    if (isHomepage && connection) {
+      storeLanguage = connection.store_language || 'fr';
+    } else {
+      const { data: pageData } = await supabaseClient
+        .from('shopify_pages')
+        .select('store_id')
+        .eq('id', pageId)
+        .single();
+      
+      if (pageData?.store_id) {
+        const { data: storeData } = await supabaseClient
+          .from('shopify_connections')
+          .select('store_language')
+          .eq('id', pageData.store_id)
+          .single();
+        
+        if (storeData?.store_language) {
+          storeLanguage = storeData.store_language;
+        }
+      }
+    }
+
+    console.log(`Using language: ${storeLanguage} for ${isHomepage ? 'homepage' : 'page'}`);
+
     // Générer le SEO avec Lovable AI (enriched context)
-    const prompt = isHomepage 
-      ? `Tu es un expert SEO français spécialisé en e-commerce Shopify. 
+    const promptType = isHomepage ? 'pageHomepage' : 'pageRegular';
+    const prompt = getSeoPrompt(storeLanguage, promptType, {
+      title: pageTitle,
+      textContent: textContent,
+      isHomepage: isHomepage
+    });
 
-${textContent}
-
-OBJECTIF: Créer un titre SEO et une meta description qui:
-1. Incluent naturellement le nom de la boutique
-2. Mentionnent le secteur d'activité
-3. Intègrent 1-2 mots-clés parmi les tags principaux ou produits détectés
-4. Créent l'urgence avec un appel à l'action
-5. Se démarquent de la concurrence
-
-RÈGLES STRICTES :
-- Titre SEO : Exactement 50-60 caractères
-- Meta Description : Exactement 150-160 caractères, engageant avec chiffre ou bénéfice concret
-- Utilise des power words (Découvrez, Profitez, Exclusive, Premium, etc.)
-- Mentionne un avantage compétitif (livraison gratuite, garantie, qualité, choix, etc.)
-
-FORMAT JSON strict uniquement (sans markdown):
-{
-  "seo_title": "...",
-  "seo_description": "..."
-}`
-      : `Génère un titre SEO optimisé (max 60 caractères) et une meta description (max 160 caractères) pour cette page Shopify:
-
-Titre: ${pageTitle}
-Contenu: ${textContent}
-
-Réponds uniquement en JSON:
-{
-  "seo_title": "...",
-  "seo_description": "..."
-}`;
+    const systemRole = getSystemRole(storeLanguage, 'page');
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
