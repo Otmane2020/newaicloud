@@ -137,22 +137,24 @@ export function AIAssistant() {
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-2 right-2 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg z-50"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-14 w-14 sm:h-16 sm:w-16 rounded-full shadow-xl hover:shadow-2xl transition-shadow z-50 bg-gradient-to-br from-primary to-primary/80"
           size="icon"
         >
-          <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
+          <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7" />
         </Button>
       )}
 
       {/* Chat window */}
       {isOpen && (
-        <Card className="fixed bottom-2 right-2 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[85vh] sm:h-[600px] shadow-2xl z-50 flex flex-col">
+        <Card className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-[420px] h-[100vh] sm:h-[680px] sm:rounded-2xl shadow-2xl z-50 flex flex-col border-0 sm:border">
           {/* Header */}
-          <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+          <div className="flex items-center justify-between p-4 sm:p-5 border-b bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-t-2xl">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                <MessageCircle className="h-5 w-5" />
+              </div>
               <div>
-                <h3 className="font-semibold text-sm sm:text-base">{t.aiAssistant.title}</h3>
+                <h3 className="font-semibold text-base">{t.aiAssistant.title}</h3>
                 <p className="text-xs opacity-90">{t.aiAssistant.subtitle}</p>
               </div>
             </div>
@@ -160,37 +162,45 @@ export function AIAssistant() {
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(false)}
-              className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+              className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/20"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 px-3 py-4 sm:p-4" ref={scrollRef}>
-            <div className="space-y-3 sm:space-y-4">
+          <ScrollArea className="flex-1 p-4 bg-muted/20" ref={scrollRef}>
+            <div className="space-y-4">
               {messages.map((message, index) => (
                 <div
                   key={index}
                   className={`flex ${
                     message.role === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  } animate-in fade-in slide-in-from-bottom-2 duration-300`}
                 >
+                  {message.role === "assistant" && (
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 flex-shrink-0">
+                      <MessageCircle className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
                   <div
-                    className={`max-w-[85%] sm:max-w-[80%] rounded-lg px-3 py-2 sm:px-4 sm:py-2 ${
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
                       message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                        ? "bg-primary text-primary-foreground rounded-br-sm"
+                        : "bg-card border rounded-bl-sm"
                     }`}
                   >
-                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
               ))}
               {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg px-3 py-2 sm:px-4 sm:py-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2">
+                    <MessageCircle className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="bg-card border rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   </div>
                 </div>
               )}
@@ -198,23 +208,23 @@ export function AIAssistant() {
           </ScrollArea>
 
           {/* Input */}
-          <div className="p-3 sm:p-4 border-t">
-            <div className="flex gap-2">
+          <div className="p-4 border-t bg-background">
+            <div className="flex gap-2 items-end">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={t.aiAssistant.placeholder}
                 disabled={isLoading}
-                className="flex-1 text-sm"
+                className="flex-1 text-sm rounded-xl resize-none min-h-[44px]"
               />
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
                 size="icon"
-                className="h-9 w-9 sm:h-10 sm:w-10"
+                className="h-11 w-11 rounded-xl flex-shrink-0"
               >
-                <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <Send className="h-4 w-4" />
               </Button>
             </div>
           </div>
