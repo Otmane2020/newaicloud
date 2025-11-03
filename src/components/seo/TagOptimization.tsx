@@ -120,9 +120,9 @@ export function TagOptimization() {
 
   // Filtered products logic
   const filteredProducts = products.filter((product) => {
-    if (filter === 'to_optimize' && product.tags) return false;
-    if (filter === 'tagged' && !product.tags) return false;
-    if (filter === 'to_sync' && (product.seo_synced_to_shopify || !product.tags)) return false;
+    if (filter === 'to_optimize' && product.optimization_count && product.optimization_count > 0) return false;
+    if (filter === 'tagged' && (!product.optimization_count || product.optimization_count === 0)) return false;
+    if (filter === 'to_sync' && (product.seo_synced_to_shopify || (!product.optimization_count || product.optimization_count === 0))) return false;
     if (filter === 'synced' && !product.seo_synced_to_shopify) return false;
 
     // Status filter
@@ -172,13 +172,10 @@ export function TagOptimization() {
     return true;
   });
 
-  // Statistics - distinguishing between existing data and AI-optimized data
-  const totalEmpty = products.filter(p => !p.tags).length;
-  const existingTags = products.filter(p => p.tags && (!p.optimization_count || p.optimization_count === 0)).length;
-  const aiOptimizedTags = products.filter(p => p.tags && p.optimization_count && p.optimization_count > 0).length;
-  const productsWithTags = existingTags + aiOptimizedTags;
-  const productsWithoutTags = totalEmpty;
-  const productsToSyncCount = products.filter(p => p.tags && p.tags.length > 0 && !p.seo_synced_to_shopify).length;
+  // Statistics - based on optimization_count
+  const productsNotOptimized = products.filter(p => !p.optimization_count || p.optimization_count === 0).length;
+  const productsOptimized = products.filter(p => p.optimization_count && p.optimization_count > 0).length;
+  const productsToSyncCount = products.filter(p => p.optimization_count && p.optimization_count > 0 && !p.seo_synced_to_shopify).length;
   const productsSynced = products.filter(p => p.seo_synced_to_shopify).length;
   
   // Calculate tag SEO score
@@ -192,8 +189,8 @@ export function TagOptimization() {
 
   const filters = [
     { id: 'all' as FilterType, label: t.seo.tags.filters.all, count: products.length },
-    { id: 'to_optimize' as FilterType, label: t.seo.tags.filters.toTag, count: productsWithoutTags },
-    { id: 'tagged' as FilterType, label: t.seo.tags.filters.tagged, count: productsWithTags },
+    { id: 'to_optimize' as FilterType, label: t.seo.tags.filters.toOptimize, count: productsNotOptimized },
+    { id: 'tagged' as FilterType, label: t.seo.tags.filters.optimized, count: productsOptimized },
     { id: 'to_sync' as FilterType, label: t.seo.tags.filters.toSync, count: productsToSyncCount },
     { id: 'synced' as FilterType, label: t.seo.tags.filters.synced, count: productsSynced },
   ];
@@ -201,12 +198,12 @@ export function TagOptimization() {
   // Clickable stats handlers
   const handleToOptimizeClick = () => {
     setFilter('to_optimize');
-    toast.info(tf('seo.tags.showing', { count: productsWithoutTags }));
+    toast.info(tf('seo.tags.showing', { count: productsNotOptimized }));
   };
 
-  const handleTaggedClick = () => {
+  const handleOptimizedClick = () => {
     setFilter('tagged');
-    toast.info(`Showing ${productsWithTags} tagged products`);
+    toast.info(`Affichage de ${productsOptimized} produits optimisés`);
   };
 
   const handleToSyncClick = () => {
@@ -220,8 +217,8 @@ export function TagOptimization() {
   };
 
   const handleGenerateAll = () => {
-    if (productsWithoutTags === 0) {
-      toast.info(t.seo.tags.allHaveTags);
+    if (productsNotOptimized === 0) {
+      toast.info(t.seo.tags.allOptimized);
       return;
     }
     setFilter('to_optimize');
@@ -231,9 +228,9 @@ export function TagOptimization() {
   };
 
   const handleGenerateAllTags = async () => {
-    const productsToGenerate = products.filter(p => !p.tags);
+    const productsToGenerate = products.filter(p => !p.optimization_count || p.optimization_count === 0);
     if (productsToGenerate.length === 0) {
-      toast.info(t.seo.tags.allHaveTags);
+      toast.info(t.seo.tags.allOptimized);
       return;
     }
 
@@ -599,7 +596,7 @@ export function TagOptimization() {
             <Button
               size="lg"
               onClick={handleGenerateAll}
-              disabled={showProgressDialog || productsWithoutTags === 0}
+              disabled={showProgressDialog || productsNotOptimized === 0}
               className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
             >
               <Sparkles className="w-5 h-5" />
@@ -618,32 +615,32 @@ export function TagOptimization() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">To Optimize</p>
-              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{productsWithoutTags}</p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Non optimisé</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{productsNotOptimized}</p>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                Empty tags
+                À optimiser
               </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Click to view</p>
+          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">Cliquer pour voir</p>
         </Card>
         
         <Card 
           className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleTaggedClick}
+          onClick={handleOptimizedClick}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{aiOptimizedTags}</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">Optimisé</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{productsOptimized}</p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                AI-generated tags
+                Par l'IA
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to view</p>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Cliquer pour voir</p>
         </Card>
         
         <Card 
@@ -772,7 +769,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateAll}
-                disabled={showProgressDialog || productsWithoutTags === 0}
+                disabled={showProgressDialog || productsNotOptimized === 0}
                 className="flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />

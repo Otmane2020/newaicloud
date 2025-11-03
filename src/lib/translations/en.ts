@@ -552,8 +552,9 @@ export const translations = {
     },
     tags: {
       loadError: "Failed to load products",
-      showing: "Showing {{count}} products to tag",
+      showing: "Showing {{count}} products to optimize",
       allHaveTags: "All products already have tags",
+      allOptimized: "All products are already optimized",
       noSelected: "No product selected",
       alreadyOptimized: "{{count}} product{{s}} {{have}} already been optimized",
       trialCanRegenerate: "In trial period, you can still regenerate them",
@@ -565,8 +566,8 @@ export const translations = {
       allSynced: "All products are synchronized",
       filters: {
         all: "All Products",
-        toTag: "To Tag",
-        tagged: "Tagged",
+        toOptimize: "Not Optimized",
+        optimized: "Optimized",
         toSync: "To Synchronize",
         synced: "Synchronized"
       }
