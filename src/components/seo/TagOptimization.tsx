@@ -1020,7 +1020,39 @@ export function TagOptimization() {
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold truncate">{product.title}</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold truncate">{product.title}</h3>
+                    {(() => {
+                      const calculateTagScore = (tags: string | null): number => {
+                        if (!tags || tags.trim().length === 0) return 0;
+                        let tagArray: string[] = [];
+                        try {
+                          tagArray = JSON.parse(tags);
+                        } catch {
+                          tagArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                        }
+                        let score = 0;
+                        if (tagArray.length > 0) score += 5;
+                        if (tagArray.length >= 3 && tagArray.length <= 10) {
+                          score += 10;
+                        } else if (tagArray.length > 0) {
+                          score += 5;
+                        }
+                        const qualityTags = tagArray.filter(t => t.length > 3);
+                        if (qualityTags.length >= tagArray.length * 0.7) {
+                          score += 5;
+                        }
+                        return Math.min(score, 20) * 5;
+                      };
+                      const score = calculateTagScore(product.tags);
+                      const scoreColor = score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-orange-500' : 'bg-red-500';
+                      return (
+                        <Badge className={`${scoreColor} text-white text-xs`}>
+                          {score}/100
+                        </Badge>
+                      );
+                    })()}
+                  </div>
                   <p className="text-sm text-muted-foreground">{product.vendor}</p>
                    {product.tags ? (
                     editingProduct === product.id ? (
@@ -1041,16 +1073,28 @@ export function TagOptimization() {
                     ) : (
                       <div className="flex items-center gap-2 mt-2">
                         <div className="flex flex-wrap gap-1">
-                          {product.tags.split(',').slice(0, 5).map((tag, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              {tag.trim()}
-                            </Badge>
-                          ))}
-                          {product.tags.split(',').length > 5 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{product.tags.split(',').length - 5}
-                            </Badge>
-                          )}
+                          {(() => {
+                            let tagArray: string[] = [];
+                            try {
+                              tagArray = JSON.parse(product.tags);
+                            } catch {
+                              tagArray = product.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                            }
+                            return (
+                              <>
+                                {tagArray.slice(0, 5).map((tag, i) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                                {tagArray.length > 5 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{tagArray.length - 5}
+                                  </Badge>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                         <Button
                           size="sm"
@@ -1121,7 +1165,39 @@ export function TagOptimization() {
               </div>
               <div className="p-4 space-y-3">
                 <div>
-                  <h3 className="font-semibold line-clamp-2">{product.title}</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold line-clamp-2">{product.title}</h3>
+                    {(() => {
+                      const calculateTagScore = (tags: string | null): number => {
+                        if (!tags || tags.trim().length === 0) return 0;
+                        let tagArray: string[] = [];
+                        try {
+                          tagArray = JSON.parse(tags);
+                        } catch {
+                          tagArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                        }
+                        let score = 0;
+                        if (tagArray.length > 0) score += 5;
+                        if (tagArray.length >= 3 && tagArray.length <= 10) {
+                          score += 10;
+                        } else if (tagArray.length > 0) {
+                          score += 5;
+                        }
+                        const qualityTags = tagArray.filter(t => t.length > 3);
+                        if (qualityTags.length >= tagArray.length * 0.7) {
+                          score += 5;
+                        }
+                        return Math.min(score, 20) * 5;
+                      };
+                      const score = calculateTagScore(product.tags);
+                      const scoreColor = score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-orange-500' : 'bg-red-500';
+                      return (
+                        <Badge className={`${scoreColor} text-white text-xs`}>
+                          {score}/100
+                        </Badge>
+                      );
+                    })()}
+                  </div>
                   <p className="text-xs text-muted-foreground">{product.vendor}</p>
                 </div>
                 {product.tags ? (
@@ -1144,11 +1220,28 @@ export function TagOptimization() {
                   ) : (
                     <div className="space-y-2">
                       <div className="flex flex-wrap gap-1">
-                        {product.tags.split(',').map((tag, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {tag.trim()}
-                          </Badge>
-                        ))}
+                        {(() => {
+                          let tagArray: string[] = [];
+                          try {
+                            tagArray = JSON.parse(product.tags);
+                          } catch {
+                            tagArray = product.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                          }
+                          return (
+                            <>
+                              {tagArray.slice(0, 5).map((tag, i) => (
+                                <Badge key={i} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                              {tagArray.length > 5 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{tagArray.length - 5}
+                                </Badge>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       <Button
                         size="sm"

@@ -27,7 +27,6 @@ import {
   List,
   TrendingUp,
   Eye,
-  Zap,
   ArrowRight,
   ShoppingBag,
   Package,
@@ -108,7 +107,7 @@ export function SeoAltImage() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedImages, setOptimizedImages] = useState<ImageWithProduct[]>([]);
-  const { limits, loading: limitsLoading } = useUsageLimits();
+  const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { t, tf } = useTranslation();
 
   const IMAGES_PER_PAGE = 50;
@@ -334,6 +333,71 @@ export function SeoAltImage() {
       setSeoScoreSort('asc');
     } else {
       setSeoScoreSort('none');
+    }
+  };
+
+  const handleOptimizeImage = async (imageId: string, useVision = true) => {
+    // Check limits BEFORE optimizing
+    if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    try {
+      setGenerating(true);
+      const toastId = toast.loading('Optimisation de l\'image en cours...');
+
+      const image = images.find(img => img.id === imageId);
+      if (!image) {
+        toast.error('Image introuvable', { id: toastId });
+        return;
+      }
+
+      const imageType = image.image_type || 'product';
+      const functionName = useVision ? 'generate-alt-texts-vision' : 'generate-alt-texts';
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: { 
+          imageId: image.id,
+          imageType: useVision ? imageType : undefined
+        }
+      });
+
+      // Gérer erreur 403 limite atteinte
+      if (error && (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403'))) {
+        toast.error('Limite d\'optimisations atteinte', { id: toastId });
+        setShowUpgradeDialog(true);
+        await refreshLimits();
+        return;
+      }
+
+      if (error) throw error;
+
+      toast.success('ALT text généré avec succès', { id: toastId });
+      await fetchImages();
+      await refreshLimits();
+      
+      // Afficher le résultat
+      const { data: updatedImage } = await supabase
+        .from(imageType === 'product' ? 'product_images' : 'content_images')
+        .select('*')
+        .eq('id', imageId)
+        .single();
+      
+      if (updatedImage) {
+        setOptimizedImages([{ ...updatedImage, image_url: updatedImage.src, product: image.product }] as any);
+        setShowResultsDialog(true);
+      }
+    } catch (error: any) {
+      console.error('Error optimizing image:', error);
+      toast.error(error.message || 'Erreur lors de l\'optimisation');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -1046,6 +1110,16 @@ export function SeoAltImage() {
                             Sans ALT
                           </Badge>
                         )}
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => handleOptimizeImage(img.id, true)}
+                          disabled={generating || !canDoAction('optimizations')}
+                          title="Optimiser avec Vision AI"
+                          className="w-full bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1081,6 +1155,7 @@ export function SeoAltImage() {
                     {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
                   </button>
                 </th>
+                <th className="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -1116,6 +1191,18 @@ export function SeoAltImage() {
                         Sans ALT
                       </Badge>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => handleOptimizeImage(img.id, true)}
+                      disabled={generating || !canDoAction('optimizations')}
+                      title="Optimiser avec Vision AI"
+                      className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </Button>
                   </td>
                 </tr>
               ))}
