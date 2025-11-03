@@ -11,7 +11,8 @@ import {
   AlertCircle,
   Loader2,
   Search,
-  RefreshCw
+  RefreshCw,
+  ShoppingBag
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -32,6 +33,17 @@ interface ChatMessage {
   content: string;
   role: 'user' | 'assistant';
   created_at: string;
+  session_id: string;
+  products?: any[]; // Ajout des produits dans les messages
+}
+
+interface Product {
+  id: string;
+  title: string;
+  price: string;
+  compare_at_price?: string;
+  image_url?: string;
+  category?: string;
 }
 
 export default function ChatHistory() {
@@ -97,7 +109,15 @@ export default function ChatHistory() {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Conversion des rôles et ajout des produits
+      const formattedMessages: ChatMessage[] = (data || []).map(msg => ({
+        ...msg,
+        role: msg.role as 'user' | 'assistant',
+        products: msg.products || [] // Récupération des produits depuis la base
+      }));
+      
+      setMessages(formattedMessages);
       setSelectedSession(sessionId);
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -170,6 +190,40 @@ export default function ChatHistory() {
     if (!message) return '';
     return message.length > 100 ? `${message.substring(0, 100)}...` : message;
   }, []);
+
+  const ProductCard = ({ product }: { product: Product }) => (
+    <div className="bg-white border rounded-lg p-3 mb-2 shadow-sm">
+      <div className="flex items-start gap-3">
+        {product.image_url && (
+          <img 
+            src={product.image_url} 
+            alt={product.title}
+            className="w-12 h-12 object-cover rounded"
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {product.title}
+          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-sm font-semibold text-primary">
+              {product.price} €
+            </span>
+            {product.compare_at_price && Number(product.compare_at_price) > Number(product.price) && (
+              <span className="text-xs text-muted-foreground line-through">
+                {product.compare_at_price} €
+              </span>
+            )}
+          </div>
+          {product.category && (
+            <Badge variant="outline" className="mt-1 text-xs">
+              {product.category}
+            </Badge>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -335,30 +389,46 @@ export default function ChatHistory() {
                   ) : (
                     <div className="space-y-6">
                       {messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${
-                            message.role === 'user' ? 'justify-end' : 'justify-start'
-                          }`}
-                        >
+                        <div key={message.id}>
                           <div
-                            className={`max-w-[85%] rounded-2xl p-4 transition-all ${
-                              message.role === 'user'
-                                ? 'bg-primary text-primary-foreground rounded-br-none'
-                                : 'bg-muted border rounded-bl-none'
+                            className={`flex ${
+                              message.role === 'user' ? 'justify-end' : 'justify-start'
                             }`}
                           >
-                            <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                              {message.content}
-                            </p>
-                            <p
-                              className={`text-xs mt-2 ${
-                                message.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            <div
+                              className={`max-w-[85%] rounded-2xl p-4 transition-all ${
+                                message.role === 'user'
+                                  ? 'bg-primary text-primary-foreground rounded-br-none'
+                                  : 'bg-muted border rounded-bl-none'
                               }`}
                             >
-                              {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
-                            </p>
+                              <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                                {message.content}
+                              </p>
+                              <p
+                                className={`text-xs mt-2 ${
+                                  message.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                                }`}
+                              >
+                                {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
+                              </p>
+                            </div>
                           </div>
+                          
+                          {/* Affichage des produits pour les messages de l'assistant */}
+                          {message.role === 'assistant' && message.products && message.products.length > 0 && (
+                            <div className="mt-3 ml-4 max-w-[85%]">
+                              <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
+                                <ShoppingBag className="w-4 h-4" />
+                                Produits suggérés ({message.products.length})
+                              </div>
+                              <div className="grid gap-2">
+                                {message.products.map((product, index) => (
+                                  <ProductCard key={index} product={product} />
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
