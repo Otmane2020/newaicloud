@@ -1292,7 +1292,7 @@ export function CollectionOptimization() {
                       </TableCell>
                       <TableCell>
                         {collection.last_synced_at ? (
-                          <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                          <Badge variant="default" className="bg-green-600 text-white">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Synced
                           </Badge>

@@ -1166,77 +1166,43 @@ export function SeoOptimization() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          {product.enrichment_status === "enriched" ? (
-                            <>
-                              <div
-                                className={`text-2xl font-bold ${
-                                  seoScore.score >= 80
-                                    ? "text-green-600"
-                                    : seoScore.score >= 50
-                                      ? "text-orange-600"
-                                      : "text-red-600"
-                                }`}
-                              >
-                                {seoScore.score}%
-                              </div>
-                              <span className="text-xs text-muted-foreground">
-                                {seoScore.score >= 80
-                                  ? t.seo.optimization.excellentEmoji
-                                  : seoScore.score >= 50
-                                    ? t.seo.optimization.goodEmoji
-                                    : t.seo.optimization.toImprove}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              {(() => {
-                                const initialScore = calculateDetailedSeoScore(
-                                  product.title,
-                                  product.vendor,
-                                  !!product.image_url,
-                                  true,
-                                  product.tags,
-                                  product.optimization_count,
-                                );
-                                return (
-                                  <>
-                                    <div
-                                      className={`text-2xl font-bold ${
-                                        initialScore.score >= 80
-                                          ? "text-green-600"
-                                          : initialScore.score >= 50
-                                            ? "text-orange-600"
-                                            : "text-red-600"
-                                      }`}
-                                    >
-                                      {initialScore.score}%
-                                    </div>
-                                    <span className="text-xs text-muted-foreground">
-                                      {t.seo.optimization.initialScore}
-                                    </span>
-                                  </>
-                                );
-                              })()}
-                            </>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const scoreBadge = getSeoScoreBadge(seoScore.score);
+                            return (
+                              <Badge variant={scoreBadge.variant} className={scoreBadge.color}>
+                                {scoreBadge.label} - {Math.round(seoScore.score)}%
+                              </Badge>
+                            );
+                          })()}
+                          {product.optimization_count && product.optimization_count > 0 && (
+                            <Sparkles className="w-3 h-3 text-primary" />
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={product.enrichment_status === "enriched" ? "default" : "secondary"}>
-                          {product.enrichment_status === "enriched"
-                            ? t.seo.optimization.optimizedTab
-                            : t.seo.optimization.pending}
+                          {product.enrichment_status === "enriched" ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              {t.seo.optimization.optimizedTab}
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 mr-1" />
+                              {t.seo.optimization.pending}
+                            </>
+                          )}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         {product.seo_synced_to_shopify ? (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <Badge variant="default" className="bg-green-600 text-white">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             {t.seo.optimization.yes}
                           </Badge>
                         ) : (
-                          <Badge variant="outline">
+                          <Badge variant="secondary">
                             <Clock className="w-3 h-3 mr-1" />
                             {t.seo.optimization.no}
                           </Badge>

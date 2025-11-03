@@ -904,29 +904,18 @@ export function PageOptimization() {
                       </TableCell>
                       <TableCell>
                         {page.last_synced_at ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge variant="default" className="bg-green-600 hover:bg-green-700 cursor-help">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Synced
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs">
-                                  Last synced: {new Date(page.last_synced_at).toLocaleString()}
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Badge variant="default" className="bg-green-600 text-white">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Synced
+                          </Badge>
                         ) : page.optimized ? (
                           <Badge variant="secondary" className="bg-yellow-600 text-white">
                             <Clock className="w-3 h-3 mr-1" />
                             Pending
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-muted-foreground">
-                            <AlertCircle className="w-3 h-3 mr-1" />
+                          <Badge variant="secondary">
+                            <Clock className="w-3 h-3 mr-1" />
                             Not synced
                           </Badge>
                         )}
