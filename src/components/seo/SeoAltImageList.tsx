@@ -1,37 +1,25 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useTranslation } from "@/lib/language";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import {
-  Loader2,
-  Image as ImageIcon,
-  Wand2,
-  AlertCircle,
-  ChevronDown,
-  ChevronRight,
-  Sparkles,
-  RefreshCw,
-  Clock,
-  Upload,
-  CheckCircle,
-} from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-  ProgressDialog,
-  ResultsDialog,
-  SyncConfirmationDialog,
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from '@/lib/language';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { Loader2, Image as ImageIcon, Wand2, AlertCircle, ChevronDown, ChevronRight, Sparkles, RefreshCw, Clock, Upload, CheckCircle } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { 
+  ProgressDialog, 
+  ResultsDialog, 
+  SyncConfirmationDialog, 
   SuccessDialog,
-  WorkflowItem,
-} from "./SeoWorkflowDialogs";
-import { SeoHeroBanner } from "./SeoHeroBanner";
-import { VisionAIBanner } from "./VisionAIBanner";
+  WorkflowItem 
+} from './SeoWorkflowDialogs';
+import { SeoHeroBanner } from './SeoHeroBanner';
+import { VisionAIBanner } from './VisionAIBanner';
 
 interface ProductImage {
   id: string;
@@ -58,14 +46,14 @@ export function SeoAltImageList() {
   const [products, setProducts] = useState<ProductWithImages[]>([]);
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
-  const [filterStatus, setFilterStatus] = useState<"all" | "empty" | "filled">("all");
-
+  const [filterStatus, setFilterStatus] = useState<'all' | 'empty' | 'filled'>('all');
+  
   // Workflow states
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [currentOperation, setCurrentOperation] = useState<"optimizing" | "syncing">("optimizing");
+  const [currentOperation, setCurrentOperation] = useState<'optimizing' | 'syncing'>('optimizing');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [optimizedItems, setOptimizedItems] = useState<WorkflowItem[]>([]);
   const [imagesToSync, setImagesToSync] = useState<ProductImage[]>([]);
@@ -77,12 +65,11 @@ export function SeoAltImageList() {
   const fetchImages = async () => {
     try {
       setLoading(true);
-
+      
       // Fetch product images with their product info
       const { data: imagesData, error: imagesError } = await supabase
-        .from("product_images")
-        .select(
-          `
+        .from('product_images')
+        .select(`
           id,
           src,
           alt_text,
@@ -96,26 +83,25 @@ export function SeoAltImageList() {
             handle,
             seller_id
           )
-        `,
-        )
-        .eq("shopify_products.seller_id", user?.id)
-        .order("product_id", { ascending: true })
-        .order("position", { ascending: true });
+        `)
+        .eq('shopify_products.seller_id', user?.id)
+        .order('product_id', { ascending: true })
+        .order('position', { ascending: true });
 
       if (imagesError) throw imagesError;
 
       // Fetch homepage images
       const { data: homepageImagesData, error: homepageError } = await supabase
-        .from("homepage_images")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("position", { ascending: true });
+        .from('homepage_images')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('position', { ascending: true });
 
-      if (homepageError) console.error("Homepage images error:", homepageError);
+      if (homepageError) console.error('Homepage images error:', homepageError);
 
       // Group product images by product
       const productsMap = new Map<string, ProductWithImages>();
-
+      
       (imagesData || []).forEach((img: any) => {
         const productId = img.shopify_products.id;
         if (!productsMap.has(productId)) {
@@ -123,7 +109,7 @@ export function SeoAltImageList() {
             id: productId,
             title: img.shopify_products.title,
             handle: img.shopify_products.handle,
-            images: [],
+            images: []
           });
         }
         productsMap.get(productId)!.images.push({
@@ -133,31 +119,31 @@ export function SeoAltImageList() {
           position: img.position,
           product_id: productId,
           last_synced_at: img.last_synced_at,
-          shopify_image_id: img.shopify_image_id,
+          shopify_image_id: img.shopify_image_id
         });
       });
 
       // Add homepage images as a separate "product"
       if (homepageImagesData && homepageImagesData.length > 0) {
-        productsMap.set("homepage", {
-          id: "homepage",
+        productsMap.set('homepage', {
+          id: 'homepage',
           title: t.seo.altImage.homepage,
-          handle: "homepage",
+          handle: 'homepage',
           images: homepageImagesData.map((img: any) => ({
             id: img.id,
             src: img.src,
             alt_text: img.alt_text,
             position: img.position,
-            product_id: "homepage",
+            product_id: 'homepage',
             last_synced_at: img.last_synced_at,
-            shopify_image_id: img.shopify_image_id || null,
-          })),
+            shopify_image_id: img.shopify_image_id || null
+          }))
         });
       }
 
       setProducts(Array.from(productsMap.values()));
     } catch (error) {
-      console.error("Error fetching images:", error);
+      console.error('Error fetching images:', error);
       toast.error(t.seo.altImage.loadError);
     } finally {
       setLoading(false);
@@ -185,15 +171,17 @@ export function SeoAltImageList() {
   };
 
   const handleGenerateForSelected = async () => {
-    const allImages = products.flatMap((p) => p.images);
-    const imagesToGenerate = allImages.filter((img) => selectedImages.has(img.id) && !img.alt_text);
+    const allImages = products.flatMap(p => p.images);
+    const imagesToGenerate = allImages.filter(
+      img => selectedImages.has(img.id) && !img.alt_text
+    );
 
     if (imagesToGenerate.length === 0) {
       toast.info(t.seo.altImage.noEmptyAlt);
       return;
     }
 
-    setCurrentOperation("optimizing");
+    setCurrentOperation('optimizing');
     setShowProgressDialog(true);
     setProgress({ current: 0, total: imagesToGenerate.length });
 
@@ -201,37 +189,37 @@ export function SeoAltImageList() {
 
     for (let i = 0; i < imagesToGenerate.length; i++) {
       try {
-        const { data, error } = await supabase.functions.invoke("generate-alt-texts", {
-          body: { imageId: imagesToGenerate[i].id },
+        const { data, error } = await supabase.functions.invoke('generate-alt-texts', {
+          body: { imageId: imagesToGenerate[i].id }
         });
-
+        
         if (!error && data) {
-          const product = products.find((p) => p.id === imagesToGenerate[i].product_id);
+          const product = products.find(p => p.id === imagesToGenerate[i].product_id);
           generatedImages.push({
             ...imagesToGenerate[i],
             alt_text: data.alt_text,
-            product_title: product?.title,
+            product_title: product?.title
           });
         }
-
+        
         setProgress({ current: i + 1, total: imagesToGenerate.length });
       } catch (error) {
-        console.error("Error generating ALT text:", error);
+        console.error('Error generating ALT text:', error);
       }
     }
 
     setSelectedImages(new Set());
     await fetchImages();
-
+    
     // Prepare items for results dialog
-    const items: WorkflowItem[] = generatedImages.map((img) => ({
+    const items: WorkflowItem[] = generatedImages.map(img => ({
       id: img.id,
-      title: img.product_title || "Unknown Product",
+      title: img.product_title || 'Unknown Product',
       alt_text: img.alt_text,
       image_url: img.src,
-      shopify_image_id: img.shopify_image_id,
+      shopify_image_id: img.shopify_image_id
     }));
-
+    
     setOptimizedItems(items);
     setShowProgressDialog(false);
     setShowResultsDialog(true);
@@ -241,16 +229,18 @@ export function SeoAltImageList() {
   const invokeWithTimeout = async (imageId: string, timeoutMs = 30000, retries = 1): Promise<any> => {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeoutMs));
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+        );
 
-        const invokePromise = supabase.functions.invoke("sync-seo-to-shopify", {
-          body: { imageId },
+        const invokePromise = supabase.functions.invoke('sync-seo-to-shopify', {
+          body: { imageId }
         });
 
         const result = await Promise.race([invokePromise, timeoutPromise]);
         return result;
       } catch (error: any) {
-        if (attempt < retries && (error.message === "Timeout" || error.message?.includes("network"))) {
+        if (attempt < retries && (error.message === 'Timeout' || error.message?.includes('network'))) {
           console.log(`⚠️ Retry ${attempt + 1}/${retries} for image ${imageId}`);
           continue;
         }
@@ -263,27 +253,27 @@ export function SeoAltImageList() {
     if (imagesToSync.length === 0) return;
 
     // CRITICAL: Filter out images without Shopify ID before syncing
-    const syncableImages = imagesToSync.filter((img) => img.shopify_image_id);
+    const syncableImages = imagesToSync.filter(img => img.shopify_image_id);
     const filteredCount = imagesToSync.length - syncableImages.length;
-
+    
     if (syncableImages.length === 0) {
       toast.error(t.seo.altImage.noSyncable, {
-        description: t.seo.altImage.homepageCannotSync,
+        description: t.seo.altImage.homepageCannotSync
       });
       setShowResultsDialog(false);
       setShowSyncDialog(false);
       return;
     }
-
+    
     if (filteredCount > 0) {
-      toast.info(tf("seo.altImage.homepageIgnored", { count: filteredCount }), {
-        description: t.seo.altImage.onlyProducts,
+      toast.info(tf('seo.altImage.homepageIgnored', { count: filteredCount }), {
+        description: t.seo.altImage.onlyProducts
       });
     }
 
     setShowResultsDialog(false);
     setShowSyncDialog(false);
-    setCurrentOperation("syncing");
+    setCurrentOperation('syncing');
     setShowProgressDialog(true);
     setProgress({ current: 0, total: syncableImages.length });
 
@@ -295,13 +285,8 @@ export function SeoAltImageList() {
     try {
       for (let i = 0; i < syncableImages.length; i++) {
         const image = syncableImages[i];
-        console.log(
-          `🔄 [${i + 1}/${syncableImages.length}] Syncing image:`,
-          image.id,
-          "Shopify ID:",
-          image.shopify_image_id,
-        );
-
+        console.log(`🔄 [${i + 1}/${syncableImages.length}] Syncing image:`, image.id, 'Shopify ID:', image.shopify_image_id);
+        
         try {
           const { data, error } = await invokeWithTimeout(image.id);
 
@@ -335,41 +320,38 @@ export function SeoAltImageList() {
       }
     } finally {
       // Wait for UI to update before closing (prevents dialog getting stuck at 100%)
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // ALWAYS close the dialog first
       setShowProgressDialog(false);
-
+      
       // Wait a bit before showing success dialog to avoid conflicts
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Clear sync state
       setImagesToSync([]);
-
+      
       // Show results
       if (successCount > 0) {
         // Update optimizedItems with successfully synced images
-        const syncedItems: WorkflowItem[] = successfulImages.map((img) => ({
+        const syncedItems: WorkflowItem[] = successfulImages.map(img => ({
           id: img.id,
-          title: img.product_title || "Unknown Product",
-          alt_text: img.alt_text || "",
+          title: img.product_title || 'Unknown Product',
+          alt_text: img.alt_text || '',
           image_url: img.src,
-          shopify_image_id: img.shopify_image_id,
+          shopify_image_id: img.shopify_image_id
         }));
         setOptimizedItems(syncedItems);
         setShowSuccessDialog(true);
       }
-
+      
       if (errorCount > 0) {
         toast.warning(`${errorCount} image(s) échouée(s)`, {
-          description:
-            failedImages.length > 0
-              ? `Produits: ${failedImages.slice(0, 3).join(", ")}${failedImages.length > 3 ? "..." : ""}`
-              : undefined,
-          duration: 5000,
+          description: failedImages.length > 0 ? `Produits: ${failedImages.slice(0, 3).join(', ')}${failedImages.length > 3 ? '...' : ''}` : undefined,
+          duration: 5000
         });
       }
-
+      
       // Refresh
       await fetchImages();
     }
@@ -378,31 +360,31 @@ export function SeoAltImageList() {
   const handleCloseSuccess = () => {
     setShowSuccessDialog(false);
     setOptimizedItems([]);
-    toast.success("Synchronisation terminée !", {
-      description: `${progress.current} image${progress.current > 1 ? "s synchronisées" : " synchronisée"} avec succès`,
+    toast.success('Synchronisation terminée !', {
+      description: `${progress.current} image${progress.current > 1 ? 's synchronisées' : ' synchronisée'} avec succès`
     });
   };
 
-  const filteredProducts = products
-    .map((product) => ({
-      ...product,
-      images: product.images.filter((img) => {
-        if (filterStatus === "empty") return !img.alt_text;
-        if (filterStatus === "filled") return !!img.alt_text;
-        return true;
-      }),
-    }))
-    .filter((p) => p.images.length > 0);
+  const filteredProducts = products.map(product => ({
+    ...product,
+    images: product.images.filter(img => {
+      if (filterStatus === 'empty') return !img.alt_text;
+      if (filterStatus === 'filled') return !!img.alt_text;
+      return true;
+    })
+  })).filter(p => p.images.length > 0);
 
-  const allImages = products.flatMap((p) => p.images);
+  const allImages = products.flatMap(p => p.images);
   const stats = {
     total: allImages.length,
-    empty: allImages.filter((img) => !img.alt_text).length,
-    filled: allImages.filter((img) => !!img.alt_text).length,
+    empty: allImages.filter(img => !img.alt_text).length,
+    filled: allImages.filter(img => !!img.alt_text).length
   };
 
   // Calculate global score for ALT images
-  const globalAltScore = stats.total > 0 ? Math.round((stats.filled / stats.total) * 100) : 0;
+  const globalAltScore = stats.total > 0 
+    ? Math.round((stats.filled / stats.total) * 100) 
+    : 0;
 
   if (loading) {
     return (
@@ -421,25 +403,25 @@ export function SeoAltImageList() {
         subtitle="Optimisation intelligente IA"
         description="Optimisez vos images produits avec l'IA. Générez des textes ALT descriptifs et optimisés pour améliorer votre référencement et l'accessibilité."
         globalScore={globalAltScore}
-        optimizing={currentOperation === "optimizing" && showProgressDialog}
+        optimizing={currentOperation === 'optimizing' && showProgressDialog}
         onOptimizeAll={async () => {
-          const imagesToGenerate = allImages.filter((img) => !img.alt_text);
+          const imagesToGenerate = allImages.filter(img => !img.alt_text);
           if (imagesToGenerate.length === 0) {
             toast.info(t.seo.altImage.noEmptyAlt);
             return;
           }
           // Select all images without ALT
-          setSelectedImages(new Set(imagesToGenerate.map((img) => img.id)));
+          setSelectedImages(new Set(imagesToGenerate.map(img => img.id)));
           // Trigger generation
           await handleGenerateForSelected();
         }}
         canOptimize={stats.empty > 0}
         features={[
-          { label: "ALT Automatisé", icon: Sparkles },
-          { label: "Images Complètes", icon: CheckCircle },
-          { label: "Sync Shopify", icon: Upload },
+          { label: 'ALT Automatisé', icon: Sparkles },
+          { label: 'Images Complètes', icon: CheckCircle },
+          { label: 'Sync Shopify', icon: Upload }
         ]}
-        badge={{ text: "Vision AI" }}
+        badge={{ text: 'Vision AI' }}
       />
 
       {/* Vision AI Banner */}
@@ -447,62 +429,56 @@ export function SeoAltImageList() {
 
       {/* Stats Cards - 4 cartes cliquables */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card
+        <Card 
           className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
-            setFilterStatus("empty");
-            toast.info(tf("seo.altImage.info.emptyImages", { count: stats.empty }));
+            setFilterStatus('empty');
+            toast.info(tf('seo.altImage.info.emptyImages', { count: stats.empty }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                {t.seo.altImage.stats.toOptimize}
-              </p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">{t.seo.altImage.stats.toOptimize}</p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.empty}</p>
-              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">{t.seo.altImage.stats.emptyAlt}</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                {t.seo.altImage.stats.emptyAlt}
+              </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
           <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
-
-        <Card
+        
+        <Card 
           className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
-            setFilterStatus("filled");
-            toast.info(tf("seo.altImage.info.aiOptimizedImages", { count: stats.filled }));
+            setFilterStatus('filled');
+            toast.info(tf('seo.altImage.info.aiOptimizedImages', { count: stats.filled }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">
-                {t.seo.altImage.stats.aiOptimized}
-              </p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">{t.seo.altImage.stats.aiOptimized}</p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.filled}</p>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1">{t.seo.altImage.stats.withAlt}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                {t.seo.altImage.stats.withAlt}
+              </p>
             </div>
             <Sparkles className="w-8 h-8 text-green-600" />
           </div>
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
-
-        <Card
+        
+        <Card 
           className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
-            toast.info(
-              tf("seo.altImage.info.toSyncImages", {
-                count: allImages.filter((img) => img.alt_text && !img.last_synced_at).length,
-              }),
-            );
+            toast.info(tf('seo.altImage.info.toSyncImages', { count: allImages.filter(img => img.alt_text && !img.last_synced_at).length }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-purple-700 dark:text-purple-300">{t.seo.altImage.stats.toSync}</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                {allImages.filter((img) => img.alt_text && !img.last_synced_at).length}
-              </p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{allImages.filter(img => img.alt_text && !img.last_synced_at).length}</p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
                 {t.seo.altImage.stats.aiOptimizedOnly}
               </p>
@@ -511,24 +487,20 @@ export function SeoAltImageList() {
           </div>
           <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
-
-        <Card
+        
+        <Card 
           className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
-            toast.info(
-              tf("seo.altImage.info.syncedImages", { count: allImages.filter((img) => img.last_synced_at).length }),
-            );
+            toast.info(tf('seo.altImage.info.syncedImages', { count: allImages.filter(img => img.last_synced_at).length }));
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                {t.seo.altImage.stats.synchronized}
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t.seo.altImage.stats.synchronized}</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{allImages.filter(img => img.last_synced_at).length}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                {t.seo.altImage.stats.syncedToShopify}
               </p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                {allImages.filter((img) => img.last_synced_at).length}
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{t.seo.altImage.stats.syncedToShopify}</p>
             </div>
             <CheckCircle className="w-8 h-8 text-blue-600" />
           </div>
@@ -538,13 +510,13 @@ export function SeoAltImageList() {
 
       {/* Filter Tabs - HIDDEN NOW */}
       <div className="hidden">
-        <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
-          <TabsList>
-            <TabsTrigger value="all">Toutes ({stats.total})</TabsTrigger>
-            <TabsTrigger value="empty">Sans ALT ({stats.empty})</TabsTrigger>
-            <TabsTrigger value="filled">Avec ALT ({stats.filled})</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+        <TabsList>
+          <TabsTrigger value="all">Toutes ({stats.total})</TabsTrigger>
+          <TabsTrigger value="empty">Sans ALT ({stats.empty})</TabsTrigger>
+          <TabsTrigger value="filled">Avec ALT ({stats.filled})</TabsTrigger>
+        </TabsList>
+      </Tabs>
       </div>
 
       {/* Stats */}
@@ -583,7 +555,9 @@ export function SeoAltImageList() {
         <div className="p-4 space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <p className="text-sm text-muted-foreground">{selectedImages.size} image(s) sélectionnée(s)</p>
+              <p className="text-sm text-muted-foreground">
+                {selectedImages.size} image(s) sélectionnée(s)
+              </p>
               <Button
                 variant="ghost"
                 size="sm"
@@ -591,7 +565,7 @@ export function SeoAltImageList() {
                   if (expandedProducts.size === filteredProducts.length) {
                     setExpandedProducts(new Set());
                   } else {
-                    setExpandedProducts(new Set(filteredProducts.map((p) => p.id)));
+                    setExpandedProducts(new Set(filteredProducts.map(p => p.id)));
                   }
                 }}
               >
@@ -612,13 +586,13 @@ export function SeoAltImageList() {
                 size="sm"
                 onClick={async () => {
                   try {
-                    const { data, error } = await supabase.functions.invoke("import-homepage-images");
+                    const { data, error } = await supabase.functions.invoke('import-homepage-images');
                     if (error) throw error;
                     toast.success(`${data.imported} images importées depuis la page d'accueil`);
                     await fetchImages();
                   } catch (error) {
-                    console.error("Import error:", error);
-                    toast.error("Erreur lors de l'import");
+                    console.error('Import error:', error);
+                    toast.error('Erreur lors de l\'import');
                   }
                 }}
               >
@@ -627,58 +601,62 @@ export function SeoAltImageList() {
               </Button>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleGenerateForSelected}
-                disabled={(currentOperation === "optimizing" && showProgressDialog) || selectedImages.size === 0}
-              >
-                {currentOperation === "optimizing" && showProgressDialog ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Génération...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Optimiser ALT ({selectedImages.size})
-                  </>
-                )}
-              </Button>
+            <Button
+              variant="outline"
+              onClick={handleGenerateForSelected}
+              disabled={currentOperation === 'optimizing' && showProgressDialog || selectedImages.size === 0}
+            >
+              {(currentOperation === 'optimizing' && showProgressDialog) ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  Optimiser ALT ({selectedImages.size})
+                </>
+              )}
+            </Button>
               <Button
                 onClick={() => {
-                  const allImages = products.flatMap((p) => p.images);
-
+                  const allImages = products.flatMap(p => p.images);
+                  
                   // Filter images that have ALT text AND Shopify image ID
-                  const syncableImages = allImages
-                    .filter((img) => selectedImages.has(img.id) && img.alt_text && img.shopify_image_id)
-                    .map((img) => {
-                      const product = products.find((p) => p.id === img.product_id);
-                      return { ...img, product_title: product?.title };
-                    });
+                  const syncableImages = allImages.filter(img => 
+                    selectedImages.has(img.id) && 
+                    img.alt_text && 
+                    img.shopify_image_id
+                  ).map(img => {
+                    const product = products.find(p => p.id === img.product_id);
+                    return { ...img, product_title: product?.title };
+                  });
 
                   // Check for images without Shopify ID
-                  const imagesWithoutShopifyId = allImages.filter(
-                    (img) => selectedImages.has(img.id) && img.alt_text && !img.shopify_image_id,
+                  const imagesWithoutShopifyId = allImages.filter(img =>
+                    selectedImages.has(img.id) && 
+                    img.alt_text && 
+                    !img.shopify_image_id
                   );
-
+                  
                   if (syncableImages.length === 0 && imagesWithoutShopifyId.length > 0) {
-                    toast.error("Images non synchronisables", {
-                      description: `${imagesWithoutShopifyId.length} image(s) n'ont pas d'ID Shopify. Importez-les d'abord depuis Shopify.`,
+                    toast.error('Images non synchronisables', {
+                      description: `${imagesWithoutShopifyId.length} image(s) n'ont pas d'ID Shopify. Importez-les d'abord depuis Shopify.`
                     });
                     return;
                   }
 
                   if (syncableImages.length === 0) {
-                    toast.info("Aucune image avec ALT text sélectionnée");
+                    toast.info('Aucune image avec ALT text sélectionnée');
                     return;
                   }
 
                   if (imagesWithoutShopifyId.length > 0) {
-                    toast.warning("Certaines images ignorées", {
-                      description: `${imagesWithoutShopifyId.length} image(s) sans ID Shopify seront ignorées.`,
+                    toast.warning('Certaines images ignorées', {
+                      description: `${imagesWithoutShopifyId.length} image(s) sans ID Shopify seront ignorées.`
                     });
                   }
-
+                  
                   setImagesToSync(syncableImages);
                   setShowSyncDialog(true);
                 }}
@@ -689,7 +667,9 @@ export function SeoAltImageList() {
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">💡 Cliquez sur un produit pour déplier et voir ses images</p>
+          <p className="text-xs text-muted-foreground">
+            💡 Cliquez sur un produit pour déplier et voir ses images
+          </p>
         </div>
       </Card>
 
@@ -704,8 +684,8 @@ export function SeoAltImageList() {
           <div className="space-y-4">
             {filteredProducts.map((product) => {
               const isExpanded = expandedProducts.has(product.id);
-              const mainImage = product.images.find((img) => img.position === 0) || product.images[0];
-              const imagesWithAlt = product.images.filter((img) => img.alt_text).length;
+              const mainImage = product.images.find(img => img.position === 0) || product.images[0];
+              const imagesWithAlt = product.images.filter(img => img.alt_text).length;
 
               return (
                 <Card key={product.id} className="overflow-hidden">
@@ -727,7 +707,9 @@ export function SeoAltImageList() {
                           )}
                           <div className="text-left">
                             <h3 className="font-semibold">{product.title}</h3>
-                            <p className="text-sm text-muted-foreground">{product.images.length} image(s)</p>
+                            <p className="text-sm text-muted-foreground">
+                              {product.images.length} image(s)
+                            </p>
                           </div>
                         </div>
                         <Badge variant={imagesWithAlt === product.images.length ? "default" : "secondary"}>
@@ -735,7 +717,7 @@ export function SeoAltImageList() {
                         </Badge>
                       </div>
                     </CollapsibleTrigger>
-
+                    
                     <CollapsibleContent>
                       <div className="p-4 pt-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {product.images.map((image) => (
@@ -743,7 +725,7 @@ export function SeoAltImageList() {
                             <div className="relative aspect-square">
                               <img
                                 src={image.src}
-                                alt={image.alt_text || "Product image"}
+                                alt={image.alt_text || 'Product image'}
                                 className="w-full h-full object-cover"
                               />
                               <div className="absolute top-2 left-2">
@@ -754,7 +736,9 @@ export function SeoAltImageList() {
                                 />
                               </div>
                               {image.alt_text && (
-                                <Badge className="absolute top-2 right-2 bg-success text-xs">ALT ✓</Badge>
+                                <Badge className="absolute top-2 right-2 bg-success text-xs">
+                                  ALT ✓
+                                </Badge>
                               )}
                               {image.last_synced_at && (
                                 <Badge className="absolute top-10 right-2 bg-green-500 text-white text-xs">
@@ -762,12 +746,16 @@ export function SeoAltImageList() {
                                 </Badge>
                               )}
                               {image.position === 0 && (
-                                <Badge className="absolute bottom-2 left-2 bg-primary text-xs">Principale</Badge>
+                                <Badge className="absolute bottom-2 left-2 bg-primary text-xs">
+                                  Principale
+                                </Badge>
                               )}
                             </div>
                             <div className="p-2">
                               {image.alt_text ? (
-                                <p className="text-xs text-muted-foreground line-clamp-2">{image.alt_text}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {image.alt_text}
+                                </p>
                               ) : (
                                 <div className="flex items-center gap-1 text-xs text-warning">
                                   <AlertCircle className="w-3 h-3" />
@@ -804,34 +792,34 @@ export function SeoAltImageList() {
         items={optimizedItems}
         onSyncClick={() => {
           setShowResultsDialog(false);
-
+          
           // Filter images that have Shopify ID
-          const syncableImages = optimizedItems.filter((img) => img.shopify_image_id);
-          const imagesWithoutShopifyId = optimizedItems.filter((img) => !img.shopify_image_id);
-
+          const syncableImages = optimizedItems.filter(img => img.shopify_image_id);
+          const imagesWithoutShopifyId = optimizedItems.filter(img => !img.shopify_image_id);
+          
           if (syncableImages.length === 0) {
-            toast.error("Images non synchronisables", {
-              description: `Aucune image n'a d'ID Shopify. Les images de homepage ne peuvent pas être synchronisées.`,
+            toast.error('Images non synchronisables', {
+              description: `Aucune image n'a d'ID Shopify. Les images de homepage ne peuvent pas être synchronisées.`
             });
             return;
           }
-
+          
           if (imagesWithoutShopifyId.length > 0) {
-            toast.warning("Certaines images ignorées", {
-              description: `${imagesWithoutShopifyId.length} image(s) de homepage sans ID Shopify seront ignorées.`,
+            toast.warning('Certaines images ignorées', {
+              description: `${imagesWithoutShopifyId.length} image(s) de homepage sans ID Shopify seront ignorées.`
             });
           }
-
-          const imagesWithProduct = syncableImages.map((img) => {
-            const product = products.find((p) => p.images.some((i) => i.id === img.id));
+          
+          const imagesWithProduct = syncableImages.map(img => {
+            const product = products.find(p => p.images.some(i => i.id === img.id));
             return {
               id: img.id,
-              src: img.image_url || "",
+              src: img.image_url || '',
               alt_text: img.alt_text,
               position: 0,
-              product_id: product?.id || "",
+              product_id: product?.id || '',
               product_title: product?.title,
-              shopify_image_id: img.shopify_image_id,
+              shopify_image_id: img.shopify_image_id
             };
           });
           setImagesToSync(imagesWithProduct);
@@ -846,7 +834,7 @@ export function SeoAltImageList() {
         type="alt"
         itemCount={imagesToSync.length}
         onConfirm={handleSyncImages}
-        loading={currentOperation === "syncing" && showProgressDialog}
+        loading={currentOperation === 'syncing' && showProgressDialog}
       />
 
       <SuccessDialog
