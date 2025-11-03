@@ -222,7 +222,7 @@ const Subscription = () => {
         </p>
       </div>
 
-      <CurrentPlanCard />
+      {!isUpgradeFlow && <CurrentPlanCard />}
 
       <div className="grid md:grid-cols-3 gap-8">
         {starterPlan && (
@@ -467,16 +467,20 @@ const Subscription = () => {
         )}
       </div>
 
-      <div className="mt-16">
-        <div className="text-center mb-8">
-          <h3 className="text-3xl font-bold mb-2">Comparaison détaillée</h3>
-          <p className="text-muted-foreground">Comparez toutes les fonctionnalités de nos plans</p>
-        </div>
-        <PricingComparison />
-      </div>
+      {!isUpgradeFlow && (
+        <>
+          <div className="mt-16">
+            <div className="text-center mb-8">
+              <h3 className="text-3xl font-bold mb-2">Comparaison détaillée</h3>
+              <p className="text-muted-foreground">Comparez toutes les fonctionnalités de nos plans</p>
+            </div>
+            <PricingComparison />
+          </div>
 
-      <UsageLimits />
-      <BillingPortal />
+          <UsageLimits />
+          <BillingPortal />
+        </>
+      )}
     </div>
   );
 };
