@@ -1,19 +1,20 @@
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { formatLimit } from '@/lib/formatUtils';
 import { useTranslation } from '@/lib/language';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 export function LimitWarningBanner() {
   const navigate = useNavigate();
   const { limits, loading } = useUsageLimits();
   const { t, tf } = useTranslation();
+  const [upgrading, setUpgrading] = useState(false);
 
   if (loading || !limits) return null;
-
-  // Hide banner if user has an active paid plan
-  if (limits.isPaid) return null;
 
   // Show banner if trial is active and approaching any limit (>80%)
   const shouldShowWarning = limits.isTrialing && (
@@ -25,7 +26,7 @@ export function LimitWarningBanner() {
     limits.usage.shopify_stores_count / limits.limits.max_shopify_stores > 0.8
   );
 
-  // Show critical banner if any limit is reached
+  // Show critical banner if any limit is reached (ALSO FOR PAID USERS)
   const limitReached = limits.limitReached.optimizations || 
     limits.limitReached.articles || 
     limits.limitReached.chat || 
@@ -33,10 +34,31 @@ export function LimitWarningBanner() {
     limits.limitReached.products ||
     limits.limitReached.shopifyStores;
 
+  // Show warning for trial users approaching limits
   if (!shouldShowWarning && !limitReached) return null;
 
-  const handleActivate = () => {
-    navigate('/subscription');
+  // Don't show warning for paid users unless limit is reached
+  if (limits.isPaid && !limitReached) return null;
+
+  const handleUpgrade = async () => {
+    try {
+      setUpgrading(true);
+      
+      // For trial users, navigate to subscription page
+      if (limits.isTrialing) {
+        navigate('/subscription');
+        return;
+      }
+
+      // For paid users who reached limits, navigate to subscription page to choose upgrade
+      // This is safer than auto-selecting the next plan
+      navigate('/subscription?upgrade=true');
+    } catch (error) {
+      console.error('Upgrade error:', error);
+      toast.error('Erreur lors de la redirection');
+    } finally {
+      setUpgrading(false);
+    }
   };
 
   const getWarningMessage = () => {
@@ -48,6 +70,10 @@ export function LimitWarningBanner() {
       if (limits.limitReached.shopifySearch) limitTypes.push(t.banners.limitWarning.limitLabels.searches);
       if (limits.limitReached.products) limitTypes.push(t.banners.limitWarning.limitLabels.products);
       if (limits.limitReached.shopifyStores) limitTypes.push(t.banners.limitWarning.limitLabels.stores);
+      
+      if (limits.isPaid) {
+        return `Limite mensuelle atteinte pour : ${limitTypes.join(', ')}. Passez à un plan supérieur pour continuer.`;
+      }
       
       return tf('banners.limitWarning.limitReached', { limitTypes: limitTypes.join(', ') });
     }
@@ -88,14 +114,22 @@ export function LimitWarningBanner() {
           </div>
         </div>
         <Button 
-          onClick={handleActivate}
+          onClick={handleUpgrade}
+          disabled={upgrading}
           className={`${
             limitReached
               ? 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700'
               : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
-          } text-white whitespace-nowrap`}
+          } text-white whitespace-nowrap gap-2`}
         >
-          {limitReached ? t.banners.limitWarning.activateNow : t.banners.limitWarning.viewPlans}
+          {upgrading ? (
+            'Chargement...'
+          ) : (
+            <>
+              <TrendingUp className="w-4 h-4" />
+              {limitReached && limits.isPaid ? 'Upgrader maintenant' : limitReached ? t.banners.limitWarning.activateNow : t.banners.limitWarning.viewPlans}
+            </>
+          )}
         </Button>
       </div>
     </div>
