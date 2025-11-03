@@ -108,7 +108,7 @@ export function SeoAltImage() {
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedImages, setOptimizedImages] = useState<ImageWithProduct[]>([]);
   const { limits, loading: limitsLoading } = useUsageLimits();
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
 
   const IMAGES_PER_PAGE = 50;
 
@@ -192,7 +192,7 @@ export function SeoAltImage() {
       
     } catch (error) {
       console.error('Error fetching images:', error);
-      toast.error('Erreur lors du chargement des images');
+      toast.error(t.seo.altImage.errorLoading);
     } finally {
       setLoading(false);
     }
@@ -210,7 +210,7 @@ export function SeoAltImage() {
         .maybeSingle();
 
       if (!stores) {
-        toast.error('Aucune boutique connectée');
+        toast.error(t.seo.altImage.noStoreConnected);
         return;
       }
 
@@ -223,14 +223,14 @@ export function SeoAltImage() {
 
       const totalImported = data?.totalImported || 0;
       if (totalImported > 0) {
-        toast.success(`${totalImported} images importées depuis Shopify`);
+        toast.success(tf('seo.altImage.imagesImported', { count: totalImported }));
       } else {
-        toast.info('Aucune nouvelle image trouvée');
+        toast.info(t.seo.altImage.noNewImages);
       }
       await fetchImages();
     } catch (error) {
       console.error('Import error:', error);
-      toast.error('Erreur lors de l\'import');
+      toast.error(t.seo.altImage.errorImport);
     } finally {
       setImporting(false);
     }
@@ -342,7 +342,7 @@ export function SeoAltImage() {
     );
 
     if (imagesToGenerate.length === 0) {
-      toast.info('Aucune image sélectionnée');
+      toast.info(t.seo.altImage.noSelection);
       return;
     }
 
@@ -354,7 +354,7 @@ export function SeoAltImage() {
         setShowUpgradeDialog(true);
         return;
       } else {
-        toast.warning(`Limite atteinte. Seulement ${remainingLimit} images seront optimisées.`);
+        toast.warning(tf('seo.altImage.limitReached', { count: remainingLimit }));
         finalImagesToGenerate = imagesToGenerate.slice(0, remainingLimit);
       }
     }
@@ -396,7 +396,7 @@ export function SeoAltImage() {
     }
 
     if (errorCount > 0) {
-      toast.warning(`${successCount} textes ALT générés, ${errorCount} erreurs. Certaines images ont un produit supprimé.`);
+      toast.warning(tf('seo.altImage.generatedWithErrors', { success: successCount, errors: errorCount }));
     }
 
     setGenerating(false);
@@ -420,7 +420,7 @@ export function SeoAltImage() {
     const imagesToOptimize = images.filter(img => !img.alt_text);
 
     if (imagesToOptimize.length === 0) {
-      toast.info('Toutes les images ont déjà un texte ALT');
+      toast.info(t.seo.altImage.allHaveAlt);
       return;
     }
 
@@ -429,11 +429,11 @@ export function SeoAltImage() {
     
     if (remainingLimit <= 0) {
       if (limits?.isTrialing) {
-        toast.error(`Quota atteint: ${limits?.usage.optimizations_count}/${limits?.limits.max_optimizations} optimisations utilisées`);
+        toast.error(tf('seo.altImage.quotaReached', { used: limits?.usage.optimizations_count, max: limits?.limits.max_optimizations }));
         setShowUpgradeDialog(true);
         return;
       } else {
-        toast.error('Limite mensuelle d\'optimisations atteinte');
+        toast.error(t.seo.altImage.monthlyLimitReached);
         return;
       }
     }
@@ -444,12 +444,12 @@ export function SeoAltImage() {
     if (willHitLimit) {
       if (limits?.isTrialing) {
         // Trial users: show upgrade dialog
-        toast.warning(`Quota limité: ${remainingLimit}/${imagesToOptimize.length} images seront optimisées`);
-        toast.info('Passez à un plan payant pour optimiser les images restantes', { duration: 5000 });
+        toast.warning(tf('seo.altImage.quotaLimited', { remaining: remainingLimit, total: imagesToOptimize.length }));
+        toast.info(t.seo.altImage.upgradeForMore, { duration: 5000 });
         finalImagesToOptimize = imagesToOptimize.slice(0, remainingLimit);
       } else {
         // Paid users: just notify
-        toast.warning(`Limite atteinte: seulement ${remainingLimit}/${imagesToOptimize.length} images seront optimisées ce mois-ci`);
+        toast.warning(tf('seo.altImage.limitReachedThisMonth', { remaining: remainingLimit, total: imagesToOptimize.length }));
         finalImagesToOptimize = imagesToOptimize.slice(0, remainingLimit);
       }
     }
@@ -492,14 +492,14 @@ export function SeoAltImage() {
 
     if (remainingImages > 0 && limits?.isTrialing) {
       toast.info(
-        `${successCount} images optimisées. ${remainingImages} images restantes - Passez à un plan payant pour continuer`,
+        tf('seo.altImage.optimizedWithRemaining', { success: successCount, remaining: remainingImages }),
         { duration: 6000 }
       );
       setTimeout(() => setShowUpgradeDialog(true), 1500);
     } else if (remainingImages > 0) {
-      toast.info(`${successCount} images optimisées ce mois-ci. ${remainingImages} images en attente du prochain cycle`);
+      toast.info(tf('seo.altImage.optimizedWaitingNext', { success: successCount, remaining: remainingImages }));
     } else if (errorCount > 0) {
-      toast.warning(`${successCount} textes ALT générés, ${errorCount} erreurs`);
+      toast.warning(tf('seo.altImage.generatedWithErrors', { success: successCount, errors: errorCount }));
     } else {
       toast.success(`Toutes les images ont été optimisées avec succès! 🎉`);
     }

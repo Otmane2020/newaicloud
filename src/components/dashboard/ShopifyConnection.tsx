@@ -14,6 +14,7 @@ import { Loader2, ShoppingBag, Link as LinkIcon, Download, Package, FileText, Al
 import { shopifyConnectionSchema } from '@/lib/validationSchemas';
 import { ImportProgressDialog } from './ImportProgressDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { useTranslation } from '@/lib/language';
 
 export function ShopifyConnection() {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ export function ShopifyConnection() {
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const { t, tf } = useTranslation();
 
   useEffect(() => {
     loadStore();
@@ -73,7 +75,7 @@ export function ShopifyConnection() {
           setImporting(false);
           setImportDialogOpen(false);
           setProductsImported(job.products_processed);
-          toast.success(`${job.products_processed} produits importés avec succès !`);
+          toast.success(tf('shopify.connection.imported', { count: job.products_processed }));
           setTimeout(() => {
             navigate('/products');
           }, 1500);
@@ -91,7 +93,7 @@ export function ShopifyConnection() {
           clearInterval(interval);
           setImporting(false);
           setImportDialogOpen(false);
-          toast.error(job.error_message || 'Erreur lors de l\'import');
+          toast.error(job.error_message || t.shopify.connection.errorImport);
         }
       }
     }, 500);
@@ -139,13 +141,13 @@ export function ShopifyConnection() {
     try {
       // Simple validation
       if (!storeName || !apiKey || !apiSecret) {
-        toast.error('Tous les champs sont requis');
+        toast.error(t.shopify.connection.allFieldsRequired);
         setSaving(false);
         return;
       }
 
       if (!apiSecret.startsWith('shpss_') && !apiSecret.startsWith('shpat_')) {
-        toast.error('La clé secrète doit commencer par shpss_ ou shpat_');
+        toast.error(t.shopify.connection.secretKeyInvalid);
         setSaving(false);
         return;
       }
@@ -194,7 +196,7 @@ export function ShopifyConnection() {
         }
       }
 
-      toast.success('Connexion Shopify enregistrée avec succès');
+      toast.success(t.shopify.connection.connectionSaved);
       
       // Wait for DB sync then reload
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -267,7 +269,7 @@ export function ShopifyConnection() {
           console.error('Auto-import error:', importError);
           setImporting(false);
           setImportDialogOpen(false);
-          toast.error(importError.message || 'Erreur lors de l\'import automatique');
+          toast.error(importError.message || t.shopify.connection.errorAutoImport);
         }
       } else {
         console.error('❌ Cannot trigger auto-import - missing data:', {
@@ -275,14 +277,14 @@ export function ShopifyConnection() {
           hasAccessToken: !!reloadedStore?.access_token,
           hasApiKey: !!reloadedStore?.api_key
         });
-        toast.error('Import automatique impossible', {
-          description: 'Les credentials n\'ont pas pu être rechargés. Veuillez réessayer dans quelques secondes.'
+        toast.error(t.shopify.connection.autoImportImpossible, {
+          description: t.shopify.connection.credentialsNotReloaded
         });
       }
       
     } catch (error) {
       console.error('Error saving connection:', error);
-      toast.error('Erreur lors de l\'enregistrement de la connexion');
+      toast.error(t.shopify.connection.errorSaving);
     } finally {
       setSaving(false);
       setApiKey('');
@@ -293,7 +295,7 @@ export function ShopifyConnection() {
   const handleDeleteConnection = async () => {
     if (!store) return;
     
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette connexion ? Vous devrez la recréer pour importer des produits.')) {
+    if (!confirm(t.shopify.connection.confirmDelete)) {
       return;
     }
 
@@ -306,14 +308,14 @@ export function ShopifyConnection() {
 
       if (error) throw error;
 
-      toast.success('Connexion supprimée avec succès');
+      toast.success(t.shopify.connection.connectionDeleted);
       setStore(null);
       setStoreName('');
       setApiKey('');
       setApiSecret('');
     } catch (error: any) {
       console.error('Error deleting connection:', error);
-      toast.error(error.message || 'Erreur lors de la suppression');
+      toast.error(error.message || t.shopify.connection.errorDeleting);
     } finally {
       setLoading(false);
     }
@@ -321,7 +323,7 @@ export function ShopifyConnection() {
 
   const handleImportProducts = async () => {
     if (!store || !store.id) {
-      toast.error('Veuillez d\'abord connecter votre boutique');
+      toast.error(t.shopify.connection.connectFirst);
       return;
     }
 
@@ -343,7 +345,7 @@ export function ShopifyConnection() {
     });
 
     if (!freshStore.data) {
-      toast.error('Impossible de charger les données de connexion');
+      toast.error(t.shopify.connection.cannotLoadData);
       console.error('❌ No data returned from supabase');
       return;
     }
@@ -369,8 +371,8 @@ export function ShopifyConnection() {
     });
 
     if (!storeData.access_token || storeData.access_token.trim() === '') {
-      toast.error('Credentials manquants', {
-        description: 'Votre connexion Shopify doit être mise à jour. Veuillez supprimer cette connexion et la recréer avec vos identifiants API.'
+      toast.error(t.shopify.connection.credentialsMissing, {
+        description: t.shopify.connection.reconnectRequired
       });
       console.error('❌ Access token is missing. Store needs to be reconnected:', { 
         storeId: storeData?.id,
@@ -383,8 +385,8 @@ export function ShopifyConnection() {
 
     // Pour les connexions manuelles, vérifier que l'API Key existe aussi
     if (storeData.connection_type === 'manual' && (!storeData.api_key || storeData.api_key.trim() === '')) {
-      toast.error('API Key manquante', {
-        description: 'Votre connexion doit être mise à jour. Veuillez la recréer avec vos identifiants API complets.'
+      toast.error(t.shopify.connection.apiKeyMissing, {
+        description: t.shopify.connection.apiKeyRequired
       });
       console.error('❌ API Key is missing for manual connection:', { 
         storeId: storeData?.id,
@@ -468,11 +470,11 @@ export function ShopifyConnection() {
       setImportDialogOpen(false);
       
       if (error.message?.includes('API token') || error.message?.includes('apiToken')) {
-        toast.error('Token API invalide ou manquant. Veuillez reconnecter votre boutique Shopify.');
+        toast.error(t.shopify.connection.invalidToken);
       } else if (error.message?.includes('Unauthorized') || error.message?.includes('401')) {
-        toast.error('Erreur d\'authentification. Veuillez vérifier votre token API.');
+        toast.error(t.shopify.connection.authError);
       } else {
-        toast.error(error.message || 'Erreur lors de l\'import des produits');
+        toast.error(error.message || t.shopify.connection.errorImporting);
       }
     }
   };
