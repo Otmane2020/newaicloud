@@ -120,11 +120,11 @@ export function SeoAuditDashboard() {
 
       if (error) throw error;
 
-      toast.success("Audit SEO généré avec succès !");
+      toast.success(t.seoAuditDashboard.toasts.auditGenerated);
       await loadLatestAudit();
     } catch (error: any) {
       console.error("Error generating audit:", error);
-      toast.error(error.message || "Erreur lors de la génération de l'audit");
+      toast.error(error.message || t.seoAuditDashboard.toasts.auditError);
     } finally {
       setGenerating(false);
     }

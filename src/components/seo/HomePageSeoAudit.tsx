@@ -32,6 +32,7 @@ import {
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { SeoTasksList } from './SeoTasksList';
 import { Link } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface SeoElements {
   title: string;
@@ -69,6 +70,7 @@ interface AuditResult {
 
 export function HomePageSeoAudit() {
   const navigate = useNavigate();
+  const { t, tf } = useTranslation();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [hasConnection, setHasConnection] = useState(false);
@@ -109,8 +111,8 @@ export function HomePageSeoAudit() {
         setSeoTitle(homepageData.seo_title || '');
         setSeoDescription(homepageData.seo_description || '');
         toast({
-          title: 'Audit chargé',
-          description: 'Dernier audit chargé automatiquement',
+          title: t.homepageAudit.toasts.auditLoaded,
+          description: t.homepageAudit.toasts.auditLoadedDesc,
         });
       }
     } catch (error) {
@@ -174,7 +176,7 @@ export function HomePageSeoAudit() {
 
   const generateSeoWithAI = async () => {
     if (!hasConnection) {
-      sonnerToast.error('Please connect your Shopify store first');
+      sonnerToast.error(t.homepageAudit.toasts.connectShopify);
       return;
     }
 
@@ -198,7 +200,7 @@ export function HomePageSeoAudit() {
       }
     } catch (error: any) {
       console.error('Error generating SEO:', error);
-      sonnerToast.error(error.message || 'Error generating SEO content');
+      sonnerToast.error(error.message || t.homepageAudit.toasts.generatingError);
     } finally {
       setGenerating(false);
     }
@@ -206,7 +208,7 @@ export function HomePageSeoAudit() {
 
   const importCurrentSeo = async () => {
     if (!hasConnection) {
-      sonnerToast.error('Veuillez connecter votre boutique Shopify');
+      sonnerToast.error(t.homepageAudit.toasts.connectShopify);
       return;
     }
 
@@ -251,12 +253,12 @@ export function HomePageSeoAudit() {
       if (currentTitle) setSeoTitle(currentTitle);
       if (currentDescription) setSeoDescription(currentDescription);
 
-      sonnerToast.success('SEO actuel importé avec succès', {
-        description: `Titre: ${currentTitle.substring(0, 50)}...`,
+      sonnerToast.success(t.homepageAudit.toasts.currentSeoImported, {
+        description: `${t.homepageAudit.elements.seoTitle}: ${currentTitle.substring(0, 50)}...`,
       });
     } catch (error: any) {
       console.error('Error importing current SEO:', error);
-      sonnerToast.error(error.message || 'Erreur lors de l\'import du SEO');
+      sonnerToast.error(error.message || t.homepageAudit.toasts.importError);
     } finally {
       setImporting(false);
     }
@@ -264,12 +266,12 @@ export function HomePageSeoAudit() {
 
   const syncToShopify = async () => {
     if (!seoTitle || !seoDescription) {
-      sonnerToast.error('Veuillez remplir tous les champs');
+      sonnerToast.error(t.homepageAudit.toasts.fillAllFields);
       return;
     }
 
     if (!hasConnection) {
-      sonnerToast.error('Veuillez connecter votre boutique Shopify');
+      sonnerToast.error(t.homepageAudit.toasts.connectShopify);
       return;
     }
 
@@ -309,12 +311,12 @@ export function HomePageSeoAudit() {
             const currentTitle = titleMatch ? titleMatch[1].trim() : '';
 
             if (currentTitle === seoTitle) {
-              sonnerToast.success('✅ Synchronisation vérifiée sur Shopify', {
-                description: 'Les changements sont bien visibles sur votre boutique',
+              sonnerToast.success(t.homepageAudit.toasts.syncVerified, {
+                description: t.homepageAudit.toasts.syncVerifiedDesc,
               });
             } else {
-              sonnerToast.warning('⚠️ Synchronisation effectuée', {
-                description: 'Les metafields sont créés mais peuvent prendre quelques minutes pour apparaître',
+              sonnerToast.warning(t.homepageAudit.toasts.syncWarning, {
+                description: t.homepageAudit.toasts.syncWarningDesc,
               });
             }
           }
@@ -340,12 +342,12 @@ export function HomePageSeoAudit() {
       console.error('Error syncing to Shopify:', error);
       
       if (error.message?.includes('Permission denied')) {
-        sonnerToast.error('Permission refusée', {
-          description: 'Vérifiez que votre token Shopify a les permissions nécessaires',
+        sonnerToast.error(t.homepageAudit.toasts.permissionDenied, {
+          description: t.homepageAudit.toasts.permissionDeniedDesc,
           duration: 8000
         });
       } else {
-        sonnerToast.error(error.message || 'Erreur lors de la synchronisation');
+        sonnerToast.error(error.message || t.homepageAudit.toasts.syncError);
       }
     } finally {
       setSyncing(false);
@@ -365,10 +367,10 @@ export function HomePageSeoAudit() {
   };
 
   const getScoreLabel = (score: number) => {
-    if (score >= 80) return 'Excellent';
-    if (score >= 60) return 'Good';
-    if (score >= 40) return 'Average';
-    return 'Needs Improvement';
+    if (score >= 80) return t.homepageAudit.scoreLabels.excellent;
+    if (score >= 60) return t.homepageAudit.scoreLabels.good;
+    if (score >= 40) return t.homepageAudit.scoreLabels.average;
+    return t.homepageAudit.scoreLabels.needsImprovement;
   };
 
   const getPriorityIcon = (index: number) => {
@@ -387,28 +389,28 @@ export function HomePageSeoAudit() {
               <div className="flex items-center gap-2">
                 <Search className="w-6 h-6 text-primary" />
                 <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-                  SEO Audit & Optimization
+                  {t.homepageAudit.title}
                 </CardTitle>
               </div>
               <CardDescription className="text-base">
-                Analyze your homepage SEO, generate optimized meta tags, and sync to Shopify
+                {t.homepageAudit.subtitle}
               </CardDescription>
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-2 text-sm">
                   <FileText className="w-4 h-4 text-primary" />
-                  <span className="font-medium">Complete analysis</span>
+                  <span className="font-medium">{t.homepageAudit.features.completeAnalysis}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-green-600" />
-                  <span className="font-medium">Score breakdown</span>
+                  <span className="font-medium">{t.homepageAudit.features.scoreBreakdown}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Sparkles className="w-4 h-4 text-accent" />
-                  <span className="font-medium">AI optimization</span>
+                  <span className="font-medium">{t.homepageAudit.features.aiOptimization}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Upload className="w-4 h-4 text-secondary" />
-                  <span className="font-medium">Shopify sync</span>
+                  <span className="font-medium">{t.homepageAudit.features.shopifySync}</span>
                 </div>
               </div>
             </div>
@@ -421,12 +423,12 @@ export function HomePageSeoAudit() {
               {isAnalyzing ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Analyzing...
+                  {t.homepageAudit.buttons.analyzing}
                 </>
               ) : (
                 <>
                   <Search className="w-5 h-5" />
-                  Analyze Homepage
+                  {t.homepageAudit.buttons.analyzeHomepage}
                 </>
               )}
             </Button>
@@ -442,7 +444,7 @@ export function HomePageSeoAudit() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
-                Overall Score
+                {t.homepageAudit.sections.overallScore}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -461,28 +463,28 @@ export function HomePageSeoAudit() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>Structure</span>
+                      <span>{t.homepageAudit.sections.structure}</span>
                       <span className="font-medium">{result.breakdown.structure}/30</span>
                     </div>
                     <Progress value={(result.breakdown.structure / 30) * 100} className="h-2" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>Content</span>
+                      <span>{t.homepageAudit.sections.content}</span>
                       <span className="font-medium">{result.breakdown.content}/30</span>
                     </div>
                     <Progress value={(result.breakdown.content / 30) * 100} className="h-2" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>Technical</span>
+                      <span>{t.homepageAudit.sections.technical}</span>
                       <span className="font-medium">{result.breakdown.technical}/25</span>
                     </div>
                     <Progress value={(result.breakdown.technical / 25) * 100} className="h-2" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>Bonus</span>
+                      <span>{t.homepageAudit.sections.bonus}</span>
                       <span className="font-medium">{result.breakdown.bonus}/15</span>
                     </div>
                     <Progress value={(result.breakdown.bonus / 15) * 100} className="h-2" />
@@ -497,7 +499,7 @@ export function HomePageSeoAudit() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                Detailed Analysis
+                {t.homepageAudit.sections.detailedAnalysis}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -505,9 +507,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.title ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">Title Tag</div>
+                    <div className="font-medium">{t.homepageAudit.elements.titleTag}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.title ? `"${result.elements.title}" (${result.elements.title.length} characters)` : 'Missing'}
+                      {result.elements.title ? `"${result.elements.title}" (${result.elements.title.length} ${t.homepageAudit.elements.characters})` : t.homepageAudit.elements.missing}
                     </div>
                   </div>
                 </div>
@@ -515,9 +517,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.metaDescription ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">Meta Description</div>
+                    <div className="font-medium">{t.homepageAudit.elements.metaDescription}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.metaDescription ? `${result.elements.metaDescription.length} characters` : 'Missing'}
+                      {result.elements.metaDescription ? `${result.elements.metaDescription.length} ${t.homepageAudit.elements.characters}` : t.homepageAudit.elements.missing}
                     </div>
                   </div>
                 </div>
@@ -525,9 +527,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.h1 ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">H1 Tag</div>
+                    <div className="font-medium">{t.homepageAudit.elements.h1Tag}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.h1 ? `"${result.elements.h1}"` : 'Missing'}
+                      {result.elements.h1 ? `"${result.elements.h1}"` : t.homepageAudit.elements.missing}
                     </div>
                   </div>
                 </div>
@@ -535,9 +537,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.h2s.length > 0 ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">H2 Tags</div>
+                    <div className="font-medium">{t.homepageAudit.elements.h2Tags}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.h2s.length} found
+                      {result.elements.h2s.length} {t.homepageAudit.elements.found}
                     </div>
                   </div>
                 </div>
@@ -545,9 +547,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   <ImageIcon className="w-5 h-5 text-blue-500 mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium">Image Alt Texts</div>
+                    <div className="font-medium">{t.homepageAudit.elements.imageAltTexts}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.altsCount}/{result.elements.totalImages} images with alt text
+                      {result.elements.altsCount}/{result.elements.totalImages} {t.homepageAudit.elements.imagesWithAlt}
                     </div>
                   </div>
                 </div>
@@ -555,9 +557,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.canonical ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">Canonical Tag</div>
+                    <div className="font-medium">{t.homepageAudit.elements.canonicalTag}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.canonical ? 'Present' : 'Missing'}
+                      {result.elements.canonical ? t.homepageAudit.elements.present : t.homepageAudit.elements.missing}
                     </div>
                   </div>
                 </div>
@@ -565,9 +567,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.hasSchema ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">Schema.org Markup</div>
+                    <div className="font-medium">{t.homepageAudit.elements.schemaMarkup}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.hasSchema ? 'Detected' : 'Missing'}
+                      {result.elements.hasSchema ? t.homepageAudit.elements.detected : t.homepageAudit.elements.missing}
                     </div>
                   </div>
                 </div>
@@ -575,9 +577,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.hasOpenGraph ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">Open Graph Tags</div>
+                    <div className="font-medium">{t.homepageAudit.elements.openGraphTags}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.hasOpenGraph ? 'Present' : 'Missing'}
+                      {result.elements.hasOpenGraph ? t.homepageAudit.elements.present : t.homepageAudit.elements.missing}
                     </div>
                   </div>
                 </div>
@@ -585,9 +587,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.hasTwitterCard ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">Twitter Card</div>
+                    <div className="font-medium">{t.homepageAudit.elements.twitterCard}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.hasTwitterCard ? 'Present' : 'Missing'}
+                      {result.elements.hasTwitterCard ? t.homepageAudit.elements.present : t.homepageAudit.elements.missing}
                     </div>
                   </div>
                 </div>
@@ -595,9 +597,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   <LinkIcon className="w-5 h-5 text-blue-500 mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium">Internal Links</div>
+                    <div className="font-medium">{t.homepageAudit.elements.internalLinks}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.internalLinks} found
+                      {result.elements.internalLinks} {t.homepageAudit.elements.found}
                     </div>
                   </div>
                 </div>
@@ -605,9 +607,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   <Code className="w-5 h-5 text-blue-500 mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium">Content Length</div>
+                    <div className="font-medium">{t.homepageAudit.elements.contentLength}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.contentLength} characters
+                      {result.elements.contentLength} {t.homepageAudit.elements.characters}
                     </div>
                   </div>
                 </div>
@@ -615,9 +617,9 @@ export function HomePageSeoAudit() {
                 <div className="flex items-start gap-3">
                   {result.elements.httpsEnabled ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                   <div className="flex-1">
-                    <div className="font-medium">HTTPS</div>
+                    <div className="font-medium">{t.homepageAudit.elements.https}</div>
                     <div className="text-sm text-muted-foreground">
-                      {result.elements.httpsEnabled ? 'Enabled' : 'Disabled'}
+                      {result.elements.httpsEnabled ? t.homepageAudit.elements.enabled : t.homepageAudit.elements.disabled}
                     </div>
                   </div>
                 </div>
@@ -631,10 +633,10 @@ export function HomePageSeoAudit() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
-                  AI Recommendations
+                  {t.homepageAudit.sections.aiRecommendations}
                 </CardTitle>
                 <CardDescription>
-                  Personalized suggestions to improve your SEO score
+                  {t.homepageAudit.sections.personalizedSuggestions}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -669,7 +671,7 @@ export function HomePageSeoAudit() {
                                   className="gap-2"
                                 >
                                   <ImageIcon className="w-4 h-4" />
-                                  Corriger {missingAlts} images
+                                  {tf('homepageAudit.elements.fixImages', { count: missingAlts })}
                                 </Button>
                               )}
                               
@@ -681,7 +683,7 @@ export function HomePageSeoAudit() {
                                   className="gap-2"
                                 >
                                   <Store className="w-4 h-4" />
-                                  Métadonnées boutique
+                                  {t.homepageAudit.elements.storeMetadata}
                                 </Button>
                               )}
                               
@@ -698,7 +700,7 @@ export function HomePageSeoAudit() {
                                     className="gap-2"
                                   >
                                     <ExternalLink className="w-4 h-4" />
-                                    Éditeur Shopify
+                                    {t.homepageAudit.elements.shopifyEditor}
                                   </a>
                                 </Button>
                               )}
@@ -714,7 +716,7 @@ export function HomePageSeoAudit() {
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-2">
                   <div className="font-medium flex items-center gap-2">
                     <Target className="w-4 h-4" />
-                    Actions Rapides
+                    {t.homepageAudit.sections.quickActions}
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {result.elements.totalImages - result.elements.altsCount > 0 && (
@@ -725,7 +727,7 @@ export function HomePageSeoAudit() {
                         className="justify-start gap-2"
                       >
                         <ImageIcon className="w-4 h-4" />
-                        {result.elements.totalImages - result.elements.altsCount} images à optimiser
+                        {tf('homepageAudit.elements.imagesToOptimize', { count: result.elements.totalImages - result.elements.altsCount })}
                       </Button>
                     )}
                     
@@ -737,7 +739,7 @@ export function HomePageSeoAudit() {
                         className="justify-start gap-2"
                       >
                         <Link className="w-4 h-4" />
-                        Optimiser {result.elements.internalLinks} liens internes
+                        {tf('homepageAudit.elements.optimizeLinks', { count: result.elements.internalLinks })}
                       </Button>
                     )}
                     
@@ -748,7 +750,7 @@ export function HomePageSeoAudit() {
                       className="justify-start gap-2"
                     >
                       <Store className="w-4 h-4" />
-                      Configurer métadonnées
+                      {t.homepageAudit.elements.configureMetadata}
                     </Button>
                   </div>
                 </div>
@@ -765,47 +767,47 @@ export function HomePageSeoAudit() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-orange-600" />
-                  SEO Optimization
+                  {t.homepageAudit.sections.seoOptimization}
                 </CardTitle>
                 <CardDescription>
-                  Import current SEO, optimize with AI, and sync to Shopify
+                  {t.homepageAudit.sections.importOptimizeSync}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Import your current homepage SEO, then optimize it with AI before syncing
+                    {t.homepageAudit.sections.importBeforeOptimize}
                   </AlertDescription>
                 </Alert>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="seo-title">SEO Title</Label>
+                    <Label htmlFor="seo-title">{t.homepageAudit.elements.seoTitle}</Label>
                     <Input
                       id="seo-title"
                       value={seoTitle}
                       onChange={(e) => setSeoTitle(e.target.value)}
-                      placeholder="Import or generate SEO title..."
+                      placeholder={`${t.homepageAudit.elements.importOrGenerate} ${t.homepageAudit.elements.seoTitle.toLowerCase()}...`}
                       maxLength={60}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {seoTitle.length}/60 characters
+                      {seoTitle.length}/60 {t.homepageAudit.elements.characters}
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="seo-description">SEO Description</Label>
+                    <Label htmlFor="seo-description">{t.homepageAudit.elements.seoDescription}</Label>
                     <Textarea
                       id="seo-description"
                       value={seoDescription}
                       onChange={(e) => setSeoDescription(e.target.value)}
-                      placeholder="Import or generate SEO description..."
+                      placeholder={`${t.homepageAudit.elements.importOrGenerate} ${t.homepageAudit.elements.seoDescription.toLowerCase()}...`}
                       maxLength={160}
                       rows={4}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {seoDescription.length}/160 characters
+                      {seoDescription.length}/160 {t.homepageAudit.elements.characters}
                     </p>
                   </div>
 
@@ -819,12 +821,12 @@ export function HomePageSeoAudit() {
                       {importing ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Importation...
+                          {t.homepageAudit.buttons.importing}
                         </>
                       ) : (
                         <>
                           <Target className="w-4 h-4 mr-2" />
-                          Importer SEO actuel
+                          {t.homepageAudit.buttons.importCurrentSeo}
                         </>
                       )}
                     </Button>
@@ -838,12 +840,12 @@ export function HomePageSeoAudit() {
                       {generating ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Génération...
+                          {t.homepageAudit.buttons.generating}
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Optimiser avec IA
+                          {t.homepageAudit.buttons.optimizeWithAI}
                         </>
                       )}
                     </Button>
@@ -856,12 +858,12 @@ export function HomePageSeoAudit() {
                       {syncing ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Synchronisation...
+                          {t.homepageAudit.buttons.syncing}
                         </>
                       ) : (
                         <>
                           <Upload className="w-4 h-4 mr-2" />
-                          Sync to Shopify
+                          {t.homepageAudit.buttons.syncToShopify}
                         </>
                       )}
                     </Button>
@@ -873,7 +875,7 @@ export function HomePageSeoAudit() {
 
           {/* Analysis Info */}
           <div className="text-xs text-muted-foreground text-center">
-            Analyzed on {new Date(result.analyzedAt).toLocaleString()} • {result.analyzedUrl}
+            {t.homepageAudit.elements.analyzedOn} {new Date(result.analyzedAt).toLocaleString()} • {result.analyzedUrl}
           </div>
         </div>
       )}
