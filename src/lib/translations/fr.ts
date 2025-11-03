@@ -702,8 +702,13 @@ export const translations = {
         importError: "Échec de l'import des articles",
         noneSelected: "Sélectionnez au moins un article",
         loadError: "Échec du chargement des articles",
+        errorLoading: "Erreur lors du chargement des données",
         importing: "Import des articles depuis Shopify...",
-        optimizing: "Optimisation SEO de {{count}} article(s)..."
+        optimizing: "Optimisation SEO de {{count}} article(s)...",
+        generating: "Génération de l'article...",
+        generationSuccess: "Article généré avec succès !",
+        generationError: "Erreur lors de la génération",
+        syncing: "Synchronisation avec Shopify..."
       },
       viewMode: {
         grid: "Grille",
@@ -727,6 +732,13 @@ export const translations = {
         articles: "articles",
         article: "article"
       }
+    },
+    hero: {
+      articles: {
+        description: "Consultez, modifiez et gérez tous vos articles de blog. Suivez leur statut et publiez-les sur votre boutique Shopify.",
+        count: "Articles",
+        seoReady: "Prêt pour le SEO"
+      }
     }
   },
 
@@ -735,6 +747,8 @@ export const translations = {
     stats: "{{count}} produit(s) • {{value}} €",
     importProducts: "Importer Produits",
     searchPlaceholder: "Rechercher des produits...",
+    slotsAvailable: "{{slots}} emplacements disponibles",
+    loadError: "Erreur lors du chargement des produits",
     filters: {
       all: "Tous",
       active: "Actif",

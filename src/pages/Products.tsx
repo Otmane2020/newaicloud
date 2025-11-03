@@ -73,7 +73,7 @@ export default function Products() {
       setProducts(data || []);
     } catch (error) {
       console.error("Error loading products:", error);
-      toast.error("Error loading products");
+      toast.error(t.products.loadError);
     } finally {
       setLoading(false);
     }
@@ -162,18 +162,18 @@ export default function Products() {
       <div className="sticky top-0 bg-background border-b z-10 p-4">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-xl font-bold">Products</h1>
+            <h1 className="text-xl font-bold">{t.products.title}</h1>
             <p className="text-xs text-muted-foreground">
               {products.length} / {limits?.limits?.max_products || "..."} • {
                 limits 
-                  ? `${Math.max(0, (limits.limits.max_products || 0) - (limits.usage.products_count || 0))} slots available`
-                  : "Loading..."
+                  ? tf('products.slotsAvailable', { slots: Math.max(0, (limits.limits.max_products || 0) - (limits.usage.products_count || 0)) })
+                  : t.common.loading
               }
             </p>
           </div>
           <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
             <Plus className="w-4 h-4 mr-2" />
-            Import Products
+            {t.products.importProducts}
           </Button>
         </div>
 
@@ -181,7 +181,7 @@ export default function Products() {
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search products..."
+            placeholder={t.products.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-10 text-sm bg-muted/50 border-0"
@@ -196,7 +196,7 @@ export default function Products() {
             onClick={() => setStatusFilter("all")}
             className="whitespace-nowrap text-xs h-8 px-3"
           >
-            All
+            {t.common.all}
           </Button>
           <Button
             variant={statusFilter === "active" ? "default" : "outline"}
@@ -204,7 +204,7 @@ export default function Products() {
             onClick={() => setStatusFilter("active")}
             className="whitespace-nowrap text-xs h-8 px-3"
           >
-            Active
+            {t.common.active}
           </Button>
           <Button
             variant={statusFilter === "draft" ? "default" : "outline"}
@@ -212,22 +212,22 @@ export default function Products() {
             onClick={() => setStatusFilter("draft")}
             className="whitespace-nowrap text-xs h-8 px-3"
           >
-            Draft
+            {t.common.draft}
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="whitespace-nowrap text-xs h-8 px-3">
-                Sort
+                {t.common.sort}
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setSortBy("recent")}>Recent</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("name-asc")}>A-Z</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("name-desc")}>Z-A</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("price-asc")}>Price: Low to High</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("price-desc")}>Price: High to Low</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("recent")}>{t.products.filters.recent}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("name-asc")}>{t.products.filters.nameAsc}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("name-desc")}>{t.products.filters.nameDesc}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("price-asc")}>{t.products.filters.priceLow}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("price-desc")}>{t.products.filters.priceHigh}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -250,11 +250,11 @@ export default function Products() {
                 <Package className="w-8 h-8 text-muted-foreground" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-2">No products</h3>
-                <p className="text-muted-foreground mb-6 text-sm">Import your products from Shopify to get started</p>
+                <h3 className="text-lg font-semibold mb-2">{t.products.empty.title}</h3>
+                <p className="text-muted-foreground mb-6 text-sm">{t.products.empty.description}</p>
                 <Button onClick={() => navigate("/integration")} size="sm">
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Product
+                  {t.products.empty.addProduct}
                 </Button>
               </div>
             </div>
@@ -263,7 +263,7 @@ export default function Products() {
           <>
             {filteredProducts.length === 0 ? (
               <Card className="p-6 text-center border-0 shadow-sm">
-                <p className="text-muted-foreground text-sm">No products match your search criteria</p>
+                <p className="text-muted-foreground text-sm">{t.products.noResults}</p>
               </Card>
             ) : viewMode === "grid" ? (
               // Optimized mobile grid (2 columns) - Like the photo
@@ -291,13 +291,13 @@ export default function Products() {
                             -{discount}%
                           </Badge>
                         )}
-                        {/* Status badge */}
+                         {/* Status badge */}
                         <Badge
                           className={`absolute top-2 right-2 text-xs px-1.5 py-0 ${
                             product.status === "active" ? "bg-green-500 text-white" : "bg-gray-500 text-white"
                           }`}
                         >
-                          {product.status === "active" ? "Active" : "Draft"}
+                          {product.status === "active" ? t.common.active : t.common.draft}
                         </Badge>
                       </div>
                       <CardContent className="p-3">
@@ -317,13 +317,13 @@ export default function Products() {
 
                         {/* Vendor and stock */}
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600 font-medium">{product.vendor || "No vendor"}</span>
+                          <span className="text-xs text-gray-600 font-medium">{product.vendor || t.products.noVendor}</span>
                           <span
                             className={`text-xs px-1.5 py-0.5 rounded ${
                               product.inventory_quantity > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                             }`}
                           >
-                            Stock: {formatNumber(product.inventory_quantity)}
+                            {tf('products.stock', { count: formatNumber(product.inventory_quantity) })}
                           </span>
                         </div>
                       </CardContent>
@@ -370,13 +370,13 @@ export default function Products() {
                               variant={product.status === "active" ? "default" : "secondary"}
                               className="text-xs bg-green-100 text-green-800 border-0"
                             >
-                              {product.status === "active" ? "Active" : "Draft"}
+                              {product.status === "active" ? t.common.active : t.common.draft}
                             </Badge>
                           </div>
 
                           {/* Description */}
                           <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                            {product.description || "No description"}
+                            {product.description || t.products.noDescription}
                           </p>
 
                           {/* Price section */}
@@ -393,7 +393,7 @@ export default function Products() {
 
                           {/* Vendor and stock */}
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-gray-700">{product.vendor || "No vendor"}</span>
+                            <span className="text-xs font-medium text-gray-700">{product.vendor || t.products.noVendor}</span>
                             <span
                               className={`text-xs px-2 py-1 rounded ${
                                 product.inventory_quantity > 0
@@ -401,7 +401,7 @@ export default function Products() {
                                   : "bg-red-100 text-red-800"
                               }`}
                             >
-                              Stock: {formatNumber(product.inventory_quantity)}
+                              {tf('products.stock', { count: formatNumber(product.inventory_quantity) })}
                             </span>
                           </div>
                         </div>

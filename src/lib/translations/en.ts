@@ -702,8 +702,13 @@ export const translations = {
         importError: "Failed to import articles",
         noneSelected: "Select at least one article",
         loadError: "Failed to load articles",
+        errorLoading: "Error loading data",
         importing: "Importing articles from Shopify...",
-        optimizing: "Optimizing SEO for {{count}} article(s)..."
+        optimizing: "Optimizing SEO for {{count}} article(s)...",
+        generating: "Generating article...",
+        generationSuccess: "Article generated successfully!",
+        generationError: "Error during generation",
+        syncing: "Syncing with Shopify..."
       },
       viewMode: {
         grid: "Grid",
@@ -727,6 +732,13 @@ export const translations = {
         articles: "articles",
         article: "article"
       }
+    },
+    hero: {
+      articles: {
+        description: "View, edit, and manage all your blog articles. Track their status and publish them to your Shopify store.",
+        count: "Articles",
+        seoReady: "SEO Ready"
+      }
     }
   },
 
@@ -735,6 +747,8 @@ export const translations = {
     stats: "{{count}} product(s) • {{value}} €",
     importProducts: "Import Products",
     searchPlaceholder: "Search products...",
+    slotsAvailable: "{{slots}} slots available",
+    loadError: "Error loading products",
     filters: {
       all: "All",
       active: "Active",

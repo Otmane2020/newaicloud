@@ -73,7 +73,7 @@ export default function Blog() {
       setCategories(uniqueCategories as string[]);
     } catch (error) {
       console.error('Error loading data:', error);
-      toast.error('Error loading data');
+      toast.error(t.blog.management.messages.errorLoading);
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export default function Blog() {
   const handleCreateArticle = async () => {
     try {
       setLoading(true);
-      toast.info('Generating article...');
+      toast.info(t.blog.management.messages.generating);
 
       const { data, error } = await supabase.functions.invoke('generate-blog-article', {
         body: {
@@ -96,14 +96,14 @@ export default function Blog() {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('Article generated successfully!');
+        toast.success(t.blog.management.messages.generationSuccess);
         loadData();
       } else {
         throw new Error(data?.error || 'Error during generation');
       }
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Error during generation');
+      toast.error(error.message || t.blog.management.messages.generationError);
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export default function Blog() {
 
   const handleSyncArticle = async (articleId: string) => {
     try {
-      toast.info('Syncing with Shopify...');
+      toast.info(t.blog.management.messages.syncing);
 
       const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
         body: { articleId }
@@ -120,54 +120,54 @@ export default function Blog() {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('Article published on Shopify!');
+        toast.success(t.blog.management.messages.syncSuccess);
         loadData();
       } else {
         throw new Error(data?.error || 'Error during synchronization');
       }
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Error during synchronization');
+      toast.error(error.message || t.blog.management.messages.syncError);
     }
   };
 
   const blogSubmenu = [
     { 
       id: 'articles', 
-      label: 'Article Management', 
+      label: t.blog.submenu.articles, 
       icon: FileText, 
-      description: 'List of your articles' 
+      description: t.blog.submenu.articlesDesc 
     },
     { 
       id: 'create-article', 
-      label: 'AI Articles', 
+      label: t.blog.submenu.aiArticles, 
       icon: Sparkles, 
-      description: 'Create an article with AI' 
+      description: t.blog.submenu.aiArticlesDesc 
     },
     // Campaigns hidden temporarily
     // { 
     //   id: 'campaigns', 
-    //   label: 'AI Campaigns', 
+    //   label: t.blog.submenu.campaigns, 
     //   icon: CalendarClock, 
-    //   description: 'Scheduled automation' 
+    //   description: t.blog.submenu.campaignsDesc 
     // },
     { 
       id: 'opportunities', 
-      label: 'Opportunities', 
+      label: t.blog.submenu.opportunities, 
       icon: Lightbulb, 
-      description: 'Content ideas'
+      description: t.blog.submenu.opportunitiesDesc
     },
     { 
       id: 'netlinking', 
-      label: 'Netlinking', 
+      label: t.blog.submenu.netlinking, 
       icon: Link, 
-      description: 'Link management'
+      description: t.blog.submenu.netlinkingDesc
     },
     { 
       id: 'settings', 
-      label: 'Settings', 
+      label: t.blog.submenu.settings, 
       icon: Settings, 
-      description: 'Configuration'
+      description: t.blog.submenu.settingsDesc
     }
   ];
 
@@ -176,10 +176,10 @@ export default function Blog() {
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-          SEO AI Blog
+          {t.blog.title}
         </h1>
         <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
-          Create optimized articles with AI
+          {t.blog.description}
         </p>
       </div>
 
@@ -191,27 +191,27 @@ export default function Blog() {
               <div className="flex items-center gap-2">
                 <FileText className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
                 <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                  Article Management
+                  {t.blog.submenu.articles}
                 </h2>
               </div>
               <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
-                View, edit, and manage all your blog articles. Track their status and publish them to your Shopify store.
+                {t.blog.hero.articles.description}
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <FileText className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                  <span className="font-medium">{articles.length} Articles</span>
+                  <span className="font-medium">{articles.length} {t.blog.hero.articles.count}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="font-medium">SEO Ready</span>
+                  <span className="font-medium">{t.blog.hero.articles.seoReady}</span>
                 </div>
               </div>
             </div>
             <div className="flex flex-col gap-3">
               <Button size="lg" onClick={() => setActiveSubtab('create-article')} className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
-                Create New Article
+                {t.blog.createNew}
               </Button>
             </div>
           </div>
