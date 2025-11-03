@@ -39,6 +39,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { VisionAIBanner } from '../seo/VisionAIBanner';
 import { ArticleFeaturedImageDialog } from './ArticleFeaturedImageDialog';
 import { useTranslation } from '@/lib/language';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 import {
   Select,
   SelectContent,
@@ -76,6 +78,8 @@ export function ArticleManagement() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [activeTab, setActiveTab] = useState<QuickFilterTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
@@ -240,6 +244,17 @@ export function ArticleManagement() {
   };
 
   const handleImportArticles = async () => {
+    // Vérifier les limites avant d'importer
+    if (!canDoAction('articles')) {
+      toast.error('Limite d\'articles atteinte', {
+        description: limits?.isTrialing 
+          ? 'Passez à un plan payant pour importer plus d\'articles.'
+          : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
+      });
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     try {
       setSyncing(true);
       const toastId = toast.loading(t.blog.management.messages.importing);
@@ -982,6 +997,14 @@ export function ArticleManagement() {
           </div>
         </div>
       )}
+
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="articles"
+        usage={limits?.usage.articles_count}
+        limit={limits?.limits.max_articles}
+      />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, Download, FolderOpen, RefreshCw } from 'lucide-react';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +32,8 @@ export function CollectionImportSelector() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [collections, setCollections] = useState<ShopifyCollection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<number>>(new Set());
   const [existingCollections, setExistingCollections] = useState<Set<number>>(new Set());
@@ -109,6 +113,17 @@ export function CollectionImportSelector() {
       return;
     }
 
+    // Vérifier les limites avant d'importer
+    if (!canDoAction('optimizations')) {
+      toast.error('Limite d\'optimisations atteinte', {
+        description: limits?.isTrialing 
+          ? 'Passez à un plan payant pour importer plus de collections.'
+          : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
+      });
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     setImporting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -121,44 +136,63 @@ export function CollectionImportSelector() {
         .eq('is_active', true)
         .single();
 
-      if (!connection) return;
+      if (!connection) {
+        toast.error('Aucune connexion Shopify active');
+        return;
+      }
 
-      const selectedCollectionsList = collections.filter(c => selectedCollections.has(c.id));
-
-      // Import collections
-      const collectionsToInsert = selectedCollectionsList.map(collection => ({
-        user_id: user.id,
-        store_id: connection.id,
-        shopify_collection_id: collection.id,
-        title: collection.title,
-        handle: collection.handle,
-        image_url: collection.image?.src || null,
-      }));
-
-      const { error } = await supabase
-        .from('shopify_collections')
-        .upsert(collectionsToInsert, {
-          onConflict: 'shopify_collection_id',
-          ignoreDuplicates: false,
-        });
-
-      if (error) throw error;
-
-      toast.success(`${selectedCollections.size} collection(s) importée(s) avec succès`);
-      setOpen(false);
-      setSelectedCollections(new Set());
+      const collectionsToImport = collections.filter(c => selectedCollections.has(c.id));
       
-      // Refresh existing collections
-      fetchShopifyCollections();
+      for (const collection of collectionsToImport) {
+        // Check if collection already exists
+        const { data: existingCollection } = await supabase
+          .from('shopify_collections')
+          .select('id')
+          .eq('shopify_collection_id', collection.id.toString())
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (existingCollection) {
+          continue; // Skip if already imported
+        }
+
+        // Import the collection
+        await supabase
+          .from('shopify_collections')
+          .insert({
+            user_id: user.id,
+            shopify_connection_id: connection.id,
+            shopify_collection_id: collection.id.toString(),
+            title: collection.title,
+            handle: collection.handle,
+            image_url: collection.image?.src,
+          });
+      }
+
+      toast.success(`${collectionsToImport.length} collection(s) importée(s) avec succès`);
+      setSelectedCollections(new Set());
+      setOpen(false);
+      await refreshLimits();
     } catch (error) {
       console.error('Error importing collections:', error);
-      toast.error('Erreur lors de l\'import des collections');
+      toast.error('Erreur lors de l\'importation des collections');
     } finally {
       setImporting(false);
     }
   };
 
-  const toggleCollection = (id: number) => {
+  const handleSelectAll = () => {
+    if (selectedCollections.size === collections.filter(c => !existingCollections.has(c.id)).length) {
+      setSelectedCollections(new Set());
+    } else {
+      const newSelected = collections
+        .filter(c => !existingCollections.has(c.id))
+        .map(c => c.id);
+      setSelectedCollections(new Set(newSelected));
+    }
+  };
+
+  const handleSelectCollection = (id: number) => {
     const newSelected = new Set(selectedCollections);
     if (newSelected.has(id)) {
       newSelected.delete(id);
@@ -168,15 +202,6 @@ export function CollectionImportSelector() {
     setSelectedCollections(newSelected);
   };
 
-  const selectAll = () => {
-    const newCollections = collections.filter(c => !existingCollections.has(c.id));
-    setSelectedCollections(new Set(newCollections.map(c => c.id)));
-  };
-
-  const deselectAll = () => {
-    setSelectedCollections(new Set());
-  };
-
   useEffect(() => {
     if (open) {
       fetchShopifyCollections();
@@ -184,125 +209,139 @@ export function CollectionImportSelector() {
   }, [open]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Download className="w-4 h-4" />
-          Importer des Collections
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle>Importer des Collections depuis Shopify</DialogTitle>
-          <DialogDescription>
-            Sélectionnez les collections que vous souhaitez importer
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" className="gap-2">
+            <Download className="w-4 h-4" />
+            Importer des Collections
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Importer des Collections depuis Shopify</DialogTitle>
+            <DialogDescription>
+              Sélectionnez les collections que vous souhaitez importer
+            </DialogDescription>
+          </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : collections.length === 0 ? (
-          <div className="text-center py-12">
-            <FolderOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Aucune collection trouvée</h3>
-            <p className="text-muted-foreground mb-4">
-              Créez d'abord des collections dans votre boutique Shopify
-            </p>
-            <Button variant="outline" onClick={fetchShopifyCollections}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Actualiser
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {collections.length} collection(s) disponible(s) • {selectedCollections.size} sélectionnée(s)
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : collections.length === 0 ? (
+            <div className="text-center py-12">
+              <FolderOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Aucune collection trouvée</h3>
+              <p className="text-muted-foreground mb-4">
+                Aucune collection n'a été trouvée dans votre boutique Shopify.
               </p>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={selectAll}>
-                  Tout sélectionner
-                </Button>
-                <Button size="sm" variant="outline" onClick={deselectAll}>
-                  Tout désélectionner
-                </Button>
-              </div>
+              <Button onClick={fetchShopifyCollections} variant="outline">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Réessayer
+              </Button>
             </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedCollections.size === collections.filter(c => !existingCollections.has(c.id)).length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Tout sélectionner ({collections.filter(c => !existingCollections.has(c.id)).length} disponible(s))
+                  </span>
+                </div>
+                <Badge variant="secondary">
+                  {selectedCollections.size} sélectionnée(s)
+                </Badge>
+              </div>
 
-            <ScrollArea className="h-[400px] border rounded-lg p-4">
-              <div className="space-y-2">
-                {collections.map((collection) => {
-                  const isExisting = existingCollections.has(collection.id);
-                  const isSelected = selectedCollections.has(collection.id);
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-2">
+                  {collections.map((collection) => {
+                    const isExisting = existingCollections.has(collection.id);
+                    const isSelected = selectedCollections.has(collection.id);
 
-                  return (
-                    <Card
-                      key={collection.id}
-                      className={`p-3 transition-all ${
-                        isExisting
-                          ? 'bg-muted/50 opacity-60'
-                          : isSelected
-                          ? 'border-primary bg-primary/5'
-                          : 'hover:border-primary/50 cursor-pointer'
-                      }`}
-                      onClick={() => !isExisting && toggleCollection(collection.id)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={isSelected}
-                          disabled={isExisting}
-                          onCheckedChange={() => !isExisting && toggleCollection(collection.id)}
-                        />
-                        {collection.image?.src && (
-                          <img
-                            src={collection.image.src}
-                            alt={collection.title}
-                            className="w-12 h-12 object-cover rounded"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{collection.title}</p>
-                            {isExisting && (
-                              <Badge variant="secondary" className="text-xs">
-                                Déjà importée
-                              </Badge>
+                    return (
+                      <Card 
+                        key={collection.id}
+                        className={`transition-all ${
+                          isExisting 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : isSelected 
+                              ? 'ring-2 ring-primary' 
+                              : 'cursor-pointer hover:shadow-md'
+                        }`}
+                        onClick={() => !isExisting && handleSelectCollection(collection.id)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            <Checkbox
+                              checked={isSelected}
+                              disabled={isExisting}
+                              onCheckedChange={() => handleSelectCollection(collection.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            {collection.image?.src && (
+                              <img
+                                src={collection.image.src}
+                                alt={collection.title}
+                                className="w-16 h-16 object-cover rounded"
+                              />
                             )}
+                            <div className="flex-1">
+                              <h4 className="font-medium flex items-center gap-2">
+                                {collection.title}
+                                {isExisting && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Déjà importée
+                                  </Badge>
+                                )}
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {collection.products_count || 0} produit(s)
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {collection.products_count || 0} produit(s)
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            </ScrollArea>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
 
-            <div className="flex items-center justify-between pt-4 border-t">
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Annuler
-              </Button>
-              <Button onClick={handleImport} disabled={importing || selectedCollections.size === 0}>
-                {importing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Import en cours...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4 mr-2" />
-                    Importer ({selectedCollections.size})
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center justify-between pt-4 border-t">
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={handleImport} disabled={importing || selectedCollections.size === 0}>
+                  {importing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Import en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Importer ({selectedCollections.size})
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+        usage={limits?.usage.optimizations_count}
+        limit={limits?.limits.max_optimizations}
+      />
+    </>
   );
 }

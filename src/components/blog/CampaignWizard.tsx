@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sparkles, Calendar, Target, Users, Clock, ArrowRight, ArrowLeft, X } from 'lucide-react';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 
 interface CampaignWizardProps {
   open: boolean;
@@ -19,6 +21,8 @@ interface CampaignWizardProps {
 
 export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizardProps) {
   const [loading, setLoading] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [step, setStep] = useState(1);
   const [keywordInput, setKeywordInput] = useState('');
   const [formData, setFormData] = useState({
@@ -70,14 +74,13 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
       if (!user) throw new Error('Non authentifié');
 
       // Vérifier les limites avant de créer la campagne
-      const { data: limitsData, error: limitsError } = await supabase.functions.invoke('check-usage-limits');
-      
-      if (limitsError) throw limitsError;
-
-      if (!limitsData.canAddCampaign) {
+      if (!canDoAction('articles')) {
         toast.error('Limite de campagnes atteinte', {
-          description: 'Passez à un plan supérieur pour créer plus de campagnes'
+          description: limits?.isTrialing 
+            ? 'Passez à un plan payant pour créer plus de campagnes.'
+            : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
         });
+        setShowUpgradeDialog(true);
         setLoading(false);
         return;
       }
@@ -101,6 +104,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
       });
 
       toast.success('Campagne créée avec succès !');
+      await refreshLimits();
       onSuccess();
       onOpenChange(false);
       setStep(1);
@@ -327,16 +331,17 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <DialogTitle className="text-2xl">Nouvelle Campagne</DialogTitle>
-          </div>
-          <DialogDescription>
-            Étape {step} sur 4
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <DialogTitle className="text-2xl">Nouvelle Campagne</DialogTitle>
+            </div>
+            <DialogDescription>
+              Étape {step} sur 4
+            </DialogDescription>
+          </DialogHeader>
 
         {/* Progress bar */}
         <div className="flex gap-2 mb-6">
@@ -386,5 +391,14 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
         </div>
       </DialogContent>
     </Dialog>
+
+    <UpgradeDialog
+      open={showUpgradeDialog}
+      onOpenChange={setShowUpgradeDialog}
+      limitType="articles"
+      usage={limits?.usage.articles_count}
+      limit={limits?.limits.max_articles}
+    />
+    </>
   );
 }

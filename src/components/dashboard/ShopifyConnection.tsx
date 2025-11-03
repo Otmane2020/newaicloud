@@ -15,6 +15,7 @@ import { shopifyConnectionSchema } from '@/lib/validationSchemas';
 import { ImportProgressDialog } from './ImportProgressDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { useTranslation } from '@/lib/language';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 
 export function ShopifyConnection() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export function ShopifyConnection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [importJobId, setImportJobId] = useState<string | null>(null);
   const [importPhase, setImportPhase] = useState<'products' | 'pages' | 'complete'>('products');
   const [productsImported, setProductsImported] = useState(0);
@@ -35,7 +37,7 @@ export function ShopifyConnection() {
   });
   const [limitReached, setLimitReached] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const { limits } = useUsageLimits();
+  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [store, setStore] = useState<any>(null);
   const [storeName, setStoreName] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -324,6 +326,17 @@ export function ShopifyConnection() {
   const handleImportProducts = async () => {
     if (!store || !store.id) {
       toast.error(t.shopify.connection.connectFirst);
+      return;
+    }
+
+    // Vérifier les limites avant d'importer
+    if (!canDoAction('products')) {
+      toast.error('Limite de produits atteinte', {
+        description: limits?.isTrialing 
+          ? 'Passez à un plan payant pour importer plus de produits.'
+          : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
+      });
+      setShowUpgradeDialog(true);
       return;
     }
 
@@ -694,6 +707,14 @@ export function ShopifyConnection() {
         importedItems={importedItems}
         limitReached={limitReached}
         maxProducts={limits?.limits?.max_products || 50}
+      />
+
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+        usage={limits?.usage.products_count}
+        limit={limits?.limits.max_products}
       />
     </div>
   );
