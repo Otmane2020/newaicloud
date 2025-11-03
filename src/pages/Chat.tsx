@@ -20,6 +20,23 @@ interface Message {
   products?: any[];
 }
 
+interface StoreAvatarProps {
+  storeName?: string;
+}
+
+const StoreAvatar = ({ storeName }: StoreAvatarProps) => {
+  const getInitials = (name?: string) => {
+    if (!name) return "NC";
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  return (
+    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md">
+      {getInitials(storeName)}
+    </div>
+  );
+};
+
 export default function Chat() {
   const { user } = useAuth();
   const { t, tf } = useTranslation();
@@ -37,6 +54,7 @@ export default function Chat() {
   const [copied, setCopied] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [storeName, setStoreName] = useState<string>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Chat embed configuration
@@ -47,8 +65,23 @@ export default function Chat() {
     if (user) {
       loadProducts();
       createSession();
+      loadStoreName();
     }
   }, [user]);
+
+  const loadStoreName = async () => {
+    if (!user?.id) return;
+    
+    const { data } = await supabase
+      .from('shopify_connections')
+      .select('store_name')
+      .eq('seller_id', user.id)
+      .limit(1) as any;
+    
+    if (data?.[0]?.store_name) {
+      setStoreName(data[0].store_name);
+    }
+  };
 
   const createSession = async () => {
     if (!user) return;
@@ -228,12 +261,24 @@ export default function Chat() {
       }
     } catch (error: any) {
       console.error('Error sending message:', error);
-      toast.error(error.message || t.seo.chat.errors.sendMessage);
       
-      // Fallback response
+      let errorMessage = t.seo.chat.fallback;
+      
+      if (error.message?.includes("Failed to fetch") || error.message?.includes("Network")) {
+        errorMessage = t.seo.chat.errors?.network || errorMessage;
+      } else if (error.message?.includes("401") || error.message?.includes("auth")) {
+        errorMessage = t.seo.chat.errors?.auth || errorMessage;
+      } else if (error.message?.includes("MISSING_API_KEY") || error.message?.includes("config")) {
+        errorMessage = t.seo.chat.errors?.config || errorMessage;
+      } else if (error.message?.includes("no products")) {
+        errorMessage = t.seo.chat.errors?.search || errorMessage;
+      }
+      
+      toast.error(errorMessage);
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: t.seo.chat.fallback
+        content: errorMessage
       }]);
     } finally {
       setLoading(false);
@@ -248,7 +293,9 @@ export default function Chat() {
   };
 
   // Generate embed code
-  const embedCode = `<!-- Sophie - Assistant Commercial IA -->
+  const storeInitials = storeName ? storeName.slice(0, 2).toUpperCase() : "NC";
+  
+  const embedCode = `<!-- Nicolas - Assistant Commercial IA -->
 <div id="smart-chat-widget"></div>
 
 <script>
@@ -325,12 +372,12 @@ export default function Chat() {
     ">
       <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <div style="width: 48px; height: 48px; border-radius: 50%; background: white/20; backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; font-size: 24px;">
-            👋
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #60a5fa, #a78bfa); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+            ${storeInitials}
           </div>
           <div>
-            <h3 style="margin: 0; font-size: 20px; font-weight: 700;">Sophie</h3>
-            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Votre conseillère commerciale</p>
+            <h3 style="margin: 0; font-size: 20px; font-weight: 700;">Nicolas</h3>
+            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Votre conseiller commercial</p>
           </div>
         </div>
         <p style="margin: 0; font-size: 14px; opacity: 0.95; line-height: 1.5;">\${config.welcomeMessage}</p>
@@ -488,14 +535,16 @@ export default function Chat() {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      \${isUser ? 'background: linear-gradient(135deg, #3b82f6, #8b5cf6);' : 'background: linear-gradient(135deg, #f3f4f6, #e5e7eb);'}
+      \${isUser ? 'background: linear-gradient(135deg, #6b7280, #9ca3af);' : 'background: linear-gradient(135deg, #60a5fa, #a78bfa);'}
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      font-size: 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
     \`;
-    avatar.textContent = isUser ? '👤' : '👩‍💼';
+    avatar.textContent = isUser ? 'U' : '${storeInitials}';
     
     const bubble = document.createElement('div');
     bubble.style.cssText = \`
@@ -519,7 +568,7 @@ export default function Chat() {
   
   // Add initial greeting
   setTimeout(() => {
-    addMessage('assistant', config.welcomeMessage || 'Bonjour ! Je suis Sophie, votre conseillère commerciale. Comment puis-je vous aider aujourd\\'hui ?');
+    addMessage('assistant', config.welcomeMessage || 'Bonjour ! Je suis Nicolas, votre conseiller commercial. Comment puis-je vous aider aujourd\\'hui ?');
   }, 500);
 })();
 </script>`;
@@ -645,14 +694,12 @@ export default function Chat() {
           {/* Header du chat avec design moderne */}
           <div className="px-6 py-5 border-b-2 bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-white">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg text-2xl">
-                👩‍💼
-              </div>
+              <StoreAvatar storeName={storeName} />
               <div>
-                <h3 className="font-bold text-lg">Sophie - Votre Conseillère</h3>
+                <h3 className="font-bold text-lg">{t.seo.chat.title}</h3>
                 <p className="text-xs text-white/90 flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                  En ligne • Prête à vous aider
+                  En ligne • Prêt à vous aider
                 </p>
               </div>
             </div>
@@ -668,8 +715,8 @@ export default function Chat() {
                 }`}
               >
                 {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-lg">
-                    👩‍💼
+                  <div className="flex-shrink-0">
+                    <StoreAvatar storeName={storeName} />
                   </div>
                 )}
                 

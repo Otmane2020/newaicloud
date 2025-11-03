@@ -461,15 +461,20 @@ export const translations = {
       }
     },
     chat: {
-      greeting: "Bonjour ! Je suis Sophie, votre conseillère commerciale. Comment puis-je vous aider aujourd'hui ?",
-      welcome: "Bienvenue ! Je suis Sophie, prête à vous conseiller.",
+      greeting: "Bonjour ! Je suis Nicolas, votre conseiller commercial. Comment puis-je vous aider aujourd'hui ?",
+      welcome: "Bienvenue ! Je suis Nicolas, prêt à vous conseiller.",
       errors: {
         sendMessage: "Erreur lors de l'envoi du message",
-        connection: "Erreur de connexion"
+        connection: "Erreur de connexion",
+        network: "Impossible de se connecter. Vérifiez votre connexion.",
+        auth: "Erreur d'authentification. Reconnectez-vous.",
+        config: "Service IA non configuré. Contactez le support.",
+        search: "Aucun produit trouvé. Essayez d'autres termes.",
+        generic: "Une erreur est survenue. Réessayez."
       },
       fallback: "Désolé, je rencontre un problème technique. Veuillez réessayer.",
-      title: "💬 Sophie - Chat Smart AI",
-      subtitle: "Sophie, votre conseillère commerciale connectée à votre catalogue Shopify",
+      title: "Chat avec Nicolas",
+      subtitle: "Votre conseiller commercial",
       productsAvailable: "{{count}} produits disponibles",
       poweredByAI: "Propulsé par IA",
       codeEmbed: "Code Embed",

@@ -902,7 +902,12 @@ async function* callDeepSeek(
 ): AsyncGenerator<string, void, unknown> {
   const deepseekKey = Deno.env.get("DEEPSEEK_API_KEY");
   if (!deepseekKey) {
-    yield "Bonjour ! Je suis votre assistant commercial. Comment puis-je vous aider ?";
+    console.error("❌ DEEPSEEK_API_KEY not configured");
+    yield `data: ${JSON.stringify({
+      error: true,
+      message: "L'assistant IA n'est pas configuré correctement. Veuillez contacter le support.",
+      code: "MISSING_API_KEY"
+    })}\n\n`;
     return;
   }
 
