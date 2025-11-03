@@ -332,14 +332,16 @@ export function CollectionOptimization() {
         console.error('❌ Error optimizing collection:', error);
         
         // Handle specific error types
-        if (error.message?.includes('trial_limit_reached')) {
-          toast.error(t.collections.optimization.messages.trialLimitReached);
+        if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
+          // Afficher le bon message selon le statut de l'utilisateur
+          if (limits?.isTrialing) {
+            toast.error(t.collections.optimization.messages.trialLimitReached);
+          } else if (limits?.isPaid) {
+            toast.error(t.collections.optimization.messages.monthlyLimitReached);
+          } else {
+            toast.error(t.collections.optimization.messages.trialLimitReached);
+          }
           setShowUpgradeDialog(true);
-          setShowProgressDialog(false);
-          setOptimizing(false);
-          return;
-        } else if (error.message?.includes('monthly_limit_reached')) {
-          toast.error(t.collections.optimization.messages.monthlyLimitReached);
           setShowProgressDialog(false);
           setOptimizing(false);
           return;
@@ -446,14 +448,16 @@ export function CollectionOptimization() {
           }
         } catch (error: any) {
           console.error('❌ Error:', error);
-          if (error.message?.includes('trial_limit_reached')) {
-            toast.error(t.collections.optimization.messages.trialLimitReached);
+          if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
+            // Afficher le bon message selon le statut de l'utilisateur
+            if (limits?.isTrialing) {
+              toast.error(t.collections.optimization.messages.trialLimitReached);
+            } else if (limits?.isPaid) {
+              toast.error(t.collections.optimization.messages.monthlyLimitReached);
+            } else {
+              toast.error(t.collections.optimization.messages.trialLimitReached);
+            }
             setShowUpgradeDialog(true);
-            setShowProgressDialog(false);
-            setOptimizing(false);
-            return;
-          } else if (error.message?.includes('monthly_limit_reached')) {
-            toast.error(t.collections.optimization.messages.monthlyLimitReached);
             setShowProgressDialog(false);
             setOptimizing(false);
             return;

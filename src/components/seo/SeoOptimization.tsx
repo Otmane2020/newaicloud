@@ -381,8 +381,15 @@ export function SeoOptimization() {
         
         if (error.message?.includes('trial_product_already_optimized')) {
           toast.warning(t.seo.optimization.someAlreadyOptimized);
-        } else if (error.message?.includes('trial_limit_reached')) {
-          toast.error(t.seo.optimization.trialLimitReached);
+        } else if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
+          // Afficher le bon message selon le statut de l'utilisateur
+          if (limits?.isTrialing) {
+            toast.error(t.seo.optimization.trialLimitReached);
+          } else if (limits?.isPaid) {
+            toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+          } else {
+            toast.error(t.seo.optimization.trialLimitReached);
+          }
           setShowUpgradeDialog(true);
           break;
         } else {
@@ -444,8 +451,15 @@ export function SeoOptimization() {
           });
         } catch (error: any) {
           console.error('Error generating SEO:', error);
-          if (error.message?.includes('trial_limit_reached')) {
-            toast.error(t.seo.optimization.trialLimitReached);
+          if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
+            // Afficher le bon message selon le statut de l'utilisateur
+            if (limits?.isTrialing) {
+              toast.error(t.seo.optimization.trialLimitReached);
+            } else if (limits?.isPaid) {
+              toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+            } else {
+              toast.error(t.seo.optimization.trialLimitReached);
+            }
             setShowUpgradeDialog(true);
             return;
           }

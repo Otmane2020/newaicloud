@@ -261,8 +261,15 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
     } catch (error: any) {
       console.error('Error:', error);
-      if (error.message?.includes('trial_limit_reached')) {
-        toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+      if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
+        // Afficher le bon message selon le statut de l'utilisateur
+        if (limits?.isTrialing) {
+          toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+        } else if (limits?.isPaid) {
+          toast.error('Limite mensuelle d\'articles atteinte. Passez à un plan supérieur.');
+        } else {
+          toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+        }
         setShowUpgradeDialog(true);
       } else {
         toast.error(error.message || 'Erreur lors de la génération', { id: 'generating' });
