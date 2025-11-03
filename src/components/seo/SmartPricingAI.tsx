@@ -1106,8 +1106,8 @@ export function SmartPricingAI() {
                                 {product.market_price.toFixed(2)} {currencySymbol}
                               </div>
                             </TooltipTrigger>
-                            {product.competitors && product.competitors.length > 0 && (
-                              <TooltipContent className="max-w-md p-4">
+                            <TooltipContent className="max-w-md p-4">
+                              {product.competitors && product.competitors.length > 0 ? (
                                 <div className="space-y-2">
                                   <p className="font-semibold text-xs mb-2">🔗 Sources utilisées pour le calcul ({product.competitors.length} trouvées):</p>
                                   <div className="space-y-1.5 max-h-60 overflow-y-auto">
@@ -1133,8 +1133,10 @@ export function SmartPricingAI() {
                                     ))}
                                   </div>
                                 </div>
-                              </TooltipContent>
-                            )}
+                              ) : (
+                                <p className="text-xs text-muted-foreground">Aucune source concurrente trouvée pour ce produit</p>
+                              )}
+                            </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       ) : (
