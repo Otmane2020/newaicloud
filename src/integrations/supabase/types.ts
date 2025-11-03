@@ -465,6 +465,45 @@ export type Database = {
           },
         ]
       }
+      chat_knowledge_base: {
+        Row: {
+          answer: string
+          category: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          keywords: string[] | null
+          priority: number | null
+          question: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          category: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[] | null
+          priority?: number | null
+          question: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          category?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[] | null
+          priority?: number | null
+          question?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
@@ -493,6 +532,83 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_order_tracking: {
+        Row: {
+          carrier: string | null
+          created_at: string | null
+          currency: string | null
+          customer_email: string | null
+          customer_name: string | null
+          estimated_delivery: string | null
+          financial_status: string | null
+          fulfillment_status: string | null
+          id: string
+          notes: string | null
+          order_date: string | null
+          order_number: string
+          raw_data: Json | null
+          shopify_order_id: number
+          store_id: string | null
+          total_price: number | null
+          tracking_number: string | null
+          tracking_url: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          carrier?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          estimated_delivery?: string | null
+          financial_status?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string | null
+          order_number: string
+          raw_data?: Json | null
+          shopify_order_id: number
+          store_id?: string | null
+          total_price?: number | null
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          carrier?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          estimated_delivery?: string | null
+          financial_status?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string | null
+          order_number?: string
+          raw_data?: Json | null
+          shopify_order_id?: number
+          store_id?: string | null
+          total_price?: number | null
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_order_tracking_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
             referencedColumns: ["id"]
           },
         ]

@@ -896,7 +896,9 @@ async function detectIntent(userMessage: string): Promise<"simple_chat" | "produ
 
 async function* callDeepSeek(
   messages: ChatMessage[], 
-  maxTokens = 300
+  maxTokens = 300,
+  sellerId?: string,
+  context: any = {},
 ): AsyncGenerator<string, void, unknown> {
   const deepseekKey = Deno.env.get("DEEPSEEK_API_KEY");
   if (!deepseekKey) {
@@ -905,6 +907,107 @@ async function* callDeepSeek(
   }
 
   try {
+    // Build enriched system prompt if context is provided
+    let enrichedMessages = [...messages];
+    if (sellerId && Object.keys(context).length > 0) {
+      const supabase = getSupabaseClient();
+      let contextInfo = "";
+
+      // Add knowledge base context
+      if (context.includeKnowledge) {
+        const { data: knowledge } = await supabase
+          .from('chat_knowledge_base')
+          .select('category, question, answer')
+          .eq('user_id', sellerId)
+          .eq('is_active', true)
+          .order('priority', { ascending: false });
+        
+        if (knowledge && knowledge.length > 0) {
+          contextInfo += `\n\n=== BASE DE CONNAISSANCES ===\n`;
+          contextInfo += `Utilise ces informations pour répondre précisément :\n\n`;
+          
+          const grouped = knowledge.reduce((acc: any, item: any) => {
+            if (!acc[item.category]) acc[item.category] = [];
+            acc[item.category].push(item);
+            return acc;
+          }, {});
+
+          for (const [category, items] of Object.entries(grouped)) {
+            contextInfo += `**${(category as string).toUpperCase()}**\n`;
+            (items as any[]).forEach(item => {
+              contextInfo += `Q: ${item.question}\nR: ${item.answer}\n\n`;
+            });
+          }
+        }
+      }
+
+      // Add products context
+      if (context.includeProducts) {
+        const { data: products, count } = await supabase
+          .from('shopify_products')
+          .select('title, product_type, vendor, status', { count: 'exact' })
+          .eq('seller_id', sellerId)
+          .limit(100);
+        
+        if (products && products.length > 0) {
+          contextInfo += `\n=== CATALOGUE PRODUITS ===\n`;
+          contextInfo += `Le vendeur a ${count} produits au catalogue.\n`;
+          
+          const categories = [...new Set(products.map((p: any) => p.product_type).filter(Boolean))];
+          if (categories.length > 0) {
+            contextInfo += `Catégories: ${categories.join(', ')}\n`;
+          }
+        }
+      }
+
+      // Add pages context
+      if (context.includePages) {
+        const { data: pages } = await supabase
+          .from('shopify_pages')
+          .select('title')
+          .eq('user_id', sellerId);
+        
+        if (pages && pages.length > 0) {
+          contextInfo += `\n=== PAGES DU SITE ===\n`;
+          contextInfo += `Pages: ${pages.map((p: any) => p.title).join(', ')}\n`;
+        }
+      }
+
+      // Add orders context
+      if (context.includeOrders) {
+        const { data: orders, count } = await supabase
+          .from('chat_order_tracking')
+          .select('fulfillment_status', { count: 'exact' })
+          .eq('user_id', sellerId);
+        
+        if (count && count > 0) {
+          contextInfo += `\n=== COMMANDES ===\n`;
+          contextInfo += `Total: ${count} commandes\n`;
+          
+          if (orders) {
+            const statusCount = orders.reduce((acc: any, order: any) => {
+              const status = order.fulfillment_status || 'unfulfilled';
+              acc[status] = (acc[status] || 0) + 1;
+              return acc;
+            }, {});
+            
+            contextInfo += `Statuts:\n`;
+            for (const [status, count] of Object.entries(statusCount)) {
+              contextInfo += `- ${status}: ${count}\n`;
+            }
+          }
+        }
+      }
+
+      // Append context to system message if exists
+      if (contextInfo && enrichedMessages[0]?.role === 'system') {
+        enrichedMessages[0] = {
+          ...enrichedMessages[0],
+          content: enrichedMessages[0].content + contextInfo,
+        };
+      }
+    }
+
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -913,10 +1016,10 @@ async function* callDeepSeek(
       },
       body: JSON.stringify({
         model: "deepseek-chat",
-        messages,
+        messages: enrichedMessages,
         temperature: 0.7,
         max_tokens: maxTokens,
-        stream: true, // ✅ Enable streaming
+        stream: true,
       }),
     });
 
@@ -961,6 +1064,7 @@ async function* OmnIAChat(
   history: ChatMessage[] = [],
   storeId?: string,
   sellerId?: string,
+  context: any = {},
 ): AsyncGenerator<ChatResponse, void, unknown> {
   const startTime = Date.now();
   console.log("🚀 [OMNIA] Message received:", userMessage);
@@ -1006,7 +1110,7 @@ async function* OmnIAChat(
       let firstToken = true;
       let tokenCount = 0;
       
-      for await (const chunk of callDeepSeek(messages, 80)) {
+      for await (const chunk of callDeepSeek(messages, 80, sellerId, context)) {
         if (firstToken) {
           logMetric(sellerId, "chat-smart", "deepseek_first_token", Date.now() - deepseekStart);
           firstToken = false;
@@ -1058,7 +1162,7 @@ async function* OmnIAChat(
         },
       ];
 
-      for await (const chunk of callDeepSeek(messages, 200)) {
+      for await (const chunk of callDeepSeek(messages, 200, sellerId, context)) {
         yield {
           role: "assistant",
           content: chunk,
@@ -1147,7 +1251,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 200, headers: corsHeaders });
 
   try {
-    const { userMessage, history, storeId, sellerId } = await req.json();
+    const { userMessage, history, storeId, sellerId, context = {} } = await req.json();
 
     if (!userMessage)
       return new Response(JSON.stringify({ error: "userMessage is required" }), {
@@ -1161,7 +1265,7 @@ Deno.serve(async (req: Request) => {
         const encoder = new TextEncoder();
         
         try {
-          for await (const chunk of OmnIAChat(userMessage, history || [], storeId, sellerId)) {
+          for await (const chunk of OmnIAChat(userMessage, history || [], storeId, sellerId, context)) {
             const data = `data: ${JSON.stringify(chunk)}\n\n`;
             controller.enqueue(encoder.encode(data));
           }

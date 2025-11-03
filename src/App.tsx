@@ -125,7 +125,7 @@ const App = () => (
               path="/chat"
               element={
                 <ProtectedLayout>
-                  <Chat />
+                  <ChatWithTabs />
                 </ProtectedLayout>
               }
             />
