@@ -13,6 +13,7 @@ import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { calculateAltTextScore } from '@/lib/seoQuality';
 import { useTranslation } from '@/lib/language';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Search, 
   RefreshCw, 
@@ -790,6 +791,71 @@ export function SeoAltImage() {
             </Badge>
           </button>
         ))}
+      </div>
+
+      {/* Sticky Action Bar */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Checkbox 
+              checked={selectedImages.size === sortedImages.length && sortedImages.length > 0}
+              onCheckedChange={handleSelectAll}
+            />
+            <span className="text-sm font-medium">
+              {selectedImages.size > 0 ? (
+                <span className="text-primary">{selectedImages.size} image(s) sélectionnée(s)</span>
+              ) : (
+                <span className="text-muted-foreground">Sélectionner tout</span>
+              )}
+            </span>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button
+              onClick={() => handleGenerateForSelected(false)}
+              disabled={selectedImages.size === 0 || generating}
+              size="sm"
+            >
+              <Sparkles className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Générer ALT</span>
+            </Button>
+            <Button
+              onClick={() => handleGenerateForSelected(true)}
+              disabled={selectedImages.size === 0 || generating}
+              variant="outline"
+              size="sm"
+            >
+              <Eye className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Vision AI</span>
+            </Button>
+            <Button
+              onClick={handleSyncSelected}
+              disabled={selectedImages.size === 0 || syncing}
+              variant="outline"
+              size="sm"
+            >
+              <Upload className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Synchroniser</span>
+            </Button>
+            <Button
+              onClick={handleImportContentImages}
+              disabled={importing}
+              variant="outline"
+              size="sm"
+            >
+              {importing ? <Loader2 className="w-4 h-4 animate-spin sm:mr-2" /> : <ImageIcon className="w-4 h-4 sm:mr-2" />}
+              <span className="hidden sm:inline">Importer</span>
+            </Button>
+            <Button
+              onClick={fetchImages}
+              disabled={loading}
+              variant="ghost"
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Content Type Filters */}

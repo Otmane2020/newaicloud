@@ -16,7 +16,8 @@ import {
   Search,
   Check,
   X,
-  ImageIcon
+  ImageIcon,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -316,6 +317,67 @@ export default function ArticleManagement() {
             <div className="text-xs text-muted-foreground">SEO Optimized</div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Sticky Action Bar */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          {/* Selection Counter */}
+          <div className="flex items-center gap-3">
+            <Checkbox 
+              checked={selectedArticles.length === filteredArticles.length && filteredArticles.length > 0}
+              onCheckedChange={toggleSelectAll}
+            />
+            <span className="text-sm font-medium">
+              {selectedArticles.length > 0 ? (
+                <span className="text-primary">{selectedArticles.length} article(s) sélectionné(s)</span>
+              ) : (
+                <span className="text-muted-foreground">Sélectionner tout</span>
+              )}
+            </span>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button
+              onClick={() => optimizeArticles(selectedArticles)}
+              disabled={selectedArticles.length === 0}
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <Sparkles className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Optimiser SEO</span>
+            </Button>
+            <Button
+              onClick={() => syncToShopify(selectedArticles)}
+              disabled={selectedArticles.length === 0}
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <ExternalLink className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Synchroniser</span>
+            </Button>
+            <Button
+              onClick={bulkDelete}
+              disabled={selectedArticles.length === 0}
+              variant="destructive"
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <Trash2 className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Supprimer</span>
+            </Button>
+            <Button
+              onClick={loadArticles}
+              disabled={loading}
+              variant="ghost"
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Filters & Actions */}

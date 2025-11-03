@@ -899,6 +899,72 @@ export function CollectionOptimization() {
         </Alert>
       )}
 
+      {/* Sticky Action Bar */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Checkbox 
+              checked={selectedCollections.size === sortedCollections.length && sortedCollections.length > 0}
+              onCheckedChange={handleSelectAll}
+            />
+            <span className="text-sm font-medium">
+              {selectedCollections.size > 0 ? (
+                <span className="text-primary">{selectedCollections.size} collection(s) sélectionnée(s)</span>
+              ) : (
+                <span className="text-muted-foreground">Sélectionner tout</span>
+              )}
+            </span>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button
+              onClick={handleOptimizeSelected}
+              disabled={selectedCollections.size === 0 || optimizing}
+              size="sm"
+            >
+              <Sparkles className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Optimiser</span>
+            </Button>
+            <Button
+              onClick={handleOptimizeAllCollections}
+              disabled={optimizing || notOptimizedCount === 0}
+              variant="outline"
+              size="sm"
+            >
+              <Sparkles className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Optimiser tout</span>
+            </Button>
+            <Button
+              onClick={() => {
+                const collectionsToSync = collections.filter(c => 
+                  selectedCollections.has(c.id) && c.optimization_count && c.optimization_count > 0
+                );
+                if (collectionsToSync.length > 0) {
+                  setCollectionsToSync(collectionsToSync);
+                  setShowSyncDialog(true);
+                } else {
+                  toast.info("Aucune collection à synchroniser");
+                }
+              }}
+              disabled={selectedCollections.size === 0 || syncing}
+              variant="outline"
+              size="sm"
+            >
+              <Upload className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Synchroniser</span>
+            </Button>
+            <Button
+              onClick={fetchCollections}
+              disabled={loading}
+              variant="ghost"
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Controls Section */}
       <Card className="p-4">
         <div className="flex flex-col gap-4">

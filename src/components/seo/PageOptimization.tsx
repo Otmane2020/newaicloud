@@ -5,7 +5,30 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Search, Loader2, FileText, Sparkles, CheckCircle, Upload, Clock, AlertCircle } from 'lucide-react';
+import {
+  Search,
+  RefreshCw,
+  CheckCircle,
+  Clock,
+  Sparkles,
+  Upload,
+  Loader2,
+  Package,
+  Eye,
+  Target,
+  TrendingUp,
+  Zap,
+  ArrowRight,
+  Filter,
+  Grid3x3,
+  List,
+  Image as ImageIcon,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  FileText,
+  AlertCircle
+} from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
@@ -555,6 +578,71 @@ export function PageOptimization() {
       ) : (
         <Card className="border-2">
           <div className="p-6">
+            {/* Sticky Action Bar */}
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border -m-6 mb-6 p-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Checkbox 
+                    checked={selectedPages.size === filteredPages.length && filteredPages.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                  <span className="text-sm font-medium">
+                    {selectedPages.size > 0 ? (
+                      <span className="text-primary">{selectedPages.size} page(s) sélectionnée(s)</span>
+                    ) : (
+                      <span className="text-muted-foreground">Sélectionner tout</span>
+                    )}
+                  </span>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <Button
+                    onClick={handleOptimizeSelected}
+                    disabled={selectedPages.size === 0 || optimizing}
+                    size="sm"
+                  >
+                    <Sparkles className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Optimiser</span>
+                  </Button>
+                  <Button
+                    onClick={handleOptimizeAll}
+                    disabled={optimizing || pages.filter(p => !p.optimized).length === 0}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Sparkles className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Optimiser tout</span>
+                  </Button>
+                  <Button
+                    onClick={handleSyncSelected}
+                    disabled={selectedPages.size === 0 || syncing}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Upload className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Synchroniser</span>
+                  </Button>
+                  <Button
+                    onClick={handleSyncAll}
+                    disabled={syncing || pages.filter(p => p.optimized).length === 0}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Upload className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Synchroniser tout</span>
+                  </Button>
+                  <Button
+                    onClick={fetchPages}
+                    disabled={loading}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-2xl font-bold mb-1">Pages Shopify</h3>

@@ -675,6 +675,77 @@ export function TagOptimization() {
         </Card>
       </div>
 
+      {/* Sticky Action Bar */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          {/* Selection Counter */}
+          <div className="flex items-center gap-3">
+            <Checkbox 
+              checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+              onCheckedChange={handleSelectAll}
+            />
+            <span className="text-sm font-medium">
+              {selectedProducts.size > 0 ? (
+                <span className="text-primary">{selectedProducts.size} produit(s) sélectionné(s)</span>
+              ) : (
+                <span className="text-muted-foreground">Sélectionner tout</span>
+              )}
+            </span>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button
+              onClick={() => handleGenerateSelected()}
+              disabled={selectedProducts.size === 0 || showProgressDialog}
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <Sparkles className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Générer Tags</span>
+            </Button>
+            <Button
+              onClick={handleGenerateAllTags}
+              disabled={showProgressDialog || productsNotOptimized === 0}
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <Sparkles className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Générer tout</span>
+            </Button>
+            <Button
+              onClick={handleSyncSelected}
+              disabled={selectedProducts.size === 0}
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <Upload className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Synchroniser</span>
+            </Button>
+            <Button
+              onClick={handleSyncAll}
+              disabled={productsToSyncCount === 0}
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <Upload className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Synchroniser tout</span>
+            </Button>
+            <Button
+              onClick={fetchProducts}
+              disabled={loading}
+              variant="ghost"
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Controls Section */}
       <Card className="p-4">
         <div className="flex flex-col gap-4">
