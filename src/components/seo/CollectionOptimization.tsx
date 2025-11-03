@@ -14,6 +14,7 @@ import {
 } from './SeoWorkflowDialogs';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CollectionImageDialog } from './CollectionImageDialog';
 import { VisionAIBanner } from './VisionAIBanner';
@@ -82,6 +83,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function CollectionOptimization() {
   const { t, tf } = useTranslation();
+  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,6 @@ export function CollectionOptimization() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedCollectionForImage, setSelectedCollectionForImage] = useState<Collection | null>(null);
-  const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   useEffect(() => {
     fetchCollections();
@@ -724,7 +725,7 @@ export function CollectionOptimization() {
     setSelectedCollections(new Set());
   };
 
-  if (loading) {
+  if (loading || limitsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -734,7 +735,16 @@ export function CollectionOptimization() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner */}
+      {limits.limitReached && !limits.canUseOptimizations && (
+        <TrialLimitBanner
+          resourceType="optimisations"
+          usage={limits.usage.optimizations_count}
+          limit={limits.limits.max_optimizations}
+        />
+      )}
+      
+      <VisionAIBanner />
+
       <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-6 md:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex-1 space-y-4">
@@ -1331,27 +1341,24 @@ export function CollectionOptimization() {
                             size="sm"
                             variant="default"
                             onClick={async () => {
+                              if (!canDoAction('optimizations')) {
+                                toast.error("Limite atteinte", {
+                                  description: `Vous avez atteint votre limite mensuelle de ${limits.limits.max_optimizations} optimisations.`,
+                                });
+                                return;
+                              }
                               setOptimizing(true);
                               try {
                                 const { data, error } = await supabase.functions.invoke('generate-collection-seo', {
                                   body: { collection_ids: [collection.id] }
                                 });
-                                
                                 if (error) throw error;
-                                
-                                // Fetch updated collection
-                                const { data: updatedCollection } = await supabase
-                                  .from('shopify_collections')
-                                  .select('*')
-                                  .eq('id', collection.id)
-                                  .single();
-                                
+                                const { data: updatedCollection } = await supabase.from('shopify_collections').select('*').eq('id', collection.id).single();
                                 if (updatedCollection) {
                                   setOptimizedCollections([updatedCollection]);
                                   setShowResultsDialog(true);
                                   toast.success('Collection optimisée !');
                                 }
-                                
                                 await fetchCollections();
                                 await refreshLimits();
                               } catch (error: any) {
@@ -1360,7 +1367,7 @@ export function CollectionOptimization() {
                                 setOptimizing(false);
                               }
                             }}
-                            disabled={optimizing}
+                            disabled={optimizing || !canDoAction('optimizations')}
                             title="Optimize"
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >

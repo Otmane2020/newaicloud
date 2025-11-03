@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import {
   Search,
   RefreshCw,
@@ -75,7 +76,7 @@ export function PageOptimization() {
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('all');
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   
-  const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
+  const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
 
   useEffect(() => {
     fetchPages();
@@ -427,7 +428,7 @@ export function PageOptimization() {
     }
   };
 
-  if (loading) {
+  if (loading || limitsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -936,8 +937,16 @@ export function PageOptimization() {
                           <Button
                             size="sm"
                             variant="default"
-                            onClick={() => handleOptimizePage(page.id, page.optimized)}
-                            disabled={optimizing}
+                            onClick={() => {
+                              if (!canDoAction('optimizations')) {
+                                toast.error("Limite atteinte", {
+                                  description: `Vous avez atteint votre limite mensuelle de ${limits.limits.max_optimizations} optimisations.`,
+                                });
+                                return;
+                              }
+                              handleOptimizePage(page.id, page.optimized);
+                            }}
+                            disabled={optimizing || !canDoAction('optimizations')}
                             title={page.optimized ? "Re-optimize" : "Optimize"}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >

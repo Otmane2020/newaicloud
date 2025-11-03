@@ -17,6 +17,7 @@ import {
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { TrialLimitDialog } from "@/components/TrialLimitDialog";
+import { TrialLimitBanner } from "@/components/TrialLimitBanner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SeoConfidenceBadge } from "./SeoConfidenceBadge";
 import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from "@/lib/seoQuality";
@@ -74,6 +75,7 @@ type QualityFilter = "all" | "excellent" | "good" | "medium" | "poor";
 
 export function SeoOptimization() {
   const { t, tf } = useTranslation();
+  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -100,7 +102,6 @@ export function SeoOptimization() {
   const [syncedItems, setSyncedItems] = useState<
     Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }>
   >([]);
-  const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
   const fetchProducts = async () => {
     try {
@@ -645,6 +646,13 @@ export function SeoOptimization() {
 
   return (
     <div className="space-y-6">
+      {limits.limitReached && !limits.canUseOptimizations && (
+        <TrialLimitBanner
+          resourceType="optimisations"
+          usage={limits.usage.optimizations_count}
+          limit={limits.limits.max_optimizations}
+        />
+      )}
       {/* Hero Banner */}
       <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-6 md:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -1245,6 +1253,12 @@ export function SeoOptimization() {
                             variant="default"
                             size="sm"
                             onClick={async () => {
+                              if (!canDoAction('optimizations')) {
+                                toast.error("Limite atteinte", {
+                                  description: `Vous avez atteint votre limite mensuelle de ${limits.limits.max_optimizations} optimisations.`,
+                                });
+                                return;
+                              }
                               setGenerating(true);
                               try {
                                 const { error } = await supabase.functions.invoke("generate-seo-with-deepseek", {
@@ -1260,7 +1274,7 @@ export function SeoOptimization() {
                                 setGenerating(false);
                               }
                             }}
-                            disabled={generating}
+                            disabled={generating || !canDoAction('optimizations')}
                             title={t.seo.optimization.optimize}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >
