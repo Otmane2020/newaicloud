@@ -130,22 +130,22 @@ export function SeoAuditDashboard() {
     }
   };
 
-  // Palette de couleurs: vert (excellent), orange (bon), rouge (faible < 55)
+  // Palette de couleurs: vert (excellent), orange (bon), rouge (faible < 60)
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-[#22c55e]"; // Vert pour excellent
-    if (score >= 55) return "text-[#FF8000]"; // Orange pour bon
-    return "text-[#FF3333]"; // Rouge pour faible < 55
+    if (score >= 60) return "text-[#FF8000]"; // Orange pour bon
+    return "text-[#FF3333]"; // Rouge pour faible < 60
   };
 
   const getScoreBgColor = (score: number) => {
     if (score >= 80) return "bg-[#22c55e]/10 border-[#22c55e]/30";
-    if (score >= 55) return "bg-[#FF8000]/10 border-[#FF8000]/30";
+    if (score >= 60) return "bg-[#FF8000]/10 border-[#FF8000]/30";
     return "bg-[#FF3333]/10 border-[#FF3333]/30";
   };
 
   const getScoreGradient = (score: number) => {
     if (score >= 80) return "from-[#22c55e]/20 to-[#22c55e]/5";
-    if (score >= 55) return "from-[#FF8000]/20 to-[#FF8000]/5";
+    if (score >= 60) return "from-[#FF8000]/20 to-[#FF8000]/5";
     return "from-[#FF3333]/20 to-[#FF3333]/5";
   };
 
@@ -182,7 +182,7 @@ export function SeoAuditDashboard() {
         end: "#16a34a",
         glow: "bg-[#22c55e]/30",
       };
-    if (score >= 55)
+    if (score >= 60)
       return {
         start: "#FF8000",
         end: "#FF8000",
@@ -463,14 +463,14 @@ export function SeoAuditDashboard() {
                   className={`text-lg px-5 py-2 ${
                     audit.global_score >= 80
                       ? "bg-[#22c55e] text-white"
-                      : audit.global_score >= 55
+                      : audit.global_score >= 60
                         ? "bg-[#FF8000] text-white"
                         : "bg-[#FF3333] text-white"
                   }`}
                 >
                   {audit.global_score >= 80
                     ? t.seoAuditDashboard.scoreLabel.excellent
-                    : audit.global_score >= 55
+                    : audit.global_score >= 60
                       ? t.seoAuditDashboard.scoreLabel.good
                       : t.seoAuditDashboard.scoreLabel.low}
                 </Badge>
@@ -504,7 +504,7 @@ export function SeoAuditDashboard() {
                             className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
                               audit.global_score >= 80
                                 ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a]"
-                                : audit.global_score >= 55
+                                : audit.global_score >= 60
                                   ? "bg-gradient-to-r from-[#FF8000] to-[#FF8000]"
                                   : "bg-gradient-to-r from-[#FF3333] to-[#FF3333]"
                             }`}
@@ -513,7 +513,7 @@ export function SeoAuditDashboard() {
                               boxShadow:
                                 audit.global_score >= 80
                                   ? "0 0 10px #22c55e"
-                                  : audit.global_score >= 55
+                                  : audit.global_score >= 60
                                     ? "0 0 10px #FF8000"
                                     : "0 0 10px #FF3333",
                             }}
@@ -607,7 +607,7 @@ export function SeoAuditDashboard() {
                 className={`mt-6 p-4 rounded-xl ${
                   audit.global_score >= 80
                     ? "bg-[#22c55e]/10 border-2 border-[#22c55e]/20"
-                    : audit.global_score >= 55
+                    : audit.global_score >= 60
                       ? "bg-[#FF8000]/10 border-2 border-[#FF8000]/20"
                       : "bg-[#FF3333]/10 border-2 border-[#FF3333]/20"
                 }`}
@@ -615,7 +615,7 @@ export function SeoAuditDashboard() {
                 <p className="text-sm font-semibold">
                   {audit.global_score >= 80
                     ? t.seoAuditDashboard.motivational.excellent
-                    : audit.global_score >= 55
+                    : audit.global_score >= 60
                       ? t.seoAuditDashboard.motivational.good
                       : t.seoAuditDashboard.motivational.low}
                 </p>

@@ -685,7 +685,7 @@ export function SeoOptimization() {
             <div className="text-center">
               <div
                 className={`text-3xl md:text-4xl font-bold ${
-                  globalSeoScore >= 70 ? "text-green-600" : globalSeoScore >= 50 ? "text-orange-600" : "text-red-600"
+                  globalSeoScore >= 80 ? "text-green-600" : globalSeoScore >= 60 ? "text-orange-600" : "text-red-600"
                 }`}
               >
                 {globalSeoScore}/100

@@ -784,7 +784,7 @@ export function CollectionOptimization() {
             <div className="text-center">
               <div className={`text-3xl md:text-4xl font-bold ${
                 globalSeoScore >= 80 ? 'text-green-600' : 
-                globalSeoScore >= 70 ? 'text-orange-600' : 
+                globalSeoScore >= 60 ? 'text-orange-600' : 
                 'text-red-600'
               }`}>
                 {globalSeoScore}/100

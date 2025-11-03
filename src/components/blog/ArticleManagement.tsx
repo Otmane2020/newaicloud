@@ -34,7 +34,6 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Zap
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { VisionAIBanner } from '../seo/VisionAIBanner';
@@ -141,10 +140,10 @@ export function ArticleManagement() {
   };
 
   const getSeoScoreBadge = (score: number) => {
-    if (score >= 80) return { variant: 'default' as const, label: t.blog.management.score.excellent, color: 'text-green-600' };
-    if (score >= 60) return { variant: 'secondary' as const, label: t.blog.management.score.good, color: 'text-blue-600' };
-    if (score >= 40) return { variant: 'outline' as const, label: t.blog.management.score.medium, color: 'text-yellow-600' };
-    return { variant: 'outline' as const, label: t.blog.management.score.poor, color: 'text-red-600' };
+    if (score >= 80) return { variant: 'default' as const, label: t.blog.management.score.excellent, color: 'bg-green-500' };
+    if (score >= 60) return { variant: 'secondary' as const, label: t.blog.management.score.good, color: 'bg-orange-500' };
+    if (score >= 40) return { variant: 'outline' as const, label: t.blog.management.score.medium, color: 'bg-orange-400' };
+    return { variant: 'outline' as const, label: t.blog.management.score.poor, color: 'bg-red-500' };
   };
 
   const handleOptimizeArticle = async (articleId: string) => {
@@ -501,8 +500,7 @@ export function ArticleManagement() {
           <div className="text-center">
             <div className={`text-4xl font-bold ${
               globalSeoScore >= 80 ? 'text-green-600' : 
-              globalSeoScore >= 60 ? 'text-blue-600' : 
-              globalSeoScore >= 40 ? 'text-yellow-600' : 
+              globalSeoScore >= 60 ? 'text-orange-600' : 
               'text-red-600'
             }`}>
               {globalSeoScore}/100
@@ -863,7 +861,7 @@ export function ArticleManagement() {
                           title="Optimize"
                           className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                         >
-                          <Zap className="w-4 h-4" />
+                          <Sparkles className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"

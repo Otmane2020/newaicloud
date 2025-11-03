@@ -102,7 +102,7 @@ export function SeoAltImage() {
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -640,7 +640,7 @@ export function SeoAltImage() {
                 <span className="font-medium">+35% SEO images</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Zap className="w-4 h-4 text-teal-600" />
+                <Sparkles className="w-4 h-4 text-teal-600" />
                 <span className="font-medium">IA Vision avancée</span>
               </div>
             </div>
@@ -648,8 +648,8 @@ export function SeoAltImage() {
           <div className="flex flex-col gap-3 items-center">
             <div className="text-center">
               <div className={`text-4xl font-bold ${
-                altSeoScore >= 70 ? 'text-green-600' : 
-                altSeoScore >= 40 ? 'text-orange-600' : 
+                altSeoScore >= 80 ? 'text-green-600' : 
+                altSeoScore >= 60 ? 'text-orange-600' : 
                 'text-red-600'
               }`}>
                 {altSeoScore}/100

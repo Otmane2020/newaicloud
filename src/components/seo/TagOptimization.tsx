@@ -642,7 +642,7 @@ export function TagOptimization() {
             <div className="text-center">
               <div className={`text-3xl md:text-4xl font-bold ${
                 tagSeoScore >= 80 ? 'text-green-600' : 
-                tagSeoScore >= 70 ? 'text-orange-600' : 
+                tagSeoScore >= 60 ? 'text-orange-600' : 
                 'text-red-600'
               }`}>
                 {tagSeoScore}/100

@@ -80,14 +80,21 @@ export function SeoHeroBanner({
         <div className="flex flex-col gap-4 items-center bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
           <div className="text-center">
             <div className={`text-5xl font-bold ${
-              globalScore >= 70 ? 'text-green-300' : 
-              globalScore >= 40 ? 'text-yellow-300' : 
-              'text-red-300'
+              globalScore >= 80 ? 'text-green-500' : 
+              globalScore >= 60 ? 'text-orange-500' : 
+              'text-red-500'
             }`}>
               {globalScore}
             </div>
             <div className="text-white/80 text-sm font-medium">Score SEO Global</div>
-            <Progress value={globalScore} className="mt-2 h-2 bg-white/20" />
+            <Progress 
+              value={globalScore} 
+              className={`mt-2 h-2 ${
+                globalScore >= 80 ? '[&>div]:bg-green-500' : 
+                globalScore >= 60 ? '[&>div]:bg-orange-500' : 
+                '[&>div]:bg-red-500'
+              }`} 
+            />
           </div>
           <Button
             size="lg"

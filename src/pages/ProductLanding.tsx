@@ -21,6 +21,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatNumber } from '@/lib/utils';
+import { SeoActionPlan } from '@/components/seo/SeoActionPlan';
 
 const formatPrice = (price: number, currency: string = 'EUR') => {
   return new Intl.NumberFormat('fr-FR', {
@@ -500,6 +501,11 @@ export default function ProductLanding() {
             <h3 className="font-semibold text-gray-900 mb-2">Service client</h3>
             <p className="text-sm text-gray-600">Support disponible 7j/7 pour vous accompagner</p>
           </div>
+        </div>
+
+        {/* Plan d'Action SEO */}
+        <div className="mt-12">
+          <SeoActionPlan productId={id!} />
         </div>
       </div>
     </div>
