@@ -392,6 +392,162 @@ export const translations = {
         syncedImages: "{{count}} synchronized images"
       }
     },
+    articleLanding: {
+      errors: {
+        loadArticle: "Error loading article"
+      },
+      toasts: {
+        linkCopied: "Link copied!"
+      },
+      loading: "Loading article...",
+      notFound: "Article not found",
+      backToArticles: "Back to articles",
+      back: "Back",
+      contents: "Contents",
+      copied: "Copied!",
+      share: "Share",
+      tableOfContents: "Table of Contents",
+      read: "read",
+      keywords: "keywords",
+      published: "Published",
+      draft: "Draft",
+      shareLabel: "Share:"
+    },
+    productSource: {
+      errors: {
+        loadProducts: "Error loading products",
+        enrichProduct: "Error during enrichment",
+        deleteProducts: "Error during deletion"
+      },
+      success: {
+        dataExported: "Data exported successfully",
+        productEnriched: "Product enriched successfully!",
+        csvExported: "CSV export successful",
+        productsDeleted: "{{count}} product(s) deleted"
+      },
+      info: {
+        allEnriched: "All products are already enriched",
+        noSelection: "No product selected",
+        enriching: "Enriching {{count}} product(s)..."
+      },
+      title: "Product Source (Enriched Catalog)",
+      subtitle: "All your products with complete AI data",
+      actions: {
+        enrichSelection: "Enrich selection ({{count}})",
+        deleteSelection: "Delete selection ({{count}})",
+        enrichAll: "Enrich all",
+        enriching: "Enriching...",
+        exportCSV: "Export CSV",
+        exportJSON: "Export JSON",
+        refresh: "Refresh"
+      },
+      stats: {
+        totalProducts: "Total Products",
+        enrichmentRate: "Enrichment Rate",
+        averageQuality: "Average Quality",
+        visionAIActive: "Vision AI Active"
+      },
+      filters: {
+        selectAll: "Select all ({{selected}}/{{total}})",
+        search: "Search a product...",
+        allStatuses: "All statuses",
+        enriched: "Enriched",
+        pending: "Pending",
+        error: "Error",
+        allCategories: "All categories",
+        displayed: "{{count}} product(s) displayed"
+      }
+    },
+    chat: {
+      greeting: "Hello! How can I help you today?",
+      welcome: "Hello! How can I help you?",
+      errors: {
+        sendMessage: "Error sending message",
+        connection: "Connection error"
+      },
+      fallback: "Sorry, I'm experiencing technical issues. Please try again.",
+      title: "💬 Smart AI Chat",
+      subtitle: "Intelligent assistant connected to your Shopify catalog",
+      productsAvailable: "{{count}} products available",
+      poweredByAI: "Powered by AI",
+      codeEmbed: "Embed Code",
+      hide: "Hide",
+      embedConfig: {
+        title: "Chat Embed Configuration",
+        subtitle: "Customize and integrate the chat on your store",
+        copyCode: "Copy code",
+        copied: "Copied!",
+        position: "Widget position",
+        positions: {
+          bottomRight: "Bottom right",
+          bottomLeft: "Bottom left",
+          topRight: "Top right",
+          topLeft: "Top left"
+        },
+        welcomeMessage: "Welcome message",
+        integrationCode: "Shopify integration code",
+        instructions: {
+          title: "📝 Installation instructions:",
+          step1: "Copy the code above",
+          step2: "In Shopify, go to Online Store → Themes",
+          step3: "Click Edit code",
+          step4: "Open theme.liquid",
+          step5: "Paste the code just before the </body> tag",
+          step6: "Save"
+        }
+      },
+      copiedToClipboard: "Code copied to clipboard!",
+      you: "You",
+      assistant: "Assistant"
+    },
+    chatRobot: {
+      title: "NewAI Robot",
+      home: "Home",
+      listeningEnabled: "🎤 Listening enabled",
+      microphoneError: "Unable to access microphone",
+      processingError: "Processing error",
+      listeningInProgress: "Listening in progress...",
+      greeting: "Hello, I am your robot assistant",
+      subtitle: "Press the microphone to start speaking",
+      you: "You",
+      robot: "Robot",
+      processing: "Processing..."
+    },
+    subscription: {
+      title: "Subscription Plans",
+      subtitle: "Choose the plan that fits your needs and scale at your own pace",
+      success: "Payment successful! Your subscription is now active.",
+      cancelled: "Payment cancelled. You can try again whenever you want.",
+      errors: {
+        loadPlans: "Error loading plans",
+        createCheckout: "Error creating payment session"
+      },
+      currentPlan: "Current Plan",
+      selectPlan: "Select Plan",
+      upgradeNow: "Upgrade Now",
+      features: {
+        optimizationsMonth: "optimizations/month",
+        articlesMonth: "articles/month",
+        chatResponsesMonth: "chat responses/month",
+        shopifyStores: "Shopify store(s)",
+        products: "products"
+      },
+      plans: {
+        starter: {
+          name: "Starter",
+          description: "For growing stores"
+        },
+        pro: {
+          name: "Pro",
+          description: "For growing stores"
+        },
+        enterprise: {
+          name: "Enterprise",
+          description: "For large operations",
+          bestValue: "Best value"
+        }
+      }
+    },
     tags: {
       loadError: "Failed to load products",
       showing: "Showing {{count}} products to tag",

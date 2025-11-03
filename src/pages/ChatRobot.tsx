@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 import { Mic, MicOff, Maximize, Minimize, Home, Settings, Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -15,6 +16,7 @@ interface Message {
 
 export default function ChatRobot() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [fullscreen, setFullscreen] = useState(false);
   const [listening, setListening] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -52,10 +54,10 @@ export default function ChatRobot() {
 
       mediaRecorder.start();
       setListening(true);
-      toast.success("🎤 Écoute activée");
+      toast.success(t.seo.chatRobot.listeningEnabled);
     } catch (error) {
       console.error("Microphone error:", error);
-      toast.error("Impossible d'accéder au microphone");
+      toast.error(t.seo.chatRobot.microphoneError);
     }
   };
 
@@ -168,7 +170,7 @@ export default function ChatRobot() {
       audio.play();
     } catch (error: any) {
       console.error("Processing error:", error);
-      toast.error(error.message || "Erreur lors du traitement");
+      toast.error(error.message || t.seo.chatRobot.processingError);
     } finally {
       setProcessing(false);
     }
@@ -196,12 +198,12 @@ export default function ChatRobot() {
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <span className="font-bold text-2xl bg-gradient-primary bg-clip-text text-transparent">
-                  NewAI Robot
+                  {t.seo.chatRobot.title}
                 </span>
               </div>
               <Button variant="outline" onClick={() => navigate("/dashboard")}>
                 <Home className="w-4 h-4 mr-2" />
-                Accueil
+                {t.seo.chatRobot.home}
               </Button>
             </div>
             <div className="flex gap-2">
@@ -224,7 +226,7 @@ export default function ChatRobot() {
                 <div className="w-1.5 rounded-full bg-primary animate-sound-wave-3" style={{ height: '1.5rem' }} />
               </div>
               <span className="text-lg font-semibold text-primary animate-pulse">
-                Écoute en cours...
+                {t.seo.chatRobot.listeningInProgress}
               </span>
             </div>
           )}
@@ -239,9 +241,9 @@ export default function ChatRobot() {
               <div className="w-20 h-20 rounded-full bg-gradient-primary mx-auto mb-6 flex items-center justify-center">
                 <Sparkles className="w-10 h-10 text-white" />
               </div>
-              <h2 className="text-3xl font-bold mb-4">Bonjour, je suis votre assistant robot</h2>
+              <h2 className="text-3xl font-bold mb-4">{t.seo.chatRobot.greeting}</h2>
               <p className="text-lg text-muted-foreground">
-                Appuyez sur le microphone pour commencer à parler
+                {t.seo.chatRobot.subtitle}
               </p>
             </div>
           ) : (
@@ -257,7 +259,7 @@ export default function ChatRobot() {
                 <div className="flex items-start gap-3">
                   <div className="flex-1">
                     <div className="font-medium mb-2">
-                      {message.role === "user" ? "Vous" : "Robot"}
+                      {message.role === "user" ? t.seo.chatRobot.you : t.seo.chatRobot.robot}
                     </div>
                     <div className="text-lg leading-relaxed">{message.content}</div>
                     <div className="text-xs opacity-70 mt-2">
@@ -297,7 +299,7 @@ export default function ChatRobot() {
           {processing && (
             <div className="flex items-center gap-2">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Traitement en cours...</span>
+              <span className="text-sm font-medium text-muted-foreground">{t.seo.chatRobot.processing}</span>
             </div>
           )}
         </div>

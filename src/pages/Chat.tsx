@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/lib/language';
 import { MessageSquare, Send, Bot, User, ShoppingCart, Sparkles, Code, Copy, Check, Settings as SettingsIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -21,11 +22,12 @@ interface Message {
 
 export default function Chat() {
   const { user } = useAuth();
+  const { t, tf } = useTranslation();
   const { limits, refresh: refreshLimits } = useUsageLimits();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Bonjour ! Je suis votre assistant intelligent connecté à votre catalogue Shopify. Je peux vous aider à trouver des produits, obtenir des informations sur votre inventaire, et suggérer des articles à vos clients. Comment puis-je vous aider aujourd\'hui ?'
+      content: t.seo.chat.greeting
     }
   ]);
   const [input, setInput] = useState('');
@@ -39,7 +41,7 @@ export default function Chat() {
 
   // Chat embed configuration
   const [chatPosition, setChatPosition] = useState<'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'>('bottom-right');
-  const [welcomeMessage, setWelcomeMessage] = useState('Bonjour ! Comment puis-je vous aider aujourd\'hui ?');
+  const [welcomeMessage, setWelcomeMessage] = useState(t.seo.chat.welcome);
 
   useEffect(() => {
     if (user) {
@@ -58,7 +60,7 @@ export default function Chat() {
           user_id: user.id,
           title: 'Nouvelle conversation',
           message_count: 1,
-          last_message: 'Bonjour ! Comment puis-je vous aider ?'
+          last_message: t.seo.chat.welcome
         })
         .select()
         .single();
@@ -226,12 +228,12 @@ export default function Chat() {
       }
     } catch (error: any) {
       console.error('Error sending message:', error);
-      toast.error(error.message || 'Erreur lors de l\'envoi du message');
+      toast.error(error.message || t.seo.chat.errors.sendMessage);
       
       // Fallback response
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Désolé, je rencontre un problème technique. Veuillez réessayer.'
+        content: t.seo.chat.fallback
       }]);
     } finally {
       setLoading(false);
@@ -376,7 +378,7 @@ export default function Chat() {
   const handleCopyEmbed = () => {
     navigator.clipboard.writeText(embedCode);
     setCopied(true);
-    toast.success('Code copié dans le presse-papier !');
+    toast.success(t.seo.chat.copiedToClipboard);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -389,17 +391,17 @@ export default function Chat() {
               <div className="p-3 bg-gradient-to-br from-primary to-primary/50 rounded-2xl shadow-lg">
                 <MessageSquare className="w-8 md:w-10 h-8 md:h-10 text-white" />
               </div>
-              💬 Chat Smart AI
+              {t.seo.chat.title}
             </h1>
             <p className="text-muted-foreground text-base md:text-lg">
-              Assistant intelligent connecté à votre catalogue Shopify
+              {t.seo.chat.subtitle}
             </p>
             <div className="flex gap-2 mt-4">
               <Badge variant="secondary" className="flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                {products.length} produits disponibles
+                {tf('seo.chat.productsAvailable', { count: products.length })}
               </Badge>
-              <Badge variant="outline" className="bg-card">Propulsé par IA</Badge>
+              <Badge variant="outline" className="bg-card">{t.seo.chat.poweredByAI}</Badge>
             </div>
           </div>
           <Button
@@ -409,7 +411,7 @@ export default function Chat() {
             className="bg-card hover:bg-card/80"
           >
             <Code className="w-4 h-4 mr-2" />
-            {showEmbed ? 'Masquer' : 'Code Embed'}
+            {showEmbed ? t.seo.chat.hide : t.seo.chat.codeEmbed}
           </Button>
         </div>
 
@@ -419,20 +421,20 @@ export default function Chat() {
               <div className="flex items-center gap-3">
                 <SettingsIcon className="w-6 h-6 text-primary" />
                 <div>
-                  <h3 className="text-lg font-bold">Configuration du Chat Embed</h3>
-                  <p className="text-sm text-muted-foreground">Personnalisez et intégrez le chat sur votre boutique</p>
+                  <h3 className="text-lg font-bold">{t.seo.chat.embedConfig.title}</h3>
+                  <p className="text-sm text-muted-foreground">{t.seo.chat.embedConfig.subtitle}</p>
                 </div>
               </div>
               <Button onClick={handleCopyEmbed} variant="default">
                 {copied ? (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    Copié!
+                    {t.seo.chat.embedConfig.copied}
                   </>
                 ) : (
                   <>
                     <Copy className="w-4 h-4 mr-2" />
-                    Copier le code
+                    {t.seo.chat.embedConfig.copyCode}
                   </>
                 )}
               </Button>
@@ -440,33 +442,33 @@ export default function Chat() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <Label htmlFor="position">Position du widget</Label>
+                <Label htmlFor="position">{t.seo.chat.embedConfig.position}</Label>
                 <Select value={chatPosition} onValueChange={(value: any) => setChatPosition(value)}>
                   <SelectTrigger id="position">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bottom-right">Bas droite</SelectItem>
-                    <SelectItem value="bottom-left">Bas gauche</SelectItem>
-                    <SelectItem value="top-right">Haut droite</SelectItem>
-                    <SelectItem value="top-left">Haut gauche</SelectItem>
+                    <SelectItem value="bottom-right">{t.seo.chat.embedConfig.positions.bottomRight}</SelectItem>
+                    <SelectItem value="bottom-left">{t.seo.chat.embedConfig.positions.bottomLeft}</SelectItem>
+                    <SelectItem value="top-right">{t.seo.chat.embedConfig.positions.topRight}</SelectItem>
+                    <SelectItem value="top-left">{t.seo.chat.embedConfig.positions.topLeft}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="welcome">Message d'accueil</Label>
+                <Label htmlFor="welcome">{t.seo.chat.embedConfig.welcomeMessage}</Label>
                 <Input
                   id="welcome"
                   value={welcomeMessage}
                   onChange={(e) => setWelcomeMessage(e.target.value)}
-                  placeholder="Message d'accueil personnalisé"
+                  placeholder={t.seo.chat.embedConfig.welcomeMessage}
                 />
               </div>
             </div>
 
             <div>
-              <Label>Code d'intégration Shopify</Label>
+              <Label>{t.seo.chat.embedConfig.integrationCode}</Label>
               <Textarea
                 readOnly
                 value={embedCode}
@@ -476,15 +478,15 @@ export default function Chat() {
 
             <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
               <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
-                📝 Instructions d'installation :
+                {t.seo.chat.embedConfig.instructions.title}
               </p>
               <ol className="text-sm text-yellow-800 dark:text-yellow-300 space-y-1 ml-4 list-decimal">
-                <li>Copiez le code ci-dessus</li>
-                <li>Dans Shopify, allez dans <strong>Boutique en ligne → Thèmes</strong></li>
-                <li>Cliquez sur <strong>Modifier le code</strong></li>
-                <li>Ouvrez <code>theme.liquid</code></li>
-                <li>Collez le code juste avant la balise <code>&lt;/body&gt;</code></li>
-                <li>Sauvegardez</li>
+                <li>{t.seo.chat.embedConfig.instructions.step1}</li>
+                <li>{t.seo.chat.embedConfig.instructions.step2}</li>
+                <li>{t.seo.chat.embedConfig.instructions.step3}</li>
+                <li>{t.seo.chat.embedConfig.instructions.step4}</li>
+                <li>{t.seo.chat.embedConfig.instructions.step5}</li>
+                <li>{t.seo.chat.embedConfig.instructions.step6}</li>
               </ol>
             </div>
           </Card>

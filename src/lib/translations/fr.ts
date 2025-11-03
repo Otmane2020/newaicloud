@@ -392,6 +392,162 @@ export const translations = {
         syncedImages: "{{count}} images synchronisées"
       }
     },
+    articleLanding: {
+      errors: {
+        loadArticle: "Erreur lors du chargement de l'article"
+      },
+      toasts: {
+        linkCopied: "Lien copié !"
+      },
+      loading: "Chargement de l'article...",
+      notFound: "Article non trouvé",
+      backToArticles: "Retour aux articles",
+      back: "Retour",
+      contents: "Sommaire",
+      copied: "Copié !",
+      share: "Partager",
+      tableOfContents: "Table des matières",
+      read: "lecture",
+      keywords: "mots-clés",
+      published: "Publié",
+      draft: "Brouillon",
+      shareLabel: "Partager :"
+    },
+    productSource: {
+      errors: {
+        loadProducts: "Erreur lors du chargement des produits",
+        enrichProduct: "Erreur lors de l'enrichissement",
+        deleteProducts: "Erreur lors de la suppression"
+      },
+      success: {
+        dataExported: "Données exportées avec succès",
+        productEnriched: "Produit enrichi avec succès !",
+        csvExported: "Export CSV réussi",
+        productsDeleted: "{{count}} produit(s) supprimé(s)"
+      },
+      info: {
+        allEnriched: "Tous les produits sont déjà enrichis",
+        noSelection: "Aucun produit sélectionné",
+        enriching: "Enrichissement de {{count}} produit(s)..."
+      },
+      title: "Source Produits (Catalogue Enrichi)",
+      subtitle: "Tous vos produits avec données IA complètes",
+      actions: {
+        enrichSelection: "Enrichir sélection ({{count}})",
+        deleteSelection: "Supprimer sélection ({{count}})",
+        enrichAll: "Enrichir tout",
+        enriching: "Enrichissement...",
+        exportCSV: "Export CSV",
+        exportJSON: "Export JSON",
+        refresh: "Actualiser"
+      },
+      stats: {
+        totalProducts: "Total Produits",
+        enrichmentRate: "Taux d'enrichissement",
+        averageQuality: "Qualité Moyenne",
+        visionAIActive: "Vision AI Actif"
+      },
+      filters: {
+        selectAll: "Tout sélectionner ({{selected}}/{{total}})",
+        search: "Rechercher un produit...",
+        allStatuses: "Tous les statuts",
+        enriched: "Enrichis",
+        pending: "En attente",
+        error: "Erreur",
+        allCategories: "Toutes les catégories",
+        displayed: "{{count}} produit(s) affiché(s)"
+      }
+    },
+    chat: {
+      greeting: "Bonjour ! Comment puis-je vous aider aujourd'hui ?",
+      welcome: "Bonjour ! Comment puis-je vous aider ?",
+      errors: {
+        sendMessage: "Erreur lors de l'envoi du message",
+        connection: "Erreur de connexion"
+      },
+      fallback: "Désolé, je rencontre un problème technique. Veuillez réessayer.",
+      title: "💬 Chat Smart AI",
+      subtitle: "Assistant intelligent connecté à votre catalogue Shopify",
+      productsAvailable: "{{count}} produits disponibles",
+      poweredByAI: "Propulsé par IA",
+      codeEmbed: "Code Embed",
+      hide: "Masquer",
+      embedConfig: {
+        title: "Configuration du Chat Embed",
+        subtitle: "Personnalisez et intégrez le chat sur votre boutique",
+        copyCode: "Copier le code",
+        copied: "Copié !",
+        position: "Position du widget",
+        positions: {
+          bottomRight: "Bas droite",
+          bottomLeft: "Bas gauche",
+          topRight: "Haut droite",
+          topLeft: "Haut gauche"
+        },
+        welcomeMessage: "Message d'accueil",
+        integrationCode: "Code d'intégration Shopify",
+        instructions: {
+          title: "📝 Instructions d'installation :",
+          step1: "Copiez le code ci-dessus",
+          step2: "Dans Shopify, allez dans Boutique en ligne → Thèmes",
+          step3: "Cliquez sur Modifier le code",
+          step4: "Ouvrez theme.liquid",
+          step5: "Collez le code juste avant la balise </body>",
+          step6: "Sauvegardez"
+        }
+      },
+      copiedToClipboard: "Code copié dans le presse-papier !",
+      you: "Vous",
+      assistant: "Assistant"
+    },
+    chatRobot: {
+      title: "NewAI Robot",
+      home: "Accueil",
+      listeningEnabled: "🎤 Écoute activée",
+      microphoneError: "Impossible d'accéder au microphone",
+      processingError: "Erreur lors du traitement",
+      listeningInProgress: "Écoute en cours...",
+      greeting: "Bonjour, je suis votre assistant robot",
+      subtitle: "Appuyez sur le microphone pour commencer à parler",
+      you: "Vous",
+      robot: "Robot",
+      processing: "Traitement en cours..."
+    },
+    subscription: {
+      title: "Plans d'abonnement",
+      subtitle: "Choisissez le plan adapté à vos besoins et évoluez à votre rythme",
+      success: "Paiement réussi ! Votre abonnement est maintenant actif.",
+      cancelled: "Paiement annulé. Vous pouvez réessayer quand vous le souhaitez.",
+      errors: {
+        loadPlans: "Erreur lors du chargement des plans",
+        createCheckout: "Erreur lors de la création de la session de paiement"
+      },
+      currentPlan: "Plan actuel",
+      selectPlan: "Sélectionner le plan",
+      upgradeNow: "Mettre à niveau",
+      features: {
+        optimizationsMonth: "optimisations/mois",
+        articlesMonth: "articles/mois",
+        chatResponsesMonth: "réponses chat/mois",
+        shopifyStores: "boutique(s) Shopify",
+        products: "produits"
+      },
+      plans: {
+        starter: {
+          name: "Starter",
+          description: "Pour les boutiques en croissance"
+        },
+        pro: {
+          name: "Pro",
+          description: "Pour les boutiques en croissance"
+        },
+        enterprise: {
+          name: "Enterprise",
+          description: "Pour les grandes opérations",
+          bestValue: "Meilleur rapport qualité-prix"
+        }
+      }
+    },
     tags: {
       loadError: "Erreur lors du chargement des produits",
       showing: "Affichage de {{count}} produits à taguer",

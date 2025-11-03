@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "@/lib/language";
 import { UsageLimits } from "@/components/dashboard/UsageLimits";
 import { BillingPortal } from "@/components/dashboard/BillingPortal";
 import { CurrentPlanCard } from "@/components/dashboard/CurrentPlanCard";
@@ -37,6 +38,7 @@ const Subscription = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,10 +49,10 @@ const Subscription = () => {
   useEffect(() => {
     const status = searchParams.get('checkout');
     if (status === 'success') {
-      toast.success('Paiement réussi! Votre abonnement est maintenant actif.');
+      toast.success(t.seo.subscription.success);
       navigate('/subscription', { replace: true });
     } else if (status === 'cancelled') {
-      toast.info('Paiement annulé. Vous pouvez réessayer quand vous le souhaitez.');
+      toast.info(t.seo.subscription.cancelled);
       navigate('/subscription', { replace: true });
     }
   }, [searchParams, navigate]);
@@ -128,7 +130,7 @@ const Subscription = () => {
       }
     } catch (error) {
       console.error('Error loading plans:', error);
-      toast.error('Erreur lors du chargement des plans');
+      toast.error(t.seo.subscription.errors.loadPlans);
     } finally {
       setLoading(false);
     }
@@ -157,7 +159,7 @@ const Subscription = () => {
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
-      toast.error('Erreur lors de la création de la session de paiement');
+      toast.error(t.seo.subscription.errors.createCheckout);
     } finally {
       setCheckoutLoading(null);
     }
@@ -197,9 +199,9 @@ const Subscription = () => {
   return (
     <div className="container mx-auto p-8 space-y-12">
       <div className="space-y-4">
-        <h1 className="text-4xl font-bold">Subscription Plans</h1>
+        <h1 className="text-4xl font-bold">{t.seo.subscription.title}</h1>
         <p className="text-muted-foreground text-lg">
-          Choose the plan that fits your needs and scale at your own pace
+          {t.seo.subscription.subtitle}
         </p>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "@/lib/language";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ interface ProductSourceData {
 
 const ProductSource = () => {
   const { user } = useAuth();
+  const { t, tf } = useTranslation();
   const [products, setProducts] = useState<ProductSourceData[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<ProductSourceData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +94,7 @@ const ProductSource = () => {
       if (error) throw error;
       setProducts(data || []);
     } catch (error: any) {
-      toast.error("Erreur lors du chargement des produits", {
+      toast.error(t.seo.productSource.errors.loadProducts, {
         description: error.message,
       });
     } finally {
@@ -129,7 +131,7 @@ const ProductSource = () => {
     link.download = `produits-enrichis-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success("Données exportées avec succès");
+    toast.success(t.seo.productSource.success.dataExported);
   };
 
   const handleEnrichProduct = async (productId: string) => {
@@ -143,14 +145,14 @@ const ProductSource = () => {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success("Produit enrichi avec succès !");
+        toast.success(t.seo.productSource.success.productEnriched);
         await loadProducts();
       } else {
-        throw new Error(data?.error || "Erreur lors de l'enrichissement");
+        throw new Error(data?.error || t.seo.productSource.errors.enrichProduct);
       }
     } catch (error: any) {
       console.error("Error enriching product:", error);
-      toast.error(error.message || "Erreur lors de l'enrichissement");
+      toast.error(error.message || t.seo.productSource.errors.enrichProduct);
     }
   };
 
@@ -158,12 +160,12 @@ const ProductSource = () => {
     const pendingProducts = products.filter(p => p.enrichment_status === "pending");
     
     if (pendingProducts.length === 0) {
-      toast.info("Tous les produits sont déjà enrichis");
+      toast.info(t.seo.productSource.info.allEnriched);
       return;
     }
 
     setEnriching(true);
-    toast.info(`Enrichissement de ${pendingProducts.length} produit(s)...`);
+    toast.info(tf('seo.productSource.info.enriching', { count: pendingProducts.length }));
     
     for (const product of pendingProducts) {
       await handleEnrichProduct(product.id);
@@ -173,12 +175,12 @@ const ProductSource = () => {
 
   const handleEnrichSelected = async () => {
     if (selectedProducts.size === 0) {
-      toast.info("Aucun produit sélectionné");
+      toast.info(t.seo.productSource.info.noSelection);
       return;
     }
 
     setEnriching(true);
-    toast.info(`Enrichissement de ${selectedProducts.size} produit(s)...`);
+    toast.info(tf('seo.productSource.info.enriching', { count: selectedProducts.size }));
     
     for (const productId of Array.from(selectedProducts)) {
       await handleEnrichProduct(productId);
@@ -189,7 +191,7 @@ const ProductSource = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedProducts.size === 0) {
-      toast.info("Aucun produit sélectionné");
+      toast.info(t.seo.productSource.info.noSelection);
       return;
     }
 
@@ -201,11 +203,11 @@ const ProductSource = () => {
 
       if (error) throw error;
 
-      toast.success(`${selectedProducts.size} produit(s) supprimé(s)`);
+      toast.success(tf('seo.productSource.success.productsDeleted', { count: selectedProducts.size }));
       setSelectedProducts(new Set());
       await loadProducts();
     } catch (error: any) {
-      toast.error(error.message || "Erreur lors de la suppression");
+      toast.error(error.message || t.seo.productSource.errors.deleteProducts);
     }
   };
 
@@ -258,7 +260,7 @@ const ProductSource = () => {
     link.download = `products-enriched-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success("Export CSV réussi");
+    toast.success(t.seo.productSource.success.csvExported);
   };
 
   const enrichedCount = products.filter(p => p.enrichment_status === "enriched").length;
@@ -280,10 +282,10 @@ const ProductSource = () => {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Database className="w-8 h-8 text-primary" />
-            Source Produits (Catalogue Enrichi)
+            {t.seo.productSource.title}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Tous vos produits avec données IA complètes
+            {t.seo.productSource.subtitle}
           </p>
         </div>
         <div className="flex gap-2">
@@ -291,28 +293,28 @@ const ProductSource = () => {
             <>
               <Button onClick={handleEnrichSelected} variant="default" disabled={enriching}>
                 <Sparkles className="w-4 h-4 mr-2" />
-                Enrichir sélection ({selectedProducts.size})
+                {tf('seo.productSource.actions.enrichSelection', { count: selectedProducts.size })}
               </Button>
               <Button onClick={handleDeleteSelected} variant="destructive">
-                Supprimer sélection ({selectedProducts.size})
+                {tf('seo.productSource.actions.deleteSelection', { count: selectedProducts.size })}
               </Button>
             </>
           )}
           <Button onClick={handleEnrichAll} variant="secondary" disabled={enriching}>
             <Sparkles className="w-4 h-4 mr-2" />
-            {enriching ? "Enrichissement..." : "Enrichir tout"}
+            {enriching ? t.seo.productSource.actions.enriching : t.seo.productSource.actions.enrichAll}
           </Button>
           <Button onClick={exportToCSV} variant="outline">
             <Download className="w-4 h-4 mr-2" />
-            Export CSV
+            {t.seo.productSource.actions.exportCSV}
           </Button>
           <Button onClick={exportData} variant="outline">
             <Download className="w-4 h-4 mr-2" />
-            Export JSON
+            {t.seo.productSource.actions.exportJSON}
           </Button>
           <Button onClick={loadProducts} disabled={enriching}>
             <TrendingUp className="w-4 h-4 mr-2" />
-            Actualiser
+            {t.seo.productSource.actions.refresh}
           </Button>
         </div>
       </div>

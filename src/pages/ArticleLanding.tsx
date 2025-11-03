@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "@/lib/language";
 import {
   Calendar, 
   Clock,
@@ -25,6 +26,7 @@ import { toast } from "sonner";
 
 export default function ArticleLanding() {
   const { id } = useParams();
+  const { t } = useTranslation();
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -68,7 +70,7 @@ export default function ArticleLanding() {
       if (error) throw error;
       setArticle(data);
     } catch (error: any) {
-      toast.error("Error loading article");
+      toast.error(t.seo.articleLanding.errors.loadArticle);
       console.error(error);
     } finally {
       setLoading(false);
@@ -100,7 +102,7 @@ export default function ArticleLanding() {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success("Link copied!");
+    toast.success(t.seo.articleLanding.toasts.linkCopied);
   };
 
   if (loading) {
@@ -108,7 +110,7 @@ export default function ArticleLanding() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Sparkles className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading article...</p>
+          <p className="text-muted-foreground">{t.seo.articleLanding.loading}</p>
         </div>
       </div>
     );
@@ -119,11 +121,11 @@ export default function ArticleLanding() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-2xl font-bold mb-2">Article not found</h2>
+          <h2 className="text-2xl font-bold mb-2">{t.seo.articleLanding.notFound}</h2>
           <Link to="/blog">
             <Button>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to articles
+              {t.seo.articleLanding.backToArticles}
             </Button>
           </Link>
         </div>
@@ -141,7 +143,7 @@ export default function ArticleLanding() {
           <Link to="/blog">
             <Button variant="ghost" size="sm" className="text-sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              {t.seo.articleLanding.back}
             </Button>
           </Link>
           
@@ -153,12 +155,12 @@ export default function ArticleLanding() {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <Menu className="w-4 h-4 mr-2" />
-            Contents
+            {t.seo.articleLanding.contents}
           </Button>
 
           <Button variant="outline" size="sm" className="text-sm" onClick={handleCopyLink}>
             {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-            {copied ? "Copied!" : "Share"}
+            {copied ? t.seo.articleLanding.copied : t.seo.articleLanding.share}
           </Button>
         </div>
       </div>
@@ -171,7 +173,7 @@ export default function ArticleLanding() {
               <Card className="p-4">
                 <h3 className="font-bold text-base mb-3 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-primary" />
-                  Table of Contents
+                  {t.seo.articleLanding.tableOfContents}
                 </h3>
                 <nav className="space-y-1">
                   {[
@@ -215,7 +217,7 @@ export default function ArticleLanding() {
             <Card className="p-5">
               <h3 className="font-bold text-base mb-4 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary" />
-                Table of Contents
+                {t.seo.articleLanding.tableOfContents}
               </h3>
               <nav className="space-y-1">
                 {[
@@ -263,12 +265,12 @@ export default function ArticleLanding() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5" />
-                  {getReadingTime(article.content)} read
+                  {getReadingTime(article.content)} {t.seo.articleLanding.read}
                 </div>
                 {article.keywords && article.keywords.length > 0 && (
                   <div className="flex items-center gap-2">
                     <Tag className="w-3.5 h-3.5" />
-                    {article.keywords.length} keywords
+                    {article.keywords.length} {t.seo.articleLanding.keywords}
                   </div>
                 )}
               </div>
@@ -283,7 +285,7 @@ export default function ArticleLanding() {
                 <div className="mb-4">
                   <Badge variant="outline" className="mb-4 text-xs md:text-sm">
                     <Sparkles className="w-3 h-3 mr-1" />
-                    {article.status === "published" ? "Published" : "Draft"}
+                    {article.status === "published" ? t.seo.articleLanding.published : t.seo.articleLanding.draft}
                   </Badge>
                   <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
                     {article.title}
@@ -312,7 +314,7 @@ export default function ArticleLanding() {
 
                   {/* Share Buttons */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <span className="text-sm font-medium text-muted-foreground">Share:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t.seo.articleLanding.shareLabel}</span>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => handleShare("facebook")} className="flex-1 sm:flex-none">
                         <Facebook className="w-4 h-4" />
