@@ -1136,6 +1136,7 @@ export const translations = {
         optimizeSelected: "Optimiser sélection",
         optimizeAll: "Optimiser tout",
         syncToShopify: "Sync vers Shopify",
+        syncAll: "Tout synchroniser",
         selectAll: "Tout sélectionner",
         refresh: "Actualiser",
         generateImage: "Générer image"

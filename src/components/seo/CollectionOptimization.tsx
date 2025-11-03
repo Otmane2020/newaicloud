@@ -549,6 +549,52 @@ export function CollectionOptimization() {
     }
   };
 
+  const handleSyncAllCollections = async () => {
+    const allOptimized = collections.filter(c => c.optimization_count && c.optimization_count > 0);
+    
+    if (allOptimized.length === 0) {
+      toast.error('Aucune collection optimisée à synchroniser');
+      return;
+    }
+
+    try {
+      setSyncing(true);
+      setShowProgressDialog(true);
+      setProgress({ current: 0, total: allOptimized.length });
+
+      let successCount = 0;
+      for (let i = 0; i < allOptimized.length; i++) {
+        const collection = allOptimized[i];
+        try {
+          const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+            body: { 
+              collectionId: collection.id,
+              force: true
+            }
+          });
+
+          if (error) throw error;
+          successCount++;
+        } catch (error: any) {
+          console.error(`Error syncing collection ${collection.id}:`, error);
+        }
+        setProgress({ current: i + 1, total: allOptimized.length });
+      }
+
+      setShowProgressDialog(false);
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      toast.success(`✅ ${successCount} collection(s) synchronisée(s) avec Shopify`);
+      await fetchCollections();
+    } catch (error: any) {
+      console.error('Error syncing all collections:', error);
+      toast.error('Erreur lors de la synchronisation');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleSyncProductCollections = async () => {
     try {
       setSyncing(true);
@@ -964,10 +1010,21 @@ export function CollectionOptimization() {
                 className="flex items-center gap-2 bg-gradient-to-r from-secondary/80 to-secondary hover:from-secondary hover:to-secondary/90 shadow-md hover:shadow-lg border-secondary/40 text-secondary-foreground font-medium transition-all duration-300"
               >
                 <Upload className="w-4 h-4" />
-                Sync à Shopify
+                {t.collections.optimization.actions.syncToShopify}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncAllCollections}
+                disabled={syncing || collections.filter(c => c.optimization_count && c.optimization_count > 0).length === 0}
+                className="flex items-center gap-2 bg-gradient-to-r from-green-500/80 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg border-green-600/40 text-white font-medium transition-all duration-300"
+              >
+                <Upload className="w-4 h-4" />
+                {t.collections.optimization.actions.syncAll}
               </Button>
               
-              <Button 
+              <Button
                 variant="outline" 
                 size="icon" 
                 onClick={fetchCollections}
