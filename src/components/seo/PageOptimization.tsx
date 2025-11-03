@@ -12,7 +12,6 @@ import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { Progress } from '@/components/ui/progress';
 import { VisionAIBanner } from './VisionAIBanner';
-import { SeoHeroBanner } from './SeoHeroBanner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
@@ -376,23 +375,6 @@ export function PageOptimization() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner with Stats - Modern Design */}
-      <SeoHeroBanner
-        icon={FileText}
-        title="Pages SEO"
-        subtitle="Optimisation intelligente IA"
-        description="Transformez vos pages Shopify en machines de conversion SEO. IA génère des meta titles et descriptions optimisés pour maximiser votre visibilité."
-        globalScore={globalPageSeoScore}
-        optimizing={optimizing}
-        onOptimizeAll={handleOptimizeAll}
-        canOptimize={pages.filter(p => !p.optimized).length > 0}
-        features={[
-          { label: 'SEO Automatisé', icon: Sparkles },
-          { label: 'Pages Complètes', icon: CheckCircle },
-          { label: 'Sync Shopify', icon: Upload }
-        ]}
-      />
-
       {/* Vision AI Banner */}
       <VisionAIBanner />
 
