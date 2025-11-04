@@ -103,9 +103,7 @@ export function SyncResultDialog({
             </h4>
             <ScrollArea className="h-[250px] sm:h-[300px] border rounded-lg bg-muted/30">
               <div className="p-2 sm:p-3 space-y-2">
-                {Object.entries(stats)
-                  .filter(([_, data]) => data.imported > 0 || data.error)
-                  .map(([type, data]) => {
+                {Object.entries(stats).map(([type, data]) => {
                     const config = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG];
                     const Icon = config.icon;
                     const typeKey = type as keyof typeof t.integration.sync.types;
