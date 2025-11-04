@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,14 @@ export function WhiteBackgroundPreviewDialog({
 
   const successfulPreviews = previews.filter(p => p.status === 'success');
   const isGenerating = previews.some(p => p.status === 'generating');
+  const isSingleImage = previews.length === 1;
+
+  // Sélectionner automatiquement si une seule image avec succès
+  useEffect(() => {
+    if (isSingleImage && successfulPreviews.length === 1) {
+      setSelectedIds(new Set([successfulPreviews[0].productId]));
+    }
+  }, [isSingleImage, successfulPreviews]);
 
   const handleToggleSelect = (productId: string) => {
     const newSelected = new Set(selectedIds);
@@ -78,7 +86,9 @@ export function WhiteBackgroundPreviewDialog({
         <DialogHeader>
           <DialogTitle>Prévisualisation des images avec fond blanc IA</DialogTitle>
           <DialogDescription>
-            Comparez les images originales avec les versions générées par l'IA. Sélectionnez celles que vous souhaitez appliquer.
+            {isSingleImage 
+              ? "Comparez l'image originale avec la version générée par l'IA."
+              : "Comparez les images originales avec les versions générées par l'IA. Sélectionnez celles que vous souhaitez appliquer."}
           </DialogDescription>
         </DialogHeader>
 
@@ -92,13 +102,15 @@ export function WhiteBackgroundPreviewDialog({
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(preview.productId)}
-                      onChange={() => handleToggleSelect(preview.productId)}
-                      disabled={preview.status !== 'success'}
-                      className="w-4 h-4"
-                    />
+                    {!isSingleImage && (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(preview.productId)}
+                        onChange={() => handleToggleSelect(preview.productId)}
+                        disabled={preview.status !== 'success'}
+                        className="w-4 h-4"
+                      />
+                    )}
                     <div>
                       <h4 className="font-medium">{preview.productTitle}</h4>
                       {preview.status === 'generating' && (
@@ -184,23 +196,26 @@ export function WhiteBackgroundPreviewDialog({
         </ScrollArea>
 
         <DialogFooter className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {successfulPreviews.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAll}
-                disabled={isGenerating}
-              >
-                {selectedIds.size === successfulPreviews.length
-                  ? 'Tout désélectionner'
-                  : 'Tout sélectionner'}
-              </Button>
-            )}
-            <span className="text-sm text-muted-foreground">
-              {selectedIds.size} sélectionné(s) sur {successfulPreviews.length}
-            </span>
-          </div>
+          {!isSingleImage && (
+            <div className="flex items-center gap-2">
+              {successfulPreviews.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  disabled={isGenerating}
+                >
+                  {selectedIds.size === successfulPreviews.length
+                    ? 'Tout désélectionner'
+                    : 'Tout sélectionner'}
+                </Button>
+              )}
+              <span className="text-sm text-muted-foreground">
+                {selectedIds.size} sélectionné(s) sur {successfulPreviews.length}
+              </span>
+            </div>
+          )}
+          {isSingleImage && <div />}
 
           <div className="flex gap-2">
             <Button
