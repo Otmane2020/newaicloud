@@ -35,9 +35,14 @@ import {
   X,
   CheckCircle,
   Hash,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Zap,
+  BookOpen
 } from 'lucide-react';
 import { WhiteBackgroundPreviewDialog } from './WhiteBackgroundPreviewDialog';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useNavigate } from 'react-router-dom';
 
 interface PreviewImage {
   productId: string;
@@ -61,6 +66,7 @@ interface Product {
 }
 
 export function GoogleShopping() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -74,6 +80,7 @@ export function GoogleShopping() {
   const [processingImages, setProcessingImages] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previews, setPreviews] = useState<PreviewImage[]>([]);
+  const [optimizationScore, setOptimizationScore] = useState(0);
 
   const fetchProducts = async () => {
     try {
@@ -96,6 +103,14 @@ export function GoogleShopping() {
 
       if (error) throw error;
       setProducts(data || []);
+      
+      // Calculate optimization score
+      if (data && data.length > 0) {
+        const optimized = data.filter(p => 
+          p.google_product_category && p.google_gtin && p.google_white_background
+        ).length;
+        setOptimizationScore(Math.round((optimized / data.length) * 100));
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Erreur lors du chargement des produits');
@@ -459,6 +474,82 @@ export function GoogleShopping() {
 
   return (
     <div className="space-y-6">
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-8 text-white shadow-xl">
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+                <Sparkles className="w-8 h-8" />
+                Google Shopping - Optimisation IA
+              </h1>
+              <p className="text-white/90 text-lg">
+                Optimisez vos produits avec l'IA pour maximiser leur visibilité sur Google Shopping
+              </p>
+            </div>
+            <div className="text-right">
+              <Badge className="bg-white/20 text-white border-white/30 text-lg px-4 py-2">
+                {products.length} produits
+              </Badge>
+            </div>
+          </div>
+
+          {/* Optimization Score */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Score d'optimisation Google Shopping</span>
+              <span className="text-2xl font-bold">{optimizationScore}%</span>
+            </div>
+            <Progress value={optimizationScore} className="h-2 bg-white/20" />
+            <p className="text-xs text-white/70 mt-2">
+              {products.length > 0 
+                ? `${Math.round(products.length * optimizationScore / 100)} produits sur ${products.length} optimisés (Catégorie + GTIN + Fond blanc IA)`
+                : 'Aucun produit à optimiser'
+              }
+            </p>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => navigate('/merchant?tab=feed')}
+              className="bg-white text-teal-600 hover:bg-white/90"
+            >
+              <BookOpen className="w-5 h-5 mr-2" />
+              Voir le flux XML
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={fetchProducts}
+              disabled={loading}
+              className="border-white text-white hover:bg-white/10"
+            >
+              <RefreshCw className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24" />
+      </div>
+
+      {/* Quick Guide Alert */}
+      <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+        <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <AlertDescription className="text-blue-800 dark:text-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <strong className="font-semibold">Guide d'optimisation rapide</strong>
+              <p className="mt-1 text-sm">
+                1. Sélectionnez les produits → 2. Générer GTINs → 3. Générer Catégories IA → 4. Fond blanc IA → 5. Synchroniser
+              </p>
+            </div>
+          </div>
+        </AlertDescription>
+      </Alert>
+
       {/* Header */}
       <div>
         <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
