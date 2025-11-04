@@ -6,7 +6,6 @@ import {
   Copy,
   Check,
   ExternalLink,
-  BookOpen,
   RefreshCw,
   AlertCircle,
   Settings,
@@ -22,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { ShopifyOptimizationGuide } from "./ShopifyOptimizationGuide";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,7 +41,6 @@ export function GoogleMerchant() {
     status: "idle",
   });
   const [isTesting, setIsTesting] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [optimizationScore, setOptimizationScore] = useState(0);
   const [totalProducts, setTotalProducts] = useState(0);
@@ -224,15 +221,6 @@ export function GoogleMerchant() {
             >
               <Zap className="w-5 h-5 mr-2" />
               Optimiser tout
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => setShowGuide(true)}
-              className="bg-white/90 text-purple-600 hover:bg-white"
-            >
-              <BookOpen className="w-5 h-5 mr-2" />
-              Guide Shopify
             </Button>
             <Button
               variant="outline"
@@ -443,8 +431,6 @@ export function GoogleMerchant() {
           <p className="text-sm text-muted-foreground">Synchronisation quotidienne automatique</p>
         </Card>
       </div>
-
-      <ShopifyOptimizationGuide open={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

@@ -40,6 +40,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { WhiteBackgroundPreviewDialog } from './WhiteBackgroundPreviewDialog';
+import { ShopifyOptimizationGuide } from './ShopifyOptimizationGuide';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
@@ -81,6 +82,7 @@ export function GoogleShopping() {
   const [showPreview, setShowPreview] = useState(false);
   const [previews, setPreviews] = useState<PreviewImage[]>([]);
   const [optimizationScore, setOptimizationScore] = useState(0);
+  const [showGuide, setShowGuide] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -513,8 +515,37 @@ export function GoogleShopping() {
             <Button
               variant="secondary"
               size="lg"
-              onClick={() => navigate('/merchant?tab=feed')}
+              onClick={() => {
+                // Select all unoptimized products and trigger optimization
+                const unoptimized = products.filter(p => 
+                  !p.google_product_category || !p.google_gtin || !p.google_white_background
+                );
+                if (unoptimized.length === 0) {
+                  toast.info('Tous les produits sont déjà optimisés !');
+                  return;
+                }
+                setSelectedProducts(new Set(unoptimized.map(p => p.id)));
+                toast.success(`${unoptimized.length} produits sélectionnés pour optimisation`);
+              }}
               className="bg-white text-teal-600 hover:bg-white/90"
+            >
+              <Zap className="w-5 h-5 mr-2" />
+              Optimiser tout
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setShowGuide(true)}
+              className="bg-white/90 text-teal-600 hover:bg-white"
+            >
+              <BookOpen className="w-5 h-5 mr-2" />
+              Guide Shopify
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => navigate('/merchant?tab=feed')}
+              className="bg-white/80 text-teal-600 hover:bg-white/90"
             >
               <BookOpen className="w-5 h-5 mr-2" />
               Voir le flux XML
@@ -909,6 +940,11 @@ export function GoogleShopping() {
         previews={previews}
         onApply={handleApplyPreviews}
         onRegenerate={handleRegeneratePreview}
+      />
+
+      <ShopifyOptimizationGuide 
+        open={showGuide} 
+        onClose={() => setShowGuide(false)} 
       />
     </div>
   );
