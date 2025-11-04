@@ -143,8 +143,8 @@ export function BillingPortal() {
           </div>
           <CardDescription>
             {hasActivePaidPlan 
-              ? "Votre plan est actif et opérationnel"
-              : "Gérez votre abonnement et consultez votre historique de paiement"
+              ? t.account.billing.descriptionActive
+              : t.account.billing.descriptionInactive
             }
           </CardDescription>
         </CardHeader>

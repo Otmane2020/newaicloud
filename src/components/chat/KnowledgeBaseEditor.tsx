@@ -10,6 +10,7 @@ import { Plus, Edit, Trash2, Brain, Loader2, Lightbulb, TestTube } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "@/lib/language";
 
 interface KnowledgeItem {
   id: string;
@@ -21,26 +22,9 @@ interface KnowledgeItem {
   is_active: boolean;
 }
 
-const categories = [
-  { value: 'delivery', label: '🚚 Livraison', icon: '🚚' },
-  { value: 'return', label: '🔄 Retours', icon: '🔄' },
-  { value: 'pickup', label: '📦 Points Retrait', icon: '📦' },
-  { value: 'payment', label: '💳 Paiement', icon: '💳' },
-  { value: 'support', label: '📱 Support', icon: '📱' },
-  { value: 'general', label: 'ℹ️ Général', icon: 'ℹ️' },
-];
-
-const templates = [
-  { category: 'delivery', question: 'Quels sont les délais de livraison ?', answer: 'Les délais de livraison standard sont de 3 à 5 jours ouvrés.' },
-  { category: 'delivery', question: 'Quelles sont les zones de livraison ?', answer: 'Nous livrons en France métropolitaine, Corse et dans toute l\'Europe.' },
-  { category: 'return', question: 'Quelle est la politique de retour ?', answer: 'Vous disposez de 14 jours pour retourner un article non utilisé.' },
-  { category: 'pickup', question: 'Où puis-je retirer ma commande ?', answer: 'Le retrait en magasin est disponible dans nos points de vente.' },
-  { category: 'payment', question: 'Quels moyens de paiement acceptez-vous ?', answer: 'Nous acceptons CB, Visa, Mastercard, PayPal et virement bancaire.' },
-  { category: 'support', question: 'Comment vous contacter ?', answer: 'Vous pouvez nous contacter par email ou téléphone du lundi au vendredi.' },
-];
-
 export default function KnowledgeBaseEditor() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [items, setItems] = useState<KnowledgeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<KnowledgeItem | null>(null);
@@ -49,6 +33,24 @@ export default function KnowledgeBaseEditor() {
   const [testQuery, setTestQuery] = useState('');
   const [testResult, setTestResult] = useState('');
   const [testing, setTesting] = useState(false);
+
+  const categories = [
+    { value: 'delivery', label: t.chat.knowledgeBase.categories.delivery, icon: '🚚' },
+    { value: 'return', label: t.chat.knowledgeBase.categories.return, icon: '🔄' },
+    { value: 'pickup', label: t.chat.knowledgeBase.categories.pickup, icon: '📦' },
+    { value: 'payment', label: t.chat.knowledgeBase.categories.payment, icon: '💳' },
+    { value: 'support', label: t.chat.knowledgeBase.categories.support, icon: '📱' },
+    { value: 'general', label: t.chat.knowledgeBase.categories.general, icon: 'ℹ️' },
+  ];
+
+  const templates = [
+    { category: 'delivery', question: t.chat.knowledgeBase.templates.deliveryTime, answer: t.chat.knowledgeBase.templates.deliveryTimeAnswer },
+    { category: 'delivery', question: t.chat.knowledgeBase.templates.deliveryZones, answer: t.chat.knowledgeBase.templates.deliveryZonesAnswer },
+    { category: 'return', question: t.chat.knowledgeBase.templates.returnPolicy, answer: t.chat.knowledgeBase.templates.returnPolicyAnswer },
+    { category: 'pickup', question: t.chat.knowledgeBase.templates.pickupLocation, answer: t.chat.knowledgeBase.templates.pickupLocationAnswer },
+    { category: 'payment', question: t.chat.knowledgeBase.templates.paymentMethods, answer: t.chat.knowledgeBase.templates.paymentMethodsAnswer },
+    { category: 'support', question: t.chat.knowledgeBase.templates.contactSupport, answer: t.chat.knowledgeBase.templates.contactSupportAnswer },
+  ];
 
   const [formData, setFormData] = useState({
     category: 'delivery',
@@ -75,8 +77,8 @@ export default function KnowledgeBaseEditor() {
     } catch (error) {
       console.error('Error loading knowledge:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger la base de connaissances",
+        title: t.errors.error,
+        description: t.chat.knowledgeBase.errorLoad,
         variant: "destructive",
       });
     } finally {
@@ -113,7 +115,7 @@ export default function KnowledgeBaseEditor() {
           .eq('id', editingItem.id);
 
         if (error) throw error;
-        toast({ title: "Question mise à jour avec succès" });
+        toast({ title: t.chat.knowledgeBase.updated });
       } else {
         const { error } = await supabase
           .from('chat_knowledge_base')
@@ -127,7 +129,7 @@ export default function KnowledgeBaseEditor() {
           });
 
         if (error) throw error;
-        toast({ title: "Question ajoutée avec succès" });
+        toast({ title: t.chat.knowledgeBase.added });
       }
 
       setIsDialogOpen(false);
@@ -137,15 +139,15 @@ export default function KnowledgeBaseEditor() {
     } catch (error) {
       console.error('Error saving knowledge:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder",
+        title: t.errors.error,
+        description: t.chat.knowledgeBase.errorSave,
         variant: "destructive",
       });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette question ?')) return;
+    if (!confirm(t.chat.knowledgeBase.confirmDelete)) return;
 
     try {
       const { error } = await supabase
@@ -154,13 +156,13 @@ export default function KnowledgeBaseEditor() {
         .eq('id', id);
 
       if (error) throw error;
-      toast({ title: "Question supprimée" });
+      toast({ title: t.chat.knowledgeBase.deleted });
       loadKnowledge();
     } catch (error) {
       console.error('Error deleting knowledge:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer",
+        title: t.errors.error,
+        description: t.chat.knowledgeBase.errorDelete,
         variant: "destructive",
       });
     }
@@ -195,8 +197,8 @@ export default function KnowledgeBaseEditor() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
-          title: "Erreur",
-          description: "Utilisateur non connecté",
+          title: t.errors.error,
+          description: t.chat.knowledgeBase.userNotConnected,
           variant: "destructive",
         });
         return;
@@ -212,12 +214,12 @@ export default function KnowledgeBaseEditor() {
       });
 
       if (error) throw error;
-      setTestResult(data.response || 'Aucune réponse');
+      setTestResult(data.response || t.chat.knowledgeBase.noResponse);
     } catch (error) {
       console.error('Error testing:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de tester",
+        title: t.errors.error,
+        description: t.chat.knowledgeBase.errorTest,
         variant: "destructive",
       });
     } finally {
@@ -237,10 +239,10 @@ export default function KnowledgeBaseEditor() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Brain className="h-5 w-5" />
-                Base de Connaissances
+                {t.chat.knowledgeBase.title}
               </CardTitle>
               <CardDescription>
-                Enrichissez les réponses de votre assistant avec vos informations
+                {t.chat.knowledgeBase.description}
               </CardDescription>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -250,21 +252,21 @@ export default function KnowledgeBaseEditor() {
                   setFormData({ category: activeCategory, question: '', answer: '', keywords: '', priority: 0 });
                 }}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
+                  {t.chat.knowledgeBase.add}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>
-                    {editingItem ? 'Modifier la question' : 'Nouvelle question'}
+                    {editingItem ? t.chat.knowledgeBase.edit : t.chat.knowledgeBase.new}
                   </DialogTitle>
                   <DialogDescription>
-                    Ajoutez des informations que l'assistant utilisera pour répondre
+                    {t.chat.knowledgeBase.dialogDescription}
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label>Catégorie</Label>
+                    <Label>{t.chat.knowledgeBase.category}</Label>
                     <select
                       className="w-full mt-1 p-2 border rounded-md"
                       value={formData.category}
@@ -276,38 +278,38 @@ export default function KnowledgeBaseEditor() {
                     </select>
                   </div>
                   <div>
-                    <Label>Question</Label>
+                    <Label>{t.chat.knowledgeBase.question}</Label>
                     <Input
                       value={formData.question}
                       onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                       required
-                      placeholder="Quelle est la question ?"
+                      placeholder={t.chat.knowledgeBase.questionPlaceholder}
                     />
                   </div>
                   <div>
-                    <Label>Réponse</Label>
+                    <Label>{t.chat.knowledgeBase.answer}</Label>
                     <Textarea
                       value={formData.answer}
                       onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
                       required
                       rows={4}
-                      placeholder="La réponse détaillée..."
+                      placeholder={t.chat.knowledgeBase.answerPlaceholder}
                     />
                   </div>
                   <div>
-                    <Label>Mots-clés (séparés par des virgules)</Label>
+                    <Label>{t.chat.knowledgeBase.keywords}</Label>
                     <Input
                       value={formData.keywords}
                       onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-                      placeholder="livraison, délai, expédition"
+                      placeholder={t.chat.knowledgeBase.keywordsPlaceholder}
                     />
                   </div>
                   <div className="flex gap-2">
                     <Button type="submit">
-                      {editingItem ? 'Mettre à jour' : 'Ajouter'}
+                      {editingItem ? t.chat.knowledgeBase.update : t.chat.knowledgeBase.add}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Annuler
+                      {t.chat.knowledgeBase.cancel}
                     </Button>
                   </div>
                 </form>
@@ -334,12 +336,12 @@ export default function KnowledgeBaseEditor() {
               {categories.map(cat => (
                 <TabsContent key={cat.value} value={cat.value} className="space-y-4">
                   <div className="text-sm text-muted-foreground mb-4">
-                    {getCategoryItems(cat.value).length} question(s) dans cette catégorie
+                    {getCategoryItems(cat.value).length} {t.chat.knowledgeBase.questionsCount.replace('{{count}}', '')}
                   </div>
                   
                   {getCategoryItems(cat.value).length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      <p>Aucune question dans cette catégorie</p>
+                      <p>{t.chat.knowledgeBase.noQuestions}</p>
                     </div>
                   ) : (
                     getCategoryItems(cat.value).map(item => (
@@ -387,12 +389,12 @@ export default function KnowledgeBaseEditor() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5" />
-            Questions suggérées
+            {t.chat.knowledgeBase.suggested}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-2">
-            {templates.filter(t => t.category === activeCategory).map((template, idx) => (
+            {templates.filter(template => template.category === activeCategory).map((template, idx) => (
               <Button
                 key={idx}
                 variant="outline"
@@ -411,13 +413,13 @@ export default function KnowledgeBaseEditor() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TestTube className="h-5 w-5" />
-            Tester le chat
+            {t.chat.knowledgeBase.testChat}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <Input
-              placeholder="Posez une question pour tester la base..."
+              placeholder={t.chat.knowledgeBase.testPlaceholder}
               value={testQuery}
               onChange={(e) => setTestQuery(e.target.value)}
             />
@@ -425,11 +427,11 @@ export default function KnowledgeBaseEditor() {
               {testing ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
-              Tester
+              {t.chat.knowledgeBase.test}
             </Button>
             {testResult && (
               <div className="p-4 bg-muted rounded-lg">
-                <p className="font-semibold mb-2">Réponse de l'assistant :</p>
+                <p className="font-semibold mb-2">{t.chat.knowledgeBase.assistantResponse}</p>
                 <p className="whitespace-pre-wrap">{testResult}</p>
               </div>
             )}
