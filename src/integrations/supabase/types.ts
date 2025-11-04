@@ -1763,6 +1763,7 @@ export type Database = {
           seo_description: string | null
           seo_title: string | null
           shopify_collection_id: number | null
+          shopify_image_id: string | null
           store_id: string | null
           title: string
           updated_at: string
@@ -1781,6 +1782,7 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           shopify_collection_id?: number | null
+          shopify_image_id?: string | null
           store_id?: string | null
           title: string
           updated_at?: string
@@ -1799,6 +1801,7 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           shopify_collection_id?: number | null
+          shopify_image_id?: string | null
           store_id?: string | null
           title?: string
           updated_at?: string

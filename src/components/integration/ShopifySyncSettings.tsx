@@ -68,11 +68,11 @@ export function ShopifySyncSettings() {
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [currentSyncType, setCurrentSyncType] = useState('');
   const [syncStats, setSyncStats] = useState({
-    products: { before: 0, after: 0, imported: 0 },
-    collections: { before: 0, after: 0, imported: 0 },
-    pages: { before: 0, after: 0, imported: 0 },
-    articles: { before: 0, after: 0, imported: 0 },
-    images: { before: 0, after: 0, imported: 0 },
+    products: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
+    collections: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
+    pages: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
+    articles: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
+    images: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
   });
   const [totalImported, setTotalImported] = useState(0);
 
@@ -189,11 +189,11 @@ export function ShopifySyncSettings() {
     setShowResultDialog(false);
     setTotalImported(0);
     setSyncStats({
-      products: { before: 0, after: 0, imported: 0 },
-      collections: { before: 0, after: 0, imported: 0 },
-      pages: { before: 0, after: 0, imported: 0 },
-      articles: { before: 0, after: 0, imported: 0 },
-      images: { before: 0, after: 0, imported: 0 },
+      products: { before: 0, after: 0, imported: 0, error: undefined },
+      collections: { before: 0, after: 0, imported: 0, error: undefined },
+      pages: { before: 0, after: 0, imported: 0, error: undefined },
+      articles: { before: 0, after: 0, imported: 0, error: undefined },
+      images: { before: 0, after: 0, imported: 0, error: undefined },
     });
 
     setSyncing(true);
@@ -225,11 +225,11 @@ export function ShopifySyncSettings() {
       ]);
 
       const initialStats = {
-        products: { before: beforeCounts[0].count || 0, after: 0, imported: 0 },
-        collections: { before: beforeCounts[1].count || 0, after: 0, imported: 0 },
-        pages: { before: beforeCounts[2].count || 0, after: 0, imported: 0 },
-        articles: { before: beforeCounts[3].count || 0, after: 0, imported: 0 },
-        images: { before: beforeCounts[4].count || 0, after: 0, imported: 0 },
+        products: { before: beforeCounts[0].count || 0, after: 0, imported: 0, error: undefined },
+        collections: { before: beforeCounts[1].count || 0, after: 0, imported: 0, error: undefined },
+        pages: { before: beforeCounts[2].count || 0, after: 0, imported: 0, error: undefined },
+        articles: { before: beforeCounts[3].count || 0, after: 0, imported: 0, error: undefined },
+        images: { before: beforeCounts[4].count || 0, after: 0, imported: 0, error: undefined },
       };
       setSyncStats(initialStats);
 
@@ -412,33 +412,47 @@ export function ShopifySyncSettings() {
           products: { 
             before: prev.products.before, 
             after: afterCounts[0].count || 0,
-            imported: (afterCounts[0].count || 0) - prev.products.before
+            imported: (afterCounts[0].count || 0) - prev.products.before,
+            error: prev.products.error
           },
           collections: { 
             before: prev.collections.before, 
             after: afterCounts[1].count || 0,
-            imported: (afterCounts[1].count || 0) - prev.collections.before
+            imported: (afterCounts[1].count || 0) - prev.collections.before,
+            error: prev.collections.error
           },
           pages: { 
             before: prev.pages.before, 
             after: afterCounts[2].count || 0,
-            imported: (afterCounts[2].count || 0) - prev.pages.before
+            imported: (afterCounts[2].count || 0) - prev.pages.before,
+            error: prev.pages.error
           },
           articles: { 
             before: prev.articles.before, 
             after: afterCounts[3].count || 0,
-            imported: (afterCounts[3].count || 0) - prev.articles.before
+            imported: (afterCounts[3].count || 0) - prev.articles.before,
+            error: prev.articles.error
           },
           images: { 
             before: prev.images.before, 
             after: afterCounts[4].count || 0,
-            imported: (afterCounts[4].count || 0) - prev.images.before
+            imported: (afterCounts[4].count || 0) - prev.images.before,
+            error: prev.images.error
           },
         };
 
-        // Recalculate total imported
-        const newTotal = Object.values(newStats).reduce((sum, stat) => sum + Math.max(0, stat.imported), 0);
+        // Recalculate total imported (only count successful imports, ignore errors)
+        const newTotal = Object.entries(newStats).reduce((sum, [key, stat]) => {
+          // Only count if no error and imported > 0
+          if (!stat.error && stat.imported > 0) {
+            return sum + stat.imported;
+          }
+          return sum;
+        }, 0);
         setTotalImported(newTotal);
+
+        console.log('📊 Final sync stats:', newStats);
+        console.log('📊 Total imported:', newTotal);
 
         return newStats;
       });
