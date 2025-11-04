@@ -215,9 +215,9 @@ export function ShopifySyncSettings() {
         return;
       }
 
-      // Get initial counts (before)
+      // Get initial counts (before) - FIXED: use shopify_products instead of products
       const beforeCounts = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('shopify_products').select('id', { count: 'exact', head: true }).eq('seller_id', user.id),
         supabase.from('shopify_collections').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('shopify_pages').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('blog_articles').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
@@ -268,46 +268,55 @@ export function ShopifySyncSettings() {
 
         try {
           let result;
-          switch (type) {
-            case 'products':
-              result = await supabase.functions.invoke('import-products', {
-                body: {
-                  storeId: connection.id,
-                  shopName: cleanShopName,
-                  apiSecret: connection.access_token,
-                }
-              });
-              productsImported = true;
-              break;
-            case 'collections':
-              result = await supabase.functions.invoke('import-shopify-collections');
-              collectionsImported = true;
-              break;
-            case 'pages':
-              result = await supabase.functions.invoke('import-shopify-pages');
-              break;
-            case 'articles':
-              result = await supabase.functions.invoke('import-shopify-articles', {
-                body: {
-                  storeId: connection.id,
-                  shopName: cleanShopName,
-                  authToken: connection.access_token,
-                }
-              });
-              break;
-            case 'images':
-              result = await supabase.functions.invoke('import-content-images', {
-                body: {
-                  storeId: connection.id,
-                  types: ['collections', 'pages', 'articles', 'homepage']
-                }
-              });
-              break;
-          }
+          
+          // Add timeout wrapper - 2 minutes max per import
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout: import took more than 2 minutes')), 120000)
+          );
+          
+          const importPromise = (async () => {
+            switch (type) {
+              case 'products':
+                return await supabase.functions.invoke('import-products', {
+                  body: {
+                    storeId: connection.id,
+                    shopName: cleanShopName,
+                    apiSecret: connection.access_token,
+                  }
+                });
+              case 'collections':
+                return await supabase.functions.invoke('import-shopify-collections');
+              case 'pages':
+                return await supabase.functions.invoke('import-shopify-pages');
+              case 'articles':
+                return await supabase.functions.invoke('import-shopify-articles', {
+                  body: {
+                    storeId: connection.id,
+                    shopName: cleanShopName,
+                    authToken: connection.access_token,
+                  }
+                });
+              case 'images':
+                return await supabase.functions.invoke('import-content-images', {
+                  body: {
+                    storeId: connection.id,
+                    types: ['collections', 'pages', 'articles', 'homepage']
+                  }
+                });
+              default:
+                throw new Error(`Unknown import type: ${type}`);
+            }
+          })();
+
+          result = await Promise.race([importPromise, timeoutPromise]);
+          
+          if (type === 'products') productsImported = true;
+          if (type === 'collections') collectionsImported = true;
 
           let imported = 0;
           if (result?.error) {
-            console.error(`Error importing ${type}:`, result.error);
+            console.error(`❌ Error importing ${type}:`, result.error);
+            toast.error(`Erreur lors de l'import de ${type}: ${result.error.message || 'Unknown error'}`);
             hasErrors = true;
           } else if (result?.data?.totalImported) {
             imported = result.data.totalImported;
@@ -317,6 +326,7 @@ export function ShopifySyncSettings() {
             imported = result.data.count;
           }
 
+          console.log(`✅ Imported ${imported} ${type}`);
           totalItems += imported;
           setTotalImported(totalItems);
 
@@ -329,9 +339,19 @@ export function ShopifySyncSettings() {
               after: prev[type as keyof typeof prev].before + imported,
             }
           }));
-        } catch (error) {
-          console.error(`Error importing ${type}:`, error);
+        } catch (error: any) {
+          console.error(`❌ Fatal error importing ${type}:`, error);
+          toast.error(`Erreur fatale lors de l'import de ${type}: ${error.message || 'Unknown error'}`);
           hasErrors = true;
+          
+          // Store error in stats
+          setSyncStats(prev => ({
+            ...prev,
+            [type]: {
+              ...prev[type as keyof typeof prev],
+              error: error.message || 'Unknown error'
+            }
+          }));
         }
       }
 
@@ -377,9 +397,9 @@ export function ShopifySyncSettings() {
         .update({ last_import_at: new Date().toISOString() })
         .eq('user_id', user.id);
 
-      // Get final counts (after)
+      // Get final counts (after) - FIXED: use shopify_products instead of products
       const afterCounts = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('shopify_products').select('id', { count: 'exact', head: true }).eq('seller_id', user.id),
         supabase.from('shopify_collections').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('shopify_pages').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('blog_articles').select('id', { count: 'exact', head: true }).eq('user_id', user.id),

@@ -2744,6 +2744,7 @@ export type Database = {
         }
         Returns: Json
       }
+      cleanup_stuck_syncs: { Args: never; Returns: undefined }
       generate_referral_code: { Args: { user_id: string }; Returns: string }
       has_role: {
         Args: {

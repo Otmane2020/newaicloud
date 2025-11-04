@@ -78,9 +78,12 @@ Deno.serve(async (req: Request) => {
   let importJob: any = null;
 
   try {
+    console.log('🚀 Starting import-products function');
+    
     // Authenticate user first with anon key
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('❌ No authorization header');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         {
@@ -96,8 +99,10 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
+    console.log('🔑 Authenticating user...');
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     if (authError || !user) {
+      console.error('❌ Authentication failed:', authError);
       console.error('Auth error:', authError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),

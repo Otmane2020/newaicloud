@@ -13,11 +13,11 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/language";
 
 interface SyncStats {
-  products: { before: number; after: number; imported: number };
-  collections: { before: number; after: number; imported: number };
-  pages: { before: number; after: number; imported: number };
-  articles: { before: number; after: number; imported: number };
-  images: { before: number; after: number; imported: number };
+  products: { before: number; after: number; imported: number; error?: string };
+  collections: { before: number; after: number; imported: number; error?: string };
+  pages: { before: number; after: number; imported: number; error?: string };
+  articles: { before: number; after: number; imported: number; error?: string };
+  images: { before: number; after: number; imported: number; error?: string };
 }
 
 interface SyncResultDialogProps {
@@ -97,32 +97,45 @@ export function SyncResultDialog({
             <ScrollArea className="h-[300px] border rounded-lg bg-muted/30">
               <div className="p-3 space-y-2">
                 {Object.entries(stats)
-                  .filter(([_, data]) => data.imported > 0)
+                  .filter(([_, data]) => data.imported > 0 || data.error)
                   .map(([type, data]) => {
                     const config = TYPE_CONFIG[type as keyof typeof TYPE_CONFIG];
                     const Icon = config.icon;
                     const typeKey = type as keyof typeof t.integration.sync.types;
                     const typeLabel = t.integration.sync.types[typeKey] || config.label;
+                    const hasError = !!data.error;
                     
                     return (
-                      <div key={type} className="flex items-center gap-3 p-3 bg-card border rounded-lg hover:shadow-md transition-all">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Icon className={`w-5 h-5 ${config.color}`} />
+                      <div key={type} className={`flex items-center gap-3 p-3 bg-card border rounded-lg hover:shadow-md transition-all ${hasError ? 'border-red-500/50 bg-red-50 dark:bg-red-950/20' : ''}`}>
+                        <div className={`w-10 h-10 rounded-lg ${hasError ? 'bg-red-100 dark:bg-red-900/30' : 'bg-primary/10'} flex items-center justify-center flex-shrink-0`}>
+                          <Icon className={`w-5 h-5 ${hasError ? 'text-red-600 dark:text-red-400' : config.color}`} />
                         </div>
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-semibold text-sm truncate">{typeLabel}</span>
-                            <span className="text-xl font-bold text-green-600 dark:text-green-400 tabular-nums flex-shrink-0">
-                              +{data.imported}
-                            </span>
+                            {hasError ? (
+                              <span className="text-sm font-bold text-red-600 dark:text-red-400 flex-shrink-0">
+                                Échec
+                              </span>
+                            ) : (
+                              <span className="text-xl font-bold text-green-600 dark:text-green-400 tabular-nums flex-shrink-0">
+                                +{data.imported}
+                              </span>
+                            )}
                           </div>
                           
-                          <div className="flex items-center gap-2 text-xs mt-1">
-                            <span className="text-muted-foreground">
-                              {data.before} → <span className="font-bold text-primary">{data.after}</span>
-                            </span>
-                          </div>
+                          {hasError ? (
+                            <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                              {data.error}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-xs mt-1">
+                              <span className="text-muted-foreground">
+                                {data.before} → <span className="font-bold text-primary">{data.after}</span>
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
