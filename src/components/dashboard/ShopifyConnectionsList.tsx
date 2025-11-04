@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShopifySyncSettings } from '@/components/integration/ShopifySyncSettings';
 import { SimpleSyncProgress } from '@/components/integration/SyncProgressDialog';
+import { SyncResultDialog } from '@/components/integration/SyncResultDialog';
 
 import {
   AlertDialog,
@@ -79,6 +80,17 @@ export default function ShopifyConnectionsList() {
   const [selectedStore, setSelectedStore] = useState<ShopifyConnection | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentSyncType, setCurrentSyncType] = useState<string>('products');
+  
+  // Sync result dialog state
+  const [showSyncResult, setShowSyncResult] = useState(false);
+  const [syncStats, setSyncStats] = useState<any>({
+    products: { before: 0, after: 0, imported: 0 },
+    collections: { before: 0, after: 0, imported: 0 },
+    pages: { before: 0, after: 0, imported: 0 },
+    articles: { before: 0, after: 0, imported: 0 },
+    images: { before: 0, after: 0, imported: 0 },
+  });
+  const [totalSyncImported, setTotalSyncImported] = useState(0);
   
   // Edit store name dialog state
   const [showEditNameDialog, setShowEditNameDialog] = useState(false);
@@ -302,9 +314,30 @@ export default function ShopifyConnectionsList() {
 
       console.log('🚀 Starting manual sync for store:', shopName);
 
+      // Get counts before import
+      const { count: productsBefore } = await supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      const { count: collectionsBefore } = await supabase
+        .from('shopify_collections')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      const { count: pagesBefore } = await supabase
+        .from('shopify_pages')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      const { count: articlesBefore } = await supabase
+        .from('blog_articles')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
       // Trigger import for all content types
       const types = ['products', 'collections', 'pages', 'articles', 'images'];
-      let totalImported = 0;
+      const importResults: Record<string, number> = {};
       
       for (const type of types) {
         setCurrentSyncType(type);
@@ -360,21 +393,77 @@ export default function ShopifyConnectionsList() {
 
           if (result?.error) {
             console.error(`❌ Error importing ${type}:`, result.error);
+            importResults[type] = 0;
           } else {
-            const imported = result?.data?.totalImported || 0;
-            totalImported += imported;
+            const imported = result?.data?.totalImported || result?.data?.count || result?.data?.imported || 0;
+            importResults[type] = imported;
             console.log(`✅ Imported ${type}:`, imported);
           }
         } catch (error) {
           console.error(`❌ Error importing ${type}:`, error);
+          importResults[type] = 0;
         }
       }
 
-      toast.success(`Synchronisation terminée : ${totalImported} éléments importés`);
+      // Get counts after import
+      const { count: productsAfter } = await supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      const { count: collectionsAfter } = await supabase
+        .from('shopify_collections')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      const { count: pagesAfter } = await supabase
+        .from('shopify_pages')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      const { count: articlesAfter } = await supabase
+        .from('blog_articles')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      // Calculate stats
+      const stats = {
+        products: {
+          before: productsBefore || 0,
+          after: productsAfter || 0,
+          imported: importResults.products || 0,
+        },
+        collections: {
+          before: collectionsBefore || 0,
+          after: collectionsAfter || 0,
+          imported: importResults.collections || 0,
+        },
+        pages: {
+          before: pagesBefore || 0,
+          after: pagesAfter || 0,
+          imported: importResults.pages || 0,
+        },
+        articles: {
+          before: articlesBefore || 0,
+          after: articlesAfter || 0,
+          imported: importResults.articles || 0,
+        },
+        images: {
+          before: 0,
+          after: 0,
+          imported: importResults.images || 0,
+        },
+      };
+
+      const totalImported = Object.values(importResults).reduce((sum, val) => sum + val, 0);
+
+      setSyncStats(stats);
+      setTotalSyncImported(totalImported);
+      setIsSyncing(false);
+      setShowSyncResult(true);
     } catch (error) {
       console.error("❌ Sync error:", error);
       toast.error(`Erreur: ${error.message}`);
-    } finally {
       setIsSyncing(false);
     }
   };
@@ -886,6 +975,13 @@ export default function ShopifyConnectionsList() {
       <SimpleSyncProgress
         open={isSyncing}
         currentType={currentSyncType}
+      />
+
+      <SyncResultDialog
+        open={showSyncResult}
+        onOpenChange={setShowSyncResult}
+        stats={syncStats}
+        totalImported={totalSyncImported}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
