@@ -2756,6 +2756,7 @@ export type Database = {
         Args: { p_field: string; p_increment?: number; p_seller_id: string }
         Returns: undefined
       }
+      reset_monthly_usage_counters: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
