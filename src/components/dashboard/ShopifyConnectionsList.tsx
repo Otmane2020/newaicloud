@@ -15,6 +15,7 @@ import { ImportConfirmDialog } from '@/components/integration/ImportConfirmDialo
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShopifySyncSettings } from '@/components/integration/ShopifySyncSettings';
+import { SimpleSyncProgress } from '@/components/integration/SyncProgressDialog';
 
 import {
   AlertDialog,
@@ -77,6 +78,7 @@ export default function ShopifyConnectionsList() {
   const [showSyncSettings, setShowSyncSettings] = useState(false);
   const [selectedStore, setSelectedStore] = useState<ShopifyConnection | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [currentSyncType, setCurrentSyncType] = useState<string>('products');
   
   // Edit store name dialog state
   const [showEditNameDialog, setShowEditNameDialog] = useState(false);
@@ -305,6 +307,7 @@ export default function ShopifyConnectionsList() {
       let totalImported = 0;
       
       for (const type of types) {
+        setCurrentSyncType(type);
         try {
           let result;
           switch (type) {
@@ -878,6 +881,11 @@ export default function ShopifyConnectionsList() {
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
         limitType="optimizations"
+      />
+
+      <SimpleSyncProgress
+        open={isSyncing}
+        currentType={currentSyncType}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
