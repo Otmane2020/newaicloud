@@ -60,8 +60,13 @@ async function searchCompetitorPrices(
   productTitle: string, 
   productImage: string
 ): Promise<CompetitorPrice[]> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+  const GOOGLE_CSE_API_KEY = Deno.env.get("GOOGLE_CSE_API_KEY");
+  const GOOGLE_CSE_ID = Deno.env.get("GOOGLE_CSE_ID");
+  
+  if (!GOOGLE_CSE_API_KEY || !GOOGLE_CSE_ID) {
+    console.warn("⚠️ Google Custom Search API non configurée");
+    return [];
+  }
 
   console.log(`🔍 Searching competitors for: ${productTitle}`);
 
@@ -69,14 +74,99 @@ async function searchCompetitorPrices(
   const queries = await generateSearchQueries(productTitle);
   console.log(`📝 Generated queries:`, queries);
 
-  // IMPORTANT: Cette fonction ne peut pas faire de vraies recherches web sans API externe
-  // Pour de vrais résultats, intégrer SerpAPI ou API Google Search
-  // Pour l'instant, on retourne un tableau vide si pas d'API de recherche
-  console.warn("⚠️ Aucune API de recherche web configurée - impossible de trouver de vrais concurrents");
-  
-  // Sans API de recherche réelle, retourner tableau vide
-  // L'analyse ne sera faite QUE si des concurrents sont trouvés manuellement
-  return [];
+  const allCompetitors: CompetitorPrice[] = [];
+
+  // Limit to 2 queries to save quota (100 requests/day max)
+  for (const query of queries.slice(0, 2)) {
+    try {
+      const searchUrl = new URL("https://www.googleapis.com/customsearch/v1");
+      searchUrl.searchParams.set("key", GOOGLE_CSE_API_KEY);
+      searchUrl.searchParams.set("cx", GOOGLE_CSE_ID);
+      searchUrl.searchParams.set("q", query);
+      searchUrl.searchParams.set("num", "10");
+      searchUrl.searchParams.set("gl", "fr"); // France
+
+      const response = await fetch(searchUrl.toString());
+      
+      if (!response.ok) {
+        console.error(`❌ Google Search API error: ${response.status}`);
+        if (response.status === 429) {
+          console.warn("⚠️ Quota Google dépassé");
+        }
+        continue;
+      }
+
+      const data = await response.json();
+      const items = data.items || [];
+
+      console.log(`📦 Found ${items.length} results for: "${query}"`);
+
+      for (const item of items) {
+        // Extract price from snippet or title
+        const text = `${item.title} ${item.snippet}`;
+        const priceMatch = text.match(/(\d+[,\s]*\d*)\s*€|€\s*(\d+[,\s]*\d*)/);
+        
+        if (!priceMatch) continue; // Skip if no price found
+
+        const priceStr = (priceMatch[1] || priceMatch[2]).replace(/[\s,]/g, '.');
+        const price = parseFloat(priceStr);
+        
+        if (isNaN(price) || price < 1) continue; // Invalid price
+
+        // Try to get image from pagemap
+        let imageUrl: string | undefined;
+        try {
+          const pagemap = item.pagemap || {};
+          const cseImage = pagemap.cse_image?.[0]?.src;
+          const metatags = pagemap.metatags?.[0];
+          imageUrl = cseImage || metatags?.["og:image"] || metatags?.["twitter:image"];
+        } catch (e) {
+          // No image found
+        }
+
+        // Compare images if both available
+        let similarity = 0.8; // Default similarity
+        if (productImage && imageUrl) {
+          try {
+            similarity = await compareProductImages(productImage, imageUrl);
+            console.log(`🖼️ Image similarity: ${(similarity * 100).toFixed(0)}% for ${item.link}`);
+          } catch (e) {
+            console.warn("⚠️ Image comparison failed, using default similarity");
+          }
+        }
+
+        // Only keep competitors with good similarity
+        if (similarity >= 0.6) {
+          allCompetitors.push({
+            url: item.link,
+            title: item.title,
+            price,
+            currency: "EUR",
+            similarity,
+            imageUrl,
+            source: new URL(item.link).hostname,
+          });
+        }
+      }
+
+      // Small delay between queries
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+    } catch (error) {
+      console.error(`❌ Error searching for "${query}":`, error);
+    }
+  }
+
+  // Sort by similarity and remove duplicates
+  const uniqueCompetitors = allCompetitors
+    .filter((c, index, self) => 
+      index === self.findIndex(t => t.url === c.url)
+    )
+    .sort((a, b) => b.similarity - a.similarity);
+
+  console.log(`✅ Total unique competitors found: ${uniqueCompetitors.length}`);
+
+  return uniqueCompetitors;
 }
 
 async function compareProductImages(
