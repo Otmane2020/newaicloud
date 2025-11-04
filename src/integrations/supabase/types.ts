@@ -425,13 +425,16 @@ export type Database = {
         Row: {
           article_id: string | null
           article_title: string
+          cache_expires_at: string | null
           created_at: string
           difficulty: string | null
           estimated_word_count: number | null
           generated_at: string | null
           id: string
           intro_excerpt: string | null
+          is_cached: boolean | null
           language: string | null
+          last_refreshed_at: string | null
           meta_description: string | null
           primary_keywords: string[] | null
           product_ids: string[] | null
@@ -446,13 +449,16 @@ export type Database = {
         Insert: {
           article_id?: string | null
           article_title: string
+          cache_expires_at?: string | null
           created_at?: string
           difficulty?: string | null
           estimated_word_count?: number | null
           generated_at?: string | null
           id?: string
           intro_excerpt?: string | null
+          is_cached?: boolean | null
           language?: string | null
+          last_refreshed_at?: string | null
           meta_description?: string | null
           primary_keywords?: string[] | null
           product_ids?: string[] | null
@@ -467,13 +473,16 @@ export type Database = {
         Update: {
           article_id?: string | null
           article_title?: string
+          cache_expires_at?: string | null
           created_at?: string
           difficulty?: string | null
           estimated_word_count?: number | null
           generated_at?: string | null
           id?: string
           intro_excerpt?: string | null
+          is_cached?: boolean | null
           language?: string | null
+          last_refreshed_at?: string | null
           meta_description?: string | null
           primary_keywords?: string[] | null
           product_ids?: string[] | null

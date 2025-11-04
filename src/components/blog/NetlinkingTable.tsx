@@ -66,8 +66,18 @@ export function NetlinkingTable() {
   useEffect(() => {
     if (user) {
       loadNetlinking();
+      
+      // Auto-check links every 24 hours if there are unchecked links
+      const checkInterval = setInterval(() => {
+        if (stats.unchecked > 0 && !checking) {
+          console.log('Auto-checking links...');
+          handleCheckLinks();
+        }
+      }, 24 * 60 * 60 * 1000); // 24 hours
+
+      return () => clearInterval(checkInterval);
     }
-  }, [user]);
+  }, [user, stats.unchecked]);
 
   const loadNetlinking = async () => {
     try {
@@ -390,8 +400,8 @@ export function NetlinkingTable() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[100px]">Statut</TableHead>
                         <TableHead className="w-[300px]">Lien</TableHead>
+                        <TableHead className="w-[100px]">Statut</TableHead>
                         <TableHead className="w-[180px]">Produit / Page</TableHead>
                         <TableHead className="w-[200px]">Article lié</TableHead>
                         <TableHead className="w-[100px]">Type</TableHead>
@@ -405,68 +415,67 @@ export function NetlinkingTable() {
                         const scoreEmoji = entry.seo_score >= 80 ? '🟢' : entry.seo_score >= 60 ? '🟠' : '🔴';
                         
                         return (
-                          <TableRow 
-                            key={entry.id} 
+                          <TableRow key={entry.id} 
                             className={`hover:bg-muted/50 ${entry.is_broken ? 'bg-destructive/5' : ''}`}
                           >
-                            <TableCell>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    {entry.is_broken ? (
-                                      <Badge variant="destructive" className="gap-1">
-                                        <AlertCircle className="w-3 h-3" />
-                                        Brisé
-                                      </Badge>
-                                    ) : entry.last_checked_at ? (
-                                      <Badge variant="default" className="bg-green-600 gap-1">
-                                        <span className="w-2 h-2 bg-white rounded-full" />
-                                        Actif
-                                      </Badge>
-                                    ) : (
-                                      <Badge variant="secondary">
-                                        Non vérifié
-                                      </Badge>
-                                    )}
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {entry.is_broken ? (
-                                      <div className="space-y-1">
-                                        <p className="font-semibold text-destructive">Lien brisé</p>
-                                        <p>Code: {entry.http_status_code || 'Timeout'}</p>
-                                        {entry.error_message && <p className="text-xs">{entry.error_message}</p>}
-                                        {entry.broken_since && (
-                                          <p className="text-xs">
-                                            Depuis: {new Date(entry.broken_since).toLocaleDateString('fr-FR')}
-                                          </p>
-                                        )}
-                                      </div>
-                                    ) : entry.last_checked_at ? (
-                                      <div className="space-y-1">
-                                        <p>Vérifié: {new Date(entry.last_checked_at).toLocaleDateString('fr-FR')}</p>
-                                        <p>Code HTTP: {entry.http_status_code}</p>
-                                      </div>
-                                    ) : (
-                                      <p>Ce lien n'a pas encore été vérifié</p>
-                                    )}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </TableCell>
-                            <TableCell>
-                              <a
-                                href={entry.target_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`flex items-center gap-1 hover:underline text-sm font-medium ${
-                                  entry.is_broken ? 'text-destructive' : 'text-blue-600'
-                                }`}
-                                title={entry.target_url}
-                              >
-                                <span className="truncate max-w-[280px]">{entry.target_url}</span>
-                                <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                              </a>
-                            </TableCell>
+                          <TableCell>
+                            <a
+                              href={entry.target_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-1 hover:underline text-sm font-medium ${
+                                entry.is_broken ? 'text-destructive' : 'text-blue-600'
+                              }`}
+                              title={entry.target_url}
+                            >
+                              <span className="truncate max-w-[280px]">{entry.target_url}</span>
+                              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                            </a>
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  {entry.is_broken ? (
+                                    <Badge variant="destructive" className="gap-1">
+                                      <AlertCircle className="w-3 h-3" />
+                                      Brisé
+                                    </Badge>
+                                  ) : entry.last_checked_at ? (
+                                    <Badge variant="default" className="bg-green-600 gap-1">
+                                      <span className="w-2 h-2 bg-white rounded-full" />
+                                      Actif
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary">
+                                      Non vérifié
+                                    </Badge>
+                                  )}
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {entry.is_broken ? (
+                                    <div className="space-y-1">
+                                      <p className="font-semibold text-destructive">Lien brisé</p>
+                                      <p>Code: {entry.http_status_code || 'Timeout'}</p>
+                                      {entry.error_message && <p className="text-xs">{entry.error_message}</p>}
+                                      {entry.broken_since && (
+                                        <p className="text-xs">
+                                          Depuis: {new Date(entry.broken_since).toLocaleDateString('fr-FR')}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : entry.last_checked_at ? (
+                                    <div className="space-y-1">
+                                      <p>Vérifié: {new Date(entry.last_checked_at).toLocaleDateString('fr-FR')}</p>
+                                      <p>Code HTTP: {entry.http_status_code}</p>
+                                    </div>
+                                  ) : (
+                                    <p>Ce lien n'a pas encore été vérifié</p>
+                                  )}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableCell>
                             <TableCell className="font-medium">
                               <div className="truncate max-w-[170px]" title={entry.product_page_name}>
                                 {entry.product_page_name}

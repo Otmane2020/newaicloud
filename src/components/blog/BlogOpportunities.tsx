@@ -78,6 +78,42 @@ export function BlogOpportunities() {
     try {
       setLoading(true);
       console.log('🔄 Loading opportunities...');
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Non authentifié');
+
+      // Check cache first (24h expiration)
+      const { data: cachedOpportunities, error: cacheError } = await supabase
+        .from('blog_opportunities')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_cached', true)
+        .gt('cache_expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false });
+
+      if (!cacheError && cachedOpportunities && cachedOpportunities.length > 0) {
+        console.log('✅ Using cached opportunities:', cachedOpportunities.length);
+        const formattedOps: Opportunity[] = cachedOpportunities.map((opp: any) => ({
+          id: opp.id,
+          title: opp.article_title,
+          description: opp.intro_excerpt || opp.meta_description,
+          category: opp.type,
+          productsCount: opp.product_ids?.length || 0,
+          type: opp.type,
+          primaryKeywords: opp.primary_keywords || [],
+          secondaryKeywords: opp.secondary_keywords || [],
+          metaDescription: opp.meta_description || '',
+          estimatedWordCount: opp.estimated_word_count || 2000,
+          seoScore: opp.seo_opportunity_score || 0,
+          difficulty: opp.difficulty || 'medium',
+          productIds: opp.product_ids || [],
+        }));
+        setOpportunities(formattedOps);
+        setLoading(false);
+        return;
+      }
+
+      console.log('📦 No valid cache, checking database...');
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
       const { data: products, error: productsError } = await supabase
@@ -99,7 +135,21 @@ export function BlogOpportunities() {
 
       console.log(`📦 Found ${products.length} products`);
       
-      const opportunities = await analyzeAndGenerateOpportunities(products, authUser?.id || '');
+      const opportunities = await analyzeAndGenerateOpportunities(products, user.id || '');
+      
+      // Save with cache enabled (24h expiration)
+      const cacheExpiresAt = new Date();
+      cacheExpiresAt.setHours(cacheExpiresAt.getHours() + 24);
+      
+      await supabase
+        .from('blog_opportunities')
+        .update({
+          is_cached: true,
+          cache_expires_at: cacheExpiresAt.toISOString(),
+          last_refreshed_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+      
       setOpportunities(opportunities);
       toast.success(tf('blog.dialogs.opportunities.detected', { count: opportunities.length }));
       
@@ -163,12 +213,27 @@ export function BlogOpportunities() {
 
   const handleRegenerate = async () => {
     setRegenerating(true);
-    toast.info(t.blog.dialogs.opportunities.analyzing, {
-      description: t.blog.dialogs.opportunities.patience,
-      duration: 5000
-    });
-    await loadOpportunities();
-    setRegenerating(false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Non authentifié');
+
+      // Clear cache to force regeneration
+      await supabase
+        .from('blog_opportunities')
+        .update({ is_cached: false, cache_expires_at: null })
+        .eq('user_id', user.id);
+
+      toast.info(t.blog.dialogs.opportunities.analyzing, {
+        description: t.blog.dialogs.opportunities.patience,
+        duration: 5000
+      });
+      await loadOpportunities();
+    } catch (error) {
+      console.error('Error regenerating:', error);
+      toast.error('Erreur lors de la régénération');
+    } finally {
+      setRegenerating(false);
+    }
   };
 
   const getIcon = (type: string) => {

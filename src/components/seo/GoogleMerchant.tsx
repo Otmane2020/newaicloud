@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { ShopifyOptimizationGuide } from "./ShopifyOptimizationGuide";
 
 interface FeedStatus {
   lastFetch: string | null;
@@ -36,6 +37,7 @@ export function GoogleMerchant() {
     status: "idle",
   });
   const [isTesting, setIsTesting] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   // URL du flux avec le domaine NewAI (pour affichage final)
   const feedUrl = `https://newai.sale/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
@@ -125,6 +127,53 @@ export function GoogleMerchant() {
 
   return (
     <div className="space-y-6">
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-8 text-white shadow-xl">
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Google Merchant Center</h1>
+              <p className="text-white/90 text-lg">
+                Synchronisez vos produits avec Google Shopping pour maximiser votre visibilité
+              </p>
+            </div>
+            <div className="text-right">
+              {getStatusBadge()}
+              {feedStatus.itemCount !== null && (
+                <div className="mt-2 text-2xl font-bold">{feedStatus.itemCount} produits</div>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setShowGuide(true)}
+              className="bg-white text-purple-600 hover:bg-white/90"
+            >
+              <BookOpen className="w-5 h-5 mr-2" />
+              Guide d'optimisation Shopify
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={testFeed}
+              disabled={isTesting}
+              className="border-white text-white hover:bg-white/10"
+            >
+              {isTesting ? (
+                <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-5 h-5 mr-2" />
+              )}
+              Tester le flux
+            </Button>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24" />
+      </div>
+
       {/* Status Card */}
       <Card className="p-6 border-l-4 border-l-primary">
         <div className="space-y-6">
@@ -276,6 +325,8 @@ export function GoogleMerchant() {
           <p className="text-sm text-muted-foreground">Synchronisation quotidienne automatique</p>
         </Card>
       </div>
+
+      <ShopifyOptimizationGuide open={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }
