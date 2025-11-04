@@ -3,7 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText, Settings } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText, Settings, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -73,6 +75,11 @@ export default function ShopifyConnectionsList() {
   
   // Sync settings dialog state
   const [showSyncSettings, setShowSyncSettings] = useState(false);
+  
+  // Edit store name dialog state
+  const [showEditNameDialog, setShowEditNameDialog] = useState(false);
+  const [storeToEdit, setStoreToEdit] = useState<ShopifyConnection | null>(null);
+  const [editedStoreName, setEditedStoreName] = useState("");
 
   useEffect(() => {
     loadConnections();
@@ -254,6 +261,34 @@ export default function ShopifyConnectionsList() {
     } catch (error) {
       console.error('Error deleting connection:', error);
       toast.error('Erreur lors de la déconnexion');
+    }
+  };
+
+  const openEditNameDialog = (store: ShopifyConnection) => {
+    setStoreToEdit(store);
+    setEditedStoreName(store.store_name || '');
+    setShowEditNameDialog(true);
+  };
+
+  const updateStoreName = async () => {
+    if (!storeToEdit || !editedStoreName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('shopify_connections')
+        .update({ store_name: editedStoreName.trim() })
+        .eq('id', storeToEdit.id);
+
+      if (error) throw error;
+
+      toast.success('Nom commercial mis à jour');
+      loadConnections();
+      setShowEditNameDialog(false);
+      setStoreToEdit(null);
+      setEditedStoreName('');
+    } catch (error) {
+      console.error('Error updating store name:', error);
+      toast.error('Erreur lors de la mise à jour');
     }
   };
 
@@ -565,6 +600,15 @@ export default function ShopifyConnectionsList() {
                   <Button
                     size="sm"
                     variant="outline"
+                    onClick={() => openEditNameDialog(store)}
+                    className="gap-2"
+                    title="Modifier le nom commercial"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => setShowSyncSettings(true)}
                     className="gap-2"
                     title="Configurer la synchronisation automatique"
@@ -610,6 +654,56 @@ export default function ShopifyConnectionsList() {
             <DialogTitle>Paramètres de synchronisation automatique</DialogTitle>
           </DialogHeader>
           <ShopifySyncSettings />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditNameDialog} onOpenChange={setShowEditNameDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5" />
+              Modifier le nom commercial
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="store-name">Nom commercial</Label>
+              <Input
+                id="store-name"
+                placeholder="Ex: Movala, Decora Home..."
+                value={editedStoreName}
+                onChange={(e) => setEditedStoreName(e.target.value)}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                Ce nom apparaîtra dans votre interface
+              </p>
+            </div>
+            {storeToEdit && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Code technique</Label>
+                <p className="text-sm font-mono bg-muted px-3 py-2 rounded">
+                  {storeToEdit.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '')}
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowEditNameDialog(false)}
+              className="flex-1"
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={updateStoreName}
+              disabled={!editedStoreName.trim()}
+              className="flex-1"
+            >
+              Enregistrer
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
