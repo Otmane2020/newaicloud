@@ -47,12 +47,12 @@ export function ShopifyTokenGuide() {
           <Info className="h-4 w-4" />
           <AlertDescription className="text-xs space-y-2">
             <p>
-              <strong>Nom de votre boutique :</strong> <code className="bg-muted px-1.5 py-0.5 rounded text-xs">demo45-8z</code>.myshopify.com
+              <strong>Nom de votre boutique :</strong> <code className="bg-muted px-1.5 py-0.5 rounded text-xs">HBxv99-2F</code>.myshopify.com
             </p>
             <p>
               Trouvez le nom dans l'URL :{" "}
               <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
-                admin.shopify.com/store/<strong>demo45-8z</strong>
+                admin.shopify.com/store/<strong>HBxv99-2F</strong>
               </code>
             </p>
           </AlertDescription>
