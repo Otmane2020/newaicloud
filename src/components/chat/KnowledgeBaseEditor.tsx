@@ -192,9 +192,21 @@ export default function KnowledgeBaseEditor() {
   const testKnowledge = async () => {
     setTesting(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Erreur",
+          description: "Utilisateur non connecté",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('chat-smart', {
         body: {
-          messages: [{ role: 'user', content: testQuery }],
+          userMessage: testQuery,
+          history: [],
+          sellerId: user.id,
           context: { includeKnowledge: true },
         },
       });
