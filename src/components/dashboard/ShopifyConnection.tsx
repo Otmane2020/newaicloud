@@ -36,6 +36,7 @@ export function ShopifyConnection() {
     percentage: 0
   });
   const [limitReached, setLimitReached] = useState(false);
+  const [totalShopifyProducts, setTotalShopifyProducts] = useState(0);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [store, setStore] = useState<any>(null);
@@ -707,6 +708,7 @@ export function ShopifyConnection() {
         importedItems={importedItems}
         limitReached={limitReached}
         maxProducts={limits?.limits?.max_products || 50}
+        totalShopifyProducts={totalShopifyProducts}
       />
 
       <UpgradeDialog

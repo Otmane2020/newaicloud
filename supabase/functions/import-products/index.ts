@@ -300,6 +300,27 @@ Deno.serve(async (req: Request) => {
     console.log(`   - Produits actuels en DB: ${currentProductsCount}/${maxProducts}`);
     console.log(`   - Slots disponibles pour import: ${availableSlots}`);
 
+    // Get total product count from Shopify first
+    let totalShopifyProducts = 0;
+    try {
+      const countResponse = await fetch(
+        `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products/count.json`,
+        {
+          headers: {
+            "X-Shopify-Access-Token": authToken,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (countResponse.ok) {
+        const countData = await countResponse.json();
+        totalShopifyProducts = countData.count || 0;
+        console.log(`📊 Total products in Shopify store: ${totalShopifyProducts}`);
+      }
+    } catch (error) {
+      console.error('Error getting product count:', error);
+    }
+
     let allProducts: ShopifyProduct[] = [];
     let nextPageUrl: string | null = `https://${cleanShopName}.myshopify.com/admin/api/2024-01/products.json?limit=50&fields=id,title,body_html,vendor,product_type,handle,status,tags,variants,images,metafields_global_title_tag,metafields_global_description_tag`;
     let pageCount = 0;
@@ -675,13 +696,14 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         count: products.length,
+        totalShopifyProducts: totalShopifyProducts,
         variantsCount: totalVariants,
         imagesCount: totalImages,
         pagesImported: pagesImported,
         articlesImported: articlesImported,
         pagesProcessed: pageCount,
         jobId: importJob.id,
-        message: `Successfully imported ${products.length} products, ${totalVariants} variants, ${totalImages} images, ${pagesImported} pages, and ${articlesImported} articles`,
+        message: `Successfully imported ${products.length} products out of ${totalShopifyProducts} total products, ${totalVariants} variants, ${totalImages} images, ${pagesImported} pages, and ${articlesImported} articles`,
       }),
       {
         status: 200,

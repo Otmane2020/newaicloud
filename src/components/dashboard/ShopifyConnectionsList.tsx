@@ -57,6 +57,7 @@ export function ShopifyConnectionsList() {
   const [importedItems, setImportedItems] = useState<any[]>([]);
   const [limitReached, setLimitReached] = useState(false);
   const [maxProducts, setMaxProducts] = useState(0);
+  const [totalShopifyProducts, setTotalShopifyProducts] = useState(0);
   
   // Upgrade dialog state
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -385,6 +386,7 @@ export function ShopifyConnectionsList() {
       setImportedItems([]);
       setImportPhase('products');
       setLimitReached(false);
+      setTotalShopifyProducts(0);
       setShowProgressDialog(true);
 
       const globalToastId = toast.loading('Import global en cours...');
@@ -395,6 +397,11 @@ export function ShopifyConnectionsList() {
       });
 
       if (error) throw error;
+      
+      // Set total products count from Shopify
+      if (importData?.totalShopifyProducts) {
+        setTotalShopifyProducts(importData.totalShopifyProducts);
+      }
       
       // Set job ID to start polling
       if (importData?.jobId) {
@@ -624,6 +631,7 @@ export function ShopifyConnectionsList() {
         importedItems={importedItems}
         limitReached={limitReached}
         maxProducts={maxProducts}
+        totalShopifyProducts={totalShopifyProducts}
       />
 
       <TrialUpgradeDialog

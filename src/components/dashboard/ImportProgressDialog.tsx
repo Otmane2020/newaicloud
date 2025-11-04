@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Loader2, Package, FileText, CreditCard, AlertCircle, Check, TrendingUp, Newspaper } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -39,6 +40,7 @@ interface ImportProgressDialogProps {
   importedItems: ImportedItem[];
   limitReached: boolean;
   maxProducts: number;
+  totalShopifyProducts?: number;
 }
 
 export function ImportProgressDialog({
@@ -52,6 +54,7 @@ export function ImportProgressDialog({
   importedItems,
   limitReached,
   maxProducts,
+  totalShopifyProducts = 0,
 }: ImportProgressDialogProps) {
   const navigate = useNavigate();
   
@@ -60,6 +63,15 @@ export function ImportProgressDialog({
   const [displayedPages, setDisplayedPages] = useState(0);
   const [displayedArticles, setDisplayedArticles] = useState(0);
   const [displayedProgress, setDisplayedProgress] = useState(0);
+
+  // Calculate recommended plan based on total products
+  const getRecommendedPlan = () => {
+    if (totalShopifyProducts <= 100) return { name: 'Starter', limit: 100, planId: 'starter' };
+    if (totalShopifyProducts <= 1000) return { name: 'Pro', limit: 1000, planId: 'pro' };
+    return { name: 'Enterprise', limit: 'Unlimited', planId: 'enterprise' };
+  };
+
+  const recommendedPlan = getRecommendedPlan();
 
   const handleUpgrade = () => {
     navigate("/subscription");
@@ -270,23 +282,49 @@ export function ImportProgressDialog({
           </div>
         ) : (
           <div className="space-y-4 sm:space-y-6 animate-scale-in">
-            {/* Quota reached message */}
+            {/* Quota reached message with total products info */}
             <div className="text-center">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-orange-100 dark:bg-orange-900/20 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
                 <AlertCircle className="w-8 h-8 sm:w-10 sm:h-10 text-orange-500" />
               </div>
-              <h3 className="text-lg sm:text-2xl font-bold mb-2">Limit Reached!</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-2">
-                You have reached the limit of {maxProducts} products in your plan.
-              </p>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
-                The first {productsImported} products have been imported successfully.
-              </p>
+              <h3 className="text-lg sm:text-2xl font-bold mb-2">Quota Reached!</h3>
+              
+              {totalShopifyProducts > 0 ? (
+                <>
+                  <div className="mb-4 p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg">
+                    <p className="text-sm sm:text-base font-semibold text-foreground mb-2">
+                      Your Shopify store has{" "}
+                      <span className="text-xl sm:text-2xl text-orange-600 dark:text-orange-400 font-bold">
+                        {totalShopifyProducts} products
+                      </span>
+                    </p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      But your current plan only allows{" "}
+                      <span className="font-semibold text-foreground">{maxProducts} products</span>
+                    </p>
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                    Only the first {productsImported} products have been imported.
+                  </p>
+                  <p className="text-xs sm:text-sm font-medium text-orange-600 dark:text-orange-400">
+                    {totalShopifyProducts - productsImported} products remaining to import
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                    You have reached the limit of {maxProducts} products in your plan.
+                  </p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
+                    The first {productsImported} products have been imported successfully.
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
               <div className="text-2xl sm:text-3xl font-bold text-primary mb-2">
-                {productsImported} / {maxProducts}
+                {productsImported} / {totalShopifyProducts || maxProducts}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Products imported
@@ -295,13 +333,34 @@ export function ImportProgressDialog({
 
             <Alert className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary">
               <Package className="h-4 w-4" />
-              <AlertTitle className="text-sm sm:text-base">Upgrade to unlock more</AlertTitle>
+              <AlertTitle className="text-sm sm:text-base font-bold">
+                Recommended: {recommendedPlan.name} Plan
+              </AlertTitle>
               <AlertDescription>
-                <ul className="mt-2 space-y-1 text-xs sm:text-sm">
-                  <li>✅ Starter Plan: 100 products</li>
-                  <li>✅ Pro Plan: 1,000 products</li>
-                  <li>✅ Enterprise Plan: Unlimited</li>
-                </ul>
+                <p className="mt-2 mb-3 text-xs sm:text-sm">
+                  To import all {totalShopifyProducts > 0 ? totalShopifyProducts : 'your'} products, upgrade to:
+                </p>
+                <div className="p-3 bg-background/50 rounded-lg border-2 border-primary/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-base">{recommendedPlan.name}</span>
+                    <Badge className="bg-primary/20 text-primary border-primary/30">
+                      {typeof recommendedPlan.limit === 'number' 
+                        ? `${recommendedPlan.limit.toLocaleString()} products` 
+                        : recommendedPlan.limit}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Perfect for your {totalShopifyProducts > 0 ? totalShopifyProducts.toLocaleString() : ''} products
+                  </p>
+                </div>
+                <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                  <p>All plans include:</p>
+                  <ul className="mt-1 space-y-1">
+                    <li>✅ SEO optimization tools</li>
+                    <li>✅ Automated product sync</li>
+                    <li>✅ Priority support</li>
+                  </ul>
+                </div>
               </AlertDescription>
             </Alert>
 
@@ -311,7 +370,7 @@ export function ImportProgressDialog({
               size="lg"
             >
               <CreditCard className="w-4 h-4 mr-2" />
-              Activate My Plan
+              Upgrade to {recommendedPlan.name} Plan
             </Button>
           </div>
         )}
