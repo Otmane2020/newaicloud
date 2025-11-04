@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +53,7 @@ interface RawChatMessage {
   role: string;
   created_at: string;
   session_id: string;
-  products?: any[];
+  products?: Json;
 }
 
 export default function ChatHistory() {
@@ -122,7 +123,7 @@ export default function ChatHistory() {
       const formattedMessages: ChatMessage[] = (data || []).map((msg: RawChatMessage) => ({
         ...msg,
         role: (msg.role === 'user' || msg.role === 'assistant') ? msg.role : 'assistant',
-        products: msg.products || []
+        products: Array.isArray(msg.products) ? msg.products : []
       }));
       
       setMessages(formattedMessages);
