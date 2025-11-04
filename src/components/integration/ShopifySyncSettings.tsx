@@ -368,7 +368,11 @@ export function ShopifySyncSettings() {
         setCurrentType('collections');
         console.log('📂 Importing collections...');
         const { data: collectionsResult, error: collectionsError } = await supabase.functions.invoke('import-shopify-collections', {
-          body: { storeId: settings.store_id }
+          body: {
+            shopName: connection.store_url.replace('.myshopify.com', ''),
+            authToken: connection.access_token,
+            storeId: connection.id
+          }
         });
 
         if (collectionsError) {
@@ -406,7 +410,11 @@ export function ShopifySyncSettings() {
         setCurrentType('pages');
         console.log('📄 Importing pages...');
         const { data: pagesResult, error: pagesError } = await supabase.functions.invoke('import-shopify-pages', {
-          body: { storeId: settings.store_id }
+          body: {
+            shopName: connection.store_url.replace('.myshopify.com', ''),
+            authToken: connection.access_token,
+            storeId: connection.id
+          }
         });
 
         if (pagesError) {
@@ -444,7 +452,11 @@ export function ShopifySyncSettings() {
         setCurrentType('articles');
         console.log('📰 Importing articles...');
         const { data: articlesResult, error: articlesError } = await supabase.functions.invoke('import-shopify-articles', {
-          body: { storeId: settings.store_id }
+          body: {
+            shopName: connection.store_url.replace('.myshopify.com', ''),
+            authToken: connection.access_token,
+            storeId: connection.id
+          }
         });
 
         if (articlesError) {
