@@ -186,15 +186,29 @@ Deno.serve(async (req) => {
 
     const created = await createRes.json();
 
+    const syncTimestamp = new Date().toISOString();
+
     await supabase
       .from("blog_articles")
       .update({
         status: "published",
-        published_at: new Date().toISOString(),
+        published_at: syncTimestamp,
         shopify_article_id: created.article?.id?.toString(),
-        last_synced_at: new Date().toISOString()
+        last_synced_at: syncTimestamp
       })
       .eq("id", articleId);
+
+    // Update last_synced_at for the featured image if it exists
+    if (featuredImage?.src) {
+      await supabase
+        .from("content_images")
+        .update({ last_synced_at: syncTimestamp })
+        .eq("content_type", "article")
+        .eq("content_id", articleId)
+        .eq("position", 0);
+      
+      console.log("✅ Featured image sync timestamp updated");
+    }
 
     console.log("✅ Article published successfully");
 
@@ -205,16 +219,22 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("❌ Error:", error);
     
-    // Update article status to error
+    // Update article status to error with timestamp
     try {
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
+      
+      const { articleId } = await req.json();
+      
       await supabase
         .from("blog_articles")
-        .update({ status: "error" })
-        .eq("id", (await req.json()).articleId);
+        .update({ 
+          status: "draft",
+          last_synced_at: new Date().toISOString() // Track failed sync attempt
+        })
+        .eq("id", articleId);
     } catch (e) {
       console.error("Failed to update article status:", e);
     }
