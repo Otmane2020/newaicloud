@@ -105,13 +105,14 @@ export function AppSidebar() {
   const merchantSubItems = [
     { title: t.merchant.submenu.feed, url: "/merchant?tab=feed", icon: FileText, key: "feed" },
     { title: t.merchant.submenu.settings, url: "/merchant?tab=settings", icon: Settings, key: "settings" },
-    { title: "Produits Google Shopping", url: "/merchant?tab=products", icon: Package, key: "products" },
+    { title: "Produits", url: "/merchant?tab=products", icon: Package, key: "products" },
     { title: "Variantes", url: "/merchant?tab=variants", icon: List, key: "variants" },
     { title: t.merchant.submenu.sync, url: "/merchant?tab=sync", icon: RefreshCw, key: "sync" },
   ];
 
   const bottomMenuItems = [
     { title: t.navigation.aiSearch, url: "/search", icon: Search, key: "aiSearch" },
+    { title: t.navigation.googleShopping, url: "/shopping", icon: ShoppingCart, key: "googleShopping" },
   ];
 
   const chatSubItems = [

@@ -36,6 +36,7 @@ import LandingPage from "./pages/LandingPage";
 import Account from "./pages/Account";
 import Subscription from "./pages/Subscription";
 import Merchant from "./pages/Merchant";
+import Shopping from "./pages/Shopping";
 import SearchProducts from "./pages/SearchProducts";
 import ChatHistory from "./pages/ChatHistory";
 import ProductDetail from "./pages/ProductDetail";
@@ -199,6 +200,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Pricing />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/shopping"
+              element={
+                <ProtectedLayout>
+                  <Shopping />
                 </ProtectedLayout>
               }
             />

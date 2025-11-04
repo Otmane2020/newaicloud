@@ -105,38 +105,6 @@ export function ProductSearch() {
         usage={limits?.usage.shopify_requests_count}
         limit={limits?.limits.max_shopify_requests}
       />
-
-      {/* Usage Warning Banner */}
-      {limits && (
-        <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="font-semibold text-amber-900 dark:text-amber-100">
-                  Recherches IA disponibles
-                </p>
-                <p className="text-sm text-amber-700 dark:text-amber-300">
-                  {limits.usage.shopify_requests_count || 0} / {limits.limits.max_shopify_requests} utilisées ce mois
-                </p>
-              </div>
-            </div>
-            {!limits.canUseShopifySearch && (
-              <Button
-                onClick={() => navigate('/account?tab=subscription')}
-                variant="default"
-                size="sm"
-                className="gap-2"
-              >
-                <Package className="w-4 h-4" />
-                Augmenter la limite
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
       
       <div className="space-y-6 p-4 md:p-0">
         <div className="text-center md:text-left">

@@ -23,7 +23,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { ShopifyOptimizationGuide } from "./ShopifyOptimizationGuide";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 interface FeedStatus {
   lastFetch: string | null;
@@ -44,7 +43,6 @@ export function GoogleMerchant() {
   const [isTesting, setIsTesting] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const [dbProductCount, setDbProductCount] = useState<number | null>(null);
 
   // URL du flux avec le domaine NewAI (pour affichage final)
   const feedUrl = `https://newai.sale/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
@@ -114,25 +112,7 @@ export function GoogleMerchant() {
   useEffect(() => {
     // Tester automatiquement le flux au chargement
     testFeed();
-    loadDbProductCount();
   }, []);
-
-  const loadDbProductCount = async () => {
-    if (!user?.id) return;
-    try {
-      const { count, error } = await supabase
-        .from('shopify_products')
-        .select('*', { count: 'exact', head: true })
-        .eq('seller_id', user.id)
-        .eq('status', 'active');
-      
-      if (!error) {
-        setDbProductCount(count);
-      }
-    } catch (error) {
-      console.error('Error loading DB product count:', error);
-    }
-  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Jamais";
@@ -178,20 +158,8 @@ export function GoogleMerchant() {
             </div>
             <div className="text-right">
               {getStatusBadge()}
-              {(feedStatus.itemCount !== null || dbProductCount !== null) && (
-                <div className="mt-2 space-y-1">
-                  {dbProductCount !== null && (
-                    <div className="text-2xl font-bold">{dbProductCount} produits (DB)</div>
-                  )}
-                  {feedStatus.itemCount !== null && (
-                    <div className="text-lg opacity-90">
-                      {feedStatus.itemCount} produits (XML)
-                      {dbProductCount !== null && feedStatus.itemCount !== dbProductCount && (
-                        <span className="ml-2 text-sm text-yellow-200">⚠️ Différence</span>
-                      )}
-                    </div>
-                  )}
-                </div>
+              {feedStatus.itemCount !== null && (
+                <div className="mt-2 text-2xl font-bold">{feedStatus.itemCount} produits</div>
               )}
             </div>
           </div>
