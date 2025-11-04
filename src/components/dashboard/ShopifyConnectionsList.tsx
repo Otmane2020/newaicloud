@@ -44,6 +44,7 @@ export default function ShopifyConnectionsList() {
   const [connections, setConnections] = useState<ShopifyConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [importingStoreId, setImportingStoreId] = useState<string | null>(null);
+  const [syncingStoreId, setSyncingStoreId] = useState<string | null>(null);
   
   // Progress dialog state
   const [showProgressDialog, setShowProgressDialog] = useState(false);
@@ -292,6 +293,7 @@ export default function ShopifyConnectionsList() {
       return;
     }
 
+    setSyncingStoreId(selectedStore.id);
     setIsSyncing(true);
     let historyEntry: any = null;
     let historyId: string | null = null;
@@ -602,7 +604,6 @@ export default function ShopifyConnectionsList() {
       }
 
       toast.error(`Erreur: ${error.message}`);
-      setIsSyncing(false);
     } finally {
       // CRITICAL: ALWAYS update timestamps, regardless of success or failure
       console.log('🔄 [SYNC FINALLY] Updating timestamps...');
@@ -658,7 +659,17 @@ export default function ShopifyConnectionsList() {
       }
       
       console.log('✅ [SYNC COMPLETE] Manual sync process completed');
+      setIsSyncing(false);
+      setSyncingStoreId(null);
     }
+  };
+
+  const startManualSync = async (store: ShopifyConnection) => {
+    setSelectedStore(store);
+    // Wait a bit for state to update
+    setTimeout(async () => {
+      await handleManualSync();
+    }, 0);
   };
 
   const updateStoreName = async () => {
@@ -940,60 +951,77 @@ export default function ShopifyConnectionsList() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-col gap-1 mb-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg truncate">
-                          {store.store_name || 'Shopify Store'}
-                        </h3>
-                        <Badge variant={store.is_active ? 'default' : 'secondary'}>
-                          {store.is_active ? (
-                            <>
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Active
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Inactive
-                            </>
-                          )}
-                        </Badge>
-                        {usageLimits && (
-                          <Badge variant="outline" className="text-xs">
-                            {usageLimits.usage?.products_count || 0}/{usageLimits.limits?.max_products || 0} products
-                          </Badge>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="font-semibold text-lg truncate">
+                        {store.store_name || 'Shopify Store'}
+                      </h3>
+                      <Badge variant={store.is_active ? 'default' : 'secondary'}>
+                        {store.is_active ? (
+                          <>
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Active
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Inactive
+                          </>
                         )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Code technique: {store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '')}
-                      </p>
+                      </Badge>
+                      {usageLimits && (
+                        <Badge variant="outline" className="text-xs">
+                          {usageLimits.usage?.products_count || 0}/{usageLimits.limits?.max_products || 0} produits
+                        </Badge>
+                      )}
                     </div>
                     
-              <p className="text-sm text-muted-foreground mb-1 truncate">
-                {store.store_url}
-              </p>
-              
-              {store.last_sync_at && (
-                <p className="text-xs text-muted-foreground">
-                  Last sync: {format(new Date(store.last_sync_at), 'PPp', { locale: fr })}
-                </p>
-              )}
-              
-              {store.connected_at && (
-                <p className="text-xs text-muted-foreground">
-                  Connected: {format(new Date(store.connected_at), 'PP', { locale: fr })}
-                </p>
-              )}
+                    <p className="text-sm text-muted-foreground mb-2 truncate">
+                      {store.store_url}
+                    </p>
+                    
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      {store.connected_at && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Connecté:</span>
+                          <span>{format(new Date(store.connected_at), 'PP', { locale: fr })}</span>
+                        </div>
+                      )}
+                      {store.last_sync_at && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Dernière synchro:</span>
+                          <span>{format(new Date(store.last_sync_at), 'PPp', { locale: fr })}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-2 ml-4">
                   <Button
                     size="sm"
+                    variant="default"
+                    onClick={() => startManualSync(store)}
+                    disabled={syncingStoreId === store.id}
+                    className="gap-2"
+                  >
+                    {syncingStoreId === store.id ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Synchronisation...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        Synchroniser
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => openEditNameDialog(store)}
                     className="gap-2"
-                    title="Modifier le nom commercial"
+                    title="Modifier le nom"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -1005,33 +1033,15 @@ export default function ShopifyConnectionsList() {
                       setShowSyncSettings(true);
                     }}
                     className="gap-2"
-                    title="Configurer la synchronisation automatique"
+                    title="Paramètres de synchronisation"
                   >
                     <Settings className="w-4 h-4" />
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => importAllContent(store)}
-                    disabled={importingStoreId === store.id}
-                    className="gap-2"
-                  >
-                    {importingStoreId === store.id ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Import en cours...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-4 h-4" />
-                        Tout Importer
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
                     variant="ghost"
                     onClick={() => openDeleteDialog(store.id)}
+                    title="Supprimer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
