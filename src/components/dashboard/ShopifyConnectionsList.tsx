@@ -75,6 +75,8 @@ export default function ShopifyConnectionsList() {
   
   // Sync settings dialog state
   const [showSyncSettings, setShowSyncSettings] = useState(false);
+  const [selectedStore, setSelectedStore] = useState<ShopifyConnection | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // Edit store name dialog state
   const [showEditNameDialog, setShowEditNameDialog] = useState(false);
@@ -268,6 +270,107 @@ export default function ShopifyConnectionsList() {
     setStoreToEdit(store);
     setEditedStoreName(store.store_name || '');
     setShowEditNameDialog(true);
+  };
+
+  const handleManualSync = async () => {
+    if (!selectedStore) {
+      toast.error("Aucun magasin sélectionné");
+      return;
+    }
+
+    setIsSyncing(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      // Extract shop name from store_url
+      const shopName = selectedStore.store_url
+        .replace(/^https?:\/\//, '')
+        .replace(/\.myshopify\.com.*$/, '');
+
+      // Get access token
+      const { data: storeData } = await supabase
+        .from('shopify_connections')
+        .select('access_token')
+        .eq('id', selectedStore.id)
+        .single();
+
+      if (!storeData) throw new Error("Store not found");
+
+      console.log('🚀 Starting manual sync for store:', shopName);
+
+      // Trigger import for all content types
+      const types = ['products', 'collections', 'pages', 'articles', 'images'];
+      let totalImported = 0;
+      
+      for (const type of types) {
+        try {
+          let result;
+          switch (type) {
+            case 'products':
+              result = await supabase.functions.invoke('import-products', {
+                body: { 
+                  shopName, 
+                  authToken: storeData.access_token, 
+                  storeId: selectedStore.id,
+                  syncMode: 'smart'
+                }
+              });
+              break;
+            case 'collections':
+              result = await supabase.functions.invoke('import-shopify-collections', {
+                body: { 
+                  shopName, 
+                  authToken: storeData.access_token, 
+                  storeId: selectedStore.id 
+                }
+              });
+              break;
+            case 'pages':
+              result = await supabase.functions.invoke('import-shopify-pages', {
+                body: { 
+                  shopName, 
+                  authToken: storeData.access_token, 
+                  storeId: selectedStore.id 
+                }
+              });
+              break;
+            case 'articles':
+              result = await supabase.functions.invoke('import-shopify-articles', {
+                body: { 
+                  shopName, 
+                  authToken: storeData.access_token, 
+                  storeId: selectedStore.id 
+                }
+              });
+              break;
+            case 'images':
+              result = await supabase.functions.invoke('import-content-images', {
+                body: { types: ['collections', 'pages', 'articles', 'homepage'] }
+              });
+              break;
+          }
+
+          if (result?.error) {
+            console.error(`❌ Error importing ${type}:`, result.error);
+          } else {
+            const imported = result?.data?.totalImported || 0;
+            totalImported += imported;
+            console.log(`✅ Imported ${type}:`, imported);
+          }
+        } catch (error) {
+          console.error(`❌ Error importing ${type}:`, error);
+        }
+      }
+
+      toast.success(`Synchronisation terminée : ${totalImported} éléments importés`);
+    } catch (error) {
+      console.error("❌ Sync error:", error);
+      toast.error(`Erreur: ${error.message}`);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const updateStoreName = async () => {
@@ -609,7 +712,10 @@ export default function ShopifyConnectionsList() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setShowSyncSettings(true)}
+                    onClick={() => {
+                      setSelectedStore(store);
+                      setShowSyncSettings(true);
+                    }}
                     className="gap-2"
                     title="Configurer la synchronisation automatique"
                   >
@@ -651,20 +757,40 @@ export default function ShopifyConnectionsList() {
       <Dialog open={showSyncSettings} onOpenChange={setShowSyncSettings}>
         <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader className="border-b pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Settings className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Settings className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl">Synchronisation automatique</DialogTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Configurez la synchronisation entre Shopify et votre plateforme
+                  </p>
+                </div>
               </div>
-              <div>
-                <DialogTitle className="text-xl">Synchronisation automatique</DialogTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Configurez la synchronisation entre Shopify et votre plateforme
-                </p>
-              </div>
+              <Button
+                onClick={handleManualSync}
+                disabled={isSyncing || !selectedStore}
+                size="lg"
+                className="shrink-0"
+              >
+                {isSyncing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Synchronisation...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Synchroniser maintenant
+                  </>
+                )}
+              </Button>
             </div>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-1">
-            <ShopifySyncSettings />
+            <ShopifySyncSettings onSyncTrigger={setIsSyncing} />
           </div>
         </DialogContent>
       </Dialog>

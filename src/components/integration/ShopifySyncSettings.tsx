@@ -487,7 +487,7 @@ const SyncHistoryList = ({ history }: { history: SyncHistory[] }) => (
   </Card>
 );
 
-export function ShopifySyncSettings() {
+export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncing: boolean) => void }) {
   const { settings, history, loading, setSettings, loadSettings, loadHistory } = useSyncData();
   const [saving, setSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -781,27 +781,8 @@ export function ShopifySyncSettings() {
           <NextSyncDisplay nextImportAt={settings?.next_import_at || null} />
           <AutoExportSettings settings={settings} setSettings={setSettings} />
 
-          {/* Boutons d'action */}
-          <div className="space-y-3 pt-6 border-t">
-            <Button
-              onClick={handleSyncNow}
-              disabled={isSyncing || selectedTypes.length === 0}
-              className="w-full"
-              size="lg"
-            >
-              {isSyncing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Synchronisation en cours...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Synchroniser maintenant
-                </>
-              )}
-            </Button>
-
+          {/* Bouton d'enregistrement */}
+          <div className="pt-6 border-t">
             <Button onClick={saveSettings} disabled={saving} variant="outline" className="w-full">
               {saving ? "Enregistrement..." : "Enregistrer les paramètres"}
             </Button>
