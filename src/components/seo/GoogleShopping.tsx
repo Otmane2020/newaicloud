@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { WhiteBackgroundPreviewDialog } from './WhiteBackgroundPreviewDialog';
 import { ShopifyOptimizationGuide } from './ShopifyOptimizationGuide';
+import { OptimizeAllDialog } from './OptimizeAllDialog';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
@@ -83,6 +84,11 @@ export function GoogleShopping() {
   const [previews, setPreviews] = useState<PreviewImage[]>([]);
   const [optimizationScore, setOptimizationScore] = useState(0);
   const [showGuide, setShowGuide] = useState(false);
+  const [showOptimizeDialog, setShowOptimizeDialog] = useState(false);
+  const [optimizationResults, setOptimizationResults] = useState<any[]>([]);
+  const [optimizationProgress, setOptimizationProgress] = useState(0);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [currentOptimizingProduct, setCurrentOptimizingProduct] = useState<string>('');
 
   const fetchProducts = async () => {
     try {
@@ -372,6 +378,105 @@ export function GoogleShopping() {
     setPreviews([]);
   };
 
+  const handleOptimizeAll = async () => {
+    const unoptimized = products.filter(p => 
+      !p.google_product_category || !p.google_gtin
+    );
+
+    if (unoptimized.length === 0) {
+      toast.info('Tous les produits sont déjà optimisés !');
+      return;
+    }
+
+    setIsOptimizing(true);
+    setShowOptimizeDialog(true);
+    setOptimizationResults([]);
+    setOptimizationProgress(0);
+
+    const results: any[] = [];
+    const total = unoptimized.length;
+
+    for (let i = 0; i < unoptimized.length; i++) {
+      const product = unoptimized[i];
+      setCurrentOptimizingProduct(product.title);
+      
+      let categoryGenerated = false;
+      let gtinGenerated = false;
+      let status: 'success' | 'error' | 'skipped' = 'skipped';
+      let error: string | undefined;
+
+      try {
+        // Generate category if missing
+        if (!product.google_product_category) {
+          try {
+            const { data: categoryData, error: categoryError } = await supabase.functions.invoke('generate-google-category', {
+              body: { productId: product.id }
+            });
+            if (categoryError) throw categoryError;
+            if (categoryData.success) {
+              categoryGenerated = true;
+              status = 'success';
+            }
+          } catch (err) {
+            console.error('Category error:', err);
+            error = 'Erreur génération catégorie';
+          }
+        }
+
+        // Generate GTIN if missing
+        if (!product.google_gtin) {
+          try {
+            const { data: gtinData, error: gtinError } = await supabase.functions.invoke('generate-gtin', {
+              body: { 
+                productIds: [product.id],
+                countryCode: 'FR'
+              }
+            });
+            if (gtinError) throw gtinError;
+            if (gtinData.results && gtinData.results.length > 0) {
+              gtinGenerated = true;
+              status = 'success';
+            }
+          } catch (err) {
+            console.error('GTIN error:', err);
+            error = error ? `${error}, GTIN` : 'Erreur génération GTIN';
+          }
+        }
+
+        if (!categoryGenerated && !gtinGenerated && !error) {
+          status = 'skipped';
+        }
+
+        if (error) {
+          status = 'error';
+        }
+      } catch (err) {
+        console.error('Optimization error:', err);
+        status = 'error';
+        error = 'Erreur générale';
+      }
+
+      results.push({
+        productId: product.id,
+        productTitle: product.title,
+        status,
+        categoryGenerated,
+        gtinGenerated,
+        error,
+      });
+
+      setOptimizationResults([...results]);
+      setOptimizationProgress(((i + 1) / total) * 100);
+    }
+
+    setIsOptimizing(false);
+    setCurrentOptimizingProduct('');
+    await fetchProducts();
+
+    const successCount = results.filter(r => r.status === 'success').length;
+    toast.success(`Optimisation terminée ! ${successCount}/${total} produits optimisés`);
+  };
+
   const handleRegeneratePreview = async (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -477,7 +582,7 @@ export function GoogleShopping() {
   return (
     <div className="space-y-6">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-lg bg-gradient-primary p-8 text-white shadow-xl">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -515,28 +620,27 @@ export function GoogleShopping() {
             <Button
               variant="secondary"
               size="lg"
-              onClick={() => {
-                // Select all unoptimized products and trigger optimization
-                const unoptimized = products.filter(p => 
-                  !p.google_product_category || !p.google_gtin || !p.google_white_background
-                );
-                if (unoptimized.length === 0) {
-                  toast.info('Tous les produits sont déjà optimisés !');
-                  return;
-                }
-                setSelectedProducts(new Set(unoptimized.map(p => p.id)));
-                toast.success(`${unoptimized.length} produits sélectionnés pour optimisation`);
-              }}
-              className="bg-white text-teal-600 hover:bg-white/90"
+              onClick={handleOptimizeAll}
+              disabled={isOptimizing}
+              className="bg-white text-primary hover:bg-white/90"
             >
-              <Zap className="w-5 h-5 mr-2" />
-              Optimiser tout
+              {isOptimizing ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Optimisation...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-5 h-5 mr-2" />
+                  Optimiser tout
+                </>
+              )}
             </Button>
             <Button
               variant="secondary"
               size="lg"
               onClick={() => setShowGuide(true)}
-              className="bg-white/90 text-teal-600 hover:bg-white"
+              className="bg-white/90 text-primary hover:bg-white"
             >
               <BookOpen className="w-5 h-5 mr-2" />
               Guide Shopify
@@ -545,7 +649,7 @@ export function GoogleShopping() {
               variant="secondary"
               size="lg"
               onClick={() => navigate('/merchant?tab=feed')}
-              className="bg-white/80 text-teal-600 hover:bg-white/90"
+              className="bg-white/80 text-primary hover:bg-white/90"
             >
               <BookOpen className="w-5 h-5 mr-2" />
               Voir le flux XML
@@ -945,6 +1049,15 @@ export function GoogleShopping() {
       <ShopifyOptimizationGuide 
         open={showGuide} 
         onClose={() => setShowGuide(false)} 
+      />
+
+      <OptimizeAllDialog
+        open={showOptimizeDialog}
+        onClose={() => setShowOptimizeDialog(false)}
+        results={optimizationResults}
+        progress={optimizationProgress}
+        isProcessing={isOptimizing}
+        currentProduct={currentOptimizingProduct}
       />
     </div>
   );
