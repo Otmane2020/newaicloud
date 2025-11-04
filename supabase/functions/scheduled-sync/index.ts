@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
                 break;
               case 'articles':
                 result = await userClient.functions.invoke('import-shopify-articles', {
-                  body: { shopName, apiSecret: authToken, storeId }
+                  body: { shopName, authToken, storeId }
                 });
                 break;
               case 'images':

@@ -336,7 +336,7 @@ export default function ShopifyConnectionsList() {
           .insert({
             user_id: user.id,
             store_id: selectedStore.id,
-            sync_type: 'manual',
+            sync_type: 'import',
             content_types: ['products', 'collections', 'pages', 'articles', 'images'],
             status: 'running',
             started_at: new Date().toISOString(),
@@ -400,51 +400,70 @@ export default function ShopifyConnectionsList() {
         
         try {
           let result;
+          const timeoutMs = 30000; // 30 seconds timeout
+          
+          const executeWithTimeout = async (promise: Promise<any>) => {
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Function timeout after 30s')), timeoutMs)
+            );
+            return Promise.race([promise, timeoutPromise]);
+          };
+
           switch (type) {
             case 'products':
-              result = await supabase.functions.invoke('import-products', {
-                body: { 
-                  shopName, 
-                  apiSecret: storeData.access_token, 
-                  storeId: selectedStore.id,
-                  syncMode: 'smart'
-                }
-              });
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-products', {
+                  body: { 
+                    shopName, 
+                    apiSecret: storeData.access_token, 
+                    storeId: selectedStore.id,
+                    syncMode: 'smart'
+                  }
+                })
+              );
               break;
             case 'collections':
-              result = await supabase.functions.invoke('import-shopify-collections', {
-                body: { 
-                  shopName, 
-                  apiSecret: storeData.access_token, 
-                  storeId: selectedStore.id 
-                }
-              });
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-shopify-collections', {
+                  body: { 
+                    shopName, 
+                    apiSecret: storeData.access_token, 
+                    storeId: selectedStore.id 
+                  }
+                })
+              );
               break;
             case 'pages':
-              result = await supabase.functions.invoke('import-shopify-pages', {
-                body: { 
-                  shopName, 
-                  apiSecret: storeData.access_token, 
-                  storeId: selectedStore.id 
-                }
-              });
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-shopify-pages', {
+                  body: { 
+                    shopName, 
+                    apiSecret: storeData.access_token, 
+                    storeId: selectedStore.id 
+                  }
+                })
+              );
               break;
             case 'articles':
-              result = await supabase.functions.invoke('import-shopify-articles', {
-                body: { 
-                  shopName, 
-                  authToken: storeData.access_token, 
-                  storeId: selectedStore.id 
-                }
-              });
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-shopify-articles', {
+                  body: { 
+                    shopName, 
+                    authToken: storeData.access_token, 
+                    storeId: selectedStore.id 
+                  }
+                })
+              );
               break;
             case 'images':
-              result = await supabase.functions.invoke('import-content-images', {
-                body: { 
-                  storeId: selectedStore.id,
-                  types: ['collections', 'pages', 'articles', 'homepage'] 
-                }
-              });
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-content-images', {
+                  body: { 
+                    storeId: selectedStore.id,
+                    types: ['collections', 'pages', 'articles', 'homepage'] 
+                  }
+                })
+              );
               break;
           }
 
@@ -592,15 +611,20 @@ export default function ShopifyConnectionsList() {
         // Update last_sync_at in shopify_connections
         try {
           console.log('📅 [SYNC TIMESTAMP] Updating last_sync_at for store:', selectedStore.id);
-          const { error: syncError } = await supabase
+          console.log('📅 [SYNC TIMESTAMP] Current user:', user.id);
+          console.log('📅 [SYNC TIMESTAMP] Update payload:', { last_sync_at: new Date().toISOString() });
+          
+          const { data: updateResult, error: syncError } = await supabase
             .from('shopify_connections')
             .update({ last_sync_at: new Date().toISOString() })
-            .eq('id', selectedStore.id);
+            .eq('id', selectedStore.id)
+            .select();
 
           if (syncError) {
             console.error('❌ [SYNC TIMESTAMP ERROR] Failed to update last_sync_at:', syncError);
           } else {
             console.log('✅ [SYNC TIMESTAMP] last_sync_at updated successfully');
+            console.log('✅ [SYNC TIMESTAMP] Update result:', updateResult);
           }
         } catch (syncTimestampError) {
           console.error('❌ [SYNC TIMESTAMP EXCEPTION]', syncTimestampError);
