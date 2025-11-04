@@ -267,30 +267,36 @@ export function GoogleShoppingVariants() {
 
     try {
       setGlobalOptimizing(true);
-      toast.info(`Optimisation complète de ${allProductIds.length} produit(s)...`);
+      const toastId = toast.loading(`Optimisation complète de ${allProductIds.length} produit(s)...`);
       
       // Step 1: Optimize titles, descriptions, categories, brands
       const { data: optimizeData, error: optimizeError } = await supabase.functions.invoke('optimize-shopping-feed', {
         body: { productIds: allProductIds }
       });
 
-      if (optimizeError) throw optimizeError;
+      if (optimizeError) {
+        console.error('Optimize error:', optimizeError);
+        throw new Error(optimizeError.message || 'Erreur d\'optimisation');
+      }
 
       // Step 2: Generate GTINs
       const { data: gtinData, error: gtinError } = await supabase.functions.invoke('generate-gtin', {
         body: { productIds: allProductIds, countryCode: 'FR' }
       });
 
-      if (gtinError) throw gtinError;
+      if (gtinError) {
+        console.error('GTIN error:', gtinError);
+        throw new Error(gtinError.message || 'Erreur de génération GTIN');
+      }
 
-      const optimizeSuccess = optimizeData.results.filter((r: any) => r.status === 'success').length;
-      const gtinGenerated = gtinData.results.filter((r: any) => r.status === 'generated').length;
+      const optimizeSuccess = optimizeData?.results?.filter((r: any) => r.status === 'success').length || 0;
+      const gtinGenerated = gtinData?.results?.filter((r: any) => r.status === 'generated').length || 0;
 
-      toast.success(`Optimisation terminée ! ${optimizeSuccess} produits optimisés, ${gtinGenerated} GTIN générés`);
+      toast.success(`Optimisation terminée ! ${optimizeSuccess} produits optimisés, ${gtinGenerated} GTIN générés`, { id: toastId });
       await fetchVariants();
     } catch (error) {
       console.error('Error in global optimization:', error);
-      toast.error('Erreur lors de l\'optimisation globale');
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de l\'optimisation globale');
     } finally {
       setGlobalOptimizing(false);
     }

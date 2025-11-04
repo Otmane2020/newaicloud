@@ -680,7 +680,12 @@ export function SmartPricingAI() {
             <DollarSign className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <h2 className="text-2xl font-bold mb-2">Smart Pricing AI</h2>
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-2xl font-bold">Smart Pricing AI</h2>
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold px-3 py-1 text-xs shadow-lg animate-pulse">
+                ✨ NEW
+              </Badge>
+            </div>
             <p className="text-muted-foreground">
               Gérez vos prix, remises et marges par collection avec synchronisation Shopify instantanée
             </p>

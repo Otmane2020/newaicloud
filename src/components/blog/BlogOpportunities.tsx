@@ -212,6 +212,17 @@ export function BlogOpportunities() {
   };
 
   const handleRegenerate = async () => {
+    // Check usage limits first
+    if (!canDoAction('optimizations')) {
+      toast.error('Limite d\'optimisations atteinte', {
+        description: limits.isTrialing 
+          ? 'Passez à un plan payant pour générer plus d\'opportunités.'
+          : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
+      });
+      setShowUpgradeDialog(true);
+      return;
+    }
+
     setRegenerating(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -227,7 +238,9 @@ export function BlogOpportunities() {
         description: t.blog.dialogs.opportunities.patience,
         duration: 5000
       });
+      
       await loadOpportunities();
+      await refreshLimits(); // Refresh usage limits
     } catch (error) {
       console.error('Error regenerating:', error);
       toast.error('Erreur lors de la régénération');
