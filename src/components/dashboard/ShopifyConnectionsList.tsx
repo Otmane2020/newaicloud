@@ -312,7 +312,7 @@ export default function ShopifyConnectionsList() {
               result = await supabase.functions.invoke('import-products', {
                 body: { 
                   shopName, 
-                  authToken: storeData.access_token, 
+                  apiSecret: storeData.access_token, 
                   storeId: selectedStore.id,
                   syncMode: 'smart'
                 }
@@ -322,7 +322,7 @@ export default function ShopifyConnectionsList() {
               result = await supabase.functions.invoke('import-shopify-collections', {
                 body: { 
                   shopName, 
-                  authToken: storeData.access_token, 
+                  apiSecret: storeData.access_token, 
                   storeId: selectedStore.id 
                 }
               });
@@ -331,7 +331,7 @@ export default function ShopifyConnectionsList() {
               result = await supabase.functions.invoke('import-shopify-pages', {
                 body: { 
                   shopName, 
-                  authToken: storeData.access_token, 
+                  apiSecret: storeData.access_token, 
                   storeId: selectedStore.id 
                 }
               });
@@ -340,7 +340,7 @@ export default function ShopifyConnectionsList() {
               result = await supabase.functions.invoke('import-shopify-articles', {
                 body: { 
                   shopName, 
-                  authToken: storeData.access_token, 
+                  apiSecret: storeData.access_token, 
                   storeId: selectedStore.id 
                 }
               });
@@ -552,7 +552,7 @@ export default function ShopifyConnectionsList() {
           body: { 
             storeId: fullStore.id,
             shopName: cleanShopName,
-            authToken: fullStore.access_token
+            apiSecret: fullStore.access_token
           }
         });
         
@@ -575,7 +575,7 @@ export default function ShopifyConnectionsList() {
             body: {
               storeId: fullStore.id,
               shopName: cleanShopName,
-              authToken: fullStore.access_token,
+              apiSecret: fullStore.access_token,
             },
           });
           
@@ -598,7 +598,7 @@ export default function ShopifyConnectionsList() {
             body: {
               storeId: fullStore.id,
               shopName: cleanShopName,
-              authToken: fullStore.access_token,
+              apiSecret: fullStore.access_token,
             },
           });
         }

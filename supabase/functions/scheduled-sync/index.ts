@@ -141,22 +141,22 @@ Deno.serve(async (req) => {
             switch (type) {
               case 'products':
                 result = await userClient.functions.invoke('import-products', {
-                  body: { shopName, authToken, storeId, syncMode }
+                  body: { shopName, apiSecret: authToken, storeId, syncMode }
                 });
                 break;
               case 'collections':
                 result = await userClient.functions.invoke('import-shopify-collections', {
-                  body: { shopName, authToken, storeId }
+                  body: { shopName, apiSecret: authToken, storeId }
                 });
                 break;
               case 'pages':
                 result = await userClient.functions.invoke('import-shopify-pages', {
-                  body: { shopName, authToken, storeId }
+                  body: { shopName, apiSecret: authToken, storeId }
                 });
                 break;
               case 'articles':
                 result = await userClient.functions.invoke('import-shopify-articles', {
-                  body: { shopName, authToken, storeId }
+                  body: { shopName, apiSecret: authToken, storeId }
                 });
                 break;
               case 'images':
