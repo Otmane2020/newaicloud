@@ -49,13 +49,14 @@ export default function Products() {
   const [sortBy, setSortBy] = useState<string>("recent");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     if (user) {
       loadProducts();
     }
-  }, [user]);
+  }, [user, currentPage]);
 
   useEffect(() => {
     filterAndSortProducts();
@@ -70,6 +71,8 @@ export default function Products() {
         .from("shopify_products")
         .select("*", { count: 'exact', head: true })
         .eq("seller_id", user?.id);
+      
+      setTotalCount(count || 0);
       
       // Load products with pagination
       const { data, error } = await supabase
@@ -425,7 +428,7 @@ export default function Products() {
             )}
             
             {/* Pagination */}
-            {filteredProducts.length > 0 && products.length >= ITEMS_PER_PAGE && (
+            {filteredProducts.length > 0 && totalCount > ITEMS_PER_PAGE && (
               <div className="flex items-center justify-center gap-2 mt-6">
                 <Button
                   variant="outline"
@@ -439,7 +442,7 @@ export default function Products() {
                   Précédent
                 </Button>
                 <span className="text-sm text-muted-foreground px-4">
-                  Page {currentPage}
+                  Page {currentPage} sur {Math.ceil(totalCount / ITEMS_PER_PAGE)}
                 </span>
                 <Button
                   variant="outline"
@@ -448,7 +451,7 @@ export default function Products() {
                     setCurrentPage(p => p + 1);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  disabled={products.length < ITEMS_PER_PAGE}
+                  disabled={currentPage >= Math.ceil(totalCount / ITEMS_PER_PAGE)}
                 >
                   Suivant
                 </Button>
