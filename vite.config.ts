@@ -38,7 +38,9 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 3000000, // 3MB limit
+        maximumFileSizeToCacheInBytes: 5000000, // 5MB limit for ML models
+        // Exclude very large WASM files from precaching
+        globIgnores: ['**/*.wasm'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
