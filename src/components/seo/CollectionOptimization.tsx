@@ -555,17 +555,39 @@ export function CollectionOptimization() {
       setProgress({ current: 0, total: collectionsToSync.length });
 
       let successCount = 0;
+      let imageSyncCount = 0;
+      
       for (let i = 0; i < collectionsToSync.length; i++) {
         const collection = collectionsToSync[i];
         try {
-          const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+          // 1. Synchroniser les metafields SEO (title_tag, description_tag, body_html)
+          const { error: seoError } = await supabase.functions.invoke('sync-seo-to-shopify', {
             body: { 
               collectionId: collection.id,
               force: true // Allow immediate sync after collection optimization
             }
           });
 
-          if (error) throw error;
+          if (seoError) throw seoError;
+          
+          // 2. Synchroniser l'image si elle existe et n'est pas en base64
+          if (collection.image_url && !collection.image_url.startsWith('data:')) {
+            try {
+              const { error: imageError } = await supabase.functions.invoke('sync-collection-image-to-shopify', {
+                body: { collection_id: collection.id }
+              });
+              
+              if (!imageError) {
+                imageSyncCount++;
+              } else {
+                console.warn(`Image sync skipped for collection ${collection.id}:`, imageError);
+              }
+            } catch (imageErr) {
+              // Log but don't fail the whole sync if image fails
+              console.warn(`Image sync failed for collection ${collection.id}:`, imageErr);
+            }
+          }
+          
           successCount++;
         } catch (error: any) {
           console.error(`Error syncing collection ${collection.id}:`, error);
@@ -578,7 +600,13 @@ export function CollectionOptimization() {
       // Small delay before showing success message
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      toast.success(`✅ ${successCount} collection(s) synchronisée(s) avec Shopify`);
+      // Message détaillé avec info sur les images
+      if (imageSyncCount > 0) {
+        toast.success(`✅ ${successCount} collection(s) synchronisée(s) (SEO + ${imageSyncCount} image(s))`);
+      } else {
+        toast.success(`✅ ${successCount} collection(s) synchronisée(s) avec Shopify`);
+      }
+      
       await fetchCollections();
     } catch (error: any) {
       console.error('Error syncing collections:', error);
@@ -603,17 +631,39 @@ export function CollectionOptimization() {
       setProgress({ current: 0, total: allOptimized.length });
 
       let successCount = 0;
+      let imageSyncCount = 0;
+      
       for (let i = 0; i < allOptimized.length; i++) {
         const collection = allOptimized[i];
         try {
-          const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+          // 1. Synchroniser les metafields SEO (title_tag, description_tag, body_html)
+          const { error: seoError } = await supabase.functions.invoke('sync-seo-to-shopify', {
             body: { 
               collectionId: collection.id,
               force: true
             }
           });
 
-          if (error) throw error;
+          if (seoError) throw seoError;
+          
+          // 2. Synchroniser l'image si elle existe et n'est pas en base64
+          if (collection.image_url && !collection.image_url.startsWith('data:')) {
+            try {
+              const { error: imageError } = await supabase.functions.invoke('sync-collection-image-to-shopify', {
+                body: { collection_id: collection.id }
+              });
+              
+              if (!imageError) {
+                imageSyncCount++;
+              } else {
+                console.warn(`Image sync skipped for collection ${collection.id}:`, imageError);
+              }
+            } catch (imageErr) {
+              // Log but don't fail the whole sync if image fails
+              console.warn(`Image sync failed for collection ${collection.id}:`, imageErr);
+            }
+          }
+          
           successCount++;
         } catch (error: any) {
           console.error(`Error syncing collection ${collection.id}:`, error);
@@ -625,7 +675,13 @@ export function CollectionOptimization() {
       
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      toast.success(`✅ ${successCount} collection(s) synchronisée(s) avec Shopify`);
+      // Message détaillé avec info sur les images
+      if (imageSyncCount > 0) {
+        toast.success(`✅ ${successCount} collection(s) synchronisée(s) (SEO + ${imageSyncCount} image(s))`);
+      } else {
+        toast.success(`✅ ${successCount} collection(s) synchronisée(s) avec Shopify`);
+      }
+      
       await fetchCollections();
     } catch (error: any) {
       console.error('Error syncing all collections:', error);
