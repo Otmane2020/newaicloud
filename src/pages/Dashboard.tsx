@@ -13,6 +13,7 @@ import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
 import { SmartBanner } from '@/components/dashboard/SmartBanner';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
 import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
+import { AIRecommendations } from '@/components/dashboard/AIRecommendations';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/language';
 import {
@@ -46,6 +47,8 @@ interface Stats {
     technical: number;
   };
   connectedStores: number;
+  productsWithImages: number;
+  productsWithoutAlt: number;
   // Trends (comparison with previous period)
   trends: {
     products: number;
@@ -77,6 +80,8 @@ export default function Dashboard() {
       technical: 0
     },
     connectedStores: 0,
+    productsWithImages: 0,
+    productsWithoutAlt: 0,
     trends: {
       products: 0,
       optimizations: 0,
@@ -131,7 +136,7 @@ export default function Dashboard() {
 
       const { data: products, error: productsError } = await supabase
         .from('shopify_products')
-        .select('id, price, seo_title, seo_description')
+        .select('id, price, seo_title, seo_description, image_url')
         .eq('seller_id', user?.id)
         .in('store_id', activeStoreIds.length > 0 ? activeStoreIds : ['']);
 
@@ -203,6 +208,15 @@ export default function Dashboard() {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user?.id);
 
+      // Count products with/without alt texts
+      const productsWithImages = products?.filter(p => p.image_url)?.length || 0;
+      
+      const { count: imagesWithoutAlt } = await supabase
+        .from('product_images')
+        .select('*', { count: 'exact', head: true })
+        .in('product_id', products?.map(p => p.id) || [])
+        .or('alt_text.is.null,alt_text.eq.');
+
       // Calculate trends (comparison with last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -244,6 +258,8 @@ export default function Dashboard() {
         seoScore,
         seoCategories,
         connectedStores,
+        productsWithImages,
+        productsWithoutAlt: imagesWithoutAlt || 0,
         trends: {
           products: totalProducts - oldTotalProducts,
           optimizations: optimizedProducts - oldOptimizedProducts,
@@ -414,16 +430,7 @@ export default function Dashboard() {
           gradient="from-success to-success"
           iconBg="bg-success/10 text-success"
           badge={stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%'}
-          subtitle={
-            <>
-              {`${stats.optimizedProducts}/${stats.totalProducts} ${t.dashboard.cards.products}`}
-              {stats.trends.optimizations !== 0 && (
-                <span className={`ml-2 text-xs ${stats.trends.optimizations > 0 ? 'text-success' : 'text-warning'}`}>
-                  {stats.trends.optimizations > 0 ? '↗' : '↘'} {Math.abs(stats.trends.optimizations)} {t.dashboard.recentActivity.thisMonth}
-                </span>
-              )}
-            </>
-          }
+          subtitle={`${stats.optimizedProducts}/${stats.totalProducts} ${t.dashboard.cards.products}${stats.trends.optimizations !== 0 ? ` ${stats.trends.optimizations > 0 ? '↗' : '↘'} ${Math.abs(stats.trends.optimizations)} ${t.dashboard.recentActivity.thisMonth}` : ''}`}
         />
         <MetricCard
           title={t.dashboard.cards.toOptimize}
@@ -448,16 +455,7 @@ export default function Dashboard() {
           icon={FileText}
           gradient="from-cyan-500 to-cyan-600"
           iconBg="bg-cyan-500/10 text-cyan-600"
-          subtitle={
-            <>
-              {t.dashboard.cards.seoContent}
-              {stats.trends.articles !== 0 && (
-                <span className={`ml-2 text-xs ${stats.trends.articles > 0 ? 'text-success' : 'text-warning'}`}>
-                  {stats.trends.articles > 0 ? '↗' : '↘'} {Math.abs(stats.trends.articles)} {t.dashboard.recentActivity.thisMonth}
-                </span>
-              )}
-            </>
-          }
+          subtitle={`${t.dashboard.cards.seoContent}${stats.trends.articles !== 0 ? ` ${stats.trends.articles > 0 ? '↗' : '↘'} ${Math.abs(stats.trends.articles)} ${t.dashboard.recentActivity.thisMonth}` : ''}`}
         />
         <MetricCard
           title={t.dashboard.cards.optimizedValue}
@@ -605,6 +603,18 @@ export default function Dashboard() {
 
       {/* Smart Recommendations Banner */}
       <div className="space-y-4 animate-fade-in" style={{ animationDelay: '300ms' }}>
+        {/* AI Recommendations */}
+        <AIRecommendations 
+          stats={{
+            productsCount: stats.totalProducts,
+            optimizedCount: stats.optimizedProducts,
+            articlesCount: stats.totalArticles,
+            seoScore: stats.seoScore,
+            productsWithImages: stats.productsWithImages,
+            productsWithoutAlt: stats.productsWithoutAlt,
+          }}
+        />
+
         {stats.pendingOptimization > 0 && (
           <SmartBanner
             type="optimization"
