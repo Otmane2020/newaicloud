@@ -528,14 +528,59 @@ export function ShopifySyncSettings() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Calculate next import time
+      let next_import_at: string | null = null;
+      
+      if (settings.import_frequency !== "manual") {
+        const now = new Date();
+        const timezone = settings.timezone || "Europe/Paris";
+        
+        switch (settings.import_frequency) {
+          case "hourly":
+            next_import_at = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+            break;
+          case "daily":
+            const nextDaily = new Date(now);
+            nextDaily.setHours(settings.import_schedule_hour || 2, 0, 0, 0);
+            if (nextDaily <= now) {
+              nextDaily.setDate(nextDaily.getDate() + 1);
+            }
+            next_import_at = nextDaily.toISOString();
+            break;
+          case "weekly":
+            const nextWeekly = new Date(now);
+            nextWeekly.setHours(settings.import_schedule_hour || 2, 0, 0, 0);
+            const daysUntilTarget = ((settings.import_schedule_day || 1) - nextWeekly.getDay() + 7) % 7;
+            nextWeekly.setDate(nextWeekly.getDate() + (daysUntilTarget || 7));
+            next_import_at = nextWeekly.toISOString();
+            break;
+          case "monthly":
+            const nextMonthly = new Date(now);
+            nextMonthly.setDate(settings.import_schedule_day || 1);
+            nextMonthly.setHours(settings.import_schedule_hour || 2, 0, 0, 0);
+            if (nextMonthly <= now) {
+              nextMonthly.setMonth(nextMonthly.getMonth() + 1);
+            }
+            next_import_at = nextMonthly.toISOString();
+            break;
+        }
+      }
+
       const { error } = await supabase
         .from("shopify_sync_settings")
-        .update({ ...settings, import_types: selectedTypes })
+        .update({ 
+          ...settings, 
+          import_types: selectedTypes,
+          next_import_at 
+        })
         .eq("user_id", user.id);
 
       if (error) throw error;
 
-      toast.success("Paramètres enregistrés");
+      // Reload settings to get the updated next_import_at
+      await loadSettings();
+      
+      toast.success("Paramètres enregistrés avec succès");
     } catch (error) {
       console.error("Error saving settings:", error);
       toast.error("Erreur lors de l'enregistrement");

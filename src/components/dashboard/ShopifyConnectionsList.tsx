@@ -649,11 +649,23 @@ export default function ShopifyConnectionsList() {
       </div>
 
       <Dialog open={showSyncSettings} onOpenChange={setShowSyncSettings}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Paramètres de synchronisation automatique</DialogTitle>
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="border-b pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Settings className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">Synchronisation automatique</DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Configurez la synchronisation entre Shopify et votre plateforme
+                </p>
+              </div>
+            </div>
           </DialogHeader>
-          <ShopifySyncSettings />
+          <div className="flex-1 overflow-y-auto px-1">
+            <ShopifySyncSettings />
+          </div>
         </DialogContent>
       </Dialog>
 
