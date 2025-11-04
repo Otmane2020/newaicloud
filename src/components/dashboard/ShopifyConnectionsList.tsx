@@ -294,47 +294,77 @@ export default function ShopifyConnectionsList() {
 
     setIsSyncing(true);
     let historyEntry: any = null;
+    let historyId: string | null = null;
     const startTime = Date.now();
+    let user: any = null;
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      console.log('🔄 [SYNC START] Initiating manual sync for store:', selectedStore.id);
+      
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        console.error('❌ [SYNC ERROR] User not authenticated');
+        throw new Error("Non authentifié");
+      }
+      user = authUser;
+      console.log('✅ [SYNC AUTH] User authenticated:', user.id);
 
       // Extract shop name from store_url
       const shopName = selectedStore.store_url
         .replace(/^https?:\/\//, '')
         .replace(/\.myshopify\.com.*$/, '');
+      console.log('🏪 [SYNC SHOP] Shop name extracted:', shopName);
 
       // Get access token
-      const { data: storeData } = await supabase
+      const { data: storeData, error: storeError } = await supabase
         .from('shopify_connections')
         .select('access_token')
         .eq('id', selectedStore.id)
         .single();
 
-      if (!storeData) throw new Error("Store not found");
+      if (storeError || !storeData) {
+        console.error('❌ [SYNC ERROR] Failed to fetch store data:', storeError);
+        throw new Error("Store not found");
+      }
+      console.log('✅ [SYNC TOKEN] Access token retrieved');
 
-      console.log('🚀 Starting manual sync for store:', shopName);
+      // CRITICAL: Create sync history entry with explicit error handling
+      console.log('📝 [SYNC HISTORY] Creating sync history entry...');
+      try {
+        const { data: entry, error: historyError } = await supabase
+          .from('sync_history')
+          .insert({
+            user_id: user.id,
+            store_id: selectedStore.id,
+            sync_type: 'manual',
+            content_types: ['products', 'collections', 'pages', 'articles', 'images'],
+            status: 'running',
+            started_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
 
-      // Create sync history entry
-      const { data: entry, error: historyError } = await supabase
-        .from('sync_history')
-        .insert({
-          user_id: user.id,
-          sync_type: 'import',
-          content_types: ['products', 'collections', 'pages', 'articles', 'images'],
-          status: 'running',
-        })
-        .select()
-        .single();
-
-      if (historyError) {
-        console.error('❌ Failed to create history entry:', historyError);
-      } else {
-        historyEntry = entry;
+        if (historyError) {
+          console.error('❌ [SYNC HISTORY ERROR] Failed to create history entry:', historyError);
+          console.error('❌ [SYNC HISTORY ERROR] Details:', {
+            code: historyError.code,
+            message: historyError.message,
+            details: historyError.details,
+            hint: historyError.hint
+          });
+        } else if (entry) {
+          historyEntry = entry;
+          historyId = entry.id;
+          console.log('✅ [SYNC HISTORY] History entry created:', historyId);
+        } else {
+          console.warn('⚠️ [SYNC HISTORY] No entry returned but no error');
+        }
+      } catch (historyCreateError) {
+        console.error('❌ [SYNC HISTORY EXCEPTION] Exception during history creation:', historyCreateError);
       }
 
       // Get counts before import
+      console.log('📊 [SYNC COUNTS] Fetching counts before import...');
       const { count: productsBefore } = await supabase
         .from('shopify_products')
         .select('*', { count: 'exact', head: true })
@@ -355,13 +385,19 @@ export default function ShopifyConnectionsList() {
         .select('*', { count: 'exact', head: true })
         .eq('store_id', selectedStore.id);
 
+      console.log('📊 [SYNC COUNTS] Before:', { productsBefore, collectionsBefore, pagesBefore, articlesBefore });
+
       // Trigger import for all content types
       const types = ['products', 'collections', 'pages', 'articles', 'images'];
       const importResults: Record<string, number> = {};
       const errorMessages: string[] = [];
       
+      console.log('🚀 [SYNC IMPORT] Starting import for all content types...');
+      
       for (const type of types) {
         setCurrentSyncType(type);
+        console.log(`📦 [SYNC ${type.toUpperCase()}] Starting import...`);
+        
         try {
           let result;
           switch (type) {
@@ -413,22 +449,23 @@ export default function ShopifyConnectionsList() {
           }
 
           if (result?.error) {
-            console.error(`❌ Error importing ${type}:`, result.error);
+            console.error(`❌ [SYNC ${type.toUpperCase()} ERROR]`, result.error);
             errorMessages.push(`${type}: ${result.error.message || 'Unknown error'}`);
             importResults[type] = 0;
           } else {
             const imported = result?.data?.totalImported || result?.data?.count || result?.data?.imported || 0;
             importResults[type] = imported;
-            console.log(`✅ Imported ${type}:`, imported);
+            console.log(`✅ [SYNC ${type.toUpperCase()}] Imported:`, imported);
           }
         } catch (error) {
-          console.error(`❌ Error importing ${type}:`, error);
+          console.error(`❌ [SYNC ${type.toUpperCase()} EXCEPTION]`, error);
           errorMessages.push(`${type}: ${error.message}`);
           importResults[type] = 0;
         }
       }
 
       // Get counts after import
+      console.log('📊 [SYNC COUNTS] Fetching counts after import...');
       const { count: productsAfter } = await supabase
         .from('shopify_products')
         .select('*', { count: 'exact', head: true })
@@ -448,6 +485,8 @@ export default function ShopifyConnectionsList() {
         .from('blog_articles')
         .select('*', { count: 'exact', head: true })
         .eq('store_id', selectedStore.id);
+
+      console.log('📊 [SYNC COUNTS] After:', { productsAfter, collectionsAfter, pagesAfter, articlesAfter });
 
       // Calculate stats
       const stats = {
@@ -481,34 +520,35 @@ export default function ShopifyConnectionsList() {
       const totalImported = Object.values(importResults).reduce((sum, val) => sum + val, 0);
       const duration = Date.now() - startTime;
 
-      // Update history entry
-      if (historyEntry) {
-        await supabase
-          .from('sync_history')
-          .update({
-            status: errorMessages.length > 0 ? 'failed' : 'success',
-            items_synced: totalImported,
-            duration_ms: duration,
-            completed_at: new Date().toISOString(),
-            error_message: errorMessages.length > 0 ? errorMessages.join('; ') : null,
-          })
-          .eq('id', historyEntry.id);
+      console.log('📊 [SYNC STATS] Total imported:', totalImported, 'Duration:', duration, 'ms');
+      console.log('📊 [SYNC STATS] Errors:', errorMessages.length > 0 ? errorMessages : 'None');
+
+      // CRITICAL: Update history entry with robust error handling
+      if (historyId) {
+        console.log('📝 [SYNC HISTORY] Updating history entry:', historyId);
+        try {
+          const { error: updateError } = await supabase
+            .from('sync_history')
+            .update({
+              status: errorMessages.length > 0 ? 'failed' : 'success',
+              items_synced: totalImported,
+              duration_ms: duration,
+              completed_at: new Date().toISOString(),
+              error_message: errorMessages.length > 0 ? errorMessages.join('; ') : null,
+            })
+            .eq('id', historyId);
+
+          if (updateError) {
+            console.error('❌ [SYNC HISTORY UPDATE ERROR]', updateError);
+          } else {
+            console.log('✅ [SYNC HISTORY] History entry updated successfully');
+          }
+        } catch (historyUpdateError) {
+          console.error('❌ [SYNC HISTORY UPDATE EXCEPTION]', historyUpdateError);
+        }
+      } else {
+        console.warn('⚠️ [SYNC HISTORY] No history ID available for update');
       }
-
-      // Update last_sync_at in shopify_connections
-      await supabase
-        .from('shopify_connections')
-        .update({ last_sync_at: new Date().toISOString() })
-        .eq('id', selectedStore.id);
-
-      // Update last_import_at in shopify_sync_settings
-      await supabase
-        .from('shopify_sync_settings')
-        .update({ last_import_at: new Date().toISOString() })
-        .eq('user_id', user.id);
-
-      // Reload connections to show updated date
-      loadConnections();
 
       setSyncStats(stats);
       setTotalSyncImported(totalImported);
@@ -521,23 +561,79 @@ export default function ShopifyConnectionsList() {
         toast.success(`Synchronisation réussie: ${totalImported} éléments importés`);
       }
     } catch (error) {
-      console.error("❌ Sync error:", error);
+      console.error("❌ [SYNC FATAL ERROR]", error);
       
-      // Update history as failed
-      if (historyEntry) {
-        await supabase
-          .from('sync_history')
-          .update({
-            status: 'failed',
-            error_message: error.message,
-            duration_ms: Date.now() - startTime,
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', historyEntry.id);
+      // CRITICAL: Update history as failed with robust error handling
+      if (historyId) {
+        console.log('📝 [SYNC HISTORY] Marking sync as failed:', historyId);
+        try {
+          await supabase
+            .from('sync_history')
+            .update({
+              status: 'failed',
+              error_message: error.message || 'Unknown error',
+              duration_ms: Date.now() - startTime,
+              completed_at: new Date().toISOString(),
+            })
+            .eq('id', historyId);
+          console.log('✅ [SYNC HISTORY] History marked as failed');
+        } catch (historyUpdateError) {
+          console.error('❌ [SYNC HISTORY UPDATE ERROR] Failed to update history on error:', historyUpdateError);
+        }
       }
 
       toast.error(`Erreur: ${error.message}`);
       setIsSyncing(false);
+    } finally {
+      // CRITICAL: ALWAYS update timestamps, regardless of success or failure
+      console.log('🔄 [SYNC FINALLY] Updating timestamps...');
+      
+      if (user && selectedStore) {
+        // Update last_sync_at in shopify_connections
+        try {
+          console.log('📅 [SYNC TIMESTAMP] Updating last_sync_at for store:', selectedStore.id);
+          const { error: syncError } = await supabase
+            .from('shopify_connections')
+            .update({ last_sync_at: new Date().toISOString() })
+            .eq('id', selectedStore.id);
+
+          if (syncError) {
+            console.error('❌ [SYNC TIMESTAMP ERROR] Failed to update last_sync_at:', syncError);
+          } else {
+            console.log('✅ [SYNC TIMESTAMP] last_sync_at updated successfully');
+          }
+        } catch (syncTimestampError) {
+          console.error('❌ [SYNC TIMESTAMP EXCEPTION]', syncTimestampError);
+        }
+
+        // Update last_import_at in shopify_sync_settings
+        try {
+          console.log('📅 [SYNC TIMESTAMP] Updating last_import_at for user:', user.id);
+          const { error: importError } = await supabase
+            .from('shopify_sync_settings')
+            .update({ last_import_at: new Date().toISOString() })
+            .eq('user_id', user.id);
+
+          if (importError) {
+            console.error('❌ [SYNC TIMESTAMP ERROR] Failed to update last_import_at:', importError);
+          } else {
+            console.log('✅ [SYNC TIMESTAMP] last_import_at updated successfully');
+          }
+        } catch (importTimestampError) {
+          console.error('❌ [SYNC TIMESTAMP EXCEPTION]', importTimestampError);
+        }
+
+        // Reload connections to show updated date
+        try {
+          console.log('🔄 [SYNC REFRESH] Reloading connections...');
+          await loadConnections();
+          console.log('✅ [SYNC REFRESH] Connections reloaded');
+        } catch (reloadError) {
+          console.error('❌ [SYNC REFRESH ERROR]', reloadError);
+        }
+      }
+      
+      console.log('✅ [SYNC COMPLETE] Manual sync process completed');
     }
   };
 
