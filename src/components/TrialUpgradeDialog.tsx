@@ -1,10 +1,13 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 interface TrialUpgradeDialogProps {
   open: boolean;
@@ -16,6 +19,38 @@ interface TrialUpgradeDialogProps {
 export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: TrialUpgradeDialogProps) {
   const [loading, setLoading] = useState(false);
   const { t, tf } = useTranslation();
+  const { limits } = useUsageLimits();
+  const [plans, setPlans] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      const { data } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('max_products', { ascending: true });
+      
+      if (data) {
+        setPlans(data);
+      }
+    };
+
+    if (open) {
+      fetchPlans();
+    }
+  }, [open]);
+
+  const currentPlan = plans.find(p => p.id === limits?.currentPlanId);
+  const currentProducts = limits?.usage.products_count || 0;
+  const maxProducts = limits?.limits.max_products || 50;
+  
+  const getRecommendedPlan = () => {
+    const neededCapacity = currentProducts;
+    return plans.find(plan => plan.max_products > neededCapacity) || plans[plans.length - 1];
+  };
+
+  const recommendedPlan = getRecommendedPlan();
+  const progressPercentage = Math.min((currentProducts / maxProducts) * 100, 100);
 
   const handleUpgrade = async () => {
     setLoading(true);
@@ -73,22 +108,12 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
     }
   };
 
-  const features = [
-    t.dialogs.upgrade.starter.features.products,
-    t.dialogs.upgrade.starter.features.optimizations,
-    t.dialogs.upgrade.starter.features.articles,
-    t.dialogs.upgrade.starter.features.searches,
-    t.dialogs.upgrade.starter.features.chatResponses,
-    t.dialogs.upgrade.starter.features.stores,
-    t.dialogs.upgrade.starter.features.automation,
-    t.dialogs.upgrade.starter.features.support
-  ];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <TrendingUp className="h-5 w-5 text-primary" />
             {reason === 'limit_reached' 
               ? t.dialogs.upgrade.limitReached.title
               : t.dialogs.upgrade.trialExpired.title}
@@ -100,20 +125,68 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <div className="text-sm font-semibold mb-2">{t.dialogs.upgrade.starter.title}</div>
-            <div className="text-2xl font-bold">{t.dialogs.upgrade.starter.price} <span className="text-sm font-normal text-muted-foreground">{t.dialogs.upgrade.starter.perMonth}</span></div>
+        <div className="space-y-6 py-4">
+          {/* Current Usage */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Plan actuel</span>
+              <Badge variant="outline">{currentPlan?.name || 'Trial'}</Badge>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Produits utilisés</span>
+                <span className="text-lg font-bold text-primary">
+                  {currentProducts} / {maxProducts}
+                </span>
+              </div>
+              <Progress value={progressPercentage} className="h-2" />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            {features.map((feature, index) => (
-              <div key={index} className="flex items-start gap-2">
-                <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <span className="text-sm">{feature}</span>
+          {/* Recommended Plan */}
+          {recommendedPlan && (
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-6 border border-primary/20">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">{recommendedPlan.name}</h3>
+                <Badge variant="secondary" className="ml-auto">
+                  Recommandé
+                </Badge>
               </div>
-            ))}
-          </div>
+              
+              <div className="mb-4">
+                <div className="text-3xl font-bold text-primary">
+                  {recommendedPlan.price_monthly}€
+                  <span className="text-lg font-normal text-muted-foreground">
+                    /mois
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Jusqu'à {recommendedPlan.max_products} produits
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span>{recommendedPlan.max_optimizations_monthly} optimisations SEO/mois</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span>{recommendedPlan.max_articles_monthly} articles de blog/mois</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span>{recommendedPlan.max_chat_responses_monthly} réponses chat/mois</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span>{recommendedPlan.max_shopify_stores} boutiques Shopify</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
