@@ -33,9 +33,11 @@ import {
   RefreshCw,
   Zap,
   CheckCircle,
-  BookOpen
+  BookOpen,
+  Image as ImageIcon
 } from 'lucide-react';
 import { ShopifyOptimizationGuide } from './ShopifyOptimizationGuide';
+import { useBackgroundRemoval } from '@/hooks/useBackgroundRemoval';
 
 interface ProductVariant {
   id: string;
@@ -67,6 +69,7 @@ export function GoogleShoppingVariants() {
   const [generatingGtin, setGeneratingGtin] = useState(false);
   const [globalOptimizing, setGlobalOptimizing] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const { removeBackgroundAndAddWhite, isProcessing: isProcessingImages, progress } = useBackgroundRemoval();
 
   const fetchVariants = async () => {
     try {
@@ -255,6 +258,100 @@ export function GoogleShoppingVariants() {
     } finally {
       setGeneratingGtin(false);
     }
+  };
+
+  const handleWhiteBackground = async () => {
+    const productIds = Array.from(selectedVariants);
+    
+    if (productIds.length === 0) {
+      toast.info('Sélectionnez au moins un produit');
+      return;
+    }
+
+    // Get products to process with images
+    const productsToProcess = variants.filter(v => 
+      selectedVariants.has(v.product_id) && (v.product_image_url || v.image_url)
+    );
+
+    if (productsToProcess.length === 0) {
+      toast.error('Aucun produit sélectionné n\'a d\'image');
+      return;
+    }
+
+    // Get user ID for storage path
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Vous devez être connecté');
+      return;
+    }
+
+    const toastId = toast.loading('Traitement des images en cours...');
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Process unique products only (not each variant)
+    const uniqueProductsMap = new Map<string, ProductVariant>();
+    productsToProcess.forEach(v => {
+      if (!uniqueProductsMap.has(v.product_id)) {
+        uniqueProductsMap.set(v.product_id, v);
+      }
+    });
+
+    for (const [productId, variant] of uniqueProductsMap) {
+      try {
+        const imageUrl = variant.product_image_url || variant.image_url;
+        if (!imageUrl) continue;
+
+        toast.loading(`Traitement de ${variant.product_title}... (${successCount + errorCount + 1}/${uniqueProductsMap.size})`, { id: toastId });
+        
+        const processedImage = await removeBackgroundAndAddWhite(imageUrl);
+        
+        // Upload to Supabase Storage with user folder
+        const fileName = `${user.id}/product-white-bg-${productId}-${Date.now()}.png`;
+        const blob = await fetch(processedImage).then(r => r.blob());
+        
+        const { error: uploadError } = await supabase.storage
+          .from('generated-images')
+          .upload(fileName, blob, {
+            contentType: 'image/png',
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('generated-images')
+          .getPublicUrl(fileName);
+
+        // Update product image_url
+        const { error: updateError } = await supabase
+          .from('shopify_products')
+          .update({ image_url: publicUrl })
+          .eq('id', productId);
+
+        if (updateError) {
+          console.error('Update error:', updateError);
+          throw updateError;
+        }
+
+        successCount++;
+      } catch (error) {
+        console.error(`Error processing ${variant.product_title}:`, error);
+        errorCount++;
+      }
+    }
+
+    if (errorCount === 0) {
+      toast.success(`${successCount} images traitées avec succès`, { id: toastId });
+    } else {
+      toast.warning(`${successCount} succès, ${errorCount} erreurs`, { id: toastId });
+    }
+
+    await fetchVariants();
+    setSelectedVariants(new Set());
   };
 
   const handleOptimizeAll = async () => {
@@ -545,6 +642,25 @@ export function GoogleShoppingVariants() {
                 <>
                   <Zap className="w-4 h-4" />
                   Générer GTIN ({selectedVariants.size})
+                </>
+              )}
+            </Button>
+            
+            <Button
+              onClick={handleWhiteBackground}
+              disabled={isProcessingImages || selectedVariants.size === 0}
+              variant="outline"
+              className="gap-2"
+            >
+              {isProcessingImages ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Traitement {progress}%
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="w-4 h-4" />
+                  Fond blanc ({selectedVariants.size})
                 </>
               )}
             </Button>

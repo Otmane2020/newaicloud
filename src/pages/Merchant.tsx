@@ -4,9 +4,10 @@ import { GoogleMerchant } from "@/components/seo/GoogleMerchant";
 import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings";
 import { GoogleShopping } from "@/components/seo/GoogleShopping";
 import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncSettings";
+import { GoogleShoppingVariants } from "@/components/seo/GoogleShoppingVariants";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw } from "lucide-react";
+import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw, List } from "lucide-react";
 
 export default function Merchant() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -15,7 +16,7 @@ export default function Merchant() {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && ["feed", "settings", "products", "sync"].includes(tab)) {
+    if (tab && ["feed", "settings", "products", "variants", "sync"].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -46,6 +47,13 @@ export default function Merchant() {
       icon: Package,
       description: "Gérez les attributs Google Shopping",
       component: <GoogleShopping />,
+    },
+    {
+      id: "variants",
+      label: "Variantes",
+      icon: List,
+      description: "Optimisez vos variantes de produits",
+      component: <GoogleShoppingVariants />,
     },
     {
       id: "sync",
