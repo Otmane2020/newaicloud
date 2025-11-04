@@ -23,9 +23,11 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
   const { limits } = useUsageLimits();
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedOptimizations, setSelectedOptimizations] = useState("100");
+  const [realProductCount, setRealProductCount] = useState(0);
 
   useEffect(() => {
-    const fetchPlans = async () => {
+    const fetchData = async () => {
+      // Fetch plans
       const { data } = await supabase
         .from('subscription_plans')
         .select('*')
@@ -35,15 +37,26 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
       if (data) {
         setPlans(data);
       }
+
+      // Fetch real product count
+      const { data: user } = await supabase.auth.getUser();
+      if (user.user) {
+        const { count } = await supabase
+          .from('shopify_products')
+          .select('*', { count: 'exact', head: true })
+          .eq('seller_id', user.user.id);
+        
+        setRealProductCount(count || 0);
+      }
     };
 
     if (open) {
-      fetchPlans();
+      fetchData();
     }
   }, [open]);
 
   const currentPlan = plans.find(p => p.id === limits?.currentPlanId);
-  const currentProducts = limits?.usage.products_count || 0;
+  const currentProducts = realProductCount || limits?.usage.products_count || 0;
   const maxProducts = limits?.limits.max_products || 50;
   
   const getRecommendedPlan = () => {
@@ -147,15 +160,15 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
               Nombre d'optimisations
             </label>
             <Select value={selectedOptimizations} onValueChange={setSelectedOptimizations}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full bg-card border-2">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-background border shadow-lg z-50">
-                <SelectItem value="50">50 optimisations</SelectItem>
-                <SelectItem value="100">100 optimisations</SelectItem>
-                <SelectItem value="200">200 optimisations</SelectItem>
-                <SelectItem value="500">500 optimisations</SelectItem>
-                <SelectItem value="1000">1000 optimisations</SelectItem>
+                <SelectItem value="50">50 optimisations - 5€/mois</SelectItem>
+                <SelectItem value="100">100 optimisations - 9€/mois</SelectItem>
+                <SelectItem value="200">200 optimisations - 16€/mois</SelectItem>
+                <SelectItem value="500">500 optimisations - 35€/mois</SelectItem>
+                <SelectItem value="1000">1000 optimisations - 65€/mois</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
