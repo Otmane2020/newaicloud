@@ -2067,6 +2067,7 @@ export type Database = {
           google_mpn: string | null
           google_product_category: string | null
           google_synced_at: string | null
+          google_white_background: boolean | null
           handle: string | null
           height: number | null
           height_unit: string | null
@@ -2183,6 +2184,7 @@ export type Database = {
           google_mpn?: string | null
           google_product_category?: string | null
           google_synced_at?: string | null
+          google_white_background?: boolean | null
           handle?: string | null
           height?: number | null
           height_unit?: string | null
@@ -2299,6 +2301,7 @@ export type Database = {
           google_mpn?: string | null
           google_product_category?: string | null
           google_synced_at?: string | null
+          google_white_background?: boolean | null
           handle?: string | null
           height?: number | null
           height_unit?: string | null

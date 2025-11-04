@@ -37,7 +37,6 @@ import {
   Hash,
   Image as ImageIcon
 } from 'lucide-react';
-import { useBackgroundRemoval } from '@/hooks/useBackgroundRemoval';
 
 interface Product {
   id: string;
@@ -47,6 +46,7 @@ interface Product {
   google_mpn: string | null;
   google_condition: string | null;
   google_gtin: string | null;
+  google_white_background: boolean | null;
   seo_synced_to_shopify: boolean;
 }
 
@@ -61,7 +61,7 @@ export function GoogleShopping() {
   const [syncing, setSyncing] = useState(false);
   const [generatingGtins, setGeneratingGtins] = useState(false);
   const [generatingCategories, setGeneratingCategories] = useState(false);
-  const { removeBackgroundAndAddWhite, isProcessing: isProcessingImages, progress } = useBackgroundRemoval();
+  const [processingImages, setProcessingImages] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -77,6 +77,7 @@ export function GoogleShopping() {
           google_mpn,
           google_condition,
           google_gtin,
+          google_white_background,
           seo_synced_to_shopify
         `)
         .order('title', { ascending: true });
@@ -228,21 +229,34 @@ export function GoogleShopping() {
       return;
     }
 
-    const toastId = toast.loading('Traitement des images en cours...');
+    setProcessingImages(true);
+    const toastId = toast.loading('Génération IA des images avec fond blanc...');
     let successCount = 0;
     let errorCount = 0;
 
     for (const product of productsToProcess) {
       try {
-        toast.loading(`Traitement de ${product.title}... (${successCount + errorCount + 1}/${productsToProcess.length})`, { id: toastId });
+        toast.loading(`Génération IA pour ${product.title}... (${successCount + errorCount + 1}/${productsToProcess.length})`, { id: toastId });
         
-        const processedImage = await removeBackgroundAndAddWhite(product.image_url);
-        
-        // Upload to Supabase Storage
+        // Call AI edge function to generate white background
+        const { data, error } = await supabase.functions.invoke('generate-white-background', {
+          body: {
+            imageUrl: product.image_url,
+            productTitle: product.title
+          }
+        });
+
+        if (error) throw error;
+        if (!data.success) throw new Error(data.error || 'AI generation failed');
+
+        // Upload generated image to Supabase Storage
         const fileName = `product-white-bg-${product.id}-${Date.now()}.png`;
-        const blob = await fetch(processedImage).then(r => r.blob());
         
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        // Convert base64 to blob
+        const base64Response = await fetch(data.imageUrl);
+        const blob = await base64Response.blob();
+        
+        const { error: uploadError } = await supabase.storage
           .from('generated-images')
           .upload(fileName, blob, {
             contentType: 'image/png',
@@ -255,10 +269,13 @@ export function GoogleShopping() {
           .from('generated-images')
           .getPublicUrl(fileName);
 
-        // Update product image_url
+        // Update product with white background image and mark as optimized
         const { error: updateError } = await supabase
           .from('shopify_products')
-          .update({ image_url: publicUrl })
+          .update({ 
+            image_url: publicUrl,
+            google_white_background: true
+          })
           .eq('id', product.id);
 
         if (updateError) throw updateError;
@@ -270,8 +287,10 @@ export function GoogleShopping() {
       }
     }
 
+    setProcessingImages(false);
+
     if (errorCount === 0) {
-      toast.success(`${successCount} images traitées avec succès`, { id: toastId });
+      toast.success(`${successCount} images générées avec IA`, { id: toastId });
     } else {
       toast.warning(`${successCount} succès, ${errorCount} erreurs`, { id: toastId });
     }
@@ -331,8 +350,12 @@ export function GoogleShopping() {
     );
   }
 
-  const productsOptimized = products.filter(p => p.google_product_category).length;
-  const productsToSync = products.filter(p => p.google_product_category && !p.seo_synced_to_shopify).length;
+  const productsOptimized = products.filter(p => 
+    p.google_product_category && p.google_gtin && p.google_white_background
+  ).length;
+  const productsToSync = products.filter(p => 
+    p.google_product_category && p.google_gtin && !p.seo_synced_to_shopify
+  ).length;
   const completionRate = products.length > 0 ? Math.round((productsOptimized / products.length) * 100) : 0;
 
   return (
@@ -365,7 +388,7 @@ export function GoogleShopping() {
             <TrendingUp className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-3xl font-bold text-green-900 dark:text-green-100">{productsOptimized}</p>
-          <p className="text-sm text-green-700 dark:text-green-300 mt-1">{completionRate}% complétés</p>
+          <p className="text-sm text-green-700 dark:text-green-300 mt-1">{completionRate}% complétés (Catégorie + GTIN + Fond blanc)</p>
         </Card>
 
         <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow">
@@ -414,19 +437,19 @@ export function GoogleShopping() {
             </Button>
             <Button
               onClick={handleWhiteBackground}
-              disabled={isProcessingImages || selectedProducts.size === 0}
+              disabled={processingImages || selectedProducts.size === 0}
               variant="outline"
               className="gap-2"
             >
-              {isProcessingImages ? (
+              {processingImages ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Traitement {progress}%
+                  Génération IA...
                 </>
               ) : (
                 <>
                   <ImageIcon className="w-4 h-4" />
-                  Fond blanc ({selectedProducts.size})
+                  Fond blanc IA ({selectedProducts.size})
                 </>
               )}
             </Button>

@@ -173,3 +173,6 @@ verify_jwt = true
 
 [functions.update-article-link]
 verify_jwt = true
+
+[functions.generate-white-background]
+verify_jwt = true
