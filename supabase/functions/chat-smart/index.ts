@@ -23,6 +23,12 @@ interface Product {
   ai_color?: string;
   ai_material?: string;
   ai_shape?: string;
+  ai_texture?: string;
+  ai_pattern?: string;
+  ai_finish?: string;
+  ai_design_elements?: string;
+  ai_vision_analysis?: string;
+  ai_vision_confidence?: number;
   image_url?: string;
   category?: string;
   sub_category?: string;
@@ -361,7 +367,7 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
   }
 
   filters.status = "active";
-  filters.limit = 12;
+  filters.limit = 2; // Limité à 1-2 produits max
   console.log("📋 Final extracted filters:", filters);
   return filters;
 }
@@ -466,11 +472,21 @@ function calculateRelevanceScore(product: Product, searchQuery: string, exactMat
     score += tagCount * 30;
   }
 
-  const aiFields = [product.ai_material, product.ai_color, product.ai_shape, product.style, product.room];
+  const aiFields = [
+    product.ai_material, 
+    product.ai_color, 
+    product.ai_shape, 
+    product.ai_texture,
+    product.ai_pattern,
+    product.ai_finish,
+    product.ai_design_elements,
+    product.style, 
+    product.room
+  ];
   for (const field of aiFields) {
     if (field) {
       const normalized = normalizeText(field);
-      if (terms.some((term) => normalized.includes(term))) score += 20;
+      if (terms.some((term) => normalized.includes(term))) score += 25; // Augmenté de 20 à 25
     }
   }
 
@@ -489,9 +505,27 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
 
   try {
     const supabase = getSupabaseClient();
+    
+    // Récupérer les produits avec leurs variantes enrichies
     let query = supabase
       .from("shopify_products")
-      .select("*")
+      .select(`
+        *,
+        product_variants!inner(
+          id,
+          ai_color,
+          ai_material,
+          ai_texture,
+          ai_pattern,
+          ai_finish,
+          ai_shape,
+          ai_design_elements,
+          ai_vision_analysis,
+          ai_vision_confidence,
+          image_url,
+          price
+        )
+      `)
       .eq("status", filters.status || "active");
 
     if (sellerId) {
@@ -541,8 +575,27 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       return [];
     }
 
+    // Enrichir les produits avec les données des variantes
+    const enrichedProducts = data.map((product: any) => {
+      const variant = product.product_variants?.[0]; // Prendre la première variante
+      return {
+        ...product,
+        ai_color: variant?.ai_color,
+        ai_material: variant?.ai_material,
+        ai_texture: variant?.ai_texture,
+        ai_pattern: variant?.ai_pattern,
+        ai_finish: variant?.ai_finish,
+        ai_shape: variant?.ai_shape,
+        ai_design_elements: variant?.ai_design_elements,
+        ai_vision_analysis: variant?.ai_vision_analysis,
+        ai_vision_confidence: variant?.ai_vision_confidence,
+        image_url: variant?.image_url || product.image_url,
+        price: variant?.price || product.price,
+      };
+    });
+
     // FILTRAGE EN MÉMOIRE avec logique ET
-    let filteredData = data;
+    let filteredData = enrichedProducts;
 
     // Filtrer par couleur (AND)
     if (filters.color) {
@@ -563,10 +616,17 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       filteredData = filteredData.filter(p => {
         const material = normalizeText(filters.material || "");
         const aiMaterial = normalizeText(p.ai_material || "");
+        const aiTexture = normalizeText(p.ai_texture || "");
+        const aiFinish = normalizeText(p.ai_finish || "");
         const title = normalizeText(p.title || "");
         const tags = normalizeText(p.tags || "");
         const desc = normalizeText(p.description || "");
-        return aiMaterial.includes(material) || title.includes(material) || tags.includes(material) || desc.includes(material);
+        return aiMaterial.includes(material) || 
+               aiTexture.includes(material) || 
+               aiFinish.includes(material) ||
+               title.includes(material) || 
+               tags.includes(material) || 
+               desc.includes(material);
       });
       console.log(`🏗️ After material filter: ${filteredData.length} products`);
     }
@@ -1139,36 +1199,86 @@ async function* OmnIAChat(
 
     if (intent === "product_chat") {
       const searchFilters = extractFiltersFromQuery(userMessage, history);
+      
+      // Compter les attributs connus dans l'historique
+      const contextStr = extractContextFromHistory(history);
+      const knownAttributes = {
+        hasColor: Boolean(searchFilters.color || /couleur|color/.test(contextStr)),
+        hasMaterial: Boolean(searchFilters.material || /matériau|material|bois|metal/.test(contextStr)),
+        hasStyle: Boolean(searchFilters.style || /style|moderne|classique/.test(contextStr)),
+        hasRoom: Boolean(searchFilters.room || /salon|chambre|cuisine/.test(contextStr)),
+        hasCategory: Boolean(searchFilters.query),
+      };
+      
+      const attributeCount = Object.values(knownAttributes).filter(Boolean).length;
+      console.log("🎯 Known attributes:", knownAttributes, "Count:", attributeCount);
+      
+      // Si moins de 2 attributs, poser des questions
+      if (attributeCount < 2) {
+        const messages: ChatMessage[] = [
+          {
+            role: "system",
+            content: `Tu es Sophie, conseillère commerciale experte.\n\nTon objectif: COMPRENDRE exactement ce que cherche le client avant de proposer des produits.\n\nATTRIBUTS CONNUS:\n${JSON.stringify(knownAttributes, null, 2)}\n\nRÈGLES CRITIQUES:\n🚫 NE propose JAMAIS de produits dans cette phase\n✅ Pose UNE question précise pour obtenir:\n   - La couleur préférée si inconnue\n   - Le matériau souhaité si inconnu\n   - Le style désiré si inconnu\n   - La pièce de destination si inconnue\n✅ Sois naturelle et conversationnelle\n✅ Max 40 mots\n\nEXEMPLE:\n"Pour vous proposer le meuble parfait, quelle couleur préférez-vous ? Plutôt tons naturels (bois, beige) ou colorés ?"`,
+          },
+          { role: "user", content: userMessage },
+        ];
+
+        let fullResponse = "";
+        for await (const chunk of callDeepSeek(messages, 80, sellerId, context)) {
+          fullResponse += chunk;
+          yield {
+            role: "assistant",
+            content: chunk,
+            intent: "product_chat",
+            products: [],
+            mode: "conversation",
+            sector: "général",
+          };
+        }
+        
+        setCachedResponse(cacheKey, fullResponse);
+        return;
+      }
+      
+      // Si on a assez d'infos, chercher 1-2 produits enrichis
       const products = await searchProducts(searchFilters, storeId, sellerId);
 
       const messages: ChatMessage[] = [
         {
           role: "system",
-          content: `Tu es Sophie, responsable commerciale experte en e-commerce.\n\nTon rôle:\n- Conseiller les clients avec précision sur les produits\n- Mettre en avant les avantages et caractéristiques clés\n- Être honnête et transparente\n- Créer un lien de confiance\n\nRÈGLES:\n🚫 NE montre PAS les produits (pas de liste)\n✅ Parle NATURELLEMENT des caractéristiques\n✅ Donne des informations PRÉCISES basées sur les produits réels\n✅ Termine par une question pour continuer la discussion`,
-        },
-        {
-          role: "user",
-          content: `PRODUITS DISPONIBLES : ${JSON.stringify(
-            products.map((p) => ({
+          content: `Tu es Sophie, experte commerciale.\n\nPRODUITS ENRICHIS DISPONIBLES:\n${JSON.stringify(
+            products.slice(0, 2).map((p) => ({
               nom: p.title,
               prix: p.price,
-              matériau: p.ai_material,
               couleur: p.ai_color,
+              matériau: p.ai_material,
+              texture: p.ai_texture,
+              motif: p.ai_pattern,
+              finition: p.ai_finish,
+              forme: p.ai_shape,
+              éléments_design: p.ai_design_elements,
+              analyse_visuelle: p.ai_vision_analysis,
               catégorie: p.category,
             })),
             null,
             2,
-          )}\n\nQuestion client : "${userMessage}"\n\nRéponds naturellement sans lister les produits.`,
+          )}\n\nRÈGLES:\n🚫 NE liste PAS les produits\n✅ Parle NATURELLEMENT de 1-2 options précises\n✅ Utilise les VRAIES caractéristiques enrichies\n✅ Mentionne couleur, matériau, texture, finition\n✅ Termine par: "Je vous montre ces options ci-dessous 👇"\n✅ Max 100 mots`,
+        },
+        {
+          role: "user",
+          content: `Question: "${userMessage}"\n\nPrésente 1-2 produits maximum avec leurs caractéristiques enrichies.`,
         },
       ];
 
-      for await (const chunk of callDeepSeek(messages, 200, sellerId, context)) {
+      let fullResponse = "";
+      for await (const chunk of callDeepSeek(messages, 150, sellerId, context)) {
+        fullResponse += chunk;
         yield {
           role: "assistant",
           content: chunk,
           intent: "product_chat",
-          products: [],
-          mode: "conversation",
+          products: products.slice(0, 2), // Limiter à 2 produits
+          mode: "product_show",
           sector: "général",
         };
       }
@@ -1181,20 +1291,31 @@ async function* OmnIAChat(
 
     let response = "";
     if (products.length === 0) {
-      response = `Je n'ai pas trouvé de produits correspondant à votre recherche "${userMessage}".\n\nPour affiner votre recherche :\n• Essayez d'autres termes ou synonymes\n• Précisez la couleur, le matériau ou le style\n• Indiquez votre budget si vous en avez un\n\nJe reste à votre disposition pour vous aider !`;
+      response = `Je n'ai pas trouvé de produits correspondant à "${userMessage}".\n\nPouvez-vous préciser :\n• La couleur souhaitée ?\n• Le matériau préféré ?\n• Le style recherché ?\n\nCela m'aidera à vous proposer les meilleurs produits !`;
     } else {
-      const productCount = products.length;
-      const promoCount = products.filter(
+      const limitedProducts = products.slice(0, 2); // Max 2 produits
+      const productCount = limitedProducts.length;
+      const promoCount = limitedProducts.filter(
         (p) => p.compare_at_price && Number(p.compare_at_price) > Number(p.price),
       ).length;
-      response = `J'ai trouvé ${productCount} produit${productCount > 1 ? "s" : ""} correspondant à votre recherche. ${promoCount > 0 ? `📢 ${promoCount} en promotion ! ` : ""}Découvrez-les ci-dessous 👇`;
+      
+      // Créer un résumé enrichi
+      const enrichedSummary = limitedProducts.map(p => {
+        const details = [];
+        if (p.ai_color) details.push(`couleur ${p.ai_color}`);
+        if (p.ai_material) details.push(`en ${p.ai_material}`);
+        if (p.ai_finish) details.push(`finition ${p.ai_finish}`);
+        return details.length > 0 ? `(${details.join(', ')})` : '';
+      }).filter(Boolean).join(' et ');
+      
+      response = `J'ai sélectionné ${productCount} produit${productCount > 1 ? "s" : ""} qui correspondent parfaitement ${enrichedSummary ? enrichedSummary : 'à votre recherche'}. ${promoCount > 0 ? `📢 ${promoCount} en promotion ! ` : ""}Découvrez-${productCount > 1 ? 'les' : 'le'} ci-dessous 👇`;
     }
 
     yield {
       role: "assistant",
       content: response,
       intent: "product_show",
-      products: products,
+      products: products.slice(0, 2), // Max 2 produits
       mode: "product_show",
       sector: "général",
     };
