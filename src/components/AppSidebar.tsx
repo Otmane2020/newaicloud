@@ -117,8 +117,8 @@ export function AppSidebar() {
   const chatSubItems = [
     { title: t.chat.submenu.assistant, url: "/chat", icon: MessageSquare, key: "assistant" },
     { title: t.chat.submenu.robot, url: "/chat-robot", icon: Bot, key: "robot" },
-    { title: t.chat.submenu.orders, url: "/chat?tab=orders", icon: Package, key: "orders" },
-    { title: t.chat.submenu.learning, url: "/chat?tab=learning", icon: Brain, key: "learning" },
+    { title: t.chat.submenu.orders, url: "/chat-orders", icon: Package, key: "orders" },
+    { title: t.chat.submenu.learning, url: "/chat-learning", icon: Brain, key: "learning" },
     { title: t.chat.submenu.history, url: "/chat-history", icon: History, key: "history" },
     { title: t.chat.submenu.productSource, url: "/product-source", icon: Database, key: "productSource" },
     { title: t.chat.submenu.settings, url: "/chat-settings", icon: Settings, key: "settings" },
@@ -186,8 +186,7 @@ export function AppSidebar() {
   const isChatActive =
     currentPath.startsWith("/chat") ||
     currentPath === "/product-source" ||
-    chatSubItems.some((item) => isActive(item.url)) ||
-    (currentPath === "/chat" && (currentSearch.includes("tab=orders") || currentSearch.includes("tab=learning")));
+    chatSubItems.some((item) => isActive(item.url));
   const isSeoActive = currentPath === "/seo" || seoSubItems.some((item) => isActive(item.url)) || auditSubItems.some((item) => isActive(item.url));
   const isAuditActive = auditSubItems.some((item) => isActive(item.url));
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
