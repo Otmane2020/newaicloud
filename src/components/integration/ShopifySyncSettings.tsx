@@ -624,6 +624,72 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
       const authToken = shopifyConnection.access_token;
       const storeId = shopifyConnection.id;
 
+      // Compter les éléments existants AVANT la synchronisation
+      const beforeCounts: Record<string, number> = {};
+      
+      for (const type of selectedTypes) {
+        try {
+          let count = 0;
+          switch (type) {
+            case 'products':
+              const { count: prodCount } = await supabase
+                .from('shopify_products')
+                .select('*', { count: 'exact', head: true })
+                .eq('seller_id', user.id);
+              count = prodCount || 0;
+              break;
+            case 'collections':
+              const { count: collCount } = await supabase
+                .from('shopify_collections')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
+              count = collCount || 0;
+              break;
+            case 'pages':
+              const { count: pageCount } = await supabase
+                .from('shopify_pages')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
+              count = pageCount || 0;
+              break;
+            case 'articles':
+              const { count: artCount } = await supabase
+                .from('blog_articles')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
+              count = artCount || 0;
+              break;
+            case 'images':
+              // Compter les images produit + images de contenu
+              // D'abord, récupérer les IDs des produits de l'utilisateur
+              const { data: userProducts } = await supabase
+                .from('shopify_products')
+                .select('id')
+                .eq('seller_id', user.id);
+              
+              const productIds = userProducts?.map(p => p.id) || [];
+              
+              const { count: prodImgCount } = await supabase
+                .from('product_images')
+                .select('*', { count: 'exact', head: true })
+                .in('product_id', productIds);
+              
+              const { count: contentImgCount } = await supabase
+                .from('content_images')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
+              
+              count = (prodImgCount || 0) + (contentImgCount || 0);
+              break;
+          }
+          beforeCounts[type] = count;
+          console.log(`📊 Before ${type}: ${count}`);
+        } catch (err) {
+          console.error(`Error counting ${type}:`, err);
+          beforeCounts[type] = 0;
+        }
+      }
+
       // Créer l'entrée d'historique
       const { data: entry, error: historyError } = await supabase
         .from("sync_history")
@@ -691,20 +757,24 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
             totalImported += result.data.totalImported;
           }
           
-          // Update stats for this type
+          // Update stats for this type using real before counts
+          const beforeCount = beforeCounts[type] || 0;
+          const importedCount = result?.data?.totalImported || 0;
+          const afterCount = beforeCount + importedCount;
+          
           if (type === 'images' && result?.data?.totalImages !== undefined) {
-            // For images, use the total count (content + product images)
+            // For images, use the total count returned by the function
             newResults.images = {
-              before: 0,
+              before: beforeCount,
               after: result.data.totalImages,
-              imported: result.data.totalImported || 0
+              imported: importedCount
             };
           } else {
-            // For other types, use totalImported as change
+            // For other types, calculate after count
             newResults[type as keyof SyncStats] = {
-              before: 0,
-              after: result?.data?.totalImported || 0,
-              imported: result?.data?.totalImported || 0
+              before: beforeCount,
+              after: afterCount,
+              imported: importedCount
             };
           }
 
