@@ -32,8 +32,10 @@ import {
   Sparkles,
   RefreshCw,
   Zap,
-  CheckCircle
+  CheckCircle,
+  BookOpen
 } from 'lucide-react';
+import { ShopifyOptimizationGuide } from './ShopifyOptimizationGuide';
 
 interface ProductVariant {
   id: string;
@@ -64,6 +66,7 @@ export function GoogleShoppingVariants() {
   const [optimizing, setOptimizing] = useState(false);
   const [generatingGtin, setGeneratingGtin] = useState(false);
   const [globalOptimizing, setGlobalOptimizing] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   const fetchVariants = async () => {
     try {
@@ -355,37 +358,90 @@ export function GoogleShoppingVariants() {
   ).size;
   const completionRate = uniqueProducts > 0 ? Math.round((optimizedProducts / uniqueProducts) * 100) : 0;
 
+  // Calcul du score d'optimisation basé sur les signaux produits
+  const calculateOptimizationScore = () => {
+    if (uniqueProducts === 0) return 0;
+    
+    let totalScore = 0;
+    const productIds = new Set(variants.map(v => v.product_id));
+    
+    productIds.forEach(productId => {
+      const productVariants = variants.filter(v => v.product_id === productId);
+      const product = productVariants[0];
+      let productScore = 0;
+      const maxScore = 7;
+      
+      if (product.google_product_category) productScore++;
+      if (product.google_gtin) productScore++;
+      if (product.google_brand) productScore++;
+      if (product.google_mpn) productScore++;
+      if (product.google_condition) productScore++;
+      if (product.optimized_title) productScore++;
+      if (product.optimized_description) productScore++;
+      
+      totalScore += (productScore / maxScore) * 100;
+    });
+    
+    return Math.round(totalScore / uniqueProducts);
+  };
+  
+  const optimizationScore = calculateOptimizationScore();
+
   return (
     <div className="space-y-6">
-      {/* Header with Global Optimization Button */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
-            <ShoppingBag className="w-8 h-8 text-primary" />
-            Google Shopping
-          </h2>
-          <p className="text-muted-foreground">
-            Optimisez vos produits et variantes pour Google Shopping
-          </p>
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-8 text-white shadow-xl">
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Google Shopping - Optimisation</h1>
+              <p className="text-white/90 text-lg">
+                Donnez les bons signaux produits dans Shopify pour gagner en visibilité dans Google Shopping
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-white/80 mb-1">Score d'optimisation</div>
+              <div className="text-4xl font-bold">{optimizationScore}%</div>
+              <div className="text-sm text-white/80 mt-1">
+                {optimizationScore >= 80 ? '🎉 Excellent' : 
+                 optimizationScore >= 60 ? '👍 Bien' : 
+                 optimizationScore >= 40 ? '⚠️ À améliorer' : 
+                 '❌ Faible'}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setShowGuide(true)}
+              className="bg-white text-purple-600 hover:bg-white/90"
+            >
+              <BookOpen className="w-5 h-5 mr-2" />
+              Guide d'optimisation Shopify
+            </Button>
+            <Button
+              onClick={handleOptimizeAll}
+              disabled={globalOptimizing || variants.length === 0}
+              size="lg"
+              className="bg-white/20 hover:bg-white/30 border-white border text-white"
+            >
+              {globalOptimizing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Optimisation en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Optimiser Tout
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-        <Button
-          onClick={handleOptimizeAll}
-          disabled={globalOptimizing || variants.length === 0}
-          size="lg"
-          className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700"
-        >
-          {globalOptimizing ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Optimisation en cours...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-5 h-5" />
-              Optimiser Tout
-            </>
-          )}
-        </Button>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24" />
       </div>
 
       {/* Stats */}
@@ -591,6 +647,8 @@ export function GoogleShoppingVariants() {
           </Table>
         </div>
       </Card>
+
+      <ShopifyOptimizationGuide open={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }
