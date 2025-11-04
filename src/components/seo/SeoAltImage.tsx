@@ -244,9 +244,9 @@ export function SeoAltImage() {
 
   // Handle URL filter params
   useEffect(() => {
-    const filterParam = searchParams.get('filter') as AltImageTab | null;
-    if (filterParam && ['all', 'needs-alt', 'has-alt', 'to-sync'].includes(filterParam)) {
-      setActiveTab(filterParam);
+    const filterParam = searchParams.get('filter') as QualityFilter | null;
+    if (filterParam && ['all', 'excellent', 'good', 'medium', 'poor'].includes(filterParam)) {
+      setQualityFilter(filterParam);
     }
   }, [searchParams]);
 

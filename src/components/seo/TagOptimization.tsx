@@ -120,6 +120,14 @@ export function TagOptimization() {
     fetchProducts();
   }, []);
 
+  // Réagir aux changements de filtre dans l'URL
+  useEffect(() => {
+    const filterParam = searchParams.get("filter") as QualityFilter;
+    if (filterParam && ['all', 'excellent', 'good', 'medium', 'poor'].includes(filterParam)) {
+      setQualityFilter(filterParam);
+    }
+  }, [searchParams]);
+
   // Get unique categories
   const uniqueCategories = Array.from(new Set(products.map(p => p.product_type).filter(Boolean))).sort();
 

@@ -133,6 +133,14 @@ export function SeoOptimization() {
     fetchProducts();
   }, []);
 
+  // Réagir aux changements de filtre dans l'URL
+  useEffect(() => {
+    const filterParam = searchParams.get("filter") as QualityFilter;
+    if (filterParam && ['all', 'excellent', 'good', 'medium', 'poor'].includes(filterParam)) {
+      setQualityFilter(filterParam);
+    }
+  }, [searchParams]);
+
   // Statistics - distinguishing between existing data and AI-optimized data
   const totalEmpty = products.filter((p) => !p.seo_title && !p.seo_description).length;
   const existingData = products.filter(

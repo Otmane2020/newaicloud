@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +76,7 @@ type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function ArticleManagement() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
   const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -97,6 +99,14 @@ export function ArticleManagement() {
   useEffect(() => {
     fetchArticles();
   }, []);
+
+  // Réagir aux changements de filtre dans l'URL
+  useEffect(() => {
+    const filterParam = searchParams.get("filter") as QualityFilter;
+    if (filterParam && ['all', 'excellent', 'good', 'medium', 'poor'].includes(filterParam)) {
+      setQualityFilter(filterParam);
+    }
+  }, [searchParams]);
 
   const fetchArticles = async () => {
     try {

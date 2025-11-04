@@ -86,6 +86,14 @@ export function PageOptimization() {
     fetchPages();
   }, []);
 
+  // Réagir aux changements de filtre dans l'URL
+  useEffect(() => {
+    const filterParam = searchParams.get("filter") as QualityFilter;
+    if (filterParam && ['all', 'excellent', 'good', 'medium', 'poor'].includes(filterParam)) {
+      setQualityFilter(filterParam);
+    }
+  }, [searchParams]);
+
   const fetchPages = async () => {
     try {
       setLoading(true);
