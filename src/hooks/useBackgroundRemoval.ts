@@ -55,12 +55,13 @@ function createSquareWithWhiteBackground(
   // Draw original image
   tempCtx.drawImage(sourceCanvas, 0, 0);
 
-  // Apply mask
+  // Apply mask to keep the product/subject (foreground)
   const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imageData.data;
 
   for (let i = 0; i < maskData.length; i++) {
-    const alpha = Math.round((1 - maskData[i]) * 255);
+    // Keep foreground (product) by using mask value directly
+    const alpha = Math.round(maskData[i] * 255);
     data[i * 4 + 3] = alpha;
   }
 
