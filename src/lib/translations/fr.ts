@@ -1190,6 +1190,15 @@ export const translations = {
 
   chat: {
     title: "Assistant IA",
+    submenu: {
+      assistant: "Assistant IA",
+      robot: "Robot Vocal",
+      orders: "Commandes",
+      learning: "Apprentissage",
+      history: "Historique",
+      productSource: "Source Produits",
+      settings: "Paramètres",
+    },
     history: "Historique Chat",
     settings: "Paramètres Chat",
     newChat: "Nouveau Chat",
@@ -1198,13 +1207,6 @@ export const translations = {
     thinking: "Réflexion...",
     noHistory: "Aucun historique",
     deleteSession: "Supprimer la Session",
-    submenu: {
-      assistant: "Assistant Chat",
-      robot: "Robot IA",
-      history: "Historique",
-      productSource: "Source Produits",
-      settings: "Paramètres Chat",
-    },
     robot: {
       title: "Assistant Vocal",
       startListening: "Commencer l'Écoute",

@@ -1969,6 +1969,7 @@ export type Database = {
           ai_package_dimensions: string | null
           ai_pattern: string | null
           ai_presentation_quality: number | null
+          ai_reasoning: string | null
           ai_shape: string | null
           ai_texture: string | null
           ai_vision_analysis: string | null
@@ -1984,6 +1985,7 @@ export type Database = {
           chat_text: string | null
           collection_ids: string[] | null
           compare_at_price: number | null
+          competitors: Json | null
           cost_price: number | null
           created_at: string
           currency: string | null
@@ -2017,10 +2019,12 @@ export type Database = {
           inventory_quantity: number | null
           last_enriched_at: string | null
           last_optimization_at: string | null
+          last_pricing_analysis: string | null
           last_seo_sync_at: string | null
           last_synced_data: Json | null
           length: number | null
           length_unit: string | null
+          market_price: number | null
           optimization_count: number | null
           optimization_history: Json | null
           optimized_description: string | null
@@ -2046,6 +2050,7 @@ export type Database = {
           smart_height_unit: string | null
           smart_length: number | null
           smart_length_unit: string | null
+          smart_price: number | null
           smart_seat_height: number | null
           smart_seat_height_unit: string | null
           smart_weight: number | null
@@ -2080,6 +2085,7 @@ export type Database = {
           ai_package_dimensions?: string | null
           ai_pattern?: string | null
           ai_presentation_quality?: number | null
+          ai_reasoning?: string | null
           ai_shape?: string | null
           ai_texture?: string | null
           ai_vision_analysis?: string | null
@@ -2095,6 +2101,7 @@ export type Database = {
           chat_text?: string | null
           collection_ids?: string[] | null
           compare_at_price?: number | null
+          competitors?: Json | null
           cost_price?: number | null
           created_at?: string
           currency?: string | null
@@ -2128,10 +2135,12 @@ export type Database = {
           inventory_quantity?: number | null
           last_enriched_at?: string | null
           last_optimization_at?: string | null
+          last_pricing_analysis?: string | null
           last_seo_sync_at?: string | null
           last_synced_data?: Json | null
           length?: number | null
           length_unit?: string | null
+          market_price?: number | null
           optimization_count?: number | null
           optimization_history?: Json | null
           optimized_description?: string | null
@@ -2157,6 +2166,7 @@ export type Database = {
           smart_height_unit?: string | null
           smart_length?: number | null
           smart_length_unit?: string | null
+          smart_price?: number | null
           smart_seat_height?: number | null
           smart_seat_height_unit?: string | null
           smart_weight?: number | null
@@ -2191,6 +2201,7 @@ export type Database = {
           ai_package_dimensions?: string | null
           ai_pattern?: string | null
           ai_presentation_quality?: number | null
+          ai_reasoning?: string | null
           ai_shape?: string | null
           ai_texture?: string | null
           ai_vision_analysis?: string | null
@@ -2206,6 +2217,7 @@ export type Database = {
           chat_text?: string | null
           collection_ids?: string[] | null
           compare_at_price?: number | null
+          competitors?: Json | null
           cost_price?: number | null
           created_at?: string
           currency?: string | null
@@ -2239,10 +2251,12 @@ export type Database = {
           inventory_quantity?: number | null
           last_enriched_at?: string | null
           last_optimization_at?: string | null
+          last_pricing_analysis?: string | null
           last_seo_sync_at?: string | null
           last_synced_data?: Json | null
           length?: number | null
           length_unit?: string | null
+          market_price?: number | null
           optimization_count?: number | null
           optimization_history?: Json | null
           optimized_description?: string | null
@@ -2268,6 +2282,7 @@ export type Database = {
           smart_height_unit?: string | null
           smart_length?: number | null
           smart_length_unit?: string | null
+          smart_price?: number | null
           smart_seat_height?: number | null
           smart_seat_height_unit?: string | null
           smart_weight?: number | null

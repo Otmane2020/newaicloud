@@ -206,13 +206,30 @@ export function SmartPricingAI() {
     };
   };
 
-  const updateProductPrice = (productId: string, field: 'price' | 'compare_at_price' | 'cost_price' | 'shipping_cost', value: string) => {
+  const updateProductPrice = async (productId: string, field: 'price' | 'compare_at_price' | 'cost_price' | 'shipping_cost', value: string) => {
     const numValue = parseFloat(value) || null;
+    
+    // Update local state
     setProducts(prev =>
       prev.map(p =>
         p.id === productId ? { ...p, [field]: numValue } : p
       )
     );
+
+    // Save to database immediately
+    try {
+      const { error } = await supabase
+        .from('shopify_products')
+        .update({ [field]: numValue })
+        .eq('id', productId);
+
+      if (error) {
+        console.error('Error updating price:', error);
+        toast.error('Erreur lors de la sauvegarde');
+      }
+    } catch (error) {
+      console.error('Error updating price:', error);
+    }
   };
 
   const toggleProductSelection = (productId: string) => {
@@ -428,7 +445,27 @@ export function SmartPricingAI() {
         return;
       }
 
-      // Update products with AI results
+      // Update products with AI results AND save to database
+      const successfulResults = data.results.filter((r: any) => !r.error);
+      
+      // Save AI results to database
+      for (const result of successfulResults) {
+        try {
+          await supabase
+            .from('shopify_products')
+            .update({
+              market_price: result.marketPrice,
+              smart_price: result.smartPrice,
+              ai_reasoning: result.reasoning,
+              competitors: result.competitors || [],
+              last_pricing_analysis: new Date().toISOString()
+            })
+            .eq('id', result.productId);
+        } catch (error) {
+          console.error('Error saving AI analysis:', error);
+        }
+      }
+
       setProducts(prev => prev.map(p => {
         const result = data.results.find((r: any) => r.productId === p.id);
         if (result && !result.error) {
