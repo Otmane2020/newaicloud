@@ -1019,6 +1019,26 @@ export default function ShopifyConnectionsList() {
                   <Button
                     size="sm"
                     variant="outline"
+                    onClick={() => importAllContent(store)}
+                    disabled={importingStoreId === store.id}
+                    className="gap-2"
+                    title="Importer les contenus"
+                  >
+                    {importingStoreId === store.id ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Import...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        Importer
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => openEditNameDialog(store)}
                     className="gap-2"
                     title="Modifier le nom"
