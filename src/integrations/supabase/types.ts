@@ -958,6 +958,7 @@ export type Database = {
           default_brand: string | null
           default_condition: string | null
           default_currency: string | null
+          generate_gtin_enabled: boolean | null
           gtin_country_code: string | null
           id: string
           last_feed_generated_at: string | null
@@ -974,6 +975,7 @@ export type Database = {
           default_brand?: string | null
           default_condition?: string | null
           default_currency?: string | null
+          generate_gtin_enabled?: boolean | null
           gtin_country_code?: string | null
           id?: string
           last_feed_generated_at?: string | null
@@ -990,6 +992,7 @@ export type Database = {
           default_brand?: string | null
           default_condition?: string | null
           default_currency?: string | null
+          generate_gtin_enabled?: boolean | null
           gtin_country_code?: string | null
           id?: string
           last_feed_generated_at?: string | null

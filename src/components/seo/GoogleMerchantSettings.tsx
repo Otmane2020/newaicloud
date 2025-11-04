@@ -17,6 +17,7 @@ interface MerchantSettings {
   user_id: string;
   store_name: string;
   auto_update_enabled: boolean;
+  generate_gtin_enabled: boolean;
   gtin_country_code: string;
   default_currency: string;
   default_condition: string;
@@ -35,6 +36,7 @@ export function GoogleMerchantSettings() {
     user_id: user?.id || "",
     store_name: "",
     auto_update_enabled: true,
+    generate_gtin_enabled: true,
     gtin_country_code: "FR",
     default_currency: "EUR",
     default_condition: "new",
@@ -58,6 +60,7 @@ export function GoogleMerchantSettings() {
       if (data) {
         setSettings({
           ...data,
+          generate_gtin_enabled: data.generate_gtin_enabled ?? true,
           default_currency: data.default_currency || 'EUR',
           default_condition: data.default_condition || 'new',
           default_brand: data.default_brand || '',
@@ -108,6 +111,7 @@ export function GoogleMerchantSettings() {
           user_id: user.id,
           store_name: settings.store_name,
           auto_update_enabled: settings.auto_update_enabled,
+          generate_gtin_enabled: settings.generate_gtin_enabled,
           gtin_country_code: settings.gtin_country_code,
           default_currency: settings.default_currency,
           default_condition: settings.default_condition,
@@ -260,6 +264,23 @@ export function GoogleMerchantSettings() {
             />
           </div>
 
+          {/* Generate GTIN */}
+          <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+            <div className="space-y-1">
+              <Label htmlFor="generate_gtin" className="text-base">
+                Générer les GTIN automatiquement
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Inclure les codes GTIN dans le flux XML Google Shopping
+              </p>
+            </div>
+            <Switch
+              id="generate_gtin"
+              checked={settings.generate_gtin_enabled}
+              onCheckedChange={(checked) => setSettings({ ...settings, generate_gtin_enabled: checked })}
+            />
+          </div>
+
           {/* Default Settings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* GTIN Country Code */}
@@ -365,6 +386,9 @@ export function GoogleMerchantSettings() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            <strong>Génération GTIN :</strong> Lorsque activée, les codes GTIN seront automatiquement générés et inclus dans le flux XML pour améliorer la visibilité sur Google Shopping.
+          </p>
           <p>
             <strong>Format GTIN :</strong> Le GTIN (Global Trade Item Number) est requis pour certains produits.
             Choisissez le format correspondant à votre pays principal de vente.

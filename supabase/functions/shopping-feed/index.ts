@@ -53,6 +53,7 @@ interface FeedSettings {
   default_currency?: string;
   default_condition?: string;
   default_brand?: string;
+  generate_gtin_enabled?: boolean;
 }
 
 function getSupabaseClient() {
@@ -234,8 +235,8 @@ async function generateGoogleShoppingFeed(
       <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
         }
 
-        // Add GTIN if available
-        if (product.google_gtin) {
+        // Add GTIN if available and enabled in settings
+        if (product.google_gtin && (feedSettings?.generate_gtin_enabled !== false)) {
           xml += `
       <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
         }
@@ -326,8 +327,8 @@ async function generateGoogleShoppingFeed(
       <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
       }
 
-      // Add GTIN if available
-      if (product.google_gtin) {
+      // Add GTIN if available and enabled in settings
+      if (product.google_gtin && (feedSettings?.generate_gtin_enabled !== false)) {
         xml += `
       <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
       }
