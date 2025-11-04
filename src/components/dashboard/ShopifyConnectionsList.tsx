@@ -507,6 +507,11 @@ export default function ShopifyConnectionsList() {
         {connections.map((store) => (
           <Card key={store.id}>
             <CardContent className="p-6">
+              <div className="mb-3 pb-3 border-b">
+                <h3 className="font-semibold text-lg text-primary">
+                  {store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '') || 'Shopify Store'}
+                </h3>
+              </div>
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4 flex-1">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
