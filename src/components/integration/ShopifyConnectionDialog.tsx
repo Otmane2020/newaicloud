@@ -205,7 +205,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <Input
                           id="oauth-shop-name"
-                          placeholder="qnxv91-2w"
+                          placeholder="HBxv99-2F"
                           value={oauthShopName}
                           onChange={(e) => setOauthShopName(e.target.value)}
                           className="flex-1 text-sm"
@@ -272,7 +272,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                     <div className="flex gap-2">
                       <Input
                         id="manual-shop-name"
-                        placeholder="qnxv91-2w"
+                        placeholder="HBxv99-2F"
                         value={manualStoreName}
                         onChange={(e) => setManualStoreName(e.target.value)}
                         disabled={manualLoading}

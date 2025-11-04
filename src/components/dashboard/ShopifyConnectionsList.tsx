@@ -97,7 +97,7 @@ export default function ShopifyConnectionsList() {
 
       for (const conn of connections) {
         try {
-          // Extract technical name from URL (e.g., "qnxv91-2w" from "qnxv91-2w.myshopify.com")
+          // Extract technical name from URL (e.g., "HBxv99-2F" from "HBxv99-2F.myshopify.com")
           const technicalName = conn.store_url
             .replace(/^https?:\/\//, '')
             .replace(/\.myshopify\.com.*$/, '');
