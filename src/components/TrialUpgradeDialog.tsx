@@ -23,7 +23,8 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
   const { limits } = useUsageLimits();
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedOptimizations, setSelectedOptimizations] = useState("100");
-  const [realProductCount, setRealProductCount] = useState(0);
+  const [importedCount, setImportedCount] = useState(0);
+  const [totalShopifyCount, setTotalShopifyCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,15 +39,11 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
         setPlans(data);
       }
 
-      // Fetch real product count
-      const { data: user } = await supabase.auth.getUser();
-      if (user.user) {
-        const { count } = await supabase
-          .from('shopify_products')
-          .select('*', { count: 'exact', head: true })
-          .eq('seller_id', user.user.id);
-        
-        setRealProductCount(count || 0);
+      // Fetch Shopify product count
+      const { data: countData } = await supabase.functions.invoke('get-shopify-product-count');
+      if (countData) {
+        setImportedCount(countData.imported_count || 0);
+        setTotalShopifyCount(countData.total_shopify_count || 0);
       }
     };
 
@@ -56,7 +53,7 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
   }, [open]);
 
   const currentPlan = plans.find(p => p.id === limits?.currentPlanId);
-  const currentProducts = realProductCount;
+  const currentProducts = importedCount;
   const maxProducts = limits?.limits.max_products || 50;
   
   const getRecommendedPlan = () => {
@@ -127,16 +124,31 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Shopify Products Status */}
+          <div className="bg-muted/50 border rounded-lg p-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Produits Shopify</span>
+                <Badge variant="outline" className="text-xs">
+                  {importedCount} / {totalShopifyCount}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {importedCount} produits importés sur {totalShopifyCount} disponibles dans votre boutique Shopify
+              </p>
+            </div>
+          </div>
+
           {/* Quota Warning */}
-          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 sm:p-4">
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
               <div className="space-y-1 flex-1 min-w-0">
-                <p className="font-semibold text-sm sm:text-base text-destructive">
+                <p className="font-semibold text-sm text-destructive">
                   Quota dépassé
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground break-words">
-                  Vous avez <span className="font-bold text-destructive">{currentProducts} produits</span> mais votre quota actuel est de <span className="font-bold">{maxProducts} produits</span>. 
+                <p className="text-xs text-muted-foreground">
+                  Vous avez <span className="font-bold text-destructive">{currentProducts} produits importés</span> mais votre quota actuel est de <span className="font-bold">{maxProducts} produits</span>. 
                   Passez à un plan supérieur pour continuer.
                 </p>
               </div>
@@ -161,26 +173,48 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
             </div>
           </div>
 
-          {/* Optimization Selector */}
+          {/* Optimization Selector - Style du checkout */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Nombre d'optimisations
+            <label className="text-sm font-medium block">
+              Package d'optimisations
             </label>
             <Select value={selectedOptimizations} onValueChange={setSelectedOptimizations}>
-              <SelectTrigger className="w-full bg-card border-2">
-                <SelectValue />
+              <SelectTrigger className="w-full bg-card border-2 h-12">
+                <SelectValue placeholder="Choisir un package" />
               </SelectTrigger>
-              <SelectContent className="bg-background border shadow-lg z-50">
-                <SelectItem value="50">50 optimisations - 5€/mois</SelectItem>
-                <SelectItem value="100">100 optimisations - 9€/mois</SelectItem>
-                <SelectItem value="200">200 optimisations - 16€/mois</SelectItem>
-                <SelectItem value="500">500 optimisations - 35€/mois</SelectItem>
-                <SelectItem value="1000">1000 optimisations - 65€/mois</SelectItem>
+              <SelectContent className="bg-background">
+                <SelectItem value="50">
+                  <div className="flex items-center justify-between w-full">
+                    <span>50 optimisations</span>
+                    <span className="ml-4 font-semibold">5€/mois</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="100">
+                  <div className="flex items-center justify-between w-full">
+                    <span>100 optimisations</span>
+                    <span className="ml-4 font-semibold">9€/mois</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="200">
+                  <div className="flex items-center justify-between w-full">
+                    <span>200 optimisations</span>
+                    <span className="ml-4 font-semibold">16€/mois</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="500">
+                  <div className="flex items-center justify-between w-full">
+                    <span>500 optimisations</span>
+                    <span className="ml-4 font-semibold">35€/mois</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="1000">
+                  <div className="flex items-center justify-between w-full">
+                    <span>1000 optimisations</span>
+                    <span className="ml-4 font-semibold">65€/mois</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Sélectionnez le nombre d'optimisations SEO dont vous avez besoin
-            </p>
           </div>
 
           {/* Recommended Plan */}
