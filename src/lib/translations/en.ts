@@ -1201,6 +1201,8 @@ export const translations = {
     submenu: {
       assistant: "Chat Assistant",
       robot: "AI Robot",
+      orders: "Orders",
+      learning: "Learning",
       history: "History",
       productSource: "Product Source",
       settings: "Chat Settings",
