@@ -60,8 +60,15 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
   const maxProducts = limits?.limits.max_products || 50;
   
   const getRecommendedPlan = () => {
+    // Ne pas recommander le plan actuel
+    const availablePlans = plans.filter(plan => plan.id !== currentPlan?.id);
+    
+    // Trouver un plan avec plus de capacité que nécessaire
     const neededCapacity = currentProducts;
-    return plans.find(plan => plan.max_products > neededCapacity) || plans[plans.length - 1];
+    const betterPlan = availablePlans.find(plan => plan.max_products > neededCapacity);
+    
+    // Si aucun plan trouvé avec plus de capacité, prendre le plus grand disponible
+    return betterPlan || availablePlans[availablePlans.length - 1] || plans[0];
   };
 
   const recommendedPlan = getRecommendedPlan();
