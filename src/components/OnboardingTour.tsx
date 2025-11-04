@@ -81,12 +81,64 @@ export function OnboardingTour() {
       setShow(false);
       return;
     }
-    checkOnboardingStatus();
+    if (user) {
+      checkOnboardingStatus();
+    }
   }, [user]);
 
-  const checkOnboardingStatus = () => {
-    // Simplified - just show the onboarding tour
-    setShow(true);
+  const checkOnboardingStatus = async () => {
+    if (!user) return;
+
+    try {
+      // Check Shopify connection
+      const { data: connections } = await supabase
+        .from('shopify_connections')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      // Check optimized products
+      const { data: optimizedProducts } = await supabase
+        .from('products')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('seo_optimized', true)
+        .limit(1);
+
+      // Check blog articles
+      const { data: articles } = await supabase
+        .from('blog_articles')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      // Update steps based on real data
+      setSteps(prev => prev.map(step => {
+        if (step.id === 'connect_shopify' && connections && connections.length > 0) {
+          return { ...step, completed: true };
+        }
+        if (step.id === 'optimize_first_product' && optimizedProducts && optimizedProducts.length > 0) {
+          return { ...step, completed: true };
+        }
+        if (step.id === 'generate_article' && articles && articles.length > 0) {
+          return { ...step, completed: true };
+        }
+        if (step.id === 'setup_automation') {
+          // Check if user has some optimized products (indicates automation usage)
+          return { ...step, completed: optimizedProducts && optimizedProducts.length > 5 };
+        }
+        if (step.id === 'view_analytics') {
+          // Consider completed if user has visited dashboard (we're on it now)
+          return { ...step, completed: true };
+        }
+        return step;
+      }));
+
+      setShow(true);
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      setShow(true);
+    }
   };
 
   const handleDismiss = () => {
