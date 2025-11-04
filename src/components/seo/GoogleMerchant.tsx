@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Download,
   FileText,
@@ -10,6 +11,7 @@ import {
   AlertCircle,
   Settings,
   Calendar,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -20,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { ShopifyOptimizationGuide } from "./ShopifyOptimizationGuide";
+import { toast } from "sonner";
 
 interface FeedStatus {
   lastFetch: string | null;
@@ -30,6 +33,7 @@ interface FeedStatus {
 
 export function GoogleMerchant() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [feedStatus, setFeedStatus] = useState<FeedStatus>({
     lastFetch: null,
@@ -38,6 +42,7 @@ export function GoogleMerchant() {
   });
   const [isTesting, setIsTesting] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   // URL du flux avec le domaine NewAI (pour affichage final)
   const feedUrl = `https://newai.sale/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
@@ -87,6 +92,20 @@ export function GoogleMerchant() {
       });
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const regenerateFeed = async () => {
+    setRegenerating(true);
+    try {
+      // Force une nouvelle génération en appelant le flux
+      await testFeed();
+      toast.success("Flux XML régénéré avec succès ! 🎉");
+    } catch (error) {
+      console.error("Error regenerating feed:", error);
+      toast.error("Erreur lors de la régénération du flux");
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -168,11 +187,49 @@ export function GoogleMerchant() {
               )}
               Tester le flux
             </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={regenerateFeed}
+              disabled={regenerating}
+              className="border-white text-white hover:bg-white/10"
+            >
+              {regenerating ? (
+                <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-5 h-5 mr-2" />
+              )}
+              Régénérer XML
+            </Button>
           </div>
         </div>
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24" />
       </div>
+
+      {/* Warning Alert */}
+      <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+        <AlertDescription className="text-amber-800 dark:text-amber-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <strong className="font-semibold">Enrichissez vos données Google Shopping</strong>
+              <p className="mt-1 text-sm">
+                Optimisez vos produits avec les catégories Google, GTIN, et descriptions pour créer un flux optimisé et augmenter votre visibilité.
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate('/merchant?tab=shopping')}
+              variant="default"
+              size="sm"
+              className="ml-4 gap-2 whitespace-nowrap"
+            >
+              <Sparkles className="w-4 h-4" />
+              Optimiser maintenant
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
 
       {/* Status Card */}
       <Card className="p-6 border-l-4 border-l-primary">
