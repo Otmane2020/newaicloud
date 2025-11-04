@@ -509,7 +509,7 @@ export default function ShopifyConnectionsList() {
             <CardContent className="p-6">
               <div className="mb-3 pb-3 border-b">
                 <h3 className="font-semibold text-lg text-primary">
-                  {store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '') || 'Shopify Store'}
+                  {store.store_name || 'Shopify Store'}
                 </h3>
               </div>
               <div className="flex items-start justify-between">
