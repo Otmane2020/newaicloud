@@ -120,12 +120,17 @@ export function SmartPricingAI() {
 
       setCollections(collectionsData || []);
 
-      // Fetch products with collection names and variants (for SKU)
+      // Fetch products with collection names and variants (for SKU) + AI analysis data
       const { data: productsData, error: productsError } = await supabase
         .from('shopify_products')
         .select(`
           *,
-          product_variants(sku, cost_price)
+          product_variants(sku, cost_price),
+          market_price,
+          smart_price,
+          ai_reasoning,
+          competitors,
+          last_pricing_analysis
         `)
         .eq('seller_id', user.id);
 
@@ -157,11 +162,11 @@ export function SmartPricingAI() {
           shopify_product_id: product.shopify_id ? String(product.shopify_id) : null,
           currency: product.currency || 'EUR',
           selected: false,
-          market_price: null,
-          smart_price: null,
+          market_price: product.market_price || null,
+          smart_price: product.smart_price || null,
           net_margin: null,
-          ai_reasoning: null,
-          competitors: [],
+          ai_reasoning: product.ai_reasoning || null,
+          competitors: Array.isArray(product.competitors) ? (product.competitors as unknown as CompetitorPrice[]) : [],
         };
         });
 
@@ -388,12 +393,18 @@ export function SmartPricingAI() {
       }
 
       toast.success(
-        `✅ ${data.updated} frais de livraison estimés`,
+        `✅ Frais de livraison Shopify importés`,
         {
           id: toastId,
-          description: 'Basé sur le poids des produits'
+          description: data.message || `${data.updated} produits mis à jour avec les tarifs réels`
         }
       );
+
+      if (data.failed > 0) {
+        toast.warning(`⚠️ ${data.failed} produits n'ont pas pu être traités`, {
+          description: data.errors?.join(', ') || 'Certains produits n\'ont pas de tarifs disponibles'
+        });
+      }
       
       await fetchData();
     } catch (error: any) {
@@ -521,6 +532,44 @@ export function SmartPricingAI() {
     }));
 
     toast.success(`✅ Prix intelligents appliqués à ${productsToUpdate.length} produit(s)`);
+  };
+
+  const syncSingleProduct = async (productId: string) => {
+    try {
+      setSyncing(true);
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+
+      const toastId = toast.loading(`Synchronisation de ${product.title}...`);
+
+      // Update price in database
+      const { error: updateError } = await supabase
+        .from('shopify_products')
+        .update({
+          price: product.price,
+          compare_at_price: product.compare_at_price
+        })
+        .eq('id', productId);
+
+      if (updateError) throw updateError;
+
+      // Sync to Shopify
+      const { error: syncError } = await supabase.functions.invoke('sync-pricing-to-shopify', {
+        body: { 
+          product_ids: [productId]
+        }
+      });
+
+      if (syncError) throw syncError;
+
+      toast.success(`✅ ${product.title} synchronisé`, { id: toastId });
+      
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      toast.error(error.message || 'Erreur lors de la synchronisation');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const syncToShopify = async (selectedOnly: boolean) => {
@@ -737,14 +786,14 @@ export function SmartPricingAI() {
       </Card>
 
       {/* Info Banner about shipping costs */}
-      <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200">
+      <Card className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-2 border-green-200">
         <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-blue-900 dark:text-blue-100">
-            <strong>À propos des frais de livraison :</strong>
-            <p className="mt-1 text-blue-700 dark:text-blue-300">
-              Les frais de livraison doivent être saisis manuellement. 
-              Shopify ne stocke pas cette information par produit. Seuls les prix de revient peuvent être importés.
+          <Truck className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-green-900 dark:text-green-100">
+            <strong>🚚 Frais de livraison Shopify :</strong>
+            <p className="mt-1 text-green-700 dark:text-green-300">
+              Cliquez sur "Importer Livraison" pour récupérer les <strong>vrais tarifs de livraison</strong> depuis votre configuration Shopify 
+              (basé sur une adresse France par défaut: Paris). Cette opération peut prendre 2-3 minutes.
             </p>
           </div>
         </div>
@@ -957,6 +1006,7 @@ export function SmartPricingAI() {
                 <th className="p-4 text-center">Marge Nette (%)</th>
                 <th className="p-4 text-right">Market Price</th>
                 <th className="p-4 text-right">Smart Price</th>
+                <th className="p-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1185,8 +1235,13 @@ export function SmartPricingAI() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="text-sm font-bold text-purple-600 dark:text-purple-400 cursor-help">
-                                {product.smart_price.toFixed(2)} {currencySymbol}
+                              <div className="flex items-center justify-end gap-2">
+                                <Badge variant="secondary" className="gap-1">
+                                  🤖 Analysé
+                                </Badge>
+                                <div className="text-sm font-bold text-purple-600 dark:text-purple-400 cursor-help">
+                                  {product.smart_price.toFixed(2)} {currencySymbol}
+                                </div>
                               </div>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-md p-4">
@@ -1229,6 +1284,26 @@ export function SmartPricingAI() {
                       ) : (
                         <span className="text-muted-foreground text-xs">Non calculé</span>
                       )}
+                    </td>
+                    <td className="p-4 text-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => syncSingleProduct(product.id)}
+                              disabled={syncing}
+                              className="gap-1"
+                            >
+                              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Synchroniser ce produit avec Shopify</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </td>
                   </tr>
                 );
