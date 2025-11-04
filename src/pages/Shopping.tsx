@@ -1,5 +1,5 @@
-import { GoogleShoppingVariants } from '@/components/seo/GoogleShoppingVariants';
+import { GoogleShopping } from '@/components/seo/GoogleShopping';
 
 export default function Shopping() {
-  return <GoogleShoppingVariants />;
+  return <GoogleShopping />;
 }

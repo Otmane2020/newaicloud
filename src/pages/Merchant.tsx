@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { GoogleMerchant } from "@/components/seo/GoogleMerchant";
 import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings";
-import { GoogleShopping } from "@/components/seo/GoogleShopping";
 import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -15,7 +14,7 @@ export default function Merchant() {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && ["feed", "settings", "products", "sync"].includes(tab)) {
+    if (tab && ["feed", "settings", "sync"].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -39,13 +38,6 @@ export default function Merchant() {
       icon: Settings,
       description: "Configurez votre boutique et vos paramètres de flux",
       component: <GoogleMerchantSettings />,
-    },
-    {
-      id: "products",
-      label: "Produits",
-      icon: Package,
-      description: "Gérez les attributs Google Shopping",
-      component: <GoogleShopping />,
     },
     {
       id: "sync",
