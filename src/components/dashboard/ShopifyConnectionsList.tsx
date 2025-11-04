@@ -387,10 +387,19 @@ export default function ShopifyConnectionsList() {
         .select('*', { count: 'exact', head: true })
         .eq('store_id', storeToSync.id);
 
-      const { count: imagesBefore } = await supabase
+      // Count both content_images AND product images
+      const { count: contentImagesBefore } = await supabase
         .from('content_images')
         .select('*', { count: 'exact', head: true })
         .eq('store_id', storeToSync.id);
+      
+      const { count: productImagesBefore } = await supabase
+        .from('shopify_products')
+        .select('image_url', { count: 'exact', head: true })
+        .eq('store_id', storeToSync.id)
+        .not('image_url', 'is', null);
+      
+      const imagesBefore = (contentImagesBefore || 0) + (productImagesBefore || 0);
 
       console.log('📊 [SYNC COUNTS] Before:', { productsBefore, collectionsBefore, pagesBefore, articlesBefore, imagesBefore });
 

@@ -505,27 +505,30 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
   try {
     const supabase = getSupabaseClient();
     
-    // Récupérer les produits avec leurs variantes enrichies
-    let query = supabase
-      .from("shopify_products")
-      .select(`
-        *,
-        product_variants!inner(
-          id,
-          ai_color,
-          ai_material,
-          ai_texture,
-          ai_pattern,
-          ai_finish,
-          ai_shape,
-          ai_design_elements,
-          ai_vision_analysis,
-          ai_vision_confidence,
-          image_url,
-          price
-        )
-      `)
-      .eq("status", filters.status || "active");
+      // Récupérer les produits avec leurs variantes enrichies + PLUS DE COLONNES
+      let query = supabase
+        .from("shopify_products")
+        .select(`
+          *,
+          product_variants!inner(
+            id,
+            title,
+            ai_color,
+            ai_material,
+            ai_texture,
+            ai_pattern,
+            ai_finish,
+            ai_shape,
+            ai_design_elements,
+            ai_vision_analysis,
+            ai_vision_confidence,
+            image_url,
+            price,
+            compare_at_price,
+            currency
+          )
+        `)
+        .eq("status", filters.status || "active");
 
     if (sellerId) {
       console.log("🔍 [SEARCH] Filtering by seller_id:", sellerId);
@@ -574,24 +577,26 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       return [];
     }
 
-    // Enrichir les produits avec les données des variantes
-    const enrichedProducts = data.map((product: any) => {
-      const variant = product.product_variants?.[0]; // Prendre la première variante
-      return {
-        ...product,
-        ai_color: variant?.ai_color,
-        ai_material: variant?.ai_material,
-        ai_texture: variant?.ai_texture,
-        ai_pattern: variant?.ai_pattern,
-        ai_finish: variant?.ai_finish,
-        ai_shape: variant?.ai_shape,
-        ai_design_elements: variant?.ai_design_elements,
-        ai_vision_analysis: variant?.ai_vision_analysis,
-        ai_vision_confidence: variant?.ai_vision_confidence,
-        image_url: variant?.image_url || product.image_url,
-        price: variant?.price || product.price,
-      };
-    });
+      // Enrichir les produits avec les données des variantes + TOUTES LES DONNÉES
+      const enrichedProducts = data.map((product: any) => {
+        const variant = product.product_variants?.[0]; // Prendre la première variante
+        return {
+          ...product,
+          ai_color: variant?.ai_color,
+          ai_material: variant?.ai_material,
+          ai_texture: variant?.ai_texture,
+          ai_pattern: variant?.ai_pattern,
+          ai_finish: variant?.ai_finish,
+          ai_shape: variant?.ai_shape,
+          ai_design_elements: variant?.ai_design_elements,
+          ai_vision_analysis: variant?.ai_vision_analysis,
+          ai_vision_confidence: variant?.ai_vision_confidence,
+          image_url: variant?.image_url || product.image_url,
+          price: variant?.price || product.price,
+          compare_at_price: variant?.compare_at_price || product.compare_at_price,
+          currency: variant?.currency || product.currency || 'EUR',
+        };
+      });
 
     // FILTRAGE EN MÉMOIRE avec logique ET
     let filteredData = enrichedProducts;
@@ -1246,23 +1251,30 @@ async function* OmnIAChat(
       const messages: ChatMessage[] = [
         {
           role: "system",
-          content: `Tu es Sophie, experte commerciale.\n\nCONTEXTE CONVERSATION:\n${contextStr}\n\nPRODUITS ENRICHIS DISPONIBLES:\n${JSON.stringify(
+          content: `Tu es Sophie, experte commerciale avec accès à un catalogue enrichi par IA.\n\nCONTEXTE CONVERSATION:\n${contextStr}\n\nPRODUITS ENRICHIS DISPONIBLES (avec analyse visuelle IA):\n${JSON.stringify(
             products.slice(0, 2).map((p) => ({
               nom: p.title,
               prix: p.price,
-              couleur: p.ai_color,
-              matériau: p.ai_material,
-              texture: p.ai_texture,
-              motif: p.ai_pattern,
-              finition: p.ai_finish,
-              forme: p.ai_shape,
-              éléments_design: p.ai_design_elements,
-              analyse_visuelle: p.ai_vision_analysis,
+              devise: p.currency,
+              // Données enrichies par IA Vision
+              couleur_IA: p.ai_color,
+              matériau_IA: p.ai_material,
+              texture_IA: p.ai_texture,
+              motif_IA: p.ai_pattern,
+              finition_IA: p.ai_finish,
+              forme_IA: p.ai_shape,
+              éléments_design_IA: p.ai_design_elements,
+              analyse_visuelle_complète: p.ai_vision_analysis,
+              confiance_IA: p.ai_vision_confidence,
+              // Données classiques
               catégorie: p.category,
+              sous_catégorie: p.sub_category,
+              description: p.description?.substring(0, 200),
+              type_produit: p.product_type,
             })),
             null,
             2,
-          )}\n\nRÈGLES:\n🚫 NE liste PAS les produits\n✅ Fais référence à la conversation précédente\n✅ Parle NATURELLEMENT de 1-2 options précises\n✅ Utilise les VRAIES caractéristiques enrichies (couleur, matériau, texture, finition)\n✅ Explique pourquoi ces produits correspondent aux critères mentionnés\n✅ Termine par: "Je vous montre ces options ci-dessous 👇"\n✅ Max 120 mots`,
+          )}\n\n🎯 RÈGLES POUR UTILISER LES DONNÉES ENRICHIES:\n\n✅ PRIORITÉ aux données enrichies IA (ai_color, ai_material, ai_texture, etc.)\n✅ Ces données sont PRÉCISES car analysées visuellement par IA\n✅ Utilise l'analyse_visuelle_complète pour des détails supplémentaires\n✅ Mentionne les finitions, textures, motifs quand pertinents\n✅ Explique pourquoi le produit correspond aux critères du client\n\n📝 FORMAT DE RÉPONSE:\n🚫 NE liste PAS les produits de manière froide\n✅ Fais référence à la conversation précédente\n✅ Parle NATURELLEMENT de 1-2 options en utilisant leurs VRAIES caractéristiques enrichies\n✅ Cite les attributs IA pertinents (ex: "en ${products[0]?.ai_material || 'bois'} avec une finition ${products[0]?.ai_finish || 'mate'}")\n✅ Termine par: "Je vous montre ces options ci-dessous 👇"\n✅ Max 120 mots`,
         },
         {
           role: "user",
@@ -1287,7 +1299,34 @@ async function* OmnIAChat(
 
     console.log("🛍️ Searching products for display...");
     const searchFilters = extractFiltersFromQuery(userMessage, history);
-    const products = await searchProducts(searchFilters, storeId, sellerId);
+    let products = await searchProducts(searchFilters, storeId, sellerId);
+
+    // FALLBACK: Si aucun produit trouvé, essayer une recherche plus large
+    if (products.length === 0 && searchFilters.query) {
+      console.log("🔄 No products found, trying broader search...");
+      const broaderFilters = { ...searchFilters };
+      
+      // Supprimer les filtres trop stricts
+      delete broaderFilters.exactMatch;
+      delete broaderFilters.color;
+      delete broaderFilters.material;
+      delete broaderFilters.style;
+      delete broaderFilters.room;
+      
+      // Recherche avec seulement la requête principale
+      products = await searchProducts(broaderFilters, storeId, sellerId);
+      console.log(`🔄 Broader search found ${products.length} products`);
+    }
+
+    // FALLBACK 2: Si toujours rien, rechercher les produits les plus populaires
+    if (products.length === 0) {
+      console.log("🔄 Still no products, getting popular products...");
+      products = await searchProducts({ 
+        status: 'active', 
+        limit: 5 
+      }, storeId, sellerId);
+      console.log(`🔄 Fallback found ${products.length} products`);
+    }
 
     let response = "";
     if (products.length === 0) {
