@@ -410,11 +410,41 @@ Deno.serve(async (req: Request) => {
     console.log(`[IMPORT-CONTENT-IMAGES] ✅ Import complete: ${totalImported} images`);
     console.log(`[IMPORT-CONTENT-IMAGES] Breakdown:`, breakdown);
 
+    // Count total images including product images
+    const { count: contentImagesCount } = await supabaseClient
+      .from('content_images')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    
+    // Get user's product IDs first, then count their images
+    const { data: userProducts } = await supabaseClient
+      .from('shopify_products')
+      .select('id')
+      .eq('seller_id', user.id);
+    
+    const productIds = userProducts?.map(p => p.id) || [];
+    
+    let productImagesCount = 0;
+    if (productIds.length > 0) {
+      const { count } = await supabaseClient
+        .from('product_images')
+        .select('*', { count: 'exact', head: true })
+        .in('product_id', productIds);
+      productImagesCount = count || 0;
+    }
+    
+    const totalImages = (contentImagesCount || 0) + productImagesCount;
+    
+    console.log(`[IMPORT-CONTENT-IMAGES] Total images: ${totalImages} (content: ${contentImagesCount}, products: ${productImagesCount})`);
+
     return new Response(
       JSON.stringify({
         success: true,
         message: `Successfully imported ${totalImported} images`,
         totalImported,
+        totalImages,
+        contentImagesCount: contentImagesCount || 0,
+        productImagesCount: productImagesCount || 0,
         breakdown,
         filtered: filtered.excluded > 0 ? filtered : undefined
       }),

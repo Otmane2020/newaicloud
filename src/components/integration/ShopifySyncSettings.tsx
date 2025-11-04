@@ -649,6 +649,8 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
 
       // Fonction de synchronisation
       const performSync = async () => {
+        const newResults = { ...syncResults };
+        
         for (const type of selectedTypes) {
           setCurrentType(type);
 
@@ -676,7 +678,7 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
               break;
             case 'images':
               result = await supabase.functions.invoke('import-content-images', {
-                body: { types: ['collections', 'pages', 'articles', 'homepage'] }
+                body: { storeId, types: ['collections', 'pages', 'articles', 'homepage'] }
               });
               break;
           }
@@ -688,9 +690,28 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
           if (result?.data?.totalImported) {
             totalImported += result.data.totalImported;
           }
+          
+          // Update stats for this type
+          if (type === 'images' && result?.data?.totalImages !== undefined) {
+            // For images, use the total count (content + product images)
+            newResults.images = {
+              before: 0,
+              after: result.data.totalImages,
+              imported: result.data.totalImported || 0
+            };
+          } else {
+            // For other types, use totalImported as change
+            newResults[type as keyof SyncStats] = {
+              before: 0,
+              after: result?.data?.totalImported || 0,
+              imported: result?.data?.totalImported || 0
+            };
+          }
 
           console.log(`✅ ${type}: ${result?.data?.totalImported || 0} éléments importés`);
         }
+        
+        setSyncResults(newResults);
       };
 
       // Lancer avec timeout
