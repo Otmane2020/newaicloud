@@ -70,6 +70,8 @@ export function ArticleFeaturedImageDialog({
         enrichedPrompt += `Make it elegant, modern, and engaging for blog readers with a 16:9 aspect ratio.`;
       }
 
+      console.log("🎨 Generating AI image for article:", article.id);
+
       const { data, error } = await supabase.functions.invoke("generate-image", {
         body: {
           prompt: enrichedPrompt,
@@ -81,49 +83,26 @@ export function ArticleFeaturedImageDialog({
 
       if (error) throw error;
 
-      if (data?.image_url) {
-        // Convert base64 to blob and upload to storage
-        const base64Data = data.image_url.split(',')[1];
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'image/png' });
-
-        // Upload to storage
-        const { data: userData } = await supabase.auth.getUser();
-        const fileName = `${userData.user?.id}/${article.id}-${Date.now()}.png`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('generated-images')
-          .upload(fileName, blob, {
-            contentType: 'image/png',
-            upsert: false
-          });
-
-        if (uploadError) throw uploadError;
-
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('generated-images')
-          .getPublicUrl(fileName);
-
-        await updateArticleImage(publicUrl);
-
-        toast.success(
-          <div className="flex items-start gap-3">
-            <img src={publicUrl} alt="Generated" className="w-16 h-16 rounded object-cover" />
-            <div>
-              <p className="font-semibold">{t.blog.dialogs.featuredImage.success}</p>
-              <p className="text-xs text-muted-foreground">Image mise à jour</p>
-            </div>
-          </div>,
-        );
-      } else {
+      if (!data?.image_url) {
         throw new Error(t.blog.dialogs.featuredImage.noUrl);
       }
+
+      console.log("✅ AI image generated successfully:", data.image_url);
+
+      // The edge function already handles upload and returns a public URL
+      const publicUrl = data.image_url;
+
+      await updateArticleImage(publicUrl);
+
+      toast.success(
+        <div className="flex items-start gap-3">
+          <img src={publicUrl} alt="Generated" className="w-16 h-16 rounded object-cover" />
+          <div>
+            <p className="font-semibold">{t.blog.dialogs.featuredImage.success}</p>
+            <p className="text-xs text-muted-foreground">Image mise à jour</p>
+          </div>
+        </div>,
+      );
     } catch (error: any) {
       console.error("Error:", error);
       const errorMessage = error.message || t.blog.dialogs.featuredImage.errorGenerate;
