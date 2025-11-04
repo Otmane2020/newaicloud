@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 import {
   CheckCircle,
   Sparkles,
@@ -36,6 +37,10 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [seoScore, setSeoScore] = useState(0);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [limitType, setLimitType] = useState<'optimizations' | 'articles' | 'chat' | 'shopifySearch'>('optimizations');
+  const [currentUsage, setCurrentUsage] = useState(0);
+  const [maxLimit, setMaxLimit] = useState(0);
 
   useEffect(() => {
     loadProduct();
@@ -160,7 +165,17 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
         await loadProduct();
       } catch (error: any) {
         console.error('Error:', error);
-        toast.error(error.message || 'Erreur lors de l\'optimisation');
+        
+        // Vérifier si c'est une erreur de limite atteinte
+        if (error.context?.limitReached === true || error.message?.includes('limitReached')) {
+          setLimitType('optimizations');
+          setCurrentUsage(error.context?.usage || 0);
+          setMaxLimit(error.context?.limit || 0);
+          setShowUpgradeDialog(true);
+          toast.error('Limite d\'optimisations atteinte');
+        } else {
+          toast.error(error.message || 'Erreur lors de l\'optimisation');
+        }
       } finally {
         setUpdating(false);
       }
@@ -299,6 +314,14 @@ export function SeoActionPlan({ productId, onScoreUpdate }: SeoActionPlanProps) 
           Voir dans SEO
         </Button>
       </div>
+
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType={limitType}
+        usage={currentUsage}
+        limit={maxLimit}
+      />
     </Card>
   );
 }
