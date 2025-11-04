@@ -528,12 +528,11 @@ export function ShopifySyncSettings() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Calculate next import time
+      // Calculate next import time in UTC
       let next_import_at: string | null = null;
       
       if (settings.import_frequency !== "manual") {
         const now = new Date();
-        const timezone = settings.timezone || "Europe/Paris";
         
         switch (settings.import_frequency) {
           case "hourly":
@@ -541,25 +540,25 @@ export function ShopifySyncSettings() {
             break;
           case "daily":
             const nextDaily = new Date(now);
-            nextDaily.setHours(settings.import_schedule_hour || 2, 0, 0, 0);
+            nextDaily.setUTCHours(settings.import_schedule_hour || 2, 0, 0, 0);
             if (nextDaily <= now) {
-              nextDaily.setDate(nextDaily.getDate() + 1);
+              nextDaily.setUTCDate(nextDaily.getUTCDate() + 1);
             }
             next_import_at = nextDaily.toISOString();
             break;
           case "weekly":
             const nextWeekly = new Date(now);
-            nextWeekly.setHours(settings.import_schedule_hour || 2, 0, 0, 0);
-            const daysUntilTarget = ((settings.import_schedule_day || 1) - nextWeekly.getDay() + 7) % 7;
-            nextWeekly.setDate(nextWeekly.getDate() + (daysUntilTarget || 7));
+            nextWeekly.setUTCHours(settings.import_schedule_hour || 2, 0, 0, 0);
+            const daysUntilTarget = ((settings.import_schedule_day || 1) - nextWeekly.getUTCDay() + 7) % 7;
+            nextWeekly.setUTCDate(nextWeekly.getUTCDate() + (daysUntilTarget || 7));
             next_import_at = nextWeekly.toISOString();
             break;
           case "monthly":
             const nextMonthly = new Date(now);
-            nextMonthly.setDate(settings.import_schedule_day || 1);
-            nextMonthly.setHours(settings.import_schedule_hour || 2, 0, 0, 0);
+            nextMonthly.setUTCDate(settings.import_schedule_day || 1);
+            nextMonthly.setUTCHours(settings.import_schedule_hour || 2, 0, 0, 0);
             if (nextMonthly <= now) {
-              nextMonthly.setMonth(nextMonthly.getMonth() + 1);
+              nextMonthly.setUTCMonth(nextMonthly.getUTCMonth() + 1);
             }
             next_import_at = nextMonthly.toISOString();
             break;
@@ -590,25 +589,147 @@ export function ShopifySyncSettings() {
   };
 
   const handleSyncNow = async () => {
-    if (!settings) {
-      toast.error("Veuillez configurer vos paramètres de synchronisation");
+    if (!selectedTypes.length) {
+      toast.error("Sélectionnez au moins un type de contenu");
       return;
     }
 
-    // Logique de synchronisation simplifiée pour l'exemple
-    try {
-      setIsSyncing(true);
-      setShowProgress(true);
+    setIsSyncing(true);
+    let historyEntry: any = null;
 
-      // Votre logique de synchronisation existante ici...
-      // (conservée pour garder la fonctionnalité)
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      // Récupérer les credentials Shopify
+      // @ts-ignore - Avoiding deep type instantiation error
+      const connectionQuery = await supabase
+        .from('shopify_connections')
+        .select('store_url, access_token, id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+
+      const shopifyConnection = connectionQuery.data;
+      const connectionError = connectionQuery.error;
+
+      if (connectionError || !shopifyConnection) {
+        throw new Error("Connexion Shopify introuvable");
+      }
+
+      // Extract shop name from store_url (e.g., "myshop.myshopify.com" -> "myshop")
+      const shopName = shopifyConnection.store_url
+        .replace(/^https?:\/\//, '')
+        .replace(/\.myshopify\.com.*$/, '');
+      const authToken = shopifyConnection.access_token;
+      const storeId = shopifyConnection.id;
+
+      // Créer l'entrée d'historique
+      const { data: entry, error: historyError } = await supabase
+        .from("sync_history")
+        .insert({
+          user_id: user.id,
+          sync_type: "import",
+          content_types: selectedTypes,
+          status: "running",
+        })
+        .select()
+        .single();
+
+      if (historyError) throw historyError;
+      historyEntry = entry;
+
+      setShowProgress(true);
+      let totalImported = 0;
+
+      // Timeout de 10 minutes
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout: La synchronisation a pris trop de temps")), 10 * 60 * 1000)
+      );
+
+      // Fonction de synchronisation
+      const performSync = async () => {
+        for (const type of selectedTypes) {
+          setCurrentType(type);
+
+          let result;
+          switch (type) {
+            case 'products':
+              result = await supabase.functions.invoke('import-products', {
+                body: { shopName, authToken, storeId, syncMode }
+              });
+              break;
+            case 'collections':
+              result = await supabase.functions.invoke('import-shopify-collections', {
+                body: { shopName, authToken, storeId }
+              });
+              break;
+            case 'pages':
+              result = await supabase.functions.invoke('import-shopify-pages', {
+                body: { shopName, authToken, storeId }
+              });
+              break;
+            case 'articles':
+              result = await supabase.functions.invoke('import-shopify-articles', {
+                body: { shopName, authToken, storeId }
+              });
+              break;
+            case 'images':
+              result = await supabase.functions.invoke('import-content-images', {
+                body: { types: ['collections', 'pages', 'articles', 'homepage'] }
+              });
+              break;
+          }
+
+          if (result?.error) {
+            throw new Error(`Erreur ${type}: ${result.error.message}`);
+          }
+
+          if (result?.data?.totalImported) {
+            totalImported += result.data.totalImported;
+          }
+
+          console.log(`✅ ${type}: ${result?.data?.totalImported || 0} éléments importés`);
+        }
+      };
+
+      // Lancer avec timeout
+      await Promise.race([performSync(), timeoutPromise]);
+
+      // Succès
+      await supabase
+        .from("sync_history")
+        .update({ 
+          status: "success",
+          items_synced: totalImported,
+          completed_at: new Date().toISOString()
+        })
+        .eq("id", historyEntry.id);
+
+      setTotalImported(totalImported);
+      setShowResultDialog(true);
+      toast.success(`Synchronisation terminée : ${totalImported} éléments importés`);
+
     } catch (error) {
-      console.error("❌ Error during sync:", error);
-      toast.error("Erreur lors de la synchronisation");
+      console.error("❌ Erreur de synchronisation:", error);
+      
+      if (historyEntry) {
+        await supabase
+          .from("sync_history")
+          .update({ 
+            status: "failed",
+            error_message: error.message,
+            completed_at: new Date().toISOString()
+          })
+          .eq("id", historyEntry.id);
+      }
+
+      toast.error(`Erreur: ${error.message}`);
     } finally {
       setIsSyncing(false);
       setCurrentType("");
       setShowProgress(false);
+      loadHistory();
     }
   };
 

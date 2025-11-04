@@ -40,6 +40,27 @@ Deno.serve(async (req) => {
       const userId = setting.user_id;
       const lastImport = setting.last_import_at ? new Date(setting.last_import_at) : null;
       
+      // Récupérer les credentials Shopify
+      const { data: shopifyConnection } = await supabase
+        .from('shopify_connections')
+        .select('store_url, access_token, id')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
+
+      if (!shopifyConnection) {
+        console.error(`[SCHEDULED-SYNC] No active Shopify connection for user ${userId}`);
+        continue;
+      }
+
+      // Extract shop name from store_url (e.g., "myshop.myshopify.com" -> "myshop")
+      const shopName = shopifyConnection.store_url
+        .replace(/^https?:\/\//, '')
+        .replace(/\.myshopify\.com.*$/, '');
+      const authToken = shopifyConnection.access_token;
+      const storeId = shopifyConnection.id;
+      const syncMode = setting.sync_mode || 'smart';
+      
       let shouldSync = false;
       let reason = '';
 
@@ -69,6 +90,17 @@ Deno.serve(async (req) => {
             if (!lastImport || (now.getTime() - lastImport.getTime()) > 6 * 24 * 60 * 60 * 1000) {
               shouldSync = true;
               reason = `weekly schedule (Day ${setting.import_schedule_day}, ${setting.import_schedule_hour}:00)`;
+            }
+          }
+          break;
+
+        case 'monthly':
+          // Sync if it's the scheduled day and hour and more than 28 days since last import
+          const currentDate = now.getUTCDate();
+          if (currentDate === setting.import_schedule_day && currentHour === setting.import_schedule_hour) {
+            if (!lastImport || (now.getTime() - lastImport.getTime()) > 28 * 24 * 60 * 60 * 1000) {
+              shouldSync = true;
+              reason = `monthly schedule (Day ${setting.import_schedule_day}, ${setting.import_schedule_hour}:00)`;
             }
           }
           break;
@@ -108,16 +140,24 @@ Deno.serve(async (req) => {
             let result;
             switch (type) {
               case 'products':
-                result = await userClient.functions.invoke('import-products');
+                result = await userClient.functions.invoke('import-products', {
+                  body: { shopName, authToken, storeId, syncMode }
+                });
                 break;
               case 'collections':
-                result = await userClient.functions.invoke('import-shopify-collections');
+                result = await userClient.functions.invoke('import-shopify-collections', {
+                  body: { shopName, authToken, storeId }
+                });
                 break;
               case 'pages':
-                result = await userClient.functions.invoke('import-shopify-pages');
+                result = await userClient.functions.invoke('import-shopify-pages', {
+                  body: { shopName, authToken, storeId }
+                });
                 break;
               case 'articles':
-                result = await userClient.functions.invoke('import-shopify-articles');
+                result = await userClient.functions.invoke('import-shopify-articles', {
+                  body: { shopName, authToken, storeId }
+                });
                 break;
               case 'images':
                 result = await userClient.functions.invoke('import-content-images', {
