@@ -287,13 +287,13 @@ export default function ShopifyConnectionsList() {
     setShowEditNameDialog(true);
   };
 
-  const handleManualSync = async () => {
-    if (!selectedStore) {
+  const handleManualSync = async (storeToSync: ShopifyConnection) => {
+    if (!storeToSync) {
       toast.error("Aucun magasin sélectionné");
       return;
     }
 
-    setSyncingStoreId(selectedStore.id);
+    setSyncingStoreId(storeToSync.id);
     setIsSyncing(true);
     let historyEntry: any = null;
     let historyId: string | null = null;
@@ -301,7 +301,7 @@ export default function ShopifyConnectionsList() {
     let user: any = null;
     
     try {
-      console.log('🔄 [SYNC START] Initiating manual sync for store:', selectedStore.id);
+      console.log('🔄 [SYNC START] Initiating manual sync for store:', storeToSync.id);
       
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) {
@@ -312,7 +312,7 @@ export default function ShopifyConnectionsList() {
       console.log('✅ [SYNC AUTH] User authenticated:', user.id);
 
       // Extract shop name from store_url
-      const shopName = selectedStore.store_url
+      const shopName = storeToSync.store_url
         .replace(/^https?:\/\//, '')
         .replace(/\.myshopify\.com.*$/, '');
       console.log('🏪 [SYNC SHOP] Shop name extracted:', shopName);
@@ -321,7 +321,7 @@ export default function ShopifyConnectionsList() {
       const { data: storeData, error: storeError } = await supabase
         .from('shopify_connections')
         .select('access_token')
-        .eq('id', selectedStore.id)
+        .eq('id', storeToSync.id)
         .single();
 
       if (storeError || !storeData) {
@@ -337,7 +337,7 @@ export default function ShopifyConnectionsList() {
           .from('sync_history')
           .insert({
             user_id: user.id,
-            store_id: selectedStore.id,
+            store_id: storeToSync.id,
             sync_type: 'import',
             content_types: ['products', 'collections', 'pages', 'articles', 'images'],
             status: 'running',
@@ -370,7 +370,7 @@ export default function ShopifyConnectionsList() {
       const { count: productsBefore } = await supabase
         .from('shopify_products')
         .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id);
+        .eq('store_id', storeToSync.id);
 
       const { count: collectionsBefore } = await supabase
         .from('shopify_collections')
@@ -380,17 +380,17 @@ export default function ShopifyConnectionsList() {
       const { count: pagesBefore } = await supabase
         .from('shopify_pages')
         .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id);
+        .eq('store_id', storeToSync.id);
 
       const { count: articlesBefore } = await supabase
         .from('blog_articles')
         .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id);
+        .eq('store_id', storeToSync.id);
 
       const { count: imagesBefore } = await supabase
         .from('content_images')
         .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id);
+        .eq('store_id', storeToSync.id);
 
       console.log('📊 [SYNC COUNTS] Before:', { productsBefore, collectionsBefore, pagesBefore, articlesBefore, imagesBefore });
 
@@ -423,7 +423,7 @@ export default function ShopifyConnectionsList() {
                   body: { 
                     shopName, 
                     apiSecret: storeData.access_token, 
-                    storeId: selectedStore.id,
+                    storeId: storeToSync.id,
                     syncMode: 'smart'
                   }
                 })
@@ -435,7 +435,7 @@ export default function ShopifyConnectionsList() {
                   body: { 
                     shopName, 
                     apiSecret: storeData.access_token, 
-                    storeId: selectedStore.id 
+                    storeId: storeToSync.id 
                   }
                 })
               );
@@ -446,7 +446,7 @@ export default function ShopifyConnectionsList() {
                   body: { 
                     shopName, 
                     apiSecret: storeData.access_token, 
-                    storeId: selectedStore.id 
+                    storeId: storeToSync.id 
                   }
                 })
               );
@@ -457,7 +457,7 @@ export default function ShopifyConnectionsList() {
                   body: { 
                     shopName, 
                     authToken: storeData.access_token, 
-                    storeId: selectedStore.id 
+                    storeId: storeToSync.id 
                   }
                 })
               );
@@ -466,7 +466,7 @@ export default function ShopifyConnectionsList() {
               result = await executeWithTimeout(
                 supabase.functions.invoke('import-content-images', {
                   body: { 
-                    storeId: selectedStore.id,
+                    storeId: storeToSync.id,
                     types: ['collections', 'pages', 'articles', 'homepage'] 
                   }
                 })
@@ -495,7 +495,7 @@ export default function ShopifyConnectionsList() {
       const { count: productsAfter } = await supabase
         .from('shopify_products')
         .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id);
+        .eq('store_id', storeToSync.id);
 
       const { count: collectionsAfter } = await supabase
         .from('shopify_collections')
@@ -505,17 +505,17 @@ export default function ShopifyConnectionsList() {
       const { count: pagesAfter } = await supabase
         .from('shopify_pages')
         .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id);
+        .eq('store_id', storeToSync.id);
 
       const { count: articlesAfter } = await supabase
         .from('blog_articles')
         .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id);
+        .eq('store_id', storeToSync.id);
 
       const { count: imagesAfter } = await supabase
         .from('content_images')
         .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id);
+        .eq('store_id', storeToSync.id);
 
       console.log('📊 [SYNC COUNTS] After:', { productsAfter, collectionsAfter, pagesAfter, articlesAfter, imagesAfter });
 
@@ -675,11 +675,7 @@ export default function ShopifyConnectionsList() {
   };
 
   const startManualSync = async (store: ShopifyConnection) => {
-    setSelectedStore(store);
-    // Wait a bit for state to update
-    setTimeout(async () => {
-      await handleManualSync();
-    }, 0);
+    await handleManualSync(store);
   };
 
   const updateStoreName = async () => {
@@ -1098,7 +1094,7 @@ export default function ShopifyConnectionsList() {
                 </div>
               </div>
               <Button
-                onClick={handleManualSync}
+                onClick={() => selectedStore && handleManualSync(selectedStore)}
                 disabled={isSyncing || !selectedStore}
                 size="lg"
                 className="shrink-0"
