@@ -37,6 +37,16 @@ import {
   Hash,
   Image as ImageIcon
 } from 'lucide-react';
+import { WhiteBackgroundPreviewDialog } from './WhiteBackgroundPreviewDialog';
+
+interface PreviewImage {
+  productId: string;
+  productTitle: string;
+  originalUrl: string;
+  generatedUrl: string | null;
+  status: 'pending' | 'generating' | 'success' | 'error';
+  error?: string;
+}
 
 interface Product {
   id: string;
@@ -62,6 +72,8 @@ export function GoogleShopping() {
   const [generatingGtins, setGeneratingGtins] = useState(false);
   const [generatingCategories, setGeneratingCategories] = useState(false);
   const [processingImages, setProcessingImages] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previews, setPreviews] = useState<PreviewImage[]>([]);
 
   const fetchProducts = async () => {
     try {
@@ -229,16 +241,30 @@ export function GoogleShopping() {
       return;
     }
 
-    setProcessingImages(true);
-    const toastId = toast.loading('Génération IA des images avec fond blanc...');
-    let successCount = 0;
-    let errorCount = 0;
+    // Initialize previews
+    const initialPreviews: PreviewImage[] = productsToProcess.map(p => ({
+      productId: p.id,
+      productTitle: p.title,
+      originalUrl: p.image_url,
+      generatedUrl: null,
+      status: 'pending' as const,
+    }));
 
-    for (const product of productsToProcess) {
+    setPreviews(initialPreviews);
+    setShowPreview(true);
+    setProcessingImages(true);
+
+    // Generate images one by one
+    for (let i = 0; i < productsToProcess.length; i++) {
+      const product = productsToProcess[i];
+      
+      setPreviews(prev => prev.map(p => 
+        p.productId === product.id 
+          ? { ...p, status: 'generating' as const }
+          : p
+      ));
+
       try {
-        toast.loading(`Génération IA pour ${product.title}... (${successCount + errorCount + 1}/${productsToProcess.length})`, { id: toastId });
-        
-        // Call AI edge function to generate white background
         const { data, error } = await supabase.functions.invoke('generate-white-background', {
           body: {
             imageUrl: product.image_url,
@@ -249,11 +275,42 @@ export function GoogleShopping() {
         if (error) throw error;
         if (!data.success) throw new Error(data.error || 'AI generation failed');
 
-        // Upload generated image to Supabase Storage
-        const fileName = `product-white-bg-${product.id}-${Date.now()}.png`;
+        setPreviews(prev => prev.map(p => 
+          p.productId === product.id 
+            ? { ...p, status: 'success' as const, generatedUrl: data.imageUrl }
+            : p
+        ));
+      } catch (error) {
+        console.error(`Error generating for ${product.title}:`, error);
+        setPreviews(prev => prev.map(p => 
+          p.productId === product.id 
+            ? { 
+                ...p, 
+                status: 'error' as const, 
+                error: error instanceof Error ? error.message : 'Erreur de génération'
+              }
+            : p
+        ));
+      }
+    }
+
+    setProcessingImages(false);
+  };
+
+  const handleApplyPreviews = async (productIds: string[]) => {
+    const toastId = toast.loading('Application des images...');
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const productId of productIds) {
+      try {
+        const preview = previews.find(p => p.productId === productId);
+        if (!preview?.generatedUrl) continue;
+
+        // Upload to Supabase Storage
+        const fileName = `product-white-bg-${productId}-${Date.now()}.png`;
         
-        // Convert base64 to blob
-        const base64Response = await fetch(data.imageUrl);
+        const base64Response = await fetch(preview.generatedUrl);
         const blob = await base64Response.blob();
         
         const { error: uploadError } = await supabase.storage
@@ -269,34 +326,76 @@ export function GoogleShopping() {
           .from('generated-images')
           .getPublicUrl(fileName);
 
-        // Update product with white background image and mark as optimized
         const { error: updateError } = await supabase
           .from('shopify_products')
           .update({ 
             image_url: publicUrl,
             google_white_background: true
           })
-          .eq('id', product.id);
+          .eq('id', productId);
 
         if (updateError) throw updateError;
 
         successCount++;
       } catch (error) {
-        console.error(`Error processing ${product.title}:`, error);
+        console.error(`Error applying preview for ${productId}:`, error);
         errorCount++;
       }
     }
 
-    setProcessingImages(false);
-
     if (errorCount === 0) {
-      toast.success(`${successCount} images générées avec IA`, { id: toastId });
+      toast.success(`${successCount} images appliquées`, { id: toastId });
     } else {
       toast.warning(`${successCount} succès, ${errorCount} erreurs`, { id: toastId });
     }
 
     await fetchProducts();
     setSelectedProducts(new Set());
+    setShowPreview(false);
+    setPreviews([]);
+  };
+
+  const handleRegeneratePreview = async (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    setPreviews(prev => prev.map(p => 
+      p.productId === productId 
+        ? { ...p, status: 'generating' as const }
+        : p
+    ));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-white-background', {
+        body: {
+          imageUrl: product.image_url,
+          productTitle: product.title
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'AI generation failed');
+
+      setPreviews(prev => prev.map(p => 
+        p.productId === productId 
+          ? { ...p, status: 'success' as const, generatedUrl: data.imageUrl }
+          : p
+      ));
+
+      toast.success('Image régénérée');
+    } catch (error) {
+      console.error('Error regenerating:', error);
+      setPreviews(prev => prev.map(p => 
+        p.productId === productId 
+          ? { 
+              ...p, 
+              status: 'error' as const, 
+              error: error instanceof Error ? error.message : 'Erreur de génération'
+            }
+          : p
+      ));
+      toast.error('Erreur lors de la régénération');
+    }
   };
 
   const handleSyncSelected = async () => {
@@ -712,6 +811,14 @@ export function GoogleShopping() {
           </div>
         </div>
       </Card>
+      
+      <WhiteBackgroundPreviewDialog
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        previews={previews}
+        onApply={handleApplyPreviews}
+        onRegenerate={handleRegeneratePreview}
+      />
     </div>
   );
 }

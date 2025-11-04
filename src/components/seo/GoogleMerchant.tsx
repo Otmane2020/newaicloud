@@ -12,6 +12,7 @@ import {
   Settings,
   Calendar,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { ShopifyOptimizationGuide } from "./ShopifyOptimizationGuide";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FeedStatus {
   lastFetch: string | null;
@@ -43,6 +45,9 @@ export function GoogleMerchant() {
   const [isTesting, setIsTesting] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [optimizationScore, setOptimizationScore] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [dbProductCount, setDbProductCount] = useState(0);
 
   // URL du flux avec le domaine NewAI (pour affichage final)
   const feedUrl = `https://newai.sale/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
@@ -112,7 +117,32 @@ export function GoogleMerchant() {
   useEffect(() => {
     // Tester automatiquement le flux au chargement
     testFeed();
+    fetchOptimizationScore();
   }, []);
+
+  const fetchOptimizationScore = async () => {
+    try {
+      // Fetch total products
+      const { count: total } = await supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch optimized products (with category, gtin, and white background)
+      const { count: optimized } = await supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .not('google_product_category', 'is', null)
+        .not('google_gtin', 'is', null)
+        .eq('google_white_background', true);
+
+      setTotalProducts(total || 0);
+      setDbProductCount(total || 0);
+      const score = total && total > 0 ? Math.round((optimized || 0) / total * 100) : 0;
+      setOptimizationScore(score);
+    } catch (error) {
+      console.error('Error fetching optimization score:', error);
+    }
+  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Jamais";
@@ -158,20 +188,51 @@ export function GoogleMerchant() {
             </div>
             <div className="text-right">
               {getStatusBadge()}
-              {feedStatus.itemCount !== null && (
-                <div className="mt-2 text-2xl font-bold">{feedStatus.itemCount} produits</div>
-              )}
+              <div className="mt-2 flex items-baseline gap-2">
+                {feedStatus.itemCount !== null && (
+                  <span className="text-2xl font-bold">{feedStatus.itemCount}</span>
+                )}
+                {dbProductCount > 0 && (
+                  <span className="text-sm text-white/70">({dbProductCount} en base)</span>
+                )}
+                <span className="text-sm text-white/70">produits</span>
+              </div>
             </div>
           </div>
+
+          {/* Optimization Score */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Score d'optimisation</span>
+              <span className="text-2xl font-bold">{optimizationScore}%</span>
+            </div>
+            <Progress value={optimizationScore} className="h-2 bg-white/20" />
+            <p className="text-xs text-white/70 mt-2">
+              {totalProducts > 0 
+                ? `${Math.round(totalProducts * optimizationScore / 100)} produits sur ${totalProducts} optimisés (Catégorie + GTIN + Fond blanc)`
+                : 'Aucun produit à optimiser'
+              }
+            </p>
+          </div>
+
           <div className="flex gap-3 mt-6">
             <Button
               variant="secondary"
               size="lg"
-              onClick={() => setShowGuide(true)}
+              onClick={() => navigate('/shopping')}
               className="bg-white text-purple-600 hover:bg-white/90"
             >
+              <Zap className="w-5 h-5 mr-2" />
+              Optimiser tout
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setShowGuide(true)}
+              className="bg-white/90 text-purple-600 hover:bg-white"
+            >
               <BookOpen className="w-5 h-5 mr-2" />
-              Guide d'optimisation Shopify
+              Guide Shopify
             </Button>
             <Button
               variant="outline"
@@ -215,11 +276,11 @@ export function GoogleMerchant() {
             <div>
               <strong className="font-semibold">Enrichissez vos données Google Shopping</strong>
               <p className="mt-1 text-sm">
-                Optimisez vos produits avec les catégories Google, GTIN, et descriptions pour créer un flux optimisé et augmenter votre visibilité.
+                Optimisez vos produits avec les catégories Google, GTIN, et fond blanc IA pour créer un flux optimisé et augmenter votre visibilité.
               </p>
             </div>
             <Button
-              onClick={() => navigate('/merchant?tab=shopping')}
+              onClick={() => navigate('/shopping')}
               variant="default"
               size="sm"
               className="ml-4 gap-2 whitespace-nowrap"
