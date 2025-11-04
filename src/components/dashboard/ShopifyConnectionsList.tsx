@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ImportProgressDialog } from './ImportProgressDialog';
-import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
 import { ImportConfirmDialog } from '@/components/integration/ImportConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -58,9 +57,6 @@ export function ShopifyConnectionsList() {
   const [limitReached, setLimitReached] = useState(false);
   const [maxProducts, setMaxProducts] = useState(0);
   const [totalShopifyProducts, setTotalShopifyProducts] = useState(0);
-  
-  // Upgrade dialog state
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [usageLimits, setUsageLimits] = useState<any>(null);
   
   // Delete confirmation dialog state
@@ -337,9 +333,10 @@ export function ShopifyConnectionsList() {
       
       setMaxProducts(maxProductsAllowed);
       
-      // If no slots available, show upgrade dialog
+      // If no slots available, show import dialog with limit message
       if (availableSlots === 0) {
-        setShowUpgradeDialog(true);
+        setLimitReached(true);
+        setShowProgressDialog(true);
         setImportingStoreId(null);
         return;
       }
@@ -632,13 +629,6 @@ export function ShopifyConnectionsList() {
         limitReached={limitReached}
         maxProducts={maxProducts}
         totalShopifyProducts={totalShopifyProducts}
-      />
-
-      <TrialUpgradeDialog
-        open={showUpgradeDialog}
-        onOpenChange={setShowUpgradeDialog}
-        reason="limit_reached"
-        limitType="products"
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
