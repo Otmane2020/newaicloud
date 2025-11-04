@@ -90,6 +90,18 @@ export function GoogleShopping() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [currentOptimizingProduct, setCurrentOptimizingProduct] = useState<string>('');
 
+  // Calculate optimization score
+  const calculateOptimizationScore = (productsList: Product[]) => {
+    if (productsList.length === 0) {
+      setOptimizationScore(0);
+      return;
+    }
+    const optimized = productsList.filter(p => 
+      p.google_product_category && p.google_gtin && p.google_white_background
+    ).length;
+    setOptimizationScore(Math.round((optimized / productsList.length) * 100));
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -111,14 +123,7 @@ export function GoogleShopping() {
 
       if (error) throw error;
       setProducts(data || []);
-      
-      // Calculate optimization score
-      if (data && data.length > 0) {
-        const optimized = data.filter(p => 
-          p.google_product_category && p.google_gtin && p.google_white_background
-        ).length;
-        setOptimizationScore(Math.round((optimized / data.length) * 100));
-      }
+      calculateOptimizationScore(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Erreur lors du chargement des produits');
