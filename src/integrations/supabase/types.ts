@@ -309,9 +309,14 @@ export type Database = {
           frequency: string | null
           id: string
           is_active: boolean | null
+          keywords: string[] | null
+          last_generation_date: string | null
           last_run_at: string | null
           name: string
+          next_execution_at: string | null
           next_run_at: string | null
+          target_audience: string | null
+          topic_niche: string | null
           updated_at: string
           user_id: string
         }
@@ -321,9 +326,14 @@ export type Database = {
           frequency?: string | null
           id?: string
           is_active?: boolean | null
+          keywords?: string[] | null
+          last_generation_date?: string | null
           last_run_at?: string | null
           name: string
+          next_execution_at?: string | null
           next_run_at?: string | null
+          target_audience?: string | null
+          topic_niche?: string | null
           updated_at?: string
           user_id: string
         }
@@ -333,9 +343,14 @@ export type Database = {
           frequency?: string | null
           id?: string
           is_active?: boolean | null
+          keywords?: string[] | null
+          last_generation_date?: string | null
           last_run_at?: string | null
           name?: string
+          next_execution_at?: string | null
           next_run_at?: string | null
+          target_audience?: string | null
+          topic_niche?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2741,6 +2756,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_next_execution: {
+        Args: { p_frequency: string; p_last_execution: string }
+        Returns: string
+      }
       check_optimization_allowed: {
         Args: {
           p_force?: boolean

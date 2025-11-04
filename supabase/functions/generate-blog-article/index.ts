@@ -22,39 +22,109 @@ Deno.serve(async (req) => {
     const requestData = await req.json();
 
     if (requestData.mode === "auto") {
-      console.log("Mode auto : génération d'articles...");
+      console.log("Mode auto : génération d'articles de campagnes...");
 
+      const now = new Date();
+
+      // Récupérer les campagnes actives qui doivent être exécutées
       const { data: campaigns, error: campaignError } = await supabase
         .from("blog_campaigns")
         .select("*")
         .eq("is_active", true)
-        .limit(requestData.limit || 5);
+        .lte("next_execution_at", now.toISOString())
+        .limit(requestData.limit || 10);
 
       if (campaignError) throw campaignError;
+      
       if (!campaigns?.length) {
+        console.log("Aucune campagne à exécuter pour le moment");
         return new Response(
           JSON.stringify({
-            success: false,
-            message: "Aucune campagne active.",
+            success: true,
+            message: "Aucune campagne à exécuter.",
+            campaigns_checked: 0,
           }),
           { status: 200, headers: corsHeaders },
         );
       }
 
+      console.log(`${campaigns.length} campagnes à traiter`);
+
       const results = [];
       for (const campaign of campaigns) {
-        const res = await generateSingleArticle({ campaign_id: campaign.id }, supabase, lovableApiKey);
-        results.push(res);
+        try {
+          // Générer l'article avec les paramètres de la campagne
+          const res = await generateSingleArticle({
+            user_id: campaign.user_id,
+            category: campaign.topic_niche || "Guide",
+            keywords: campaign.keywords || [],
+            title: null,
+            language: "fr",
+            articleLength: "2000",
+          }, supabase, lovableApiKey);
+
+          results.push({
+            campaign_id: campaign.id,
+            campaign_name: campaign.name,
+            ...res,
+          });
+
+          // Mettre à jour la campagne avec la prochaine date d'exécution
+          if (res.success) {
+            const nextExecution = calculateNextExecution(campaign.frequency, now);
+            
+            await supabase
+              .from("blog_campaigns")
+              .update({
+                last_generation_date: now.toISOString(),
+                next_execution_at: nextExecution.toISOString(),
+              })
+              .eq("id", campaign.id);
+
+            console.log(`✅ Campagne ${campaign.name} - Prochain article: ${nextExecution.toISOString()}`);
+          }
+        } catch (err) {
+          console.error(`❌ Erreur campagne ${campaign.name}:`, err);
+          results.push({
+            campaign_id: campaign.id,
+            campaign_name: campaign.name,
+            success: false,
+            error: err instanceof Error ? err.message : "Unknown error",
+          });
+        }
       }
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: `${results.length} articles générés.`,
+          message: `${results.filter(r => r.success).length}/${campaigns.length} articles générés.`,
           results,
         }),
         { status: 200, headers: corsHeaders },
       );
+    }
+
+    function calculateNextExecution(frequency: string, lastExecution: Date): Date {
+      const next = new Date(lastExecution);
+      
+      switch (frequency) {
+        case 'daily':
+          next.setDate(next.getDate() + 1);
+          break;
+        case 'weekly':
+          next.setDate(next.getDate() + 7);
+          break;
+        case 'biweekly':
+          next.setDate(next.getDate() + 14);
+          break;
+        case 'monthly':
+          next.setMonth(next.getMonth() + 1);
+          break;
+        default:
+          next.setDate(next.getDate() + 7); // Par défaut: hebdomadaire
+      }
+      
+      return next;
     }
 
     const result = await generateSingleArticle(requestData, supabase, lovableApiKey);
@@ -255,6 +325,25 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       }
     }
 
+    // Récupération des pages Shopify réelles pour netlinking
+    let shopifyPages: any[] = [];
+    if (user_id) {
+      const { data: pagesData } = await supabaseClient
+        .from("shopify_pages")
+        .select("title, handle, body_html")
+        .eq("user_id", user_id)
+        .limit(10);
+
+      if (pagesData && pagesData.length > 0) {
+        shopifyPages = pagesData;
+        console.log(`${shopifyPages.length} pages Shopify trouvées pour netlinking`);
+      }
+    }
+
+    const pagesContext = shopifyPages.length > 0
+      ? `\n\nPAGES SHOPIFY DISPONIBLES POUR NETLINKING:\n${shopifyPages.map(p => `- ${p.title} (handle: ${p.handle})`).join('\n')}\n**IMPORTANT: Intègre des liens vers ces pages dans l'article pour améliorer le maillage interne.**`
+      : "";
+
     // Génération du contenu HTML complet avec présentation améliorée
     const wordCountTarget = parseInt(articleLength);
     
@@ -329,7 +418,7 @@ ${
     ? `PRODUITS SÉLECTIONNÉS (${products.length}) :
 ${products.map((p: any) => `- ${p.title} (${p.price}€)${p.category ? ` - Catégorie: ${p.category}` : ""} : ${p.description?.substring(0, 100) || "Description non disponible"}`).join("\n")}`
     : `Article informatif générique sur ${topicInfo}`
-}
+}${pagesContext}
 
 STRUCTURE HTML À SUIVRE :
 

@@ -92,6 +92,10 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
           name: formData.name,
           frequency: formData.frequency,
           auto_post: formData.auto_publish,
+          topic_niche: formData.topic_niche,
+          keywords: formData.keywords,
+          target_audience: formData.target_audience,
+          next_execution_at: new Date(formData.start_date).toISOString(),
         });
 
       if (error) throw error;
