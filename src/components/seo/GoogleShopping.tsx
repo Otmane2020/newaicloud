@@ -34,8 +34,10 @@ import {
   Save,
   X,
   CheckCircle,
-  Hash
+  Hash,
+  Image as ImageIcon
 } from 'lucide-react';
+import { useBackgroundRemoval } from '@/hooks/useBackgroundRemoval';
 
 interface Product {
   id: string;
@@ -59,6 +61,7 @@ export function GoogleShopping() {
   const [syncing, setSyncing] = useState(false);
   const [generatingGtins, setGeneratingGtins] = useState(false);
   const [generatingCategories, setGeneratingCategories] = useState(false);
+  const { removeBackgroundAndAddWhite, isProcessing: isProcessingImages, progress } = useBackgroundRemoval();
 
   const fetchProducts = async () => {
     try {
@@ -210,6 +213,73 @@ export function GoogleShopping() {
     setGeneratingCategories(false);
   };
 
+  const handleWhiteBackground = async () => {
+    if (selectedProducts.size === 0) {
+      toast.info('Sélectionnez au moins un produit');
+      return;
+    }
+
+    const productsToProcess = products.filter(p => 
+      selectedProducts.has(p.id) && p.image_url
+    );
+
+    if (productsToProcess.length === 0) {
+      toast.error('Aucun produit sélectionné n\'a d\'image');
+      return;
+    }
+
+    const toastId = toast.loading('Traitement des images en cours...');
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const product of productsToProcess) {
+      try {
+        toast.loading(`Traitement de ${product.title}... (${successCount + errorCount + 1}/${productsToProcess.length})`, { id: toastId });
+        
+        const processedImage = await removeBackgroundAndAddWhite(product.image_url);
+        
+        // Upload to Supabase Storage
+        const fileName = `product-white-bg-${product.id}-${Date.now()}.png`;
+        const blob = await fetch(processedImage).then(r => r.blob());
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('generated-images')
+          .upload(fileName, blob, {
+            contentType: 'image/png',
+            upsert: true
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('generated-images')
+          .getPublicUrl(fileName);
+
+        // Update product image_url
+        const { error: updateError } = await supabase
+          .from('shopify_products')
+          .update({ image_url: publicUrl })
+          .eq('id', product.id);
+
+        if (updateError) throw updateError;
+
+        successCount++;
+      } catch (error) {
+        console.error(`Error processing ${product.title}:`, error);
+        errorCount++;
+      }
+    }
+
+    if (errorCount === 0) {
+      toast.success(`${successCount} images traitées avec succès`, { id: toastId });
+    } else {
+      toast.warning(`${successCount} succès, ${errorCount} erreurs`, { id: toastId });
+    }
+
+    await fetchProducts();
+    setSelectedProducts(new Set());
+  };
+
   const handleSyncSelected = async () => {
     if (selectedProducts.size === 0) {
       toast.info('Sélectionnez au moins un produit');
@@ -339,6 +409,24 @@ export function GoogleShopping() {
                 <>
                   <Hash className="w-4 h-4" />
                   Générer GTINs ({selectedProducts.size})
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleWhiteBackground}
+              disabled={isProcessingImages || selectedProducts.size === 0}
+              variant="outline"
+              className="gap-2"
+            >
+              {isProcessingImages ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Traitement {progress}%
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="w-4 h-4" />
+                  Fond blanc ({selectedProducts.size})
                 </>
               )}
             </Button>
