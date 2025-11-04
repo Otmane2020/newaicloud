@@ -108,9 +108,9 @@ function setCachedResponse(cacheKey: string, response: string): void {
 }
 
 function extractContextFromHistory(history: ChatMessage[]): string {
+  // Garder TOUS les messages utilisateur pour le contexte complet
   return history
     .filter((msg) => msg.role === "user")
-    .slice(-3)
     .map((msg) => msg.content)
     .join(" ");
 }
@@ -118,13 +118,12 @@ function extractContextFromHistory(history: ChatMessage[]): string {
 function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): ProductSearchFilters {
   const filters: ProductSearchFilters = {};
   const normalized = normalizeText(query);
-  const pronounReferences = ["la", "le", "les", "celle", "celui", "celles", "ceux", "ca", "ça"];
-  const hasPronounReference = pronounReferences.some((word) => normalized.includes(word));
+  
+  // TOUJOURS utiliser le contexte complet de l'historique
   let searchQuery = query;
-
-  if (hasPronounReference && history.length > 0) {
+  if (history.length > 0) {
     const context = extractContextFromHistory(history);
-    console.log("🔄 Pronoun detected, using context:", context);
+    console.log("🔄 Using full conversation context:", context);
     searchQuery = context + " " + query;
   }
 
@@ -1200,25 +1199,26 @@ async function* OmnIAChat(
     if (intent === "product_chat") {
       const searchFilters = extractFiltersFromQuery(userMessage, history);
       
-      // Compter les attributs connus dans l'historique
+      // Compter les attributs connus dans TOUTE la conversation
       const contextStr = extractContextFromHistory(history);
       const knownAttributes = {
-        hasColor: Boolean(searchFilters.color || /couleur|color/.test(contextStr)),
-        hasMaterial: Boolean(searchFilters.material || /matériau|material|bois|metal/.test(contextStr)),
-        hasStyle: Boolean(searchFilters.style || /style|moderne|classique/.test(contextStr)),
-        hasRoom: Boolean(searchFilters.room || /salon|chambre|cuisine/.test(contextStr)),
+        hasColor: Boolean(searchFilters.color || /couleur|color|blanc|noir|gris|beige|bois|marron|bleu|vert|rouge/.test(contextStr)),
+        hasMaterial: Boolean(searchFilters.material || /matériau|material|bois|metal|verre|marbre|cuir|tissu/.test(contextStr)),
+        hasStyle: Boolean(searchFilters.style || /style|moderne|classique|vintage|scandinave/.test(contextStr)),
+        hasRoom: Boolean(searchFilters.room || /salon|chambre|cuisine|bureau/.test(contextStr)),
         hasCategory: Boolean(searchFilters.query),
+        hasBudget: Boolean(searchFilters.maxPrice || searchFilters.minPrice || /budget|euros?|€|\d+\s*euros?/.test(contextStr)),
       };
       
       const attributeCount = Object.values(knownAttributes).filter(Boolean).length;
-      console.log("🎯 Known attributes:", knownAttributes, "Count:", attributeCount);
+      console.log("🎯 Known attributes from FULL history:", knownAttributes, "Count:", attributeCount);
       
-      // Si moins de 2 attributs, poser des questions
-      if (attributeCount < 2) {
+      // Si moins de 3 attributs (catégorie + 2 autres), poser des questions
+      if (attributeCount < 3) {
         const messages: ChatMessage[] = [
           {
             role: "system",
-            content: `Tu es Sophie, conseillère commerciale experte.\n\nTon objectif: COMPRENDRE exactement ce que cherche le client avant de proposer des produits.\n\nATTRIBUTS CONNUS:\n${JSON.stringify(knownAttributes, null, 2)}\n\nRÈGLES CRITIQUES:\n🚫 NE propose JAMAIS de produits dans cette phase\n✅ Pose UNE question précise pour obtenir:\n   - La couleur préférée si inconnue\n   - Le matériau souhaité si inconnu\n   - Le style désiré si inconnu\n   - La pièce de destination si inconnue\n✅ Sois naturelle et conversationnelle\n✅ Max 40 mots\n\nEXEMPLE:\n"Pour vous proposer le meuble parfait, quelle couleur préférez-vous ? Plutôt tons naturels (bois, beige) ou colorés ?"`,
+            content: `Tu es Sophie, conseillère commerciale experte.\n\nHISTORIQUE COMPLET:\n${contextStr}\n\nATTRIBUTS CONNUS:\n${JSON.stringify(knownAttributes, null, 2)}\n\nTon objectif: COMPRENDRE exactement ce que cherche le client.\n\nRÈGLES CRITIQUES:\n🚫 NE propose JAMAIS de produits maintenant\n✅ Pose UNE question précise sur ce qui manque:\n   - Budget si inconnu ET catégorie connue\n   - Couleur si inconnue\n   - Matériau si inconnu\n   - Style si inconnu\n✅ Sois naturelle et fait référence à ce qui a été dit\n✅ Max 40 mots\n\nEXEMPLE:\n"Super ! Pour l'armoire que vous cherchez, quel est votre budget maximum ?"`,
           },
           { role: "user", content: userMessage },
         ];
@@ -1246,7 +1246,7 @@ async function* OmnIAChat(
       const messages: ChatMessage[] = [
         {
           role: "system",
-          content: `Tu es Sophie, experte commerciale.\n\nPRODUITS ENRICHIS DISPONIBLES:\n${JSON.stringify(
+          content: `Tu es Sophie, experte commerciale.\n\nCONTEXTE CONVERSATION:\n${contextStr}\n\nPRODUITS ENRICHIS DISPONIBLES:\n${JSON.stringify(
             products.slice(0, 2).map((p) => ({
               nom: p.title,
               prix: p.price,
@@ -1262,11 +1262,11 @@ async function* OmnIAChat(
             })),
             null,
             2,
-          )}\n\nRÈGLES:\n🚫 NE liste PAS les produits\n✅ Parle NATURELLEMENT de 1-2 options précises\n✅ Utilise les VRAIES caractéristiques enrichies\n✅ Mentionne couleur, matériau, texture, finition\n✅ Termine par: "Je vous montre ces options ci-dessous 👇"\n✅ Max 100 mots`,
+          )}\n\nRÈGLES:\n🚫 NE liste PAS les produits\n✅ Fais référence à la conversation précédente\n✅ Parle NATURELLEMENT de 1-2 options précises\n✅ Utilise les VRAIES caractéristiques enrichies (couleur, matériau, texture, finition)\n✅ Explique pourquoi ces produits correspondent aux critères mentionnés\n✅ Termine par: "Je vous montre ces options ci-dessous 👇"\n✅ Max 120 mots`,
         },
         {
           role: "user",
-          content: `Question: "${userMessage}"\n\nPrésente 1-2 produits maximum avec leurs caractéristiques enrichies.`,
+          content: `Dernière question: "${userMessage}"\n\nPrésente 1-2 produits maximum en expliquant pourquoi ils correspondent à ma recherche.`,
         },
       ];
 

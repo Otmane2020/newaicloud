@@ -218,7 +218,7 @@ export default function Chat() {
           },
           body: JSON.stringify({
             userMessage: userMessageText,
-            history: messages.slice(-5),
+            history: messages, // Envoyer TOUT l'historique
             sellerId: user?.id,
           }),
         }
