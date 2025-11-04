@@ -221,7 +221,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                       <AlertDescription className="text-xs">
                         Trouvez le nom dans l'URL :{" "}
                         <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
-                          admin.shopify.com/store/<strong>qnxv91-2w</strong>
+                          admin.shopify.com/store/<strong>ma-boutique-demo</strong>
                         </code>
                       </AlertDescription>
                     </Alert>
@@ -287,7 +287,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                       <AlertDescription className="text-xs">
                         Trouvez le nom dans l'URL :{" "}
                         <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
-                          admin.shopify.com/store/<strong>qnxv91-2w</strong>
+                          admin.shopify.com/store/<strong>ma-boutique-demo</strong>
                         </code>
                       </AlertDescription>
                     </Alert>

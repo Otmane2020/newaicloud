@@ -47,12 +47,12 @@ export function ShopifyTokenGuide() {
           <Info className="h-4 w-4" />
           <AlertDescription className="text-xs space-y-2">
             <p>
-              <strong>Nom de votre boutique :</strong> <code className="bg-muted px-1.5 py-0.5 rounded text-xs">qnxv91-2w</code>.myshopify.com
+              <strong>Nom de votre boutique :</strong> <code className="bg-muted px-1.5 py-0.5 rounded text-xs">ma-boutique-demo</code>.myshopify.com
             </p>
             <p>
               Trouvez le nom dans l'URL :{" "}
               <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
-                admin.shopify.com/store/<strong>qnxv91-2w</strong>
+                admin.shopify.com/store/<strong>ma-boutique-demo</strong>
               </code>
             </p>
           </AlertDescription>
@@ -167,13 +167,13 @@ export function ShopifyTokenGuide() {
               </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-background p-2 rounded text-xs font-mono block overflow-x-auto">
-                  da237524e4e1252a740b204af962acdf
+                  abc123def456ghi789jkl012mno345pq
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 flex-shrink-0"
-                  onClick={() => copyToClipboard("da237524e4e1252a740b204af962acdf", "Exemple API Key")}
+                  onClick={() => copyToClipboard("abc123def456ghi789jkl012mno345pq", "Exemple API Key")}
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
@@ -195,13 +195,13 @@ export function ShopifyTokenGuide() {
               </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-background p-2 rounded text-xs font-mono block overflow-x-auto">
-                  shpat_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+                  shpat_xx11yy22zz33aa44bb55cc66dd77ee88
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 flex-shrink-0"
-                  onClick={() => copyToClipboard("shpat_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6", "Exemple Token")}
+                  onClick={() => copyToClipboard("shpat_xx11yy22zz33aa44bb55cc66dd77ee88", "Exemple Token")}
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
