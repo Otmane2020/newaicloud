@@ -511,6 +511,9 @@ export default function ShopifyConnectionsList() {
                 <h3 className="font-semibold text-lg text-primary">
                   {store.store_name || 'Shopify Store'}
                 </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Code: {store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '')}
+                </p>
               </div>
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4 flex-1">
