@@ -255,6 +255,21 @@ export function ShopifySyncSettings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Fetch store connection details
+      console.log('🔍 Fetching store connection...');
+      const { data: connection, error: connectionError } = await supabase
+        .from('shopify_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (connectionError || !connection) {
+        throw new Error('Aucune connexion Shopify active trouvée');
+      }
+
+      console.log('✅ Store connection found:', connection.store_name);
+
       // Count before sync
       const countsBefore: Record<string, number> = {};
       for (const type of selectedTypes) {
@@ -267,7 +282,7 @@ export function ShopifySyncSettings() {
         
         if (table) {
           const { count } = await supabase
-            .from(table)
+            .from(table as any)
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user.id);
           countsBefore[type] = count || 0;
@@ -304,10 +319,17 @@ export function ShopifySyncSettings() {
       if (selectedTypes.includes('products')) {
         setCurrentType('products');
         console.log('📦 Importing products...');
+        
+        // Extract shop name from store_url (remove .myshopify.com)
+        const shopName = connection.store_url.replace('.myshopify.com', '');
+        
         const { data: productsResult, error: productsError } = await supabase.functions.invoke('import-products', {
           body: { 
+            shopName: shopName,
+            apiKey: connection.api_key || undefined,
+            apiSecret: connection.access_token,
+            storeId: connection.id,
             maxProducts: 250,
-            storeId: settings.store_id,
             syncMode: syncMode
           }
         });
@@ -506,7 +528,7 @@ export function ShopifySyncSettings() {
         
         if (table) {
           const { count } = await supabase
-            .from(table)
+            .from(table as any)
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user.id);
           countsAfter[type] = count || 0;
