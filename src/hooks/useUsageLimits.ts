@@ -60,8 +60,18 @@ export const useUsageLimits = () => {
         .eq('id', user.user?.id)
         .single();
       
+      // Récupérer le vrai nombre de produits depuis shopify_products
+      const { count: realProductCount } = await supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', user.user?.id);
+      
       const enrichedData = {
         ...data,
+        usage: {
+          ...data.usage,
+          products_count: realProductCount || 0, // Remplacer par le compte réel
+        },
         trialEndsAt: profileData?.trial_ends_at || null,
         currentPlanId: profileData?.current_plan_id || null,
         subscriptionStatus: profileData?.subscription_status || null,

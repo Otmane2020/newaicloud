@@ -56,7 +56,7 @@ export function TrialUpgradeDialog({ open, onOpenChange, reason, limitType }: Tr
   }, [open]);
 
   const currentPlan = plans.find(p => p.id === limits?.currentPlanId);
-  const currentProducts = realProductCount || limits?.usage.products_count || 0;
+  const currentProducts = realProductCount;
   const maxProducts = limits?.limits.max_products || 50;
   
   const getRecommendedPlan = () => {
