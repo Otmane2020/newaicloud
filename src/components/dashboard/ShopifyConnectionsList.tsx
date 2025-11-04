@@ -387,7 +387,12 @@ export default function ShopifyConnectionsList() {
         .select('*', { count: 'exact', head: true })
         .eq('store_id', selectedStore.id);
 
-      console.log('📊 [SYNC COUNTS] Before:', { productsBefore, collectionsBefore, pagesBefore, articlesBefore });
+      const { count: imagesBefore } = await supabase
+        .from('content_images')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      console.log('📊 [SYNC COUNTS] Before:', { productsBefore, collectionsBefore, pagesBefore, articlesBefore, imagesBefore });
 
       // Trigger import for all content types
       const types = ['products', 'collections', 'pages', 'articles', 'images'];
@@ -507,7 +512,12 @@ export default function ShopifyConnectionsList() {
         .select('*', { count: 'exact', head: true })
         .eq('store_id', selectedStore.id);
 
-      console.log('📊 [SYNC COUNTS] After:', { productsAfter, collectionsAfter, pagesAfter, articlesAfter });
+      const { count: imagesAfter } = await supabase
+        .from('content_images')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      console.log('📊 [SYNC COUNTS] After:', { productsAfter, collectionsAfter, pagesAfter, articlesAfter, imagesAfter });
 
       // Calculate stats
       const stats = {
@@ -532,8 +542,8 @@ export default function ShopifyConnectionsList() {
           imported: importResults.articles || 0,
         },
         images: {
-          before: 0,
-          after: 0,
+          before: imagesBefore || 0,
+          after: imagesAfter || 0,
           imported: importResults.images || 0,
         },
       };
