@@ -134,13 +134,13 @@ serve(async (req) => {
         return Response.redirect(`${appUrl}/integration?error=store_already_connected`);
       }
 
-      // Save connection
+      // Save connection - use commercial name from oauth_state if provided, otherwise try shopInfo
       const { error: connectionError } = await supabaseClient
         .from("shopify_connections")
         .insert({
           user_id: userId,
           store_url: shop,
-          store_name: shopInfo.shop?.name || oauthState.shop_name,
+          store_name: oauthState.shop_name || shopInfo.shop?.name || shop.replace('.myshopify.com', ''),
           access_token: accessToken,
           is_active: true,
           connection_type: "oauth",
@@ -205,10 +205,12 @@ serve(async (req) => {
     console.log('[SHOPIFY-OAUTH] User authenticated', { userId: user.id });
 
     let shopName;
+    let commercialName;
     try {
       const body = await req.json();
       shopName = body.shopName;
-      console.log('[SHOPIFY-OAUTH] Request body parsed', { shopName });
+      commercialName = body.commercialName;
+      console.log('[SHOPIFY-OAUTH] Request body parsed', { shopName, commercialName });
     } catch (e) {
       console.error('[SHOPIFY-OAUTH] Failed to parse request body', e);
       return new Response(
@@ -247,13 +249,13 @@ serve(async (req) => {
     const stateToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Stocker le state
+    // Stocker le state avec le nom commercial s'il est fourni
     const { error: stateError } = await supabaseClient
       .from("oauth_states")
       .insert({
         state_token: stateToken,
         user_id: user.id,
-        shop_name: shopName,
+        shop_name: commercialName || shopName,
         expires_at: expiresAt.toISOString(),
       });
 

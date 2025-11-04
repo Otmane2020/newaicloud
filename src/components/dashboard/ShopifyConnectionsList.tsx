@@ -507,14 +507,6 @@ export default function ShopifyConnectionsList() {
         {connections.map((store) => (
           <Card key={store.id}>
             <CardContent className="p-6">
-              <div className="mb-3 pb-3 border-b">
-                <h3 className="font-semibold text-lg text-primary">
-                  {store.store_name || 'Shopify Store'}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Code: {store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '')}
-                </p>
-              </div>
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4 flex-1">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
@@ -522,28 +514,33 @@ export default function ShopifyConnectionsList() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-lg truncate">
-                        {store.store_name || store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '') || 'Shopify Store'}
-                      </h3>
-                      <Badge variant={store.is_active ? 'default' : 'secondary'}>
-                        {store.is_active ? (
-                          <>
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Active
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-3 h-3 mr-1" />
-                            Inactive
-                          </>
-                        )}
-                      </Badge>
-                      {usageLimits && (
-                        <Badge variant="outline" className="text-xs">
-                          {usageLimits.usage?.products_count || 0}/{usageLimits.limits?.max_products || 0} products
+                    <div className="flex flex-col gap-1 mb-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg truncate">
+                          {store.store_name || 'Shopify Store'}
+                        </h3>
+                        <Badge variant={store.is_active ? 'default' : 'secondary'}>
+                          {store.is_active ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Active
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Inactive
+                            </>
+                          )}
                         </Badge>
-                      )}
+                        {usageLimits && (
+                          <Badge variant="outline" className="text-xs">
+                            {usageLimits.usage?.products_count || 0}/{usageLimits.limits?.max_products || 0} products
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Code technique: {store.store_url.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '')}
+                      </p>
                     </div>
                     
               <p className="text-sm text-muted-foreground mb-1 truncate">

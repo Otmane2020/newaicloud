@@ -20,9 +20,11 @@ interface ShopifyConnectionDialogProps {
 export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectionDialogProps) {
   const { limits, refresh: refreshLimits } = useUsageLimits();
   const [oauthShopName, setOauthShopName] = useState("");
+  const [oauthCommercialName, setOauthCommercialName] = useState("");
   const [oauthLoading, setOauthLoading] = useState(false);
   
   const [manualStoreName, setManualStoreName] = useState("");
+  const [manualCommercialName, setManualCommercialName] = useState("");
   const [manualApiKey, setManualApiKey] = useState("");
   const [manualApiSecret, setManualApiSecret] = useState("");
   const [manualLoading, setManualLoading] = useState(false);
@@ -53,6 +55,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       const { data, error } = await supabase.functions.invoke("shopify-oauth", {
         body: {
           shopName: cleanShopName,
+          commercialName: oauthCommercialName.trim() || null,
         },
       });
 
@@ -118,7 +121,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
         .from('shopify_connections')
         .insert({
           user_id: user.id,
-          store_name: cleanStoreName,
+          store_name: manualCommercialName.trim() || cleanStoreName,
           store_url: storeUrl,
           api_key: manualApiKey.trim(),
           access_token: manualApiSecret.trim(),
@@ -145,6 +148,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       
       // Reset form
       setManualStoreName("");
+      setManualCommercialName("");
       setManualApiKey("");
       setManualApiSecret("");
 
@@ -189,7 +193,7 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
               {/* OAuth Tab */}
               <TabsContent value="oauth" className="space-y-4 mt-4">
-                <div className="space-y-4 p-4 border rounded-lg bg-card">
+                  <div className="space-y-4 p-4 border rounded-lg bg-card">
                   <div className="flex items-center gap-2">
                     <Shield className="w-5 h-5 text-primary" />
                     <h3 className="font-semibold text-sm sm:text-base">Connexion OAuth Sécurisée</h3>
@@ -201,7 +205,21 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
 
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <Label htmlFor="oauth-shop-name" className="text-sm">Nom de votre boutique</Label>
+                      <Label htmlFor="oauth-commercial-name" className="text-sm">Nom commercial de votre boutique</Label>
+                      <Input
+                        id="oauth-commercial-name"
+                        placeholder="Movala, Decora Home, etc."
+                        value={oauthCommercialName}
+                        onChange={(e) => setOauthCommercialName(e.target.value)}
+                        className="text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Le nom qui apparaîtra dans l'interface (ex: "Movala")
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="oauth-shop-name" className="text-sm">Code technique de votre boutique</Label>
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <Input
                           id="oauth-shop-name"
@@ -266,8 +284,24 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="manual-commercial-name" className="text-sm font-medium">
+                      Nom commercial de votre boutique
+                    </Label>
+                    <Input
+                      id="manual-commercial-name"
+                      placeholder="Movala, Decora Home, etc."
+                      value={manualCommercialName}
+                      onChange={(e) => setManualCommercialName(e.target.value)}
+                      disabled={manualLoading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Le nom qui apparaîtra dans l'interface (ex: "Movala")
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="manual-shop-name" className="text-sm font-medium">
-                      Nom de la boutique
+                      Code technique de la boutique
                     </Label>
                     <div className="flex gap-2">
                       <Input
