@@ -14,6 +14,8 @@ import { SmartBanner } from '@/components/dashboard/SmartBanner';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
 import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
 import { AIRecommendations } from '@/components/dashboard/AIRecommendations';
+import { AdvancedAnalytics } from '@/components/dashboard/AdvancedAnalytics';
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/language';
 import {
@@ -603,8 +605,11 @@ export default function Dashboard() {
 
       {/* Smart Recommendations Banner */}
       <div className="space-y-4 animate-fade-in" style={{ animationDelay: '300ms' }}>
+        {/* Onboarding Tour */}
+        <OnboardingTour />
+        
         {/* AI Recommendations */}
-        <AIRecommendations 
+        <AIRecommendations
           stats={{
             productsCount: stats.totalProducts,
             optimizedCount: stats.optimizedProducts,
@@ -647,8 +652,13 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Recent Activity Timeline */}
+      {/* Advanced Analytics */}
       <div className="animate-fade-in" style={{ animationDelay: '400ms' }}>
+        <AdvancedAnalytics />
+      </div>
+
+      {/* Recent Activity Timeline */}
+      <div className="animate-fade-in" style={{ animationDelay: '500ms' }}>
         <ActivityTimeline activities={recentActivities} />
       </div>
     </div>
