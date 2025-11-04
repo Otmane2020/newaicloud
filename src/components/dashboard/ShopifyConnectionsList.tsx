@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ImportProgressDialog } from './ImportProgressDialog';
-import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { ImportConfirmDialog } from '@/components/integration/ImportConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -634,11 +634,10 @@ export default function ShopifyConnectionsList() {
         totalShopifyProducts={totalShopifyProducts}
       />
 
-      <TrialUpgradeDialog
+      <UpgradeDialog
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
-        reason="limit_reached"
-        limitType="products"
+        limitType="optimizations"
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

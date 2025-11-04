@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTrialLimits } from '@/hooks/useTrialLimits';
-import { TrialUpgradeDialog } from '@/components/TrialUpgradeDialog';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { calculateDetailedSeoScore } from '@/lib/seoQuality';
 import { formatCurrency } from '@/lib/utils';
 import { SeoScoreGauge } from '@/components/dashboard/SeoScoreGauge';
@@ -253,11 +253,10 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 p-6 max-w-7xl mx-auto">
-      <TrialUpgradeDialog
+      <UpgradeDialog
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
-        reason={trialStatus.trialExpired ? 'trial_expired' : 'limit_reached'}
-        limitType={trialStatus.limitType}
+        limitType={trialStatus.limitType as 'optimizations' | 'articles' | 'chat' | 'shopifySearch'}
       />
       
       {/* Hero Section avec Welcome Banner */}

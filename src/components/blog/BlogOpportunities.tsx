@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
-import { TrialUpgradeDialog } from "@/components/TrialUpgradeDialog";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useTranslation } from "@/lib/language";
 
 interface Opportunity {
@@ -355,10 +355,9 @@ export function BlogOpportunities() {
         })}
       </div>
       
-      <TrialUpgradeDialog 
+      <UpgradeDialog 
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
-        reason="limit_reached"
         limitType="articles"
       />
     </div>
