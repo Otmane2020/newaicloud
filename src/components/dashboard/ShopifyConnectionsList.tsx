@@ -35,7 +35,7 @@ interface ShopifyConnection {
   connection_type: string | null;
 }
 
-export function ShopifyConnectionsList() {
+export default function ShopifyConnectionsList() {
   const navigate = useNavigate();
   const [connections, setConnections] = useState<ShopifyConnection[]>([]);
   const [loading, setLoading] = useState(true);

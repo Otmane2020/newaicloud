@@ -7,11 +7,7 @@ import { SkeletonLoader } from "./SkeletonLoader";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 
-const ShopifyConnectionsList = lazy(() =>
-  import("@/components/dashboard/ShopifyConnectionsList").then(module => ({
-    default: module.ShopifyConnectionsList
-  }))
-);
+const ShopifyConnectionsList = lazy(() => import("@/components/dashboard/ShopifyConnectionsList"));
 
 export function ShopifyIntegrationTabs() {
   const [showDialog, setShowDialog] = useState(false);
