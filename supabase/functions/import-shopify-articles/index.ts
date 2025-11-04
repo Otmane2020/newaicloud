@@ -82,11 +82,14 @@ Deno.serve(async (req: Request) => {
     }
 
     const requestBody = await req.json();
-    const { shopName, authToken, storeId } = requestBody;
+    const { shopName, apiSecret, authToken, storeId } = requestBody;
 
-    if (!shopName || !authToken) {
+    // Accept either apiSecret or authToken for backwards compatibility
+    const accessToken = apiSecret || authToken;
+
+    if (!shopName || !accessToken) {
       return new Response(
-        JSON.stringify({ error: 'Missing shopName or authToken' }),
+        JSON.stringify({ error: 'Missing shopName or authToken/apiSecret' }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -111,7 +114,7 @@ Deno.serve(async (req: Request) => {
       `https://${cleanShopName}.myshopify.com/admin/api/2025-01/blogs.json`,
       {
         headers: {
-          "X-Shopify-Access-Token": authToken,
+          "X-Shopify-Access-Token": accessToken,
           "Content-Type": "application/json",
         },
       }
@@ -159,7 +162,7 @@ Deno.serve(async (req: Request) => {
       while (nextUrl) {
         const articlesResponse = await fetch(nextUrl, {
           headers: {
-            "X-Shopify-Access-Token": authToken,
+            "X-Shopify-Access-Token": accessToken,
             "Content-Type": "application/json",
           },
         });

@@ -340,14 +340,17 @@ export default function ShopifyConnectionsList() {
               result = await supabase.functions.invoke('import-shopify-articles', {
                 body: { 
                   shopName, 
-                  apiSecret: storeData.access_token, 
+                  authToken: storeData.access_token, 
                   storeId: selectedStore.id 
                 }
               });
               break;
             case 'images':
               result = await supabase.functions.invoke('import-content-images', {
-                body: { types: ['collections', 'pages', 'articles', 'homepage'] }
+                body: { 
+                  storeId: selectedStore.id,
+                  types: ['collections', 'pages', 'articles', 'homepage'] 
+                }
               });
               break;
           }
@@ -552,7 +555,7 @@ export default function ShopifyConnectionsList() {
           body: { 
             storeId: fullStore.id,
             shopName: cleanShopName,
-            apiSecret: fullStore.access_token
+            authToken: fullStore.access_token
           }
         });
         
