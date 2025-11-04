@@ -459,6 +459,7 @@ export function GoogleShopping() {
       results.push({
         productId: product.id,
         productTitle: product.title,
+        imageUrl: product.image_url,
         status,
         categoryGenerated,
         gtinGenerated,
