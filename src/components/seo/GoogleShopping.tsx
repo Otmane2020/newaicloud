@@ -228,13 +228,6 @@ export function GoogleShopping() {
       return;
     }
 
-    // Get user ID for storage path
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('Vous devez être connecté');
-      return;
-    }
-
     const toastId = toast.loading('Traitement des images en cours...');
     let successCount = 0;
     let errorCount = 0;
@@ -245,8 +238,8 @@ export function GoogleShopping() {
         
         const processedImage = await removeBackgroundAndAddWhite(product.image_url);
         
-        // Upload to Supabase Storage with user folder
-        const fileName = `${user.id}/product-white-bg-${product.id}-${Date.now()}.png`;
+        // Upload to Supabase Storage
+        const fileName = `product-white-bg-${product.id}-${Date.now()}.png`;
         const blob = await fetch(processedImage).then(r => r.blob());
         
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -256,10 +249,7 @@ export function GoogleShopping() {
             upsert: true
           });
 
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          throw uploadError;
-        }
+        if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
           .from('generated-images')
@@ -271,10 +261,7 @@ export function GoogleShopping() {
           .update({ image_url: publicUrl })
           .eq('id', product.id);
 
-        if (updateError) {
-          console.error('Update error:', updateError);
-          throw updateError;
-        }
+        if (updateError) throw updateError;
 
         successCount++;
       } catch (error) {

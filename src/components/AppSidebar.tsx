@@ -105,8 +105,7 @@ export function AppSidebar() {
   const merchantSubItems = [
     { title: t.merchant.submenu.feed, url: "/merchant?tab=feed", icon: FileText, key: "feed" },
     { title: t.merchant.submenu.settings, url: "/merchant?tab=settings", icon: Settings, key: "settings" },
-    { title: "Produits", url: "/merchant?tab=products", icon: Package, key: "products" },
-    { title: "Variantes", url: "/merchant?tab=variants", icon: List, key: "variants" },
+    { title: t.merchant.submenu.products, url: "/merchant?tab=products", icon: Package, key: "products" },
     { title: t.merchant.submenu.sync, url: "/merchant?tab=sync", icon: RefreshCw, key: "sync" },
   ];
 
