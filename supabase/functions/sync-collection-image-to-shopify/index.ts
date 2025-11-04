@@ -7,12 +7,16 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('🎯 [SYNC-IMAGE] Function invoked - method:', req.method);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     console.log('🔄 [SYNC-IMAGE] Starting collection image sync...');
+    console.log('🔍 [SYNC-IMAGE] Supabase URL:', Deno.env.get('SUPABASE_URL'));
+    console.log('🔍 [SYNC-IMAGE] Request headers:', req.headers);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

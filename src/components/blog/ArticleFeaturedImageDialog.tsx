@@ -259,18 +259,32 @@ export function ArticleFeaturedImageDialog({
     try {
       setProcessingAlt(true);
       
-      const { error: syncError } = await supabase.functions.invoke("sync-blog-to-shopify", {
-        body: { articleId: article.id },
+      console.log('🔄 [ARTICLE-IMAGE] Syncing article image to Shopify:', article.id);
+      toast.loading('Synchronisation de l\'image avec Shopify...', { id: 'article-sync' });
+      
+      // Use dedicated image sync function instead of full article sync
+      const { data: syncResult, error: syncError } = await supabase.functions.invoke("sync-article-image-to-shopify", {
+        body: { article_id: article.id },
       });
 
-      if (syncError) throw syncError;
+      console.log('📥 [ARTICLE-IMAGE] Sync response:', { syncResult, syncError });
+
+      if (syncError) {
+        console.error('❌ [ARTICLE-IMAGE] Sync error:', syncError);
+        throw syncError;
+      }
       
-      toast.success("Article synchronisé avec Shopify avec succès");
+      if (syncResult?.success) {
+        toast.success("Image de l'article synchronisée avec Shopify ✅", { id: 'article-sync' });
+      } else {
+        toast.warning("⚠️ Image enregistrée localement (sync Shopify partielle)", { id: 'article-sync' });
+      }
+      
       setShowSuccessDialog(false);
       onImageUpdated();
     } catch (err: any) {
-      console.error("Error:", err);
-      toast.error(err.message || "Erreur lors de la synchronisation");
+      console.error("❌ [ARTICLE-IMAGE] Error:", err);
+      toast.error(err.message || "Erreur lors de la synchronisation", { id: 'article-sync' });
     } finally {
       setProcessingAlt(false);
     }

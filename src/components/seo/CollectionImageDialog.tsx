@@ -203,6 +203,7 @@ export function CollectionImageDialog({
     if (error) throw error;
 
     // ✅ Trigger Shopify sync and wait for response
+    console.log('📞 [COLLECTION-IMAGE] Calling sync-collection-image-to-shopify with:', collection.id);
     toast.loading('Synchronisation avec Shopify en cours...', { id: 'shopify-sync' });
     
     try {
@@ -211,17 +212,21 @@ export function CollectionImageDialog({
         { body: { collection_id: collection.id } }
       );
 
+      console.log('📥 [COLLECTION-IMAGE] Response:', { syncResult, syncError });
+
       if (syncError) {
-        console.error('Shopify sync error:', syncError);
-        toast.error('⚠️ Image enregistrée mais synchronisation Shopify échouée', { id: 'shopify-sync' });
+        console.error('❌ [COLLECTION-IMAGE] Shopify sync error:', syncError);
+        toast.error(`⚠️ Synchronisation échouée: ${syncError.message}`, { id: 'shopify-sync' });
       } else if (syncResult?.success) {
+        console.log('✅ [COLLECTION-IMAGE] Sync successful');
         toast.success('✅ Image synchronisée avec Shopify', { id: 'shopify-sync' });
       } else {
+        console.warn('⚠️ [COLLECTION-IMAGE] Incomplete sync:', syncResult);
         toast.warning('⚠️ Image enregistrée (sync Shopify incomplète)', { id: 'shopify-sync' });
       }
-    } catch (syncError) {
-      console.error('Sync error (non-blocking):', syncError);
-      toast.warning('⚠️ Image enregistrée localement (erreur sync Shopify)', { id: 'shopify-sync' });
+    } catch (syncError: any) {
+      console.error('❌ [COLLECTION-IMAGE] Sync error (non-blocking):', syncError);
+      toast.error(`⚠️ Erreur sync: ${syncError?.message || 'Erreur inconnue'}`, { id: 'shopify-sync' });
     }
 
     onImageUpdated();

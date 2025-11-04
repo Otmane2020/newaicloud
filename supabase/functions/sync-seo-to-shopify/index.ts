@@ -632,8 +632,10 @@ Deno.serve(async (req: Request) => {
 
         if (!metafieldResponse.ok) {
           const errorText = await metafieldResponse.text();
-          console.error(`[SYNC-COLLECTION] Metafield ${metafield.key} sync error:`, errorText);
-          // Continue with other metafields even if one fails
+          console.error(`[SYNC-COLLECTION] ❌ Metafield ${metafield.key} sync error:`, errorText);
+          
+          // ⚠️ CRITICAL FIX: Throw error instead of continuing silently
+          throw new Error(`Échec synchronisation ${metafield.key}: ${errorText}`);
         } else {
           console.log(`[SYNC-COLLECTION] ✅ Metafield ${metafield.key} synced successfully`);
         }
