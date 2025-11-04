@@ -293,6 +293,8 @@ export default function ShopifyConnectionsList() {
     }
 
     setIsSyncing(true);
+    let historyEntry: any = null;
+    const startTime = Date.now();
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -313,6 +315,24 @@ export default function ShopifyConnectionsList() {
       if (!storeData) throw new Error("Store not found");
 
       console.log('🚀 Starting manual sync for store:', shopName);
+
+      // Create sync history entry
+      const { data: entry, error: historyError } = await supabase
+        .from('sync_history')
+        .insert({
+          user_id: user.id,
+          sync_type: 'import',
+          content_types: ['products', 'collections', 'pages', 'articles', 'images'],
+          status: 'running',
+        })
+        .select()
+        .single();
+
+      if (historyError) {
+        console.error('❌ Failed to create history entry:', historyError);
+      } else {
+        historyEntry = entry;
+      }
 
       // Get counts before import
       const { count: productsBefore } = await supabase
@@ -338,6 +358,7 @@ export default function ShopifyConnectionsList() {
       // Trigger import for all content types
       const types = ['products', 'collections', 'pages', 'articles', 'images'];
       const importResults: Record<string, number> = {};
+      const errorMessages: string[] = [];
       
       for (const type of types) {
         setCurrentSyncType(type);
@@ -393,6 +414,7 @@ export default function ShopifyConnectionsList() {
 
           if (result?.error) {
             console.error(`❌ Error importing ${type}:`, result.error);
+            errorMessages.push(`${type}: ${result.error.message || 'Unknown error'}`);
             importResults[type] = 0;
           } else {
             const imported = result?.data?.totalImported || result?.data?.count || result?.data?.imported || 0;
@@ -401,6 +423,7 @@ export default function ShopifyConnectionsList() {
           }
         } catch (error) {
           console.error(`❌ Error importing ${type}:`, error);
+          errorMessages.push(`${type}: ${error.message}`);
           importResults[type] = 0;
         }
       }
@@ -456,13 +479,63 @@ export default function ShopifyConnectionsList() {
       };
 
       const totalImported = Object.values(importResults).reduce((sum, val) => sum + val, 0);
+      const duration = Date.now() - startTime;
+
+      // Update history entry
+      if (historyEntry) {
+        await supabase
+          .from('sync_history')
+          .update({
+            status: errorMessages.length > 0 ? 'failed' : 'success',
+            items_synced: totalImported,
+            duration_ms: duration,
+            completed_at: new Date().toISOString(),
+            error_message: errorMessages.length > 0 ? errorMessages.join('; ') : null,
+          })
+          .eq('id', historyEntry.id);
+      }
+
+      // Update last_sync_at in shopify_connections
+      await supabase
+        .from('shopify_connections')
+        .update({ last_sync_at: new Date().toISOString() })
+        .eq('id', selectedStore.id);
+
+      // Update last_import_at in shopify_sync_settings
+      await supabase
+        .from('shopify_sync_settings')
+        .update({ last_import_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+
+      // Reload connections to show updated date
+      loadConnections();
 
       setSyncStats(stats);
       setTotalSyncImported(totalImported);
       setIsSyncing(false);
       setShowSyncResult(true);
+
+      if (errorMessages.length > 0) {
+        toast.warning(`Synchronisation terminée avec des erreurs: ${totalImported} éléments importés`);
+      } else {
+        toast.success(`Synchronisation réussie: ${totalImported} éléments importés`);
+      }
     } catch (error) {
       console.error("❌ Sync error:", error);
+      
+      // Update history as failed
+      if (historyEntry) {
+        await supabase
+          .from('sync_history')
+          .update({
+            status: 'failed',
+            error_message: error.message,
+            duration_ms: Date.now() - startTime,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', historyEntry.id);
+      }
+
       toast.error(`Erreur: ${error.message}`);
       setIsSyncing(false);
     }
