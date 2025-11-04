@@ -822,3 +822,5 @@ export function ShopifySyncSettings() {
     </div>
   );
 }
+
+export default ShopifySyncSettings;
