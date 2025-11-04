@@ -18,6 +18,7 @@ import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CollectionImageDialog } from './CollectionImageDialog';
+import { ReoptimizeConfirmDialog } from './ReoptimizeConfirmDialog';
 import { VisionAIBanner } from './VisionAIBanner';
 import { useTranslation } from '@/lib/language';
 import {
@@ -111,6 +112,8 @@ export function CollectionOptimization() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedCollectionForImage, setSelectedCollectionForImage] = useState<Collection | null>(null);
+  const [showReoptimizeDialog, setShowReoptimizeDialog] = useState(false);
+  const [pendingOptimizationCollections, setPendingOptimizationCollections] = useState<Collection[]>([]);
 
   useEffect(() => {
     fetchCollections();
@@ -332,6 +335,22 @@ export function CollectionOptimization() {
       toast.error(t.collections.optimization.messages.invalidIds);
       return;
     }
+
+    // Check if any collections have already been optimized
+    const alreadyOptimized = collectionsToOptimize.filter(c => (c.optimization_count || 0) > 0);
+    
+    if (alreadyOptimized.length > 0) {
+      // Show confirmation dialog for re-optimization
+      setPendingOptimizationCollections(collectionsToOptimize);
+      setShowReoptimizeDialog(true);
+      return;
+    }
+
+    // If none are optimized, proceed directly
+    await executeOptimization(collectionsToOptimize);
+  };
+
+  const executeOptimization = async (collectionsToOptimize: Collection[]) => {
 
     setOptimizing(true);
     setShowProgressDialog(true);
@@ -1608,6 +1627,13 @@ export function CollectionOptimization() {
         limitType="optimizations"
         usage={limits?.usage.optimizations_count}
         limit={limits?.limits.max_optimizations}
+      />
+
+      <ReoptimizeConfirmDialog
+        open={showReoptimizeDialog}
+        onOpenChange={setShowReoptimizeDialog}
+        collections={pendingOptimizationCollections}
+        onConfirm={() => executeOptimization(pendingOptimizationCollections)}
       />
 
       {selectedCollectionForImage && (
