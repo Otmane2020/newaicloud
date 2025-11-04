@@ -393,7 +393,7 @@ export default function Blog() {
       )}
 
       {/* Horizontal submenu */}
-      <Card className="p-1">
+      <Card className="p-1 hidden">
         <Tabs value={activeSubtab} onValueChange={(value) => {
           setActiveSubtab(value);
           setSearchParams({ subtab: value });
