@@ -6,10 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Cache en mémoire avec TTL
-const responseCache = new Map<string, { response: string; timestamp: number }>();
-const CACHE_TTL = 3600000; // 1 heure
-
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
@@ -22,34 +18,12 @@ interface Product {
   compare_at_price?: string;
   ai_color?: string;
   ai_material?: string;
-  ai_shape?: string;
   image_url?: string;
   category?: string;
-  sub_category?: string;
-  tags?: string;
   handle?: string;
   vendor?: string;
   currency?: string;
   description?: string;
-  product_type?: string;
-  style?: string;
-  room?: string;
-}
-
-interface ProductSearchFilters {
-  query?: string;
-  category?: string;
-  subCategory?: string;
-  color?: string;
-  material?: string;
-  style?: string;
-  room?: string;
-  limit?: number;
-  status?: string;
-  maxPrice?: number;
-  minPrice?: number;
-  exactMatch?: boolean;
-  strictCategory?: boolean;
 }
 
 interface ChatResponse {
@@ -59,7 +33,6 @@ interface ChatResponse {
   products: Product[];
   mode: "conversation" | "product_show" | "product_chat";
   sector: string;
-  follow_up_questions?: string[];
 }
 
 function getSupabaseClient() {
@@ -77,515 +50,202 @@ function normalizeText(text: string): string {
     .trim();
 }
 
-// Cache helpers
-function getCachedResponse(cacheKey: string): string | null {
-  const entry = responseCache.get(cacheKey);
-  if (!entry) return null;
-  
-  if (Date.now() - entry.timestamp > CACHE_TTL) {
-    responseCache.delete(cacheKey);
-    return null;
-  }
-  
-  console.log("✅ Cache HIT:", cacheKey);
-  return entry.response;
-}
-
-function setCachedResponse(cacheKey: string, response: string): void {
-  responseCache.set(cacheKey, { response, timestamp: Date.now() });
-  console.log("💾 Cache SET:", cacheKey);
-  
-  if (responseCache.size > 100) {
-    const firstKey = responseCache.keys().next().value;
-    if (firstKey) responseCache.delete(firstKey);
-  }
-}
-
-function extractContextFromHistory(history: ChatMessage[]): string {
-  return history
-    .filter((msg) => msg.role === "user")
-    .slice(-3)
-    .map((msg) => msg.content)
-    .join(" ");
-}
-
-// Système de détection d'attributs beaucoup plus complet
-function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): ProductSearchFilters {
-  const filters: ProductSearchFilters = {};
-  const normalized = normalizeText(query);
-  const pronounReferences = ["la", "le", "les", "celle", "celui", "celles", "ceux", "ca", "ça"];
-  const hasPronounReference = pronounReferences.some((word) => normalized.includes(word));
-  let searchQuery = query;
-
-  if (hasPronounReference && history.length > 0) {
-    const context = extractContextFromHistory(history);
-    console.log("🔄 Pronoun detected, using context:", context);
-    searchQuery = context + " " + query;
-  }
-
-  const searchNormalized = normalizeText(searchQuery);
-  console.log("🎯 Analyzing query for filters:", searchNormalized);
-
-  // DÉTECTION DES CATÉGORIES PRINCIPALES (AMÉLIORÉE)
-  const categoryPatterns = [
-    { pattern: /table\s*basse/i, category: "table basse", priority: 100 },
-    { pattern: /table\s*a\s*manger/i, category: "table à manger", priority: 100 },
-    { pattern: /table\s*de\s*salle\s*a\s*manger/i, category: "table à manger", priority: 100 },
-    { pattern: /canape/i, category: "canapé", priority: 100 },
-    { pattern: /fauteuil/i, category: "fauteuil", priority: 100 },
-    { pattern: /chaise/i, category: "chaise", priority: 100 },
-    { pattern: /armoire/i, category: "armoire", priority: 100 },
-    { pattern: /commode/i, category: "commode", priority: 90 },
-    { pattern: /buffet/i, category: "buffet", priority: 90 },
-    { pattern: /etagere/i, category: "étagère", priority: 80 },
-    { pattern: /bibliotheque/i, category: "bibliothèque", priority: 80 },
-    { pattern: /lit/i, category: "lit", priority: 100 },
-    { pattern: /bureau/i, category: "bureau", priority: 90 },
-    { pattern: /lampe/i, category: "lampe", priority: 70 },
-    { pattern: /miroir/i, category: "miroir", priority: 70 },
-    { pattern: /tabouret/i, category: "tabouret", priority: 60 },
-    { pattern: /meuble\s*de\s*tele/i, category: "meuble tv", priority: 80 },
-    { pattern: /meuble\s*tv/i, category: "meuble tv", priority: 80 },
-  ];
-
-  // Recherche de la catégorie avec la plus haute priorité
-  let bestCategory = null;
-  let highestPriority = 0;
-
-  for (const { pattern, category, priority } of categoryPatterns) {
-    if (pattern.test(searchQuery) && priority > highestPriority) {
-      bestCategory = category;
-      highestPriority = priority;
-      console.log("🎯 Category detected:", category, "priority:", priority);
-    }
-  }
-
-  if (bestCategory) {
-    filters.query = bestCategory;
-    filters.exactMatch = highestPriority >= 90; // Match exact pour les catégories importantes
-    filters.strictCategory = highestPriority >= 90;
-  }
-
-  // DÉTECTION DES COULEURS (SYSTÈME AMÉLIORÉ)
-  const colorMap = {
-    blanc: ["blanc", "blanche", "white", "blanches", "neige", "immaculé"],
-    noir: ["noir", "noire", "black", "noires", "ébène", "nuit"],
-    gris: ["gris", "grise", "gray", "grey", "grises", "argent", "anthracite"],
-    beige: ["beige", "sable", "crème", "écru", "naturel"],
-    bois: ["bois", "wood", "boise", "nature", "naturel", "massif"],
-    marron: ["marron", "brown", "brun", "brune", "châtaigne", "café", "chocolat"],
-    bleu: ["bleu", "bleue", "blue", "bleues", "marine", "ciel", "turquoise"],
-    vert: ["vert", "verte", "green", "vertes", "émeraude", "forêt", "menthe"],
-    rouge: ["rouge", "red", "cerise", "bordeaux", "rubis"],
-    jaune: ["jaune", "yellow", "doré", "moutarde", "soleil"],
-    orange: ["orange", "mandarine", "corail"],
-    rose: ["rose", "pink", "fuchsia", "saumon"],
-    violet: ["violet", "violette", "purple", "mauve", "lavande", "lilas"],
-    multicolore: ["multicolore", "coloré", "colorée", "arc en ciel"],
-  };
-
-  for (const [color, variants] of Object.entries(colorMap)) {
-    if (variants.some((variant) => searchNormalized.includes(variant))) {
-      filters.color = color;
-      console.log("🎨 Color detected:", color);
-      break;
-    }
-  }
-
-  // DÉTECTION DES MATÉRIAUX (SYSTÈME COMPLET)
-  const materialMap = {
-    bois: ["bois", "wood", "boise", "en bois", "bois massif", "chene", "chenê", "noyer", "teck", "pin", "merisier", "hetre", "hêtre", "acajou", "bambou"],
-    metal: ["metal", "métal", "acier", "inox", "fer", "aluminium", "chrome", "or", "argent", "bronze", "cuivre", "acier inoxydable"],
-    verre: ["verre", "glass", "vitre", "vitrine", "transparent", "cristal"],
-    marbre: ["marbre", "marbree", "marbré", "marble", "pierre naturelle"],
-    cuir: ["cuir", "leather", "simili cuir", "cuir véritable", "daim", "nubuck"],
-    tissu: ["tissu", "tissée", "tissé", "tissus", "textile", "fabric", "velours", "lin", "coton", "soie", "laine", "polyester", "microfibre"],
-    plastique: ["plastique", "plastic", "resine", "résine", "composite", "polycarbonate", "acrylique"],
-    ceramique: ["ceramique", "céramique", "ceramic", "porcelaine", "faïence", "terre cuite"],
-    pierre: ["pierre", "stone", "granit", "granite", "ardoise", "basalte"],
-    rotin: ["rotin", "osier", "bambou", "wicker", "vannerie"],
-    beton: ["beton", "béton", "ciment", "industriel"],
-  };
-
-  for (const [material, variants] of Object.entries(materialMap)) {
-    if (variants.some((variant) => searchNormalized.includes(variant))) {
-      filters.material = material;
-      console.log("🏗️ Material detected:", material);
-      break;
-    }
-  }
-
-  // DÉTECTION DES STYLES (SYSTÈME ÉTENDU)
-  const styleMap = {
-    moderne: ["moderne", "modern", "contemporain", "contemporaine", "design", "actuel", "tendance"],
-    classique: ["classique", "traditionnel", "traditionnelle", "ancien", "ancienne", "vieux", "ancien style"],
-    vintage: ["vintage", "retro", "rétro", "ancien", "ancienne", "années 50", "années 60", "années 70"],
-    scandinave: ["scandinave", "scandinavie", "nordique", "danemark", "suède", "norvège", "hygge", "épuré"],
-    industriel: ["industriel", "industrielle", "industrie", "metal", "métal", "usine", "loft", "new york"],
-    rustique: ["rustique", "campagne", "provence", "provencal", "provençale", "ferme", "chaleureux"],
-    minimaliste: ["minimaliste", "minimal", "epure", "épuré", "simple", "sobre", "essentiel"],
-    design: ["design", "contemporain", "moderne", "tendance", "créatif", "artistique"],
-    elegant: ["elegant", "élégant", "raffine", "raffiné", "chic", "luxe", "luxueux", "premium"],
-    bohème: ["bohème", "boho", "ethnique", "voyage", "nature"],
-    japonais: ["japonais", "japonaise", "zen", "asiatique", "wabi sabi"],
-  };
-
-  for (const [style, variants] of Object.entries(styleMap)) {
-    if (variants.some((variant) => searchNormalized.includes(variant))) {
-      filters.style = style;
-      console.log("🎭 Style detected:", style);
-      break;
-    }
-  }
-
-  // DÉTECTION DES PIÈCES (SYSTÈME COMPLET)
-  const roomMap = {
-    salon: ["salon", "sejour", "séjour", "living", "salle de sejour", "salle à manger", "séjour", "coin détente"],
-    chambre: ["chambre", "chambre a coucher", "chambre à coucher", "bedroom", "dortoir", "coin nuit"],
-    cuisine: ["cuisine", "kitchen", "salle de cuisine", "coin repas", "cellier"],
-    "salle de bain": ["salle de bain", "salle de bains", "bain", "bains", "bathroom", "douche", "toilette", "sanitaire"],
-    bureau: ["bureau", "office", "studie", "studio", "travail", "espace travail", "home office"],
-    jardin: ["jardin", "exterieur", "extérieur", "terrasse", "balcon", "jardinnage", "véranda"],
-    entree: ["entree", "entrée", "hall", "couloir", "vestibule", "accueil"],
-    dressing: ["dressing", "dressings", "penderie", "rangement vetements", "rangement vêtements"],
-    cave: ["cave", "sous sol", "sous-sol", "cellier"],
-  };
-
-  for (const [room, variants] of Object.entries(roomMap)) {
-    if (variants.some((variant) => searchNormalized.includes(variant))) {
-      filters.room = room;
-      console.log("🏠 Room detected:", room);
-      break;
-    }
-  }
-
-  // DÉTECTION DES BUDGETS ET PRIX (AMÉLIORÉE)
-  const priceMatch = searchNormalized.match(
-    /(?:moins de|max|maximum|jusqu'?a|jusqu'?à|inferieur a|inférieur à|pas plus de|<\s*|budget)\s*(\d+)(?:\s*euros?|\s*€|\s*euro)?/i,
-  );
-  if (priceMatch) {
-    filters.maxPrice = parseInt(priceMatch[1]);
-    console.log("💰 Max price detected:", filters.maxPrice);
-  }
-
-  const minPriceMatch = searchNormalized.match(
-    /(?:plus de|min|minimum|a partir de|à partir de|superieur a|supérieur à|>\s*|a partir)\s*(\d+)(?:\s*euros?|\s*€|\s*euro)?/i,
-  );
-  if (minPriceMatch) {
-    filters.minPrice = parseInt(minPriceMatch[1]);
-    console.log("💰 Min price detected:", filters.minPrice);
-  }
-
-  const priceRangeMatch = searchNormalized.match(
-    /(?:entre\s*)(\d+)(?:\s*et|\s*à|\s*-|\s*et)\s*(\d+)(?:\s*euros?|\s*€|\s*euro)?/i,
-  );
-  if (priceRangeMatch) {
-    filters.minPrice = parseInt(priceRangeMatch[1]);
-    filters.maxPrice = parseInt(priceRangeMatch[2]);
-    console.log("💰 Price range detected:", filters.minPrice, "-", filters.maxPrice);
-  }
-
-  // DÉTECTION DES TAILLES ET DIMENSIONS
-  const sizePatterns = [
-    { regex: /(\d+)\s*cm\s*(?:de\s*)?(?:largeur|large)/i, type: "width" },
-    { regex: /(\d+)\s*cm\s*(?:de\s*)?(?:hauteur|haut)/i, type: "height" },
-    { regex: /(\d+)\s*cm\s*(?:de\s*)?(?:profondeur|profond)/i, type: "depth" },
-    { regex: /(\d+)\s*cm\s*(?:x|\*)\s*(\d+)\s*cm/i, type: "dimensions" },
-    { regex: /petit/i, type: "small" },
-    { regex: /grand/i, type: "large" },
-    { regex: /moyen/i, type: "medium" },
-  ];
-
-  for (const pattern of sizePatterns) {
-    const match = searchNormalized.match(pattern.regex);
-    if (match) {
-      console.log("📏 Size detected:", pattern.type, match[1]);
-      // Stocker les informations de taille pour utilisation future
-      break;
-    }
-  }
-
-  // Si pas de catégorie spécifique détectée, utiliser la recherche textuelle
-  if (!bestCategory) {
-    const genericKeywords = [
-      "produits",
-      "articles",
-      "catalogue",
-      "collection",
-      "tout",
-      "tous",
-      "tes",
-      "vos",
-      "montre",
-      "voir",
-    ];
-    const isGenericRequest = genericKeywords.some((word) => searchNormalized.includes(word));
-
-    const categories = [
-      "canape",
-      "table",
-      "chaise",
-      "fauteuil",
-      "meuble",
-      "armoire",
-      "lit",
-      "bureau",
-      "lampe",
-      "miroir",
-    ];
-    const foundCategory = categories.find((c) => searchNormalized.includes(c));
-
-    if (foundCategory) {
-      filters.query = foundCategory;
-    } else if (isGenericRequest) {
-      filters.query = "";
-    } else {
-      // Extraction des termes principaux pour la recherche
-      const stopWords = [
-        "je", "tu", "il", "elle", "on", "nous", "vous", "ils", "elles",
-        "de", "du", "des", "le", "la", "les", "un", "une", "au", "aux",
-        "avec", "pour", "dans", "sur", "sous", "chez", "est", "sont",
-        "ai", "as", "a", "avons", "avez", "ont", "veux", "voudrais",
-        "cherche", "recherche", "quel", "quelle", "quels", "quelles",
-      ];
-      
-      const queryWords = searchNormalized
-        .split(" ")
-        .filter((word) => word.length > 2 && !stopWords.includes(word))
-        .filter((word) => !Object.values(colorMap).flat().includes(word))
-        .filter((word) => !Object.values(materialMap).flat().includes(word))
-        .filter((word) => !Object.values(styleMap).flat().includes(word))
-        .filter((word) => !Object.values(roomMap).flat().includes(word));
-
-      filters.query = queryWords.join(" ");
-    }
-  }
-
-  filters.status = "active";
-  filters.limit = 12;
-  
-  console.log("📋 Final extracted filters:", filters);
-  return filters;
-}
-
-// SYSTÈME DE DÉTECTION D'INTENT - 3 TYPES PRINCIPAUX
-async function detectIntent(userMessage: string, history: ChatMessage[] = []): Promise<"simple_chat" | "product_chat" | "product_show"> {
+async function detectIntent(
+  userMessage: string, 
+  history: ChatMessage[] = []
+): Promise<"simple_chat" | "product_chat" | "product_show"> {
   const msg = normalizeText(userMessage);
-  const context = extractContextFromHistory(history);
-  const fullContext = context + " " + msg;
   
   console.log("🧠 Analyzing intent for:", msg);
-  console.log("📚 Context from history:", context);
   
-  let scores = { 
-    simple_chat: 0, 
-    product_chat: 0, 
-    product_show: 0
-  };
-
-  // Mots-clés pour chaque intent - SIMPLIFIÉ À 3 TYPES
-  const intentKeywords = {
-    simple_chat: [
-      "bonjour", "salut", "hello", "coucou", "hey", "hi", "bonsoir",
-      "comment ca va", "ca va", "comment allez-vous", "merci", "thanks",
-      "au revoir", "bye", "a bientot", "ok", "d'accord", "parfait",
-      "super", "genial", "cool", "qui es-tu", "ton nom", "tu fais quoi",
-      "comment tu t'appelles", "tu es un robot", "tu es une ia",
-      "vous etes disponible", "vous travaillez", "jour de repos", "week-end",
-      "aide", "help", "bien", "mal", "content", "triste"
-    ],
-
-    product_show: [
-      "montre", "montrez", "montre-moi", "affiche", "voir", "regarder",
-      "montrer", "liste", "lister", "catalogue", "collection", "gamme",
-      "selection", "je cherche", "je veux", "j'ai besoin", "je voudrais",
-      "trouver", "acheter", "commander", "panier", "budget", "plusieurs",
-      "quelques", "des", "tous les", "toutes les", "ce que vous avez",
-      "vos produits", "votre catalogue", "disponible", "en stock", "ajouter au panier",
-      "voir les produits", "proposer", "visualiser"
-    ],
-
-    product_chat: [
-      "avez-vous", "proposez-vous", "vendez-vous", "vous avez", "disponible",
-      "en stock", "existe", "qualite", "durable", "resistant", "solide",
-      "fiable", "materiau", "matiere", "composition", "fabrication",
-      "garantie", "retour", "satisfait", "livraison", "conseil", "avis",
-      "recommandation", "suggestion", "comment choisir", "lequel", "quelle",
-      "difference", "meilleur", "preferer", "conseiller", "tendance", "mode",
-      "populaire", "best-seller", "nouveau", "actualite", "promotion", "promo",
-      "solde", "offre", "prix", "coute", "combien", "dimension", "taille",
-      "couleur", "matériau", "style", "caracteristique", "fonctionnalite",
-      "avantage", "inconvenient", "pourquoi", "comment", "est-ce que",
-      "detail", "détail", "specification", "comparer", "comparaison", "vs",
-      "recommandez", "conseille", "suggere", "idée", "pour mon", "pour ma"
-    ]
-  };
-
-  const productKeywords = [
-    "produit", "article", "modele", "reference", "table", "chaise", "canape",
-    "fauteuil", "meuble", "lit", "bureau", "armoire", "lampe", "miroir",
-    "decoration", "mobilier", "robe", "chemise", "pantalon", "jupe", "sac",
-    "bijou", "vetement", "chaussure", "accessoire", "ceinture", "telephone",
-    "smartphone", "ordinateur", "tablette", "casque", "meuble", "mobilier"
-  ];
-
-  // CALCUL DES SCORES AVEC PONDÉRATIONS INTELLIGENTES
-  Object.entries(intentKeywords).forEach(([intent, keywords]) => {
-    keywords.forEach((word) => {
-      if (msg.includes(word)) {
-        scores[intent as keyof typeof scores] += 10;
-      }
-    });
-  });
-
-  // Bonus pour les mots-clés de produits
-  productKeywords.forEach((word) => {
-    if (msg.includes(word)) {
-      scores.product_show += 8;
-      scores.product_chat += 6;
-    }
-  });
-
-  // DÉTECTION DE PHRASES SPÉCIFIQUES - SIMPLIFIÉ À 3 TYPES
-  const specificPatterns = [
-    // Product Show patterns (afficher, voir des produits)
-    { pattern: /(montre|voir|affiche).*(table|chaise|canape|fauteuil|meuble|armoire|lit)/i, intent: "product_show", score: 50 },
-    { pattern: /je (cherche|veux|voudrais).*(armoire|canape|table|chaise)/i, intent: "product_show", score: 40 },
-    { pattern: /quels?.*(produits|articles).*avez.*vous/i, intent: "product_show", score: 35 },
-    { pattern: /(liste|catalogue|collection|voir).*(produits|articles)/i, intent: "product_show", score: 45 },
-    
-    // Product Chat patterns (discuter, informations, conseils)
-    { pattern: /(combien|prix|cout|coût).*(coute|coûte)/i, intent: "product_chat", score: 40 },
-    { pattern: /(quelle|quel).*(couleur|matériau|style|taille)/i, intent: "product_chat", score: 35 },
-    { pattern: /(livraison|garantie|retour|delai)/i, intent: "product_chat", score: 30 },
-    { pattern: /(detail|détail|specification|caracteristiques)/i, intent: "product_chat", score: 45 },
-    { pattern: /(comparer|comparaison|difference|vs)/i, intent: "product_chat", score: 50 },
-    { pattern: /(recommandez|conseillez|suggere|idée)/i, intent: "product_chat", score: 55 },
-  ];
-
-  specificPatterns.forEach(({ pattern, intent, score }) => {
-    if (pattern.test(fullContext)) {
-      scores[intent as keyof typeof scores] += score;
-    }
-  });
-
-  // ANALYSE DU CONTEXTE HISTORIQUE
-  if (history.length > 0) {
-    const lastMessages = history.slice(-3).map(m => m.content).join(" ");
-    const lastNormalized = normalizeText(lastMessages);
-
-    // Si l'historique contient des discussions sur des produits spécifiques
-    if (productKeywords.some(word => lastNormalized.includes(word))) {
-      scores.product_chat += 20;
-    }
-
-    // Si l'utilisateur vient de demander à voir des produits
-    if (lastNormalized.includes("montre") || lastNormalized.includes("voir")) {
-      scores.product_show += 25;
-      scores.product_chat += 15;
-    }
-  }
-
-  // RÈGLES CONTEXTUELLES SUPPLÉMENTAIRES
-  if (msg.length < 10 && scores.simple_chat > 0) {
-    scores.simple_chat += 30;
-  }
-
-  // Si la requête contient des attributs spécifiques (couleur, matériau, etc.)
-  const hasSpecificAttributes = msg.match(/(blanc|noir|bois|metal|cuir|tissu|moderne|classique)/i);
-  if (hasSpecificAttributes) {
-    scores.product_show += 25;
-    scores.product_chat += 15;
-  }
-
-  console.log("📊 Detailed intent scores:", scores);
-
-  // DÉCISION FINALE - 3 TYPES PRINCIPAUX
-  const maxScore = Math.max(...Object.values(scores));
-  const threshold = 30;
-
-  if (maxScore < threshold) {
-    console.log("🎯 Decision: SIMPLE_CHAT (fallback - no clear intent)");
+  // Simple greeting detection
+  const greetings = ["bonjour", "salut", "hello", "coucou", "hey", "hi", "bonsoir"];
+  if (greetings.some(g => msg.includes(g)) && msg.length < 20) {
     return "simple_chat";
   }
 
-  // Priorité: product_show > product_chat > simple_chat
-  if (scores.product_show === maxScore && scores.product_show > 40) {
-    console.log("🎯 Decision: PRODUCT_SHOW (show products and add to cart)");
+  // Product show detection
+  const showKeywords = ["montre", "voir", "affiche", "liste", "catalogue", "je cherche", "je veux"];
+  if (showKeywords.some(k => msg.includes(k))) {
     return "product_show";
   }
 
-  if (scores.product_chat === maxScore && scores.product_chat > 35) {
-    console.log("🎯 Decision: PRODUCT_CHAT (discuss products, info, recommendations)");
+  // Product chat detection  
+  const chatKeywords = ["combien", "prix", "couleur", "conseil", "recommande", "detail"];
+  if (chatKeywords.some(k => msg.includes(k))) {
     return "product_chat";
   }
 
-  console.log("🎯 Decision: SIMPLE_CHAT (general conversation)");
   return "simple_chat";
 }
 
-// [Le reste du code reste similaire mais avec des améliorations pour chaque intent...]
+async function searchProducts(
+  sellerId: string, 
+  query?: string,
+  limit: number = 12
+): Promise<Product[]> {
+  const supabase = getSupabaseClient();
+  
+  let dbQuery = supabase
+    .from('shopify_products')
+    .select('*')
+    .eq('seller_id', sellerId)
+    .eq('status', 'active')
+    .limit(limit);
+    
+  if (query && query.trim()) {
+    dbQuery = dbQuery.ilike('title', `%${query}%`);
+  }
+  
+  const { data, error } = await dbQuery;
+  
+  if (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
+  
+  return data || [];
+}
 
-// Fonction principale OmnIAChat mise à jour
+async function callLovableAI(messages: ChatMessage[]): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages,
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      throw new Error("Rate limit atteint. Veuillez réessayer.");
+    }
+    if (response.status === 402) {
+      throw new Error("Crédits insuffisants.");
+    }
+    throw new Error(`AI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "Je n'ai pas pu générer de réponse.";
+}
+
 async function* OmnIAChat(
   userMessage: string,
   history: ChatMessage[] = [],
   storeId?: string,
   sellerId?: string,
-  context: any = {},
 ): AsyncGenerator<ChatResponse, void, unknown> {
-  const startTime = Date.now();
   console.log("🚀 [OMNIA] Message received:", userMessage);
 
   try {
-    // Détection d'intent améliorée
-    const intentStart = Date.now();
     const intent = await detectIntent(userMessage, history);
-    const intentDuration = Date.now() - intentStart;
-    console.log(`🎯 Final intent: ${intent} (${intentDuration}ms)`);
+    console.log(`🎯 Intent detected: ${intent}`);
 
-    // Handle product_chat and product_show intents
-    if (intent === "product_chat" || intent === "product_show") {
-      const searchFilters = extractFiltersFromQuery(userMessage, history);
-      console.log("🔍 Extracted filters for product search:", searchFilters);
+    // Handle simple chat
+    if (intent === "simple_chat") {
+      const systemMessage = {
+        role: "system" as const,
+        content: `Tu es un conseiller commercial IA sympathique et professionnel. 
+        Tu aides les clients à trouver des produits et réponds à leurs questions.
+        Reste bref, clair et amical. Utilise des emojis avec modération.`
+      };
 
-      // Product_chat: discuss product without showing full list
-      if (intent === "product_chat") {
-        const followUpQuestions = [
-          "Quelle couleur préférez-vous ?",
-          "Avez-vous une préférence de matériau ?",
-          "Quel style recherchez-vous ?",
-          "Pour quelle pièce ?",
-          "Avez-vous un budget en tête ?"
-        ];
+      const aiMessages = [systemMessage, ...history, { role: "user" as const, content: userMessage }];
+      const response = await callLovableAI(aiMessages);
 
-        yield {
-          role: "assistant",
-          content: `Je vois que vous vous intéressez à ${searchFilters.query || 'nos produits'} ! Pour vous proposer les meilleures options, pourriez-vous me préciser :
+      yield {
+        role: "assistant",
+        content: response,
+        intent: "simple_chat",
+        products: [],
+        mode: "conversation",
+        sector: "général",
+      };
+      return;
+    }
 
+    // Handle product_chat
+    if (intent === "product_chat") {
+      yield {
+        role: "assistant",
+        content: `Je serais ravi de vous aider à trouver le produit parfait ! 
+        
+Pourriez-vous me préciser :
 • La couleur que vous préférez
 • Le matériau souhaité
-• Le style que vous aimez
+• Le style que vous recherchez
 • La pièce où ce sera placé
 
-Cela m'aidera à vous trouver le produit parfait ! 🎯`,
-          intent: "product_chat",
+Cela m'aidera à vous proposer les meilleures options ! 🎯`,
+        intent: "product_chat",
+        products: [],
+        mode: "product_chat",
+        sector: "mobilier",
+      };
+      return;
+    }
+
+    // Handle product_show
+    if (intent === "product_show" && sellerId) {
+      const normalizedQuery = normalizeText(userMessage);
+      
+      // Extract search terms
+      const categories = [
+        "table", "chaise", "canape", "fauteuil", "meuble", 
+        "armoire", "lit", "bureau", "lampe", "miroir"
+      ];
+      const foundCategory = categories.find(c => normalizedQuery.includes(c));
+      
+      const products = await searchProducts(sellerId, foundCategory, 12);
+
+      if (products.length === 0) {
+        yield {
+          role: "assistant",
+          content: "Je n'ai pas trouvé de produits correspondant à votre recherche. Voulez-vous voir notre catalogue complet ?",
+          intent: "product_show",
           products: [],
-          mode: "product_chat",
+          mode: "product_show",
           sector: "mobilier",
-          follow_up_questions: followUpQuestions
         };
         return;
       }
+
+      const productList = products.map(p => `• ${p.title} - ${p.price}€`).join('\n');
+      
+      yield {
+        role: "assistant",
+        content: `Voici ${products.length} produits qui pourraient vous intéresser :\n\n${productList}\n\nClic sur un produit pour plus de détails ! 🛍️`,
+        intent: "product_show",
+        products: products,
+        mode: "product_show",
+        sector: "mobilier",
+      };
+      return;
     }
 
-    // [Le reste du code pour les autres intents...]
-
-  } catch (error) {
-    console.error("❌ [OMNIA] Global error:", error);
+    // Fallback
     yield {
       role: "assistant",
-      content: "Je suis désolé, je rencontre un problème technique. Pouvez-vous réessayer dans un instant ?",
+      content: "Comment puis-je vous aider aujourd'hui ? 😊",
+      intent: "simple_chat",
+      products: [],
+      mode: "conversation",
+      sector: "général",
+    };
+
+  } catch (error) {
+    console.error("❌ [OMNIA] Error:", error);
+    yield {
+      role: "assistant",
+      content: "Je suis désolé, je rencontre un problème technique. Pouvez-vous réessayer ?",
       intent: "simple_chat",
       products: [],
       mode: "conversation",
@@ -594,4 +254,70 @@ Cela m'aidera à vous trouver le produit parfait ! 🎯`,
   }
 }
 
-// [Le reste du code Deno.serve reste inchangé...]
+// HTTP Handler
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { userMessage, history = [], storeId, sellerId } = await req.json();
+    
+    if (!userMessage) {
+      return new Response(
+        JSON.stringify({ error: "userMessage is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("📨 Message:", userMessage);
+    console.log("👤 Seller ID:", sellerId);
+
+    // Create streaming response
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const generator = OmnIAChat(userMessage, history, storeId, sellerId);
+          
+          for await (const chunk of generator) {
+            const data = `data: ${JSON.stringify(chunk)}\n\n`;
+            controller.enqueue(encoder.encode(data));
+          }
+          
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        } catch (error) {
+          console.error("❌ Stream error:", error);
+          const errorData = `data: ${JSON.stringify({
+            role: "assistant",
+            content: "Désolé, une erreur s'est produite.",
+            intent: "simple_chat",
+            products: [],
+            mode: "conversation",
+            sector: "général"
+          })}\n\n`;
+          controller.enqueue(encoder.encode(errorData));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        }
+      }
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
+
+  } catch (error) {
+    console.error("❌ Chat error:", error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Erreur inconnue" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
