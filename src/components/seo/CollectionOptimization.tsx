@@ -747,7 +747,7 @@ export function CollectionOptimization() {
 
   return (
     <div className="space-y-6">
-      {limits.limitReached && !limits.canUseOptimizations && (
+      {limits?.limitReached && !limits?.canUseOptimizations && (
         <TrialLimitBanner
           resourceType="optimisations"
           usage={limits.usage.optimizations_count}
@@ -909,7 +909,7 @@ export function CollectionOptimization() {
       {limits && limits.isTrialing && (
         <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
           <AlertDescription className="text-sm">
-            {limits.limitReached.optimizations ? (
+            {limits.limitReached?.optimizations ? (
               <span className="text-orange-600 dark:text-orange-100 font-medium">
                 ⚠️ Limite trial atteinte: {limits.usage.optimizations_count}/{limits.limits.max_optimizations} optimisations utilisées
               </span>
