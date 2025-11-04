@@ -148,6 +148,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const { shopName, apiKey, apiSecret, storeId } = validation.data;
+    const syncMode = requestBody.syncMode || 'smart'; // Default to smart mode
+    
+    console.log('🔄 Sync mode:', syncMode);
     
     // Determine authentication method
     const isManualAuth = !!apiKey;
@@ -437,6 +440,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Fetch existing products to check optimization status (for smart mode)
+    const existingProductIds = products.map(p => p.id);
+    const { data: existingProducts } = await supabaseServiceClient
+      .from('shopify_products')
+      .select('shopify_id, optimization_count, title, description, seo_title, seo_description')
+      .in('shopify_id', existingProductIds);
+    
+    const existingMap = new Map(existingProducts?.map(p => [p.shopify_id, p]) || []);
+    
+    console.log(`🔍 Found ${existingProducts?.length || 0} existing products in DB`);
+    console.log(`🤖 Smart mode: ${syncMode === 'smart' ? 'ENABLED' : 'DISABLED'}`);
+    
     const productsToInsert = products.map((product) => {
       const firstVariant = product.variants[0] || {} as ShopifyVariant;
       const firstImage = product.images[0];
@@ -444,22 +459,35 @@ Deno.serve(async (req: Request) => {
         (sum, v) => sum + (v.inventory_quantity || 0),
         0
       );
+      
+      const existing = existingMap.get(product.id);
+      const isOptimized = existing && existing.optimization_count > 0;
+      
+      // In smart mode, protect optimized content
+      const shouldProtect = syncMode === 'smart' && isOptimized;
+      
+      if (shouldProtect) {
+        console.log(`🛡️ Protecting optimized content for product ${product.id} (${existing?.title})`);
+      }
 
       return {
         seller_id: user.id,
         store_id: storeId || null,
         shopify_id: product.id,
-        title: product.title,
-        description: product.body_html || "",
+        // Protect optimized content if in smart mode and product is optimized
+        title: shouldProtect ? existing.title : product.title,
+        description: shouldProtect ? existing.description : (product.body_html || ""),
         vendor: product.vendor || "",
         product_type: product.product_type || "",
         handle: product.handle || "",
         status: product.status || "active",
         tags: product.tags || "",
-        seo_title: product.metafields_global_title_tag || product.title,
-        seo_description: product.metafields_global_description_tag || 
-                         product.body_html?.replace(/<[^>]*>/g, '').substring(0, 160) || 
-                         `Découvrez ${product.title}`,
+        seo_title: shouldProtect ? existing.seo_title : (product.metafields_global_title_tag || product.title),
+        seo_description: shouldProtect ? existing.seo_description : (
+          product.metafields_global_description_tag || 
+          product.body_html?.replace(/<[^>]*>/g, '').substring(0, 160) || 
+          `Découvrez ${product.title}`
+        ),
         image_url: firstImage?.src || "",
         price: parseFloat(firstVariant.price || "0"),
         compare_at_price: firstVariant.compare_at_price
@@ -469,7 +497,8 @@ Deno.serve(async (req: Request) => {
         currency: shopCurrency,
         raw_data: product,
         shop_name: cleanShopName,
-        optimization_count: 0, // Reset optimization counter on import
+        // Preserve optimization count if product already exists
+        ...(existing ? { optimization_count: existing.optimization_count } : { optimization_count: 0 })
       };
     });
 

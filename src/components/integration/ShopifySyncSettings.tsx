@@ -62,6 +62,7 @@ export function ShopifySyncSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncMode, setSyncMode] = useState<'full' | 'smart'>('smart');
   
   // Progress dialog state
   const [showProgressDialog, setShowProgressDialog] = useState(false);
@@ -247,6 +248,7 @@ export function ShopifySyncSettings() {
           sync_type: 'import',
           content_types: settings.import_types,
           status: 'running',
+          details: { sync_mode: syncMode }
         })
         .select()
         .single();
@@ -282,6 +284,7 @@ export function ShopifySyncSettings() {
                     storeId: connection.id,
                     shopName: cleanShopName,
                     apiSecret: connection.access_token,
+                    syncMode: syncMode
                   }
                 });
               case 'collections':
@@ -329,6 +332,18 @@ export function ShopifySyncSettings() {
           console.log(`✅ Imported ${imported} ${type}`);
           totalItems += imported;
           setTotalImported(totalItems);
+
+          // Update sync_history with details after each successful import
+          if (historyEntry && imported > 0) {
+            const currentDetails = { sync_mode: syncMode, [type]: imported };
+            await supabase
+              .from('sync_history')
+              .update({ 
+                items_synced: totalItems,
+                details: currentDetails
+              })
+              .eq('id', historyEntry.id);
+          }
 
           // Update stats for this type
           setSyncStats(prev => ({
@@ -628,6 +643,42 @@ export function ShopifySyncSettings() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Sync Mode */}
+          <div className="space-y-3">
+            <Label>Mode de synchronisation</Label>
+            <Select
+              value={syncMode}
+              onValueChange={(value: 'full' | 'smart') => setSyncMode(value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="smart">
+                  <div className="flex flex-col">
+                    <span className="font-medium">Intelligent (Recommandé)</span>
+                    <span className="text-xs text-muted-foreground">
+                      Protège les contenus optimisés par IA
+                    </span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="full">
+                  <div className="flex flex-col">
+                    <span className="font-medium">Complet</span>
+                    <span className="text-xs text-muted-foreground">
+                      Écrase tout avec les données Shopify
+                    </span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {syncMode === 'smart' && (
+              <p className="text-xs text-muted-foreground">
+                ⚠️ Les produits optimisés gardent leur titre, description et SEO générés par IA
+              </p>
+            )}
           </div>
 
           {/* Last Sync */}

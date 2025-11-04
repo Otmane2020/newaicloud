@@ -2527,6 +2527,7 @@ export type Database = {
           completed_at: string | null
           content_types: string[]
           created_at: string
+          details: Json | null
           duration_ms: number | null
           error_message: string | null
           id: string
@@ -2541,6 +2542,7 @@ export type Database = {
           completed_at?: string | null
           content_types: string[]
           created_at?: string
+          details?: Json | null
           duration_ms?: number | null
           error_message?: string | null
           id?: string
@@ -2555,6 +2557,7 @@ export type Database = {
           completed_at?: string | null
           content_types?: string[]
           created_at?: string
+          details?: Json | null
           duration_ms?: number | null
           error_message?: string | null
           id?: string
