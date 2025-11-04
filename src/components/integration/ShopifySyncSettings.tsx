@@ -8,11 +8,56 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Clock, Calendar, Download, Upload, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { RefreshCw, Clock, Calendar, Download, Upload, CheckCircle2, XCircle, Loader2, Shield, Zap } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SimpleSyncProgress } from './SyncProgressDialog';
 import { SyncResultDialog } from './SyncResultDialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
+interface Timezone {
+  value: string;
+  label: string;
+  utc: string[];
+}
+
+const TIMEZONES: Timezone[] = [
+  {
+    value: "America/Los_Angeles",
+    label: "Los Angeles",
+    utc: ["UTC-8"]
+  },
+  {
+    value: "America/New_York",
+    label: "New York",
+    utc: ["UTC-5"]
+  },
+  {
+    value: "Europe/London",
+    label: "London",
+    utc: ["UTC+0"]
+  },
+  {
+    value: "Europe/Paris",
+    label: "Paris",
+    utc: ["UTC+1"]
+  },
+  {
+    value: "Asia/Tokyo",
+    label: "Tokyo",
+    utc: ["UTC+9"]
+  },
+  {
+    value: "Australia/Sydney",
+    label: "Sydney",
+    utc: ["UTC+10"]
+  }
+];
+
+const SCHEDULE_HOURS = Array.from({ length: 24 }, (_, i) => ({
+  value: i,
+  label: `${i.toString().padStart(2, '0')}:00`,
+}));
 
 interface SyncSettings {
   import_frequency: 'manual' | 'hourly' | 'daily' | 'weekly' | 'monthly';
@@ -24,6 +69,7 @@ interface SyncSettings {
   last_import_at: string | null;
   last_export_at: string | null;
   next_import_at: string | null;
+  store_id?: string;
 }
 
 interface SyncHistory {
@@ -36,6 +82,14 @@ interface SyncHistory {
   error_message: string | null;
   started_at: string;
   completed_at: string | null;
+}
+
+interface SyncStats {
+  products: { before: number; after: number; imported: number; error?: string };
+  collections: { before: number; after: number; imported: number; error?: string };
+  pages: { before: number; after: number; imported: number; error?: string };
+  articles: { before: number; after: number; imported: number; error?: string };
+  images: { before: number; after: number; imported: number; error?: string };
 }
 
 const IMPORT_TYPES = [
@@ -61,19 +115,20 @@ export function ShopifySyncSettings() {
   const [history, setHistory] = useState<SyncHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [syncMode, setSyncMode] = useState<'full' | 'smart'>('smart');
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(['products', 'collections', 'pages', 'articles', 'images']);
   
   // Progress dialog state
-  const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
-  const [currentSyncType, setCurrentSyncType] = useState('');
-  const [syncStats, setSyncStats] = useState({
-    products: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
-    collections: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
-    pages: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
-    articles: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
-    images: { before: 0, after: 0, imported: 0, error: undefined as string | undefined },
+  const [currentType, setCurrentType] = useState('');
+  const [syncResults, setSyncResults] = useState<SyncStats>({
+    products: { before: 0, after: 0, imported: 0 },
+    collections: { before: 0, after: 0, imported: 0 },
+    pages: { before: 0, after: 0, imported: 0 },
+    articles: { before: 0, after: 0, imported: 0 },
+    images: { before: 0, after: 0, imported: 0 },
   });
   const [totalImported, setTotalImported] = useState(0);
 
@@ -97,11 +152,13 @@ export function ShopifySyncSettings() {
 
       if (data) {
         setSettings(data as SyncSettings);
+        if (data.import_types) {
+          setSelectedTypes(data.import_types);
+        }
       } else {
         // Create default settings
-        const defaultSettings = {
-          user_id: user.id,
-          import_frequency: 'manual' as const,
+        const defaultSettings: Partial<SyncSettings> = {
+          import_frequency: 'manual',
           import_schedule_hour: 9,
           import_schedule_day: 1,
           import_types: ['products', 'collections', 'pages', 'articles', 'images'],
@@ -109,18 +166,18 @@ export function ShopifySyncSettings() {
           export_after_optimization: true,
         };
 
-        const { data: newSettings, error: createError } = await supabase
+        const { data: newSettings } = await supabase
           .from('shopify_sync_settings')
-          .insert(defaultSettings)
+          .insert({ ...defaultSettings, user_id: user.id })
           .select()
           .single();
 
-        if (createError) throw createError;
-        setSettings(newSettings as SyncSettings);
+        if (newSettings) {
+          setSettings(newSettings as SyncSettings);
+        }
       }
     } catch (error) {
       console.error('Error loading settings:', error);
-      toast.error('Erreur lors du chargement des paramètres');
     } finally {
       setLoading(false);
     }
@@ -131,18 +188,17 @@ export function ShopifySyncSettings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Clean up stuck syncs (running for more than 5 minutes)
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      // Clean up stuck syncs
       await supabase
         .from('sync_history')
         .update({ 
-          status: 'failed', 
-          error_message: 'Sync timeout - exceeded 5 minutes',
-          completed_at: new Date().toISOString()
+          status: 'failed',
+          completed_at: new Date().toISOString(),
+          error_message: 'Sync stuck in running state'
         })
         .eq('user_id', user.id)
         .eq('status', 'running')
-        .lt('started_at', fiveMinutesAgo);
+        .lt('started_at', new Date(Date.now() - 10 * 60 * 1000).toISOString());
 
       const { data, error } = await supabase
         .from('sync_history')
@@ -168,7 +224,7 @@ export function ShopifySyncSettings() {
 
       const { error } = await supabase
         .from('shopify_sync_settings')
-        .update(settings)
+        .update({ ...settings, import_types: selectedTypes })
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -183,624 +239,522 @@ export function ShopifySyncSettings() {
   };
 
   const handleSyncNow = async () => {
-    if (!settings) return;
+    if (!settings) {
+      toast.error('Veuillez configurer vos paramètres de synchronisation');
+      return;
+    }
 
-    // Reset and show progress dialog
-    setShowProgressDialog(true);
-    setShowResultDialog(false);
-    setTotalImported(0);
-    setSyncStats({
-      products: { before: 0, after: 0, imported: 0, error: undefined },
-      collections: { before: 0, after: 0, imported: 0, error: undefined },
-      pages: { before: 0, after: 0, imported: 0, error: undefined },
-      articles: { before: 0, after: 0, imported: 0, error: undefined },
-      images: { before: 0, after: 0, imported: 0, error: undefined },
-    });
+    let historyEntry: any = null;
 
-    setSyncing(true);
     try {
+      setIsSyncing(true);
+      setShowProgress(true);
+      
+      console.log('🔄 Starting sync process...');
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get active Shopify connection
-      const { data: connection, error: connectionError } = await supabase
-        .from('shopify_connections')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (connectionError || !connection) {
-        toast.error('Aucune connexion Shopify active trouvée');
-        setShowProgressDialog(false);
-        return;
+      // Count before sync
+      const countsBefore: Record<string, number> = {};
+      for (const type of selectedTypes) {
+        const table = type === 'products' ? 'shopify_products' 
+                    : type === 'collections' ? 'shopify_collections'
+                    : type === 'pages' ? 'shopify_pages'
+                    : type === 'articles' ? 'blog_articles'
+                    : type === 'images' ? 'content_images'
+                    : null;
+        
+        if (table) {
+          const { count } = await supabase
+            .from(table)
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+          countsBefore[type] = count || 0;
+          console.log(`📊 ${type} before: ${count}`);
+        }
       }
 
-      // Get initial counts (before) - FIXED: use shopify_products instead of products
-      const beforeCounts = await Promise.all([
-        supabase.from('shopify_products').select('id', { count: 'exact', head: true }).eq('seller_id', user.id),
-        supabase.from('shopify_collections').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('shopify_pages').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('blog_articles').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('content_images').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-      ]);
-
-      const initialStats = {
-        products: { before: beforeCounts[0].count || 0, after: 0, imported: 0, error: undefined },
-        collections: { before: beforeCounts[1].count || 0, after: 0, imported: 0, error: undefined },
-        pages: { before: beforeCounts[2].count || 0, after: 0, imported: 0, error: undefined },
-        articles: { before: beforeCounts[3].count || 0, after: 0, imported: 0, error: undefined },
-        images: { before: beforeCounts[4].count || 0, after: 0, imported: 0, error: undefined },
-      };
-      setSyncStats(initialStats);
-
-      // Clean the shop name
-      let cleanShopName = (connection.store_url || '')
-        .replace(/^https?:\/\//, '')
-        .replace(/\.myshopify\.com.*$/, '')
-        .replace(/\/$/, '');
-
       // Create sync history entry
-      const { data: historyEntry, error: historyError } = await supabase
+      console.log('📝 Creating sync history entry...');
+      const { data: historyData, error: historyError } = await supabase
         .from('sync_history')
         .insert({
           user_id: user.id,
+          store_id: settings.store_id,
           sync_type: 'import',
-          content_types: settings.import_types,
+          content_types: selectedTypes,
           status: 'running',
           details: { sync_mode: syncMode }
         })
         .select()
         .single();
 
-      if (historyError) throw historyError;
+      if (historyError) {
+        console.error('❌ Error creating sync history:', historyError);
+        throw historyError;
+      }
 
-      const startTime = Date.now();
-      let totalItems = 0;
-      let hasErrors = false;
+      historyEntry = historyData;
+      console.log('✅ Sync history created:', historyEntry.id);
 
-      // Import based on selected types
-      let collectionsImported = false;
-      let productsImported = false;
-      const typesCount = settings.import_types.length;
-      
-      for (let i = 0; i < settings.import_types.length; i++) {
-        const type = settings.import_types[i];
-        setCurrentSyncType(type);
+      const results: Record<string, any> = {};
 
-        try {
-          let result;
-          
-          // Add timeout wrapper - 2 minutes max per import
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout: import took more than 2 minutes')), 120000)
-          );
-          
-          const importPromise = (async () => {
-            switch (type) {
-              case 'products':
-                return await supabase.functions.invoke('import-products', {
-                  body: {
-                    storeId: connection.id,
-                    shopName: cleanShopName,
-                    apiSecret: connection.access_token,
-                    syncMode: syncMode
-                  }
-                });
-              case 'collections':
-                return await supabase.functions.invoke('import-shopify-collections');
-              case 'pages':
-                return await supabase.functions.invoke('import-shopify-pages');
-              case 'articles':
-                return await supabase.functions.invoke('import-shopify-articles', {
-                  body: {
-                    storeId: connection.id,
-                    shopName: cleanShopName,
-                    authToken: connection.access_token,
-                  }
-                });
-              case 'images':
-                return await supabase.functions.invoke('import-content-images', {
-                  body: {
-                    storeId: connection.id,
-                    types: ['collections', 'pages', 'articles', 'homepage']
-                  }
-                });
-              default:
-                throw new Error(`Unknown import type: ${type}`);
-            }
-          })();
-
-          result = await Promise.race([importPromise, timeoutPromise]);
-          
-          if (type === 'products') productsImported = true;
-          if (type === 'collections') collectionsImported = true;
-
-          let imported = 0;
-          if (result?.error) {
-            console.error(`❌ Error importing ${type}:`, result.error);
-            toast.error(`Erreur lors de l'import de ${type}: ${result.error.message || 'Unknown error'}`);
-            hasErrors = true;
-          } else if (result?.data?.totalImported) {
-            imported = result.data.totalImported;
-          } else if (result?.data?.imported) {
-            imported = result.data.imported;
-          } else if (result?.data?.count) {
-            imported = result.data.count;
+      // Import products
+      if (selectedTypes.includes('products')) {
+        setCurrentType('products');
+        console.log('📦 Importing products...');
+        const { data: productsResult, error: productsError } = await supabase.functions.invoke('import-products', {
+          body: { 
+            maxProducts: 250,
+            storeId: settings.store_id,
+            syncMode: syncMode
           }
+        });
 
-          console.log(`✅ Imported ${imported} ${type}`);
-          totalItems += imported;
-          setTotalImported(totalItems);
+        if (productsError) {
+          console.error('❌ Products import error:', productsError);
+          throw productsError;
+        }
+        
+        results.products = productsResult;
+        console.log('✅ Products imported:', productsResult);
 
-          // Update sync_history with details after each successful import
-          if (historyEntry && imported > 0) {
-            const currentDetails = { sync_mode: syncMode, [type]: imported };
-            await supabase
-              .from('sync_history')
-              .update({ 
-                items_synced: totalItems,
-                details: currentDetails
-              })
-              .eq('id', historyEntry.id);
-          }
-
-          // Update stats for this type
-          setSyncStats(prev => ({
-            ...prev,
-            [type]: {
-              ...prev[type as keyof typeof prev],
-              imported,
-              after: prev[type as keyof typeof prev].before + imported,
-            }
-          }));
-        } catch (error: any) {
-          console.error(`❌ Fatal error importing ${type}:`, error);
-          toast.error(`Erreur fatale lors de l'import de ${type}: ${error.message || 'Unknown error'}`);
-          hasErrors = true;
-          
-          // Store error in stats
-          setSyncStats(prev => ({
-            ...prev,
-            [type]: {
-              ...prev[type as keyof typeof prev],
-              error: error.message || 'Unknown error'
-            }
-          }));
+        // Update sync history with product details
+        if (historyEntry) {
+          await supabase
+            .from('sync_history')
+            .update({
+              items_synced: productsResult.count || 0,
+              details: {
+                sync_mode: syncMode,
+                products: productsResult.stats || { 
+                  total: productsResult.count || 0,
+                  new: 0,
+                  updated: productsResult.count || 0,
+                  protected: 0
+                }
+              }
+            })
+            .eq('id', historyEntry.id);
+          console.log('✅ Sync history updated for products');
         }
       }
 
-      // CRITICAL: Synchronize product-collection relationships if both were imported
-      if (collectionsImported && productsImported) {
-        try {
-          console.log('🔄 Synchronizing product-collection relationships...');
-          const syncResult = await supabase.functions.invoke('sync-product-collections');
-          
-          if (syncResult?.error) {
-            console.error('❌ Error syncing product-collections:', syncResult.error);
-            hasErrors = true;
-          } else {
-            console.log('✅ Product-collection relationships synchronized');
-            if (syncResult?.data?.updated_count) {
-              totalItems += syncResult.data.updated_count;
-              setTotalImported(totalItems);
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error in product-collection sync:', error);
-          hasErrors = true;
+      // Import collections
+      if (selectedTypes.includes('collections')) {
+        setCurrentType('collections');
+        console.log('📂 Importing collections...');
+        const { data: collectionsResult, error: collectionsError } = await supabase.functions.invoke('import-shopify-collections', {
+          body: { storeId: settings.store_id }
+        });
+
+        if (collectionsError) {
+          console.error('❌ Collections import error:', collectionsError);
+          throw collectionsError;
+        }
+        
+        results.collections = collectionsResult;
+        console.log('✅ Collections imported:', collectionsResult);
+
+        // Update sync history
+        if (historyEntry) {
+          const { data: currentData } = await supabase.from('sync_history').select('details').eq('id', historyEntry.id).single();
+          const currentDetails = currentData?.details as any || {};
+          await supabase
+            .from('sync_history')
+            .update({
+              items_synced: (historyEntry.items_synced || 0) + (collectionsResult.count || 0),
+              details: {
+                ...currentDetails,
+                collections: {
+                  total: collectionsResult.count || 0,
+                  new: collectionsResult.newCount || 0,
+                  updated: (collectionsResult.count || 0) - (collectionsResult.newCount || 0)
+                }
+              }
+            })
+            .eq('id', historyEntry.id);
+          console.log('✅ Sync history updated for collections');
         }
       }
 
-      const duration = Date.now() - startTime;
+      // Import pages
+      if (selectedTypes.includes('pages')) {
+        setCurrentType('pages');
+        console.log('📄 Importing pages...');
+        const { data: pagesResult, error: pagesError } = await supabase.functions.invoke('import-shopify-pages', {
+          body: { storeId: settings.store_id }
+        });
 
-      // Update history
-      await supabase
-        .from('sync_history')
-        .update({
-          status: hasErrors ? 'failed' : 'success',
-          items_synced: totalItems,
-          duration_ms: duration,
-          completed_at: new Date().toISOString(),
-          error_message: hasErrors ? 'Some imports failed - check logs' : null
-        })
-        .eq('id', historyEntry.id);
+        if (pagesError) {
+          console.error('❌ Pages import error:', pagesError);
+          throw pagesError;
+        }
+        
+        results.pages = pagesResult;
+        console.log('✅ Pages imported:', pagesResult);
 
-      // Update last import timestamp
+        // Update sync history
+        if (historyEntry) {
+          const { data: currentData } = await supabase.from('sync_history').select('details').eq('id', historyEntry.id).single();
+          const currentDetails = currentData?.details as any || {};
+          await supabase
+            .from('sync_history')
+            .update({
+              items_synced: (historyEntry.items_synced || 0) + (pagesResult.count || 0),
+              details: {
+                ...currentDetails,
+                pages: {
+                  total: pagesResult.count || 0,
+                  new: pagesResult.newCount || 0,
+                  updated: (pagesResult.count || 0) - (pagesResult.newCount || 0)
+                }
+              }
+            })
+            .eq('id', historyEntry.id);
+          console.log('✅ Sync history updated for pages');
+        }
+      }
+
+      // Import articles
+      if (selectedTypes.includes('articles')) {
+        setCurrentType('articles');
+        console.log('📰 Importing articles...');
+        const { data: articlesResult, error: articlesError } = await supabase.functions.invoke('import-shopify-articles', {
+          body: { storeId: settings.store_id }
+        });
+
+        if (articlesError) {
+          console.error('❌ Articles import error:', articlesError);
+          throw articlesError;
+        }
+        
+        results.articles = articlesResult;
+        console.log('✅ Articles imported:', articlesResult);
+
+        // Update sync history
+        if (historyEntry) {
+          const { data: currentData } = await supabase.from('sync_history').select('details').eq('id', historyEntry.id).single();
+          const currentDetails = currentData?.details as any || {};
+          await supabase
+            .from('sync_history')
+            .update({
+              items_synced: (historyEntry.items_synced || 0) + (articlesResult.count || 0),
+              details: {
+                ...currentDetails,
+                articles: {
+                  total: articlesResult.count || 0,
+                  new: articlesResult.newCount || 0,
+                  updated: (articlesResult.count || 0) - (articlesResult.newCount || 0)
+                }
+              }
+            })
+            .eq('id', historyEntry.id);
+          console.log('✅ Sync history updated for articles');
+        }
+      }
+
+      // Import images
+      if (selectedTypes.includes('images')) {
+        setCurrentType('images');
+        console.log('🖼️ Importing images...');
+        const { data: imagesResult, error: imagesError } = await supabase.functions.invoke('import-content-images', {
+          body: { storeId: settings.store_id }
+        });
+
+        if (imagesError) {
+          console.error('❌ Images import error:', imagesError);
+          throw imagesError;
+        }
+        
+        results.images = imagesResult;
+        console.log('✅ Images imported:', imagesResult);
+
+        // Update sync history
+        if (historyEntry) {
+          const { data: currentData } = await supabase.from('sync_history').select('details').eq('id', historyEntry.id).single();
+          const currentDetails = currentData?.details as any || {};
+          await supabase
+            .from('sync_history')
+            .update({
+              items_synced: (historyEntry.items_synced || 0) + (imagesResult.count || 0),
+              details: {
+                ...currentDetails,
+                images: {
+                  total: imagesResult.count || 0,
+                  new: imagesResult.newCount || 0,
+                  updated: (imagesResult.count || 0) - (imagesResult.newCount || 0)
+                }
+              }
+            })
+            .eq('id', historyEntry.id);
+          console.log('✅ Sync history updated for images');
+        }
+      }
+
+      // Count after sync
+      console.log('📊 Counting after sync...');
+      const countsAfter: Record<string, number> = {};
+      for (const type of selectedTypes) {
+        const table = type === 'products' ? 'shopify_products' 
+                    : type === 'collections' ? 'shopify_collections'
+                    : type === 'pages' ? 'shopify_pages'
+                    : type === 'articles' ? 'blog_articles'
+                    : type === 'images' ? 'content_images'
+                    : null;
+        
+        if (table) {
+          const { count } = await supabase
+            .from(table)
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+          countsAfter[type] = count || 0;
+          console.log(`📊 ${type} after: ${count}`);
+        }
+      }
+
+      // Calculate stats
+      const stats: SyncStats = {
+        products: {
+          before: countsBefore.products || 0,
+          after: countsAfter.products || 0,
+          imported: (countsAfter.products || 0) - (countsBefore.products || 0)
+        },
+        collections: {
+          before: countsBefore.collections || 0,
+          after: countsAfter.collections || 0,
+          imported: (countsAfter.collections || 0) - (countsBefore.collections || 0)
+        },
+        pages: {
+          before: countsBefore.pages || 0,
+          after: countsAfter.pages || 0,
+          imported: (countsAfter.pages || 0) - (countsBefore.pages || 0)
+        },
+        articles: {
+          before: countsBefore.articles || 0,
+          after: countsAfter.articles || 0,
+          imported: (countsAfter.articles || 0) - (countsBefore.articles || 0)
+        },
+        images: {
+          before: countsBefore.images || 0,
+          after: countsAfter.images || 0,
+          imported: (countsAfter.images || 0) - (countsBefore.images || 0)
+        }
+      };
+
+      const totalImported = Object.values(stats).reduce((sum, stat) => sum + stat.imported, 0);
+
+      console.log('📊 Final stats:', stats);
+      console.log('📊 Total imported:', totalImported);
+
+      // Update sync history to success
+      if (historyEntry) {
+        console.log('✅ Marking sync as success in history...');
+        await supabase
+          .from('sync_history')
+          .update({
+            status: 'success',
+            completed_at: new Date().toISOString(),
+            items_synced: totalImported
+          })
+          .eq('id', historyEntry.id);
+        console.log('✅ Sync history marked as success');
+      }
+
+      // Update last_import_at
       await supabase
         .from('shopify_sync_settings')
         .update({ last_import_at: new Date().toISOString() })
         .eq('user_id', user.id);
 
-      // Get final counts (after) - FIXED: use shopify_products instead of products
-      const afterCounts = await Promise.all([
-        supabase.from('shopify_products').select('id', { count: 'exact', head: true }).eq('seller_id', user.id),
-        supabase.from('shopify_collections').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('shopify_pages').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('blog_articles').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('content_images').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-      ]);
-
-      // Update final counts and recalculate imported
-      setSyncStats(prev => {
-        const newStats = {
-          products: { 
-            before: prev.products.before, 
-            after: afterCounts[0].count || 0,
-            imported: (afterCounts[0].count || 0) - prev.products.before,
-            error: prev.products.error
-          },
-          collections: { 
-            before: prev.collections.before, 
-            after: afterCounts[1].count || 0,
-            imported: (afterCounts[1].count || 0) - prev.collections.before,
-            error: prev.collections.error
-          },
-          pages: { 
-            before: prev.pages.before, 
-            after: afterCounts[2].count || 0,
-            imported: (afterCounts[2].count || 0) - prev.pages.before,
-            error: prev.pages.error
-          },
-          articles: { 
-            before: prev.articles.before, 
-            after: afterCounts[3].count || 0,
-            imported: (afterCounts[3].count || 0) - prev.articles.before,
-            error: prev.articles.error
-          },
-          images: { 
-            before: prev.images.before, 
-            after: afterCounts[4].count || 0,
-            imported: (afterCounts[4].count || 0) - prev.images.before,
-            error: prev.images.error
-          },
-        };
-
-        // Recalculate total imported (only count successful imports, ignore errors)
-        const newTotal = Object.entries(newStats).reduce((sum, [key, stat]) => {
-          // Only count if no error and imported > 0
-          if (!stat.error && stat.imported > 0) {
-            return sum + stat.imported;
-          }
-          return sum;
-        }, 0);
-        setTotalImported(newTotal);
-
-        console.log('📊 Final sync stats:', newStats);
-        console.log('📊 Total imported:', newTotal);
-
-        return newStats;
-      });
-
-      // Hide progress, show result dialog
-      setShowProgressDialog(false);
+      setShowProgress(false);
+      setSyncResults(stats);
+      setTotalImported(totalImported);
       setShowResultDialog(true);
       
-      loadSettings();
-      loadHistory();
+      toast.success('Synchronisation terminée !');
+      await loadHistory();
     } catch (error) {
-      console.error('Error syncing:', error);
+      console.error('❌ Error during sync:', error);
+      
+      // Mark sync as failed in history
+      if (historyEntry) {
+        console.log('❌ Marking sync as failed in history...');
+        await supabase
+          .from('sync_history')
+          .update({
+            status: 'failed',
+            completed_at: new Date().toISOString(),
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          })
+          .eq('id', historyEntry.id);
+      }
+      
       toast.error('Erreur lors de la synchronisation');
-      setShowProgressDialog(false);
     } finally {
-      setSyncing(false);
+      setIsSyncing(false);
+      setCurrentType('');
+      setShowProgress(false);
+      console.log('🏁 Sync process completed');
     }
   };
 
-  if (loading || !settings) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+  if (loading) {
+    return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   return (
-    <>
-      <SimpleSyncProgress
-        open={showProgressDialog}
-        currentType={currentSyncType}
-      />
-      
-      <SyncResultDialog
-        open={showResultDialog}
-        onOpenChange={setShowResultDialog}
-        stats={syncStats}
-        totalImported={totalImported}
-      />
-      
-      <div className="space-y-6">
+    <div className="space-y-6">
+      {/* Sync Mode Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Mode de synchronisation</CardTitle>
+          <CardDescription>Choisissez comment gérer le contenu optimisé par l'IA</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup value={syncMode} onValueChange={(v) => setSyncMode(v as 'full' | 'smart')}>
+            <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+              <RadioGroupItem value="smart" id="smart" />
+              <Label htmlFor="smart" className="flex-1 cursor-pointer">
+                <div className="flex items-center gap-2 mb-1">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <span className="font-semibold">Smart (Recommandé)</span>
+                  <Badge variant="secondary" className="ml-auto">Par défaut</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Protège le contenu optimisé par l'IA (titres, descriptions SEO). Seuls les prix, stocks et nouveaux produits sont synchronisés.
+                </p>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+              <RadioGroupItem value="full" id="full" />
+              <Label htmlFor="full" className="flex-1 cursor-pointer">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className="w-4 h-4 text-orange-500" />
+                  <span className="font-semibold">Full</span>
+                  <Badge variant="outline" className="ml-auto">Avancé</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Écrase TOUT le contenu avec les données Shopify, y compris le contenu optimisé par l'IA. À utiliser avec précaution.
+                </p>
+              </Label>
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
       {/* Import Settings */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Download className="h-5 w-5" />
-                Import depuis Shopify
-              </CardTitle>
-              <CardDescription>
-                Configuration de l'import automatique des données Shopify
-              </CardDescription>
-            </div>
-            <Button onClick={handleSyncNow} disabled={syncing}>
-              {syncing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Synchronisation...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Synchroniser maintenant
-                </>
-              )}
-            </Button>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="w-5 h-5" />
+            Paramètres d'importation
+          </CardTitle>
+          <CardDescription>Configurez comment importer vos données depuis Shopify</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Frequency */}
-          <div className="space-y-2">
-            <Label>Fréquence de synchronisation</Label>
-            <Select
-              value={settings.import_frequency}
-              onValueChange={(value: any) =>
-                setSettings({ ...settings, import_frequency: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="manual">Manuel uniquement</SelectItem>
-                <SelectItem value="hourly">Toutes les heures</SelectItem>
-                <SelectItem value="daily">Quotidien</SelectItem>
-                <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                <SelectItem value="monthly">Mensuel</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Schedule */}
-          {settings.import_frequency !== 'manual' && settings.import_frequency !== 'hourly' && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {(settings.import_frequency === 'daily' || settings.import_frequency === 'weekly' || settings.import_frequency === 'monthly') && (
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Heure de synchronisation
-                  </Label>
-                  <Select
-                    value={settings.import_schedule_hour.toString()}
-                    onValueChange={(value) =>
-                      setSettings({ ...settings, import_schedule_hour: parseInt(value) })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 24 }, (_, i) => (
-                        <SelectItem key={i} value={i.toString()}>
-                          {i.toString().padStart(2, '0')}:00
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {settings.import_frequency === 'weekly' && (
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Jour de la semaine
-                  </Label>
-                  <Select
-                    value={settings.import_schedule_day.toString()}
-                    onValueChange={(value) =>
-                      setSettings({ ...settings, import_schedule_day: parseInt(value) })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DAYS_OF_WEEK.map((day) => (
-                        <SelectItem key={day.value} value={day.value.toString()}>
-                          {day.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Import Types */}
-          <div className="space-y-3">
-            <Label>Types de contenu à importer</Label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {IMPORT_TYPES.map((type) => (
+          {/* Content Type Selection */}
+          <div>
+            <Label className="mb-3 block">Types de contenu à synchroniser</Label>
+            <div className="space-y-2">
+              {IMPORT_TYPES.map(type => (
                 <div key={type.id} className="flex items-center space-x-2">
                   <Checkbox
                     id={type.id}
-                    checked={settings.import_types.includes(type.id)}
+                    checked={selectedTypes.includes(type.id)}
                     onCheckedChange={(checked) => {
-                      const newTypes = checked
-                        ? [...settings.import_types, type.id]
-                        : settings.import_types.filter((t) => t !== type.id);
-                      setSettings({ ...settings, import_types: newTypes });
+                      if (checked) {
+                        setSelectedTypes([...selectedTypes, type.id]);
+                      } else {
+                        setSelectedTypes(selectedTypes.filter(t => t !== type.id));
+                      }
                     }}
                   />
-                  <label
-                    htmlFor={type.id}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {type.label}
-                  </label>
+                  <Label htmlFor={type.id} className="cursor-pointer">{type.label}</Label>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Sync Mode */}
-          <div className="space-y-3">
-            <Label>Mode de synchronisation</Label>
-            <Select
-              value={syncMode}
-              onValueChange={(value: 'full' | 'smart') => setSyncMode(value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="smart">
-                  <div className="flex flex-col">
-                    <span className="font-medium">Intelligent (Recommandé)</span>
-                    <span className="text-xs text-muted-foreground">
-                      Protège les contenus optimisés par IA
-                    </span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="full">
-                  <div className="flex flex-col">
-                    <span className="font-medium">Complet</span>
-                    <span className="text-xs text-muted-foreground">
-                      Écrase tout avec les données Shopify
-                    </span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {syncMode === 'smart' && (
-              <p className="text-xs text-muted-foreground">
-                ⚠️ Les produits optimisés gardent leur titre, description et SEO générés par IA
-              </p>
+          {/* Sync Now Button */}
+          <Button
+            onClick={handleSyncNow}
+            disabled={isSyncing || selectedTypes.length === 0}
+            className="w-full"
+            size="lg"
+          >
+            {isSyncing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Synchronisation en cours...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Synchroniser maintenant
+              </>
             )}
-          </div>
+          </Button>
 
-          {/* Last Sync */}
-          {settings.last_import_at && (
-            <div className="rounded-lg bg-muted p-4">
-              <p className="text-sm text-muted-foreground">
-                Dernière synchronisation :{' '}
-                <span className="font-medium text-foreground">
-                  {format(new Date(settings.last_import_at), "d MMMM yyyy 'à' HH:mm", {
-                    locale: fr,
-                  })}
-                </span>
-              </p>
-            </div>
-          )}
-
-          <Button onClick={saveSettings} disabled={saving} className="w-full">
+          {/* Save Settings Button */}
+          <Button
+            onClick={saveSettings}
+            disabled={saving}
+            variant="outline"
+            className="w-full"
+          >
             {saving ? 'Enregistrement...' : 'Enregistrer les paramètres'}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Export Settings */}
+      {/* Sync History */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Export vers Shopify
+            <Clock className="w-5 h-5" />
+            Historique de synchronisation
           </CardTitle>
-          <CardDescription>
-            Configuration de l'export automatique des optimisations SEO
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Synchronisation automatique</Label>
-              <p className="text-sm text-muted-foreground">
-                Synchroniser automatiquement après chaque optimisation
-              </p>
-            </div>
-            <Switch
-              checked={settings.export_after_optimization}
-              onCheckedChange={(checked) =>
-                setSettings({ ...settings, export_after_optimization: checked })
-              }
-            />
-          </div>
-
-          {settings.last_export_at && (
-            <div className="rounded-lg bg-muted p-4">
-              <p className="text-sm text-muted-foreground">
-                Dernier export :{' '}
-                <span className="font-medium text-foreground">
-                  {format(new Date(settings.last_export_at), "d MMMM yyyy 'à' HH:mm", {
-                    locale: fr,
-                  })}
-                </span>
-              </p>
-            </div>
-          )}
-
-          <Button onClick={saveSettings} disabled={saving} className="w-full">
-            {saving ? 'Enregistrement...' : 'Enregistrer les paramètres'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Sync History - Hidden per user request
-      <Card>
-        <CardHeader>
-          <CardTitle>Historique des synchronisations</CardTitle>
-          <CardDescription>Les 10 dernières synchronisations</CardDescription>
         </CardHeader>
         <CardContent>
           {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Aucune synchronisation enregistrée
-            </p>
+            <p className="text-muted-foreground text-center py-4">Aucune synchronisation récente</p>
           ) : (
-            <div className="space-y-3">
-              {history.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
+            <div className="space-y-2">
+              {history.map(entry => (
+                <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
-                    {entry.status === 'success' && (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    )}
-                    {entry.status === 'failed' && (
-                      <XCircle className="h-5 w-5 text-destructive" />
-                    )}
-                    {entry.status === 'running' && (
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    )}
+                    {entry.status === 'success' && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                    {entry.status === 'failed' && <XCircle className="w-5 h-5 text-red-500" />}
+                    {entry.status === 'running' && <Loader2 className="w-5 h-5 animate-spin text-blue-500" />}
                     <div>
-                      <p className="text-sm font-medium">
-                        {entry.sync_type === 'import' ? 'Import' : 'Export'} -{' '}
-                        {entry.content_types.join(', ')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(entry.started_at), "d MMM yyyy 'à' HH:mm", {
-                          locale: fr,
-                        })}
-                        {entry.duration_ms && ` · ${Math.round(entry.duration_ms / 1000)}s`}
+                      <p className="font-medium capitalize">{entry.sync_type}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {entry.items_synced} éléments • {format(new Date(entry.started_at), 'Pp', { locale: fr })}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <Badge variant={entry.status === 'success' ? 'default' : 'destructive'}>
-                      {entry.items_synced} éléments
-                    </Badge>
-                  </div>
+                  <Badge variant={entry.status === 'success' ? 'default' : entry.status === 'failed' ? 'destructive' : 'secondary'}>
+                    {entry.status}
+                  </Badge>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
-      */}
-      </div>
-    </>
+
+      {/* Progress Dialog */}
+      <SimpleSyncProgress open={showProgress} currentType={currentType} />
+
+      {/* Result Dialog */}
+      <SyncResultDialog
+        open={showResultDialog}
+        onOpenChange={setShowResultDialog}
+        stats={syncResults}
+        totalImported={totalImported}
+      />
+    </div>
   );
 }

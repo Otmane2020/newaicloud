@@ -81,11 +81,18 @@ export function SyncResultDialog({
           <div className="flex-shrink-0 p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg text-center">
             <TrendingUp className="w-12 h-12 mx-auto mb-3 text-green-500 animate-pulse" />
             <div className="text-5xl font-bold text-green-600 dark:text-green-400 tabular-nums mb-2">
-              +{displayedTotal}
+              {totalImported > 0 ? '+' : ''}{displayedTotal}
             </div>
             <p className="text-lg font-semibold text-green-900 dark:text-green-100">
-              {t.integration.sync.result.totalImported}
+              {totalImported > 0 
+                ? t.integration.sync.result.totalImported 
+                : 'Éléments synchronisés (0 nouveaux)'}
             </p>
+            {totalImported === 0 && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Tous vos éléments sont à jour avec Shopify
+              </p>
+            )}
           </div>
 
           {/* Stats by type */}

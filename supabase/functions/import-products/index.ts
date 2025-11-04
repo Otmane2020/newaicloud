@@ -726,10 +726,24 @@ Deno.serve(async (req: Request) => {
       // Ne pas bloquer l'import si les articles échouent
     }
 
+    // Calculer les statistiques détaillées
+    const existingProductsSet = new Set(existingProducts?.map(p => p.shopify_id?.toString()) || []);
+    const stats = {
+      total: products.length,
+      new: products.filter(p => !existingProductsSet.has(p.id.toString())).length,
+      updated: products.filter(p => existingProductsSet.has(p.id.toString())).length,
+      protected: syncMode === 'smart' ? products.filter(p => {
+        const existing = existingMap.get(p.id);
+        return existing && existing.optimization_count > 0;
+      }).length : 0,
+      skipped: 0
+    };
+
     return new Response(
       JSON.stringify({
         success: true,
         count: products.length,
+        stats: stats,
         totalShopifyProducts: totalShopifyProducts,
         variantsCount: totalVariants,
         imagesCount: totalImages,
@@ -737,7 +751,7 @@ Deno.serve(async (req: Request) => {
         articlesImported: articlesImported,
         pagesProcessed: pageCount,
         jobId: importJob.id,
-        message: `Successfully imported ${products.length} products out of ${totalShopifyProducts} total products, ${totalVariants} variants, ${totalImages} images, ${pagesImported} pages, and ${articlesImported} articles`,
+        message: `Successfully imported ${products.length} products (${stats.new} new, ${stats.updated} updated, ${stats.protected} protected) out of ${totalShopifyProducts} total products, ${totalVariants} variants, ${totalImages} images, ${pagesImported} pages, and ${articlesImported} articles`,
       }),
       {
         status: 200,
