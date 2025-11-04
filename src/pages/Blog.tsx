@@ -28,6 +28,8 @@ export default function Blog() {
   const [showWizard, setShowWizard] = useState(false);
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     const subtab = searchParams.get('subtab');
@@ -45,11 +47,19 @@ export default function Blog() {
 
   const loadData = async () => {
     try {
+      // Count total articles
+      const { count } = await supabase
+        .from('blog_articles')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id);
+      
+      // Load articles with pagination
       const { data: articlesData, error: articlesError } = await supabase
         .from('blog_articles')
         .select('*')
         .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
       if (articlesError) throw articlesError;
       setArticles(articlesData || []);

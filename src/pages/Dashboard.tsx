@@ -46,6 +46,13 @@ interface Stats {
     technical: number;
   };
   connectedStores: number;
+  // Trends (comparison with previous period)
+  trends: {
+    products: number;
+    optimizations: number;
+    articles: number;
+    seoScore: number;
+  };
 }
 
 export default function Dashboard() {
@@ -69,7 +76,13 @@ export default function Dashboard() {
       images: 0,
       technical: 0
     },
-    connectedStores: 0
+    connectedStores: 0,
+    trends: {
+      products: 0,
+      optimizations: 0,
+      articles: 0,
+      seoScore: 0
+    }
   });
   const [loading, setLoading] = useState(true);
 
@@ -190,6 +203,38 @@ export default function Dashboard() {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user?.id);
 
+      // Calculate trends (comparison with last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data: oldProducts } = await supabase
+        .from('shopify_products')
+        .select('id, seo_title, seo_description')
+        .eq('seller_id', user?.id)
+        .in('store_id', activeStoreIds.length > 0 ? activeStoreIds : [''])
+        .lt('created_at', thirtyDaysAgo.toISOString());
+      
+      const oldTotalProducts = oldProducts?.length || 0;
+      const oldOptimizedProducts = oldProducts?.filter(p => p.seo_title && p.seo_description).length || 0;
+      
+      const { count: oldArticlesCount } = await supabase
+        .from('blog_articles')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id)
+        .lt('created_at', thirtyDaysAgo.toISOString());
+      
+      // Get previous SEO audit for comparison
+      const { data: previousAudit } = await supabase
+        .from('seo_audit_reports')
+        .select('global_score')
+        .eq('user_id', user?.id)
+        .lt('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      const oldSeoScore = previousAudit?.global_score || seoScore;
+      
       setStats({
         totalProducts,
         optimizedProducts,
@@ -198,7 +243,13 @@ export default function Dashboard() {
         totalValue,
         seoScore,
         seoCategories,
-        connectedStores
+        connectedStores,
+        trends: {
+          products: totalProducts - oldTotalProducts,
+          optimizations: optimizedProducts - oldOptimizedProducts,
+          articles: (articlesCount || 0) - (oldArticlesCount || 0),
+          seoScore: seoScore - oldSeoScore
+        }
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -363,7 +414,16 @@ export default function Dashboard() {
           gradient="from-success to-success"
           iconBg="bg-success/10 text-success"
           badge={stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%'}
-          subtitle={`${stats.optimizedProducts}/${stats.totalProducts} ${t.dashboard.cards.products}`}
+          subtitle={
+            <>
+              {`${stats.optimizedProducts}/${stats.totalProducts} ${t.dashboard.cards.products}`}
+              {stats.trends.optimizations !== 0 && (
+                <span className={`ml-2 text-xs ${stats.trends.optimizations > 0 ? 'text-success' : 'text-warning'}`}>
+                  {stats.trends.optimizations > 0 ? '↗' : '↘'} {Math.abs(stats.trends.optimizations)} {t.dashboard.recentActivity.thisMonth}
+                </span>
+              )}
+            </>
+          }
         />
         <MetricCard
           title={t.dashboard.cards.toOptimize}
@@ -388,7 +448,16 @@ export default function Dashboard() {
           icon={FileText}
           gradient="from-cyan-500 to-cyan-600"
           iconBg="bg-cyan-500/10 text-cyan-600"
-          subtitle={t.dashboard.cards.seoContent}
+          subtitle={
+            <>
+              {t.dashboard.cards.seoContent}
+              {stats.trends.articles !== 0 && (
+                <span className={`ml-2 text-xs ${stats.trends.articles > 0 ? 'text-success' : 'text-warning'}`}>
+                  {stats.trends.articles > 0 ? '↗' : '↘'} {Math.abs(stats.trends.articles)} {t.dashboard.recentActivity.thisMonth}
+                </span>
+              )}
+            </>
+          }
         />
         <MetricCard
           title={t.dashboard.cards.optimizedValue}

@@ -48,6 +48,8 @@ export default function Products() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     if (user) {
@@ -62,15 +64,25 @@ export default function Products() {
   const loadProducts = async () => {
     try {
       setLoading(true);
+      
+      // Count total products first
+      const { count } = await supabase
+        .from("shopify_products")
+        .select("*", { count: 'exact', head: true })
+        .eq("seller_id", user?.id);
+      
+      // Load products with pagination
       const { data, error } = await supabase
         .from("shopify_products")
         .select("*")
         .eq("seller_id", user?.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
       if (error) throw error;
 
       setProducts(data || []);
+      console.log(`📦 Loaded ${data?.length || 0} products (page ${currentPage}/${Math.ceil((count || 0) / ITEMS_PER_PAGE)})`);
     } catch (error) {
       console.error("Error loading products:", error);
       toast.error(t.products.loadError);
@@ -409,6 +421,37 @@ export default function Products() {
                     </Card>
                   );
                 })}
+              </div>
+            )}
+            
+            {/* Pagination */}
+            {filteredProducts.length > 0 && products.length >= ITEMS_PER_PAGE && (
+              <div className="flex items-center justify-center gap-2 mt-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCurrentPage(p => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === 1}
+                >
+                  Précédent
+                </Button>
+                <span className="text-sm text-muted-foreground px-4">
+                  Page {currentPage}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCurrentPage(p => p + 1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={products.length < ITEMS_PER_PAGE}
+                >
+                  Suivant
+                </Button>
               </div>
             )}
           </>

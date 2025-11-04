@@ -148,6 +148,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const { shopName, apiKey, apiSecret, storeId } = validation.data;
+    
+    // Retry configuration
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 2000;
     const syncMode = requestBody.syncMode || 'smart'; // Default to smart mode
     
     console.log('🔄 Sync mode:', syncMode);

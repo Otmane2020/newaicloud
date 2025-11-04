@@ -38,16 +38,25 @@ export default function Collections() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [importing, setImporting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
   const { t } = useTranslation();
 
   const fetchCollections = async () => {
     try {
       setLoading(true);
       
+      // Count total collections
+      const { count } = await supabase
+        .from('shopify_collections')
+        .select('*', { count: 'exact', head: true });
+      
+      // Fetch collections with pagination
       const { data, error } = await supabase
         .from('shopify_collections')
         .select('*')
-        .order('title', { ascending: true });
+        .order('title', { ascending: true })
+        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
       if (error) throw error;
 
@@ -509,6 +518,35 @@ export default function Collections() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+      
+      {/* Pagination */}
+      {filteredCollections.length > 0 && collections.length >= ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCurrentPage(p => Math.max(1, p - 1));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={currentPage === 1}
+          >
+            Précédent
+          </Button>
+          <span className="text-muted-foreground px-4">
+            Page {currentPage}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCurrentPage(p => p + 1);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={collections.length < ITEMS_PER_PAGE}
+          >
+            Suivant
+          </Button>
         </div>
       )}
     </div>
