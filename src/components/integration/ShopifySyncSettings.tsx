@@ -70,6 +70,7 @@ interface SyncSettings {
   last_export_at: string | null;
   next_import_at: string | null;
   store_id?: string;
+  timezone?: string;
 }
 
 interface SyncHistory {
@@ -708,6 +709,177 @@ export function ShopifySyncSettings() {
                   <Label htmlFor={type.id} className="cursor-pointer">{type.label}</Label>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Import Frequency */}
+          <div className="space-y-3 pt-6 border-t">
+            <Label htmlFor="import_frequency">Fréquence d'importation</Label>
+            <Select
+              value={settings?.import_frequency || 'manual'}
+              onValueChange={(value) => setSettings(prev => prev ? {...prev, import_frequency: value as any} : null)}
+            >
+              <SelectTrigger id="import_frequency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manual">Manuel</SelectItem>
+                <SelectItem value="hourly">Toutes les heures</SelectItem>
+                <SelectItem value="daily">Quotidien</SelectItem>
+                <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                <SelectItem value="monthly">Mensuel</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Schedule Settings (only if not manual) */}
+          {settings?.import_frequency && settings.import_frequency !== 'manual' && (
+            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+              <Label className="text-sm font-semibold">Horaire de synchronisation</Label>
+              
+              {/* Hour Selection */}
+              {['daily', 'weekly', 'monthly'].includes(settings.import_frequency) && (
+                <div className="space-y-2">
+                  <Label htmlFor="schedule_hour" className="text-sm">Heure de synchronisation</Label>
+                  <Select
+                    value={settings.import_schedule_hour?.toString() || '2'}
+                    onValueChange={(value) => setSettings(prev => prev ? {...prev, import_schedule_hour: parseInt(value)} : null)}
+                  >
+                    <SelectTrigger id="schedule_hour">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}:00
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Day of Week Selection (weekly) */}
+              {settings.import_frequency === 'weekly' && (
+                <div className="space-y-2">
+                  <Label htmlFor="schedule_day" className="text-sm">Jour de la semaine</Label>
+                  <Select
+                    value={settings.import_schedule_day?.toString() || '1'}
+                    onValueChange={(value) => setSettings(prev => prev ? {...prev, import_schedule_day: parseInt(value)} : null)}
+                  >
+                    <SelectTrigger id="schedule_day">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Lundi</SelectItem>
+                      <SelectItem value="2">Mardi</SelectItem>
+                      <SelectItem value="3">Mercredi</SelectItem>
+                      <SelectItem value="4">Jeudi</SelectItem>
+                      <SelectItem value="5">Vendredi</SelectItem>
+                      <SelectItem value="6">Samedi</SelectItem>
+                      <SelectItem value="0">Dimanche</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Day of Month Selection (monthly) */}
+              {settings.import_frequency === 'monthly' && (
+                <div className="space-y-2">
+                  <Label htmlFor="schedule_day" className="text-sm">Jour du mois</Label>
+                  <Select
+                    value={settings.import_schedule_day?.toString() || '1'}
+                    onValueChange={(value) => setSettings(prev => prev ? {...prev, import_schedule_day: parseInt(value)} : null)}
+                  >
+                    <SelectTrigger id="schedule_day">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 28 }, (_, i) => (
+                        <SelectItem key={i + 1} value={(i + 1).toString()}>
+                          {i + 1}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Timezone */}
+              <div className="space-y-2">
+                <Label htmlFor="timezone" className="text-sm">Fuseau horaire</Label>
+                <Select
+                  value={settings.timezone || 'Europe/Paris'}
+                  onValueChange={(value) => setSettings(prev => prev ? {...prev, timezone: value} : null)}
+                >
+                  <SelectTrigger id="timezone">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Europe/Paris">Europe/Paris (CET)</SelectItem>
+                    <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
+                    <SelectItem value="America/Los_Angeles">America/Los_Angeles (PST)</SelectItem>
+                    <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
+                    <SelectItem value="Australia/Sydney">Australia/Sydney (AEST)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Next Sync Display */}
+          {settings?.next_import_at && settings.import_frequency !== 'manual' && (
+            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Prochaine synchronisation</p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(settings.next_import_at), 'PPp', { locale: fr })}
+                  </p>
+                </div>
+              </div>
+              <Badge variant="secondary">
+                <Clock className="w-3 h-3 mr-1" />
+                Planifiée
+              </Badge>
+            </div>
+          )}
+
+          {/* Auto Export Settings */}
+          <div className="space-y-4 pt-6 border-t">
+            <Label className="text-base font-semibold">Export automatique</Label>
+            
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex-1">
+                <Label htmlFor="export_auto" className="cursor-pointer font-medium">
+                  Activer l'export automatique
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Exporter automatiquement les données après chaque synchronisation
+                </p>
+              </div>
+              <Switch
+                id="export_auto"
+                checked={settings?.export_auto_enabled || false}
+                onCheckedChange={(checked) => setSettings(prev => prev ? {...prev, export_auto_enabled: checked} : null)}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex-1">
+                <Label htmlFor="export_after_opt" className="cursor-pointer font-medium">
+                  Exporter après optimisation
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Exporter automatiquement vers Shopify après optimisation IA
+                </p>
+              </div>
+              <Switch
+                id="export_after_opt"
+                checked={settings?.export_after_optimization || false}
+                onCheckedChange={(checked) => setSettings(prev => prev ? {...prev, export_after_optimization: checked} : null)}
+              />
             </div>
           </div>
 
