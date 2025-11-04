@@ -844,10 +844,12 @@ export function SeoAuditDashboard() {
                                 'tags': { tab: 'tags', filter: 'poor' },
                                 'articles': { tab: 'articles', filter: 'poor' },
                                 'pages': { tab: 'pages', filter: 'poor' },
+                                'content': { tab: 'articles', filter: 'poor' }, // Content = articles + pages
+                                'technical': { tab: 'products', filter: 'poor' }, // Technical issues généralement liés aux produits
                                 'homepage': { tab: 'homepage' },
                               };
                               
-                              const mapping = categoryMap[issue.category?.toLowerCase()] || { tab: 'products' };
+                              const mapping = categoryMap[issue.category?.toLowerCase()] || { tab: 'products', filter: 'poor' };
                               const url = mapping.filter 
                                 ? `/seo?tab=${mapping.tab}&filter=${mapping.filter}`
                                 : `/seo?tab=${mapping.tab}`;
