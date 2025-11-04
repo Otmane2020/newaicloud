@@ -401,19 +401,17 @@ export function CollectionOptimization() {
     await fetchCollections();
     await refreshLimits();
 
-    // Get updated collections
-    const updatedCollections = await Promise.all(
-      collectionsToOptimize.map(async (c) => {
-        const { data } = await supabase
-          .from('shopify_collections')
-          .select('*')
-          .eq('id', c.id)
-          .single();
-        return data;
-      })
-    );
+    // ✅ CRITICAL: Get fresh optimized data with all SEO fields
+    const { data: freshCollections } = await supabase
+      .from('shopify_collections')
+      .select('*')
+      .in('id', collectionsToOptimize.map(c => c.id));
 
-    const optimized = updatedCollections.filter(Boolean) as Collection[];
+    const optimized = (freshCollections || []).filter(c => 
+      c.seo_title || c.seo_description || c.body_html
+    ) as Collection[];
+    
+    console.log('📊 [PREVIEW] Freshly loaded optimized collections:', optimized);
     setOptimizedCollections(optimized);
     
     toast.success(t.collections.optimization.messages.optimizationSuccess.replace('{{count}}', String(successCount)));

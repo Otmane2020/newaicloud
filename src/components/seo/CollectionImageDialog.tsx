@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ImageIcon, Upload, Sparkles, TrendingUp, Loader2, Eye } from 'lucide-react';
+import { ImageIcon, Upload, Sparkles, TrendingUp, Loader2, CheckCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -32,6 +32,9 @@ export function CollectionImageDialog({
   const [selectedOption, setSelectedOption] = useState<'popular' | 'ai' | 'upload' | null>(null);
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('');
+  const [processingAlt, setProcessingAlt] = useState(false);
 
   const handleUsePopularProduct = async () => {
     try {
@@ -132,22 +135,7 @@ export function CollectionImageDialog({
           console.log('✅ Image uploaded to storage:', publicUrl);
         }
         
-        await updateCollectionImage(imageUrl);
-        
-        // Show success with image preview
-        toast.success(
-          <div className="flex items-start gap-3">
-            <img 
-              src={imageUrl} 
-              alt="Generated" 
-              className="w-16 h-16 rounded object-cover"
-            />
-            <div>
-              <p className="font-semibold">Image générée avec succès</p>
-              <p className="text-xs text-muted-foreground">Synchronisation avec Shopify en cours...</p>
-            </div>
-          </div>
-        );
+        await updateCollectionImage(imageUrl, true); // Pass true to indicate AI-generated
       } else {
         toast.error('Erreur lors de la génération de l\'image');
       }
@@ -177,7 +165,7 @@ export function CollectionImageDialog({
     }
   };
 
-  const updateCollectionImage = async (imageUrl: string) => {
+  const updateCollectionImage = async (imageUrl: string, isAiGenerated: boolean = false) => {
     // ✅ CRITICAL: Validate URL format - reject base64 data URLs
     if (imageUrl.startsWith('data:')) {
       toast.error('❌ Erreur: Format base64 détecté. L\'image doit être une URL publique HTTP.');
@@ -191,22 +179,48 @@ export function CollectionImageDialog({
 
     console.log('✅ Valid public URL detected:', imageUrl);
 
+    // Generate automatic alt text for AI-generated images
+    const altText = isAiGenerated 
+      ? `Image professionnelle générée par IA pour la collection ${collection.title}`
+      : `${collection.title} - Collection image`;
+
     const { error } = await supabase
       .from('shopify_collections')
       .update({ 
         image_url: imageUrl,
-        image_alt: `${collection.title} - Collection image`,
+        image_alt: altText,
         updated_at: new Date().toISOString()
       })
       .eq('id', collection.id);
 
     if (error) throw error;
 
-    // ✅ Trigger Shopify sync and wait for response
-    console.log('📞 [COLLECTION-IMAGE] Calling sync-collection-image-to-shopify with:', collection.id);
-    toast.loading('Synchronisation avec Shopify en cours...', { id: 'shopify-sync' });
+    // Store image info for success dialog
+    setGeneratedImageUrl(imageUrl);
     
+    // Close main dialog
+    onOpenChange(false);
+    setSelectedOption(null);
+    setCustomImageUrl('');
+    setAiPrompt('');
+    
+    // Refresh the collection list FIRST
+    await onImageUpdated();
+    
+    // Wait a bit to ensure parent has refreshed
+    await new Promise(resolve => setTimeout(resolve, 150));
+    
+    // Then show success dialog (no toast to avoid hiding the dialog)
+    setShowSuccessDialog(true);
+  };
+
+  const handleSyncToShopify = async () => {
     try {
+      setProcessingAlt(true);
+      
+      console.log('📞 [COLLECTION-IMAGE] Calling sync-collection-image-to-shopify with:', collection.id);
+      toast.loading('Synchronisation avec Shopify en cours...', { id: 'shopify-sync' });
+      
       const { data: syncResult, error: syncError } = await supabase.functions.invoke(
         'sync-collection-image-to-shopify',
         { body: { collection_id: collection.id } }
@@ -216,24 +230,23 @@ export function CollectionImageDialog({
 
       if (syncError) {
         console.error('❌ [COLLECTION-IMAGE] Shopify sync error:', syncError);
-        toast.error(`⚠️ Synchronisation échouée: ${syncError.message}`, { id: 'shopify-sync' });
-      } else if (syncResult?.success) {
-        console.log('✅ [COLLECTION-IMAGE] Sync successful');
+        throw syncError;
+      }
+      
+      if (syncResult?.success) {
         toast.success('✅ Image synchronisée avec Shopify', { id: 'shopify-sync' });
       } else {
-        console.warn('⚠️ [COLLECTION-IMAGE] Incomplete sync:', syncResult);
-        toast.warning('⚠️ Image enregistrée (sync Shopify incomplète)', { id: 'shopify-sync' });
+        toast.warning('⚠️ Image enregistrée (sync Shopify partielle)', { id: 'shopify-sync' });
       }
-    } catch (syncError: any) {
-      console.error('❌ [COLLECTION-IMAGE] Sync error (non-blocking):', syncError);
-      toast.error(`⚠️ Erreur sync: ${syncError?.message || 'Erreur inconnue'}`, { id: 'shopify-sync' });
+      
+      setShowSuccessDialog(false);
+      onImageUpdated();
+    } catch (err: any) {
+      console.error('❌ [COLLECTION-IMAGE] Error:', err);
+      toast.error(err.message || 'Erreur lors de la synchronisation', { id: 'shopify-sync' });
+    } finally {
+      setProcessingAlt(false);
     }
-
-    onImageUpdated();
-    onOpenChange(false);
-    setSelectedOption(null);
-    setCustomImageUrl('');
-    setAiPrompt('');
   };
 
   const handleClose = () => {
@@ -251,17 +264,18 @@ export function CollectionImageDialog({
   ];
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ImageIcon className="w-5 h-5" />
-            Ajouter une image de collection
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Collection: <span className="font-medium">{collection.title}</span>
-          </p>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5" />
+              Ajouter une image de collection
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Collection: <span className="font-medium">{collection.title}</span>
+            </p>
+          </DialogHeader>
 
         <div className="space-y-4">
           {/* Why use AI section */}
@@ -472,5 +486,67 @@ export function CollectionImageDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Success Dialog with Export Options */}
+    <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+      <DialogContent className="sm:max-w-md">
+        <div className="flex flex-col items-center text-center space-y-4 py-4">
+          <div className="relative w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center animate-scale-in">
+            <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+          </div>
+
+          <div>
+            <DialogTitle className="text-xl font-bold text-green-600 dark:text-green-400 mb-2">
+              Image mise à jour avec succès !
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              L'image de la collection a été enregistrée. Vous pouvez maintenant l'exporter vers Shopify.
+            </DialogDescription>
+          </div>
+
+          {/* Image Preview */}
+          {generatedImageUrl && (
+            <div className="w-full">
+              <img
+                src={generatedImageUrl}
+                alt={collection.title}
+                className="w-full h-48 object-cover rounded-lg border"
+              />
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="w-full space-y-2 pt-2">
+            <Button
+              onClick={handleSyncToShopify}
+              disabled={processingAlt}
+              className="w-full h-11 font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              {processingAlt ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Synchronisation...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Exporter vers Shopify
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={() => setShowSuccessDialog(false)}
+              variant="outline"
+              className="w-full"
+              disabled={processingAlt}
+            >
+              Fermer
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
