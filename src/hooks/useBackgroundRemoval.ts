@@ -88,11 +88,23 @@ export function useBackgroundRemoval() {
       setProgress(20);
 
       console.log('Initializing segmentation model...');
-      const segmenter = await pipeline(
-        'image-segmentation',
-        'Xenova/segformer-b0-finetuned-ade-512-512',
-        { device: 'webgpu' }
-      );
+      
+      // Try WebGPU first, fallback to WASM if not available
+      let segmenter;
+      try {
+        segmenter = await pipeline(
+          'image-segmentation',
+          'Xenova/segformer-b0-finetuned-ade-512-512',
+          { device: 'webgpu' }
+        );
+        console.log('Using WebGPU for segmentation');
+      } catch (gpuError) {
+        console.log('WebGPU not available, falling back to WASM');
+        segmenter = await pipeline(
+          'image-segmentation',
+          'Xenova/segformer-b0-finetuned-ade-512-512'
+        );
+      }
       setProgress(40);
 
       // Convert image to canvas
