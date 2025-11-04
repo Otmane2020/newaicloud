@@ -3,11 +3,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sparkles, FileText, Link, Download, ExternalLink, TrendingUp, Search, Settings, Rocket, Eye } from 'lucide-react';
+import { Sparkles, FileText, Link, Download, ExternalLink, Search, Settings, Rocket, Eye, AlertCircle, RefreshCw, Loader2, Trash2, Edit } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
+import { ReplaceLinkDialog } from './ReplaceLinkDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface NetlinkingEntry {
   id: string;
@@ -21,6 +34,11 @@ interface NetlinkingEntry {
   updated_at: string;
   product_page_name: string;
   seo_score: number;
+  is_broken: boolean;
+  last_checked_at: string | null;
+  http_status_code: number | null;
+  error_message: string | null;
+  broken_since: string | null;
 }
 
 export function NetlinkingTable() {
@@ -28,11 +46,20 @@ export function NetlinkingTable() {
   const [entries, setEntries] = useState<NetlinkingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const [selectedLink, setSelectedLink] = useState<NetlinkingEntry | null>(null);
+  const [replaceDialogOpen, setReplaceDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [linkToDelete, setLinkToDelete] = useState<string | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     internal: 0,
     external: 0,
     totalClicks: 0,
+    broken: 0,
+    working: 0,
+    unchecked: 0,
   });
   const { t, tf } = useTranslation();
 
@@ -121,8 +148,11 @@ export function NetlinkingTable() {
       const internal = formattedData.filter((e: any) => e.link_type === 'internal').length;
       const external = formattedData.filter((e: any) => e.link_type === 'external').length;
       const totalClicks = formattedData.reduce((sum: number, e: any) => sum + (e.click_count || 0), 0);
+      const broken = formattedData.filter((e: any) => e.is_broken).length;
+      const working = formattedData.filter((e: any) => !e.is_broken && e.last_checked_at).length;
+      const unchecked = formattedData.filter((e: any) => !e.last_checked_at).length;
 
-      setStats({ total, internal, external, totalClicks });
+      setStats({ total, internal, external, totalClicks, broken, working, unchecked });
     } catch (error) {
       console.error('Error loading netlinking:', error);
       toast.error(t.blog.dialogs.netlinking.errorLoading);
@@ -152,16 +182,64 @@ export function NetlinkingTable() {
     }
   };
 
+  const handleCheckLinks = async (linkIds?: string[]) => {
+    setChecking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-broken-links', {
+        body: { link_ids: linkIds },
+      });
+
+      if (error) throw error;
+
+      if (data.broken > 0) {
+        toast.warning(`${data.broken} lien(s) brisé(s) détecté(s)`);
+      } else {
+        toast.success('Tous les liens sont fonctionnels');
+      }
+
+      await loadNetlinking();
+    } catch (error: any) {
+      console.error('Error checking links:', error);
+      toast.error('Erreur lors de la vérification des liens');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleDeleteLink = async () => {
+    if (!linkToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('blog_netlinking')
+        .delete()
+        .eq('id', linkToDelete);
+
+      if (error) throw error;
+
+      toast.success('Lien supprimé');
+      await loadNetlinking();
+    } catch (error: any) {
+      console.error('Error deleting link:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeleteDialogOpen(false);
+      setLinkToDelete(null);
+    }
+  };
+
   const exportToCSV = () => {
     const csv = [
-      ['Article', 'URL cible', 'Texte d\'ancrage', 'Type', 'Clics', 'Date de création'],
+      ['Article', 'URL cible', 'Texte d\'ancrage', 'Type', 'Statut', 'Code HTTP', 'Clics', 'Dernière vérification'],
       ...entries.map((entry) => [
         entry.article_title,
         entry.target_url,
         entry.anchor_text,
         entry.link_type,
+        entry.is_broken ? 'Brisé' : entry.last_checked_at ? 'Actif' : 'Non vérifié',
+        entry.http_status_code || '',
         entry.click_count,
-        new Date(entry.created_at).toLocaleDateString('fr-FR'),
+        entry.last_checked_at ? new Date(entry.last_checked_at).toLocaleDateString('fr-FR') : '',
       ]),
     ]
       .map((row) => row.join(','))
@@ -176,14 +254,32 @@ export function NetlinkingTable() {
     toast.success(t.blog.dialogs.netlinking.csvExported);
   };
 
+  const filteredEntries = entries.filter((entry) => {
+    if (activeTab === 'broken') return entry.is_broken;
+    if (activeTab === 'working') return !entry.is_broken && entry.last_checked_at;
+    return true;
+  });
+
   return (
     <div className="space-y-6">
-      {/* Action Button */}
-      <div className="flex justify-end">
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-2">
+        <Button
+          onClick={() => handleCheckLinks()}
+          disabled={checking || entries.length === 0}
+          variant="outline"
+        >
+          {checking ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <AlertCircle className="w-4 h-4 mr-2" />
+          )}
+          Vérifier tous les liens
+        </Button>
         <Button
           onClick={handleAnalyzeAllArticles}
           disabled={analyzing}
-          size="lg"
+          size="default"
           className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
         >
           {analyzing ? (
@@ -201,7 +297,7 @@ export function NetlinkingTable() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Liens</CardTitle>
@@ -229,6 +325,20 @@ export function NetlinkingTable() {
           </CardContent>
         </Card>
 
+        <Card className={stats.broken > 0 ? "border-destructive" : ""}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+              {stats.broken > 0 && <AlertCircle className="w-4 h-4 text-destructive" />}
+              Liens Brisés
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${stats.broken > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+              {stats.broken}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Clics</CardTitle>
@@ -250,134 +360,206 @@ export function NetlinkingTable() {
               </CardTitle>
               <CardDescription>Tous vos liens créés dans les articles</CardDescription>
             </div>
-      <Button onClick={exportToCSV} variant="outline" size="sm">
-        <Download className="w-4 h-4 mr-2" />
-        Exporter CSV
-      </Button>
-    </div>
-  </CardHeader>
-  <CardContent>
-    {loading ? (
-      <div className="text-center py-8 text-muted-foreground">{t.blog.dialogs.netlinking.loading}</div>
-    ) : entries.length === 0 ? (
-      <div className="text-center py-12">
-        <Link className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-        <p className="text-muted-foreground mb-2">{t.blog.dialogs.netlinking.noLinks}</p>
-        <p className="text-sm text-muted-foreground">{t.blog.dialogs.netlinking.autoDetect}</p>
-      </div>
-    ) : (
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[300px]">Lien</TableHead>
-              <TableHead className="w-[180px]">Produit / Page</TableHead>
-              <TableHead className="w-[200px]">Article lié</TableHead>
-              <TableHead className="w-[100px]">Type de lien</TableHead>
-              <TableHead className="w-[120px]">Score SEO</TableHead>
-              <TableHead className="w-[140px]">Dernière mise à jour</TableHead>
-              <TableHead className="w-[150px] text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {entries.map((entry) => {
-              const scoreColor = entry.seo_score >= 80 ? 'text-green-600' : entry.seo_score >= 60 ? 'text-orange-600' : 'text-red-600';
-              const scoreEmoji = entry.seo_score >= 80 ? '🟢' : entry.seo_score >= 60 ? '🟠' : '🔴';
-              
-              return (
-                <TableRow key={entry.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <a
-                      href={entry.target_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-blue-600 hover:underline text-sm font-medium"
-                      title={entry.target_url}
-                    >
-                      <span className="truncate max-w-[280px]">{entry.target_url}</span>
-                      <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                    </a>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <div className="truncate max-w-[170px]" title={entry.product_page_name}>
-                      {entry.product_page_name}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="italic text-sm text-muted-foreground truncate max-w-[190px]" title={entry.article_title}>
-                      {entry.article_title}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={entry.link_type === 'internal' ? 'default' : 'outline'}>
-                      {entry.link_type === 'internal' ? 'Interne' : 'Externe'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className={`flex items-center gap-2 font-semibold ${scoreColor}`}>
-                      <span className="text-lg">{scoreEmoji}</span>
-                      <span>{entry.seo_score}/100</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(entry.updated_at || entry.created_at).toLocaleDateString('fr-FR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric'
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      {entry.seo_score >= 80 ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toast.info('Analyse du lien...')}
-                          title="Analyser"
-                        >
-                          <Search className="w-4 h-4 mr-1" />
-                          Analyser
-                        </Button>
-                      ) : entry.seo_score >= 60 ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toast.info('Optimisation du lien...')}
-                          title="Optimiser"
-                        >
-                          <Settings className="w-4 h-4 mr-1" />
-                          Optimiser
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toast.info('Amélioration du lien...')}
-                          title="Améliorer"
-                        >
-                          <Rocket className="w-4 h-4 mr-1" />
-                          Améliorer
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => window.open(entry.target_url, '_blank')}
-                        title="Voir le lien"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-    )}
-  </CardContent>
-</Card>
+            <Button onClick={exportToCSV} variant="outline" size="sm">
+              <Download className="w-4 h-4 mr-2" />
+              Exporter CSV
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">{t.blog.dialogs.netlinking.loading}</div>
+          ) : entries.length === 0 ? (
+            <div className="text-center py-12">
+              <Link className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-2">{t.blog.dialogs.netlinking.noLinks}</p>
+              <p className="text-sm text-muted-foreground">{t.blog.dialogs.netlinking.autoDetect}</p>
+            </div>
+          ) : (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="all">Tous ({stats.total})</TabsTrigger>
+                <TabsTrigger value="broken" className={stats.broken > 0 ? "text-destructive" : ""}>
+                  Brisés ({stats.broken})
+                </TabsTrigger>
+                <TabsTrigger value="working">Actifs ({stats.working})</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value={activeTab}>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[100px]">Statut</TableHead>
+                        <TableHead className="w-[300px]">Lien</TableHead>
+                        <TableHead className="w-[180px]">Produit / Page</TableHead>
+                        <TableHead className="w-[200px]">Article lié</TableHead>
+                        <TableHead className="w-[100px]">Type</TableHead>
+                        <TableHead className="w-[120px]">Score SEO</TableHead>
+                        <TableHead className="w-[200px] text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredEntries.map((entry) => {
+                        const scoreColor = entry.seo_score >= 80 ? 'text-green-600' : entry.seo_score >= 60 ? 'text-orange-600' : 'text-red-600';
+                        const scoreEmoji = entry.seo_score >= 80 ? '🟢' : entry.seo_score >= 60 ? '🟠' : '🔴';
+                        
+                        return (
+                          <TableRow 
+                            key={entry.id} 
+                            className={`hover:bg-muted/50 ${entry.is_broken ? 'bg-destructive/5' : ''}`}
+                          >
+                            <TableCell>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    {entry.is_broken ? (
+                                      <Badge variant="destructive" className="gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        Brisé
+                                      </Badge>
+                                    ) : entry.last_checked_at ? (
+                                      <Badge variant="default" className="bg-green-600 gap-1">
+                                        <span className="w-2 h-2 bg-white rounded-full" />
+                                        Actif
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="secondary">
+                                        Non vérifié
+                                      </Badge>
+                                    )}
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {entry.is_broken ? (
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-destructive">Lien brisé</p>
+                                        <p>Code: {entry.http_status_code || 'Timeout'}</p>
+                                        {entry.error_message && <p className="text-xs">{entry.error_message}</p>}
+                                        {entry.broken_since && (
+                                          <p className="text-xs">
+                                            Depuis: {new Date(entry.broken_since).toLocaleDateString('fr-FR')}
+                                          </p>
+                                        )}
+                                      </div>
+                                    ) : entry.last_checked_at ? (
+                                      <div className="space-y-1">
+                                        <p>Vérifié: {new Date(entry.last_checked_at).toLocaleDateString('fr-FR')}</p>
+                                        <p>Code HTTP: {entry.http_status_code}</p>
+                                      </div>
+                                    ) : (
+                                      <p>Ce lien n'a pas encore été vérifié</p>
+                                    )}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </TableCell>
+                            <TableCell>
+                              <a
+                                href={entry.target_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-1 hover:underline text-sm font-medium ${
+                                  entry.is_broken ? 'text-destructive' : 'text-blue-600'
+                                }`}
+                                title={entry.target_url}
+                              >
+                                <span className="truncate max-w-[280px]">{entry.target_url}</span>
+                                <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                              </a>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              <div className="truncate max-w-[170px]" title={entry.product_page_name}>
+                                {entry.product_page_name}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="italic text-sm text-muted-foreground truncate max-w-[190px]" title={entry.article_title}>
+                                {entry.article_title}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={entry.link_type === 'internal' ? 'default' : 'outline'}>
+                                {entry.link_type === 'internal' ? 'Interne' : 'Externe'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className={`flex items-center gap-2 font-semibold ${scoreColor}`}>
+                                <span className="text-lg">{scoreEmoji}</span>
+                                <span>{entry.seo_score}/100</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-end gap-1">
+                                {entry.is_broken ? (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedLink(entry);
+                                        setReplaceDialogOpen(true);
+                                      }}
+                                      title="Remplacer"
+                                    >
+                                      <Edit className="w-4 h-4 mr-1" />
+                                      Remplacer
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleCheckLinks([entry.id])}
+                                      disabled={checking}
+                                      title="Re-vérifier"
+                                    >
+                                      <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setLinkToDelete(entry.id);
+                                        setDeleteDialogOpen(true);
+                                      }}
+                                      title="Supprimer"
+                                      className="text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleCheckLinks([entry.id])}
+                                      disabled={checking}
+                                      title="Vérifier"
+                                    >
+                                      <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => window.open(entry.target_url, '_blank')}
+                                      title="Voir le lien"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </CardContent>
+      </Card>
 
 {/* Section Génération Articles */}
 <Card className="mt-6">
@@ -435,6 +617,32 @@ export function NetlinkingTable() {
     </div>
   </CardContent>
 </Card>
+      <ReplaceLinkDialog
+        open={replaceDialogOpen}
+        onClose={() => {
+          setReplaceDialogOpen(false);
+          setSelectedLink(null);
+        }}
+        link={selectedLink}
+        onSuccess={() => loadNetlinking()}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce lien ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le lien sera supprimé de votre base de données netlinking.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLink} className="bg-destructive">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

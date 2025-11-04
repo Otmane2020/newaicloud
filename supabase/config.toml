@@ -167,3 +167,9 @@ verify_jwt = true
 
 [functions.analyze-competitor-pricing]
 verify_jwt = true
+
+[functions.check-broken-links]
+verify_jwt = true
+
+[functions.update-article-link]
+verify_jwt = true

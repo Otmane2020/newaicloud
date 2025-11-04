@@ -360,9 +360,14 @@ export type Database = {
         Row: {
           anchor_text: string
           article_id: string | null
+          broken_since: string | null
           click_count: number | null
           created_at: string | null
+          error_message: string | null
+          http_status_code: number | null
           id: string
+          is_broken: boolean | null
+          last_checked_at: string | null
           link_type: string | null
           seo_score: number | null
           target_type: string | null
@@ -373,9 +378,14 @@ export type Database = {
         Insert: {
           anchor_text: string
           article_id?: string | null
+          broken_since?: string | null
           click_count?: number | null
           created_at?: string | null
+          error_message?: string | null
+          http_status_code?: number | null
           id?: string
+          is_broken?: boolean | null
+          last_checked_at?: string | null
           link_type?: string | null
           seo_score?: number | null
           target_type?: string | null
@@ -386,9 +396,14 @@ export type Database = {
         Update: {
           anchor_text?: string
           article_id?: string | null
+          broken_since?: string | null
           click_count?: number | null
           created_at?: string | null
+          error_message?: string | null
+          http_status_code?: number | null
           id?: string
+          is_broken?: boolean | null
+          last_checked_at?: string | null
           link_type?: string | null
           seo_score?: number | null
           target_type?: string | null
