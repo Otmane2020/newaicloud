@@ -958,9 +958,12 @@ export type Database = {
           default_brand: string | null
           default_condition: string | null
           default_currency: string | null
+          excluded_collections: string[] | null
+          filter_mode: string | null
           generate_gtin_enabled: boolean | null
           gtin_country_code: string | null
           id: string
+          included_collections: string[] | null
           last_feed_generated_at: string | null
           last_shopify_sync_at: string | null
           store_name: string
@@ -975,9 +978,12 @@ export type Database = {
           default_brand?: string | null
           default_condition?: string | null
           default_currency?: string | null
+          excluded_collections?: string[] | null
+          filter_mode?: string | null
           generate_gtin_enabled?: boolean | null
           gtin_country_code?: string | null
           id?: string
+          included_collections?: string[] | null
           last_feed_generated_at?: string | null
           last_shopify_sync_at?: string | null
           store_name: string
@@ -992,9 +998,12 @@ export type Database = {
           default_brand?: string | null
           default_condition?: string | null
           default_currency?: string | null
+          excluded_collections?: string[] | null
+          filter_mode?: string | null
           generate_gtin_enabled?: boolean | null
           gtin_country_code?: string | null
           id?: string
+          included_collections?: string[] | null
           last_feed_generated_at?: string | null
           last_shopify_sync_at?: string | null
           store_name?: string

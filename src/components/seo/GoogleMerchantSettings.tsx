@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Save, Copy, Check, ExternalLink, RefreshCw, Settings, Info, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface MerchantSettings {
   id?: string;
@@ -22,8 +23,16 @@ interface MerchantSettings {
   default_currency: string;
   default_condition: string;
   default_brand: string;
+  filter_mode: string;
+  included_collections: string[];
+  excluded_collections: string[];
   updated_at?: string;
   created_at?: string;
+}
+
+interface Collection {
+  id: string;
+  title: string;
 }
 
 export function GoogleMerchantSettings() {
@@ -32,6 +41,7 @@ export function GoogleMerchantSettings() {
   const [testing, setTesting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [feedStatus, setFeedStatus] = useState<"idle" | "success" | "error">("idle");
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [settings, setSettings] = useState<MerchantSettings>({
     user_id: user?.id || "",
     store_name: "",
@@ -41,13 +51,34 @@ export function GoogleMerchantSettings() {
     default_currency: "EUR",
     default_condition: "new",
     default_brand: "",
+    filter_mode: "all",
+    included_collections: [],
+    excluded_collections: [],
   });
 
   useEffect(() => {
     if (user) {
       loadSettings();
+      loadCollections();
     }
   }, [user]);
+
+  const loadCollections = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("shopify_collections")
+        .select("id, title")
+        .eq("user_id", user.id)
+        .order("title");
+
+      if (error) throw error;
+      setCollections(data || []);
+    } catch (error) {
+      console.error("Error loading collections:", error);
+    }
+  };
 
   const loadSettings = async () => {
     if (!user) return;
@@ -64,6 +95,9 @@ export function GoogleMerchantSettings() {
           default_currency: data.default_currency || 'EUR',
           default_condition: data.default_condition || 'new',
           default_brand: data.default_brand || '',
+          filter_mode: data.filter_mode || 'all',
+          included_collections: data.included_collections || [],
+          excluded_collections: data.excluded_collections || [],
         });
       }
     } catch (error) {
@@ -116,6 +150,9 @@ export function GoogleMerchantSettings() {
           default_currency: settings.default_currency,
           default_condition: settings.default_condition,
           default_brand: settings.default_brand,
+          filter_mode: settings.filter_mode,
+          included_collections: settings.included_collections,
+          excluded_collections: settings.excluded_collections,
         },
         {
           onConflict: "user_id",
@@ -359,6 +396,103 @@ export function GoogleMerchantSettings() {
             <p className="text-xs text-muted-foreground">Utilisée pour les produits sans marque spécifiée</p>
           </div>
 
+          {/* Collection Filtering */}
+          <div className="space-y-4 p-4 bg-secondary/50 rounded-lg">
+            <Label className="text-base font-semibold">Filtrage par collections</Label>
+            
+            <div className="space-y-2">
+              <Label htmlFor="filter_mode">Mode de filtrage</Label>
+              <Select
+                value={settings.filter_mode}
+                onValueChange={(value) => setSettings({ 
+                  ...settings, 
+                  filter_mode: value,
+                  included_collections: value === 'all' ? [] : settings.included_collections,
+                  excluded_collections: value === 'all' ? [] : settings.excluded_collections,
+                })}
+              >
+                <SelectTrigger id="filter_mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les collections</SelectItem>
+                  <SelectItem value="include">Inclure uniquement certaines collections</SelectItem>
+                  <SelectItem value="exclude">Exclure certaines collections</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {settings.filter_mode === 'include' && (
+              <div className="space-y-3">
+                <Label className="text-sm">Collections à inclure</Label>
+                <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-3">
+                  {collections.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucune collection disponible</p>
+                  ) : (
+                    collections.map((collection) => (
+                      <div key={collection.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`include-${collection.id}`}
+                          checked={settings.included_collections.includes(collection.id)}
+                          onCheckedChange={(checked) => {
+                            const newCollections = checked
+                              ? [...settings.included_collections, collection.id]
+                              : settings.included_collections.filter(id => id !== collection.id);
+                            setSettings({ ...settings, included_collections: newCollections });
+                          }}
+                        />
+                        <Label 
+                          htmlFor={`include-${collection.id}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {collection.title}
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {settings.included_collections.length} collection(s) sélectionnée(s)
+                </p>
+              </div>
+            )}
+
+            {settings.filter_mode === 'exclude' && (
+              <div className="space-y-3">
+                <Label className="text-sm">Collections à exclure</Label>
+                <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-3">
+                  {collections.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucune collection disponible</p>
+                  ) : (
+                    collections.map((collection) => (
+                      <div key={collection.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`exclude-${collection.id}`}
+                          checked={settings.excluded_collections.includes(collection.id)}
+                          onCheckedChange={(checked) => {
+                            const newCollections = checked
+                              ? [...settings.excluded_collections, collection.id]
+                              : settings.excluded_collections.filter(id => id !== collection.id);
+                            setSettings({ ...settings, excluded_collections: newCollections });
+                          }}
+                        />
+                        <Label 
+                          htmlFor={`exclude-${collection.id}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {collection.title}
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {settings.excluded_collections.length} collection(s) exclue(s)
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Save Button */}
           <Button onClick={handleSave} disabled={loading} className="w-full" size="lg">
             {loading ? (
@@ -388,6 +522,10 @@ export function GoogleMerchantSettings() {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
             <strong>Génération GTIN :</strong> Lorsque activée, les codes GTIN seront automatiquement générés et inclus dans le flux XML pour améliorer la visibilité sur Google Shopping.
+          </p>
+          <p>
+            <strong>Filtrage par collections :</strong> Contrôlez quelles collections sont incluses dans le flux Google Shopping.
+            Vous pouvez inclure uniquement certaines collections ou exclure des collections spécifiques.
           </p>
           <p>
             <strong>Format GTIN :</strong> Le GTIN (Global Trade Item Number) est requis pour certains produits.

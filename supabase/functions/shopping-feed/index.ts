@@ -54,6 +54,9 @@ interface FeedSettings {
   default_condition?: string;
   default_brand?: string;
   generate_gtin_enabled?: boolean;
+  filter_mode?: string;
+  included_collections?: string[];
+  excluded_collections?: string[];
 }
 
 function getSupabaseClient() {
@@ -456,20 +459,54 @@ Deno.serve(async (req: Request) => {
     console.log(`Generating feed for seller: ${sellerId}, store: ${storeDomain}`);
 
     // Fetch active products for this seller with all necessary fields
-    const { data: products, error } = await supabase
+    let productsQuery = supabase
       .from("shopify_products")
       .select("*")
       .eq("seller_id", sellerId)
       .eq("status", "active")
       .not("price", "is", null);
 
+    const { data: allProducts, error } = await productsQuery;
+
     if (error) {
       console.error("Database error:", error);
       throw error;
     }
 
-    if (!products || products.length === 0) {
+    if (!allProducts || allProducts.length === 0) {
       return new Response(JSON.stringify({ error: "No active products found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Filter products based on collection settings
+    let products = allProducts;
+    
+    if (feedSettings?.filter_mode === 'include' && feedSettings.included_collections && feedSettings.included_collections.length > 0) {
+      // Only include products that belong to selected collections
+      const includedCollections = feedSettings.included_collections;
+      products = allProducts.filter(product => {
+        const productCollections = product.collection_ids || [];
+        return includedCollections.some(collectionId => 
+          productCollections.includes(collectionId)
+        );
+      });
+      console.log(`Filtered to ${products.length} products from ${includedCollections.length} included collections`);
+    } else if (feedSettings?.filter_mode === 'exclude' && feedSettings.excluded_collections && feedSettings.excluded_collections.length > 0) {
+      // Exclude products that belong to excluded collections
+      const excludedCollections = feedSettings.excluded_collections;
+      products = allProducts.filter(product => {
+        const productCollections = product.collection_ids || [];
+        return !excludedCollections.some(collectionId => 
+          productCollections.includes(collectionId)
+        );
+      });
+      console.log(`Filtered to ${products.length} products after excluding ${excludedCollections.length} collections`);
+    }
+
+    if (products.length === 0) {
+      return new Response(JSON.stringify({ error: "No products match the collection filters" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
