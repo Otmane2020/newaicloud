@@ -274,7 +274,7 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(starterPlan)}</span>
+                  <span className="text-5xl font-bold">${getPrice(starterPlan)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
               </div>
@@ -356,7 +356,7 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(selectedPro)}</span>
+                  <span className="text-5xl font-bold">${getPrice(selectedPro)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
               </div>
