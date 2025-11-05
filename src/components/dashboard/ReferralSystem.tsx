@@ -34,6 +34,9 @@ export function ReferralSystem() {
     return null;
   }
 
+  // Hidden per user request
+  return null;
+
   useEffect(() => {
     if (user) {
       loadReferralData();
