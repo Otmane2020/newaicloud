@@ -1118,6 +1118,37 @@ export const translations = {
     },
     loading: "Loading collections...",
     loadError: "Error loading collections",
+    importComplete: "Import Complete",
+    importCollections: "Import Collections",
+    importImages: "Import Collections + Images",
+    importing: "Importing...",
+    optimizing: "Optimizing...",
+    syncing: "Syncing...",
+    optimization: {
+      title: "Collection Optimization",
+      optimizeAll: "Optimize All",
+      optimizeSelected: "Optimize Selected",
+      tabs: {
+        all: "All Collections",
+        optimized: "Optimized",
+        notOptimized: "Not Optimized",
+      },
+      messages: {
+        optimizationSuccess: "{{count}} collections optimized",
+        optimizationError: "Error during optimization",
+        syncSuccess: "{{count}} collections synced",
+        syncError: "Error during synchronization",
+      },
+      actions: {
+        optimizeAll: "Optimize All",
+        syncAll: "Sync All",
+        refresh: "Refresh",
+      },
+    },
+    viewMode: {
+      grid: "Grid View",
+      list: "List View",
+    },
     optimization: {
       tabs: {
         all: "All",
@@ -1934,8 +1965,20 @@ export const translations = {
 
   performance: {
     title: "Performance Monitor",
+    subtitle: "Track performance metrics",
+    loading: "Loading metrics...",
+    noMetrics: "No metrics available",
     overview: "Overview",
     metrics: "Metrics",
+    stats: {
+      totalOperations: "Total Operations",
+      avgTime: "Average Time",
+      trackedOperations: "Tracked Operations",
+    },
+    chart: {
+      title: "Last 500 Measurements",
+      allOperations: "All Operations Combined",
+    },
     pageSpeed: "Page Speed",
     loadTime: "Load Time",
     timeToInteractive: "Time to Interactive",
@@ -2369,6 +2412,217 @@ export const translations = {
       max: "Max",
       measurements: "Measurements",
     },
+  },
+
+  googleShopping: {
+    title: "Google Shopping Feed",
+    description: "Manage your Google Shopping product feed",
+    stats: {
+      totalProducts: "Total Products",
+      optimized: "Optimized",
+      pending: "Pending",
+      inFeed: "In Feed",
+    },
+    table: {
+      product: "Product",
+      image: "Image",
+      category: "Category",
+      gtin: "GTIN",
+      mpn: "MPN",
+      condition: "Condition",
+      status: "Status",
+      actions: "Actions",
+    },
+    actions: {
+      generateGtins: "Generate GTINs",
+      generateCategories: "Generate Categories",
+      processImages: "Process Images",
+      optimizeAll: "Optimize All",
+      exportFeed: "Export Feed",
+      refresh: "Refresh",
+    },
+    filters: {
+      search: "Search products...",
+      allCategories: "All Categories",
+      allStatus: "All Status",
+    },
+    status: {
+      ready: "Ready",
+      pending: "Pending",
+      error: "Error",
+      missing: "Missing Data",
+    },
+    messages: {
+      optimizationSuccess: "{{count}} products optimized",
+      optimizationError: "Error during optimization",
+      exportSuccess: "Feed exported successfully",
+      exportError: "Error exporting feed",
+    },
+  },
+
+  pricing: {
+    title: "Smart Pricing AI",
+    description: "AI-powered pricing optimization",
+    stats: {
+      avgMargin: "Average Margin",
+      totalProducts: "Total Products",
+      optimized: "Optimized Prices",
+      potential: "Potential Revenue",
+    },
+    table: {
+      product: "Product",
+      currentPrice: "Current Price",
+      smartPrice: "Smart Price",
+      marketPrice: "Market Price",
+      margin: "Margin",
+      actions: "Actions",
+    },
+    actions: {
+      analyzePrices: "Analyze Prices",
+      importCosts: "Import Costs",
+      syncToShopify: "Sync to Shopify",
+      bulkUpdate: "Bulk Update",
+    },
+    config: {
+      taxRate: "Tax Rate",
+      targetMargin: "Target Margin",
+      minMargin: "Minimum Margin",
+      competitorPricing: "Competitor Pricing",
+    },
+    messages: {
+      pricesAnalyzed: "Prices analyzed successfully",
+      pricesSynced: "Prices synced to Shopify",
+      costsImported: "Costs imported successfully",
+      analysisError: "Error analyzing prices",
+    },
+  },
+
+  merchant: {
+    title: "Google Merchant Center",
+    description: "Manage your feed and sync your products",
+    submenu: {
+      feed: "XML Feed",
+      settings: "Settings",
+      sync: "Synchronization",
+    },
+    tabs: {
+      feed: "XML Feed",
+      settings: "Settings",
+      sync: "Synchronization",
+    },
+    actions: {
+      openMerchant: "Open Merchant Center",
+      generateFeed: "Generate Feed",
+      downloadFeed: "Download Feed",
+      sync: "Sync Now",
+    },
+    feedDescription: "Your Google Merchant XML feed",
+    settingsDescription: "Configure your feed settings",
+    syncDescription: "Synchronize with Google Shopping",
+  },
+
+  chatTabs: {
+    chat: "AI Smart Chat",
+    orders: "Orders",
+    learning: "Learning",
+    ordersManagement: {
+      title: "Orders Management",
+      description: "Manage customer orders through AI assistant",
+      comingSoon: "Coming Soon",
+      comingSoonDesc: "This feature will be available soon to help you manage customer orders directly through the AI chat.",
+    },
+  },
+
+  forms: {
+    labels: {
+      title: "Title",
+      description: "Description",
+      category: "Category",
+      price: "Price",
+      quantity: "Quantity",
+      status: "Status",
+      tags: "Tags",
+      images: "Images",
+      required: "Required",
+    },
+    placeholders: {
+      enterTitle: "Enter title...",
+      enterDescription: "Enter description...",
+      selectCategory: "Select category...",
+      enterPrice: "Enter price...",
+      enterQuantity: "Enter quantity...",
+      selectStatus: "Select status...",
+      addTags: "Add tags...",
+    },
+    validation: {
+      required: "This field is required",
+      minLength: "Minimum length is {{min}} characters",
+      maxLength: "Maximum length is {{max}} characters",
+      invalidEmail: "Invalid email address",
+      invalidUrl: "Invalid URL",
+      invalidNumber: "Invalid number",
+    },
+    category: {
+      all: "All Categories",
+      select: "Select Category",
+    },
+  },
+
+  dialogs: {
+    confirm: {
+      title: "Confirm Action",
+      message: "Are you sure you want to proceed?",
+      confirm: "Confirm",
+      cancel: "Cancel",
+    },
+    delete: {
+      title: "Delete Item",
+      message: "Are you sure you want to delete this item? This action cannot be undone.",
+      confirm: "Delete",
+      cancel: "Cancel",
+    },
+    unsavedChanges: {
+      title: "Unsaved Changes",
+      message: "You have unsaved changes. Do you want to save them?",
+      save: "Save",
+      discard: "Discard",
+      cancel: "Cancel",
+    },
+    trialLimit: {
+      title: "Trial Limit Reached",
+      message: "You've reached your trial limit. Upgrade to continue.",
+    },
+    upgrade: {
+      upgradeNow: "Upgrade Now",
+      seePlans: "See Plans",
+      feature1: "Unlimited optimizations",
+      feature2: "Priority support",
+      feature3: "Advanced analytics",
+      feature4: "Custom integration",
+      feature5: "API access",
+      feature6: "White label",
+      feature7: "Dedicated account manager",
+      feature8: "SLA guarantee",
+    },
+    limit: {
+      title: "Limit Reached",
+      description: "You've reached your plan limit",
+    },
+  },
+
+  tables: {
+    noData: "No data available",
+    loading: "Loading...",
+    rowsPerPage: "Rows per page",
+    page: "Page",
+    of: "of",
+    selected: "{{count}} selected",
+    selectAll: "Select all",
+    deselectAll: "Deselect all",
+    actions: "Actions",
+    filters: "Filters",
+    export: "Export",
+    import: "Import",
   },
 };
 
