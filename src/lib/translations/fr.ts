@@ -1641,6 +1641,25 @@ export const translations = {
         articles: "Articles",
         images: "Images",
       },
+      chooseManagement: "Choisissez comment gérer le contenu optimisé par IA",
+      noRecentSync: "Aucune synchronisation récente",
+      selectContentType: "Sélectionnez au moins un type de contenu",
+    },
+    collections: {
+      selectToImport: "Sélectionnez les collections que vous souhaitez importer",
+      noCollectionFound: "Aucune collection trouvée",
+      noCollectionText: "Aucune collection n'a été trouvée dans votre boutique Shopify",
+      noStoreSelected: "Aucune boutique sélectionnée",
+      selectAtLeastOne: "Veuillez sélectionner au moins une collection",
+    },
+    connection: {
+      enterStoreName: "Veuillez entrer le nom de votre boutique",
+      chooseMethod: "Choisissez votre méthode de connexion",
+      chooseConnectionMethod: "Choisissez votre méthode de connexion :",
+    },
+    metadata: {
+      noActiveStore: "Aucune boutique active trouvée",
+      noStoreConnected: "Aucune boutique connectée. Connectez une boutique pour gérer ses métadonnées.",
     },
     connect: "Connecter Boutique",
     disconnect: "Déconnecter",
@@ -1822,6 +1841,20 @@ export const translations = {
     required: "Requis",
     optional: "Optionnel",
     charactersRemaining: "{{count}} caractères restants",
+    validation: {
+      required: "Ce champ est requis",
+      selectOption: "Veuillez sélectionner une option",
+      enterValue: "Veuillez entrer une valeur",
+      selectAtLeastOne: "Veuillez sélectionner au moins un élément",
+      fillAllFields: "Veuillez remplir tous les champs requis",
+    },
+    placeholders: {
+      selectPlan: "Sélectionnez un plan",
+      selectAudience: "Sélectionnez votre audience",
+      selectCategory: "Sélectionnez une catégorie",
+      selectCollection: "Sélectionnez une collection",
+      selectProduct: "Sélectionnez un produit",
+    },
   },
 
   modals: {
@@ -2127,7 +2160,11 @@ export const translations = {
       },
       activateMyPlan: "Activer mon abonnement",
       activateSubscription: "Activer l'abonnement",
-      unlockFeatures: "Libérez toutes les fonctionnalités en activant votre abonnement"
+      unlockFeatures: "Libérez toutes les fonctionnalités en activant votre abonnement",
+      selectPlan: "Sélectionnez un plan",
+      youReachedLimit: "Vous avez atteint la limite de votre plan",
+      chooseOptimizations: "Choisissez le nombre d'optimisations par mois :",
+      activateThisPlan: "Activer ce Plan",
     },
     limit: {
       upgradeRequired: "🚀 Mise à niveau requise",
@@ -2145,7 +2182,25 @@ export const translations = {
     trialLimit: {
       title: "🚀 Passez au plan supérieur",
       description: "Vous avez atteint la limite de votre plan actuel :",
-      usageFormat: "{{limitType}} : {{currentUsage}}/{{maxUsage}} utilisés"
+      usageFormat: "{{limitType}} : {{currentUsage}}/{{maxUsage}} utilisés",
+      activateMyPlan: "Activer Mon Plan",
+      later: "Peut-être Plus Tard",
+      unlockFeatures: "Débloquez toutes les fonctionnalités avec un plan payant",
+      starter: {
+        title: "Plan Starter",
+        price: "9,99€",
+        perMonth: "/mois",
+        features: {
+          products: "1000 produits",
+          optimizations: "100 optimisations SEO/mois",
+          articles: "10 articles IA/mois",
+          searches: "100 recherches IA/mois",
+          chatResponses: "50 réponses chat/mois",
+          stores: "1 boutique Shopify",
+          automation: "Automatisation SEO",
+          support: "Support prioritaire",
+        },
+      },
     }
   },
 
@@ -2748,6 +2803,56 @@ export const translations = {
       title: "Tout est Prêt ! 🚀",
       description: "Prêt à optimiser le SEO de votre boutique",
       getStarted: "Commencer",
+    },
+  },
+
+  empty: {
+    noResults: "Aucun résultat trouvé",
+    noData: "Aucune donnée disponible",
+    noConnection: "Aucune connexion active",
+    noCollection: "Aucune collection trouvée",
+    noProduct: "Aucun produit trouvé",
+    noSync: "Aucune synchronisation récente",
+    noCampaign: "Aucune campagne",
+    none: "Aucun",
+    noCollectionFound: "Aucune collection trouvée",
+    noProductFound: "Aucun produit trouvé",
+    noCollectionText: "Aucune collection n'a été trouvée dans votre boutique Shopify",
+    noStoreSelected: "Aucune boutique sélectionnée",
+    noActiveStore: "Aucune boutique active trouvée",
+    noStoreConnected: "Aucune boutique connectée. Connectez une boutique pour gérer ses métadonnées.",
+  },
+
+  campaigns: {
+    errors: {
+      enterName: "Veuillez entrer un nom de campagne",
+      defineMainTopic: "Veuillez définir le sujet principal",
+      selectType: "Veuillez sélectionner un type de campagne",
+      selectCollection: "Veuillez sélectionner au moins une collection",
+      selectProduct: "Veuillez sélectionner au moins un produit",
+      noShopifyStore: "Aucune boutique Shopify connectée",
+    },
+    labels: {
+      selectAudience: "Sélectionnez votre audience",
+      selectCollections: "Sélectionnez les collections à afficher",
+      selectProducts: "Sélectionnez les produits à afficher",
+      chooseArtStyle: "Choisissez le style artistique de votre page de destination",
+    },
+  },
+
+  ads: {
+    errors: {
+      noShopifyStore: "Aucune boutique Shopify connectée",
+      noCampaignType: "Veuillez sélectionner un type de campagne",
+      noName: "Veuillez donner un nom à votre campagne",
+      noCollection: "Veuillez sélectionner au moins une collection",
+      noProduct: "Veuillez sélectionner au moins un produit",
+      fillRequired: "Veuillez remplir tous les champs requis",
+    },
+    empty: {
+      noCampaign: "Aucune campagne",
+      noCollectionFound: "Aucune collection trouvée",
+      noProductFound: "Aucun produit trouvé",
     },
   },
 

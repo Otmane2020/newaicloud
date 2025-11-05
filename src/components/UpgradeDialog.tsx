@@ -113,7 +113,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
   const handleActivate = async () => {
     if (!selectedPlanId) {
-      toast.error('Veuillez sélectionner un plan');
+      toast.error(t.forms.validation.selectOption);
       return;
     }
 
@@ -154,7 +154,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
         <div className="space-y-4">
           <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg">
             <p className="font-medium text-orange-900 dark:text-orange-100 mb-1">
-              Vous avez atteint la limite de votre plan <span className="font-bold">{currentPlanData?.name || currentPlan}</span>
+              {t.dialogs.upgrade.youReachedLimit} <span className="font-bold">{currentPlanData?.name || currentPlan}</span>
             </p>
             <p className="text-sm text-orange-800 dark:text-orange-200">
               {limitTitle}: {limitMessage}
@@ -167,12 +167,12 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
             <>
               <div className="space-y-3">
                 <p className="text-muted-foreground font-medium text-sm sm:text-base">
-                  Choisissez le nombre d'optimisations par mois:
+                  {t.dialogs.upgrade.chooseOptimizations}
                 </p>
                 
                 <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
                   <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder="Sélectionnez un plan" />
+                    <SelectValue placeholder={t.dialogs.upgrade.selectPlan} />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
                     {availablePlans.map((plan) => (
@@ -235,7 +235,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
             ) : (
               <CreditCard className="w-5 h-5 mr-2" />
             )}
-            {loading ? t.dialogs.upgrade.loading : 'Activer ce plan'}
+            {loading ? t.dialogs.upgrade.loading : t.dialogs.upgrade.activateThisPlan}
           </Button>
           
           <Button 

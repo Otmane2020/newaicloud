@@ -1551,6 +1551,25 @@ export const translations = {
         articles: "Articles",
         images: "Images",
       },
+      chooseManagement: "Choose how to manage AI-optimized content",
+      noRecentSync: "No recent synchronization",
+      selectContentType: "Select at least one content type",
+    },
+    collections: {
+      selectToImport: "Select the collections you want to import",
+      noCollectionFound: "No collection found",
+      noCollectionText: "No collections were found in your Shopify store",
+      noStoreSelected: "No store selected",
+      selectAtLeastOne: "Please select at least one collection",
+    },
+    connection: {
+      enterStoreName: "Please enter your store name",
+      chooseMethod: "Choose your connection method",
+      chooseConnectionMethod: "Choose your connection method:",
+    },
+    metadata: {
+      noActiveStore: "No active store found",
+      noStoreConnected: "No store connected. Connect a store to manage its metadata.",
     },
     connect: "Connect Store",
     disconnect: "Disconnect",
@@ -1732,6 +1751,20 @@ export const translations = {
     required: "Required",
     optional: "Optional",
     charactersRemaining: "{{count}} characters remaining",
+    validation: {
+      required: "This field is required",
+      selectOption: "Please select an option",
+      enterValue: "Please enter a value",
+      selectAtLeastOne: "Please select at least one item",
+      fillAllFields: "Please fill all required fields",
+    },
+    placeholders: {
+      selectPlan: "Select a plan",
+      selectAudience: "Select your audience",
+      selectCategory: "Select a category",
+      selectCollection: "Select a collection",
+      selectProduct: "Select a product",
+    },
   },
 
   modals: {
@@ -2127,7 +2160,11 @@ export const translations = {
       },
       activateMyPlan: "Activate my subscription",
       activateSubscription: "Activate subscription",
-      unlockFeatures: "Unlock all features by activating your subscription"
+      unlockFeatures: "Unlock all features by activating your subscription",
+      selectPlan: "Select a plan",
+      youReachedLimit: "You've reached the limit of your plan",
+      chooseOptimizations: "Choose the number of optimizations per month:",
+      activateThisPlan: "Activate This Plan",
     },
     limit: {
       upgradeRequired: "🚀 Upgrade Required",
@@ -2145,7 +2182,25 @@ export const translations = {
     trialLimit: {
       title: "🚀 Upgrade to higher plan",
       description: "You have reached the limit of your current plan:",
-      usageFormat: "{{limitType}}: {{currentUsage}}/{{maxUsage}} used"
+      usageFormat: "{{limitType}}: {{currentUsage}}/{{maxUsage}} used",
+      activateMyPlan: "Activate My Plan",
+      later: "Maybe Later",
+      unlockFeatures: "Unlock all features with a paid plan",
+      starter: {
+        title: "Starter Plan",
+        price: "$9.99",
+        perMonth: "/month",
+        features: {
+          products: "1000 products",
+          optimizations: "100 SEO optimizations/month",
+          articles: "10 AI articles/month",
+          searches: "100 AI searches/month",
+          chatResponses: "50 chat responses/month",
+          stores: "1 Shopify store",
+          automation: "SEO automation",
+          support: "Priority support",
+        },
+      },
     }
   },
 
@@ -2737,6 +2792,56 @@ export const translations = {
       title: "You're All Set! 🚀",
       description: "Ready to optimize your store's SEO",
       getStarted: "Get Started",
+    },
+  },
+
+  empty: {
+    noResults: "No results found",
+    noData: "No data available",
+    noConnection: "No active connection",
+    noCollection: "No collection found",
+    noProduct: "No product found",
+    noSync: "No recent sync",
+    noCampaign: "No campaign",
+    none: "None",
+    noCollectionFound: "No collection found",
+    noProductFound: "No product found",
+    noCollectionText: "No collections were found in your Shopify store",
+    noStoreSelected: "No store selected",
+    noActiveStore: "No active store found",
+    noStoreConnected: "No store connected. Connect a store to manage its metadata.",
+  },
+
+  campaigns: {
+    errors: {
+      enterName: "Please enter a campaign name",
+      defineMainTopic: "Please define the main topic",
+      selectType: "Please select a campaign type",
+      selectCollection: "Please select at least one collection",
+      selectProduct: "Please select at least one product",
+      noShopifyStore: "No Shopify store connected",
+    },
+    labels: {
+      selectAudience: "Select your audience",
+      selectCollections: "Select collections to display",
+      selectProducts: "Select products to display",
+      chooseArtStyle: "Choose the artistic style of your landing page",
+    },
+  },
+
+  ads: {
+    errors: {
+      noShopifyStore: "No Shopify store connected",
+      noCampaignType: "Please select a campaign type",
+      noName: "Please give your campaign a name",
+      noCollection: "Please select at least one collection",
+      noProduct: "Please select at least one product",
+      fillRequired: "Please fill all required fields",
+    },
+    empty: {
+      noCampaign: "No campaign",
+      noCollectionFound: "No collection found",
+      noProductFound: "No product found",
     },
   },
 
