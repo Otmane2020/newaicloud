@@ -134,7 +134,38 @@ serve(async (req) => {
       campaigns_count: 0,
     };
     
-    console.log(`[LIMITS] Current usage:`, currentUsage);
+    console.log(`[LIMITS] Current usage from tracking:`, currentUsage);
+
+    // Vérifier le compte réel de produits dans la base de données
+    const { count: realProductCount, error: countError } = await supabaseClient
+      .from('shopify_products')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', user.id);
+
+    if (countError) {
+      console.error('[LIMITS] Error counting real products:', countError);
+    } else if (realProductCount !== null && currentUsage.products_count !== realProductCount) {
+      console.warn(`[LIMITS] ⚠️ Inconsistency detected: usage_tracking shows ${currentUsage.products_count} products but real count is ${realProductCount}`);
+      
+      // Corriger automatiquement usage_tracking
+      const { error: updateError } = await supabaseClient
+        .from('usage_tracking')
+        .update({ 
+          products_count: realProductCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('seller_id', user.id)
+        .eq('month', currentMonth.toISOString().split('T')[0]);
+      
+      if (updateError) {
+        console.error('[LIMITS] Error updating products_count:', updateError);
+      } else {
+        console.log(`[LIMITS] ✅ Auto-corrected products_count from ${currentUsage.products_count} to ${realProductCount}`);
+        currentUsage.products_count = realProductCount;
+      }
+    } else {
+      console.log(`[LIMITS] ✅ Products count is consistent: ${realProductCount}`);
+    }
 
     // Determine limits based on subscription status
     let limits;
