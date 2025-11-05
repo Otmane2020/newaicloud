@@ -1,3 +1,6 @@
+// Supabase Edge Function: chat-smart
+// Streamed SSE assistant for product chat/show with sector detection and robust intent parsing
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.1";
 
 const corsHeaders = {
@@ -6,10 +9,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Cache mémoire (TTL 1h)
+// ----------------------------
+// In-memory cache (TTL: 1 hour)
+// ----------------------------
 const responseCache = new Map<string, { response: string; timestamp: number }>();
 const CACHE_TTL = 3600000;
 
+// ----------------------------
+// Types
+// ----------------------------
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
@@ -61,15 +69,20 @@ interface ProductSearchFilters {
   exactMatch?: boolean;
 }
 
+type Intent = "simple_chat" | "product_chat" | "product_show";
+
 interface ChatResponse {
   role: "assistant";
   content: string;
-  intent: "simple_chat" | "product_chat" | "product_show" | "conversation";
+  intent: Intent | "conversation";
   products: Product[];
   mode: "conversation" | "product_show";
-  sector: string;
+  sector: string; // e.g., "meubles", "high_tech", ...
 }
 
+// ----------------------------
+// Helpers
+// ----------------------------
 function getSupabaseClient() {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -87,7 +100,6 @@ function normalizeText(text: string): string {
     .trim();
 }
 
-// Cache helpers
 function getCachedResponse(cacheKey: string): string | null {
   const entry = responseCache.get(cacheKey);
   if (!entry) return null;
@@ -98,6 +110,7 @@ function getCachedResponse(cacheKey: string): string | null {
   console.log("✅ Cache HIT:", cacheKey);
   return entry.response;
 }
+
 function setCachedResponse(cacheKey: string, response: string): void {
   responseCache.set(cacheKey, { response, timestamp: Date.now() });
   console.log("💾 Cache SET:", cacheKey);
@@ -111,10 +124,44 @@ function extractContextFromHistory(history: ChatMessage[]): string {
   return history.filter(m => m.role === "user").map(m => m.content).join(" ");
 }
 
-/** **************
- *  INTENT
- *************** */
-async function detectIntent(userMessage: string): Promise<"simple_chat" | "product_chat" | "product_show"> {
+// ----------------------------
+// Sector detection (20 universal categories)
+// ----------------------------
+const universalCategories: { key: string; synonyms: string[] }[] = [
+  { key: "meubles", synonyms: ["meuble","mobilier","table","chaise","canape","sofa","divan","banquette","buffet","armoire","lit","dressing","etagere","commode","meuble tv"] },
+  { key: "deco", synonyms: ["decoration","deco","lampe","miroir","cadre","plante","vase","coussin","tapis","rideau","luminaire","applique","suspension"] },
+  { key: "electromenager", synonyms: ["electromenager","machine a laver","lave linge","seche linge","refrigerateur","frigo","four","micro onde","aspirateur","robot cuisine","bouilloire","grille pain"] },
+  { key: "high_tech", synonyms: ["high tech","electronique","smartphone","telephone","tv","televiseur","ordinateur","pc","tablette","casque","ecouteur","console","gaming","camera"] },
+  { key: "mode", synonyms: ["mode","vetement","vêtement","tshirt","tee shirt","pantalon","robe","chaussure","sneakers","basket","manteau","chemise","pull","jupe"] },
+  { key: "beaute", synonyms: ["beaute","beauté","cosmetique","maquillage","soin","parfum","shampoing","shampooing","creme","serum","peau","corps","cheveux"] },
+  { key: "sport", synonyms: ["sport","fitness","musculation","tapis de course","halteres","halteres","halteres","velo","yoga","tennis","football","basketball"] },
+  { key: "bricolage", synonyms: ["bricolage","outil","perceuse","visseuse","tournevis","marteau","vis","meche","ponceuse","construction","chantier"] },
+  { key: "jardin", synonyms: ["jardin","exterieur","exterieur","terrasse","barbecue","plancha","piscine","parasol","salon de jardin","tondeuse"] },
+  { key: "maison", synonyms: ["maison","linge","linge de lit","vaisselle","cuisine","ustensile","poele","casserole","salle de bain","menage","rangement"] },
+  { key: "enfant", synonyms: ["enfant","bebe","b?b?","jouet","poussette","lit bebe","chaise haute","peluche","jeu educatif"] },
+  { key: "auto_moto", synonyms: ["auto","voiture","moto","vehicule","pneu","huile","accessoire auto","garage","entretien auto","dashcam"] },
+  { key: "animaux", synonyms: ["animal","animaux","chien","chat","croquette","litiere","aquarium","cage","harnais","collier","gamelle"] },
+  { key: "alimentaire", synonyms: ["alimentaire","epicerie","nourriture","boisson","vin","snack","cafe","the","chocolat","pates","riz"] },
+  { key: "sante", synonyms: ["sante","bien etre","pharmacie","vitamine","medicament","complement","gel hydroalcoolique","masque","thermometre"] },
+  { key: "jeux_video", synonyms: ["jeu video","jeux video","console","ps5","xbox","switch","gaming","manette","jeu","dlc"] },
+  { key: "bijoux", synonyms: ["bijoux","bague","collier","bracelet","boucle d oreille","pendentif","montre","or","argent","acier"] },
+  { key: "informatique", synonyms: ["informatique","ordinateur","pc","laptop","ultrabook","clavier","souris","ecran","monitor","serveur","ssd","hdd","ram"] },
+  { key: "loisir", synonyms: ["loisir","hobby","musique","instrument","livre","roman","manga","bd","dvd","bluray","cinema","photo"] },
+  { key: "voyage", synonyms: ["voyage","vacances","valise","bagage","sac a dos","billet","vol","hotel","camping","caravane"] },
+];
+
+function detectSector(text: string): string {
+  const msg = normalizeText(text);
+  for (const cat of universalCategories) {
+    if (cat.synonyms.some(s => msg.includes(normalizeText(s)))) return cat.key;
+  }
+  return "meubles"; // par défaut, ton store actuel
+}
+
+// ----------------------------
+// Intent detection (robust, accent-insensitive)
+// ----------------------------
+async function detectIntent(userMessage: string): Promise<Intent> {
   const msg = normalizeText(userMessage);
 
   const greetings = [
@@ -131,8 +178,8 @@ async function detectIntent(userMessage: string): Promise<"simple_chat" | "produ
 
   const productNouns = [
     "produit","article","modele","reference","table","chaise","canape","fauteuil","meuble","lit","bureau","armoire",
-    "lampe","miroir","commode","buffet","etagere","bibliotheque","tabouret","decoration","mobilier","table basse",
-    "table a manger"
+    "lampe","miroir","commode","buffet","etagere","bibliotheque","tabouret","decoration","mobilier","meuble tv",
+    "table basse","table a manger"
   ];
 
   const infoChat = [
@@ -182,13 +229,11 @@ async function detectIntent(userMessage: string): Promise<"simple_chat" | "produ
   return "simple_chat";
 }
 
-/** *******************
- *  FILTERS EXTRACTION
- ******************** */
+// ----------------------------
+// Filter extraction
+// ----------------------------
 function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): ProductSearchFilters {
   const filters: ProductSearchFilters = {};
-  const normalized = normalizeText(query);
-
   let searchQuery = query;
   if (history.length > 0) {
     const context = extractContextFromHistory(history);
@@ -215,6 +260,7 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
     { test: s => s.includes("lampe"), category: "lampe", exact: true },
     { test: s => s.includes("miroir"), category: "miroir", exact: true },
     { test: s => s.includes("tabouret"), category: "tabouret", exact: true },
+    { test: s => s.includes("meuble tv"), category: "meuble tv", exact: true },
   ];
 
   let foundSpecificCategory = false;
@@ -244,10 +290,10 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
     bois:["bois","wood","boise","en bois","bois massif","chene","noyer","teck","pin"],
     metal:["metal","metallique","acier","inox","fer","aluminium","chrome","or","argent"],
     verre:["verre","glass","vitre"],
-    marbre:["marbre","marbre","marble"],
+    marbre:["marbre","marble"],
     cuir:["cuir","leather","simili cuir"],
     tissu:["tissu","textile","fabric","velours","lin","coton","soie"],
-    plastique:["plastique","plastic","resine","resine","composite"],
+    plastique:["plastique","plastic","resine","composite"],
     ceramique:["ceramique","ceramic","porcelaine","faience"],
     pierre:["pierre","stone","granit","granite","ardoise"],
     rotin:["rotin","osier","bambou","wicker"],
@@ -259,12 +305,12 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
   const styleMap: Record<string,string[]> = {
     moderne:["moderne","modern","contemporain","contemporaine","design"],
     classique:["classique","traditionnel","traditionnelle","ancien","ancienne"],
-    vintage:["vintage","retro","ret ro","r etro"],
+    vintage:["vintage","retro","r etro"],
     scandinave:["scandinave","nordique","danemark","suede"],
     industriel:["industriel","industrielle","usine","metal"],
     rustique:["rustique","campagne","provence","provencal","provencale"],
-    minimaliste:["minimaliste","minimal","epure","epure","sobre"],
-    elegant:["elegant","raffine","raffine","chic","luxe","luxueux"],
+    minimaliste:["minimaliste","minimal","epure","sobre"],
+    elegant:["elegant","raffine","chic","luxe","luxueux"],
   };
   for (const [style, variants] of Object.entries(styleMap)) {
     if (variants.some(v => nq.includes(v))) { filters.style = style; break; }
@@ -283,25 +329,25 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
     if (variants.some(v => nq.includes(v))) { filters.room = room; break; }
   }
 
-  // functionality / characteristics (quelques mots “meuble” fréquents)
+  // functionality / characteristics hints
   const funcHints = ["rangement","tiroir","porte","etagere","extensible","convertible","relevable","pliable"];
   if (funcHints.some(h => nq.includes(h))) filters.functionality = funcHints.find(h => nq.includes(h));
   const charHints = ["robuste","durable","solide","eco","ecoresponsable","facile a monter","montage facile","compact"];
   if (charHints.some(h => nq.includes(h))) filters.characteristics = charHints.find(h => nq.includes(h));
 
   // Prix
-  const priceMax = nq.match(/(?:moins de|max|maximum|jusqu a|jusqu a|inferieur a|pas plus de|<)\s*(\d+)\s*(?:euros?|€)?/i);
+  const priceMax = nq.match(/(?:moins de|max|maximum|jusqu a|inferieur a|pas plus de|<)\s*(\d+)\s*(?:euros?|€)?/i);
   if (priceMax) filters.maxPrice = parseInt(priceMax[1]);
   const priceMin = nq.match(/(?:plus de|min|minimum|a partir de|superieur a|>)\s*(\d+)\s*(?:euros?|€)?/i);
   if (priceMin) filters.minPrice = parseInt(priceMin[1]);
   const priceRange = nq.match(/entre\s*(\d+)\s*(?:et|a|-)\s*(\d+)\s*(?:euros?|€)?/i);
   if (priceRange) { filters.minPrice = parseInt(priceRange[1]); filters.maxPrice = parseInt(priceRange[2]); }
 
-  // Query générique si pas de catégorie précise
+  // Query si pas de catégorie spécifique
   if (!foundSpecificCategory) {
     const genericKeywords = ["produits","articles","catalogue","collection","tout","tous","tes","vos","montre","voir"];
     const isGenericRequest = genericKeywords.some(w => nq.includes(w));
-    const categories = ["canape","table","chaise","fauteuil","meuble","armoire","lit","bureau","lampe","miroir"];
+    const categories = ["canape","table","chaise","fauteuil","meuble","armoire","lit","bureau","lampe","miroir","meuble tv"];
     const foundCategory = categories.find(c => nq.includes(c));
     if (foundCategory) filters.query = foundCategory;
     else if (isGenericRequest) filters.query = "";
@@ -323,15 +369,14 @@ function extractFiltersFromQuery(query: string, history: ChatMessage[] = []): Pr
   return filters;
 }
 
-/** **************
- *  RELEVANCE
- *************** */
-function calculateRelevanceScore(product: Product, searchQuery: string, exactMatch: boolean = false): number {
+// ----------------------------
+// Relevance scoring
+// ----------------------------
+function calculateRelevanceScore(product: Product, searchQuery: string, exactMatch = false): number {
   const query = normalizeText(searchQuery);
   const terms = query.split(" ").filter(t => t.length > 2);
   let score = 0;
 
-  // Catégorie stricte
   if (exactMatch) {
     const title = normalizeText(product.title || "");
     const category = normalizeText(product.category || "");
@@ -351,7 +396,7 @@ function calculateRelevanceScore(product: Product, searchQuery: string, exactMat
     if (category === query || subCategory === query || productType === query) score += 1500;
   }
 
-  const productTypes = ["table","chaise","canape","fauteuil","armoire","lit","bureau","lampe","miroir","commode","buffet","etagere","tabouret"];
+  const productTypes = ["table","chaise","canape","fauteuil","armoire","lit","bureau","lampe","miroir","commode","buffet","etagere","tabouret","meuble tv"];
   const mentionedType = productTypes.find(type => terms.includes(type));
   if (mentionedType) {
     const title = normalizeText(product.title || "");
@@ -384,22 +429,19 @@ function calculateRelevanceScore(product: Product, searchQuery: string, exactMat
   ].forEach(f => addFieldHits(f, 25));
 
   addFieldHits(product.description, 10);
-
   return score;
 }
 
-/** **************
- *  SEARCH
- *************** */
+// ----------------------------
+// Product search (shopify_products only)
+// ----------------------------
 async function searchProducts(filters: ProductSearchFilters, storeId?: string, sellerId?: string): Promise<Product[]> {
   console.log("🔍 [SEARCH] Searching with filters:", filters);
   console.log("🔍 [SEARCH] storeId:", storeId, "sellerId:", sellerId);
   const supabase = getSupabaseClient();
 
-  // helper to apply post-filters & scoring
   const postProcess = (rows: any[]): Product[] => {
     const enriched = rows.map((p: any) => {
-      // si product_variants joint, on peut avoir un champ variant, sinon fallback produit
       const v = p.product_variants?.[0];
       return {
         ...p,
@@ -417,48 +459,24 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       } as Product;
     });
 
-    // Filtres mémoire (AND)
+    // Memory filters (AND)
     let data = enriched;
-
     const includesNorm = (src: string | undefined, needle: string | undefined) =>
       src && needle ? normalizeText(src).includes(normalizeText(needle)) : false;
 
-    if (filters.color) {
-      data = data.filter(p => [p.ai_color, p.title, p.tags].some(f => includesNorm(f, filters.color)));
-    }
+    if (filters.color) data = data.filter(p => [p.ai_color, p.title, p.tags].some(f => includesNorm(f, filters.color)));
     if (filters.material) {
       data = data.filter(p => [p.ai_material, p.ai_texture, p.ai_finish, p.title, p.tags, p.description].some(f => includesNorm(f, filters.material)));
     }
-    if (filters.style) {
-      data = data.filter(p => [p.style, p.title, p.tags].some(f => includesNorm(f, filters.style)));
-    }
-    if (filters.room) {
-      data = data.filter(p => [p.room, p.title, p.tags].some(f => includesNorm(f, filters.room)));
-    }
-    if (filters.functionality) {
-      data = data.filter(p => includesNorm(p.functionality, filters.functionality) || includesNorm(p.description, filters.functionality));
-    }
-    if (filters.characteristics) {
-      data = data.filter(p => includesNorm(p.characteristics, filters.characteristics) || includesNorm(p.description, filters.characteristics));
-    }
-    if (filters.category) {
-      data = data.filter(p => includesNorm(p.category, filters.category));
-    }
-    if (filters.subCategory) {
-      data = data.filter(p => includesNorm(p.sub_category, filters.subCategory));
-    }
-    if (filters.maxPrice) {
-      data = data.filter(p => {
-        const price = parseFloat(p.price as any);
-        return !isNaN(price) && price <= (filters.maxPrice as number);
-      });
-    }
-    if (filters.minPrice) {
-      data = data.filter(p => {
-        const price = parseFloat(p.price as any);
-        return !isNaN(price) && price >= (filters.minPrice as number);
-      });
-    }
+    if (filters.style) data = data.filter(p => [p.style, p.title, p.tags].some(f => includesNorm(f, filters.style)));
+    if (filters.room) data = data.filter(p => [p.room, p.title, p.tags].some(f => includesNorm(f, filters.room)));
+    if (filters.functionality) data = data.filter(p => includesNorm(p.functionality, filters.functionality) || includesNorm(p.description, filters.functionality));
+    if (filters.characteristics) data = data.filter(p => includesNorm(p.characteristics, filters.characteristics) || includesNorm(p.description, filters.characteristics));
+    if (filters.category) data = data.filter(p => includesNorm(p.category, filters.category));
+    if (filters.subCategory) data = data.filter(p => includesNorm(p.sub_category, filters.subCategory));
+    if (filters.maxPrice) data = data.filter(p => { const price = parseFloat(p.price as any); return !isNaN(price) && price <= (filters.maxPrice as number); });
+    if (filters.minPrice) data = data.filter(p => { const price = parseFloat(p.price as any); return !isNaN(price) && price >= (filters.minPrice as number); });
+
     if (data.length === 0) return [];
 
     const searchQuery = filters.query || "";
@@ -470,7 +488,6 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
     return scored.slice(0, filters.limit || 12);
   };
 
-  // Build base query with attempt #1 (join variants)
   const buildQueryJoin = () => {
     let q = supabase
       .from("shopify_products")
@@ -518,6 +535,7 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       .from("shopify_products")
       .select("*")
       .eq("status", filters.status || "active");
+
     if (sellerId) q = q.eq("seller_id", sellerId);
     else if (storeId) q = q.eq("store_id", storeId);
 
@@ -539,11 +557,9 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
   };
 
   try {
-    // Try with join
     let { data, error } = await buildQueryJoin();
     if (error) {
-      console.warn("⚠️ [SEARCH] Join failed, fallback to simple select:", error.message || error);
-      // Fallback
+      console.warn("⚠️ [SEARCH] Join failed, fallback to simple:", error.message || error);
       const fb = await buildQuerySimple();
       data = fb.data as any;
       error = fb.error as any;
@@ -558,11 +574,11 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
   }
 }
 
-/** **************
- *  DeepSeek
- *************** */
+// ----------------------------
+// DeepSeek streaming
+// ----------------------------
 async function* callDeepSeek(
-  messages: ChatMessage[], 
+  messages: ChatMessage[],
   maxTokens = 300,
   sellerId?: string,
   context: any = {},
@@ -688,9 +704,9 @@ async function* callDeepSeek(
   }
 }
 
-/** **************
- *  MAIN ORCHESTRATOR
- *************** */
+// ----------------------------
+// Orchestrator
+// ----------------------------
 async function* OmnIAChat(
   userMessage: string,
   history: ChatMessage[] = [],
@@ -699,20 +715,23 @@ async function* OmnIAChat(
   context: any = {},
 ): AsyncGenerator<ChatResponse, void, unknown> {
   const startTime = Date.now();
-  console.log("🚀 [OMNIA] Message received:", userMessage);
+  const historyText = extractContextFromHistory(history);
+  const sectorDetected = detectSector(`${historyText} ${userMessage}`);
+
+  console.log("🚀 [chat-smart] Message:", userMessage, "| Sector:", sectorDetected);
 
   try {
     const intentStart = Date.now();
     const intent = await detectIntent(userMessage);
     const intentDuration = Date.now() - intentStart;
-    console.log(`🎯 Final intent: ${intent} (${intentDuration}ms)`);
-    logMetric(sellerId, "chat-smart", "intent_detection", intentDuration, { intent });
+    console.log(`🎯 Intent: ${intent} (${intentDuration}ms)`);
+    logMetric(sellerId, "chat-smart", "intent_detection", intentDuration, { intent, sector: sectorDetected });
 
-    const cacheKey = `${intent}:${normalizeText(userMessage)}:${sellerId || 'anon'}`;
+    const cacheKey = `${intent}:${normalizeText(userMessage)}:${sellerId || 'anon'}:${sectorDetected}`;
     const cached = getCachedResponse(cacheKey);
     if (cached) {
       logMetric(sellerId, "chat-smart", "cache_hit", Date.now() - startTime);
-      yield { role:"assistant", content: cached, intent, products: [], mode:"conversation", sector:"général" };
+      yield { role:"assistant", content: cached, intent, products: [], mode:"conversation", sector: sectorDetected };
       return;
     }
 
@@ -721,7 +740,7 @@ async function* OmnIAChat(
         { role:"system", content: `Tu es Sophie, responsable commerciale experte.
 - Chaleureuse et professionnelle
 - A l'écoute
-- Réponds en français, ton naturel
+- Réponds en français
 - Max 60 mots` },
         { role:"user", content: userMessage },
       ];
@@ -732,53 +751,52 @@ async function* OmnIAChat(
       for await (const chunk of callDeepSeek(messages, 80, sellerId, context)) {
         if (firstToken) { logMetric(sellerId, "chat-smart", "deepseek_first_token", Date.now()-deepseekStart); firstToken=false; }
         full += chunk; tokenCount++;
-        yield { role:"assistant", content: chunk, intent:"simple_chat", products: [], mode:"conversation", sector:"général" };
+        yield { role:"assistant", content: chunk, intent:"simple_chat", products: [], mode:"conversation", sector: sectorDetected };
       }
       setCachedResponse(cacheKey, full);
-      logMetric(sellerId, "chat-smart", "total_response", Date.now()-startTime, { intent:"simple_chat", tokens: tokenCount, cached:false });
+      logMetric(sellerId, "chat-smart", "total_response", Date.now()-startTime, { intent:"simple_chat", tokens: tokenCount, cached:false, sector: sectorDetected });
       return;
     }
 
     if (intent === "product_chat") {
       const searchFilters = extractFiltersFromQuery(userMessage, history);
 
-      const contextStr = extractContextFromHistory(history);
       const knownAttributes = {
-        hasColor: Boolean(searchFilters.color || /couleur|color|blanc|noir|gris|beige|bois|marron|bleu|vert|rouge/.test(normalizeText(contextStr))),
-        hasMaterial: Boolean(searchFilters.material || /materiau|matiere|bois|metal|verre|marbre|cuir|tissu/.test(normalizeText(contextStr))),
-        hasStyle: Boolean(searchFilters.style || /style|moderne|classique|vintage|scandinave/.test(normalizeText(contextStr))),
-        hasRoom: Boolean(searchFilters.room || /salon|chambre|cuisine|bureau/.test(normalizeText(contextStr))),
+        hasColor: Boolean(searchFilters.color || /couleur|color|blanc|noir|gris|beige|bois|marron|bleu|vert|rouge/.test(normalizeText(historyText))),
+        hasMaterial: Boolean(searchFilters.material || /materiau|matiere|bois|metal|verre|marbre|cuir|tissu/.test(normalizeText(historyText))),
+        hasStyle: Boolean(searchFilters.style || /style|moderne|classique|vintage|scandinave/.test(normalizeText(historyText))),
+        hasRoom: Boolean(searchFilters.room || /salon|chambre|cuisine|bureau/.test(normalizeText(historyText))),
         hasCategory: Boolean(searchFilters.query),
-        hasBudget: Boolean(searchFilters.maxPrice || searchFilters.minPrice || /\d+\s*(euros?|€)/.test(normalizeText(contextStr))),
+        hasBudget: Boolean(searchFilters.maxPrice || searchFilters.minPrice || /\d+\s*(euros?|€)/.test(normalizeText(historyText))),
         hasFunctionality: Boolean(searchFilters.functionality),
         hasCharacteristics: Boolean(searchFilters.characteristics),
       };
       const attributeCount = Object.values(knownAttributes).filter(Boolean).length;
       console.log("🎯 Known attributes:", knownAttributes, "Count:", attributeCount);
 
-      // Plus souple : proposer si >= 2 attributs (catégorie + 1 autre)
+      // Plus souple : catégorie + 1 attribut suffit
       if (attributeCount < 2) {
         const messages: ChatMessage[] = [
           {
             role: "system",
             content: `Tu es Sophie (conseillère).
 HISTORIQUE:
-${contextStr}
+${historyText}
 
 ATTRIBUTS CONNUS:
 ${JSON.stringify(knownAttributes, null, 2)}
 
 RÈGLES:
 - NE propose pas de produit maintenant
-- Pose UNE question ciblée sur l'attribut manquant prioritaire: budget > couleur > matériau > style > pièce > fonctionnalité
-- Ton: naturel, 40 mots max`,
+- Pose UNE question ciblée: prioriser budget > couleur > matériau > style > pièce > fonctionnalité
+- Ton naturel, 40 mots max`,
           },
           { role: "user", content: userMessage },
         ];
         let full = "";
         for await (const chunk of callDeepSeek(messages, 80, sellerId, context)) {
           full += chunk;
-          yield { role:"assistant", content: chunk, intent:"product_chat", products: [], mode:"conversation", sector:"général" };
+          yield { role:"assistant", content: chunk, intent:"product_chat", products: [], mode:"conversation", sector: sectorDetected };
         }
         setCachedResponse(cacheKey, full);
         return;
@@ -791,7 +809,7 @@ RÈGLES:
           content: `Tu es Sophie, experte commerciale.
 
 CONTEXTE:
-${contextStr}
+${historyText}
 
 PRODUITS:
 ${JSON.stringify(
@@ -815,7 +833,7 @@ RÈGLES:
       let full = "";
       for await (const chunk of callDeepSeek(messages, 150, sellerId, context)) {
         full += chunk;
-        yield { role:"assistant", content: chunk, intent:"product_chat", products: products.slice(0,2), mode:"product_show", sector:"général" };
+        yield { role:"assistant", content: chunk, intent:"product_chat", products: products.slice(0,2), mode:"product_show", sector: sectorDetected };
       }
       return;
     }
@@ -842,17 +860,17 @@ RÈGLES:
       response = `J'ai sélectionné ${list.length} option${list.length>1?"s":""} ${enrichedSummary || "pertinentes"}. ${promoCount?`📢 ${promoCount} en promotion. `:""}Je vous les montre ci-dessous 👇`;
     }
 
-    yield { role:"assistant", content: response, intent:"product_show", products: products.slice(0,2), mode:"product_show", sector:"général" };
+    yield { role:"assistant", content: response, intent:"product_show", products: products.slice(0,2), mode:"product_show", sector: sectorDetected };
 
   } catch (error) {
-    console.error("❌ [OMNIA] Global error:", error);
-    yield { role:"assistant", content:"Je suis désolé, un problème technique est survenu. Réessayez dans un instant.", intent:"conversation", products:[], mode:"conversation", sector:"général" };
+    console.error("❌ [chat-smart] Global error:", error);
+    yield { role:"assistant", content:"Je suis désolé, un problème technique est survenu. Réessayez dans un instant.", intent:"conversation", products:[], mode:"conversation", sector: sectorDetected };
   }
 }
 
-/** **************
- *  METRICS
- *************** */
+// ----------------------------
+// Metrics
+// ----------------------------
 async function logMetric(
   userId: string | undefined,
   functionName: string,
@@ -876,9 +894,9 @@ async function logMetric(
   }
 }
 
-/** **************
- *  HTTP HANDLER
- *************** */
+// ----------------------------
+// HTTP Handler (SSE)
+// ----------------------------
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 200, headers: corsHeaders });
   try {
@@ -901,13 +919,13 @@ Deno.serve(async (req: Request) => {
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         } catch (error) {
           console.error("Stream error:", error);
-          const errData = `data: ${JSON.stringify({ 
+          const errData = `data: ${JSON.stringify({
             role: "assistant",
             content: "Erreur lors du traitement.",
             intent: "conversation",
             products: [],
             mode: "conversation",
-            sector: "général"
+            sector: "meubles"
           })}\n\n`;
           controller.enqueue(encoder.encode(errData));
         } finally {
