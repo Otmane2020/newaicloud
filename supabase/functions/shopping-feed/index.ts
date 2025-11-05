@@ -66,7 +66,18 @@ interface ShopifyConnection {
   public_domain: string | null;
   store_url: string | null;
   myshopify_domain: string | null;
-  access_token?: string;
+  access_token: string;
+  shopify_domain: string;
+}
+
+interface ShopifyShop {
+  shop: {
+    domain: string;
+    primary_domain: {
+      url: string;
+    } | null;
+    myshopify_domain: string;
+  };
 }
 
 function getSupabaseClient() {
@@ -74,6 +85,101 @@ function getSupabaseClient() {
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !supabaseKey) throw new Error("Missing Supabase credentials");
   return createClient(supabaseUrl, supabaseKey);
+}
+
+// Fonction pour récupérer le vrai domaine depuis l'API Admin Shopify
+async function getShopifyStoreDomain(connection: ShopifyConnection): Promise<string> {
+  try {
+    const { shopify_domain, access_token } = connection;
+    
+    if (!shopify_domain || !access_token) {
+      throw new Error("Missing Shopify domain or access token");
+    }
+
+    // Appel à l'API Admin Shopify pour récupérer les infos du shop
+    const response = await fetch(`https://${shopify_domain}/admin/api/2024-01/shop.json`, {
+      headers: {
+        'X-Shopify-Access-Token': access_token,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Shopify API error: ${response.status} ${response.statusText}`);
+    }
+
+    const shopData: ShopifyShop = await response.json();
+    
+    // Priorité: primary_domain (domaine personnalisé) -> domain -> myshopify_domain
+    const domain = shopData.shop.primary_domain?.url || shopData.shop.domain || shopData.shop.myshopify_domain;
+    
+    // Nettoyer le domaine (enlever https:// etc.)
+    const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    
+    console.log(`✅ Shopify domain resolved: ${cleanDomain}`);
+    return cleanDomain;
+
+  } catch (error) {
+    console.error('❌ Error fetching Shopify domain:', error);
+    
+    // Fallback aux données locales si l'API échoue
+    const fallbackDomain = connection.public_domain || connection.store_url || connection.myshopify_domain;
+    if (fallbackDomain) {
+      const cleanFallback = fallbackDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      console.log(`🔄 Using fallback domain: ${cleanFallback}`);
+      return cleanFallback;
+    }
+    
+    throw new Error("Could not retrieve Shopify domain");
+  }
+}
+
+async function getStoreDomain(sellerId: string, feedSettings?: FeedSettings): Promise<string | null> {
+  const supabase = getSupabaseClient();
+  
+  try {
+    // Récupérer la connexion Shopify avec le token d'accès
+    const { data: connection } = await supabase
+      .from("shopify_connections")
+      .select("public_domain, store_url, myshopify_domain, access_token, shopify_domain")
+      .eq("user_id", sellerId)
+      .eq("is_active", true)
+      .single() as { data: ShopifyConnection | null };
+
+    if (!connection) {
+      console.warn(`No active Shopify connection found for seller ${sellerId}`);
+      return feedSettings?.feed_domain || null;
+    }
+
+    console.log('🛍️ Shopify connection data:', {
+      shopify_domain: connection.shopify_domain,
+      has_access_token: !!connection.access_token,
+      public_domain: connection.public_domain,
+      store_url: connection.store_url
+    });
+
+    // Essayer de récupérer le domaine depuis l'API Shopify
+    try {
+      const shopifyDomain = await getShopifyStoreDomain(connection);
+      return shopifyDomain;
+    } catch (shopifyError) {
+      console.error('Failed to get domain from Shopify API, using local data:', shopifyError);
+      
+      // Fallback aux données locales
+      const localDomain = connection.public_domain || connection.store_url || connection.myshopify_domain;
+      if (localDomain) {
+        const cleanDomain = localDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        console.log(`🔄 Using local domain: ${cleanDomain}`);
+        return cleanDomain;
+      }
+      
+      return feedSettings?.feed_domain || null;
+    }
+
+  } catch (error) {
+    console.error('❌ Error getting store domain:', error);
+    return feedSettings?.feed_domain || null;
+  }
 }
 
 function escapeXml(unsafe: string): string {
@@ -91,47 +197,41 @@ function escapeCSV(str: string): string {
   return str.replace(/"/g, '""');
 }
 
-/**
- * Validates a GTIN using the GS1 checksum algorithm
- * Supports GTIN-8, GTIN-12, GTIN-13, and GTIN-14
- */
 function isValidGTIN(gtin: string | null | undefined): boolean {
   if (!gtin) return false;
-
-  const cleanGtin = gtin.replace(/[\s-]/g, "");
-
+  
+  const cleanGtin = gtin.replace(/[\s-]/g, '');
+  
   if (!/^\d{8}$|^\d{12,14}$/.test(cleanGtin)) {
     return false;
   }
-
-  const digits = cleanGtin.split("").map(Number);
+  
+  const digits = cleanGtin.split('').map(Number);
   const checkDigit = digits.pop()!;
-
+  
   const sum = digits.reverse().reduce((acc, digit, index) => {
     return acc + digit * (index % 2 === 0 ? 3 : 1);
   }, 0);
-
+  
   const calculatedCheck = (10 - (sum % 10)) % 10;
-
+  
   return calculatedCheck === checkDigit;
 }
 
 function truncateText(text: string, maxLength: number): string {
   if (!text) return "";
   if (text.length <= maxLength) return text;
-
-  // Try to truncate at sentence end
+  
   const lastSentenceEnd = Math.max(
-    text.lastIndexOf(".", maxLength - 3),
-    text.lastIndexOf("!", maxLength - 3),
-    text.lastIndexOf("?", maxLength - 3),
+    text.lastIndexOf('.', maxLength - 3),
+    text.lastIndexOf('!', maxLength - 3),
+    text.lastIndexOf('?', maxLength - 3)
   );
-
+  
   if (lastSentenceEnd > maxLength * 0.7) {
-    // Only use if we're keeping most of the text
     return text.substring(0, lastSentenceEnd + 1);
   }
-
+  
   return text.substring(0, maxLength - 3) + "...";
 }
 
@@ -155,37 +255,33 @@ function generateVariantTitle(product: Product, variant: Variant): string {
 }
 
 function getProductDescription(product: Product): string {
-  let description =
-    product.optimized_description ||
-    product.seo_description ||
-    product.body_html ||
-    product.description ||
-    product.title;
-
-  // Clean HTML and entities
+  let description = product.optimized_description || 
+                    product.seo_description || 
+                    product.body_html ||
+                    product.description || 
+                    product.title;
+  
   description = description
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&[a-z]+;/gi, " ")
-    .replace(/\s+/g, " ")
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
-
-  // Ensure complete sentences
+  
   if (!/[.!?]$/.test(description)) {
     const lastSentenceEnd = Math.max(
-      description.lastIndexOf("."),
-      description.lastIndexOf("!"),
-      description.lastIndexOf("?"),
+      description.lastIndexOf('.'),
+      description.lastIndexOf('!'),
+      description.lastIndexOf('?')
     );
-
+    
     if (lastSentenceEnd > 0 && lastSentenceEnd > description.length * 0.8) {
       description = description.substring(0, lastSentenceEnd + 1);
     } else {
-      // Add period if no proper ending
-      description = description + ".";
+      description = description + '.';
     }
   }
-
+  
   return truncateText(description, 5000);
 }
 
@@ -196,12 +292,11 @@ function getProductImage(product: Product, variant?: Variant): string {
 function getAdditionalImages(product: Product, variant?: Variant): string[] {
   const mainImage = getProductImage(product, variant);
   const additionalImages: string[] = [];
-
-  // For now, return empty array - you should implement logic to get multiple product images
-  // This could come from a product_images table or additional_image_urls field
-
-  // Filter out duplicates and main image, limit to 9 (Google's limit)
-  return additionalImages.filter((img) => img && img !== mainImage).slice(0, 9);
+  
+  // À implémenter: récupérer les images supplémentaires depuis votre base de données
+  return additionalImages
+    .filter(img => img && img !== mainImage)
+    .slice(0, 9);
 }
 
 function getProductPrice(product: Product, variant?: Variant): number {
@@ -229,11 +324,9 @@ function getProductMpn(product: Product, variant?: Variant): string {
 
 function getGoogleProductCategory(product: Product): string | null {
   const category = product.google_product_category;
-
+  
   if (!category) {
-    console.warn(
-      `⚠️ Product ${product.id} (${product.title}) missing google_product_category - may be rejected by Google Merchant`,
-    );
+    console.warn(`⚠️ Product ${product.id} (${product.title}) missing google_product_category`);
     return null;
   }
 
@@ -245,20 +338,20 @@ function getGoogleProductCategory(product: Product): string | null {
 }
 
 function shouldUseIdentifierExists(product: Product, variant?: Variant): boolean {
-  // Only use identifier_exists=false if we truly have no identifiers
   const hasBrand = !!product.google_brand || !!product.vendor;
   const hasMpn = !!product.google_mpn || !!variant?.sku;
   const hasGtin = isValidGTIN(product.google_gtin);
-
+  
   return !hasBrand && !hasMpn && !hasGtin;
 }
 
 function generateProductUrl(product: Product, storeDomain: string | null): string {
   if (!storeDomain) {
+    // Fallback temporaire - devrait normalement toujours avoir un domaine
     return `https://newai.sale/product/${product.handle}`;
   }
-
-  const cleanDomain = storeDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  
+  const cleanDomain = storeDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
   return `https://${cleanDomain}/products/${product.handle}`;
 }
 
@@ -269,9 +362,7 @@ async function generateGoogleShoppingFeed(
   storeDomain: string | null,
   feedSettings?: FeedSettings,
 ): Promise<string> {
-  const baseUrl = storeDomain
-    ? `https://${storeDomain.replace(/^https?:\/\//, "").replace(/\/$/, "")}`
-    : "https://newai.sale";
+  const baseUrl = storeDomain ? `https://${storeDomain.replace(/^https?:\/\//, '').replace(/\/$/, '')}` : "https://newai.sale";
   const date = new Date().toISOString();
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -288,11 +379,10 @@ async function generateGoogleShoppingFeed(
   for (const product of products) {
     const productVariants = variants[product.id] || [];
 
-    const hasRealVariants =
-      productVariants.length > 1 ||
-      (productVariants.length === 1 &&
-        productVariants[0].title !== "Default Title" &&
-        (productVariants[0].option1 || productVariants[0].option2 || productVariants[0].option3));
+    const hasRealVariants = productVariants.length > 1 || 
+      (productVariants.length === 1 && 
+       productVariants[0].title !== 'Default Title' && 
+       (productVariants[0].option1 || productVariants[0].option2 || productVariants[0].option3));
 
     if (hasRealVariants && productVariants.length > 0) {
       for (const variant of productVariants) {
@@ -324,14 +414,12 @@ async function generateGoogleShoppingFeed(
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>`;
 
-        // Add additional images if available
         if (additionalImages.length > 0) {
-          additionalImages.forEach((img) => {
+          additionalImages.forEach(img => {
             xml += `
       <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`;
           });
         } else {
-          // Fallback to main image if no additional images
           xml += `
       <g:additional_image_link>${escapeXml(imageUrl)}</g:additional_image_link>`;
         }
@@ -339,7 +427,6 @@ async function generateGoogleShoppingFeed(
         xml += `
       <g:availability>${escapeXml(availability)}</g:availability>`;
 
-        // Handle pricing
         if (product.compare_at_price) {
           const comparePrice = parseFloat(product.compare_at_price);
           if (comparePrice > price) {
@@ -360,7 +447,6 @@ async function generateGoogleShoppingFeed(
       <g:brand>${escapeXml(brand)}</g:brand>
       <g:mpn>${escapeXml(mpn)}</g:mpn>`;
 
-        // Add product type and category
         if (product.product_type) {
           xml += `
       <g:product_type>${escapeXml(product.product_type)}</g:product_type>`;
@@ -371,9 +457,8 @@ async function generateGoogleShoppingFeed(
       <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
         }
 
-        // Handle GTIN and identifier_exists
-        const hasValidGtin = isValidGTIN(product.google_gtin) && feedSettings?.generate_gtin_enabled !== false;
-
+        const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+        
         if (hasValidGtin) {
           xml += `
       <g:gtin>${escapeXml(product.google_gtin!)}</g:gtin>`;
@@ -384,13 +469,11 @@ async function generateGoogleShoppingFeed(
       <g:identifier_exists>false</g:identifier_exists>`;
         }
 
-        // Add item group ID for variants
         if (productVariants.length > 1) {
           xml += `
       <g:item_group_id>${escapeXml(`group_${product.id}`)}</g:item_group_id>`;
         }
 
-        // Add variant attributes
         if (variant.option1) {
           xml += `
       <g:size>${escapeXml(variant.option1)}</g:size>`;
@@ -412,7 +495,6 @@ async function generateGoogleShoppingFeed(
         itemCount++;
       }
     } else {
-      // Product without variants - single entry
       const itemId = generateProductId(product);
       const title = truncateText(product.optimized_title || product.seo_title || product.title, 150);
       const description = getProductDescription(product);
@@ -441,14 +523,12 @@ async function generateGoogleShoppingFeed(
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>`;
 
-      // Add additional images if available
       if (additionalImages.length > 0) {
-        additionalImages.forEach((img) => {
+        additionalImages.forEach(img => {
           xml += `
       <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`;
         });
       } else {
-        // Fallback to main image if no additional images
         xml += `
       <g:additional_image_link>${escapeXml(imageUrl)}</g:additional_image_link>`;
       }
@@ -456,7 +536,6 @@ async function generateGoogleShoppingFeed(
       xml += `
       <g:availability>${escapeXml(availability)}</g:availability>`;
 
-      // Handle pricing
       if (product.compare_at_price) {
         const comparePrice = parseFloat(product.compare_at_price);
         if (comparePrice > price) {
@@ -477,7 +556,6 @@ async function generateGoogleShoppingFeed(
       <g:brand>${escapeXml(brand)}</g:brand>
       <g:mpn>${escapeXml(mpn)}</g:mpn>`;
 
-      // Add product type and category
       if (product.product_type) {
         xml += `
       <g:product_type>${escapeXml(product.product_type)}</g:product_type>`;
@@ -488,9 +566,8 @@ async function generateGoogleShoppingFeed(
       <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
       }
 
-      // Handle GTIN and identifier_exists
-      const hasValidGtin = isValidGTIN(product.google_gtin) && feedSettings?.generate_gtin_enabled !== false;
-
+      const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+      
       if (hasValidGtin) {
         xml += `
       <g:gtin>${escapeXml(product.google_gtin!)}</g:gtin>`;
@@ -523,20 +600,16 @@ function generateGoogleShoppingCSV(
   storeDomain: string | null,
   feedSettings?: FeedSettings,
 ): string {
-  const baseUrl = storeDomain
-    ? `https://${storeDomain.replace(/^https?:\/\//, "").replace(/\/$/, "")}`
-    : "https://newai.sale";
-
-  let csv =
-    "id,title,description,link,image_link,additional_image_link,availability,price,sale_price,condition,brand,mpn,gtin,identifier_exists,google_product_category,product_type,item_group_id,size,color,material\n";
+  const baseUrl = storeDomain ? `https://${storeDomain.replace(/^https?:\/\//, '').replace(/\/$/, '')}` : "https://newai.sale";
+  
+  let csv = 'id,title,description,link,image_link,additional_image_link,availability,price,sale_price,condition,brand,mpn,gtin,identifier_exists,google_product_category,product_type,item_group_id,size,color,material\n';
 
   for (const product of products) {
     const productVariants = variants[product.id] || [];
-    const hasRealVariants =
-      productVariants.length > 1 ||
-      (productVariants.length === 1 &&
-        productVariants[0].title !== "Default Title" &&
-        (productVariants[0].option1 || productVariants[0].option2 || productVariants[0].option3));
+    const hasRealVariants = productVariants.length > 1 || 
+      (productVariants.length === 1 && 
+       productVariants[0].title !== 'Default Title' && 
+       (productVariants[0].option1 || productVariants[0].option2 || productVariants[0].option3));
 
     if (hasRealVariants && productVariants.length > 0) {
       for (const variant of productVariants) {
@@ -556,11 +629,11 @@ function generateGoogleShoppingCSV(
 
         if (price <= 0) continue;
 
-        const hasValidGtin = isValidGTIN(product.google_gtin) && feedSettings?.generate_gtin_enabled !== false;
-
+        const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+        
         let priceField = `${price.toFixed(2)} ${currency}`;
-        let salePriceField = "";
-
+        let salePriceField = '';
+        
         if (product.compare_at_price) {
           const comparePrice = parseFloat(product.compare_at_price);
           if (comparePrice > price) {
@@ -569,57 +642,16 @@ function generateGoogleShoppingCSV(
           }
         }
 
-        const gtinValue = hasValidGtin ? escapeCSV(product.google_gtin!) : "";
-        const identifierExists = useIdentifierExists && !hasValidGtin ? "false" : "";
-        const categoryValue = googleCategory ? escapeCSV(googleCategory) : "";
-        const productTypeValue = product.product_type ? escapeCSV(product.product_type) : "";
-        const itemGroupId = productVariants.length > 1 ? escapeCSV("group_" + product.id) : "";
-        const sizeValue = variant.option1 ? escapeCSV(variant.option1) : "";
-        const colorValue = variant.option2 ? escapeCSV(variant.option2) : "";
-        const materialValue = variant.option3 ? escapeCSV(variant.option3) : "";
+        const gtinValue = hasValidGtin ? escapeCSV(product.google_gtin!) : '';
+        const identifierExists = (useIdentifierExists && !hasValidGtin) ? 'false' : '';
+        const categoryValue = googleCategory ? escapeCSV(googleCategory) : '';
+        const productTypeValue = product.product_type ? escapeCSV(product.product_type) : '';
+        const itemGroupId = productVariants.length > 1 ? escapeCSV("group_" + product.id) : '';
+        const sizeValue = variant.option1 ? escapeCSV(variant.option1) : '';
+        const colorValue = variant.option2 ? escapeCSV(variant.option2) : '';
+        const materialValue = variant.option3 ? escapeCSV(variant.option3) : '';
 
-        csv +=
-          '"' +
-          escapeCSV(itemId) +
-          '","' +
-          escapeCSV(title) +
-          '","' +
-          escapeCSV(description) +
-          '","' +
-          escapeCSV(productUrl) +
-          '","' +
-          escapeCSV(imageUrl) +
-          '","' +
-          escapeCSV(imageUrl) +
-          '","' +
-          escapeCSV(availability) +
-          '","' +
-          escapeCSV(priceField) +
-          '","' +
-          escapeCSV(salePriceField) +
-          '","' +
-          escapeCSV(condition) +
-          '","' +
-          escapeCSV(brand) +
-          '","' +
-          escapeCSV(mpn) +
-          '","' +
-          gtinValue +
-          '","' +
-          identifierExists +
-          '","' +
-          categoryValue +
-          '","' +
-          productTypeValue +
-          '","' +
-          itemGroupId +
-          '","' +
-          sizeValue +
-          '","' +
-          colorValue +
-          '","' +
-          materialValue +
-          '"\n';
+        csv += '"' + escapeCSV(itemId) + '","' + escapeCSV(title) + '","' + escapeCSV(description) + '","' + escapeCSV(productUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(availability) + '","' + escapeCSV(priceField) + '","' + escapeCSV(salePriceField) + '","' + escapeCSV(condition) + '","' + escapeCSV(brand) + '","' + escapeCSV(mpn) + '","' + gtinValue + '","' + identifierExists + '","' + categoryValue + '","' + productTypeValue + '","' + itemGroupId + '","' + sizeValue + '","' + colorValue + '","' + materialValue + '"\n';
       }
     } else {
       const itemId = generateProductId(product);
@@ -638,11 +670,11 @@ function generateGoogleShoppingCSV(
 
       if (price <= 0) continue;
 
-      const hasValidGtin = isValidGTIN(product.google_gtin) && feedSettings?.generate_gtin_enabled !== false;
-
+      const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+      
       let priceField = `${price.toFixed(2)} ${currency}`;
-      let salePriceField = "";
-
+      let salePriceField = '';
+      
       if (product.compare_at_price) {
         const comparePrice = parseFloat(product.compare_at_price);
         if (comparePrice > price) {
@@ -651,106 +683,17 @@ function generateGoogleShoppingCSV(
         }
       }
 
-      const gtinValue = hasValidGtin ? escapeCSV(product.google_gtin!) : "";
-      const identifierExists = useIdentifierExists && !hasValidGtin ? "false" : "";
-      const categoryValue = googleCategory ? escapeCSV(googleCategory) : "";
-      const productTypeValue = product.product_type ? escapeCSV(product.product_type) : "";
+      const gtinValue = hasValidGtin ? escapeCSV(product.google_gtin!) : '';
+      const identifierExists = (useIdentifierExists && !hasValidGtin) ? 'false' : '';
+      const categoryValue = googleCategory ? escapeCSV(googleCategory) : '';
+      const productTypeValue = product.product_type ? escapeCSV(product.product_type) : '';
 
-      csv +=
-        '"' +
-        escapeCSV(itemId) +
-        '","' +
-        escapeCSV(title) +
-        '","' +
-        escapeCSV(description) +
-        '","' +
-        escapeCSV(productUrl) +
-        '","' +
-        escapeCSV(imageUrl) +
-        '","' +
-        escapeCSV(imageUrl) +
-        '","' +
-        escapeCSV(availability) +
-        '","' +
-        escapeCSV(priceField) +
-        '","' +
-        escapeCSV(salePriceField) +
-        '","' +
-        escapeCSV(condition) +
-        '","' +
-        escapeCSV(brand) +
-        '","' +
-        escapeCSV(mpn) +
-        '","' +
-        gtinValue +
-        '","' +
-        identifierExists +
-        '","' +
-        categoryValue +
-        '","' +
-        productTypeValue +
-        '","","","",""\n';
+      csv += '"' + escapeCSV(itemId) + '","' + escapeCSV(title) + '","' + escapeCSV(description) + '","' + escapeCSV(productUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(availability) + '","' + escapeCSV(priceField) + '","' + escapeCSV(salePriceField) + '","' + escapeCSV(condition) + '","' + escapeCSV(brand) + '","' + escapeCSV(mpn) + '","' + gtinValue + '","' + identifierExists + '","' + categoryValue + '","' + productTypeValue + '","","","",""\n';
     }
   }
 
   console.log(`Generated CSV feed for seller ${sellerId}`);
   return csv;
-}
-
-async function getStoreDomain(sellerId: string, feedSettings?: FeedSettings): Promise<string | null> {
-  const supabase = getSupabaseClient();
-
-  try {
-    // Get store domain from shopify_connections with proper priority
-    const { data: connection } = (await supabase
-      .from("shopify_connections")
-      .select("public_domain, store_url, myshopify_domain")
-      .eq("user_id", sellerId)
-      .eq("is_active", true)
-      .single()) as { data: ShopifyConnection | null };
-
-    console.log("Shopify Connection Data:", {
-      userId: sellerId,
-      connectionData: connection,
-      feedSettingsDomain: feedSettings?.feed_domain,
-    });
-
-    // Priority: 1) public_domain (custom domain), 2) store_url, 3) myshopify_domain, 4) feed_domain fallback
-    let storeDomain =
-      connection?.public_domain ||
-      connection?.store_url ||
-      connection?.myshopify_domain ||
-      feedSettings?.feed_domain ||
-      null;
-
-    // Clean the domain - remove http:// or https:// and trailing slashes
-    if (storeDomain) {
-      storeDomain = storeDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    }
-
-    // Check if we're getting myshopify.com domains and try to find custom domain
-    if (storeDomain && storeDomain.includes("myshopify.com")) {
-      console.warn("⚠️ Using myshopify.com domain instead of custom domain");
-
-      // Try to get the custom domain from store_settings
-      const { data: storeSettings } = await supabase
-        .from("store_settings")
-        .select("custom_domain, primary_domain")
-        .eq("user_id", sellerId)
-        .single();
-
-      if (storeSettings?.custom_domain || storeSettings?.primary_domain) {
-        storeDomain = storeSettings.custom_domain || storeSettings.primary_domain;
-        console.log(`Found custom domain from store_settings: ${storeDomain}`);
-      }
-    }
-
-    console.log(`Final domain for feed: ${storeDomain}`);
-    return storeDomain;
-  } catch (error) {
-    console.error("Error getting store domain:", error);
-    return feedSettings?.feed_domain || null;
-  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -784,7 +727,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const identifier = pathParts[identifierIndex];
-    const format = pathParts[identifierIndex + 1] || "xml";
+    const format = pathParts[identifierIndex + 1] || 'xml';
 
     if (!identifier || identifier === "xml" || identifier === "csv") {
       return new Response(JSON.stringify({ error: "Store name or Seller ID is required in the path" }), {
@@ -793,7 +736,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (format !== "xml" && format !== "csv") {
+    if (format !== 'xml' && format !== 'csv') {
       return new Response(JSON.stringify({ error: "Invalid format. Use 'xml' or 'csv'" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -802,7 +745,6 @@ Deno.serve(async (req: Request) => {
 
     const supabase = getSupabaseClient();
 
-    // Try to find feed settings by store_name first
     let sellerId: string | null = null;
     let feedSettings: FeedSettings | null = null;
 
@@ -816,10 +758,8 @@ Deno.serve(async (req: Request) => {
       sellerId = settingsData.user_id;
       feedSettings = settingsData;
     } else {
-      // Fallback to legacy format (seller_id directly)
       sellerId = identifier;
 
-      // Try to get feed settings by user_id
       const { data: userSettings } = await supabase
         .from("merchant_feed_settings")
         .select("*")
@@ -838,12 +778,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Get store domain with improved logic
+    // RÉCUPÉRATION DU VRAI DOMAINE SHOPIFY
     const storeDomain = await getStoreDomain(sellerId, feedSettings || undefined);
 
-    console.log(`Generating ${format} feed for seller: ${sellerId}, domain: ${storeDomain}`);
+    if (!storeDomain) {
+      return new Response(JSON.stringify({ 
+        error: "Could not determine store domain. Please check Shopify connection." 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // Fetch active products for this seller
+    console.log(`🎯 Generating ${format} feed for seller: ${sellerId}, domain: ${storeDomain}`);
+
     let productsQuery = supabase
       .from("shopify_products")
       .select("*")
@@ -865,29 +813,24 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Filter products based on collection settings
     let products = allProducts;
-
-    if (
-      feedSettings?.filter_mode === "include" &&
-      feedSettings.included_collections &&
-      feedSettings.included_collections.length > 0
-    ) {
+    
+    if (feedSettings?.filter_mode === 'include' && feedSettings.included_collections && feedSettings.included_collections.length > 0) {
       const includedCollections = feedSettings.included_collections;
-      products = allProducts.filter((product) => {
+      products = allProducts.filter(product => {
         const productCollections = product.collection_ids || [];
-        return includedCollections.some((collectionId) => productCollections.includes(collectionId));
+        return includedCollections.some(collectionId => 
+          productCollections.includes(collectionId)
+        );
       });
       console.log(`Filtered to ${products.length} products from ${includedCollections.length} included collections`);
-    } else if (
-      feedSettings?.filter_mode === "exclude" &&
-      feedSettings.excluded_collections &&
-      feedSettings.excluded_collections.length > 0
-    ) {
+    } else if (feedSettings?.filter_mode === 'exclude' && feedSettings.excluded_collections && feedSettings.excluded_collections.length > 0) {
       const excludedCollections = feedSettings.excluded_collections;
-      products = allProducts.filter((product) => {
+      products = allProducts.filter(product => {
         const productCollections = product.collection_ids || [];
-        return !excludedCollections.some((collectionId) => productCollections.includes(collectionId));
+        return !excludedCollections.some(collectionId => 
+          productCollections.includes(collectionId)
+        );
       });
       console.log(`Filtered to ${products.length} products after excluding ${excludedCollections.length} collections`);
     }
@@ -899,11 +842,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Fetch all variants for these products
     const productIds = products.map((p) => p.id);
     const { data: allVariants } = await supabase.from("product_variants").select("*").in("product_id", productIds);
 
-    // Group variants by product_id
     const variantsByProduct: { [key: string]: Variant[] } = {};
     if (allVariants) {
       for (const variant of allVariants) {
@@ -914,7 +855,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    if (format === "csv") {
+    if (format === 'csv') {
       const csvFeed = generateGoogleShoppingCSV(
         products,
         variantsByProduct,
