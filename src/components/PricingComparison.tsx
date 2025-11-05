@@ -3,12 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, X } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 import React from 'react';
-import { useTranslation } from '@/lib/language';
-
 
 const PricingComparison = () => {
   const isMobile = useIsMobile();
-  const { language } = useTranslation();
 
   const features = [
     {
@@ -71,11 +68,7 @@ const PricingComparison = () => {
   if (isMobile) {
     const plans = ['starter', 'pro', 'enterprise'];
     const planNames = { starter: 'Starter', pro: 'Pro', enterprise: 'Enterprise' };
-    const planPrices = { 
-      starter: '$9.99/mois', 
-      pro: '$98 - $4,900/mois', 
-      enterprise: '$199 - $19,900/mois' 
-    };
+    const planPrices = { starter: '$9.99/mois', pro: '$98 - $4,900/mois', enterprise: '$199 - $19,900/mois' };
     
     return (
       <div className="space-y-4">
@@ -117,7 +110,6 @@ const PricingComparison = () => {
   }
 
   // Desktop: Table
-  
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">

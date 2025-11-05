@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from 'sonner';
 
-
 interface Plan {
   id: string;
   name: string;
@@ -50,7 +49,7 @@ interface Plan {
 
 export default function Onboarding() {
   const { user } = useAuth();
-  const { t, tf, language } = useTranslation();
+  const { t, tf } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [plans, setPlans] = useState<Plan[]>([]);
