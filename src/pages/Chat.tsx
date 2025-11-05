@@ -700,7 +700,7 @@ export default function Chat() {
   
   // Add initial greeting
   setTimeout(() => {
-    addMessage('assistant', config.welcomeMessage || 'Bonjour ! Je suis Nicolas, votre conseiller commercial. Comment puis-je vous aider aujourd\\'hui ?');
+    addMessage('assistant', config.welcomeMessage || '${t.seo.chat.greeting}');
   }, 500);
 })();
 </script>`;
@@ -847,27 +847,27 @@ export default function Chat() {
           </Card>
         )}
 
-        <Card className="h-[calc(100vh-240px)] flex flex-col bg-card shadow-2xl border-4 border-primary/20 rounded-2xl overflow-hidden">
+        <Card className="h-[calc(100vh-240px)] flex flex-col bg-card shadow-2xl border-2 sm:border-4 border-primary/20 rounded-xl sm:rounded-2xl overflow-hidden">
           {/* Header du chat avec design moderne */}
-          <div className="px-6 py-5 border-b-2 bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-white">
-            <div className="flex items-center gap-3">
+          <div className="px-3 sm:px-6 py-3 sm:py-5 border-b-2 bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-white">
+            <div className="flex items-center gap-2 sm:gap-3">
               <StoreAvatar storeName={storeName} />
               <div>
-                <h3 className="font-bold text-lg">{assistantName}</h3>
+                <h3 className="font-bold text-base sm:text-lg">{assistantName}</h3>
                 <p className="text-xs text-white/90 flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                  En ligne • Prêt à vous aider
+                  {t.seo.chat.onlineStatus}
                 </p>
               </div>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-background">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 bg-background">
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex gap-3 ${
+                className={`flex gap-2 sm:gap-3 ${
                   message.role === 'user' ? 'justify-end' : 'justify-start'
                 }`}
               >
@@ -877,15 +877,15 @@ export default function Chat() {
                   </div>
                 )}
                 
-                <div className={`flex flex-col gap-2 max-w-[80%]`}>
+                <div className={`flex flex-col gap-2 max-w-[85%] sm:max-w-[80%]`}>
                   <div
-                    className={`rounded-2xl px-4 py-3 ${
+                    className={`rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base ${
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-foreground'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <p className="whitespace-pre-wrap break-words">{message.content}</p>
                   </div>
                   
                   {/* Product suggestions */}
@@ -894,7 +894,7 @@ export default function Chat() {
                       {message.products.map((product, idx) => (
                         <Card 
                           key={idx} 
-                          className="p-3 flex items-center gap-3 hover:shadow-lg transition-all cursor-pointer group"
+                          className="p-2 sm:p-3 flex items-center gap-2 sm:gap-3 hover:shadow-lg transition-all cursor-pointer group"
                           onClick={() => {
                             if (product.id) {
                               window.open(`/product-landing/${product.id}`, '_blank');
@@ -905,18 +905,19 @@ export default function Chat() {
                             <img
                               src={product.image_url}
                               alt={product.title}
-                              className="w-16 h-16 object-cover rounded group-hover:scale-105 transition-transform"
+                              className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded group-hover:scale-105 transition-transform flex-shrink-0"
                             />
                           )}
-                          <div className="flex-1">
-                            <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{product.title}</p>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors truncate">{product.title}</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               {product.price} {product.currency || 'EUR'}
                             </p>
                           </div>
                           <Button
                             size="sm"
                             variant="outline"
+                            className="flex-shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               const shopUrl = product.shop_name?.includes('.myshopify.com') 
@@ -929,7 +930,7 @@ export default function Chat() {
                               }
                             }}
                           >
-                            <ShoppingCart className="w-4 h-4" />
+                            <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
                         </Card>
                       ))}
@@ -938,19 +939,19 @@ export default function Chat() {
                 </div>
 
                 {message.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                    <User className="w-5 h-5 text-primary-foreground" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
                   </div>
                 )}
               </div>
             ))}
             
             {loading && (
-              <div className="flex gap-3 justify-start">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-primary animate-pulse" />
+              <div className="flex gap-2 sm:gap-3 justify-start">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse" />
                 </div>
-                <div className="bg-secondary rounded-2xl px-4 py-3">
+                <div className="bg-secondary rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 sm:py-3">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                     <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -964,27 +965,27 @@ export default function Chat() {
           </div>
 
           {/* Input avec design moderne */}
-          <div className="border-t-2 p-5 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-muted/30 dark:to-muted/10">
-            <div className="flex gap-3">
+          <div className="border-t-2 p-3 sm:p-5 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-muted/30 dark:to-muted/10">
+            <div className="flex gap-2 sm:gap-3">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="💬 Tapez votre message ici..."
-                className="flex-1 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary shadow-sm rounded-xl h-12 text-base"
+                placeholder={t.seo.chat.inputPlaceholder}
+                className="flex-1 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary shadow-sm rounded-xl h-10 sm:h-12 text-sm sm:text-base"
                 disabled={loading}
               />
               <Button 
                 onClick={handleSend} 
                 disabled={loading || !input.trim()}
                 size="lg"
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg rounded-xl px-6 h-12"
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg rounded-xl px-4 sm:px-6 h-10 sm:h-12"
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              Appuyez sur Entrée pour envoyer • Shift+Entrée pour nouvelle ligne
+            <p className="text-xs text-muted-foreground mt-2 text-center hidden sm:block">
+              {t.seo.chat.sendHint}
             </p>
           </div>
         </Card>

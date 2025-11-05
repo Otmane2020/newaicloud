@@ -735,6 +735,9 @@ export const translations = {
     chat: {
       greeting: "Hello! I'm your sales advisor. How can I help you today?",
       welcome: "Welcome! I'm ready to assist you.",
+      onlineStatus: "Online • Ready to help",
+      inputPlaceholder: "💬 Type your message here...",
+      sendHint: "Press Enter to send • Shift+Enter for new line",
       errors: {
         sendMessage: "Error sending message",
         connection: "Connection error",

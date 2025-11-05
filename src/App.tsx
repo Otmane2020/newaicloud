@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AIAssistant } from "@/components/AIAssistant";
+import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
@@ -314,6 +315,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <AIAssistant />
+          <NotificationPermissionPrompt />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
