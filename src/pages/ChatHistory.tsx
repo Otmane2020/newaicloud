@@ -13,12 +13,16 @@ import {
   Loader2,
   Search,
   RefreshCw,
-  ShoppingBag
+  ShoppingBag,
+  Filter,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isAfter, isBefore, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface ChatSession {
   id: string;
@@ -65,22 +69,97 @@ export default function ChatHistory() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingSessions, setDeletingSessions] = useState<Set<string>>(new Set());
+  
+  // Filtres avancés
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [productFilter, setProductFilter] = useState<string>('all');
+  const [messageCountFilter, setMessageCountFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadSessions();
   }, []);
 
   useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredSessions(sessions);
-    } else {
-      const filtered = sessions.filter(session =>
+    applyFilters();
+  }, [sessions, searchTerm, dateFilter, productFilter, messageCountFilter]);
+
+  const applyFilters = async () => {
+    let filtered = [...sessions];
+
+    // Filtre de recherche textuelle
+    if (searchTerm.trim() !== '') {
+      filtered = filtered.filter(session =>
         session.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         session.last_message?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredSessions(filtered);
     }
-  }, [sessions, searchTerm]);
+
+    // Filtre par date
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      filtered = filtered.filter(session => {
+        const sessionDate = new Date(session.updated_at);
+        switch (dateFilter) {
+          case 'today':
+            return sessionDate.toDateString() === now.toDateString();
+          case 'week':
+            return isAfter(sessionDate, subDays(now, 7));
+          case 'month':
+            return isAfter(sessionDate, subDays(now, 30));
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Filtre par nombre de messages
+    if (messageCountFilter !== 'all') {
+      filtered = filtered.filter(session => {
+        switch (messageCountFilter) {
+          case 'few':
+            return session.message_count <= 5;
+          case 'medium':
+            return session.message_count > 5 && session.message_count <= 15;
+          case 'many':
+            return session.message_count > 15;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Filtre par présence de produits
+    if (productFilter !== 'all') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const sessionIds = filtered.map(s => s.id);
+      
+      const { data: messagesWithProducts } = await supabase
+        .from('chat_messages')
+        .select('session_id, products')
+        .in('session_id', sessionIds)
+        .not('products', 'is', null);
+
+      const sessionsWithProducts = new Set(
+        messagesWithProducts
+          ?.filter(msg => msg.products && Array.isArray(msg.products) && msg.products.length > 0)
+          .map(msg => msg.session_id) || []
+      );
+
+      filtered = filtered.filter(session => {
+        if (productFilter === 'with') {
+          return sessionsWithProducts.has(session.id);
+        } else if (productFilter === 'without') {
+          return !sessionsWithProducts.has(session.id);
+        }
+        return true;
+      });
+    }
+
+    setFilteredSessions(filtered);
+  };
 
   const loadSessions = async () => {
     try {
@@ -108,29 +187,47 @@ export default function ChatHistory() {
   };
 
   const loadMessages = async (sessionId: string) => {
-    if (selectedSession === sessionId) return;
-
     try {
       setLoadingMessages(true);
+      setSelectedSession(sessionId);
+      
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading messages:', error);
+        throw error;
+      }
       
-      const formattedMessages: ChatMessage[] = (data || []).map((msg: RawChatMessage) => ({
-        ...msg,
-        role: (msg.role === 'user' || msg.role === 'assistant') ? msg.role : 'assistant',
-        products: Array.isArray(msg.products) ? msg.products : []
-      }));
+      console.log('Messages loaded:', data);
       
+      const formattedMessages: ChatMessage[] = (data || []).map((msg: RawChatMessage) => {
+        let products: any[] = [];
+        
+        if (msg.products) {
+          if (Array.isArray(msg.products)) {
+            products = msg.products;
+          } else if (typeof msg.products === 'object') {
+            products = [msg.products];
+          }
+        }
+        
+        return {
+          ...msg,
+          role: (msg.role === 'user' || msg.role === 'assistant') ? msg.role : 'assistant',
+          products: products
+        };
+      });
+      
+      console.log('Formatted messages:', formattedMessages);
       setMessages(formattedMessages);
-      setSelectedSession(sessionId);
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error('Erreur lors du chargement des messages');
+      setMessages([]);
     } finally {
       setLoadingMessages(false);
     }
@@ -267,14 +364,96 @@ export default function ChatHistory() {
         </div>
 
         {sessions.length > 0 && (
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Rechercher dans les conversations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Rechercher dans les conversations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Popover open={showFilters} onOpenChange={setShowFilters}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filtres
+                  {(dateFilter !== 'all' || productFilter !== 'all' || messageCountFilter !== 'all') && (
+                    <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
+                      {[dateFilter, productFilter, messageCountFilter].filter(f => f !== 'all').length}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="end">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">Filtres avancés</h4>
+                    {(dateFilter !== 'all' || productFilter !== 'all' || messageCountFilter !== 'all') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setDateFilter('all');
+                          setProductFilter('all');
+                          setMessageCountFilter('all');
+                        }}
+                        className="h-auto p-1 text-xs"
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Réinitialiser
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Période</label>
+                    <Select value={dateFilter} onValueChange={setDateFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes les périodes</SelectItem>
+                        <SelectItem value="today">Aujourd'hui</SelectItem>
+                        <SelectItem value="week">Cette semaine</SelectItem>
+                        <SelectItem value="month">Ce mois-ci</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Produits suggérés</label>
+                    <Select value={productFilter} onValueChange={setProductFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes les conversations</SelectItem>
+                        <SelectItem value="with">Avec produits</SelectItem>
+                        <SelectItem value="without">Sans produits</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Nombre de messages</label>
+                    <Select value={messageCountFilter} onValueChange={setMessageCountFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous</SelectItem>
+                        <SelectItem value="few">Courtes (≤ 5 messages)</SelectItem>
+                        <SelectItem value="medium">Moyennes (6-15 messages)</SelectItem>
+                        <SelectItem value="many">Longues ({'>'}15 messages)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         )}
       </div>
