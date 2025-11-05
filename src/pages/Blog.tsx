@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { BlogWizard } from '@/components/blog/BlogWizard';
 import { BlogOpportunities } from '@/components/blog/BlogOpportunities';
 import { CampaignWizard } from '@/components/blog/CampaignWizard';
+import { CampaignCalendar } from '@/components/blog/CampaignCalendar';
 import { ArticleManagement } from '@/components/blog/ArticleManagement';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/language';
@@ -154,13 +155,12 @@ export default function Blog() {
       icon: Sparkles, 
       description: t.blog.submenu.aiArticlesDesc 
     },
-    // Campaigns hidden temporarily
-    // { 
-    //   id: 'campaigns', 
-    //   label: t.blog.submenu.campaigns, 
-    //   icon: CalendarClock, 
-    //   description: t.blog.submenu.campaignsDesc 
-    // },
+    { 
+      id: 'campaigns', 
+      label: t.blog.submenu.campaigns, 
+      icon: CalendarClock, 
+      description: t.blog.submenu.campaignsDesc 
+    },
     { 
       id: 'opportunities', 
       label: t.blog.submenu.opportunities, 
@@ -547,7 +547,9 @@ export default function Blog() {
       )}
 
       {activeSubtab === 'campaigns' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          <CampaignCalendar />
+          
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-3 flex-1">
               <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
