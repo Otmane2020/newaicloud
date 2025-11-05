@@ -74,7 +74,7 @@ const PricingComparison = () => {
     const currency = getCurrencySymbol(language);
     const planPrices = { 
       starter: `${currency}9.99/mois`, 
-      pro: `${currency}98 - ${currency}4,900/mois`, 
+      pro: `${currency}49 - ${currency}4,900/mois`, 
       enterprise: `${currency}199 - ${currency}19,900/mois` 
     };
     
@@ -137,7 +137,7 @@ const PricingComparison = () => {
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge className="bg-primary">Pro</Badge>
-                  <span className="text-2xl font-bold">{currency}98 - {currency}4,900</span>
+                  <span className="text-2xl font-bold">{currency}49 - {currency}4,900</span>
                   <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
