@@ -2317,6 +2317,14 @@ export const translations = {
       generating: "Generating landing page...",
       pleaseWait: "Please wait a few moments",
     },
+    header: {
+      home: "Home",
+      features: "Features",
+      benefits: "Benefits",
+      pricing: "Pricing",
+      login: "Login",
+      signup: "Sign Up",
+    },
   },
 
   performance: {

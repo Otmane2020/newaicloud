@@ -2,10 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Menu, X, Sparkles } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "@/lib/language";
 
 export const PublicHeader = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -44,38 +47,39 @@ export const PublicHeader = () => {
               onClick={() => scrollToSection("hero")}
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
-              Home
+              {t.landing.header.home}
             </button>
             <button
               onClick={() => scrollToSection("features")}
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
-              Features
+              {t.landing.header.features}
             </button>
             <button
               onClick={() => scrollToSection("benefits")}
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
-              Benefits
+              {t.landing.header.benefits}
             </button>
             <button
               onClick={() => scrollToSection("pricing")}
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
-              Pricing
+              {t.landing.header.pricing}
             </button>
           </nav>
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
+            <LanguageSwitcher />
             <Button
               variant="ghost"
               onClick={() => navigate("/auth?mode=login")}
             >
-              Login
+              {t.landing.header.login}
             </Button>
             <Button onClick={() => navigate("/auth?mode=signup")}>
-              Sign Up
+              {t.landing.header.signup}
             </Button>
           </div>
 
@@ -100,36 +104,39 @@ export const PublicHeader = () => {
                 onClick={() => scrollToSection("hero")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                Home
+                {t.landing.header.home}
               </button>
               <button
                 onClick={() => scrollToSection("features")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                Features
+                {t.landing.header.features}
               </button>
               <button
                 onClick={() => scrollToSection("benefits")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                Benefits
+                {t.landing.header.benefits}
               </button>
               <button
                 onClick={() => scrollToSection("pricing")}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
-                Pricing
+                {t.landing.header.pricing}
               </button>
               <div className="flex flex-col gap-2 pt-4 border-t">
+                <div className="pb-2">
+                  <LanguageSwitcher />
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => navigate("/auth?mode=login")}
                   className="w-full"
                 >
-                  Login
+                  {t.landing.header.login}
                 </Button>
                 <Button onClick={() => navigate("/auth?mode=signup")} className="w-full">
-                  Sign Up
+                  {t.landing.header.signup}
                 </Button>
               </div>
             </nav>

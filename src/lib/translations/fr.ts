@@ -2409,6 +2409,14 @@ export const translations = {
       generating: "Génération de la landing page en cours...",
       pleaseWait: "Veuillez patienter quelques instants",
     },
+    header: {
+      home: "Accueil",
+      features: "Fonctionnalités",
+      benefits: "Avantages",
+      pricing: "Tarifs",
+      login: "Connexion",
+      signup: "S'inscrire",
+    },
   },
 
   performance: {
