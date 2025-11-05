@@ -2040,6 +2040,7 @@ export type Database = {
           ai_volume_unit: string | null
           ai_weight: number | null
           ai_weight_unit: string | null
+          body_html: string | null
           category: string | null
           characteristics: string | null
           chat_text: string | null
@@ -2157,6 +2158,7 @@ export type Database = {
           ai_volume_unit?: string | null
           ai_weight?: number | null
           ai_weight_unit?: string | null
+          body_html?: string | null
           category?: string | null
           characteristics?: string | null
           chat_text?: string | null
@@ -2274,6 +2276,7 @@ export type Database = {
           ai_volume_unit?: string | null
           ai_weight?: number | null
           ai_weight_unit?: string | null
+          body_html?: string | null
           category?: string | null
           characteristics?: string | null
           chat_text?: string | null

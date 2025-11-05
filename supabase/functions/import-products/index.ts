@@ -481,6 +481,7 @@ Deno.serve(async (req: Request) => {
         // Protect optimized content if in smart mode and product is optimized
         title: shouldProtect ? existing.title : product.title,
         description: shouldProtect ? existing.description : (product.body_html || ""),
+        body_html: product.body_html || "",
         vendor: product.vendor || "",
         product_type: product.product_type || "",
         handle: product.handle || "",

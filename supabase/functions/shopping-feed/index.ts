@@ -10,6 +10,7 @@ interface Product {
   id: string;
   title: string;
   description: string | null;
+  body_html: string | null;
   price: string;
   compare_at_price: string | null;
   image_url: string | null;
@@ -104,18 +105,19 @@ function generateVariantTitle(product: Product, variant: Variant): string {
 }
 
 function getProductDescription(product: Product): string {
-  // Order of priority for description
+  // Priorité: optimized > seo > body_html (Shopify complet) > description > title
   let description = product.optimized_description || 
                     product.seo_description || 
+                    product.body_html ||
                     product.description || 
                     product.title;
   
-  // Clean HTML tags and entities
+  // Nettoyer les balises HTML et entités
   description = description
-    .replace(/<[^>]*>/g, ' ')  // Remove all HTML tags
-    .replace(/&nbsp;/g, ' ')    // Replace &nbsp; with spaces
-    .replace(/&[a-z]+;/gi, ' ') // Remove HTML entities
-    .replace(/\s+/g, ' ')       // Replace multiple spaces with single space
+    .replace(/<[^>]*>/g, ' ')       // Retirer toutes les balises HTML
+    .replace(/&nbsp;/g, ' ')         // Remplacer &nbsp; par espaces
+    .replace(/&[a-z]+;/gi, ' ')      // Retirer les entités HTML (&eacute;, etc.)
+    .replace(/\s+/g, ' ')            // Remplacer multiples espaces par un seul
     .trim();
   
   return description;
@@ -152,15 +154,20 @@ function getProductMpn(product: Product, variant?: Variant): string {
 
 function getGoogleProductCategory(product: Product): string | null {
   // Ensure the category is a valid Google product category ID or name
-  if (!product.google_product_category) return null;
+  const category = product.google_product_category;
+  
+  if (!category) {
+    console.warn(`⚠️ Product ${product.id} (${product.title}) missing google_product_category - may be rejected by Google Merchant`);
+    return null;
+  }
 
   // If it's a numeric string, it's likely a category ID
-  if (/^\d+$/.test(product.google_product_category)) {
-    return product.google_product_category;
+  if (/^\d+$/.test(category)) {
+    return category;
   }
 
   // Otherwise, escape and use as is
-  return escapeXml(product.google_product_category);
+  return escapeXml(category);
 }
 
 async function generateGoogleShoppingFeed(
@@ -326,16 +333,25 @@ async function generateGoogleShoppingFeed(
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>
       <g:additional_image_link>${escapeXml(imageUrl)}</g:additional_image_link>
-      <g:availability>${escapeXml(availability)}</g:availability>
-      <g:price>${price.toFixed(2)} ${currency}</g:price>`;
+      <g:availability>${escapeXml(availability)}</g:availability>`;
 
-      // Add sale price if available and valid
+      // Handle pricing for promotions (same logic as variants)
       if (product.compare_at_price) {
         const comparePrice = parseFloat(product.compare_at_price);
         if (comparePrice > price) {
+          // Product on promotion: compare_at_price is the regular price, price is the sale price
           xml += `
-      <g:sale_price>${comparePrice.toFixed(2)} ${currency}</g:sale_price>`;
+      <g:price>${comparePrice.toFixed(2)} ${currency}</g:price>
+      <g:sale_price>${price.toFixed(2)} ${currency}</g:sale_price>`;
+        } else {
+          // Invalid promotion data, just show regular price
+          xml += `
+      <g:price>${price.toFixed(2)} ${currency}</g:price>`;
         }
+      } else {
+        // No promotion, just regular price
+        xml += `
+      <g:price>${price.toFixed(2)} ${currency}</g:price>`;
       }
 
       xml += `
@@ -461,17 +477,16 @@ Deno.serve(async (req: Request) => {
         feedSettings = userSettings;
       }
 
-      // Get store domain
+      // Get store domain (also fetch public_domain)
       const { data: connection } = await supabase
         .from("shopify_connections")
-        .select("store_url")
+        .select("public_domain, store_url")
         .eq("user_id", sellerId)
         .eq("is_active", true)
         .single();
 
-      if (connection?.store_url) {
-        storeDomain = connection.store_url;
-      }
+      // Priority: 1) public_domain (custom domain), 2) myshopify domain
+      storeDomain = connection?.public_domain || connection?.store_url || null;
     }
 
     if (!sellerId) {
