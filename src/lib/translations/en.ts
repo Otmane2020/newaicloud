@@ -25,6 +25,7 @@ export const translations = {
     draft: "Draft",
     recent: "Recent",
     sort: "Sort",
+    category: "Category",
   },
   
   navigation: {
@@ -1138,10 +1139,20 @@ export const translations = {
         optimizationError: "Error during optimization",
         syncSuccess: "{{count}} collections synced",
         syncError: "Error during synchronization",
+        collectionsToOptimize: "{{count}} collections to optimize",
+        collectionsOptimized: "{{success}}/{{total}} collections optimized!",
+        allOptimized: "All collections are already optimized",
+        trialLimitReached: "Trial limit reached. Upgrade to continue.",
+        noneSelected: "No collections selected",
+        invalidIds: "Invalid collection IDs",
+        optimizationFailed: "Optimization failed",
+        alreadyOptimizedTrial: "This collection is already optimized (trial limit reached)",
+        monthlyLimitReached: "Monthly limit reached. Upgrade to continue.",
       },
       actions: {
         optimizeAll: "Optimize All",
         syncAll: "Sync All",
+        syncToShopify: "Sync to Shopify",
         refresh: "Refresh",
       },
     },
@@ -1149,78 +1160,6 @@ export const translations = {
       grid: "Grid View",
       list: "List View",
     },
-    optimization: {
-      tabs: {
-        all: "All",
-        notOptimized: "To Optimize",
-        optimized: "Optimized"
-      },
-      status: {
-        optimized: "Optimized",
-        notOptimized: "Not Optimized",
-        all: "All Status"
-      },
-      sync: {
-        synced: "Synced",
-        notSynced: "Not Synced",
-        all: "All Sync"
-      },
-      quality: {
-        all: "All Quality",
-        excellent: "Excellent",
-        good: "Good",
-        medium: "Medium",
-        poor: "Poor"
-      },
-      score: {
-        excellent: "Excellent",
-        good: "Good",
-        medium: "Medium",
-        poor: "Poor"
-      },
-      actions: {
-        optimizeSelected: "Optimize Selected",
-        optimizeAll: "Optimize All",
-        syncToShopify: "Sync to Shopify",
-        syncAll: "Sync All",
-        selectAll: "Select All",
-        refresh: "Refresh",
-        generateImage: "Generate Image"
-      },
-      messages: {
-        collectionsToOptimize: "{{count}} collections to optimize",
-        collectionsOptimized: "{{count}} collections optimized",
-        allOptimized: "All collections are already optimized",
-        noneSelected: "No collection selected",
-        optimizationSuccess: "✅ {{count}} collection(s) optimized",
-        optimizationError: "Error: {{message}}",
-        optimizationFailed: "Optimization failed",
-        collectionError: "Collection \"{{title}}\": {{message}}",
-        trialLimitReached: "Current plan limit reached. Upgrade to a higher plan to continue.",
-        monthlyLimitReached: "Monthly optimization limit reached. Upgrade to a higher plan.",
-        alreadyOptimizedTrial: "Current plan limit reached. This collection is already optimized.",
-        invalidIds: "Error: Invalid collection IDs detected. Please refresh.",
-        syncSuccess: "Successfully synced to Shopify",
-        syncError: "Failed to sync to Shopify"
-      },
-      viewMode: {
-        grid: "Grid",
-        list: "List"
-      },
-      filters: {
-        search: "Search by title or handle...",
-        status: "Status",
-        sync: "Sync",
-        quality: "Quality"
-      },
-      table: {
-        collection: "Collection",
-        seoScore: "SEO Score",
-        products: "Products",
-        status: "Status",
-        actions: "Actions"
-      }
-    }
   },
 
   chat: {
@@ -2497,118 +2436,6 @@ export const translations = {
     },
   },
 
-  merchant: {
-    title: "Google Merchant Center",
-    description: "Manage your feed and sync your products",
-    submenu: {
-      feed: "XML Feed",
-      settings: "Settings",
-      sync: "Synchronization",
-    },
-    tabs: {
-      feed: "XML Feed",
-      settings: "Settings",
-      sync: "Synchronization",
-    },
-    actions: {
-      openMerchant: "Open Merchant Center",
-      generateFeed: "Generate Feed",
-      downloadFeed: "Download Feed",
-      sync: "Sync Now",
-    },
-    feedDescription: "Your Google Merchant XML feed",
-    settingsDescription: "Configure your feed settings",
-    syncDescription: "Synchronize with Google Shopping",
-  },
-
-  chatTabs: {
-    chat: "AI Smart Chat",
-    orders: "Orders",
-    learning: "Learning",
-    ordersManagement: {
-      title: "Orders Management",
-      description: "Manage customer orders through AI assistant",
-      comingSoon: "Coming Soon",
-      comingSoonDesc: "This feature will be available soon to help you manage customer orders directly through the AI chat.",
-    },
-  },
-
-  forms: {
-    labels: {
-      title: "Title",
-      description: "Description",
-      category: "Category",
-      price: "Price",
-      quantity: "Quantity",
-      status: "Status",
-      tags: "Tags",
-      images: "Images",
-      required: "Required",
-    },
-    placeholders: {
-      enterTitle: "Enter title...",
-      enterDescription: "Enter description...",
-      selectCategory: "Select category...",
-      enterPrice: "Enter price...",
-      enterQuantity: "Enter quantity...",
-      selectStatus: "Select status...",
-      addTags: "Add tags...",
-    },
-    validation: {
-      required: "This field is required",
-      minLength: "Minimum length is {{min}} characters",
-      maxLength: "Maximum length is {{max}} characters",
-      invalidEmail: "Invalid email address",
-      invalidUrl: "Invalid URL",
-      invalidNumber: "Invalid number",
-    },
-    category: {
-      all: "All Categories",
-      select: "Select Category",
-    },
-  },
-
-  dialogs: {
-    confirm: {
-      title: "Confirm Action",
-      message: "Are you sure you want to proceed?",
-      confirm: "Confirm",
-      cancel: "Cancel",
-    },
-    delete: {
-      title: "Delete Item",
-      message: "Are you sure you want to delete this item? This action cannot be undone.",
-      confirm: "Delete",
-      cancel: "Cancel",
-    },
-    unsavedChanges: {
-      title: "Unsaved Changes",
-      message: "You have unsaved changes. Do you want to save them?",
-      save: "Save",
-      discard: "Discard",
-      cancel: "Cancel",
-    },
-    trialLimit: {
-      title: "Trial Limit Reached",
-      message: "You've reached your trial limit. Upgrade to continue.",
-    },
-    upgrade: {
-      upgradeNow: "Upgrade Now",
-      seePlans: "See Plans",
-      feature1: "Unlimited optimizations",
-      feature2: "Priority support",
-      feature3: "Advanced analytics",
-      feature4: "Custom integration",
-      feature5: "API access",
-      feature6: "White label",
-      feature7: "Dedicated account manager",
-      feature8: "SLA guarantee",
-    },
-    limit: {
-      title: "Limit Reached",
-      description: "You've reached your plan limit",
-    },
-  },
 
   tables: {
     noData: "No data available",

@@ -25,6 +25,7 @@ export const translations = {
     draft: "Brouillon",
     recent: "Récent",
     sort: "Trier",
+    category: "Catégorie",
   },
   
   navigation: {
@@ -1118,78 +1119,47 @@ export const translations = {
     },
     loading: "Chargement des collections...",
     loadError: "Erreur lors du chargement des collections",
+    importComplete: "Import Complet",
+    importCollections: "Importer Collections",
+    importImages: "Importer Collections + Images",
+    importing: "Import en cours...",
+    optimizing: "Optimisation...",
+    syncing: "Synchronisation...",
     optimization: {
+      title: "Optimisation des Collections",
+      optimizeAll: "Tout Optimiser",
+      optimizeSelected: "Optimiser Sélection",
       tabs: {
-        all: "Toutes",
-        notOptimized: "À optimiser",
-        optimized: "Optimisées"
-      },
-      status: {
-        optimized: "Optimisé",
-        notOptimized: "Non optimisé",
-        all: "Tous les statuts"
-      },
-      sync: {
-        synced: "Synchronisé",
-        notSynced: "Non synchronisé",
-        all: "Toutes les syncs"
-      },
-      quality: {
-        all: "Toutes qualités",
-        excellent: "Excellent",
-        good: "Bon",
-        medium: "Moyen",
-        poor: "Faible"
-      },
-      score: {
-        excellent: "Excellent",
-        good: "Bon",
-        medium: "Moyen",
-        poor: "Faible"
-      },
-      actions: {
-        optimizeSelected: "Optimiser sélection",
-        optimizeAll: "Optimiser tout",
-        syncToShopify: "Sync vers Shopify",
-        syncAll: "Tout synchroniser",
-        selectAll: "Tout sélectionner",
-        refresh: "Actualiser",
-        generateImage: "Générer image"
+        all: "Toutes Collections",
+        optimized: "Optimisées",
+        notOptimized: "Non Optimisées",
       },
       messages: {
+        optimizationSuccess: "{{count}} collections optimisées",
+        optimizationError: "Erreur lors de l'optimisation",
+        syncSuccess: "{{count}} collections synchronisées",
+        syncError: "Erreur lors de la synchronisation",
         collectionsToOptimize: "{{count}} collections à optimiser",
-        collectionsOptimized: "{{count}} collections optimisées",
+        collectionsOptimized: "{{success}}/{{total}} collections optimisées !",
         allOptimized: "Toutes les collections sont déjà optimisées",
+        trialLimitReached: "Limite d'essai atteinte. Passez à un plan payant pour continuer.",
         noneSelected: "Aucune collection sélectionnée",
-        optimizationSuccess: "✅ {{count}} collection(s) optimisée(s)",
-        optimizationError: "Erreur : {{message}}",
+        invalidIds: "IDs de collections invalides",
         optimizationFailed: "Échec de l'optimisation",
-        collectionError: "Collection \"{{title}}\": {{message}}",
-        trialLimitReached: "Limite du plan actuel atteinte. Passez à un plan supérieur pour continuer.",
-        monthlyLimitReached: "Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur.",
-        alreadyOptimizedTrial: "Limite du plan actuel atteinte. Cette collection est déjà optimisée.",
-        invalidIds: "Erreur: IDs de collection invalides détectés. Veuillez rafraîchir la page.",
-        syncSuccess: "Synchronisation réussie vers Shopify",
-        syncError: "Échec de la synchronisation vers Shopify"
+        alreadyOptimizedTrial: "Cette collection est déjà optimisée (limite d'essai atteinte)",
+        monthlyLimitReached: "Limite mensuelle atteinte. Passez à un plan supérieur.",
       },
-      viewMode: {
-        grid: "Grille",
-        list: "Liste"
+      actions: {
+        optimizeAll: "Tout Optimiser",
+        syncAll: "Tout Synchroniser",
+        syncToShopify: "Synchroniser avec Shopify",
+        refresh: "Actualiser",
       },
-      filters: {
-        search: "Rechercher par titre ou identifiant...",
-        status: "Statut",
-        sync: "Synchronisation",
-        quality: "Qualité"
-      },
-      table: {
-        collection: "Collection",
-        seoScore: "Score SEO",
-        products: "Produits",
-        status: "Statut",
-        actions: "Actions"
-      }
-    }
+    },
+    viewMode: {
+      grid: "Grille",
+      list: "Liste"
+    },
   },
 
   chat: {
@@ -2380,6 +2350,101 @@ export const translations = {
       min: "Min",
       max: "Max",
       measurements: "Mesures",
+    },
+  },
+
+  googleShopping: {
+    title: "Google Shopping",
+    description: "Gérez votre flux de produits Google Shopping",
+    stats: {
+      totalProducts: "Produits Totaux",
+      optimized: "Optimisés",
+      pending: "En Attente",
+      inFeed: "Dans le Flux",
+    },
+    table: {
+      product: "Produit",
+      image: "Image",
+      category: "Catégorie",
+      gtin: "GTIN",
+      mpn: "MPN",
+      condition: "Condition",
+      status: "Statut",
+      actions: "Actions",
+    },
+    actions: {
+      generateGtins: "Générer GTINs",
+      generateCategories: "Générer Catégories",
+      processImages: "Traiter Images",
+      optimizeAll: "Tout Optimiser",
+      exportFeed: "Exporter Flux",
+      refresh: "Actualiser",
+    },
+    filters: {
+      search: "Rechercher des produits...",
+      allCategories: "Toutes Catégories",
+      allStatus: "Tous les Statuts",
+    },
+    status: {
+      ready: "Prêt",
+      pending: "En Attente",
+      error: "Erreur",
+      missing: "Données Manquantes",
+    },
+    messages: {
+      optimizationSuccess: "{{count}} produits optimisés",
+      optimizationError: "Erreur lors de l'optimisation",
+      exportSuccess: "Flux exporté avec succès",
+      exportError: "Erreur lors de l'export du flux",
+    },
+  },
+
+  pricing: {
+    title: "Smart Pricing AI",
+    description: "Optimisation des prix par IA",
+    stats: {
+      avgMargin: "Marge Moyenne",
+      totalProducts: "Produits Totaux",
+      optimized: "Prix Optimisés",
+      potential: "Revenu Potentiel",
+    },
+    table: {
+      product: "Produit",
+      currentPrice: "Prix Actuel",
+      smartPrice: "Prix Intelligent",
+      marketPrice: "Prix Marché",
+      margin: "Marge",
+      actions: "Actions",
+    },
+    actions: {
+      analyzePrices: "Analyser Prix",
+      importCosts: "Importer Coûts",
+      syncToShopify: "Sync Shopify",
+      bulkUpdate: "Mise à Jour Groupée",
+    },
+    config: {
+      taxRate: "Taux de TVA",
+      targetMargin: "Marge Cible",
+      minMargin: "Marge Minimum",
+      competitorPricing: "Prix Concurrent",
+    },
+    messages: {
+      pricesAnalyzed: "Prix analysés avec succès",
+      pricesSynced: "Prix synchronisés avec Shopify",
+      costsImported: "Coûts importés avec succès",
+      analysisError: "Erreur lors de l'analyse des prix",
+    },
+  },
+
+  chatTabs: {
+    chat: "Chat IA Smart",
+    orders: "Commandes",
+    learning: "Apprentissage",
+    ordersManagement: {
+      title: "Gestion des Commandes",
+      description: "Gérez les commandes clients via l'assistant IA",
+      comingSoon: "Bientôt Disponible",
+      comingSoonDesc: "Cette fonctionnalité sera bientôt disponible pour vous aider à gérer les commandes clients directement via le chat IA.",
     },
   },
 

@@ -370,7 +370,7 @@ export function BlogOpportunities() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="text-sm">
-                    <span className="font-semibold">{t.forms.category}:</span> {opp.category}
+                    <span className="font-semibold">{t.common.category}:</span> {opp.category}
                     {opp.subCategory && ` > ${opp.subCategory}`}
                   </div>
                   
