@@ -839,29 +839,29 @@ export function CollectionOptimization() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-2xl md:text-3xl font-bold">Collection SEO</h2>
+                  <h2 className="text-2xl md:text-3xl font-bold">{t.collections.optimization.title}</h2>
                   <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0">
                     <Sparkles className="w-3 h-3 mr-1" />
-                    Vision AI
+                    {t.seo.optimization.visionAI.badge}
                   </Badge>
                 </div>
               </div>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-              Optimisez vos collections Shopify avec l'IA. Générez des titres, descriptions SEO et images avec <span className="font-semibold">Vision AI</span>
+              {t.collections.optimization.description}
             </p>
             <div className="flex flex-wrap gap-4 pt-2">
               <div className="flex items-center gap-2 text-sm">
                 <Target className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">SEO Intelligent</span>
+                <span className="font-medium">{t.collections.optimization.features.intelligent}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="font-medium">+40% visibilité</span>
+                <span className="font-medium">{t.collections.optimization.features.visibility}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Zap className="w-4 h-4 text-purple-600" />
-                <span className="font-medium">Génération rapide</span>
+                <span className="font-medium">{t.collections.optimization.features.fast}</span>
               </div>
             </div>
           </div>
@@ -874,12 +874,12 @@ export function CollectionOptimization() {
               }`}>
                 {globalSeoScore}/100
               </div>
-              <div className="text-sm text-muted-foreground">Score SEO Global</div>
+              <div className="text-sm text-muted-foreground">{t.collections.optimization.globalScore}</div>
               <div className="text-xs text-muted-foreground mt-1">
-                30% non-optimisé + 70% IA-optimisé
+                {t.collections.optimization.scoreWeighting}
               </div>
               <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {optimizationRate}% optimisé
+                {optimizationRate}% {t.collections.optimization.optimized}
               </div>
             </div>
             <div className="flex gap-3">
@@ -890,15 +890,12 @@ export function CollectionOptimization() {
                 className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
               >
                 <Sparkles className="w-5 h-5" />
-                Optimiser tout
+                {t.collections.optimization.optimizeAll}
               </Button>
             </div>
           </div>
         </div>
       </Card>
-
-      {/* Vision AI Banner */}
-      <VisionAIBanner />
 
       {/* Clickable Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -1406,8 +1406,17 @@ export const translations = {
     syncing: "Syncing...",
     optimization: {
       title: "Collection Optimization",
+      description: "Optimize your Shopify collections with AI. Generate titles, SEO descriptions and images with Vision AI",
       optimizeAll: "Optimize All",
       optimizeSelected: "Optimize Selected",
+      globalScore: "Global SEO Score",
+      scoreWeighting: "30% non-optimized + 70% AI-optimized",
+      optimized: "optimized",
+      features: {
+        intelligent: "Intelligent SEO",
+        visibility: "+40% visibility",
+        fast: "Fast generation",
+      },
       tabs: {
         all: "All Collections",
         optimized: "Optimized",
