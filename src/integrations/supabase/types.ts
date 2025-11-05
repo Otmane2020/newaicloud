@@ -2446,11 +2446,15 @@ export type Database = {
           name: string
           popular: boolean | null
           price_monthly: number
+          price_monthly_eur: number | null
           price_yearly: number
+          price_yearly_eur: number | null
           recommended: boolean | null
           stripe_price_id: string | null
           stripe_price_id_monthly: string | null
+          stripe_price_id_monthly_eur: string | null
           stripe_price_id_yearly: string | null
+          stripe_price_id_yearly_eur: string | null
           trial_days: number | null
           trial_max_articles: number | null
           trial_max_chat_responses: number | null
@@ -2477,11 +2481,15 @@ export type Database = {
           name: string
           popular?: boolean | null
           price_monthly: number
+          price_monthly_eur?: number | null
           price_yearly: number
+          price_yearly_eur?: number | null
           recommended?: boolean | null
           stripe_price_id?: string | null
           stripe_price_id_monthly?: string | null
+          stripe_price_id_monthly_eur?: string | null
           stripe_price_id_yearly?: string | null
+          stripe_price_id_yearly_eur?: string | null
           trial_days?: number | null
           trial_max_articles?: number | null
           trial_max_chat_responses?: number | null
@@ -2508,11 +2516,15 @@ export type Database = {
           name?: string
           popular?: boolean | null
           price_monthly?: number
+          price_monthly_eur?: number | null
           price_yearly?: number
+          price_yearly_eur?: number | null
           recommended?: boolean | null
           stripe_price_id?: string | null
           stripe_price_id_monthly?: string | null
+          stripe_price_id_monthly_eur?: string | null
           stripe_price_id_yearly?: string | null
+          stripe_price_id_yearly_eur?: string | null
           trial_days?: number | null
           trial_max_articles?: number | null
           trial_max_chat_responses?: number | null

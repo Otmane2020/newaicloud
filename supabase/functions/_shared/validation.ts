@@ -93,6 +93,7 @@ export function validateCreateCheckout(data: any): ValidationResult<{
   success_url?: string;
   cancel_url?: string;
   force_immediate_payment?: boolean;
+  currency?: string;
 }> {
   const errors: ValidationError[] = [];
 
@@ -137,6 +138,14 @@ export function validateCreateCheckout(data: any): ValidationResult<{
     }
   }
 
+  if (data.currency !== undefined && data.currency !== null) {
+    if (typeof data.currency !== 'string') {
+      errors.push({ path: ['currency'], message: 'Currency must be a string' });
+    } else if (!['USD', 'EUR', 'usd', 'eur'].includes(data.currency)) {
+      errors.push({ path: ['currency'], message: 'Currency must be USD or EUR' });
+    }
+  }
+
   if (errors.length > 0) {
     return { success: false, errors };
   }
@@ -148,7 +157,8 @@ export function validateCreateCheckout(data: any): ValidationResult<{
       billing_period: data.billing_period as 'monthly' | 'yearly',
       success_url: data.success_url,
       cancel_url: data.cancel_url,
-      force_immediate_payment: data.force_immediate_payment || false
+      force_immediate_payment: data.force_immediate_payment || false,
+      currency: data.currency
     }
   };
 }

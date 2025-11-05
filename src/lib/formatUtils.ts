@@ -28,18 +28,65 @@ export const getCurrencySymbol = (language: 'fr' | 'en'): string => {
 };
 
 /**
+ * Get the appropriate Stripe price ID based on language and billing period
+ * @param plan - The subscription plan object
+ * @param language - The language code ('fr' or 'en')
+ * @param billingPeriod - The billing period ('monthly' or 'yearly')
+ * @returns The appropriate Stripe price ID
+ */
+export const getPriceIdByLanguage = (
+  plan: any,
+  language: 'fr' | 'en',
+  billingPeriod: 'monthly' | 'yearly'
+): string => {
+  if (language === 'fr') {
+    return billingPeriod === 'monthly' 
+      ? (plan.stripe_price_id_monthly_eur || plan.stripe_price_id_monthly)
+      : (plan.stripe_price_id_yearly_eur || plan.stripe_price_id_yearly);
+  }
+  return billingPeriod === 'monthly' 
+    ? plan.stripe_price_id_monthly 
+    : plan.stripe_price_id_yearly;
+};
+
+/**
+ * Get the appropriate price amount based on language and billing period
+ * @param plan - The subscription plan object
+ * @param language - The language code ('fr' or 'en')
+ * @param billingPeriod - The billing period ('monthly' or 'yearly')
+ * @returns The price amount
+ */
+export const getPriceByLanguage = (
+  plan: any,
+  language: 'fr' | 'en',
+  billingPeriod: 'monthly' | 'yearly'
+): number => {
+  if (language === 'fr') {
+    return billingPeriod === 'monthly' 
+      ? (plan.price_monthly_eur || plan.price_monthly)
+      : (plan.price_yearly_eur || plan.price_yearly);
+  }
+  return billingPeriod === 'monthly' 
+    ? plan.price_monthly 
+    : plan.price_yearly;
+};
+
+/**
  * Format a price with the appropriate currency symbol
  * @param amount - The price amount
  * @param language - The language code ('fr' or 'en')
+ * @param includeDecimals - Whether to include decimal places (default: true)
  * @returns Formatted price string
  */
-export const formatPrice = (amount: number, language: 'fr' | 'en'): string => {
+export const formatPrice = (
+  amount: number, 
+  language: 'fr' | 'en',
+  includeDecimals: boolean = true
+): string => {
   const symbol = getCurrencySymbol(language);
-  // French: "9,99 €" or "49 €"
-  // English: "$9.99" or "$49"
-  const formattedAmount = language === 'fr' 
-    ? amount.toFixed(2).replace('.', ',')
-    : amount.toFixed(2);
+  const formattedAmount = includeDecimals 
+    ? (language === 'fr' ? amount.toFixed(2).replace('.', ',') : amount.toFixed(2))
+    : Math.round(amount).toString();
   
   return language === 'fr' 
     ? `${formattedAmount} ${symbol}`

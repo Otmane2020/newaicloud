@@ -1,4 +1,13 @@
 export const translations = {
+  currency: {
+    usd: "USD",
+    eur: "EUR",
+    symbol: "€",
+    symbolEur: "€",
+    monthly: "/mois",
+    yearly: "/an",
+    save: "Économisez"
+  },
   common: {
     loading: "Chargement...",
     save: "Enregistrer",

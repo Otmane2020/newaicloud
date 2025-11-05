@@ -40,7 +40,7 @@ serve(async (req) => {
       );
     }
 
-    const { plan_id, billing_period, success_url, cancel_url, force_immediate_payment } = validation.data;
+    const { plan_id, billing_period, success_url, cancel_url, force_immediate_payment, currency } = validation.data;
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -80,10 +80,22 @@ serve(async (req) => {
 
     console.log('📋 Plan found:', plan.name);
 
-    // Get Stripe Price ID
-    const stripePriceId = billing_period === 'yearly' 
-      ? plan.stripe_price_id_yearly 
-      : (plan.stripe_price_id_monthly || plan.stripe_price_id);
+    // Get Stripe Price ID based on currency preference
+    // Default to EUR if currency not specified
+    const useEur = currency === 'EUR' || currency === 'eur';
+    let stripePriceId;
+    
+    if (billing_period === 'yearly') {
+      stripePriceId = useEur && plan.stripe_price_id_yearly_eur 
+        ? plan.stripe_price_id_yearly_eur 
+        : plan.stripe_price_id_yearly;
+    } else {
+      stripePriceId = useEur && plan.stripe_price_id_monthly_eur
+        ? plan.stripe_price_id_monthly_eur
+        : (plan.stripe_price_id_monthly || plan.stripe_price_id);
+    }
+    
+    console.log(`💰 Currency: ${useEur ? 'EUR' : 'USD'}, Price ID: ${stripePriceId}`);
 
     if (!stripePriceId || !stripePriceId.startsWith('price_')) {
       console.error(`❌ Invalid Stripe Price ID: ${stripePriceId}`);

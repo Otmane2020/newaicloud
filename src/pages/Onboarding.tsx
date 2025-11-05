@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
-import { getCurrencySymbol } from '@/lib/formatUtils';
+import { getCurrencySymbol, formatPrice, getPriceByLanguage } from '@/lib/formatUtils';
 
 interface Plan {
   id: string;
@@ -247,6 +247,7 @@ export default function Onboarding() {
         body: {
           plan_id: planId,
           billing_period: billingCycle,
+          currency: language === 'fr' ? 'EUR' : 'USD',
           success_url: `${window.location.origin}/onboarding?checkout=success`,
           cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`,
           force_immediate_payment: hasActiveTrial
@@ -411,12 +412,9 @@ export default function Onboarding() {
                   <div className="flex flex-col items-center justify-center mb-2">
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        {billingCycle === 'yearly' 
-                          ? `${getCurrencySymbol(language)}${(starterPlan.price_yearly / 12).toFixed(2)}`
-                          : `${getCurrencySymbol(language)}${starterPlan.price_monthly.toFixed(2)}`
-                        }
+                        {formatPrice(getPriceByLanguage(starterPlan, language, billingCycle), language)}
                       </span>
-                      <span className="text-muted-foreground">/mois</span>
+                      <span className="text-muted-foreground">{language === 'fr' ? '/mois' : '/month'}</span>
                     </div>
                   </div>
                 </div>

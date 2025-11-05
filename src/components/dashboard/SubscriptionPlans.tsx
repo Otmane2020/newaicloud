@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useTranslation } from "@/lib/language";
-import { getCurrencySymbol } from "@/lib/formatUtils";
+import { getCurrencySymbol, getPriceByLanguage, formatPrice } from "@/lib/formatUtils";
 
 interface Plan {
   id: string;
@@ -158,6 +158,7 @@ export function SubscriptionPlans() {
           body: { 
             plan_id: planId,
             billing_period: billingPeriod,
+            currency: language === 'fr' ? 'EUR' : 'USD',
             success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
             cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
           }
@@ -184,10 +185,10 @@ export function SubscriptionPlans() {
   const isCurrentPlan = (planId: string) => currentPlanId === planId;
 
   const getPrice = (plan: Plan) => {
-    const price = billingPeriod === 'yearly' ? plan.price_yearly : plan.price_monthly;
+    const price = getPriceByLanguage(plan, language, billingPeriod);
     // Format: keep 9.99 as is, but remove decimals for whole numbers like 49.00 -> 49
-    if (price === 9.99) return '9,99';
-    return Math.floor(price).toString();
+    if (price === 9.99) return formatPrice(price, language, true).replace(/[€$]/, '');
+    return formatPrice(price, language, false).replace(/[€$]/, '');
   };
 
   const getSavings = (plan: Plan) => {
@@ -347,7 +348,7 @@ export function SubscriptionPlans() {
                       key={plan.id} 
                       value={plan.id}
                     >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly)}€/mois
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, 'monthly'), language)}
                     </SelectItem>
                   ))}
                 </SelectContent>

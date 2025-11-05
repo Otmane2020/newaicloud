@@ -7,6 +7,8 @@ import PricingComparison from "@/components/PricingComparison";
 import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/lib/language";
+import { getCurrencySymbol } from "@/lib/formatUtils";
 import { useEffect, useState } from "react";
 import { 
   Zap, 
@@ -30,6 +32,7 @@ import {
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { language } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
 
@@ -304,12 +307,15 @@ const Index = () => {
                   
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold">${price}</span>
-                      <span className="text-muted-foreground">/month</span>
+                      <span className="text-5xl font-bold">{getCurrencySymbol(language)}{price}</span>
+                      <span className="text-muted-foreground">{language === 'fr' ? '/mois' : '/month'}</span>
                     </div>
                     {billingCycle === 'yearly' && (
                       <p className="text-sm text-success mt-1">
-                        billed annually (i.e. ${plan.yearlyTotal}/year)
+                        {language === 'fr' 
+                          ? `facturé annuellement (soit ${getCurrencySymbol(language)}${plan.yearlyTotal}/an)`
+                          : `billed annually (i.e. ${getCurrencySymbol(language)}${plan.yearlyTotal}/year)`
+                        }
                       </p>
                     )}
                     {plan.trial && (
