@@ -2096,40 +2096,6 @@ export const translations = {
     },
   },
 
-  notifications: {
-    title: "Notifications SEO",
-    description: "Vos tâches d'optimisation quotidiennes",
-    empty: "Aucune notification",
-    emptyDescription: "Les tâches SEO apparaîtront ici",
-    markCompleted: "Marquer terminé",
-    delete: "Supprimer",
-    completed: "Terminé",
-    view: "Voir",
-    dueBefore: "À faire avant",
-    priority: {
-      high: "haute",
-      medium: "moyenne",
-      low: "basse"
-    },
-    samples: {
-      optimizeProducts: {
-        title: "Optimiser 15 produits",
-        message: "Vos 15 nouveaux produits nécessitent une optimisation SEO pour améliorer leur visibilité.",
-        actionLabel: "Optimiser maintenant"
-      },
-      missingAlts: {
-        title: "Textes ALT manquants",
-        message: "23 images de produits n'ont pas de texte alternatif. Ajoutez-les pour améliorer votre SEO.",
-        actionLabel: "Ajouter les ALT"
-      },
-      seoAudit: {
-        title: "Audit SEO disponible",
-        message: "Votre rapport d'audit SEO hebdomadaire est prêt. Consultez les recommandations pour améliorer votre score.",
-        actionLabel: "Voir le rapport"
-      }
-    },
-  },
-
   dialogs: {
     upgrade: {
       limitReached: {
@@ -2462,4 +2428,327 @@ export const translations = {
     export: "Exporter",
     import: "Importer",
   },
+
+  blogWizard: {
+    title: "Assistant Blog",
+    description: "Créez des articles SEO de haute qualité avec l'IA",
+    steps: {
+      topic: "Sélection du Sujet",
+      settings: "Paramètres Article",
+      generation: "Génération",
+      review: "Révision & Publication",
+    },
+    topicStep: {
+      title: "Choisissez Votre Sujet",
+      subtitle: "Sur quoi souhaitez-vous écrire ?",
+      topicLabel: "Sujet de l'Article",
+      topicPlaceholder: "Entrez le sujet de votre article...",
+      keywords: "Mots-clés Cibles",
+      keywordsPlaceholder: "mot-clé1, mot-clé2, mot-clé3",
+      tone: "Ton de Rédaction",
+      tones: {
+        professional: "Professionnel",
+        casual: "Décontracté",
+        friendly: "Amical",
+        expert: "Expert",
+      },
+    },
+    settingsStep: {
+      title: "Paramètres de l'Article",
+      subtitle: "Configurez les détails de votre article",
+      wordCount: "Nombre de Mots",
+      includeSections: "Inclure les Sections",
+      sections: {
+        introduction: "Introduction",
+        mainContent: "Contenu Principal",
+        conclusion: "Conclusion",
+        faq: "Section FAQ",
+      },
+    },
+    generationStep: {
+      title: "Génération de l'Article",
+      subtitle: "L'IA crée votre article...",
+      analyzing: "Analyse du sujet...",
+      researching: "Recherche du contenu...",
+      writing: "Rédaction de l'article...",
+      optimizing: "Optimisation SEO...",
+    },
+    reviewStep: {
+      title: "Révisez Votre Article",
+      subtitle: "Effectuez les ajustements finaux avant publication",
+      preview: "Aperçu",
+      edit: "Modifier",
+      seoScore: "Score SEO",
+      readability: "Lisibilité",
+      publish: "Publier l'Article",
+      saveDraft: "Enregistrer en Brouillon",
+    },
+    messages: {
+      topicRequired: "Veuillez entrer un sujet",
+      keywordsRequired: "Veuillez ajouter au moins un mot-clé",
+      generationSuccess: "Article généré avec succès !",
+      generationError: "Erreur lors de la génération de l'article",
+      publishSuccess: "Article publié avec succès !",
+      publishError: "Erreur lors de la publication de l'article",
+    },
+  },
+
+  campaignWizard: {
+    title: "Assistant Campagne",
+    description: "Créez des campagnes marketing automatisées",
+    steps: {
+      type: "Type de Campagne",
+      targeting: "Ciblage",
+      content: "Contenu",
+      schedule: "Planification",
+      review: "Révision",
+    },
+    typeStep: {
+      title: "Sélectionnez le Type de Campagne",
+      subtitle: "Quel type de campagne souhaitez-vous créer ?",
+      types: {
+        product: "Lancement Produit",
+        seasonal: "Campagne Saisonnière",
+        promotional: "Campagne Promotionnelle",
+        newsletter: "Newsletter",
+      },
+    },
+    targetingStep: {
+      title: "Définissez Votre Audience",
+      subtitle: "Qui devrait voir cette campagne ?",
+      audience: "Audience Cible",
+      segments: "Segments Clients",
+      locations: "Localisations Géographiques",
+    },
+    contentStep: {
+      title: "Contenu de la Campagne",
+      subtitle: "Créez votre message de campagne",
+      headline: "Titre",
+      description: "Description",
+      callToAction: "Appel à l'Action",
+      images: "Images de Campagne",
+    },
+    scheduleStep: {
+      title: "Planifier la Campagne",
+      subtitle: "Quand cette campagne doit-elle être diffusée ?",
+      startDate: "Date de Début",
+      endDate: "Date de Fin",
+      timezone: "Fuseau Horaire",
+      automated: "Envoi Automatisé",
+    },
+    reviewStep: {
+      title: "Réviser la Campagne",
+      subtitle: "Vérifiez tous les détails avant le lancement",
+      summary: "Résumé de la Campagne",
+      preview: "Aperçu",
+      launch: "Lancer la Campagne",
+      saveDraft: "Enregistrer en Brouillon",
+    },
+    messages: {
+      typeRequired: "Veuillez sélectionner un type de campagne",
+      contentRequired: "Veuillez ajouter du contenu à la campagne",
+      scheduleRequired: "Veuillez définir une planification",
+      launchSuccess: "Campagne lancée avec succès !",
+      launchError: "Erreur lors du lancement de la campagne",
+      draftSaved: "Campagne enregistrée en brouillon",
+    },
+  },
+
+  productComponents: {
+    card: {
+      viewDetails: "Voir Détails",
+      addToCart: "Ajouter au Panier",
+      outOfStock: "Rupture de Stock",
+      sale: "Promotion",
+      new: "Nouveau",
+    },
+    search: {
+      placeholder: "Rechercher des produits...",
+      noResults: "Aucun produit trouvé",
+      resultsCount: "{{count}} produits trouvés",
+      filters: "Filtres",
+      sortBy: "Trier Par",
+      sortOptions: {
+        relevance: "Pertinence",
+        priceLowHigh: "Prix: Croissant",
+        priceHighLow: "Prix: Décroissant",
+        nameAZ: "Nom: A-Z",
+        nameZA: "Nom: Z-A",
+        newest: "Plus Récents",
+      },
+    },
+    enrichment: {
+      title: "Enrichissement Produit",
+      description: "Améliorez les données produit avec l'IA",
+      analyze: "Analyser le Produit",
+      suggestions: "Suggestions IA",
+      apply: "Appliquer les Suggestions",
+      enriching: "Enrichissement...",
+      enriched: "Produit enrichi avec succès !",
+      enrichmentError: "Erreur lors de l'enrichissement du produit",
+    },
+    landing: {
+      title: "Page de Destination Produit",
+      customize: "Personnaliser la Page",
+      preview: "Aperçu de la Page",
+      publish: "Publier la Page",
+      sections: {
+        hero: "Section Héro",
+        features: "Caractéristiques",
+        specifications: "Spécifications",
+        reviews: "Avis",
+        relatedProducts: "Produits Associés",
+      },
+    },
+    source: {
+      title: "Source Produits",
+      description: "Trouvez et importez des produits",
+      search: "Rechercher Produits",
+      import: "Importer Produits",
+      selected: "{{count}} produits sélectionnés",
+      importing: "Import en cours...",
+      importSuccess: "Produits importés avec succès !",
+      importError: "Erreur lors de l'import des produits",
+    },
+  },
+
+  notifications: {
+    title: "Notifications",
+    description: "Restez informé de vos tâches SEO",
+    types: {
+      seoOptimization: "Optimisation SEO",
+      productUpdate: "Mise à Jour Produit",
+      blogPublished: "Blog Publié",
+      campaignLaunched: "Campagne Lancée",
+      limitWarning: "Alerte Limite",
+      systemAlert: "Alerte Système",
+    },
+    messages: {
+      productOptimized: "{{count}} produit(s) optimisé(s) avec succès",
+      blogArticlePublished: "Nouvel article de blog publié : {{title}}",
+      campaignLaunched: "Campagne \"{{name}}\" lancée avec succès",
+      limitReached: "Vous avez atteint {{percent}}% de votre limite {{limitType}}",
+      trialEnding: "Votre essai se termine dans {{days}} jours",
+      subscriptionExpired: "Votre abonnement a expiré",
+      syncComplete: "Synchronisation Shopify terminée avec succès",
+      syncError: "Échec de la synchronisation Shopify - vérifiez votre connexion",
+    },
+    actions: {
+      markAsRead: "Marquer comme Lu",
+      markAllAsRead: "Tout Marquer comme Lu",
+      viewDetails: "Voir Détails",
+      dismiss: "Ignorer",
+      settings: "Paramètres Notifications",
+    },
+    empty: {
+      title: "Aucune notification",
+      description: "Vous êtes à jour !",
+    },
+    samples: {
+      optimizeProducts: {
+        title: "Optimisez vos produits",
+        message: "Vous avez des produits nécessitant une optimisation SEO",
+        actionLabel: "Aller aux Produits",
+      },
+      missingAlts: {
+        title: "Balises ALT manquantes",
+        message: "Certaines images n'ont pas de texte alternatif",
+        actionLabel: "Corriger les ALT",
+      },
+      seoAudit: {
+        title: "Lancer un Audit SEO",
+        message: "Planifiez un audit SEO complet pour votre boutique",
+        actionLabel: "Lancer l'Audit",
+      },
+    },
+    priority: {
+      high: "Haute",
+      medium: "Moyenne",
+      low: "Basse",
+    },
+    view: "Voir",
+    markCompleted: "Marquer comme Terminé",
+    completed: "Terminé",
+    dueBefore: "À faire avant le",
+    emptyDescription: "Aucune notification à afficher",
+  },
+
+  edgeFunctions: {
+    errors: {
+      unauthorized: "Accès non autorisé",
+      invalidRequest: "Format de requête invalide",
+      missingParams: "Paramètres requis manquants",
+      resourceNotFound: "Ressource introuvable",
+      rateLimitExceeded: "Limite de taux dépassée. Veuillez réessayer plus tard",
+      serverError: "Erreur serveur. Veuillez réessayer",
+      invalidCredentials: "Identifiants invalides",
+      insufficientPermissions: "Permissions insuffisantes",
+      quotaExceeded: "Quota dépassé pour votre plan actuel",
+      invalidShopifyToken: "Token d'accès Shopify invalide",
+      shopifyConnectionError: "Échec de connexion à Shopify",
+      aiServiceError: "Service IA temporairement indisponible",
+      optimizationFailed: "Échec de l'optimisation. Veuillez réessayer",
+      syncFailed: "Échec de la synchronisation",
+      imageProcessingError: "Erreur lors du traitement de l'image",
+      invalidImageFormat: "Format d'image invalide",
+      fileTooLarge: "Taille du fichier dépasse la limite",
+      invalidEmail: "Adresse email invalide",
+      emailSendFailed: "Échec de l'envoi de l'email",
+      paymentRequired: "Paiement requis pour accéder à cette fonctionnalité",
+      subscriptionInactive: "Abonnement non actif",
+      trialExpired: "Période d'essai expirée",
+      maintenanceMode: "Service temporairement indisponible pour maintenance",
+    },
+    success: {
+      optimizationComplete: "Optimisation terminée avec succès",
+      syncComplete: "Synchronisation terminée",
+      dataUpdated: "Données mises à jour avec succès",
+      emailSent: "Email envoyé avec succès",
+      subscriptionActivated: "Abonnement activé",
+      paymentProcessed: "Paiement traité avec succès",
+    },
+  },
+
+  onboardingTour: {
+    welcome: {
+      title: "Bienvenue sur NewAI ! 🎉",
+      description: "Faisons un tour rapide des fonctionnalités clés",
+      start: "Démarrer la Visite",
+      skip: "Passer la Visite",
+    },
+    steps: {
+      dashboard: {
+        title: "Tableau de Bord",
+        description: "Votre hub central pour la gestion SEO et les analytics",
+      },
+      products: {
+        title: "Produits",
+        description: "Importez et optimisez votre catalogue de produits",
+      },
+      seo: {
+        title: "Optimisation SEO",
+        description: "Suggestions SEO alimentées par l'IA pour votre boutique",
+      },
+      blog: {
+        title: "Blog & Contenu",
+        description: "Créez des articles optimisés SEO avec l'IA",
+      },
+      integration: {
+        title: "Intégration Shopify",
+        description: "Connectez votre boutique Shopify pour commencer",
+      },
+    },
+    navigation: {
+      next: "Suivant",
+      previous: "Précédent",
+      finish: "Terminer la Visite",
+      skip: "Passer",
+    },
+    completion: {
+      title: "Tout est Prêt ! 🚀",
+      description: "Prêt à optimiser le SEO de votre boutique",
+      getStarted: "Commencer",
+    },
+  },
+
 };

@@ -273,7 +273,7 @@ export function NotificationCenter() {
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">{t.notifications.empty}</p>
+              <p className="text-muted-foreground">{t.notifications.empty.title}</p>
               <p className="text-sm text-muted-foreground mt-1">
                 {t.notifications.emptyDescription}
               </p>
