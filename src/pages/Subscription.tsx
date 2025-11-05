@@ -236,47 +236,44 @@ const Subscription = () => {
       {isUpgradeFlow && currentPlan && (
         <Card className="p-6 mb-8 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 border-2 border-primary/30 dark:border-primary/50">
           <div className="space-y-4">
-            {/* En-tête avec plan actuel */}
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold mb-1">Votre plan actuel</h3>
+                <h3 className="text-lg font-semibold mb-1">{t.seo.subscription.yourCurrentPlan}</h3>
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{getPlanIcon(currentPlan.id)}</span>
                   <div>
                     <p className="text-xl font-bold">{currentPlan.name}</p>
-                    <p className="text-muted-foreground text-sm">{currentPlan.price_monthly}€/mois</p>
+                    <p className="text-muted-foreground text-sm">{currentPlan.price_monthly}€{t.seo.subscription.perMonth}</p>
                   </div>
                 </div>
               </div>
               <Badge variant="outline" className="text-lg px-4 py-2 border-primary">
-                Plan actuel
+                {t.seo.subscription.currentPlanBadge}
               </Badge>
             </div>
 
-            {/* Limites du plan actuel */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-border">
               <div className="text-center">
                 <p className="text-2xl font-bold text-primary">{currentPlan.max_optimizations_monthly}</p>
-                <p className="text-xs text-muted-foreground">Optimisations/mois</p>
+                <p className="text-xs text-muted-foreground">{t.seo.subscription.monthlyOptimizations}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-primary">{currentPlan.max_products === -1 ? '∞' : currentPlan.max_products}</p>
-                <p className="text-xs text-muted-foreground">Produits</p>
+                <p className="text-xs text-muted-foreground">{t.seo.subscription.products}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-primary">{currentPlan.max_articles_monthly}</p>
-                <p className="text-xs text-muted-foreground">Articles/mois</p>
+                <p className="text-xs text-muted-foreground">{t.seo.subscription.articlesPerMonth}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-primary">{currentPlan.max_shopify_stores}</p>
-                <p className="text-xs text-muted-foreground">Boutiques</p>
+                <p className="text-xs text-muted-foreground">{t.seo.subscription.stores}</p>
               </div>
             </div>
 
-            {/* Message d'upgrade basé sur le contexte */}
             <div className="bg-card p-4 rounded-lg border border-border">
               <p className="text-sm font-medium text-primary">
-                💡 Vous avez atteint les limites de votre plan actuel. Choisissez un plan supérieur ci-dessous pour continuer.
+                {t.seo.subscription.limitReachedMessage}
               </p>
             </div>
           </div>
@@ -288,7 +285,7 @@ const Subscription = () => {
           <Card className={`p-8 relative flex flex-col ${isCurrentPlan(starterPlan.id) ? 'border-2 border-primary shadow-primary' : ''}`}>
             {isCurrentPlan(starterPlan.id) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
-                Plan actuel
+                {t.seo.subscription.currentPlanBadge}
               </Badge>
             )}
             <div className="space-y-6 flex-1">
@@ -303,26 +300,26 @@ const Subscription = () => {
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">{starterPlan.price_monthly}€</span>
-                  <span className="text-muted-foreground">/mois</span>
+                  <span className="text-muted-foreground">{t.seo.subscription.perMonth}</span>
                 </div>
               </div>
 
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_optimizations_monthly} optimisations/mois</span>
+                  <span>{starterPlan.max_optimizations_monthly} {t.seo.subscription.optimizationsMonth}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_articles_monthly} articles/mois</span>
+                  <span>{starterPlan.max_articles_monthly} {t.seo.subscription.articlesMonth}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_chat_responses_monthly} réponses chat/mois</span>
+                  <span>{starterPlan.max_chat_responses_monthly} {t.seo.subscription.chatResponsesMonth}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="w-5 h-5 text-success" />
-                  <span>{starterPlan.max_shopify_stores} boutique(s) Shopify</span>
+                  <span>{starterPlan.max_shopify_stores} {t.seo.subscription.shopifyStores}</span>
                 </div>
               </div>
             </div>
@@ -338,10 +335,10 @@ const Subscription = () => {
               ) : isCurrentPlan(starterPlan.id) ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Plan actuel
+                  {t.seo.subscription.currentPlanBadge}
                 </>
               ) : (
-                'Sélectionner ce plan'
+                t.seo.subscription.selectThisPlan
               )}
             </Button>
           </Card>
@@ -351,12 +348,12 @@ const Subscription = () => {
           <Card className={`p-8 relative flex flex-col ${(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) ? 'border-2 border-primary shadow-primary' : ''}`}>
             {(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
-                Plan actuel
+                {t.seo.subscription.currentPlanBadge}
               </Badge>
             )}
             {!(currentPlan?.id === 'professional' || currentPlan?.id.startsWith('pro-')) && isUpgradeFlow && recommendedPlanType === 'pro' && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
-                Plan recommandé
+                {t.seo.subscription.recommendedPlanBadge}
               </Badge>
             )}
             <div className="space-y-6 flex-1">
@@ -365,7 +362,7 @@ const Subscription = () => {
                   <span className="text-3xl">⚡</span>
                   <h3 className="text-2xl font-bold">Pro</h3>
                 </div>
-                <p className="text-muted-foreground text-sm">Pour les boutiques en croissance</p>
+                <p className="text-muted-foreground text-sm">{t.seo.subscription.proGrowth}</p>
               </div>
               
               <div>
@@ -388,30 +385,30 @@ const Subscription = () => {
                   <div>
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-bold">{selectedProPlan.price_monthly}€</span>
-                      <span className="text-muted-foreground">/mois</span>
+                      <span className="text-muted-foreground">{t.seo.subscription.perMonth}</span>
                     </div>
                   </div>
 
                   <div className="space-y-3 pt-6 border-t">
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_optimizations_monthly} optimisations/mois</span>
+                      <span>{selectedProPlan.max_optimizations_monthly} {t.seo.subscription.optimizationsMonth}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_articles_monthly} articles/mois</span>
+                      <span>{selectedProPlan.max_articles_monthly} {t.seo.subscription.articlesMonth}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_chat_responses_monthly} réponses chat/mois</span>
+                      <span>{selectedProPlan.max_chat_responses_monthly} {t.seo.subscription.chatResponsesMonth}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_shopify_stores} boutique(s) Shopify</span>
+                      <span>{selectedProPlan.max_shopify_stores} {t.seo.subscription.shopifyStores}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedProPlan.max_products === -1 ? 'Produits illimités' : `${selectedProPlan.max_products.toLocaleString()} produits`}</span>
+                      <span>{selectedProPlan.max_products === -1 ? t.seo.subscription.unlimitedProducts : `${selectedProPlan.max_products.toLocaleString()} ${t.seo.subscription.products.toLowerCase()}`}</span>
                     </div>
                   </div>
                 </>
@@ -429,10 +426,10 @@ const Subscription = () => {
               ) : isCurrentPlan(selectedProTier) ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Plan actuel
+                  {t.seo.subscription.currentPlanBadge}
                 </>
               ) : (
-                'Mettre à niveau'
+                t.seo.subscription.upgrade
               )}
             </Button>
           </Card>
@@ -442,17 +439,17 @@ const Subscription = () => {
           <Card className={`p-8 relative flex flex-col ${currentPlan?.id.startsWith('enterprise-') ? 'border-2 border-primary shadow-primary' : ''}`}>
             {currentPlan?.id.startsWith('enterprise-') && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
-                Plan actuel
+                {t.seo.subscription.currentPlanBadge}
               </Badge>
             )}
             {!currentPlan?.id.startsWith('enterprise-') && isUpgradeFlow && recommendedPlanType === 'enterprise' && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
-                Plan recommandé
+                {t.seo.subscription.recommendedPlanBadge}
               </Badge>
             )}
             {!currentPlan?.id.startsWith('enterprise-') && !isUpgradeFlow && enterprisePlans[0]?.best_value && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-success">
-                Meilleur rapport qualité-prix
+                {t.seo.subscription.bestValueBadge}
               </Badge>
             )}
             <div className="space-y-6 flex-1">
@@ -461,7 +458,7 @@ const Subscription = () => {
                   <span className="text-3xl">🏢</span>
                   <h3 className="text-2xl font-bold">Enterprise</h3>
                 </div>
-                <p className="text-muted-foreground text-sm">Pour les grandes opérations</p>
+                <p className="text-muted-foreground text-sm">{t.seo.subscription.enterpriseLarge}</p>
               </div>
               
               <div>
@@ -484,30 +481,30 @@ const Subscription = () => {
                   <div>
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-bold">{selectedEnterprisePlan.price_monthly.toLocaleString()}€</span>
-                      <span className="text-muted-foreground">/mois</span>
+                      <span className="text-muted-foreground">{t.seo.subscription.perMonth}</span>
                     </div>
                   </div>
 
                   <div className="space-y-3 pt-6 border-t">
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_optimizations_monthly.toLocaleString()} optimisations/mois</span>
+                      <span>{selectedEnterprisePlan.max_optimizations_monthly.toLocaleString()} {t.seo.subscription.optimizationsMonth}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_articles_monthly} articles/mois</span>
+                      <span>{selectedEnterprisePlan.max_articles_monthly} {t.seo.subscription.articlesMonth}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_chat_responses_monthly.toLocaleString()} réponses chat/mois</span>
+                      <span>{selectedEnterprisePlan.max_chat_responses_monthly.toLocaleString()} {t.seo.subscription.chatResponsesMonth}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_shopify_stores} boutique(s) Shopify</span>
+                      <span>{selectedEnterprisePlan.max_shopify_stores} {t.seo.subscription.shopifyStores}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span>{selectedEnterprisePlan.max_products === -1 ? 'Produits illimités' : `${selectedEnterprisePlan.max_products.toLocaleString()} produits`}</span>
+                      <span>{selectedEnterprisePlan.max_products === -1 ? t.seo.subscription.unlimitedProducts : `${selectedEnterprisePlan.max_products.toLocaleString()} ${t.seo.subscription.products.toLowerCase()}`}</span>
                     </div>
                   </div>
                 </>
@@ -525,10 +522,10 @@ const Subscription = () => {
               ) : isCurrentPlan(selectedEnterpriseTier) ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Plan actuel
+                  {t.seo.subscription.currentPlanBadge}
                 </>
               ) : (
-                'Mettre à niveau'
+                t.seo.subscription.upgrade
               )}
             </Button>
           </Card>
@@ -539,8 +536,8 @@ const Subscription = () => {
         <>
           <div className="mt-16">
             <div className="text-center mb-8">
-              <h3 className="text-3xl font-bold mb-2">Comparaison détaillée</h3>
-              <p className="text-muted-foreground">Comparez toutes les fonctionnalités de nos plans</p>
+              <h3 className="text-3xl font-bold mb-2">{t.seo.subscription.detailedComparison}</h3>
+              <p className="text-muted-foreground">{t.seo.subscription.comparePlans}</p>
             </div>
             <PricingComparison />
           </div>

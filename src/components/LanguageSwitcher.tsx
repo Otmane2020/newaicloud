@@ -1,5 +1,5 @@
 import { useTranslation } from '@/lib/language';
-import { Languages } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,7 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 
 export function LanguageSwitcher() {
   const { language, setLanguage } = useTranslation();
@@ -15,27 +14,39 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2">
-          <Languages className="h-4 w-4" />
-          <span className="text-xs font-medium uppercase">{language}</span>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="gap-2 px-3 py-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border border-primary/20 rounded-full transition-all duration-300 hover:scale-105"
+        >
+          <Globe className="h-4 w-4" />
+          <span className="text-xs font-bold uppercase tracking-wider">{language}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40">
+      <DropdownMenuContent align="end" className="w-48 p-2">
         <DropdownMenuItem 
           onClick={() => setLanguage('en')}
-          className={language === 'en' ? 'bg-accent font-medium' : ''}
+          className={`rounded-lg cursor-pointer transition-all ${
+            language === 'en' 
+              ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold' 
+              : 'hover:bg-accent/50'
+          }`}
         >
-          <span className="mr-2">🇬🇧</span>
-          English
-          {language === 'en' && <Badge variant="secondary" className="ml-auto">✓</Badge>}
+          <span className="text-2xl mr-3">🇬🇧</span>
+          <span className="flex-1">English</span>
+          {language === 'en' && <span className="ml-2 text-lg">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setLanguage('fr')}
-          className={language === 'fr' ? 'bg-accent font-medium' : ''}
+          className={`rounded-lg cursor-pointer transition-all ${
+            language === 'fr' 
+              ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold' 
+              : 'hover:bg-accent/50'
+          }`}
         >
-          <span className="mr-2">🇫🇷</span>
-          Français
-          {language === 'fr' && <Badge variant="secondary" className="ml-auto">✓</Badge>}
+          <span className="text-2xl mr-3">🇫🇷</span>
+          <span className="flex-1">Français</span>
+          {language === 'fr' && <span className="ml-2 text-lg">✓</span>}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

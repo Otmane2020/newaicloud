@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
 
         // If existing GTIN is invalid, generate new one
         let attempts = 0;
-        let newGtin: string;
+        let newGtin: string = '';
         let isUnique = false;
 
         while (attempts < 10 && !isUnique) {
@@ -203,12 +203,12 @@ Deno.serve(async (req: Request) => {
           attempts++;
         }
 
-        if (!isUnique) {
+        if (!isUnique || !newGtin) {
           throw new Error("Could not generate unique GTIN after 10 attempts");
         }
 
         // Validate the generated GTIN before saving
-        if (!isValidGTIN(newGtin!)) {
+        if (!isValidGTIN(newGtin)) {
           throw new Error("Generated invalid GTIN: " + newGtin);
         }
 
