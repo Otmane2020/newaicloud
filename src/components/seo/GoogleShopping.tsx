@@ -392,14 +392,19 @@ export function GoogleShopping() {
   };
 
   const handleOptimizeAll = async () => {
+    // Include products that are missing any optimization field
     const unoptimized = products.filter(p => 
-      !p.google_product_category || !p.google_gtin
+      !p.google_product_category || !p.google_gtin || !p.google_white_background
     );
 
     if (unoptimized.length === 0) {
       toast.info('Tous les produits sont déjà optimisés !');
       return;
     }
+
+    // Ask user for confirmation
+    const confirmMessage = `${unoptimized.length} produits seront optimisés (catégorie, GTIN et/ou fond blanc manquants). Continuer ?`;
+    if (!confirm(confirmMessage)) return;
 
     setIsOptimizing(true);
     setShowOptimizeDialog(true);
