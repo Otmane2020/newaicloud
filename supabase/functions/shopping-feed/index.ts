@@ -104,7 +104,21 @@ function generateVariantTitle(product: Product, variant: Variant): string {
 }
 
 function getProductDescription(product: Product): string {
-  return product.optimized_description || product.seo_description || product.description || product.title;
+  // Order of priority for description
+  let description = product.optimized_description || 
+                    product.seo_description || 
+                    product.description || 
+                    product.title;
+  
+  // Clean HTML tags and entities
+  description = description
+    .replace(/<[^>]*>/g, ' ')  // Remove all HTML tags
+    .replace(/&nbsp;/g, ' ')    // Replace &nbsp; with spaces
+    .replace(/&[a-z]+;/gi, ' ') // Remove HTML entities
+    .replace(/\s+/g, ' ')       // Replace multiple spaces with single space
+    .trim();
+  
+  return description;
 }
 
 function getProductImage(product: Product, variant?: Variant): string {
@@ -211,16 +225,25 @@ async function generateGoogleShoppingFeed(
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(imageUrl)}</g:image_link>
       <g:additional_image_link>${escapeXml(imageUrl)}</g:additional_image_link>
-      <g:availability>${escapeXml(availability)}</g:availability>
-      <g:price>${price.toFixed(2)} ${currency}</g:price>`;
+      <g:availability>${escapeXml(availability)}</g:availability>`;
 
-        // Add sale price if available and valid
+        // Handle pricing for promotions
         if (product.compare_at_price) {
           const comparePrice = parseFloat(product.compare_at_price);
           if (comparePrice > price) {
+            // Product on promotion: compare_at_price is the regular price, price is the sale price
             xml += `
-      <g:sale_price>${comparePrice.toFixed(2)} ${currency}</g:sale_price>`;
+      <g:price>${comparePrice.toFixed(2)} ${currency}</g:price>
+      <g:sale_price>${price.toFixed(2)} ${currency}</g:sale_price>`;
+          } else {
+            // Invalid promotion data, just show regular price
+            xml += `
+      <g:price>${price.toFixed(2)} ${currency}</g:price>`;
           }
+        } else {
+          // No promotion, just regular price
+          xml += `
+      <g:price>${price.toFixed(2)} ${currency}</g:price>`;
         }
 
         xml += `

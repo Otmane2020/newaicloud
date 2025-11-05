@@ -2,7 +2,7 @@ import { useState, Suspense, lazy, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Plus, RefreshCw } from "lucide-react";
-import { ShopifyConnectionDialog } from "./ShopifyConnectionDialog";
+import { ShopifyConnectionWizard } from "./ShopifyConnectionWizard";
 import { SkeletonLoader } from "./SkeletonLoader";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
@@ -104,7 +104,7 @@ export function ShopifyIntegrationTabs() {
         <ShopifyConnectionsList key={refreshKey} />
       </Suspense>
 
-      <ShopifyConnectionDialog open={showDialog} onOpenChange={setShowDialog} />
+      <ShopifyConnectionWizard open={showDialog} onOpenChange={setShowDialog} />
     </div>
   );
 }
