@@ -41,13 +41,13 @@ const StoreAvatar = ({ storeName }: StoreAvatarProps) => {
 
 export default function Chat() {
   const { user } = useAuth();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const navigate = useNavigate();
   const { limits, refresh: refreshLimits } = useUsageLimits();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: t.seo.chat.greeting
+      content: language === 'fr' ? t.seo.chat.greeting : 'Hello! I\'m your AI shopping assistant. How can I help you today?'
     }
   ]);
   const [input, setInput] = useState('');
@@ -58,13 +58,13 @@ export default function Chat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [storeName, setStoreName] = useState<string>();
-  const [assistantName, setAssistantName] = useState<string>('Nicolas');
+  const [assistantName, setAssistantName] = useState<string>(language === 'fr' ? 'Nicolas' : 'Assistant');
   const [enrichmentPercentage, setEnrichmentPercentage] = useState<number>(100);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Chat embed configuration
   const [chatPosition, setChatPosition] = useState<'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'>('bottom-right');
-  const [welcomeMessage, setWelcomeMessage] = useState(t.seo.chat.welcome);
+  const [welcomeMessage, setWelcomeMessage] = useState(language === 'fr' ? t.seo.chat.welcome : 'Welcome! How can I assist you?');
 
   useEffect(() => {
     if (user) {

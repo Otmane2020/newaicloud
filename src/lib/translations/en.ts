@@ -1,4 +1,11 @@
 export const translations = {
+  aiAssistant: {
+    title: "AI Assistant",
+    subtitle: "Online and ready to help",
+    welcome: "Hello! I'm your AI assistant. How can I help you today?",
+    placeholder: "Type your message...",
+    error: "Sorry, I encountered an error. Please try again."
+  },
   currency: {
     usd: "USD",
     eur: "EUR",
@@ -2048,19 +2055,6 @@ export const translations = {
     contact: "Contact",
     address: "123 SEO Street, Tech City, TC 12345",
     allRightsReserved: "All rights reserved",
-  },
-
-  aiAssistant: {
-    title: "AI Assistant",
-    subtitle: "Always at your service",
-    welcome: "Hello! I'm your AI assistant. How can I help you today?",
-    placeholder: "Ask your question...",
-    send: "Send",
-    thinking: "Thinking...",
-    error: "Error processing your request",
-    errorDescription: "Please try again",
-    newConversation: "New Conversation",
-    clearHistory: "Clear History",
   },
 
   shopify: {

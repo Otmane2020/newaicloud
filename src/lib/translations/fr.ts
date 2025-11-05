@@ -1,12 +1,19 @@
 export const translations = {
+  aiAssistant: {
+    title: "AI Assistant",
+    subtitle: "Online and ready to help",
+    welcome: "Hello! I'm your AI assistant. How can I help you today?",
+    placeholder: "Type your message...",
+    error: "Sorry, I encountered an error. Please try again."
+  },
   currency: {
     usd: "USD",
     eur: "EUR",
-    symbol: "€",
+    symbol: "$",
     symbolEur: "€",
-    monthly: "/mois",
-    yearly: "/an",
-    save: "Économisez"
+    monthly: "/month",
+    yearly: "/year",
+    save: "Save"
   },
   common: {
     loading: "Chargement...",
@@ -2140,19 +2147,6 @@ export const translations = {
     contact: "Contact",
     address: "123 Rue du SEO, Tech City, TC 12345",
     allRightsReserved: "Tous droits réservés",
-  },
-
-  aiAssistant: {
-    title: "Assistant IA",
-    subtitle: "Toujours à votre service",
-    welcome: "Bonjour ! Je suis votre assistant IA. Comment puis-je vous aider aujourd'hui ?",
-    placeholder: "Posez votre question...",
-    send: "Envoyer",
-    thinking: "Réflexion...",
-    error: "Erreur lors du traitement de votre demande",
-    errorDescription: "Veuillez réessayer",
-    newConversation: "Nouvelle Conversation",
-    clearHistory: "Effacer l'Historique",
   },
 
   shopify: {
