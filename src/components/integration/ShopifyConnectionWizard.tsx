@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { useTranslation } from "@/lib/language";
 
 interface ShopifyConnectionWizardProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface ShopifyConnectionWizardProps {
 export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectionWizardProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const { limits, refresh: refreshLimits } = useUsageLimits();
+  const { t } = useTranslation();
 
   // Step 1 data
   const [commercialName, setCommercialName] = useState("");
@@ -34,11 +36,11 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
 
   const handleNext = () => {
     if (!commercialName.trim()) {
-      toast.error("Le nom commercial est requis");
+      toast.error(t.wizards.shopify.commercialNameRequired);
       return;
     }
     if (!shopifyCode.trim()) {
-      toast.error("Le code Shopify est requis");
+      toast.error(t.wizards.shopify.shopifyCodeRequired);
       return;
     }
     setStep(2);
@@ -50,8 +52,8 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
 
   const handleOAuthConnect = async () => {
     if (!limits?.canAddShopifyStore) {
-      toast.error("Limite de boutiques atteinte", {
-        description: `Vous avez atteint le maximum (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Passez à un forfait supérieur.`,
+      toast.error(t.wizards.shopify.storeLimit, {
+        description: t.wizards.shopify.storeLimitDescription,
       });
       return;
     }
@@ -62,7 +64,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Vous devez être connecté");
+        toast.error(t.wizards.shopify.mustBeConnected);
         return;
       }
 
@@ -81,11 +83,11 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
       if (data?.authUrl) {
         window.location.href = data.authUrl;
       } else {
-        throw new Error("URL d'authentification non reçue");
+        throw new Error(t.wizards.shopify.authUrlError);
       }
     } catch (error: any) {
       console.error("OAuth connection error:", error);
-      toast.error(error.message || "Erreur lors de la connexion OAuth");
+      toast.error(error.message || t.wizards.shopify.oauthError);
     } finally {
       setOauthLoading(false);
     }
@@ -93,13 +95,13 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
 
   const handleManualConnect = async () => {
     if (!apiKey.trim() || !apiSecret.trim()) {
-      toast.error("Veuillez remplir tous les champs");
+      toast.error(t.wizards.shopify.fillAllFields);
       return;
     }
 
     if (!limits?.canAddShopifyStore) {
-      toast.error("Limite de boutiques atteinte", {
-        description: `Vous avez atteint le maximum (${limits?.usage.shopify_stores_count}/${limits?.limits.max_shopify_stores}). Passez à un forfait supérieur.`,
+      toast.error(t.wizards.shopify.storeLimit, {
+        description: t.wizards.shopify.storeLimitDescription,
       });
       return;
     }
@@ -110,7 +112,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Vous devez être connecté");
+        toast.error(t.wizards.shopify.mustBeConnected);
         return;
       }
 
@@ -126,7 +128,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
       });
 
       if (!shopInfoResponse.ok) {
-        toast.error("Identifiants invalides. Vérifiez vos clés API.");
+        toast.error(t.wizards.shopify.invalidCredentials);
         return;
       }
 
@@ -142,7 +144,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
         .single();
 
       if (existing) {
-        toast.error("Cette boutique est déjà connectée");
+        toast.error(t.wizards.shopify.storeAlreadyConnected);
         return;
       }
 
@@ -167,7 +169,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
         p_increment: 1,
       });
 
-      toast.success("Boutique connectée avec succès ! 🎉");
+      toast.success(t.wizards.shopify.storeConnectedSuccess);
       await refreshLimits();
 
       onOpenChange(false);
@@ -178,7 +180,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
       setTimeout(() => window.location.reload(), 1000);
     } catch (error: any) {
       console.error("Manual connection error:", error);
-      toast.error(error.message || "Erreur lors de la connexion manuelle");
+      toast.error(error.message || t.wizards.shopify.manualConnectionError);
     } finally {
       setManualLoading(false);
     }
@@ -202,7 +204,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
     >
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{step === 1 ? "Connecter une boutique Shopify" : "Configuration des accès"}</DialogTitle>
+          <DialogTitle>{step === 1 ? t.wizards.shopify.title : t.wizards.shopify.configTitle}</DialogTitle>
         </DialogHeader>
 
         {/* Progress indicator */}
@@ -230,25 +232,25 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="commercialName">
-                Nom commercial <span className="text-destructive">*</span>
+                {t.wizards.shopify.commercialName} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="commercialName"
-                placeholder="Ma Boutique..."
+                placeholder={t.wizards.shopify.commercialNamePlaceholder}
                 value={commercialName}
                 onChange={(e) => setCommercialName(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">Le nom qui apparaîtra dans l'interface</p>
+              <p className="text-xs text-muted-foreground">{t.wizards.shopify.commercialNameDescription}</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="shopifyCode">
-                Code technique Shopify <span className="text-destructive">*</span>
+                {t.wizards.shopify.shopifyCode} <span className="text-destructive">*</span>
               </Label>
               <div className="flex gap-2 items-center">
                 <Input
                   id="shopifyCode"
-                  placeholder="qbxv98-9w"
+                  placeholder={t.wizards.shopify.shopifyCodePlaceholder}
                   value={shopifyCode}
                   onChange={(e) => setShopifyCode(e.target.value)}
                   className="flex-1"
@@ -256,12 +258,12 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
                 <span className="text-sm text-muted-foreground whitespace-nowrap">.myshopify.com</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Trouvez-le dans l'URL : admin.shopify.com/store/<strong>qbxv98-9w</strong>
+                {t.wizards.shopify.shopifyCodeDescription}<strong>qbxv98-9w</strong>
               </p>
             </div>
 
             <Button onClick={handleNext} className="w-full" size="lg">
-              Étape suivante
+              {t.wizards.shopify.nextStep}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -276,58 +278,57 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleBack}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Modifier
+                  {t.wizards.shopify.modify}
                 </Button>
               </div>
             </div>
 
-            <p className="text-sm text-muted-foreground">Choisissez votre méthode de connexion :</p>
+            <p className="text-sm text-muted-foreground">{t.wizards.shopify.chooseMethod}</p>
 
             <Tabs defaultValue="oauth" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="oauth">
                   <Zap className="w-4 h-4 mr-2" />
-                  OAuth (Recommandé)
+                  {t.wizards.shopify.oauth}
                 </TabsTrigger>
                 <TabsTrigger value="manual">
                   <Key className="w-4 h-4 mr-2" />
-                  Clés API
+                  {t.wizards.shopify.apiKeys}
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="oauth" className="space-y-4">
                 <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                  <p className="text-sm font-medium">Connexion rapide en 1 clic ⚡</p>
+                  <p className="text-sm font-medium">{t.wizards.shopify.oauthQuick}</p>
                   <p className="text-xs text-muted-foreground">
-                    Pas besoin de créer des clés API manuellement. Shopify gérera l'authentification de manière
-                    sécurisée.
+                    {t.wizards.shopify.oauthDescription}
                   </p>
                 </div>
 
                 <Button onClick={handleOAuthConnect} disabled={oauthLoading} className="w-full" size="lg">
-                  {oauthLoading ? "Redirection..." : "Connecter avec Shopify OAuth"}
+                  {oauthLoading ? t.wizards.shopify.redirecting : t.wizards.shopify.connectWithOAuth}
                 </Button>
               </TabsContent>
 
               <TabsContent value="manual" className="space-y-4">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="apiKey">API Key</Label>
+                    <Label htmlFor="apiKey">{t.wizards.shopify.apiKey}</Label>
                     <Input
                       id="apiKey"
                       type="password"
-                      placeholder="Votre API Key Shopify"
+                      placeholder={t.wizards.shopify.apiKeyPlaceholder}
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="apiSecret">Admin API Access Token</Label>
+                    <Label htmlFor="apiSecret">{t.wizards.shopify.adminToken}</Label>
                     <Input
                       id="apiSecret"
                       type="password"
-                      placeholder="shpat_..."
+                      placeholder={t.wizards.shopify.adminTokenPlaceholder}
                       value={apiSecret}
                       onChange={(e) => setApiSecret(e.target.value)}
                     />
@@ -336,7 +337,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
                   <ShopifyTokenGuide />
 
                   <Button onClick={handleManualConnect} disabled={manualLoading} className="w-full" size="lg">
-                    {manualLoading ? "Connexion..." : "Connecter la boutique"}
+                    {manualLoading ? t.wizards.shopify.connecting : t.wizards.shopify.connectStore}
                   </Button>
                 </div>
               </TabsContent>
@@ -344,7 +345,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
 
             <Button variant="ghost" onClick={handleBack} className="w-full">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
+              {t.wizards.shopify.back}
             </Button>
           </div>
         )}
