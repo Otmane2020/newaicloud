@@ -3617,6 +3617,71 @@ export const translations = {
       oauthError: "Error during OAuth connection",
       manualConnectionError: "Error during manual connection",
     },
+    browser: {
+      requestTitle: "Stay Updated with Notifications",
+      requestDescription: "Enable notifications to get instant alerts about SEO opportunities, updates, and important tasks.",
+      benefit1: "Get notified of SEO opportunities instantly",
+      benefit2: "Never miss important updates",
+      benefit3: "Receive reminders for pending tasks",
+      allow: "Enable Notifications",
+      later: "Maybe Later",
+      enabled: "Notifications enabled successfully!",
+      denied: "Notifications were blocked. You can enable them later in settings."
+    }
+  },
+  
+  dialogs: {
+    optimize: {
+      title: "Optimization in progress...",
+      titleCompleted: "Optimization completed",
+      processing: "Processing...",
+      completed: "Completed",
+      success: "Success",
+      errors: "Errors",
+      skipped: "Skipped",
+      details: "Optimization details",
+      currentProduct: "Current product:",
+      close: "Close",
+      category: "Category",
+      gtin: "GTIN"
+    },
+    sync: {
+      title: "Synchronization in progress...",
+      titleCompleted: "Synchronization completed",
+      processing: "Processing...",
+      completed: "Completed",
+      currentItem: "Current:",
+      details: "Synchronization details",
+      types: {
+        products: "Products",
+        collections: "Collections",
+        pages: "Pages",
+        articles: "Articles",
+        tags: "Tags",
+        altImages: "ALT Images"
+      }
+    },
+    reoptimize: {
+      title: "Confirm re-optimization?",
+      warning: "Current SEO data will be overwritten",
+      alreadyOptimized: "Already optimized",
+      neverOptimized: "Never optimized",
+      totalCollections: "Total collections",
+      totalOptimizations: "Total previous optimizations",
+      quotaNote: "This optimization will count towards your monthly quota",
+      confirm: "Confirm re-optimization",
+      cancel: "Cancel"
+    },
+    pageSync: {
+      title: "Sync with Shopify",
+      ready: "ready to be synchronized",
+      seoTitle: "SEO Title",
+      seoDescription: "SEO Description"
+    },
+    articleSync: {
+      title: "Publish to Shopify",
+      publish: "Publish"
+    }
   },
 
 };

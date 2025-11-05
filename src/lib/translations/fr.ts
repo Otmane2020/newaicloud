@@ -3630,6 +3630,71 @@ export const translations = {
       oauthError: "Erreur lors de la connexion OAuth",
       manualConnectionError: "Erreur lors de la connexion manuelle",
     },
+    browser: {
+      requestTitle: "Restez Informé avec les Notifications",
+      requestDescription: "Activez les notifications pour recevoir des alertes instantanées sur les opportunités SEO, les mises à jour et les tâches importantes.",
+      benefit1: "Soyez notifié des opportunités SEO instantanément",
+      benefit2: "Ne manquez jamais une mise à jour importante",
+      benefit3: "Recevez des rappels pour les tâches en attente",
+      allow: "Activer les Notifications",
+      later: "Plus Tard",
+      enabled: "Notifications activées avec succès !",
+      denied: "Les notifications ont été bloquées. Vous pouvez les activer plus tard dans les paramètres."
+    }
+  },
+  
+  dialogs: {
+    optimize: {
+      title: "Optimisation en cours...",
+      titleCompleted: "Optimisation terminée",
+      processing: "Traitement en cours...",
+      completed: "Terminé",
+      success: "Succès",
+      errors: "Erreurs",
+      skipped: "Ignorés",
+      details: "Détails de l'optimisation",
+      currentProduct: "Produit actuel :",
+      close: "Fermer",
+      category: "Catégorie",
+      gtin: "GTIN"
+    },
+    sync: {
+      title: "Synchronisation en cours...",
+      titleCompleted: "Synchronisation terminée",
+      processing: "Traitement en cours...",
+      completed: "Terminé",
+      currentItem: "En cours :",
+      details: "Détails de la synchronisation",
+      types: {
+        products: "Produits",
+        collections: "Collections",
+        pages: "Pages",
+        articles: "Articles",
+        tags: "Tags",
+        altImages: "Images ALT"
+      }
+    },
+    reoptimize: {
+      title: "Confirmer la réoptimisation ?",
+      warning: "Les données SEO actuelles seront écrasées",
+      alreadyOptimized: "Déjà optimisées",
+      neverOptimized: "Jamais optimisées",
+      totalCollections: "Collections totales",
+      totalOptimizations: "Optimisations précédentes totales",
+      quotaNote: "Cette optimisation sera comptée dans votre quota mensuel",
+      confirm: "Confirmer la réoptimisation",
+      cancel: "Annuler"
+    },
+    pageSync: {
+      title: "Synchroniser avec Shopify",
+      ready: "prête à être synchronisée",
+      seoTitle: "Titre SEO",
+      seoDescription: "Description SEO"
+    },
+    articleSync: {
+      title: "Publier sur Shopify",
+      publish: "Publier"
+    }
   },
 
 };
