@@ -6,8 +6,10 @@ import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncS
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 export default function Merchant() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "feed");
@@ -27,23 +29,23 @@ export default function Merchant() {
   const tabs = [
     {
       id: "feed",
-      label: "Flux XML",
+      label: t.navigation.merchantSubmenu.feed,
       icon: FileText,
-      description: "Gérez votre flux Google Shopping XML",
+      description: t.merchant.tabs.feed.description,
       component: <GoogleMerchant />,
     },
     {
       id: "settings",
-      label: "Paramètres",
+      label: t.navigation.merchantSubmenu.settings,
       icon: Settings,
-      description: "Configurez votre boutique et vos paramètres de flux",
+      description: t.merchant.tabs.settings.description,
       component: <GoogleMerchantSettings />,
     },
     {
       id: "sync",
-      label: "Synchronisation",
+      label: t.navigation.merchantSubmenu.synchronization,
       icon: RefreshCw,
-      description: "Synchronisez avec Shopify",
+      description: t.merchant.tabs.sync.description,
       component: <GoogleShoppingSyncSettings />,
     },
   ];
@@ -60,9 +62,9 @@ export default function Merchant() {
               <ShoppingCart className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold">Google Merchant Center</h1>
+              <h1 className="text-3xl md:text-4xl font-bold">{t.merchant.title}</h1>
               <p className="text-muted-foreground">
-                Gérez votre flux et synchronisez vos produits
+                {t.merchant.description}
               </p>
             </div>
           </div>
@@ -75,7 +77,7 @@ export default function Merchant() {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-all shadow-md hover:shadow-lg"
         >
-          Ouvrir Merchant Center
+          {t.merchant.openMerchantCenter}
           <ArrowRight className="w-4 h-4" />
         </a>
       </div>

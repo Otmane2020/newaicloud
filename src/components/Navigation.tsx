@@ -56,9 +56,15 @@ export function Navigation() {
       label: t.navigation.seo, 
       icon: Sparkles,
       subItems: [
-        { path: '/seo?tab=optimization', label: t.navigation.seoOptimization, icon: Sparkles },
-        { path: '/seo?tab=tags', label: t.navigation.tagOptimization, icon: Tag },
-        { path: '/seo?tab=alt', label: t.navigation.altImage, icon: ImageIcon },
+        { path: '/seo?tab=products', label: t.navigation.seoSubmenu.products, icon: ShoppingBag },
+        { path: '/seo?tab=collections', label: t.navigation.seoSubmenu.collections, icon: FileText },
+        { path: '/seo?tab=pages', label: t.navigation.seoSubmenu.pages, icon: FileText },
+        { path: '/seo?tab=articles', label: t.navigation.seoSubmenu.articles, icon: PenSquare },
+        { path: '/seo?tab=alt', label: t.navigation.seoSubmenu.altImage, icon: ImageIcon },
+        { path: '/seo?tab=homepage', label: t.navigation.seoSubmenu.homepage, icon: FileText },
+        { path: '/seo?tab=tags', label: t.navigation.seoSubmenu.tags, icon: Tag },
+        { path: '/seo?tab=automation', label: t.navigation.seoSubmenu.automation, icon: Sparkles },
+        { path: '/seo?tab=audit', label: t.navigation.seoSubmenu.audit, icon: BarChart3 },
       ]
     },
     { 
@@ -66,17 +72,11 @@ export function Navigation() {
       label: t.navigation.seoBlog, 
       icon: FileText,
       subItems: [
-        { path: '/blog?tab=articles', label: t.navigation.articles, icon: PenSquare },
-        { path: '/blog?tab=campaigns', label: t.navigation.campaigns, icon: CalendarClock },
-        { 
-          path: '/blog?tab=opportunities', 
-          label: t.navigation.opportunities, 
-          icon: Lightbulb,
-          subItems: [
-            { path: '/blog?tab=netlinking', label: t.navigation.netlinking, icon: LinkIcon },
-            { path: '/blog?tab=settings', label: t.navigation.settings, icon: Settings }
-          ]
-        }
+        { path: '/blog?tab=articles', label: t.navigation.blogSubmenu.articles, icon: PenSquare },
+        { path: '/blog?tab=campaigns', label: t.navigation.blogSubmenu.campaigns, icon: CalendarClock },
+        { path: '/blog?tab=opportunities', label: t.navigation.blogSubmenu.opportunities, icon: Lightbulb },
+        { path: '/blog?tab=netlinking', label: t.navigation.blogSubmenu.netlinking, icon: LinkIcon },
+        { path: '/blog?tab=settings', label: t.navigation.blogSubmenu.settings, icon: Settings }
       ]
     },
     { 
@@ -84,9 +84,9 @@ export function Navigation() {
       label: t.navigation.smartChat, 
       icon: MessageSquare,
       subItems: [
-        { path: '/chat', label: t.navigation.conversation, icon: MessageSquare },
-        { path: '/chat-history', label: t.navigation.history, icon: CalendarClock },
-        { path: '/product-source', label: t.navigation.productSource, icon: ShoppingBag },
+        { path: '/chat', label: t.navigation.chatSubmenu.assistant, icon: MessageSquare },
+        { path: '/chat-history', label: t.navigation.chatSubmenu.history, icon: CalendarClock },
+        { path: '/product-source', label: t.navigation.chatSubmenu.productSource, icon: ShoppingBag },
       ]
     },
   ];

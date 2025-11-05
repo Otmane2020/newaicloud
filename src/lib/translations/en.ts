@@ -63,6 +63,71 @@ export const translations = {
     settings: "Settings",
     translations: "Translations",
     refresh: "Refresh",
+    
+    // SEO Submenu - Detailed
+    seoSubmenu: {
+      products: "Products",
+      collections: "Collections",
+      pages: "Pages",
+      articles: "Articles",
+      altImage: "ALT Images",
+      homepage: "Homepage",
+      tags: "Tags",
+      automation: "Automation",
+      audit: "SEO Audit",
+    },
+    
+    // SEO Audit Submenu
+    auditSubmenu: {
+      overview: "Overview",
+      homepage: "Homepage",
+      issues: "Issues",
+      actionPlan: "Action Plan",
+      reports: "Reports",
+    },
+    
+    // Blog Submenu
+    blogSubmenu: {
+      articles: "AI Articles",
+      campaigns: "AI Campaigns",
+      opportunities: "Opportunities",
+      netlinking: "Netlinking",
+      settings: "Settings",
+    },
+    
+    // Google Shopping Submenu
+    shoppingSubmenu: {
+      feed: "XML Feed",
+      settings: "Settings",
+      synchronization: "Synchronization",
+    },
+    
+    // Google Merchant Submenu
+    merchantSubmenu: {
+      feed: "XML Feed",
+      settings: "Settings",
+      synchronization: "Synchronization",
+    },
+    
+    // Chat Submenu
+    chatSubmenu: {
+      assistant: "Chat Assistant",
+      robot: "AI Robot",
+      orders: "Orders",
+      learning: "Learning",
+      history: "History",
+      productSource: "Product Source",
+      settings: "Chat Settings",
+      smartPricing: "Smart Pricing AI",
+    },
+    
+    // Account Submenu
+    accountSubmenu: {
+      profile: "My Profile",
+      integrations: "Integrations",
+      subscription: "Subscription",
+      billing: "Billing",
+    },
   },
 
   dashboard: {
@@ -1356,18 +1421,30 @@ export const translations = {
 
   merchant: {
     title: "Google Merchant Center",
-    description: "Manage your product feed for Google Shopping",
+    description: "Manage your feed and synchronize your products",
     syncFeed: "Sync Feed",
     downloadFeed: "Download Feed",
     feedUrl: "Feed URL",
     lastSync: "Last Sync",
     totalProducts: "Total Products",
     status: "Status",
+    openMerchantCenter: "Open Merchant Center",
     submenu: {
       feed: "XML Feed",
       settings: "Settings",
       products: "Products",
       sync: "Synchronization",
+    },
+    tabs: {
+      feed: {
+        description: "Manage your Google Shopping XML feed",
+      },
+      settings: {
+        description: "Configure your store and feed settings",
+      },
+      sync: {
+        description: "Synchronize with Shopify",
+      },
     },
     settings: {
       title: "Google Shopping Feed Configuration",

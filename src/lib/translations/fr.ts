@@ -63,6 +63,71 @@ export const translations = {
     settings: "Paramètres",
     translations: "Traductions",
     refresh: "Actualiser",
+    
+    // SEO Submenu - Detailed
+    seoSubmenu: {
+      products: "Produits",
+      collections: "Collections",
+      pages: "Pages",
+      articles: "Articles",
+      altImage: "Images ALT",
+      homepage: "Page d'accueil",
+      tags: "Tags",
+      automation: "Automatisation",
+      audit: "Audit SEO",
+    },
+    
+    // SEO Audit Submenu
+    auditSubmenu: {
+      overview: "Vue d'ensemble",
+      homepage: "Page d'accueil",
+      issues: "Problèmes",
+      actionPlan: "Plan d'action",
+      reports: "Rapports",
+    },
+    
+    // Blog Submenu
+    blogSubmenu: {
+      articles: "Articles IA",
+      campaigns: "Campagnes IA",
+      opportunities: "Opportunités",
+      netlinking: "Maillage",
+      settings: "Paramètres",
+    },
+    
+    // Google Shopping Submenu
+    shoppingSubmenu: {
+      feed: "Flux XML",
+      settings: "Paramètres",
+      synchronization: "Synchronisation",
+    },
+    
+    // Google Merchant Submenu
+    merchantSubmenu: {
+      feed: "Flux XML",
+      settings: "Paramètres",
+      synchronization: "Synchronisation",
+    },
+    
+    // Chat Submenu
+    chatSubmenu: {
+      assistant: "Assistant Chat",
+      robot: "Robot IA",
+      orders: "Commandes",
+      learning: "Apprentissage",
+      history: "Historique",
+      productSource: "Source Produits",
+      settings: "Paramètres Chat",
+      smartPricing: "Prix Intelligent IA",
+    },
+    
+    // Account Submenu
+    accountSubmenu: {
+      profile: "Mon Profil",
+      integrations: "Intégrations",
+      subscription: "Abonnement",
+      billing: "Facturation",
+    },
   },
 
   dashboard: {
@@ -1356,18 +1421,30 @@ export const translations = {
 
   merchant: {
     title: "Google Merchant Center",
-    description: "Gérez votre flux de produits pour Google Shopping",
+    description: "Gérez votre flux et synchronisez vos produits",
     syncFeed: "Synchroniser le Flux",
     downloadFeed: "Télécharger le Flux",
     feedUrl: "URL du Flux",
     lastSync: "Dernière Synchronisation",
     totalProducts: "Total Produits",
     status: "Statut",
+    openMerchantCenter: "Ouvrir Merchant Center",
     submenu: {
       feed: "Flux XML",
       settings: "Paramètres",
       products: "Produits",
       sync: "Synchronisation",
+    },
+    tabs: {
+      feed: {
+        description: "Gérez votre flux Google Shopping XML",
+      },
+      settings: {
+        description: "Configurez votre boutique et vos paramètres de flux",
+      },
+      sync: {
+        description: "Synchronisez avec Shopify",
+      },
     },
     settings: {
       title: "Configuration du Flux Google Shopping",
