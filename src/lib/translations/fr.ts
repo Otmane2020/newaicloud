@@ -2096,6 +2096,17 @@ export const translations = {
     limitReached: "Limite d'import atteinte",
     limitMessage: "Vous avez atteint votre limite d'import. Passez au plan supérieur pour continuer.",
     upgradePlan: "Améliorer le Plan",
+    browser: {
+      requestTitle: "Restez Informé avec les Notifications en Temps Réel",
+      requestDescription: "Activez les notifications du navigateur pour recevoir des mises à jour instantanées sur vos optimisations SEO, la progression de la synchronisation et les alertes importantes.",
+      benefit1: "Alertes instantanées pour les optimisations terminées",
+      benefit2: "Mises à jour en temps réel de la synchronisation",
+      benefit3: "Ne manquez jamais d'opportunités SEO importantes",
+      allow: "Activer les Notifications",
+      later: "Plus Tard",
+      enabled: "Notifications du navigateur activées !",
+      denied: "Notifications bloquées. Vous pouvez les activer dans les paramètres de votre navigateur.",
+    },
   },
 
   trial: {
@@ -3640,60 +3651,6 @@ export const translations = {
       later: "Plus Tard",
       enabled: "Notifications activées avec succès !",
       denied: "Les notifications ont été bloquées. Vous pouvez les activer plus tard dans les paramètres."
-    }
-  },
-  
-  dialogs: {
-    optimize: {
-      title: "Optimisation en cours...",
-      titleCompleted: "Optimisation terminée",
-      processing: "Traitement en cours...",
-      completed: "Terminé",
-      success: "Succès",
-      errors: "Erreurs",
-      skipped: "Ignorés",
-      details: "Détails de l'optimisation",
-      currentProduct: "Produit actuel :",
-      close: "Fermer",
-      category: "Catégorie",
-      gtin: "GTIN"
-    },
-    sync: {
-      title: "Synchronisation en cours...",
-      titleCompleted: "Synchronisation terminée",
-      processing: "Traitement en cours...",
-      completed: "Terminé",
-      currentItem: "En cours :",
-      details: "Détails de la synchronisation",
-      types: {
-        products: "Produits",
-        collections: "Collections",
-        pages: "Pages",
-        articles: "Articles",
-        tags: "Tags",
-        altImages: "Images ALT"
-      }
-    },
-    reoptimize: {
-      title: "Confirmer la réoptimisation ?",
-      warning: "Les données SEO actuelles seront écrasées",
-      alreadyOptimized: "Déjà optimisées",
-      neverOptimized: "Jamais optimisées",
-      totalCollections: "Collections totales",
-      totalOptimizations: "Optimisations précédentes totales",
-      quotaNote: "Cette optimisation sera comptée dans votre quota mensuel",
-      confirm: "Confirmer la réoptimisation",
-      cancel: "Annuler"
-    },
-    pageSync: {
-      title: "Synchroniser avec Shopify",
-      ready: "prête à être synchronisée",
-      seoTitle: "Titre SEO",
-      seoDescription: "Description SEO"
-    },
-    articleSync: {
-      title: "Publier sur Shopify",
-      publish: "Publier"
     }
   },
 

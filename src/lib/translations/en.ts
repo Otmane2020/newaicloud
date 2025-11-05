@@ -2004,6 +2004,17 @@ export const translations = {
     limitReached: "Import limit reached",
     limitMessage: "You've reached your import limit. Upgrade to continue.",
     upgradePlan: "Upgrade Plan",
+    browser: {
+      requestTitle: "Stay Updated with Real-time Notifications",
+      requestDescription: "Enable browser notifications to receive instant updates about your SEO optimizations, sync progress, and important alerts.",
+      benefit1: "Instant alerts for completed optimizations",
+      benefit2: "Real-time sync progress updates",
+      benefit3: "Never miss important SEO opportunities",
+      allow: "Enable Notifications",
+      later: "Maybe Later",
+      enabled: "Browser notifications enabled!",
+      denied: "Notifications blocked. You can enable them in your browser settings.",
+    },
   },
 
   trial: {
@@ -3627,60 +3638,6 @@ export const translations = {
       later: "Maybe Later",
       enabled: "Notifications enabled successfully!",
       denied: "Notifications were blocked. You can enable them later in settings."
-    }
-  },
-  
-  dialogs: {
-    optimize: {
-      title: "Optimization in progress...",
-      titleCompleted: "Optimization completed",
-      processing: "Processing...",
-      completed: "Completed",
-      success: "Success",
-      errors: "Errors",
-      skipped: "Skipped",
-      details: "Optimization details",
-      currentProduct: "Current product:",
-      close: "Close",
-      category: "Category",
-      gtin: "GTIN"
-    },
-    sync: {
-      title: "Synchronization in progress...",
-      titleCompleted: "Synchronization completed",
-      processing: "Processing...",
-      completed: "Completed",
-      currentItem: "Current:",
-      details: "Synchronization details",
-      types: {
-        products: "Products",
-        collections: "Collections",
-        pages: "Pages",
-        articles: "Articles",
-        tags: "Tags",
-        altImages: "ALT Images"
-      }
-    },
-    reoptimize: {
-      title: "Confirm re-optimization?",
-      warning: "Current SEO data will be overwritten",
-      alreadyOptimized: "Already optimized",
-      neverOptimized: "Never optimized",
-      totalCollections: "Total collections",
-      totalOptimizations: "Total previous optimizations",
-      quotaNote: "This optimization will count towards your monthly quota",
-      confirm: "Confirm re-optimization",
-      cancel: "Cancel"
-    },
-    pageSync: {
-      title: "Sync with Shopify",
-      ready: "ready to be synchronized",
-      seoTitle: "SEO Title",
-      seoDescription: "SEO Description"
-    },
-    articleSync: {
-      title: "Publish to Shopify",
-      publish: "Publish"
     }
   },
 
