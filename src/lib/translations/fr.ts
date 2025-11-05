@@ -138,6 +138,104 @@ export const translations = {
       billing: "Facturation",
     },
   },
+  
+  googleShopping: {
+    errors: {
+      loadProducts: "Erreur lors du chargement des produits",
+      saveData: "Erreur lors de la sauvegarde",
+      generateGtin: "Erreur lors de la génération des GTINs",
+      generateCategories: "Erreur lors de la génération des catégories",
+      generateImages: "Erreur de génération d'image",
+      applyImages: "Erreur lors de l'application des images",
+    },
+    success: {
+      dataUpdated: "Données Google Shopping mises à jour",
+      gtinsGenerated: "GTINs générés pour {{count}} produits",
+      categoriesGenerated: "Catégories générées: {{success}} succès, {{errors}} erreurs",
+      imagesApplied: "{{count}} images appliquées",
+      optimizationComplete: "Optimisation terminée",
+    },
+    prompts: {
+      selectProduct: "Sélectionnez au moins un produit",
+      confirmOptimize: "{{count}} produits seront optimisés (catégorie, GTIN et/ou fond blanc manquants). Continuer ?",
+      noImage: "Aucun produit sélectionné n'a d'image",
+      allOptimized: "Tous les produits sont déjà optimisés !",
+    },
+  },
+  
+  googleMerchant: {
+    title: "Google Merchant Center",
+    subtitle: "Synchronisez vos produits avec Google Shopping pour maximiser votre visibilité",
+    score: "Score d'optimisation",
+    status: {
+      operational: "Opérationnel",
+      error: "Erreur",
+      testing: "Test en cours",
+      notTested: "Non testé",
+    },
+    buttons: {
+      optimizeAll: "Optimiser tout",
+      testFeed: "Tester le flux",
+      regenerateXml: "Régénérer XML",
+      downloadXml: "Télécharger XML",
+      exportCsv: "Exporter CSV",
+      optimizeNow: "Optimiser maintenant",
+    },
+    alerts: {
+      enrichData: "Enrichissez vos données Google Shopping",
+      enrichDescription: "Optimisez vos produits avec les catégories Google, GTIN, et fond blanc IA pour créer un flux optimisé et augmenter votre visibilité.",
+    },
+    feedUrl: {
+      title: "URL du Flux XML",
+      subtitle: "Copiez cette URL pour Google Merchant Center",
+      label: "URL de votre flux Google Shopping",
+      copy: "Copier",
+      copied: "Copié!",
+      note: "Note: Cette URL newai.sale fonctionnera après publication. En preview, le test utilise l'URL Supabase directe.",
+      preview: "Prévisualiser le flux",
+    },
+    sync: {
+      title: "Statut de Synchronisation",
+      subtitle: "Synchronisez vos produits depuis Shopify vers le flux Google Shopping",
+      lastSync: "Dernière synchronisation",
+      frequency: "Fréquence",
+      syncNow: "Synchroniser maintenant",
+      syncing: "Synchronisation en cours...",
+      autoSyncTitle: "Paramètres de Synchronisation Automatique",
+      autoSyncSubtitle: "Configurez la synchronisation automatique depuis votre boutique Shopify",
+      autoSyncEnabled: "Synchronisation automatique",
+      autoSyncDescription: "Synchroniser automatiquement les modifications depuis Shopify",
+      frequencyLabel: "Fréquence de synchronisation",
+      frequencyOptions: {
+        manual: "Manuelle",
+        hourly: "Toutes les heures",
+        daily: "Quotidienne",
+        weekly: "Hebdomadaire",
+      },
+      howItWorks: "Comment ça marche : La synchronisation automatique récupère les mises à jour de vos produits depuis Shopify (prix, stock, descriptions) et met à jour votre flux Google Shopping. Les modifications sont détectées automatiquement selon la fréquence choisie.",
+    },
+  },
+  
+  smartPricing: {
+    errors: {
+      loadData: "Erreur lors du chargement des données",
+      save: "Erreur lors de la sauvegarde",
+      import: "Erreur lors de l'import",
+      notDeployed: "La fonction d'import n'est pas encore déployée",
+      analysis: "Fonction d'analyse non déployée",
+    },
+    success: {
+      bulkApplied: "Modification appliquée avec succès",
+      costsImported: "Import terminé : {{count}} coûts importés",
+      shippingImported: "Frais de livraison Shopify importés",
+      analysisComplete: "Analyse terminée : {{count}} produit(s)",
+    },
+    prompts: {
+      importCosts: "Import des coûts en cours...",
+      importShipping: "Import des frais de livraison...",
+      analyzing: "Analyse IA de {{count}} produit(s)...",
+    },
+  },
 
   dashboard: {
     welcome: "Bienvenue, {{name}} 👋",
@@ -2460,52 +2558,6 @@ export const translations = {
       min: "Min",
       max: "Max",
       measurements: "Mesures",
-    },
-  },
-
-  googleShopping: {
-    title: "Google Shopping",
-    description: "Gérez votre flux de produits Google Shopping",
-    stats: {
-      totalProducts: "Produits Totaux",
-      optimized: "Optimisés",
-      pending: "En Attente",
-      inFeed: "Dans le Flux",
-    },
-    table: {
-      product: "Produit",
-      image: "Image",
-      category: "Catégorie",
-      gtin: "GTIN",
-      mpn: "MPN",
-      condition: "Condition",
-      status: "Statut",
-      actions: "Actions",
-    },
-    actions: {
-      generateGtins: "Générer GTINs",
-      generateCategories: "Générer Catégories",
-      processImages: "Traiter Images",
-      optimizeAll: "Tout Optimiser",
-      exportFeed: "Exporter Flux",
-      refresh: "Actualiser",
-    },
-    filters: {
-      search: "Rechercher des produits...",
-      allCategories: "Toutes Catégories",
-      allStatus: "Tous les Statuts",
-    },
-    status: {
-      ready: "Prêt",
-      pending: "En Attente",
-      error: "Erreur",
-      missing: "Données Manquantes",
-    },
-    messages: {
-      optimizationSuccess: "{{count}} produits optimisés",
-      optimizationError: "Erreur lors de l'optimisation",
-      exportSuccess: "Flux exporté avec succès",
-      exportError: "Erreur lors de l'export du flux",
     },
   },
 

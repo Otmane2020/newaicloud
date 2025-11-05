@@ -120,14 +120,12 @@ export const translations = {
     
     // Chat Submenu
     chatSubmenu: {
-      assistant: "Chat Assistant",
-      robot: "AI Robot",
+      assistant: "Assistant",
       orders: "Orders",
       learning: "Learning",
       history: "History",
       productSource: "Product Source",
       settings: "Chat Settings",
-      smartPricing: "Smart Pricing AI",
     },
     
     // Account Submenu
@@ -136,6 +134,104 @@ export const translations = {
       integrations: "Integrations",
       subscription: "Subscription",
       billing: "Billing",
+    },
+  },
+  
+  googleShopping: {
+    errors: {
+      loadProducts: "Error loading products",
+      saveData: "Error saving data",
+      generateGtin: "Error generating GTINs",
+      generateCategories: "Error generating categories",
+      generateImages: "Image generation error",
+      applyImages: "Error applying images",
+    },
+    success: {
+      dataUpdated: "Google Shopping data updated",
+      gtinsGenerated: "GTINs generated for {{count}} products",
+      categoriesGenerated: "Categories generated: {{success}} success, {{errors}} errors",
+      imagesApplied: "{{count}} images applied",
+      optimizationComplete: "Optimization complete",
+    },
+    prompts: {
+      selectProduct: "Select at least one product",
+      confirmOptimize: "{{count}} products will be optimized (missing category, GTIN and/or white background). Continue?",
+      noImage: "No selected product has an image",
+      allOptimized: "All products are already optimized!",
+    },
+  },
+  
+  googleMerchant: {
+    title: "Google Merchant Center",
+    subtitle: "Synchronize your products with Google Shopping to maximize your visibility",
+    score: "Optimization score",
+    status: {
+      operational: "Operational",
+      error: "Error",
+      testing: "Testing in progress",
+      notTested: "Not tested",
+    },
+    buttons: {
+      optimizeAll: "Optimize all",
+      testFeed: "Test feed",
+      regenerateXml: "Regenerate XML",
+      downloadXml: "Download XML",
+      exportCsv: "Export CSV",
+      optimizeNow: "Optimize now",
+    },
+    alerts: {
+      enrichData: "Enrich your Google Shopping data",
+      enrichDescription: "Optimize your products with Google categories, GTIN, and AI white background to create an optimized feed and increase your visibility.",
+    },
+    feedUrl: {
+      title: "XML Feed URL",
+      subtitle: "Copy this URL for Google Merchant Center",
+      label: "Your Google Shopping feed URL",
+      copy: "Copy",
+      copied: "Copied!",
+      note: "Note: This newai.sale URL will work after publication. In preview, the test uses the direct Supabase URL.",
+      preview: "Preview feed",
+    },
+    sync: {
+      title: "Synchronization Status",
+      subtitle: "Synchronize your products from Shopify to Google Shopping feed",
+      lastSync: "Last synchronization",
+      frequency: "Frequency",
+      syncNow: "Synchronize now",
+      syncing: "Synchronization in progress...",
+      autoSyncTitle: "Automatic Synchronization Settings",
+      autoSyncSubtitle: "Configure automatic synchronization from your Shopify store",
+      autoSyncEnabled: "Automatic synchronization",
+      autoSyncDescription: "Automatically synchronize changes from Shopify",
+      frequencyLabel: "Synchronization frequency",
+      frequencyOptions: {
+        manual: "Manual",
+        hourly: "Every hour",
+        daily: "Daily",
+        weekly: "Weekly",
+      },
+      howItWorks: "How it works: Automatic synchronization retrieves updates from your Shopify products (prices, stock, descriptions) and updates your Google Shopping feed. Changes are detected automatically according to the chosen frequency.",
+    },
+  },
+  
+  smartPricing: {
+    errors: {
+      loadData: "Error loading data",
+      save: "Error saving",
+      import: "Error importing",
+      notDeployed: "Import function not yet deployed",
+      analysis: "Analysis function not deployed",
+    },
+    success: {
+      bulkApplied: "Modification applied successfully",
+      costsImported: "Import completed: {{count}} costs imported",
+      shippingImported: "Shopify shipping costs imported",
+      analysisComplete: "Analysis complete: {{count}} product(s)",
+    },
+    prompts: {
+      importCosts: "Importing costs in progress...",
+      importShipping: "Importing shipping costs...",
+      analyzing: "AI analysis of {{count}} product(s)...",
     },
   },
 
@@ -2460,52 +2556,6 @@ export const translations = {
       min: "Min",
       max: "Max",
       measurements: "Measurements",
-    },
-  },
-
-  googleShopping: {
-    title: "Google Shopping Feed",
-    description: "Manage your Google Shopping product feed",
-    stats: {
-      totalProducts: "Total Products",
-      optimized: "Optimized",
-      pending: "Pending",
-      inFeed: "In Feed",
-    },
-    table: {
-      product: "Product",
-      image: "Image",
-      category: "Category",
-      gtin: "GTIN",
-      mpn: "MPN",
-      condition: "Condition",
-      status: "Status",
-      actions: "Actions",
-    },
-    actions: {
-      generateGtins: "Generate GTINs",
-      generateCategories: "Generate Categories",
-      processImages: "Process Images",
-      optimizeAll: "Optimize All",
-      exportFeed: "Export Feed",
-      refresh: "Refresh",
-    },
-    filters: {
-      search: "Search products...",
-      allCategories: "All Categories",
-      allStatus: "All Status",
-    },
-    status: {
-      ready: "Ready",
-      pending: "Pending",
-      error: "Error",
-      missing: "Missing Data",
-    },
-    messages: {
-      optimizationSuccess: "{{count}} products optimized",
-      optimizationError: "Error during optimization",
-      exportSuccess: "Feed exported successfully",
-      exportError: "Error exporting feed",
     },
   },
 
