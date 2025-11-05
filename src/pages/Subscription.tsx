@@ -13,6 +13,7 @@ import { UsageLimits } from "@/components/dashboard/UsageLimits";
 import { BillingPortal } from "@/components/dashboard/BillingPortal";
 import { CurrentPlanCard } from "@/components/dashboard/CurrentPlanCard";
 import PricingComparison from "@/components/PricingComparison";
+import { getCurrencySymbol } from "@/lib/formatUtils";
 
 interface Plan {
   id: string;
@@ -38,7 +39,8 @@ const Subscription = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const currency = getCurrencySymbol(language);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -243,7 +245,7 @@ const Subscription = () => {
                   <span className="text-2xl">{getPlanIcon(currentPlan.id)}</span>
                   <div>
                     <p className="text-xl font-bold">{currentPlan.name}</p>
-                    <p className="text-muted-foreground text-sm">{currentPlan.price_monthly}€{t.seo.subscription.perMonth}</p>
+                    <p className="text-muted-foreground text-sm">{currentPlan.price_monthly}{currency}{t.seo.subscription.perMonth}</p>
                   </div>
                 </div>
               </div>
@@ -299,7 +301,7 @@ const Subscription = () => {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">{starterPlan.price_monthly}€</span>
+                  <span className="text-5xl font-bold">{starterPlan.price_monthly}{currency}</span>
                   <span className="text-muted-foreground">{t.seo.subscription.perMonth}</span>
                 </div>
               </div>
@@ -373,7 +375,7 @@ const Subscription = () => {
                   <SelectContent>
                     {proPlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly} optimisations - {plan.price_monthly}€/mois
+                        {plan.max_optimizations_monthly} optimisations - {plan.price_monthly}{currency}/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -384,7 +386,7 @@ const Subscription = () => {
                 <>
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold">{selectedProPlan.price_monthly}€</span>
+                      <span className="text-5xl font-bold">{selectedProPlan.price_monthly}{currency}</span>
                       <span className="text-muted-foreground">{t.seo.subscription.perMonth}</span>
                     </div>
                   </div>
@@ -469,7 +471,7 @@ const Subscription = () => {
                   <SelectContent>
                     {enterprisePlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - {plan.price_monthly.toLocaleString()}€/mois
+                        {plan.max_optimizations_monthly.toLocaleString()} optimisations - {plan.price_monthly.toLocaleString()}{currency}/mois
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -480,7 +482,7 @@ const Subscription = () => {
                 <>
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold">{selectedEnterprisePlan.price_monthly.toLocaleString()}€</span>
+                      <span className="text-5xl font-bold">{selectedEnterprisePlan.price_monthly.toLocaleString()}{currency}</span>
                       <span className="text-muted-foreground">{t.seo.subscription.perMonth}</span>
                     </div>
                   </div>
