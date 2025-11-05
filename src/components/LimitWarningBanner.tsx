@@ -90,66 +90,75 @@ export function LimitWarningBanner() {
           : "bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border-b border-yellow-200 dark:border-yellow-800"
       } p-3 sm:p-4 sticky top-0 z-50`}
     >
-      <div className="container mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
-          <AlertCircle
-            className={`w-4 h-4 sm:w-5 sm:h-5 ${
-              limitReached ? "text-red-600 dark:text-red-500" : "text-orange-600 dark:text-orange-500"
-            } flex-shrink-0 mt-0.5`}
-          />
-          <div className="flex-1 min-w-0">
-            <p
-              className={`font-medium text-sm sm:text-base break-words ${
-                limitReached ? "text-red-900 dark:text-red-100" : "text-orange-900 dark:text-orange-100"
-              }`}
-            >
-              {getWarningMessage()}
-            </p>
-            <div
-              className={`text-xs sm:text-sm mt-1 flex flex-col sm:flex-row sm:flex-wrap gap-x-2 gap-y-0.5 ${
-                limitReached ? "text-red-700 dark:text-red-300" : "text-orange-700 dark:text-orange-300"
-              }`}
-            >
+      <div className="container mx-auto">
+        <div className="flex flex-col gap-3">
+          {/* Message Section */}
+          <div className="flex items-start gap-2 sm:gap-3">
+            <AlertCircle
+              className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                limitReached ? "text-red-600 dark:text-red-500" : "text-orange-600 dark:text-orange-500"
+              } flex-shrink-0 mt-0.5`}
+            />
+            <div className="flex-1 min-w-0">
+              <p
+                className={`font-medium text-sm sm:text-base ${
+                  limitReached ? "text-red-900 dark:text-red-100" : "text-orange-900 dark:text-orange-100"
+                }`}
+              >
+                {getWarningMessage()}
+              </p>
+            </div>
+          </div>
+
+          {/* Stats Section */}
+          <div
+            className={`text-xs sm:text-sm flex flex-col gap-1 ml-6 sm:ml-8 ${
+              limitReached ? "text-red-700 dark:text-red-300" : "text-orange-700 dark:text-orange-300"
+            }`}
+          >
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5">
               <span className="whitespace-nowrap">
                 {t.dashboard.usage.labels.optimizations}: {limits.usage.optimizations_count}/
                 {formatLimit(limits.limits.max_optimizations)}
               </span>
               <span className="whitespace-nowrap">
-                •{t.dashboard.usage.labels.articles}: {limits.usage.articles_count}/
+                {t.dashboard.usage.labels.articles}: {limits.usage.articles_count}/
                 {formatLimit(limits.limits.max_articles)}
               </span>
               <span className="whitespace-nowrap">
-                •{t.dashboard.usage.labels.chatResponses}: {limits.usage.chat_responses_count}/
+                {t.dashboard.usage.labels.chatResponses}: {limits.usage.chat_responses_count}/
                 {formatLimit(limits.limits.max_chat_responses)}
               </span>
             </div>
           </div>
+
+          {/* Button Section */}
+          <Button
+            onClick={handleUpgrade}
+            disabled={upgrading}
+            size="sm"
+            className={`${
+              limitReached
+                ? "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
+                : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            } text-white gap-2 w-full sm:w-auto text-xs sm:text-sm ml-6 sm:ml-0`}
+          >
+            {upgrading ? (
+              t.banners.limitWarning.loading
+            ) : (
+              <>
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span>
+                  {limitReached && limits.isPaid
+                    ? t.banners.limitWarning.upgradeNow
+                    : limitReached
+                      ? t.banners.limitWarning.activateNow
+                      : t.banners.limitWarning.viewPlans}
+                </span>
+              </>
+            )}
+          </Button>
         </div>
-        <Button
-          onClick={handleUpgrade}
-          disabled={upgrading}
-          size="sm"
-          className={`${
-            limitReached
-              ? "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
-              : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-          } text-white gap-2 flex-shrink-0 w-full sm:w-auto text-xs sm:text-sm`}
-        >
-          {upgrading ? (
-            t.banners.limitWarning.loading
-          ) : (
-            <>
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="truncate">
-                {limitReached && limits.isPaid
-                  ? t.banners.limitWarning.upgradeNow
-                  : limitReached
-                    ? t.banners.limitWarning.activateNow
-                    : t.banners.limitWarning.viewPlans}
-              </span>
-            </>
-          )}
-        </Button>
       </div>
     </div>
   );
