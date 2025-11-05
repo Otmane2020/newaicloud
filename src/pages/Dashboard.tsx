@@ -323,7 +323,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8 p-6 max-w-7xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 md:space-y-8 p-4 sm:p-6 max-w-7xl mx-auto">
       <UpgradeDialog
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
@@ -331,29 +331,29 @@ export default function Dashboard() {
       />
       
       {/* Hero Section avec Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary-dark to-accent p-8 shadow-xl animate-fade-in">
+      <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary via-primary-dark to-accent p-4 sm:p-6 md:p-8 shadow-xl animate-fade-in">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
         <div className="relative">
-          <h1 className="text-4xl font-black text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2">
             {tf('dashboard.welcome', { name: user?.user_metadata?.full_name || 'User' })}
           </h1>
-          <p className="text-white/80 text-lg mb-6">
+          <p className="text-white/80 text-sm sm:text-base md:text-lg mb-4 sm:mb-6">
             {new Date().toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={() => window.location.href = '/seo?tab=audit-dashboard'}
-              className="px-6 py-3 bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2"
             >
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               {t.dashboard.launchAudit}
             </button>
             {stats.pendingOptimization > 0 && (
               <button
                 onClick={() => window.location.href = '/seo?tab=products'}
-                className="px-6 py-3 bg-accent/90 backdrop-blur-md hover:bg-accent text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center gap-2"
+                className="px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-accent/90 backdrop-blur-md hover:bg-accent text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                 {tf('dashboard.optimizeProducts', { count: stats.pendingOptimization })}
               </button>
             )}
@@ -369,18 +369,18 @@ export default function Dashboard() {
         />
         
         {/* Quick Actions sous le score */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <button
             onClick={() => window.location.href = '/seo?tab=products'}
-            className="p-4 bg-card hover:bg-accent/10 border-2 border-accent/20 rounded-xl transition-all group"
+            className="p-3 sm:p-4 bg-card hover:bg-accent/10 border-2 border-accent/20 rounded-xl transition-all group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <ShoppingBag className="w-6 h-6 text-accent" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
               </div>
               <div className="text-left flex-1">
-                <div className="font-bold text-foreground">{t.dashboard.actions.optimizeSeo}</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="font-bold text-sm sm:text-base text-foreground">{t.dashboard.actions.optimizeSeo}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   {tf('dashboard.actions.optimizedCount', { optimized: stats.optimizedProducts, total: stats.totalProducts })}
                 </div>
               </div>
@@ -389,15 +389,15 @@ export default function Dashboard() {
           
           <button
             onClick={() => window.location.href = '/blog?tab=articles'}
-            className="p-4 bg-card hover:bg-cyan-500/10 border-2 border-cyan-500/20 rounded-xl transition-all group"
+            className="p-3 sm:p-4 bg-card hover:bg-cyan-500/10 border-2 border-cyan-500/20 rounded-xl transition-all group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileText className="w-6 h-6 text-cyan-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-600" />
               </div>
               <div className="text-left flex-1">
-                <div className="font-bold text-foreground">{t.dashboard.actions.createArticle}</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="font-bold text-sm sm:text-base text-foreground">{t.dashboard.actions.createArticle}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   {tf('dashboard.actions.published', { count: stats.totalArticles })}
                 </div>
               </div>
@@ -406,17 +406,17 @@ export default function Dashboard() {
           
           <button
             onClick={() => window.location.href = '/integration'}
-            className="p-4 bg-card hover:bg-success/10 border-2 border-success/20 rounded-xl transition-all group"
+            className="p-3 sm:p-4 bg-card hover:bg-success/10 border-2 border-success/20 rounded-xl transition-all group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Store className="w-6 h-6 text-success" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-success/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Store className="w-5 h-5 sm:w-6 sm:h-6 text-success" />
               </div>
               <div className="text-left flex-1">
-                <div className="font-bold text-foreground">
+                <div className="font-bold text-sm sm:text-base text-foreground">
                   {stats.connectedStores > 0 ? t.dashboard.actions.manageStores : t.dashboard.connectShopify}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   {stats.connectedStores > 0 ? tf('dashboard.actions.stores', { count: stats.connectedStores }) : t.dashboard.importProducts}
                 </div>
               </div>
@@ -426,7 +426,7 @@ export default function Dashboard() {
       </div>
 
       {/* Métriques Clés - Focus sur l'Optimisation */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
         <MetricCard
           title={t.dashboard.cards.aiOptimized}
           value={stats.optimizedProducts}

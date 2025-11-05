@@ -339,6 +339,7 @@ export const translations = {
       downgrade: "Downgrade",
       changePlan: "Change Plan",
       perMonth: "/month",
+      optimizationsCount: "{{count}} optimizations",
       descriptions: {
         starter: "Perfect for getting started",
         pro: "For growing businesses",
@@ -350,6 +351,13 @@ export const translations = {
         articles: "articles/month",
         campaigns: "campaigns",
         chatResponses: "chat responses/month",
+        unlimitedProducts: "Unlimited products",
+        optimizationsPerMonth: "SEO optimizations/month",
+        articlesPerMonth: "blog articles/month",
+        chatResponsesPerMonth: "chat responses/month",
+        shopifyStores: "Shopify store(s)",
+        seoAutomation: "SEO automation",
+        prioritySupport: "Priority support"
       },
       errors: {
         missingConfig: "The \"{{planName}}\" plan must be configured in Stripe. Please create the prices in your Stripe dashboard.",
