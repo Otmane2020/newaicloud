@@ -58,6 +58,7 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
+          <div className="overflow-x-hidden max-w-full">
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/blog-newai" element={<BlogNewAI />} />
@@ -316,6 +317,7 @@ const App = () => (
           <Sonner />
           <AIAssistant />
           <NotificationPermissionPrompt />
+          </div>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

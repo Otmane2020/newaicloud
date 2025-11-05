@@ -28,25 +28,25 @@ export function MetricCard({
       {/* Border gradient effect on hover */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
       
-      <CardContent className="p-6 relative">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 rounded-xl ${iconBg} group-hover:scale-110 transition-transform duration-300`}>
-            <Icon className="w-5 h-5 text-current" />
+      <CardContent className="p-3 sm:p-4 md:p-6 relative">
+        <div className="flex items-start justify-between mb-2 sm:mb-4">
+          <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${iconBg} group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-current" />
           </div>
           {badge && (
-            <Badge variant="secondary" className="text-xs font-semibold">
+            <Badge variant="secondary" className="text-xs font-semibold flex-shrink-0">
               {badge}
             </Badge>
           )}
         </div>
         
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-3xl font-black text-foreground tracking-tight">
+        <div className="space-y-1 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{title}</p>
+          <p className="text-xl sm:text-2xl md:text-3xl font-black text-foreground tracking-tight break-words">
             {value}
           </p>
           {subtitle && (
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
+            <p className="text-xs text-muted-foreground break-words">{subtitle}</p>
           )}
           {trend && (
             <p className="text-xs font-medium text-success">{trend}</p>

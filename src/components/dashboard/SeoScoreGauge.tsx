@@ -145,40 +145,40 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
       <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -translate-y-32 translate-x-32" />
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-accent/10 to-transparent rounded-full blur-2xl translate-y-24 -translate-x-24" />
 
-      <CardHeader className="pb-4 relative z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <CardHeader className="pb-3 sm:pb-4 relative z-10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <div
-              className={`p-4 rounded-2xl bg-gradient-to-br ${getScoreGradient()} backdrop-blur-sm shadow-lg border border-white/20`}
+              className={`p-2 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br ${getScoreGradient()} backdrop-blur-sm shadow-lg border border-white/20 flex-shrink-0`}
             >
               {getScoreIcon()}
             </div>
-            <div>
-              <CardTitle className="text-2xl font-black bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            <div className="min-w-0">
+              <CardTitle className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text truncate">
                 {t.seoGauge.title}
               </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1 font-medium">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 font-medium truncate">
                 {t.seoGauge.subtitle}
               </p>
             </div>
           </div>
           <Badge
             variant="outline"
-            className={`${getScoreColor()} border-2 border-current px-5 py-2.5 text-lg font-bold shadow-lg`}
+            className={`${getScoreColor()} border-2 border-current px-3 sm:px-5 py-1.5 sm:py-2.5 text-sm sm:text-lg font-bold shadow-lg flex-shrink-0`}
           >
             {getScoreLabel()}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-8 relative z-10">
+      <CardContent className="space-y-4 sm:space-y-6 md:space-y-8 relative z-10">
         {/* Score principal avec gauge circulaire ultra stylisée */}
-        <div className="flex items-center justify-center relative py-12">
+        <div className="flex items-center justify-center relative py-6 sm:py-8 md:py-12">
           <div className="relative">
             {/* Glow effect background */}
             <div className={`absolute inset-0 rounded-full blur-2xl ${gaugeGradient.glow} animate-pulse`} />
 
             {/* Cercle de fond avec gradient amélioré */}
-            <svg className="w-56 h-56 transform -rotate-90 relative z-10" viewBox="0 0 224 224">
+            <svg className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 transform -rotate-90 relative z-10" viewBox="0 0 224 224">
               <defs>
                 {/* Gradient principal pour la jauge */}
                 <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -240,12 +240,12 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
             {/* Texte au centre avec animation améliorée */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="relative">
-                <span className={`text-7xl font-black ${getScoreColor()} animate-scale-in drop-shadow-lg`}>
+                <span className={`text-4xl sm:text-5xl md:text-7xl font-black ${getScoreColor()} animate-scale-in drop-shadow-lg`}>
                   {score}
                 </span>
-                <span className="text-2xl text-muted-foreground font-bold">/100</span>
+                <span className="text-lg sm:text-xl md:text-2xl text-muted-foreground font-bold">/100</span>
               </div>
-              <div className="mt-3 px-4 py-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-lg">
+              <div className="mt-2 sm:mt-3 px-2 sm:px-4 py-1 sm:py-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-lg">
                 <span className="text-xs font-semibold text-muted-foreground">{t.seoGauge.currentScore}</span>
               </div>
             </div>
@@ -253,10 +253,10 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
         </div>
 
         {/* Breakdown des catégories - Cliquables avec design premium */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-base font-bold text-foreground">6 {t.seoGauge.categories}</h4>
-            <Badge variant="outline" className="text-xs">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2 sm:mb-4">
+            <h4 className="text-sm sm:text-base font-bold text-foreground">6 {t.seoGauge.categories}</h4>
+            <Badge variant="outline" className="text-xs flex-shrink-0">
               {tf('seoGauge.excellentCount', { count: categories.filter((c) => c.value >= 80).length })}
             </Badge>
           </div>
@@ -266,24 +266,24 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
               <a
                 key={idx}
                 href={cat.link}
-                className="block space-y-3 p-4 rounded-xl hover:bg-gradient-to-r hover:from-muted/50 hover:to-muted/30 transition-all duration-300 cursor-pointer group border border-transparent hover:border-border hover:shadow-lg"
+                className="block space-y-2 sm:space-y-3 p-3 sm:p-4 rounded-lg sm:rounded-xl hover:bg-gradient-to-r hover:from-muted/50 hover:to-muted/30 transition-all duration-300 cursor-pointer group border border-transparent hover:border-border hover:shadow-lg"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
+                <div className="flex items-start sm:items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                      <div className="text-xs sm:text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
                         {cat.name}
                       </div>
-                      <div className={`w-2 h-2 rounded-full ${categoryColor.dot} animate-pulse`} />
+                      <div className={`w-2 h-2 rounded-full ${categoryColor.dot} animate-pulse flex-shrink-0`} />
                     </div>
-                    <div className="text-xs text-muted-foreground font-medium">{cat.description}</div>
+                    <div className="text-xs text-muted-foreground font-medium break-words">{cat.description}</div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-lg font-black ${categoryColor.text}`}>{cat.value}</span>
+                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                    <span className={`text-base sm:text-lg font-black ${categoryColor.text}`}>{cat.value}</span>
                     <span className="text-xs text-muted-foreground font-medium">/100</span>
                   </div>
                 </div>
-                <div className="relative h-3 bg-muted rounded-full overflow-hidden shadow-inner">
+                <div className="relative h-2 sm:h-3 bg-muted rounded-full overflow-hidden shadow-inner">
                   <div
                     className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out shadow-lg ${categoryColor.bg}`}
                     style={{

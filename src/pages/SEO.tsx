@@ -150,13 +150,13 @@ export default function SEO() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+    <div className="space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2 break-words">
             {t.seo.title}
           </h1>
-          <p className="text-muted-foreground text-base md:text-lg">
+          <p className="text-muted-foreground text-sm sm:text-base break-words">
             {t.seo.description}
           </p>
         </div>
@@ -164,10 +164,10 @@ export default function SEO() {
           variant="outline"
           size="sm"
           onClick={handleClearCache}
-          className="gap-2"
+          className="gap-2 flex-shrink-0 w-full sm:w-auto"
         >
           <RefreshCw className="w-4 h-4" />
-          {t.seo.clearCache}
+          <span className="truncate">{t.seo.clearCache}</span>
         </Button>
       </div>
 
@@ -178,36 +178,36 @@ export default function SEO() {
         {activeTab === 'pages' && (
           <>
             {/* Banner for Pages */}
-            <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-8 mb-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                <div className="flex-1 space-y-3">
+            <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
+                <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-6 h-6 text-purple-600" />
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 flex-shrink-0" />
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent break-words">
                       {t.seo.banners.pages.title}
                     </h2>
                   </div>
-                  <p className="text-muted-foreground text-lg max-w-2xl">
+                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg break-words">
                     {t.seo.banners.pages.description}
                   </p>
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <FileText className="w-4 h-4 text-purple-600" />
-                      <span className="font-medium">{t.seo.banners.pages.seoOptimized}</span>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 pt-1 sm:pt-2">
+                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                      <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
+                      <span className="font-medium break-words">{t.seo.banners.pages.seoOptimized}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <TrendingUp className="w-4 h-4 text-green-600" />
-                      <span className="font-medium">{t.seo.banners.pages.betterRankings}</span>
+                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                      <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
+                      <span className="font-medium break-words">{t.seo.banners.pages.betterRankings}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Sparkles className="w-4 h-4 text-pink-600" />
-                      <span className="font-medium">{t.seo.banners.pages.aiEnhanced}</span>
+                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                      <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 flex-shrink-0" />
+                      <span className="font-medium break-words">{t.seo.banners.pages.aiEnhanced}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-3 items-center">
+                <div className="flex flex-col gap-2 sm:gap-3 items-center w-full lg:w-auto flex-shrink-0">
                   <div className="text-center">
-                    <div className={`text-4xl font-bold ${
+                    <div className={`text-3xl sm:text-4xl font-bold ${
                       loadingScores ? 'text-muted-foreground' :
                       pagesSeoScore >= 80 ? 'text-green-600' : 
                       pagesSeoScore >= 60 ? 'text-purple-600' : 
@@ -216,16 +216,16 @@ export default function SEO() {
                     }`}>
                       {loadingScores ? '...' : `${pagesSeoScore}/100`}
                     </div>
-                    <div className="text-sm text-muted-foreground">{t.seo.banners.pages.seoScore}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">{t.seo.banners.pages.seoScore}</div>
                   </div>
                   <Button
                     size="lg"
                     onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg w-full lg:w-auto"
                   >
-                    <Sparkles className="w-5 h-5" />
-                    {t.seo.banners.pages.optimizeBtn}
-                    <FileText className="w-5 h-5" />
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <span className="truncate">{t.seo.banners.pages.optimizeBtn}</span>
+                    <FileText className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                   </Button>
                 </div>
               </div>
@@ -236,36 +236,36 @@ export default function SEO() {
         {activeTab === 'articles' && (
           <>
             {/* Banner for Articles */}
-            <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-8 mb-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                <div className="flex-1 space-y-3">
+            <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
+                <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
                   <div className="flex items-center gap-2">
-                    <PenSquare className="w-6 h-6 text-blue-600" />
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    <PenSquare className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0" />
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent break-words">
                       {t.seo.banners.articles.title}
                     </h2>
                   </div>
-                  <p className="text-muted-foreground text-lg max-w-2xl">
+                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg break-words">
                     {t.seo.banners.articles.description}
                   </p>
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium">{t.seo.banners.articles.seoOptimized}</span>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 pt-1 sm:pt-2">
+                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                      <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+                      <span className="font-medium break-words">{t.seo.banners.articles.seoOptimized}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <TrendingUp className="w-4 h-4 text-green-600" />
-                      <span className="font-medium">{t.seo.banners.articles.trafficBoost}</span>
+                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                      <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
+                      <span className="font-medium break-words">{t.seo.banners.articles.trafficBoost}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Sparkles className="w-4 h-4 text-purple-600" />
-                      <span className="font-medium">{t.seo.banners.articles.aiEnhanced}</span>
+                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                      <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
+                      <span className="font-medium break-words">{t.seo.banners.articles.aiEnhanced}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-3 items-center">
+                <div className="flex flex-col gap-2 sm:gap-3 items-center w-full lg:w-auto flex-shrink-0">
                   <div className="text-center">
-                    <div className={`text-4xl font-bold ${
+                    <div className={`text-3xl sm:text-4xl font-bold ${
                       loadingScores ? 'text-muted-foreground' :
                       articlesSeoScore >= 80 ? 'text-green-600' : 
                       articlesSeoScore >= 60 ? 'text-blue-600' : 
@@ -274,16 +274,16 @@ export default function SEO() {
                     }`}>
                       {loadingScores ? '...' : `${articlesSeoScore}/100`}
                     </div>
-                    <div className="text-sm text-muted-foreground">{t.seo.banners.articles.seoScore}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">{t.seo.banners.articles.seoScore}</div>
                   </div>
                   <Button
                     size="lg"
                     onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 gap-2 shadow-lg"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 gap-2 shadow-lg w-full lg:w-auto"
                   >
-                    <Sparkles className="w-5 h-5" />
-                    {t.seo.banners.articles.optimizeBtn}
-                    <FileText className="w-5 h-5" />
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <span className="truncate">{t.seo.banners.articles.optimizeBtn}</span>
+                    <FileText className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                   </Button>
                 </div>
               </div>

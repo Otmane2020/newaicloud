@@ -323,7 +323,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 md:space-y-8 p-4 sm:p-6 max-w-7xl mx-auto">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
       <UpgradeDialog
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
@@ -331,30 +331,30 @@ export default function Dashboard() {
       />
       
       {/* Hero Section avec Welcome Banner */}
-      <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary via-primary-dark to-accent p-4 sm:p-6 md:p-8 shadow-xl animate-fade-in">
+      <div className="relative overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-primary via-primary-dark to-accent p-3 sm:p-4 md:p-6 lg:p-8 shadow-xl animate-fade-in">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
         <div className="relative">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white mb-2">
+          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-white mb-1 sm:mb-2 break-words">
             {tf('dashboard.welcome', { name: user?.user_metadata?.full_name || 'User' })}
           </h1>
-          <p className="text-white/80 text-xs sm:text-sm md:text-base mb-4 sm:mb-6">
+          <p className="text-white/80 text-xs sm:text-sm mb-3 sm:mb-4 md:mb-6 break-words">
             {new Date().toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={() => window.location.href = '/seo?tab=audit-dashboard'}
-              className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 text-xs sm:text-sm md:text-base bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-lg sm:rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+              className="px-3 sm:px-4 md:px-6 py-2 text-xs sm:text-sm bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-lg shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2 w-full sm:w-auto"
             >
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-              <span>{t.dashboard.launchAudit}</span>
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="break-words">{t.dashboard.launchAudit}</span>
             </button>
             {stats.pendingOptimization > 0 && (
               <button
                 onClick={() => window.location.href = '/seo?tab=products'}
-                className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 text-xs sm:text-sm md:text-base bg-accent/90 backdrop-blur-md hover:bg-accent text-white font-bold rounded-lg sm:rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="px-3 sm:px-4 md:px-6 py-2 text-xs sm:text-sm bg-accent/90 backdrop-blur-md hover:bg-accent text-white font-bold rounded-lg shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2 w-full sm:w-auto"
               >
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                <span>{tf('dashboard.optimizeProducts', { count: stats.pendingOptimization })}</span>
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="break-words">{tf('dashboard.optimizeProducts', { count: stats.pendingOptimization })}</span>
               </button>
             )}
           </div>
