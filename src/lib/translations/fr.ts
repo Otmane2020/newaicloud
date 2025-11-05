@@ -2403,6 +2403,12 @@ export const translations = {
       subtitle: "Commencez votre essai gratuit aujourd'hui",
       button: "Commencer Maintenant",
     },
+    campaign: {
+      notFound: "Campagne introuvable",
+      notFoundMessage: "Cette landing page n'existe pas ou a été supprimée.",
+      generating: "Génération de la landing page en cours...",
+      pleaseWait: "Veuillez patienter quelques instants",
+    },
   },
 
   performance: {

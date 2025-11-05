@@ -2311,6 +2311,12 @@ export const translations = {
       subtitle: "Start your free trial today",
       button: "Get Started Now",
     },
+    campaign: {
+      notFound: "Campaign not found",
+      notFoundMessage: "This landing page doesn't exist or has been deleted.",
+      generating: "Generating landing page...",
+      pleaseWait: "Please wait a few moments",
+    },
   },
 
   performance: {
