@@ -52,24 +52,24 @@ export function SmartBanner({
   const Icon = config.icon;
 
   return (
-    <div className={`relative overflow-hidden rounded-xl border-2 ${config.border} bg-gradient-to-r ${config.gradient} backdrop-blur-sm p-6 animate-fade-in`}>
+    <div className={`relative overflow-hidden rounded-lg sm:rounded-xl border-2 ${config.border} bg-gradient-to-r ${config.gradient} backdrop-blur-sm p-4 sm:p-6 animate-fade-in`}>
       {/* Animated background effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
       
-      <div className="relative flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1">
-          <div className={`p-3 rounded-xl ${config.iconBg} animate-pulse`}>
-            <Icon className={`w-6 h-6 ${config.iconColor}`} />
+      <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
+          <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${config.iconBg} animate-pulse flex-shrink-0`}>
+            <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${config.iconColor}`} />
           </div>
           
-          <div className="flex-1">
-            <h3 className="text-base font-bold text-foreground mb-1">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm sm:text-base font-bold text-foreground mb-1 break-words">
               {count !== undefined && count > 0 && (
                 <span className={`${config.iconColor} mr-2`}>🎯 {count}</span>
               )}
               {title}
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground break-words">
               {description}
             </p>
           </div>
@@ -77,10 +77,10 @@ export function SmartBanner({
 
         <Button 
           onClick={onAction}
-          className={`${config.buttonClass} font-semibold shadow-lg hover:scale-105 transition-transform`}
-          size="lg"
+          className={`${config.buttonClass} font-semibold shadow-lg hover:scale-105 transition-transform w-full sm:w-auto flex-shrink-0`}
+          size="sm"
         >
-          {actionLabel}
+          <span className="truncate">{actionLabel}</span>
         </Button>
       </div>
     </div>

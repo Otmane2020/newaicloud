@@ -343,18 +343,18 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={() => window.location.href = '/seo?tab=audit-dashboard'}
-              className="px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-white/90 backdrop-blur-md hover:bg-white text-primary font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2 w-full sm:w-auto"
             >
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-              {t.dashboard.launchAudit}
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <span className="truncate">{t.dashboard.launchAudit}</span>
             </button>
             {stats.pendingOptimization > 0 && (
               <button
                 onClick={() => window.location.href = '/seo?tab=products'}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-accent/90 backdrop-blur-md hover:bg-accent text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2"
+                className="px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-accent/90 backdrop-blur-md hover:bg-accent text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2 w-full sm:w-auto"
               >
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                {tf('dashboard.optimizeProducts', { count: stats.pendingOptimization })}
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="truncate">{tf('dashboard.optimizeProducts', { count: stats.pendingOptimization })}</span>
               </button>
             )}
           </div>
