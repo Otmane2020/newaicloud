@@ -2284,39 +2284,6 @@ export const translations = {
   },
 
   landing: {
-    hero: {
-      title: "AI-Powered SEO for Shopify",
-      subtitle: "Optimize your store in minutes with artificial intelligence",
-      cta: "Start Free Trial",
-      secondaryCta: "See How It Works",
-    },
-    features: {
-      title: "Powerful Features",
-      subtitle: "Everything you need to boost your SEO",
-    },
-    testimonials: {
-      title: "What Our Customers Say",
-      subtitle: "Join thousands of satisfied merchants",
-    },
-    pricing: {
-      title: "Simple, Transparent Pricing",
-      subtitle: "Choose the plan that fits your needs",
-    },
-    faq: {
-      title: "Frequently Asked Questions",
-      subtitle: "Get answers to common questions",
-    },
-    cta: {
-      title: "Ready to Boost Your SEO?",
-      subtitle: "Start your free trial today",
-      button: "Get Started Now",
-    },
-    campaign: {
-      notFound: "Campaign not found",
-      notFoundMessage: "This landing page doesn't exist or has been deleted.",
-      generating: "Generating landing page...",
-      pleaseWait: "Please wait a few moments",
-    },
     header: {
       home: "Home",
       features: "Features",
@@ -2324,6 +2291,214 @@ export const translations = {
       pricing: "Pricing",
       login: "Login",
       signup: "Sign Up",
+    },
+    hero: {
+      badge: "🚀 AI-Powered E-commerce Optimization",
+      title: "Transform Your Shopify Store Into a",
+      titleHighlight: "Traffic Machine",
+      titleEnd: "With AI",
+      subtitle: "Automate SEO optimization, generate high-quality content, and boost your organic traffic. Get your first results in under 5 minutes.",
+      ctaPrimary: "Start Free Trial — 14 Days Free",
+      ctaSecondary: "Watch Demo",
+      setupTime: "Setup in 5 minutes",
+    },
+    howItWorks: {
+      badge: "Process",
+      title: "4 Simple Steps to Success",
+      subtitle: "From installation to results in minutes",
+      steps: [
+        {
+          title: "Install from Shopify",
+          description: "One-click installation directly from the Shopify App Store",
+        },
+        {
+          title: "AI Scans Your Store",
+          description: "Our AI analyzes all your products and identifies optimization opportunities",
+        },
+        {
+          title: "Get Recommendations",
+          description: "Receive actionable AI-powered suggestions to improve your SEO",
+        },
+        {
+          title: "See Results",
+          description: "Watch your traffic and rankings improve within days",
+        },
+      ],
+    },
+    features: {
+      badge: "Key Features",
+      title: "What Our AI Actually Does",
+      subtitle: "Concrete actions that boost your SEO and drive traffic",
+      items: [
+        {
+          title: "Auto Meta Tag Analysis",
+          description: "AI scans and optimizes all your meta titles, descriptions, and keywords for maximum search visibility",
+          tags: ["SEO", "Automation", "Analytics"],
+        },
+        {
+          title: "Image ALT Optimization",
+          description: "Advanced Vision AI analyzes your product images visually and generates contextual, SEO-optimized ALT text based on actual image content and product details",
+          tags: ["Vision AI", "Image Analysis", "Visual Recognition"],
+        },
+        {
+          title: "SEO Content Generation",
+          description: "Create high-quality, SEO-optimized product descriptions and blog articles that rank",
+          tags: ["Content", "AI Writing", "Blog"],
+        },
+        {
+          title: "Smart Tagging System",
+          description: "AI-powered automatic tagging for better product organization and discoverability",
+          tags: ["Tags", "Organization"],
+        },
+        {
+          title: "Google Merchant Feed",
+          description: "Automatic XML feed generation and real-time sync with Google Shopping",
+          tags: ["Google", "Shopping", "Feed"],
+        },
+        {
+          title: "Full Automation",
+          description: "Set it and forget it. AI continuously optimizes your store in the background",
+          tags: ["Automation", "AI", "24/7"],
+        },
+      ],
+    },
+    testimonials: {
+      badge: "Testimonials",
+      title: "Trusted by E-commerce Stores",
+      subtitle: "See what store owners say about NewAI",
+      items: [
+        {
+          quote: "Our organic traffic increased by 180% in just 2 months. The AI does all the heavy lifting!",
+          author: "Sarah Chen",
+          role: "Fashion Store Owner",
+        },
+        {
+          quote: "I save 15+ hours every week on SEO. The ROI is incredible. Best investment for my store.",
+          author: "Marcus Johnson",
+          role: "Electronics Retailer",
+        },
+        {
+          quote: "Finally ranked on Google's first page! The AI knew exactly what to optimize. Game changer.",
+          author: "Emma Rodriguez",
+          role: "Home Decor Shop",
+        },
+      ],
+    },
+    benefits: {
+      badge: "Results",
+      title: "Proven results for Shopify stores",
+      subtitle: "Join hundreds of sellers who have transformed their store with AI optimization",
+      cta: "Start now",
+      items: [
+        {
+          title: "3x Faster",
+          description: "Automate product entry and optimization",
+        },
+        {
+          title: "50% More traffic",
+          description: "AI-optimized SEO attracts qualified visitors",
+        },
+        {
+          title: "10h+ saved",
+          description: "Automated content creation and management",
+        },
+        {
+          title: "Better Google ranking",
+          description: "Structured data and optimized feeds",
+        },
+      ],
+      stats: [
+        { value: "10K+", label: "Products Optimized" },
+        { value: "500+", label: "Active Sellers" },
+        { value: "95%", label: "Satisfaction Rate" },
+        { value: "24/7", label: "AI Support" },
+      ],
+    },
+    pricing: {
+      badge: "Pricing",
+      title: "Plans & Pricing",
+      subtitle: "Choose the plan that fits your store size. All plans include Shopify integration and dedicated support.",
+      monthly: "Monthly",
+      yearly: "Yearly",
+      yearlyDiscount: "-20%",
+      perMonth: "/month",
+      billedAnnually: "billed annually (i.e. {{currency}}{{total}}/year)",
+      comparisonTitle: "Plan Comparison Table",
+      comparisonSubtitle: "Compare all features in detail",
+      plans: {
+        starter: {
+          name: "Starter",
+          description: "For small stores wanting to discover the power of AI",
+          trial: "14-day free trial",
+          cta: "Start Free Trial",
+          highlight: "Enjoy the power of AI with essential features and quotas tailored to your start.",
+          badge: "",
+          features: [
+            "100 analyzed products",
+            "100 AI SEO optimizations / month (titles, meta, ALT, tags)",
+            "1 AI article / month",
+            "20 Shopify AI searches / month",
+            "50 AI Chat responses / month",
+            "1 Shopify store connected",
+            "Basic automation (SEO + blog + chat)",
+            "Email support",
+          ],
+        },
+        pro: {
+          name: "Pro",
+          description: "For growing stores",
+          cta: "Try for free",
+          highlight: "The perfect balance between power, automation, and scalability.",
+          badge: "Most Popular 🔥",
+          features: [
+            "1,000 analyzed products",
+            "500 AI SEO optimizations / month",
+            "5 AI articles / month",
+            "3 automatic AI campaigns / month (up to 30 articles/campaign)",
+            "300 Shopify AI searches / month",
+            "500 AI Chat responses / month",
+            "Up to 2 Shopify stores connected",
+            "Integrated Google Merchant Center",
+            "Full automation (SEO + blog + chat)",
+            "24/7 priority support",
+          ],
+        },
+        enterprise: {
+          name: "Enterprise",
+          description: "For large stores and agencies",
+          cta: "Contact us",
+          highlight: "Fully managed AI suite with high quotas, API access, and personal support.",
+          badge: "",
+          features: [
+            "Unlimited products",
+            "2,000 AI SEO optimizations / month",
+            "20 AI articles / month",
+            "10 automatic AI campaigns / month (up to 30 articles/campaign)",
+            "2,000 Shopify AI searches / month",
+            "3,000 AI Chat responses / month",
+            "Up to 5 Shopify stores connected",
+            "Multi-stores & custom API access",
+            "Dedicated account manager",
+            "Custom training sessions",
+            "Guaranteed SLA",
+          ],
+        },
+      },
+    },
+    faq: {
+      title: "Frequently Asked Questions",
+      subtitle: "Get answers to common questions",
+    },
+    cta: {
+      title: "Ready to transform your store?",
+      subtitle: "Start your 14-day free trial today.",
+      button: "Start Free Trial",
+    },
+    campaign: {
+      notFound: "Campaign not found",
+      notFoundMessage: "This landing page doesn't exist or has been deleted.",
+      generating: "Generating landing page...",
+      pleaseWait: "Please wait a few moments",
     },
   },
 

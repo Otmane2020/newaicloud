@@ -2376,39 +2376,6 @@ export const translations = {
   },
 
   landing: {
-    hero: {
-      title: "SEO Propulsé par IA pour Shopify",
-      subtitle: "Optimisez votre boutique en quelques minutes avec l'intelligence artificielle",
-      cta: "Commencer l'Essai Gratuit",
-      secondaryCta: "Voir Comment Ça Marche",
-    },
-    features: {
-      title: "Fonctionnalités Puissantes",
-      subtitle: "Tout ce dont vous avez besoin pour booster votre SEO",
-    },
-    testimonials: {
-      title: "Ce Que Disent Nos Clients",
-      subtitle: "Rejoignez des milliers de marchands satisfaits",
-    },
-    pricing: {
-      title: "Tarification Simple et Transparente",
-      subtitle: "Choisissez le plan qui correspond à vos besoins",
-    },
-    faq: {
-      title: "Questions Fréquemment Posées",
-      subtitle: "Obtenez des réponses aux questions courantes",
-    },
-    cta: {
-      title: "Prêt à Booster Votre SEO ?",
-      subtitle: "Commencez votre essai gratuit aujourd'hui",
-      button: "Commencer Maintenant",
-    },
-    campaign: {
-      notFound: "Campagne introuvable",
-      notFoundMessage: "Cette landing page n'existe pas ou a été supprimée.",
-      generating: "Génération de la landing page en cours...",
-      pleaseWait: "Veuillez patienter quelques instants",
-    },
     header: {
       home: "Accueil",
       features: "Fonctionnalités",
@@ -2416,6 +2383,214 @@ export const translations = {
       pricing: "Tarifs",
       login: "Connexion",
       signup: "S'inscrire",
+    },
+    hero: {
+      badge: "🚀 Optimisation E-commerce avec IA",
+      title: "Transformez votre boutique Shopify en",
+      titleHighlight: "Machine à Trafic",
+      titleEnd: "avec l'IA",
+      subtitle: "Automatisez l'optimisation SEO, générez du contenu de qualité et boostez votre trafic organique. Obtenez vos premiers résultats en moins de 5 minutes.",
+      ctaPrimary: "Essai gratuit — 14 jours gratuits",
+      ctaSecondary: "Voir la démo",
+      setupTime: "Installation en 5 minutes",
+    },
+    howItWorks: {
+      badge: "Processus",
+      title: "4 étapes simples vers le succès",
+      subtitle: "De l'installation aux résultats en quelques minutes",
+      steps: [
+        {
+          title: "Installation depuis Shopify",
+          description: "Installation en un clic directement depuis le Shopify App Store",
+        },
+        {
+          title: "L'IA analyse votre boutique",
+          description: "Notre IA analyse tous vos produits et identifie les opportunités d'optimisation",
+        },
+        {
+          title: "Recevez des recommandations",
+          description: "Recevez des suggestions concrètes basées sur l'IA pour améliorer votre SEO",
+        },
+        {
+          title: "Voyez les résultats",
+          description: "Observez votre trafic et votre classement s'améliorer en quelques jours",
+        },
+      ],
+    },
+    features: {
+      badge: "Fonctionnalités clés",
+      title: "Ce que notre IA fait réellement",
+      subtitle: "Actions concrètes qui boostent votre SEO et génèrent du trafic",
+      items: [
+        {
+          title: "Analyse automatique des balises Meta",
+          description: "L'IA analyse et optimise tous vos titres meta, descriptions et mots-clés pour une visibilité maximale",
+          tags: ["SEO", "Automatisation", "Analytique"],
+        },
+        {
+          title: "Optimisation ALT des images",
+          description: "L'IA Vision avancée analyse visuellement vos images produits et génère des textes ALT contextuels optimisés SEO basés sur le contenu réel et les détails produits",
+          tags: ["IA Vision", "Analyse d'images", "Reconnaissance visuelle"],
+        },
+        {
+          title: "Génération de contenu SEO",
+          description: "Créez des descriptions produits et articles de blog de haute qualité, optimisés SEO qui se classent",
+          tags: ["Contenu", "Rédaction IA", "Blog"],
+        },
+        {
+          title: "Système de tags intelligent",
+          description: "Taggage automatique basé sur l'IA pour une meilleure organisation et découvrabilité des produits",
+          tags: ["Tags", "Organisation"],
+        },
+        {
+          title: "Flux Google Merchant",
+          description: "Génération automatique de flux XML et synchronisation en temps réel avec Google Shopping",
+          tags: ["Google", "Shopping", "Flux"],
+        },
+        {
+          title: "Automatisation complète",
+          description: "Configurez et oubliez. L'IA optimise continuellement votre boutique en arrière-plan",
+          tags: ["Automatisation", "IA", "24/7"],
+        },
+      ],
+    },
+    testimonials: {
+      badge: "Témoignages",
+      title: "Approuvé par les boutiques E-commerce",
+      subtitle: "Découvrez ce que disent les propriétaires de boutiques sur NewAI",
+      items: [
+        {
+          quote: "Notre trafic organique a augmenté de 180% en seulement 2 mois. L'IA fait tout le travail !",
+          author: "Sarah Chen",
+          role: "Propriétaire boutique de mode",
+        },
+        {
+          quote: "J'économise plus de 15 heures par semaine sur le SEO. Le ROI est incroyable. Meilleur investissement pour ma boutique.",
+          author: "Marcus Johnson",
+          role: "Vendeur d'électronique",
+        },
+        {
+          quote: "Enfin classé en première page Google ! L'IA savait exactement quoi optimiser. Révolutionnaire.",
+          author: "Emma Rodriguez",
+          role: "Boutique de décoration",
+        },
+      ],
+    },
+    benefits: {
+      badge: "Résultats",
+      title: "Résultats prouvés pour les boutiques Shopify",
+      subtitle: "Rejoignez des centaines de vendeurs qui ont transformé leur boutique avec l'optimisation IA",
+      cta: "Commencer maintenant",
+      items: [
+        {
+          title: "3x plus rapide",
+          description: "Automatisez la saisie et l'optimisation des produits",
+        },
+        {
+          title: "50% de trafic en plus",
+          description: "Le SEO optimisé par IA attire des visiteurs qualifiés",
+        },
+        {
+          title: "10h+ économisées",
+          description: "Création et gestion de contenu automatisées",
+        },
+        {
+          title: "Meilleur classement Google",
+          description: "Données structurées et flux optimisés",
+        },
+      ],
+      stats: [
+        { value: "10K+", label: "Produits optimisés" },
+        { value: "500+", label: "Vendeurs actifs" },
+        { value: "95%", label: "Taux de satisfaction" },
+        { value: "24/7", label: "Support IA" },
+      ],
+    },
+    pricing: {
+      badge: "Tarifs",
+      title: "Plans et tarifs",
+      subtitle: "Choisissez le plan adapté à la taille de votre boutique. Tous les plans incluent l'intégration Shopify et un support dédié.",
+      monthly: "Mensuel",
+      yearly: "Annuel",
+      yearlyDiscount: "-20%",
+      perMonth: "/mois",
+      billedAnnually: "facturé annuellement (soit {{currency}}{{total}}/an)",
+      comparisonTitle: "Tableau comparatif des plans",
+      comparisonSubtitle: "Comparez toutes les fonctionnalités en détail",
+      plans: {
+        starter: {
+          name: "Starter",
+          description: "Pour les petites boutiques souhaitant découvrir la puissance de l'IA",
+          trial: "Essai gratuit de 14 jours",
+          cta: "Commencer l'essai gratuit",
+          highlight: "Profitez de la puissance de l'IA avec des fonctionnalités essentielles et des quotas adaptés à votre démarrage.",
+          badge: "",
+          features: [
+            "100 produits analysés",
+            "100 optimisations SEO IA / mois (titres, meta, ALT, tags)",
+            "1 article IA / mois",
+            "20 recherches Shopify IA / mois",
+            "50 réponses Chat IA / mois",
+            "1 boutique Shopify connectée",
+            "Automatisation de base (SEO + blog + chat)",
+            "Support par email",
+          ],
+        },
+        pro: {
+          name: "Pro",
+          description: "Pour les boutiques en croissance",
+          cta: "Essayer gratuitement",
+          highlight: "L'équilibre parfait entre puissance, automatisation et évolutivité.",
+          badge: "Plus populaire 🔥",
+          features: [
+            "1 000 produits analysés",
+            "500 optimisations SEO IA / mois",
+            "5 articles IA / mois",
+            "3 campagnes IA automatiques / mois (jusqu'à 30 articles/campagne)",
+            "300 recherches Shopify IA / mois",
+            "500 réponses Chat IA / mois",
+            "Jusqu'à 2 boutiques Shopify connectées",
+            "Google Merchant Center intégré",
+            "Automatisation complète (SEO + blog + chat)",
+            "Support prioritaire 24/7",
+          ],
+        },
+        enterprise: {
+          name: "Enterprise",
+          description: "Pour les grandes boutiques et agences",
+          cta: "Nous contacter",
+          highlight: "Suite IA entièrement gérée avec quotas élevés, accès API et support personnel.",
+          badge: "",
+          features: [
+            "Produits illimités",
+            "2 000 optimisations SEO IA / mois",
+            "20 articles IA / mois",
+            "10 campagnes IA automatiques / mois (jusqu'à 30 articles/campagne)",
+            "2 000 recherches Shopify IA / mois",
+            "3 000 réponses Chat IA / mois",
+            "Jusqu'à 5 boutiques Shopify connectées",
+            "Multi-boutiques et accès API personnalisé",
+            "Gestionnaire de compte dédié",
+            "Sessions de formation personnalisées",
+            "SLA garanti",
+          ],
+        },
+      },
+    },
+    faq: {
+      title: "Questions fréquemment posées",
+      subtitle: "Obtenez des réponses aux questions courantes",
+    },
+    cta: {
+      title: "Prêt à transformer votre boutique ?",
+      subtitle: "Commencez votre essai gratuit de 14 jours dès aujourd'hui.",
+      button: "Commencer l'essai gratuit",
+    },
+    campaign: {
+      notFound: "Campagne introuvable",
+      notFoundMessage: "Cette landing page n'existe pas ou a été supprimée.",
+      generating: "Génération de la landing page en cours...",
+      pleaseWait: "Veuillez patienter quelques instants",
     },
   },
 

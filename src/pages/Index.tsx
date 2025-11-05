@@ -32,7 +32,7 @@ import {
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
 
@@ -57,35 +57,35 @@ const Index = () => {
           <div className="flex flex-col items-center text-center space-y-8 animate-fade-in">
             <Badge className="bg-primary/20 text-primary-foreground border-primary/30 px-6 py-2">
               <Sparkles className="w-4 h-4 mr-2" />
-              🚀 AI-Powered E-commerce Optimization
+              {t.landing.hero.badge}
             </Badge>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white max-w-4xl leading-tight">
-              Transform Your Shopify Store Into a{" "}
+              {t.landing.hero.title}{" "}
               <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
-                Traffic Machine
+                {t.landing.hero.titleHighlight}
               </span>{" "}
-              With AI
+              {t.landing.hero.titleEnd}
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-2xl text-gray-300">
-              Automate SEO optimization, generate high-quality content, and boost your organic traffic. Get your first results in under 5 minutes.
+              {t.landing.hero.subtitle}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button size="lg" className="group bg-primary hover:bg-primary/90 shadow-glow" onClick={() => navigate('/auth?mode=signup')}>
-                Start Free Trial — 14 Days Free
+                {t.landing.hero.ctaPrimary}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10">
                 <Play className="mr-2 w-5 h-5" />
-                Watch Demo
+                {t.landing.hero.ctaSecondary}
               </Button>
             </div>
             
             <div className="flex items-center gap-2 text-sm text-gray-300 pt-2">
               <CheckCircle2 className="w-4 h-4 text-success" />
-              <span>Setup in 5 minutes</span>
+              <span>{t.landing.hero.setupTime}</span>
             </div>
           </div>
         </div>
@@ -105,19 +105,22 @@ const Index = () => {
       {/* How It Works Section */}
       <section className="container mx-auto px-4 py-24">
         <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-primary text-primary">Process</Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">4 Simple Steps to Success</h2>
+          <Badge variant="outline" className="border-primary text-primary">{t.landing.howItWorks.badge}</Badge>
+          <h2 className="text-4xl md:text-5xl font-bold">{t.landing.howItWorks.title}</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            From installation to results in minutes
+            {t.landing.howItWorks.subtitle}
           </p>
         </div>
 
         <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-          {howItWorksSteps.map((step, index) => (
+          {t.landing.howItWorks.steps.map((step: any, index: number) => (
             <div key={index} className="relative">
               <div className="text-center space-y-4">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-primary mx-auto flex items-center justify-center shadow-glow">
-                  <step.icon className="w-8 h-8 text-white" />
+                  {index === 0 && <ShoppingBag className="w-8 h-8 text-white" />}
+                  {index === 1 && <Search className="w-8 h-8 text-white" />}
+                  {index === 2 && <Sparkles className="w-8 h-8 text-white" />}
+                  {index === 3 && <TrendingUp className="w-8 h-8 text-white" />}
                 </div>
                 <div className="relative">
                   <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
@@ -138,48 +141,52 @@ const Index = () => {
       {/* Key Features Section */}
       <section id="features" className="container mx-auto px-4 py-24 bg-gradient-subtle">
           <div className="text-center mb-16 space-y-4">
-            <Badge variant="outline" className="border-primary text-primary">Key Features</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold">What Our AI Actually Does</h2>
+            <Badge variant="outline" className="border-primary text-primary">{t.landing.features.badge}</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold">{t.landing.features.title}</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Concrete actions that boost your SEO and drive traffic
+              {t.landing.features.subtitle}
             </p>
           </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
-            <Card 
-              key={index}
-              className="p-6 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 border-2 border-transparent hover:border-primary/20 bg-card"
-            >
-              <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4 shadow-glow">
-                <feature.icon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground mb-4">{feature.description}</p>
-              <div className="flex flex-wrap gap-2">
-                {feature.tags.map((tag: string, i: number) => (
-                  <Badge key={i} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </Card>
-          ))}
+          {t.landing.features.items.map((feature: any, index: number) => {
+            const icons = [Search, ImageIcon, FileText, Tags, BarChart3, Sparkles];
+            const FeatureIcon = icons[index];
+            return (
+              <Card 
+                key={index}
+                className="p-6 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 border-2 border-transparent hover:border-primary/20 bg-card"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4 shadow-glow">
+                  <FeatureIcon className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                <p className="text-muted-foreground mb-4">{feature.description}</p>
+                <div className="flex flex-wrap gap-2">
+                  {feature.tags.map((tag: string, i: number) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
       {/* Testimonials Section */}
       <section className="container mx-auto px-4 py-24">
         <div className="text-center mb-16 space-y-4">
-          <Badge variant="outline" className="border-success text-success">Testimonials</Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">Trusted by E-commerce Stores</h2>
+          <Badge variant="outline" className="border-success text-success">{t.landing.testimonials.badge}</Badge>
+          <h2 className="text-4xl md:text-5xl font-bold">{t.landing.testimonials.title}</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            See what store owners say about NewAI
+            {t.landing.testimonials.subtitle}
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {testimonials.map((testimonial, index) => (
+          {t.landing.testimonials.items.map((testimonial: any, index: number) => (
             <Card key={index} className="p-6 space-y-4 border-2 hover:border-primary/30 transition-colors">
               <div className="flex gap-1">
                 {[...Array(5)].map((_, i) => (
@@ -205,16 +212,16 @@ const Index = () => {
       <section id="benefits" className="container mx-auto px-4 py-24 bg-gradient-subtle">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <Badge variant="outline" className="border-success text-success">Results</Badge>
+            <Badge variant="outline" className="border-success text-success">{t.landing.benefits.badge}</Badge>
             <h2 className="text-4xl md:text-5xl font-bold">
-              Proven results for Shopify stores
+              {t.landing.benefits.title}
             </h2>
             <p className="text-muted-foreground text-lg">
-              Join hundreds of sellers who have transformed their store with AI optimization
+              {t.landing.benefits.subtitle}
             </p>
             
             <div className="space-y-4 pt-4">
-              {benefits.map((benefit, index) => (
+              {t.landing.benefits.items.map((benefit: any, index: number) => (
                 <div key={index} className="flex items-start gap-3">
                   <CheckCircle2 className="w-6 h-6 text-success flex-shrink-0 mt-1" />
                   <div>
@@ -226,7 +233,7 @@ const Index = () => {
             </div>
 
             <Button size="lg" className="mt-6" onClick={() => navigate('/auth?mode=signup')}>
-              Start now
+              {t.landing.benefits.cta}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
@@ -235,7 +242,7 @@ const Index = () => {
             <div className="absolute inset-0 bg-gradient-primary rounded-3xl blur-3xl opacity-20" />
             <Card className="relative p-8 space-y-6 border-2 border-primary/20">
               <div className="grid grid-cols-2 gap-6">
-                {stats.map((stat, index) => (
+                {t.landing.benefits.stats.map((stat: any, index: number) => (
                   <div key={index} className="space-y-2">
                     <p className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                       {stat.value}
@@ -254,11 +261,11 @@ const Index = () => {
         <div className="text-center mb-16 space-y-4">
           <Badge variant="outline" className="border-primary text-primary">
             <Globe className="w-4 h-4 mr-2" />
-            Pricing
+            {t.landing.pricing.badge}
           </Badge>
-          <h2 className="text-4xl md:text-5xl font-bold">Plans & Pricing</h2>
+          <h2 className="text-4xl md:text-5xl font-bold">{t.landing.pricing.title}</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Choose the plan that fits your store size. All plans include Shopify integration and dedicated support.
+            {t.landing.pricing.subtitle}
           </p>
           
           {/* Billing Cycle Toggle */}
@@ -269,7 +276,7 @@ const Index = () => {
                 billingCycle === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Monthly
+              {t.landing.pricing.monthly}
             </button>
             <button
               onClick={() => setBillingCycle('yearly')}
@@ -277,30 +284,35 @@ const Index = () => {
                 billingCycle === 'yearly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Yearly
-              <Badge className="absolute -top-2 -right-2 bg-success text-xs">-20%</Badge>
+              {t.landing.pricing.yearly}
+              <Badge className="absolute -top-2 -right-2 bg-success text-xs">{t.landing.pricing.yearlyDiscount}</Badge>
             </button>
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-          {pricingPlans.map((plan, index) => {
-            const price = billingCycle === 'monthly' ? plan.priceMonthly : plan.priceYearly;
+          {[
+            { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false },
+            { key: 'pro', priceMonthly: 49, priceYearly: 39, yearlyTotal: 468, icon: "🟠", featured: true },
+            { key: 'enterprise', priceMonthly: 199, priceYearly: 159, yearlyTotal: 1908, icon: "🔵", featured: false }
+          ].map((planConfig, index) => {
+            const plan = t.landing.pricing.plans[planConfig.key as 'starter' | 'pro' | 'enterprise'];
+            const price = billingCycle === 'monthly' ? planConfig.priceMonthly : planConfig.priceYearly;
             
             return (
               <Card 
                 key={index}
-                className={`p-8 relative ${plan.featured ? 'border-2 border-primary shadow-primary scale-105' : 'border-2 border-transparent'}`}
+                className={`p-8 relative ${planConfig.featured ? 'border-2 border-primary shadow-primary scale-105' : 'border-2 border-transparent'}`}
               >
                 {plan.badge && (
-                  <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 ${plan.badgeColor || 'bg-gradient-primary'}`}>
+                  <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 ${planConfig.featured ? 'bg-primary' : 'bg-gradient-primary'}`}>
                     {plan.badge}
                   </Badge>
                 )}
                 <div className="space-y-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-2xl font-bold">{plan.icon} {plan.name}</h3>
+                      <h3 className="text-2xl font-bold">{planConfig.icon} {plan.name}</h3>
                     </div>
                     <p className="text-muted-foreground text-sm">{plan.description}</p>
                   </div>
@@ -308,17 +320,14 @@ const Index = () => {
                   <div>
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-bold">{getCurrencySymbol(language)}{price}</span>
-                      <span className="text-muted-foreground">{language === 'fr' ? '/mois' : '/month'}</span>
+                      <span className="text-muted-foreground">{t.landing.pricing.perMonth}</span>
                     </div>
                     {billingCycle === 'yearly' && (
                       <p className="text-sm text-success mt-1">
-                        {language === 'fr' 
-                          ? `facturé annuellement (soit ${getCurrencySymbol(language)}${plan.yearlyTotal}/an)`
-                          : `billed annually (i.e. ${getCurrencySymbol(language)}${plan.yearlyTotal}/year)`
-                        }
+                        {t.landing.pricing.billedAnnually.replace('{{currency}}', getCurrencySymbol(language)).replace('{{total}}', String(planConfig.yearlyTotal))}
                       </p>
                     )}
-                    {plan.trial && (
+                    {planConfig.key === 'starter' && plan.trial && (
                       <p className="text-sm text-muted-foreground mt-1">
                         {plan.trial}
                       </p>
@@ -327,7 +336,7 @@ const Index = () => {
 
                   <Button 
                     className="w-full" 
-                    variant={plan.featured ? "default" : "outline"}
+                    variant={planConfig.featured ? "default" : "outline"}
                     size="lg"
                     onClick={() => navigate('/auth?mode=signup')}
                   >
@@ -359,8 +368,8 @@ const Index = () => {
         {/* Comparison Table */}
         <div className="mt-16">
           <div className="text-center mb-8">
-            <h3 className="text-3xl font-bold mb-2">Plan Comparison Table</h3>
-            <p className="text-muted-foreground">Compare all features in detail</p>
+            <h3 className="text-3xl font-bold mb-2">{t.landing.pricing.comparisonTitle}</h3>
+            <p className="text-muted-foreground">{t.landing.pricing.comparisonSubtitle}</p>
           </div>
           <PricingComparison />
         </div>
@@ -378,13 +387,13 @@ const Index = () => {
         <div className="container relative mx-auto px-4 py-24">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <h2 className="text-4xl md:text-5xl font-bold text-white">
-              Ready to transform your store?
+              {t.landing.cta.title}
             </h2>
             <p className="text-xl text-gray-300">
-              Start your 14-day free trial today.
+              {t.landing.cta.subtitle}
             </p>
             <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90" onClick={() => navigate('/auth?mode=signup')}>
-              Start Free Trial
+              {t.landing.cta.button}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
@@ -395,188 +404,6 @@ const Index = () => {
   );
 };
 
-const howItWorksSteps = [
-  {
-    icon: ShoppingBag,
-    title: "Install from Shopify",
-    description: "One-click installation directly from the Shopify App Store"
-  },
-  {
-    icon: Search,
-    title: "AI Scans Your Store",
-    description: "Our AI analyzes all your products and identifies optimization opportunities"
-  },
-  {
-    icon: Sparkles,
-    title: "Get Recommendations",
-    description: "Receive actionable AI-powered suggestions to improve your SEO"
-  },
-  {
-    icon: TrendingUp,
-    title: "See Results",
-    description: "Watch your traffic and rankings improve within days"
-  }
-];
-
-const features = [
-  {
-    icon: Search,
-    title: "Auto Meta Tag Analysis",
-    description: "AI scans and optimizes all your meta titles, descriptions, and keywords for maximum search visibility",
-    tags: ["SEO", "Automation", "Analytics"]
-  },
-  {
-    icon: ImageIcon,
-    title: "Image ALT Optimization",
-    description: "Advanced Vision AI analyzes your product images visually and generates contextual, SEO-optimized ALT text based on actual image content and product details",
-    tags: ["Vision AI", "Image Analysis", "Visual Recognition"]
-  },
-  {
-    icon: FileText,
-    title: "SEO Content Generation",
-    description: "Create high-quality, SEO-optimized product descriptions and blog articles that rank",
-    tags: ["Content", "AI Writing", "Blog"]
-  },
-  {
-    icon: Tags,
-    title: "Smart Tagging System",
-    description: "AI-powered automatic tagging for better product organization and discoverability",
-    tags: ["Tags", "Organization"]
-  },
-  {
-    icon: BarChart3,
-    title: "Google Merchant Feed",
-    description: "Automatic XML feed generation and real-time sync with Google Shopping",
-    tags: ["Google", "Shopping", "Feed"]
-  },
-  {
-    icon: Sparkles,
-    title: "Full Automation",
-    description: "Set it and forget it. AI continuously optimizes your store in the background",
-    tags: ["Automation", "AI", "24/7"]
-  }
-];
-
-const testimonials = [
-  {
-    quote: "Our organic traffic increased by 180% in just 2 months. The AI does all the heavy lifting!",
-    author: "Sarah Chen",
-    role: "Fashion Store Owner"
-  },
-  {
-    quote: "I save 15+ hours every week on SEO. The ROI is incredible. Best investment for my store.",
-    author: "Marcus Johnson",
-    role: "Electronics Retailer"
-  },
-  {
-    quote: "Finally ranked on Google's first page! The AI knew exactly what to optimize. Game changer.",
-    author: "Emma Rodriguez",
-    role: "Home Decor Shop"
-  }
-];
-
-const benefits = [
-  {
-    title: "3x Faster",
-    description: "Automate product entry and optimization"
-  },
-  {
-    title: "50% More traffic",
-    description: "AI-optimized SEO attracts qualified visitors"
-  },
-  {
-    title: "10h+ saved",
-    description: "Automated content creation and management"
-  },
-  {
-    title: "Better Google ranking",
-    description: "Structured data and optimized feeds"
-  }
-];
-
-const stats = [
-  { value: "10K+", label: "Products Optimized" },
-  { value: "500+", label: "Active Sellers" },
-  { value: "95%", label: "Satisfaction Rate" },
-  { value: "24/7", label: "AI Support" }
-];
-
-const pricingPlans = [
-  {
-    name: "Starter",
-    icon: "🟢",
-    description: "For small stores wanting to discover the power of AI",
-    priceMonthly: 9.99,
-    priceYearly: 7.99,
-    yearlyTotal: 95.88,
-    trial: "14-day free trial",
-    cta: "Start Free Trial",
-    featured: false,
-    badge: null,
-    highlight: "Enjoy the power of AI with essential features and quotas tailored to your start.",
-    features: [
-      "100 analyzed products",
-      "100 AI SEO optimizations / month (titles, meta, ALT, tags)",
-      "1 AI article / month",
-      "20 Shopify AI searches / month",
-      "50 AI Chat responses / month",
-      "1 Shopify store connected",
-      "Basic automation (SEO + blog + chat)",
-      "Email support"
-    ]
-  },
-  {
-    name: "Pro",
-    icon: "🟠",
-    description: "For growing stores",
-    priceMonthly: 49,
-    priceYearly: 39,
-    yearlyTotal: 468,
-    trial: null,
-    cta: "Try for free",
-    featured: true,
-    badge: "Most Popular 🔥",
-    badgeColor: "bg-primary",
-    highlight: "The perfect balance between power, automation, and scalability.",
-    features: [
-      "1,000 analyzed products",
-      "500 AI SEO optimizations / month",
-      "5 AI articles / month",
-      "3 automatic AI campaigns / month (up to 30 articles/campaign)",
-      "300 Shopify AI searches / month",
-      "500 AI Chat responses / month",
-      "Up to 2 Shopify stores connected",
-      "Integrated Google Merchant Center",
-      "Full automation (SEO + blog + chat)",
-      "24/7 priority support"
-    ]
-  },
-  {
-    name: "Enterprise",
-    icon: "🔵",
-    description: "For large stores and agencies",
-    priceMonthly: 199,
-    priceYearly: 159,
-    yearlyTotal: 1908,
-    trial: null,
-    cta: "Contact us",
-    featured: false,
-    badge: null,
-    highlight: "Fully managed AI suite with high quotas, API access, and personal support.",
-    features: [
-      "Unlimited products",
-      "2,000 AI SEO optimizations / month",
-      "20 AI articles / month",
-      "10 automatic AI campaigns / month (up to 30 articles/campaign)",
-      "2,000 Shopify AI searches / month",
-      "3,000 AI Chat responses / month",
-      "Up to 5 Shopify stores connected",
-      "Multi-stores & custom API access",
-      "Dedicated account manager",
-      "Custom training sessions",
-      "Guaranteed SLA"
-    ]
-  }
-];
+// All content is now sourced from translations
 
 export default Index;
