@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { UpgradeDialog } from '@/components/UpgradeDialog';
 import {
   Table,
   TableBody,
@@ -90,6 +91,16 @@ export function GoogleShopping() {
   const [optimizationProgress, setOptimizationProgress] = useState(0);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [currentOptimizingProduct, setCurrentOptimizingProduct] = useState<string>('');
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+
+  // Listen for upgrade dialog events
+  useEffect(() => {
+    const handleShowUpgrade = (event: any) => {
+      setShowUpgradeDialog(true);
+    };
+    window.addEventListener('show-upgrade-dialog', handleShowUpgrade);
+    return () => window.removeEventListener('show-upgrade-dialog', handleShowUpgrade);
+  }, []);
 
   // Calculate optimization score
   const calculateOptimizationScore = (productsList: Product[]) => {
@@ -402,6 +413,27 @@ export function GoogleShopping() {
       return;
     }
 
+    // Check usage limits before starting
+    try {
+      const { data: limitCheck, error: limitError } = await supabase.functions.invoke('check-usage-limits', {
+        body: { 
+          action: 'optimize',
+          count: unoptimized.length
+        }
+      });
+
+      if (limitError || !limitCheck?.allowed) {
+        toast.error(limitCheck?.message || 'Limite d\'optimisations atteinte');
+        // Open upgrade dialog
+        window.dispatchEvent(new CustomEvent('show-upgrade-dialog', { 
+          detail: { limitType: 'optimizations' } 
+        }));
+        return;
+      }
+    } catch (err) {
+      console.error('Error checking limits:', err);
+    }
+
     // Ask user for confirmation
     const confirmMessage = `${unoptimized.length} produits seront optimisés (catégorie, GTIN et/ou fond blanc manquants). Continuer ?`;
     if (!confirm(confirmMessage)) return;
@@ -430,7 +462,30 @@ export function GoogleShopping() {
             const { data: categoryData, error: categoryError } = await supabase.functions.invoke('generate-google-category', {
               body: { productId: product.id }
             });
-            if (categoryError) throw categoryError;
+            
+            if (categoryError) {
+              // Check if it's a quota/limit error
+              if (categoryError.message?.includes('trial_product_already_optimized')) {
+                error = 'Produit déjà optimisé (limite essai)';
+                status = 'error';
+                // Show upgrade dialog
+                window.dispatchEvent(new CustomEvent('show-upgrade-dialog', { 
+                  detail: { limitType: 'optimizations' } 
+                }));
+                break; // Stop the optimization loop
+              }
+              throw categoryError;
+            }
+            
+            if (categoryData?.error === 'trial_product_already_optimized') {
+              error = 'Limite atteinte';
+              status = 'error';
+              window.dispatchEvent(new CustomEvent('show-upgrade-dialog', { 
+                detail: { limitType: 'optimizations' } 
+              }));
+              break;
+            }
+            
             if (categoryData.success) {
               categoryGenerated = true;
               status = 'success';
@@ -988,7 +1043,23 @@ export function GoogleShopping() {
                                 const { data, error } = await supabase.functions.invoke('generate-google-category', {
                                   body: { productId: product.id }
                                 });
-                                if (error) throw error;
+                                
+                                if (error) {
+                                  // Check for quota errors
+                                  if (error.message?.includes('trial_product_already_optimized')) {
+                                    toast.error('Limite atteinte - Produit déjà optimisé pendant l\'essai');
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  throw error;
+                                }
+                                
+                                if (data?.error === 'trial_product_already_optimized') {
+                                  toast.error('Limite atteinte - Produit déjà optimisé pendant l\'essai');
+                                  setShowUpgradeDialog(true);
+                                  return;
+                                }
+                                
                                 if (data.success) {
                                   toast.success('Catégorie générée avec succès !');
                                   fetchProducts();
@@ -1073,6 +1144,12 @@ export function GoogleShopping() {
         progress={optimizationProgress}
         isProcessing={isOptimizing}
         currentProduct={currentOptimizingProduct}
+      />
+
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
       />
     </div>
   );
