@@ -18,17 +18,20 @@ interface Message {
 
 export function AIAssistant() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: t.aiAssistant.welcome,
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Initialize welcome message based on language
+  useEffect(() => {
+    setMessages([{
+      role: "assistant",
+      content: t.aiAssistant.welcome,
+    }]);
+  }, [language, t.aiAssistant.welcome]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -58,6 +61,7 @@ export function AIAssistant() {
               role: m.role,
               content: m.content,
             })),
+            language: language,
           }),
         }
       );
@@ -146,15 +150,15 @@ export function AIAssistant() {
 
       {/* Chat window */}
       {isOpen && (
-        <Card className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-[420px] h-[100vh] sm:h-[680px] sm:rounded-2xl shadow-2xl z-50 flex flex-col border-0 sm:border">
+        <Card className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-[380px] h-[100vh] sm:h-[600px] sm:rounded-2xl shadow-2xl z-50 flex flex-col border-0 sm:border">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-5 border-b bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-t-2xl">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                <MessageCircle className="h-5 w-5" />
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-primary to-primary/90 text-primary-foreground sm:rounded-t-2xl">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-base">{t.aiAssistant.title}</h3>
+                <h3 className="font-semibold text-sm sm:text-base">{t.aiAssistant.title}</h3>
                 <p className="text-xs opacity-90">{t.aiAssistant.subtitle}</p>
               </div>
             </div>
@@ -162,15 +166,15 @@ export function AIAssistant() {
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(false)}
-              className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/20"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/20"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4 bg-muted/20" ref={scrollRef}>
-            <div className="space-y-4">
+          <ScrollArea className="flex-1 p-3 sm:p-4 bg-muted/20" ref={scrollRef}>
+            <div className="space-y-3">
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -179,28 +183,28 @@ export function AIAssistant() {
                   } animate-in fade-in slide-in-from-bottom-2 duration-300`}
                 >
                   {message.role === "assistant" && (
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 flex-shrink-0">
-                      <MessageCircle className="h-4 w-4 text-primary" />
+                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 flex-shrink-0">
+                      <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                     </div>
                   )}
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
+                    className={`max-w-[85%] sm:max-w-[80%] rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3 shadow-sm text-sm ${
                       message.role === "user"
                         ? "bg-primary text-primary-foreground rounded-br-sm"
                         : "bg-card border rounded-bl-sm"
                     }`}
                   >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
               ))}
               {isLoading && (
                 <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2">
-                    <MessageCircle className="h-4 w-4 text-primary" />
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2">
+                    <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                   </div>
-                  <div className="bg-card border rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <div className="bg-card border rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3 shadow-sm">
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-primary" />
                   </div>
                 </div>
               )}
@@ -208,7 +212,7 @@ export function AIAssistant() {
           </ScrollArea>
 
           {/* Input */}
-          <div className="p-4 border-t bg-background">
+          <div className="p-3 sm:p-4 border-t bg-background">
             <div className="flex gap-2 items-end">
               <Input
                 value={input}
@@ -216,15 +220,15 @@ export function AIAssistant() {
                 onKeyPress={handleKeyPress}
                 placeholder={t.aiAssistant.placeholder}
                 disabled={isLoading}
-                className="flex-1 text-sm rounded-xl resize-none min-h-[44px]"
+                className="flex-1 text-sm rounded-xl resize-none min-h-[40px] sm:min-h-[44px]"
               />
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
                 size="icon"
-                className="h-11 w-11 rounded-xl flex-shrink-0"
+                className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex-shrink-0"
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
