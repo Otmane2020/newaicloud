@@ -60,6 +60,8 @@ export const translations = {
     adminPanel: "Panel Admin",
     currentPlan: "Plan Actuel",
     settings: "Paramètres",
+    translations: "Traductions",
+    refresh: "Actualiser",
   },
 
   dashboard: {
@@ -1565,7 +1567,8 @@ export const translations = {
   },
 
   admin: {
-    title: "Panel Admin",
+    title: "Tableau de Bord Admin",
+    subtitle: "Gestion des utilisateurs et des abonnements",
     users: "Utilisateurs",
     plans: "Plans d'Abonnement",
     analytics: "Analytics",
@@ -1573,6 +1576,23 @@ export const translations = {
     totalUsers: "Total Utilisateurs",
     activeSubscriptions: "Abonnements Actifs",
     revenue: "Revenu",
+    stats: {
+      freeTrials: "Essais Gratuits",
+      noSubscription: "Sans Abonnement",
+    },
+    table: {
+      user: "Utilisateur",
+      currentPlan: "Plan Actuel",
+      signupDate: "Date d'Inscription",
+      subscriptionStatus: "Statut Abonnement",
+      actions: "Actions",
+    },
+    status: {
+      active: "Actif",
+      trial: "Essai",
+      cancelled: "Annulé",
+      none: "Aucun",
+    },
     errors: {
       loadData: "Erreur lors du chargement des données",
       updatePlan: "Erreur lors de la mise à jour du plan",
@@ -2284,6 +2304,70 @@ export const translations = {
       seoDescription: "Description SEO",
       importOrGenerate: "Importer ou générer le SEO",
       analyzedOn: "Analysé le",
+    },
+  },
+
+  articleManagement: {
+    title: "Gestion des Articles SEO",
+    subtitle: "Optimisez les titres SEO et meta descriptions de vos articles",
+    stats: {
+      total: "Total",
+      ai: "IA",
+      shopify: "Shopify",
+      published: "Publiés",
+      synced: "Synchronisés",
+      seoOptimized: "Optimisés SEO",
+    },
+    actions: {
+      createArticle: "Créer Article",
+      optimizeSeo: "Optimiser SEO",
+      synchronize: "Synchroniser",
+      delete: "Supprimer",
+    },
+    filters: {
+      allSources: "Toutes sources",
+      allStatuses: "Tous statuts",
+      allScores: "Tous scores",
+      seoScore: "Score SEO",
+      excellent: "Excellent (≥80%)",
+      good: "Bon (55-79%)",
+      medium: "Moyen (40-54%)",
+      poor: "Faible (<40%)",
+      notSynced: "Non synchronisé",
+    },
+    table: {
+      articleTitle: "Titre de l'Article",
+      seoTitle: "Titre SEO",
+      seoMetaDescription: "Meta Description SEO",
+      seoScore: "Score SEO",
+      source: "Source",
+      syncStatus: "Statut Sync",
+      actions: "Actions",
+    },
+    noArticles: "Aucun article trouvé",
+    itemsSelected: "{{count}} élément(s) sélectionné(s)",
+  },
+
+  performanceMonitor: {
+    title: "Monitoring de Performance",
+    loadingMetrics: "Chargement des métriques...",
+    noMetrics: "Aucune métrique disponible. Utilisez le chat pour générer des données.",
+    stats: {
+      totalOperations: "Opérations Totales",
+      averageTime: "Temps Moyen",
+      operationsTracked: "Opérations Suivies",
+      last500: "Dernières 500 mesures",
+      allOperations: "Toutes opérations confondues",
+      uniqueTypes: "Types d'opérations uniques",
+    },
+    chart: {
+      title: "Temps de réponse par opération",
+      average: "Moyenne (ms)",
+      maximum: "Maximum (ms)",
+      mean: "Moyenne",
+      min: "Min",
+      max: "Max",
+      measurements: "Mesures",
     },
   },
 };
