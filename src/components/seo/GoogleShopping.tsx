@@ -134,6 +134,13 @@ export function GoogleShopping() {
 
   useEffect(() => {
     fetchProducts();
+    
+    // Auto-refresh products and score every 15 seconds to catch updates
+    const interval = setInterval(() => {
+      fetchProducts();
+    }, 15000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const filteredProducts = products.filter((product) => {

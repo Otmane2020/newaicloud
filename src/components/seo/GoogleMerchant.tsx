@@ -102,6 +102,7 @@ export function GoogleMerchant() {
     try {
       // Force une nouvelle génération en appelant le flux
       await testFeed();
+      await fetchOptimizationScore(); // Recalculate score after regeneration
       toast.success("Flux XML régénéré avec succès ! 🎉");
     } catch (error) {
       console.error("Error regenerating feed:", error);
@@ -115,6 +116,13 @@ export function GoogleMerchant() {
     // Tester automatiquement le flux au chargement
     testFeed();
     fetchOptimizationScore();
+    
+    // Auto-refresh score every 10 seconds to catch external updates
+    const interval = setInterval(() => {
+      fetchOptimizationScore();
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchOptimizationScore = async () => {
