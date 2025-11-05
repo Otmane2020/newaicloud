@@ -12,6 +12,7 @@ import {
   Calendar,
   Sparkles,
   Zap,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -109,6 +110,83 @@ export function GoogleMerchant() {
       toast.error("Erreur lors de la régénération du flux");
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  const exportToCSV = async () => {
+    try {
+      toast.info("Génération du fichier CSV...");
+      
+      // Fetch products from database
+      const { data: products, error } = await supabase
+        .from('shopify_products')
+        .select('*')
+        .order('title');
+
+      if (error) throw error;
+
+      if (!products || products.length === 0) {
+        toast.error("Aucun produit à exporter");
+        return;
+      }
+
+      // CSV headers
+      const headers = [
+        'ID',
+        'Titre',
+        'Description',
+        'Prix',
+        'URL',
+        'URL Image',
+        'Disponibilité',
+        'Marque',
+        'Catégorie Google',
+        'GTIN',
+        'MPN',
+        'Condition',
+        'Fond blanc IA'
+      ];
+
+      // Convert products to CSV rows
+      const rows = products.map((product: any) => [
+        product.shopify_product_id || '',
+        product.title || '',
+        (product.body_html || product.description || '').replace(/"/g, '""').replace(/\n/g, ' '),
+        product.price || '',
+        product.handle ? `https://www.shopify.com/products/${product.handle}` : '',
+        product.image_url || '',
+        product.status === 'active' ? 'in stock' : 'out of stock',
+        product.vendor || '',
+        product.google_product_category || '',
+        product.google_gtin || '',
+        product.google_mpn || '',
+        product.google_condition || 'new',
+        product.google_white_background ? 'Oui' : 'Non'
+      ]);
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `google-shopping-feed-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`${products.length} produits exportés en CSV ! 📊`);
+    } catch (error) {
+      console.error('Error exporting to CSV:', error);
+      toast.error("Erreur lors de l'export CSV");
     }
   };
 
@@ -329,12 +407,18 @@ export function GoogleMerchant() {
             </Button>
 
             {feedStatus.status === "success" && (
-              <Button asChild variant="outline" size="lg">
-                <a href={directFeedUrl} target="_blank" rel="noopener noreferrer">
-                  <Download className="w-4 h-4 mr-2" />
-                  Télécharger XML
-                </a>
-              </Button>
+              <>
+                <Button asChild variant="outline" size="lg">
+                  <a href={directFeedUrl} target="_blank" rel="noopener noreferrer">
+                    <Download className="w-4 h-4 mr-2" />
+                    Télécharger XML
+                  </a>
+                </Button>
+                <Button onClick={exportToCSV} variant="outline" size="lg">
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Exporter CSV
+                </Button>
+              </>
             )}
           </div>
         </div>
