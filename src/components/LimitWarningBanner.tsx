@@ -73,7 +73,7 @@ export function LimitWarningBanner() {
       if (limits.limitReached.shopifyStores) limitTypes.push(t.banners.limitWarning.limitLabels.stores);
 
       if (limits.isPaid) {
-        return `Limite mensuelle atteinte. Passez à un plan supérieur pour continuer.`;
+        return t.banners.limitWarning.monthlyLimitReached;
       }
 
       return tf("banners.limitWarning.limitReached", { limitTypes: limitTypes.join(", ") });
@@ -128,12 +128,12 @@ export function LimitWarningBanner() {
           } text-white whitespace-nowrap gap-2`}
         >
           {upgrading ? (
-            "Chargement..."
+            t.banners.limitWarning.loading
           ) : (
             <>
               <TrendingUp className="w-4 h-4" />
               {limitReached && limits.isPaid
-                ? "Upgrader maintenant"
+                ? t.banners.limitWarning.upgradeNow
                 : limitReached
                   ? t.banners.limitWarning.activateNow
                   : t.banners.limitWarning.viewPlans}

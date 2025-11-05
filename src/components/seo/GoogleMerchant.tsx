@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "@/lib/language";
 
 interface FeedStatus {
   lastFetch: string | null;
@@ -35,6 +36,7 @@ interface FeedStatus {
 export function GoogleMerchant() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [feedStatus, setFeedStatus] = useState<FeedStatus>({
     lastFetch: null,
@@ -75,7 +77,7 @@ export function GoogleMerchant() {
 
       // Vérifier si c'est un XML valide
       if (!text.includes("<?xml") || !text.includes("<rss")) {
-        throw new Error("Format XML invalide");
+        throw new Error(t.merchant.feed.errors.invalidFormat);
       }
 
       // Compter les items
@@ -91,7 +93,7 @@ export function GoogleMerchant() {
         lastFetch: null,
         itemCount: null,
         status: "error",
-        error: error instanceof Error ? error.message : "Erreur inconnue",
+        error: error instanceof Error ? error.message : t.merchant.feed.errors.unknown,
       });
     } finally {
       setIsTesting(false);
@@ -104,10 +106,10 @@ export function GoogleMerchant() {
       // Force une nouvelle génération en appelant le flux
       await testFeed();
       await fetchOptimizationScore(); // Recalculate score after regeneration
-      toast.success("Flux XML régénéré avec succès ! 🎉");
+      toast.success(t.merchant.feed.success.regenerated);
     } catch (error) {
       console.error("Error regenerating feed:", error);
-      toast.error("Erreur lors de la régénération du flux");
+      toast.error(t.merchant.feed.errors.regenerateFailed);
     } finally {
       setRegenerating(false);
     }
@@ -115,7 +117,7 @@ export function GoogleMerchant() {
 
   const exportToCSV = async () => {
     try {
-      toast.info("Génération du fichier CSV...");
+      toast.info(t.merchant.feed.status.generating);
       
       // Fetch products from database
       const { data: products, error } = await supabase
@@ -126,25 +128,25 @@ export function GoogleMerchant() {
       if (error) throw error;
 
       if (!products || products.length === 0) {
-        toast.error("Aucun produit à exporter");
+        toast.error(t.merchant.feed.errors.noProducts);
         return;
       }
 
       // CSV headers
       const headers = [
-        'ID',
-        'Titre',
-        'Description',
-        'Prix',
-        'URL',
-        'URL Image',
-        'Disponibilité',
-        'Marque',
-        'Catégorie Google',
-        'GTIN',
-        'MPN',
-        'Condition',
-        'Fond blanc IA'
+        t.merchant.feed.csv.headers.id,
+        t.merchant.feed.csv.headers.title,
+        t.merchant.feed.csv.headers.description,
+        t.merchant.feed.csv.headers.price,
+        t.merchant.feed.csv.headers.url,
+        t.merchant.feed.csv.headers.imageUrl,
+        t.merchant.feed.csv.headers.availability,
+        t.merchant.feed.csv.headers.brand,
+        t.merchant.feed.csv.headers.category,
+        t.merchant.feed.csv.headers.gtin,
+        t.merchant.feed.csv.headers.mpn,
+        t.merchant.feed.csv.headers.condition,
+        t.merchant.feed.csv.headers.whiteBackground
       ];
 
       // Convert products to CSV rows
@@ -155,13 +157,13 @@ export function GoogleMerchant() {
         product.price || '',
         product.handle ? `https://www.shopify.com/products/${product.handle}` : '',
         product.image_url || '',
-        product.status === 'active' ? 'in stock' : 'out of stock',
+        product.status === 'active' ? t.merchant.feed.csv.inStock : t.merchant.feed.csv.outOfStock,
         product.vendor || '',
         product.google_product_category || '',
         product.google_gtin || '',
         product.google_mpn || '',
         product.google_condition || 'new',
-        product.google_white_background ? 'Oui' : 'Non'
+        product.google_white_background ? t.merchant.feed.csv.yes : t.merchant.feed.csv.no
       ]);
 
       // Combine headers and rows
@@ -183,10 +185,10 @@ export function GoogleMerchant() {
       link.click();
       document.body.removeChild(link);
 
-      toast.success(`${products.length} produits exportés en CSV ! 📊`);
+      toast.success(t.merchant.feed.success.exported.replace('{{count}}', products.length.toString()));
     } catch (error) {
       console.error('Error exporting to CSV:', error);
-      toast.error("Erreur lors de l'export CSV");
+      toast.error(t.merchant.feed.errors.exportFailed);
     }
   };
 
@@ -228,8 +230,8 @@ export function GoogleMerchant() {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Jamais";
-    return new Date(dateString).toLocaleString("fr-FR");
+    if (!dateString) return t.merchant.feed.status.never;
+    return new Date(dateString).toLocaleString();
   };
 
   const getStatusBadge = () => {
@@ -237,23 +239,23 @@ export function GoogleMerchant() {
       case "success":
         return (
           <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-            ✓ Opérationnel
+            ✓ {t.merchant.feed.status.operational}
           </Badge>
         );
       case "error":
         return (
           <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
-            ✗ Erreur
+            ✗ {t.merchant.feed.status.error}
           </Badge>
         );
       case "loading":
         return (
           <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
-            ⟳ Test en cours
+            ⟳ {t.merchant.feed.status.testing}
           </Badge>
         );
       default:
-        return <Badge variant="outline">⏳ Non testé</Badge>;
+        return <Badge variant="outline">⏳ {t.merchant.feed.status.notTested}</Badge>;
     }
   };
 
@@ -264,9 +266,9 @@ export function GoogleMerchant() {
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Google Merchant Center</h1>
+              <h1 className="text-3xl font-bold mb-2">{t.merchant.title}</h1>
               <p className="text-white/90 text-lg">
-                Synchronisez vos produits avec Google Shopping pour maximiser votre visibilité
+                {t.merchant.description}
               </p>
             </div>
             <div className="text-right">
@@ -276,9 +278,9 @@ export function GoogleMerchant() {
                   <span className="text-2xl font-bold">{feedStatus.itemCount}</span>
                 )}
                 {dbProductCount > 0 && (
-                  <span className="text-sm text-white/70">({dbProductCount} en base)</span>
+                  <span className="text-sm text-white/70">({dbProductCount} {t.merchant.feed.inDatabase})</span>
                 )}
-                <span className="text-sm text-white/70">produits</span>
+                <span className="text-sm text-white/70">{t.merchant.feed.products}</span>
               </div>
             </div>
           </div>
@@ -286,14 +288,16 @@ export function GoogleMerchant() {
           {/* Optimization Score */}
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Score d'optimisation</span>
+              <span className="text-sm font-medium">{t.merchant.feed.optimizationScore}</span>
               <span className="text-2xl font-bold">{optimizationScore}%</span>
             </div>
             <Progress value={optimizationScore} className="h-2 bg-white/20" />
             <p className="text-xs text-white/70 mt-2">
               {totalProducts > 0 
-                ? `${Math.round(totalProducts * optimizationScore / 100)} produits sur ${totalProducts} optimisés (Catégorie + GTIN + Fond blanc)`
-                : 'Aucun produit à optimiser'
+                ? t.merchant.feed.optimizationDetails
+                    .replace('{{optimized}}', Math.round(totalProducts * optimizationScore / 100).toString())
+                    .replace('{{total}}', totalProducts.toString())
+                : t.merchant.feed.noProducts
               }
             </p>
           </div>
@@ -306,7 +310,7 @@ export function GoogleMerchant() {
               className="bg-white text-purple-600 hover:bg-white/90"
             >
               <Zap className="w-5 h-5 mr-2" />
-              Optimiser tout
+              {t.merchant.feed.actions.optimizeAll}
             </Button>
             <Button
               variant="outline"
@@ -320,7 +324,7 @@ export function GoogleMerchant() {
               ) : (
                 <RefreshCw className="w-5 h-5 mr-2" />
               )}
-              Tester le flux
+              {t.merchant.feed.actions.testFeed}
             </Button>
             <Button
               variant="outline"
@@ -334,7 +338,7 @@ export function GoogleMerchant() {
               ) : (
                 <Download className="w-5 h-5 mr-2" />
               )}
-              Régénérer XML
+              {t.merchant.feed.actions.regenerate}
             </Button>
           </div>
         </div>
@@ -348,9 +352,9 @@ export function GoogleMerchant() {
         <AlertDescription className="text-amber-800 dark:text-amber-200">
           <div className="flex items-center justify-between">
             <div>
-              <strong className="font-semibold">Enrichissez vos données Google Shopping</strong>
+              <strong className="font-semibold">{t.merchant.feed.enrichment.title}</strong>
               <p className="mt-1 text-sm">
-                Optimisez vos produits avec les catégories Google, GTIN, et fond blanc IA pour créer un flux optimisé et augmenter votre visibilité.
+                {t.merchant.feed.enrichment.description}
               </p>
             </div>
             <Button
@@ -360,7 +364,7 @@ export function GoogleMerchant() {
               className="ml-4 gap-2 whitespace-nowrap"
             >
               <Sparkles className="w-4 h-4" />
-              Optimiser maintenant
+              {t.merchant.feed.enrichment.action}
             </Button>
           </div>
         </AlertDescription>
@@ -370,40 +374,40 @@ export function GoogleMerchant() {
       <Card className="p-6 border-l-4 border-l-primary">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold">Statut du Flux</h3>
+            <h3 className="text-xl font-bold">{t.merchant.feed.statusTitle}</h3>
             {getStatusBadge()}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Dernier test</p>
+              <p className="text-sm font-medium text-muted-foreground">{t.merchant.feed.lastTest}</p>
               <p className="text-lg font-semibold">
                 {feedStatus.status === "loading" ? "..." : formatDate(feedStatus.lastFetch)}
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Produits détectés</p>
+              <p className="text-sm font-medium text-muted-foreground">{t.merchant.feed.detectedProducts}</p>
               <p className="text-lg font-semibold">
                 {feedStatus.status === "loading" ? "..." : feedStatus.itemCount || "0"}
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Format</p>
-              <p className="text-lg font-semibold">XML Google Shopping</p>
+              <p className="text-sm font-medium text-muted-foreground">{t.merchant.feed.format}</p>
+              <p className="text-lg font-semibold">{t.merchant.feed.formatValue}</p>
             </div>
           </div>
 
           {feedStatus.status === "error" && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>Erreur: {feedStatus.error}</AlertDescription>
+              <AlertDescription>{t.merchant.feed.status.error}: {feedStatus.error}</AlertDescription>
             </Alert>
           )}
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={testFeed} disabled={isTesting} variant="default" size="lg">
               <RefreshCw className={`w-4 h-4 mr-2 ${isTesting ? "animate-spin" : ""}`} />
-              {isTesting ? "Test en cours..." : "Tester le flux"}
+              {isTesting ? t.merchant.feed.status.testing : t.merchant.feed.actions.testFeed}
             </Button>
 
             {feedStatus.status === "success" && (
@@ -411,12 +415,12 @@ export function GoogleMerchant() {
                 <Button asChild variant="outline" size="lg">
                   <a href={directFeedUrl} target="_blank" rel="noopener noreferrer">
                     <Download className="w-4 h-4 mr-2" />
-                    Télécharger XML
+                    {t.merchant.feed.actions.downloadXML}
                   </a>
                 </Button>
                 <Button onClick={exportToCSV} variant="outline" size="lg">
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Exporter CSV
+                  {t.merchant.feed.actions.exportCSV}
                 </Button>
               </>
             )}
@@ -496,10 +500,10 @@ export function GoogleMerchant() {
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
               <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <h4 className="font-semibold">Format</h4>
+            <h4 className="font-semibold">{t.merchant.feed.info.format.title}</h4>
           </div>
           <p className="text-sm text-muted-foreground">
-            XML Google Shopping Feed conforme aux spécifications officielles
+            {t.merchant.feed.info.format.description}
           </p>
         </Card>
 
@@ -508,9 +512,9 @@ export function GoogleMerchant() {
             <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
               <RefreshCw className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
-            <h4 className="font-semibold">Mise à jour</h4>
+            <h4 className="font-semibold">{t.merchant.feed.info.update.title}</h4>
           </div>
-          <p className="text-sm text-muted-foreground">Flux mis à jour automatiquement en temps réel</p>
+          <p className="text-sm text-muted-foreground">{t.merchant.feed.info.update.description}</p>
         </Card>
 
         <Card className="p-4 hover:shadow-md transition-shadow">
@@ -518,9 +522,9 @@ export function GoogleMerchant() {
             <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
               <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
-            <h4 className="font-semibold">Planification</h4>
+            <h4 className="font-semibold">{t.merchant.feed.info.schedule.title}</h4>
           </div>
-          <p className="text-sm text-muted-foreground">Synchronisation quotidienne automatique</p>
+          <p className="text-sm text-muted-foreground">{t.merchant.feed.info.schedule.description}</p>
         </Card>
       </div>
     </div>

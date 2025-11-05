@@ -1646,6 +1646,96 @@ export const translations = {
         description: "Synchronize with Shopify",
       },
     },
+    feed: {
+      products: "products",
+      inDatabase: "in database",
+      optimizationScore: "Optimization Score",
+      optimizationDetails: "{{optimized}} products out of {{total}} optimized (Category + GTIN + White Background)",
+      noProducts: "No products to optimize",
+      statusTitle: "Feed Status",
+      lastTest: "Last Test",
+      detectedProducts: "Detected Products",
+      format: "Format",
+      formatValue: "XML Google Shopping",
+      enrichment: {
+        title: "Enrich your Google Shopping data",
+        description: "Optimize your products with Google categories, GTIN, and AI white background to create an optimized feed and increase your visibility.",
+        action: "Optimize now"
+      },
+      url: {
+        title: "XML Feed URL",
+        description: "Copy this URL for Google Merchant Center",
+        label: "Your Google Shopping feed URL",
+        copy: "Copy",
+        copied: "Copied!",
+        preview: "Preview feed",
+        note: {
+          title: "Note:",
+          description: "This newai.sale URL will work after publication. In preview, the test uses the direct Supabase URL."
+        }
+      },
+      actions: {
+        optimizeAll: "Optimize All",
+        testFeed: "Test Feed",
+        regenerate: "Regenerate XML",
+        downloadXML: "Download XML",
+        exportCSV: "Export CSV"
+      },
+      status: {
+        operational: "Operational",
+        error: "Error",
+        testing: "Testing",
+        notTested: "Not Tested",
+        never: "Never",
+        generating: "Generating CSV file..."
+      },
+      success: {
+        regenerated: "XML feed regenerated successfully! 🎉",
+        exported: "{{count}} products exported to CSV! 📊"
+      },
+      errors: {
+        invalidFormat: "Invalid XML format",
+        unknown: "Unknown error",
+        regenerateFailed: "Error regenerating feed",
+        noProducts: "No products to export",
+        exportFailed: "Error exporting CSV"
+      },
+      csv: {
+        headers: {
+          id: "ID",
+          title: "Title",
+          description: "Description",
+          price: "Price",
+          url: "URL",
+          imageUrl: "Image URL",
+          availability: "Availability",
+          brand: "Brand",
+          category: "Google Category",
+          gtin: "GTIN",
+          mpn: "MPN",
+          condition: "Condition",
+          whiteBackground: "AI White Background"
+        },
+        inStock: "in stock",
+        outOfStock: "out of stock",
+        yes: "Yes",
+        no: "No"
+      },
+      info: {
+        format: {
+          title: "Format",
+          description: "XML Google Shopping Feed compliant with official specifications"
+        },
+        update: {
+          title: "Update",
+          description: "Feed updated automatically in real-time"
+        },
+        schedule: {
+          title: "Schedule",
+          description: "Automatic daily synchronization"
+        }
+      }
+    },
     settings: {
       title: "Google Shopping Feed Configuration",
       description: "Configure your XML feed settings for Google Merchant Center",
@@ -2483,9 +2573,12 @@ export const translations = {
   banners: {
     limitWarning: {
       limitReached: "⚠️ Trial limit reached for: {{limitTypes}}",
+      monthlyLimitReached: "Monthly limit reached. Upgrade to continue.",
       approaching: "📊 You're approaching your free trial limits",
       activateNow: "Activate now",
+      upgradeNow: "Upgrade Now",
       viewPlans: "View plans",
+      loading: "Loading...",
       limitLabels: {
         optimizations: "SEO optimizations",
         articles: "articles",

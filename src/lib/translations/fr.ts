@@ -1648,6 +1648,96 @@ export const translations = {
         description: "Synchronisez avec Shopify",
       },
     },
+    feed: {
+      products: "produits",
+      inDatabase: "en base",
+      optimizationScore: "Score d'optimisation",
+      optimizationDetails: "{{optimized}} produits sur {{total}} optimisés (Catégorie + GTIN + Fond blanc)",
+      noProducts: "Aucun produit à optimiser",
+      statusTitle: "Statut du Flux",
+      lastTest: "Dernier test",
+      detectedProducts: "Produits détectés",
+      format: "Format",
+      formatValue: "XML Google Shopping",
+      enrichment: {
+        title: "Enrichissez vos données Google Shopping",
+        description: "Optimisez vos produits avec les catégories Google, GTIN, et fond blanc IA pour créer un flux optimisé et augmenter votre visibilité.",
+        action: "Optimiser maintenant"
+      },
+      url: {
+        title: "URL du Flux XML",
+        description: "Copiez cette URL pour Google Merchant Center",
+        label: "URL de votre flux Google Shopping",
+        copy: "Copier",
+        copied: "Copié!",
+        preview: "Prévisualiser le flux",
+        note: {
+          title: "Note:",
+          description: "Cette URL newai.sale fonctionnera après publication. En preview, le test utilise l'URL Supabase directe."
+        }
+      },
+      actions: {
+        optimizeAll: "Optimiser tout",
+        testFeed: "Tester le flux",
+        regenerate: "Régénérer XML",
+        downloadXML: "Télécharger XML",
+        exportCSV: "Exporter CSV"
+      },
+      status: {
+        operational: "Opérationnel",
+        error: "Erreur",
+        testing: "Test en cours",
+        notTested: "Non testé",
+        never: "Jamais",
+        generating: "Génération du fichier CSV..."
+      },
+      success: {
+        regenerated: "Flux XML régénéré avec succès ! 🎉",
+        exported: "{{count}} produits exportés en CSV ! 📊"
+      },
+      errors: {
+        invalidFormat: "Format XML invalide",
+        unknown: "Erreur inconnue",
+        regenerateFailed: "Erreur lors de la régénération du flux",
+        noProducts: "Aucun produit à exporter",
+        exportFailed: "Erreur lors de l'export CSV"
+      },
+      csv: {
+        headers: {
+          id: "ID",
+          title: "Titre",
+          description: "Description",
+          price: "Prix",
+          url: "URL",
+          imageUrl: "URL Image",
+          availability: "Disponibilité",
+          brand: "Marque",
+          category: "Catégorie Google",
+          gtin: "GTIN",
+          mpn: "MPN",
+          condition: "Condition",
+          whiteBackground: "Fond blanc IA"
+        },
+        inStock: "en stock",
+        outOfStock: "en rupture",
+        yes: "Oui",
+        no: "Non"
+      },
+      info: {
+        format: {
+          title: "Format",
+          description: "XML Google Shopping Feed conforme aux spécifications officielles"
+        },
+        update: {
+          title: "Mise à jour",
+          description: "Flux mis à jour automatiquement en temps réel"
+        },
+        schedule: {
+          title: "Planification",
+          description: "Synchronisation quotidienne automatique"
+        }
+      }
+    },
     settings: {
       title: "Configuration du Flux Google Shopping",
       description: "Configurez les paramètres de votre flux XML pour Google Merchant Center",
@@ -2485,9 +2575,12 @@ export const translations = {
   banners: {
     limitWarning: {
       limitReached: "⚠️ Limite d'essai atteinte pour : {{limitTypes}}",
+      monthlyLimitReached: "Limite mensuelle atteinte. Passez à un plan supérieur pour continuer.",
       approaching: "📊 Vous approchez de vos limites d'essai gratuit",
       activateNow: "Activer maintenant",
+      upgradeNow: "Upgrader maintenant",
       viewPlans: "Voir les plans",
+      loading: "Chargement...",
       limitLabels: {
         optimizations: "optimisations SEO",
         articles: "articles",
