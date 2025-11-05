@@ -1688,7 +1688,6 @@ export const translations = {
     daily: "Quotidienne",
     weekly: "Hebdomadaire",
     manual: "Manuelle",
-    metadata: "Métadonnées",
     updateMetadata: "Mettre à Jour Métadonnées",
     limitReached: "Limite d'import atteinte",
     limitMessage: "Vous avez atteint votre limite d'import. Passez au plan supérieur pour continuer.",

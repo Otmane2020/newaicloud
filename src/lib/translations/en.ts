@@ -1598,7 +1598,6 @@ export const translations = {
     daily: "Daily",
     weekly: "Weekly",
     manual: "Manual",
-    metadata: "Metadata",
     updateMetadata: "Update Metadata",
     limitReached: "Import limit reached",
     limitMessage: "You've reached your import limit. Upgrade to continue.",
