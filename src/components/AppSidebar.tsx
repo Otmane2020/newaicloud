@@ -373,9 +373,12 @@ export function AppSidebar() {
               {/* Smart Pricing AI - Main Menu Item */}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isPricingActive}>
-                  <NavLink to="/pricing">
+                  <NavLink to="/pricing" className="relative">
                     <CreditCard className="h-4 w-4" />
                     <span>Smart Pricing AI</span>
+                    <Badge className="ml-auto bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-[10px] px-1.5 py-0 h-4 animate-pulse">
+                      NEW
+                    </Badge>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -426,7 +429,7 @@ export function AppSidebar() {
                       {userPlan || t.common.loading}
                     </span>
                     <span className="text-xs text-white/90 font-medium">
-                      ({t.account.upgrade})
+                      (Upgrade)
                     </span>
                   </NavLink>
                   <div className="flex items-center gap-2 text-muted-foreground">

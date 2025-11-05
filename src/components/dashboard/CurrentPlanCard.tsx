@@ -26,6 +26,7 @@ export function CurrentPlanCard() {
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -40,6 +41,14 @@ export function CurrentPlanCard() {
         .select('current_plan_id, subscription_status, trial_ends_at')
         .eq('id', user?.id)
         .single();
+
+      // Récupérer les données d'abonnement pour obtenir le billing_period
+      const { data: subscriptionData } = await supabase
+        .from('subscriptions')
+        .select('billing_period, current_period_end')
+        .eq('seller_id', user?.id)
+        .eq('status', 'active')
+        .maybeSingle();
 
       const { data: plansData } = await supabase
         .from('subscription_plans')
@@ -56,9 +65,15 @@ export function CurrentPlanCard() {
             name: isTrialing ? `${plan.name} (Trial)` : plan.name
           });
           
-          // Si en trial, utiliser trial_ends_at, sinon appeler check-subscription pour Stripe
+          // Set billing period
+          const period = subscriptionData?.billing_period;
+          setBillingPeriod((period === 'yearly' || period === 'monthly') ? period : 'monthly');
+          
+          // Si en trial, utiliser trial_ends_at, sinon utiliser subscription data
           if (isTrialing) {
             setSubscriptionEnd(profileData.trial_ends_at);
+          } else if (subscriptionData?.current_period_end) {
+            setSubscriptionEnd(subscriptionData.current_period_end);
           } else {
             const { data: subData } = await supabase.functions.invoke('check-subscription');
             if (subData?.subscription_end) {
@@ -127,7 +142,14 @@ export function CurrentPlanCard() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold">{currentPlan.name}</h3>
-              <p className="text-sm text-muted-foreground">{t.account.subscription.currentPlan}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground">{t.account.subscription.currentPlan}</p>
+                {billingPeriod === 'yearly' && (
+                  <Badge variant="secondary" className="text-xs bg-green-500/20 text-green-700 dark:text-green-300">
+                    {t.onboarding.yearly}
+                  </Badge>
+                )}
+              </div>
             </div>
             <Badge variant="default" className="bg-green-500 hover:bg-green-600">
               {t.account.subscription.active}
