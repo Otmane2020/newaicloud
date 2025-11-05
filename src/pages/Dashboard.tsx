@@ -484,8 +484,8 @@ export default function Dashboard() {
           icon={ShoppingBag}
           gradient="from-blue-500 to-blue-600"
           iconBg="bg-blue-500/10 text-blue-600"
-          subtitle={`${googleShoppingScore.optimizedProducts}/${googleShoppingScore.totalProducts} produits optimisés`}
-          badge={googleShoppingScore.score >= 80 ? 'Excellent' : googleShoppingScore.score >= 50 ? 'Bon' : 'À améliorer'}
+          subtitle={`${googleShoppingScore.optimizedProducts}/${googleShoppingScore.totalProducts} ${t.dashboard.cards.optimizedProducts}`}
+          badge={googleShoppingScore.score >= 80 ? t.dashboard.cards.excellent : googleShoppingScore.score >= 50 ? t.dashboard.cards.good : t.dashboard.cards.needsImprovement}
         />
       </div>
 

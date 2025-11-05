@@ -20,6 +20,7 @@ import { UpgradeDialog } from '@/components/UpgradeDialog';
 export function ShopifyConnection() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, tf, language } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -44,7 +45,7 @@ export function ShopifyConnection() {
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const { t, tf } = useTranslation();
+  
 
   useEffect(() => {
     loadStore();
@@ -637,7 +638,7 @@ export function ShopifyConnection() {
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <span className="text-sm font-medium">Import en cours...</span>
+                <span className="text-sm font-medium">{language === 'fr' ? 'Import en cours...' : 'Import in progress...'}</span>
               </div>
 
               <Progress value={progress.percentage} className="h-3" />
@@ -645,14 +646,14 @@ export function ShopifyConnection() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
                   <div className="text-2xl font-bold text-foreground">{progress.percentage}%</div>
-                  <div className="text-xs text-muted-foreground mt-1">Progression</div>
+                  <div className="text-xs text-muted-foreground mt-1">{language === 'fr' ? 'Progression' : 'Progress'}</div>
                 </div>
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
                   <div className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
                     <FileText className="w-5 h-5" />
                     {progress.currentPage}/{progress.totalPages || '?'}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">Pages</div>
+                  <div className="text-xs text-muted-foreground mt-1">{language === 'fr' ? 'Pages' : 'Pages'}</div>
                 </div>
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
                   <div className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">

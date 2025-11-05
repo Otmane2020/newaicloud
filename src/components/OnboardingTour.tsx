@@ -8,6 +8,7 @@ import { CheckCircle2, ChevronRight, X, Sparkles, Target, Zap, FileText, BarChar
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/lib/language';
 
 interface OnboardingStep {
   id: string;
@@ -24,56 +25,110 @@ export function OnboardingTour() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t, tf, language } = useTranslation();
   const [show, setShow] = useState(false);
   const [steps, setSteps] = useState<OnboardingStep[]>([
     {
       id: 'connect_shopify',
-      title: 'Connectez votre boutique Shopify',
-      description: 'Synchronisez vos produits en 1 clic',
+      title: language === 'fr' ? 'Connectez votre boutique Shopify' : 'Connect your Shopify store',
+      description: language === 'fr' ? 'Synchronisez vos produits en 1 clic' : 'Sync your products in 1 click',
       icon: Target,
-      action: 'Connecter',
+      action: language === 'fr' ? 'Connecter' : 'Connect',
       route: '/integration',
       completed: false,
       quickWin: true
     },
     {
       id: 'optimize_first_product',
-      title: 'Optimisez votre premier produit',
-      description: 'Améliorez le SEO d\'un produit en 30 secondes',
+      title: language === 'fr' ? 'Optimisez votre premier produit' : 'Optimize your first product',
+      description: language === 'fr' ? 'Améliorez le SEO d\'un produit en 30 secondes' : 'Improve product SEO in 30 seconds',
       icon: Sparkles,
-      action: 'Optimiser',
+      action: language === 'fr' ? 'Optimiser' : 'Optimize',
       route: '/seo',
       completed: false,
       quickWin: true
     },
     {
       id: 'generate_article',
-      title: 'Créez votre premier article de blog',
-      description: 'Générez du contenu optimisé SEO avec l\'IA',
+      title: language === 'fr' ? 'Créez votre premier article de blog' : 'Create your first blog article',
+      description: language === 'fr' ? 'Générez du contenu optimisé SEO avec l\'IA' : 'Generate AI-optimized SEO content',
       icon: FileText,
-      action: 'Créer',
+      action: language === 'fr' ? 'Créer' : 'Create',
       route: '/blog',
       completed: false
     },
     {
       id: 'setup_automation',
-      title: 'Activez les optimisations automatiques',
-      description: 'Laissez l\'IA travailler pour vous',
+      title: language === 'fr' ? 'Activez les optimisations automatiques' : 'Enable automatic optimizations',
+      description: language === 'fr' ? 'Laissez l\'IA travailler pour vous' : 'Let AI work for you',
       icon: Zap,
-      action: 'Activer',
+      action: language === 'fr' ? 'Activer' : 'Enable',
       route: '/seo',
       completed: false
     },
     {
       id: 'view_analytics',
-      title: 'Consultez vos premières statistiques',
-      description: 'Suivez l\'impact de vos optimisations',
+      title: language === 'fr' ? 'Consultez vos premières statistiques' : 'View your first statistics',
+      description: language === 'fr' ? 'Suivez l\'impact de vos optimisations' : 'Track the impact of your optimizations',
       icon: BarChart3,
-      action: 'Voir',
+      action: language === 'fr' ? 'Voir' : 'View',
       route: '/dashboard',
       completed: false
     }
   ]);
+
+  useEffect(() => {
+    // Update steps when language changes
+    setSteps([
+      {
+        id: 'connect_shopify',
+        title: language === 'fr' ? 'Connectez votre boutique Shopify' : 'Connect your Shopify store',
+        description: language === 'fr' ? 'Synchronisez vos produits en 1 clic' : 'Sync your products in 1 click',
+        icon: Target,
+        action: language === 'fr' ? 'Connecter' : 'Connect',
+        route: '/integration',
+        completed: steps.find(s => s.id === 'connect_shopify')?.completed || false,
+        quickWin: true
+      },
+      {
+        id: 'optimize_first_product',
+        title: language === 'fr' ? 'Optimisez votre premier produit' : 'Optimize your first product',
+        description: language === 'fr' ? 'Améliorez le SEO d\'un produit en 30 secondes' : 'Improve product SEO in 30 seconds',
+        icon: Sparkles,
+        action: language === 'fr' ? 'Optimiser' : 'Optimize',
+        route: '/seo',
+        completed: steps.find(s => s.id === 'optimize_first_product')?.completed || false,
+        quickWin: true
+      },
+      {
+        id: 'generate_article',
+        title: language === 'fr' ? 'Créez votre premier article de blog' : 'Create your first blog article',
+        description: language === 'fr' ? 'Générez du contenu optimisé SEO avec l\'IA' : 'Generate AI-optimized SEO content',
+        icon: FileText,
+        action: language === 'fr' ? 'Créer' : 'Create',
+        route: '/blog',
+        completed: steps.find(s => s.id === 'generate_article')?.completed || false
+      },
+      {
+        id: 'setup_automation',
+        title: language === 'fr' ? 'Activez les optimisations automatiques' : 'Enable automatic optimizations',
+        description: language === 'fr' ? 'Laissez l\'IA travailler pour vous' : 'Let AI work for you',
+        icon: Zap,
+        action: language === 'fr' ? 'Activer' : 'Enable',
+        route: '/seo',
+        completed: steps.find(s => s.id === 'setup_automation')?.completed || false
+      },
+      {
+        id: 'view_analytics',
+        title: language === 'fr' ? 'Consultez vos premières statistiques' : 'View your first statistics',
+        description: language === 'fr' ? 'Suivez l\'impact de vos optimisations' : 'Track the impact of your optimizations',
+        icon: BarChart3,
+        action: language === 'fr' ? 'Voir' : 'View',
+        route: '/dashboard',
+        completed: steps.find(s => s.id === 'view_analytics')?.completed || false
+      }
+    ]);
+  }, [language]);
 
   useEffect(() => {
     const completed = localStorage.getItem('onboarding_completed');
@@ -163,10 +218,13 @@ export function OnboardingTour() {
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              Bienvenue sur votre plateforme SEO
+              {language === 'fr' ? 'Bienvenue sur votre plateforme SEO' : 'Welcome to your SEO platform'}
             </CardTitle>
             <CardDescription>
-              Suivez ces étapes pour obtenir vos premiers résultats en moins de 10 minutes
+              {language === 'fr' 
+                ? 'Suivez ces étapes pour obtenir vos premiers résultats en moins de 10 minutes'
+                : 'Follow these steps to get your first results in less than 10 minutes'
+              }
             </CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={handleDismiss}>
@@ -175,23 +233,26 @@ export function OnboardingTour() {
         </div>
         <div className="pt-4 space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Progression</span>
-            <span className="font-medium">{completedCount}/{steps.length} complétées</span>
+            <span className="text-muted-foreground">{language === 'fr' ? 'Progression' : 'Progress'}</span>
+            <span className="font-medium">{completedCount}/{steps.length} {language === 'fr' ? 'complétées' : 'completed'}</span>
           </div>
           <Progress value={progressPercent} className="h-2" />
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {quickWins.length > 0 && (
-          <div className="bg-primary/5 rounded-lg p-3 mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-4 h-4 text-primary" />
-              <span className="font-semibold text-sm">Quick Wins</span>
-              <Badge variant="secondary" className="text-xs">Recommandé</Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Commencez par ces actions pour des résultats immédiats
-            </p>
+            <div className="bg-primary/5 rounded-lg p-3 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-sm">{language === 'fr' ? 'Quick Wins' : 'Quick Wins'}</span>
+                <Badge variant="secondary" className="text-xs">{language === 'fr' ? 'Recommandé' : 'Recommended'}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {language === 'fr' 
+                  ? 'Commencez par ces actions pour des résultats immédiats'
+                  : 'Start with these actions for immediate results'
+                }
+              </p>
           </div>
         )}
 

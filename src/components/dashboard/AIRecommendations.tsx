@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, AlertCircle, CheckCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/lib/language";
 
 interface Recommendation {
   id: string;
@@ -30,8 +31,9 @@ interface AIRecommendationsProps {
 
 export function AIRecommendations({ stats }: AIRecommendationsProps) {
   const navigate = useNavigate();
+  const { language } = useTranslation();
 
-  // Générer recommandations basées sur les stats
+  // Generate recommendations based on stats
   const recommendations: Recommendation[] = [];
 
   // SEO produits
@@ -42,15 +44,17 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (optimizationRate < 50 && stats.productsCount > 0) {
     recommendations.push({
       id: 'optimize-products',
-      title: 'Optimiser les produits non-SEO',
-      description: `${stats.productsCount - stats.optimizedCount} produits nécessitent une optimisation SEO pour améliorer leur visibilité.`,
+      title: language === 'fr' ? 'Optimiser les produits non-SEO' : 'Optimize non-SEO products',
+      description: language === 'fr' 
+        ? `${stats.productsCount - stats.optimizedCount} produits nécessitent une optimisation SEO pour améliorer leur visibilité.`
+        : `${stats.productsCount - stats.optimizedCount} products need SEO optimization to improve visibility.`,
       priority: 'high',
       category: 'seo',
       action: {
-        label: 'Optimiser maintenant',
+        label: language === 'fr' ? 'Optimiser maintenant' : 'Optimize now',
         route: '/seo?filter=poor',
       },
-      impact: '+30% de trafic organique estimé',
+      impact: language === 'fr' ? '+30% de trafic organique estimé' : '+30% estimated organic traffic',
     });
   }
 
@@ -58,15 +62,17 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (stats.productsWithoutAlt > 0) {
     recommendations.push({
       id: 'add-alt-texts',
-      title: 'Ajouter des textes alternatifs aux images',
-      description: `${stats.productsWithoutAlt} images sans texte alternatif. Cela nuit à votre référencement et à l'accessibilité.`,
+      title: language === 'fr' ? 'Ajouter des textes alternatifs aux images' : 'Add alt texts to images',
+      description: language === 'fr'
+        ? `${stats.productsWithoutAlt} images sans texte alternatif. Cela nuit à votre référencement et à l'accessibilité.`
+        : `${stats.productsWithoutAlt} images without alt text. This hurts your SEO and accessibility.`,
       priority: 'high',
       category: 'seo',
       action: {
-        label: 'Générer les alt texts',
+        label: language === 'fr' ? 'Générer les alt texts' : 'Generate alt texts',
         route: '/seo',
       },
-      impact: '+15% de visibilité dans Google Images',
+      impact: language === 'fr' ? '+15% de visibilité dans Google Images' : '+15% visibility in Google Images',
     });
   }
 
@@ -74,15 +80,17 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (stats.seoScore < 70) {
     recommendations.push({
       id: 'improve-seo-score',
-      title: 'Améliorer le score SEO global',
-      description: `Votre score SEO actuel est de ${stats.seoScore}/100. Des améliorations sont possibles pour mieux performer.`,
+      title: language === 'fr' ? 'Améliorer le score SEO global' : 'Improve global SEO score',
+      description: language === 'fr'
+        ? `Votre score SEO actuel est de ${stats.seoScore}/100. Des améliorations sont possibles pour mieux performer.`
+        : `Your current SEO score is ${stats.seoScore}/100. Improvements are possible to perform better.`,
       priority: 'medium',
       category: 'seo',
       action: {
-        label: 'Voir le rapport SEO',
+        label: language === 'fr' ? 'Voir le rapport SEO' : 'View SEO report',
         route: '/seo',
       },
-      impact: 'Meilleur positionnement dans les résultats de recherche',
+      impact: language === 'fr' ? 'Meilleur positionnement dans les résultats de recherche' : 'Better ranking in search results',
     });
   }
 
@@ -90,15 +98,17 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (stats.articlesCount < 5) {
     recommendations.push({
       id: 'create-blog-content',
-      title: 'Créer du contenu blog régulier',
-      description: `Vous avez ${stats.articlesCount} article(s). Publier régulièrement améliore votre autorité et génère du trafic.`,
+      title: language === 'fr' ? 'Créer du contenu blog régulier' : 'Create regular blog content',
+      description: language === 'fr'
+        ? `Vous avez ${stats.articlesCount} article(s). Publier régulièrement améliore votre autorité et génère du trafic.`
+        : `You have ${stats.articlesCount} article(s). Publishing regularly improves your authority and generates traffic.`,
       priority: 'medium',
       category: 'content',
       action: {
-        label: 'Générer des articles',
+        label: language === 'fr' ? 'Générer des articles' : 'Generate articles',
         route: '/blog',
       },
-      impact: '+50% de sessions organiques sur 3 mois',
+      impact: language === 'fr' ? '+50% de sessions organiques sur 3 mois' : '+50% organic sessions over 3 months',
     });
   }
 
@@ -106,27 +116,31 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (stats.productsCount > 100 && optimizationRate > 80) {
     recommendations.push({
       id: 'optimize-performance',
-      title: 'Excellent travail SEO !',
-      description: `${optimizationRate.toFixed(0)}% de vos produits sont optimisés. Continuez sur cette lancée en automatisant vos synchros.`,
+      title: language === 'fr' ? 'Excellent travail SEO !' : 'Excellent SEO work!',
+      description: language === 'fr'
+        ? `${optimizationRate.toFixed(0)}% de vos produits sont optimisés. Continuez sur cette lancée en automatisant vos synchros.`
+        : `${optimizationRate.toFixed(0)}% of your products are optimized. Keep it up by automating your syncs.`,
       priority: 'low',
       category: 'performance',
       action: {
-        label: 'Activer l\'automatisation',
+        label: language === 'fr' ? 'Activer l\'automatisation' : 'Enable automation',
         route: '/account',
       },
-      impact: 'Gain de temps et cohérence maximale',
+      impact: language === 'fr' ? 'Gain de temps et cohérence maximale' : 'Time savings and maximum consistency',
     });
   }
 
-  // Si tout est bon
+  // If everything is good
   if (recommendations.length === 0) {
     recommendations.push({
       id: 'all-good',
-      title: 'Votre boutique est bien optimisée !',
-      description: 'Continuez à publier du contenu régulièrement et à surveiller vos performances.',
+      title: language === 'fr' ? 'Votre boutique est bien optimisée !' : 'Your store is well optimized!',
+      description: language === 'fr'
+        ? 'Continuez à publier du contenu régulièrement et à surveiller vos performances.'
+        : 'Keep publishing content regularly and monitoring your performance.',
       priority: 'low',
       category: 'performance',
-      impact: 'Maintenir votre excellence SEO',
+      impact: language === 'fr' ? 'Maintenir votre excellence SEO' : 'Maintain your SEO excellence',
     });
   }
 
@@ -146,7 +160,7 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold text-lg">Recommandations IA</h3>
+        <h3 className="font-semibold text-lg">{language === 'fr' ? 'Recommandations IA' : 'AI Recommendations'}</h3>
       </div>
 
       <div className="space-y-3">

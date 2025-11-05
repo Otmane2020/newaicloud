@@ -245,6 +245,10 @@ export const translations = {
       notConnected: "Not connected",
       products: "products",
       actionRequired: "Action required",
+      optimizedProducts: "products optimized",
+      excellent: "Excellent",
+      good: "Good",
+      needsImprovement: "Needs Improvement",
     },
     recentActivity: {
       title: "Recent Activity",
