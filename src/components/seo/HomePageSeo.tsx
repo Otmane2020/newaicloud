@@ -10,8 +10,10 @@ import { Sparkles, Upload, Home, AlertCircle, Loader2, ExternalLink } from 'luci
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { VisionAIBanner } from './VisionAIBanner';
+import { useTranslation } from '@/lib/language';
 
 export function HomePageSeo() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -44,7 +46,7 @@ export function HomePageSeo() {
       }
     } catch (error) {
       console.error('Error loading SEO data:', error);
-      toast.error('Erreur lors du chargement des données SEO');
+      toast.error(t.seo.homepage.errors.loadError);
     } finally {
       setLoading(false);
     }
@@ -96,11 +98,11 @@ export function HomePageSeo() {
             });
         }
         
-        toast.success('SEO généré avec succès');
+        toast.success(t.seo.homepage.success.generated);
       }
     } catch (error: any) {
       console.error('Error generating SEO:', error);
-      toast.error(error.message || 'Erreur lors de la génération');
+      toast.error(error.message || t.seo.homepage.errors.generateError);
     } finally {
       setGenerating(false);
     }
@@ -108,7 +110,7 @@ export function HomePageSeo() {
 
   const syncToShopify = async () => {
     if (!seoTitle || !seoDescription) {
-      toast.error('Veuillez remplir tous les champs');
+      toast.error(t.seo.homepage.errors.fillAllFields);
       return;
     }
 
@@ -123,10 +125,10 @@ export function HomePageSeo() {
 
       if (error) throw error;
 
-      toast.success('SEO synchronisé avec succès sur Shopify');
+      toast.success(t.seo.homepage.success.synced);
     } catch (error: any) {
       console.error('Error syncing to Shopify:', error);
-      toast.error(error.message || 'Erreur lors de la synchronisation');
+      toast.error(error.message || t.seo.homepage.errors.syncError);
     } finally {
       setSyncing(false);
     }
@@ -148,15 +150,15 @@ export function HomePageSeo() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Home className="h-5 w-5" />
-            Homepage SEO
+            {t.seo.homepage.title}
           </CardTitle>
-          <CardDescription>Optimize your Shopify homepage for search engines</CardDescription>
+          <CardDescription>{t.seo.homepage.description}</CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Please connect your Shopify store first to use this feature
+              {t.seo.homepage.connectShopifyFirst}
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -173,24 +175,24 @@ export function HomePageSeo() {
             <div className="flex items-center gap-2">
               <Home className="w-6 h-6 text-cyan-600" />
               <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                Homepage SEO
+                {t.seo.homepage.title}
               </h2>
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              Optimize your Shopify homepage SEO. Create an unforgettable first impression and boost your conversion rate.
+              {t.seo.homepage.bannerDescription}
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <div className="flex items-center gap-2 text-sm">
                 <Sparkles className="w-4 h-4 text-cyan-600" />
-                <span className="font-medium">Smart AI</span>
+                <span className="font-medium">{t.seo.homepage.badges.smartAI}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Home className="w-4 h-4 text-sky-600" />
-                <span className="font-medium">Showcase page</span>
+                <span className="font-medium">{t.seo.homepage.badges.showcasePage}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Upload className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">Instant sync</span>
+                <span className="font-medium">{t.seo.homepage.badges.instantSync}</span>
               </div>
             </div>
           </div>
@@ -201,9 +203,9 @@ export function HomePageSeo() {
               disabled={generating}
             >
               {generating ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t.seo.homepage.actions.generating}</>
               ) : (
-                <><Sparkles className="mr-2 h-4 w-4" /> Generate with AI</>
+                <><Sparkles className="mr-2 h-4 w-4" /> {t.seo.homepage.actions.generateAI}</>
               )}
             </Button>
           </div>
@@ -218,37 +220,37 @@ export function HomePageSeo() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Optimize your homepage meta tags to improve search engine visibility
+            {t.seo.homepage.alertDescription}
           </AlertDescription>
         </Alert>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="seo-title">SEO Title</Label>
+            <Label htmlFor="seo-title">{t.seo.homepage.fields.seoTitle}</Label>
             <Input
               id="seo-title"
               value={seoTitle}
               onChange={(e) => setSeoTitle(e.target.value)}
-              placeholder="Enter your homepage title..."
+              placeholder={t.seo.homepage.fields.titlePlaceholder}
               maxLength={60}
             />
             <p className="text-xs text-muted-foreground">
-              {seoTitle.length}/60 characters
+              {seoTitle.length}/60 {t.seo.homepage.fields.characters}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="seo-description">SEO Description</Label>
+            <Label htmlFor="seo-description">{t.seo.homepage.fields.seoDescription}</Label>
             <Textarea
               id="seo-description"
               value={seoDescription}
               onChange={(e) => setSeoDescription(e.target.value)}
-              placeholder="Enter your homepage description..."
+              placeholder={t.seo.homepage.fields.descriptionPlaceholder}
               rows={4}
               maxLength={160}
             />
             <p className="text-xs text-muted-foreground">
-              {seoDescription.length}/160 characters
+              {seoDescription.length}/160 {t.seo.homepage.fields.characters}
             </p>
           </div>
         </div>
@@ -260,7 +262,7 @@ export function HomePageSeo() {
             variant="outline"
           >
             <Sparkles className="h-4 w-4 mr-2" />
-            {generating ? 'Generating...' : 'Generate with AI'}
+            {generating ? t.seo.homepage.actions.generating : t.seo.homepage.actions.generateAI}
           </Button>
 
           <Button
@@ -268,7 +270,7 @@ export function HomePageSeo() {
             disabled={syncing || !seoTitle || !seoDescription}
           >
             <Upload className="h-4 w-4 mr-2" />
-            {syncing ? 'Synchronisation...' : 'Synchroniser avec Shopify'}
+            {syncing ? t.seo.homepage.actions.syncing : t.seo.homepage.actions.syncToShopify}
           </Button>
         </div>
 
@@ -277,7 +279,7 @@ export function HomePageSeo() {
           <div className="mt-6 p-4 border rounded-lg space-y-3 bg-muted/50">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-muted-foreground">
-                Search Result Preview
+                {t.seo.homepage.preview.title}
               </p>
               <SeoConfidenceBadge 
                 seoTitle={seoTitle} 

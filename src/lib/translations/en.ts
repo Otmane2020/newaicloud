@@ -626,6 +626,44 @@ export const translations = {
         syncedImages: "{{count}} synchronized images"
       }
     },
+    homepage: {
+      title: "Homepage SEO",
+      description: "Optimize your Shopify homepage for search engines",
+      connectShopifyFirst: "Please connect your Shopify store first to use this feature",
+      bannerDescription: "Optimize your Shopify homepage SEO. Create an unforgettable first impression and boost your conversion rate.",
+      badges: {
+        smartAI: "Smart AI",
+        showcasePage: "Showcase page",
+        instantSync: "Instant sync",
+      },
+      actions: {
+        generateAI: "Generate with AI",
+        generating: "Generating...",
+        syncToShopify: "Sync to Shopify",
+        syncing: "Synchronizing...",
+      },
+      alertDescription: "Optimize your homepage meta tags to improve search engine visibility",
+      fields: {
+        seoTitle: "SEO Title",
+        titlePlaceholder: "Enter your homepage title...",
+        seoDescription: "SEO Description",
+        descriptionPlaceholder: "Enter your homepage description...",
+        characters: "characters",
+      },
+      preview: {
+        title: "Search Result Preview",
+      },
+      errors: {
+        loadError: "Error loading SEO data",
+        generateError: "Error during generation",
+        fillAllFields: "Please fill in all fields",
+        syncError: "Error during synchronization",
+      },
+      success: {
+        generated: "SEO generated successfully",
+        synced: "SEO synced successfully to Shopify",
+      },
+    },
     articleLanding: {
       errors: {
         loadArticle: "Error loading article"
