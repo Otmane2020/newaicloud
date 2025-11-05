@@ -111,6 +111,15 @@ serve(async (req) => {
       const shopInfo = await shopInfoResponse.json();
       const userId = oauthState.user_id;
 
+      // Extract domains from Shopify API
+      const publicDomain = shopInfo.shop?.domain || null; // Custom domain (e.g., decora-home.fr)
+      const myshopifyDomain = shopInfo.shop?.myshopify_domain || shop; // Shopify domain (e.g., qnxv91-2w.myshopify.com)
+
+      console.log('[SHOPIFY-OAUTH] Domaines détectés', {
+        public_domain: publicDomain,
+        myshopify_domain: myshopifyDomain
+      });
+
       // ✅ 1. FIRST: Check usage limits
       const { data: usageLimits } = await supabaseClient.rpc('check_usage_limits', {
         p_user_id: userId
@@ -139,7 +148,8 @@ serve(async (req) => {
         .from("shopify_connections")
         .insert({
           user_id: userId,
-          store_url: shop,
+          store_url: myshopifyDomain, // Use myshopify_domain for technical URL
+          public_domain: publicDomain, // Store custom domain automatically
           store_name: oauthState.shop_name || shopInfo.shop?.name || shop.replace('.myshopify.com', ''),
           access_token: accessToken,
           is_active: true,

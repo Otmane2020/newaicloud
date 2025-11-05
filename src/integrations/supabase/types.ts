@@ -1880,6 +1880,7 @@ export type Database = {
           is_active: boolean | null
           is_encrypted: boolean | null
           last_sync_at: string | null
+          public_domain: string | null
           store_address: string | null
           store_business_hours: string | null
           store_category: string | null
@@ -1904,6 +1905,7 @@ export type Database = {
           is_active?: boolean | null
           is_encrypted?: boolean | null
           last_sync_at?: string | null
+          public_domain?: string | null
           store_address?: string | null
           store_business_hours?: string | null
           store_category?: string | null
@@ -1928,6 +1930,7 @@ export type Database = {
           is_active?: boolean | null
           is_encrypted?: boolean | null
           last_sync_at?: string | null
+          public_domain?: string | null
           store_address?: string | null
           store_business_hours?: string | null
           store_category?: string | null

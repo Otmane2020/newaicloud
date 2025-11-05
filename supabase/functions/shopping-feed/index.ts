@@ -50,6 +50,7 @@ interface Variant {
 interface FeedSettings {
   user_id: string;
   store_name: string;
+  feed_domain?: string;
   default_currency?: string;
   default_condition?: string;
   default_brand?: string;
@@ -413,14 +414,15 @@ Deno.serve(async (req: Request) => {
       // Get store domain from shopify_connections
       const { data: connection } = await supabase
         .from("shopify_connections")
-        .select("store_url")
+        .select("public_domain, store_url")
         .eq("user_id", sellerId)
         .eq("is_active", true)
         .single();
 
-      if (connection?.store_url) {
-        storeDomain = connection.store_url;
-      }
+      // Priority: 1) public_domain (custom domain like decora-home.fr), 2) myshopify domain, 3) feed_domain fallback
+      storeDomain = connection?.public_domain || connection?.store_url || feedSettings?.feed_domain || null;
+      
+      console.log(`Using domain for feed URLs: ${storeDomain}`);
     } else {
       // Fallback to legacy format (seller_id directly)
       sellerId = identifier;

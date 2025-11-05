@@ -117,12 +117,32 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
       // Créer la connexion avec les clés API (API Key + API Secret)
       const storeUrl = `${cleanStoreName}.myshopify.com`;
 
+      // Validate credentials and fetch shop info to get custom domain
+      const shopInfoResponse = await fetch(`https://${storeUrl}/admin/api/2025-10/shop.json`, {
+        headers: {
+          'X-Shopify-Access-Token': manualApiSecret.trim(),
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!shopInfoResponse.ok) {
+        toast.error("Invalid credentials. Please check your API Key and Admin API Access Token.");
+        return;
+      }
+
+      // Extract public domain from shop info
+      const shopInfo = await shopInfoResponse.json();
+      const publicDomain = shopInfo.shop?.domain || null;
+      
+      console.log('[SHOPIFY-MANUAL] Domaine détecté:', publicDomain);
+
       const { error: insertError } = await supabase
         .from('shopify_connections')
         .insert({
           user_id: user.id,
           store_name: manualCommercialName.trim() || cleanStoreName,
           store_url: storeUrl,
+          public_domain: publicDomain, // Auto-retrieved custom domain
           api_key: manualApiKey.trim(),
           access_token: manualApiSecret.trim(),
           connection_type: 'manual',
