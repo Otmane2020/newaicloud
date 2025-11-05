@@ -78,6 +78,35 @@ function escapeXml(unsafe: string): string {
     .replace(/'/g, "&apos;");
 }
 
+/**
+ * Validates a GTIN using the GS1 checksum algorithm
+ * Supports GTIN-8, GTIN-12, GTIN-13, and GTIN-14
+ */
+function isValidGTIN(gtin: string | null | undefined): boolean {
+  if (!gtin) return false;
+  
+  // Remove any spaces or dashes
+  const cleanGtin = gtin.replace(/[\s-]/g, '');
+  
+  // Check if it's a valid length (8, 12, 13, or 14 digits)
+  if (!/^\d{8}$|^\d{12,14}$/.test(cleanGtin)) {
+    return false;
+  }
+  
+  // Validate checksum using GS1 algorithm
+  const digits = cleanGtin.split('').map(Number);
+  const checkDigit = digits.pop()!;
+  
+  // Calculate checksum (multiply odd positions by 3, even by 1, from right to left)
+  const sum = digits.reverse().reduce((acc, digit, index) => {
+    return acc + digit * (index % 2 === 0 ? 3 : 1);
+  }, 0);
+  
+  const calculatedCheck = (10 - (sum % 10)) % 10;
+  
+  return calculatedCheck === checkDigit;
+}
+
 function truncateText(text: string, maxLength: number): string {
   if (!text) return "";
   if (text.length <= maxLength) return text;
@@ -267,12 +296,24 @@ async function generateGoogleShoppingFeed(
         if (googleCategory) {
           xml += `
       <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
+        } else {
+          console.warn(`Product ${product.id} (${product.title}) missing google_product_category - may reduce visibility in Google Shopping`);
         }
 
-        // Add GTIN if available and enabled in settings
-        if (product.google_gtin && (feedSettings?.generate_gtin_enabled !== false)) {
+        // Validate GTIN and add identifier_exists accordingly
+        const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+        
+        if (hasValidGtin) {
           xml += `
-      <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
+      <g:gtin>${escapeXml(product.google_gtin!)}</g:gtin>`;
+        } else {
+          // Product has no valid GTIN - declare identifier_exists=false
+          xml += `
+      <g:identifier_exists>false</g:identifier_exists>`;
+          
+          if (product.google_gtin) {
+            console.warn(`Product ${product.id} (${product.title}) has invalid GTIN: ${product.google_gtin} - using identifier_exists=false`);
+          }
         }
 
         // Add item group ID for variants
