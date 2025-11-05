@@ -327,7 +327,7 @@ const Index = () => {
                         {t.landing.pricing.billedAnnually.replace('{{currency}}', getCurrencySymbol(language)).replace('{{total}}', String(planConfig.yearlyTotal))}
                       </p>
                     )}
-                    {planConfig.key === 'starter' && plan.trial && (
+                    {planConfig.key === 'starter' && 'trial' in plan && plan.trial && (
                       <p className="text-sm text-muted-foreground mt-1">
                         {plan.trial}
                       </p>
