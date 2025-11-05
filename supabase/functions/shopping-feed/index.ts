@@ -78,6 +78,11 @@ function escapeXml(unsafe: string): string {
     .replace(/'/g, "&apos;");
 }
 
+function escapeCSV(str: string): string {
+  if (!str) return "";
+  return str.replace(/"/g, '""');
+}
+
 /**
  * Validates a GTIN using the GS1 checksum algorithm
  * Supports GTIN-8, GTIN-12, GTIN-13, and GTIN-14
@@ -411,10 +416,20 @@ async function generateGoogleShoppingFeed(
       <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
       }
 
-      // Add GTIN if available and enabled in settings
-      if (product.google_gtin && (feedSettings?.generate_gtin_enabled !== false)) {
+      // Validate GTIN and add identifier_exists accordingly
+      const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+      
+      if (hasValidGtin) {
         xml += `
-      <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
+      <g:gtin>${escapeXml(product.google_gtin!)}</g:gtin>`;
+      } else {
+        // Product has no valid GTIN - declare identifier_exists=false
+        xml += `
+      <g:identifier_exists>false</g:identifier_exists>`;
+        
+        if (product.google_gtin) {
+          console.warn(`Product ${product.id} (${product.title}) has invalid GTIN: ${product.google_gtin} - using identifier_exists=false`);
+        }
       }
 
       xml += `
@@ -430,6 +445,108 @@ async function generateGoogleShoppingFeed(
 
   console.log(`Generated feed with ${itemCount} items for seller ${sellerId}`);
   return xml;
+}
+
+function generateGoogleShoppingCSV(
+  products: Product[],
+  variants: { [key: string]: Variant[] },
+  sellerId: string,
+  storeDomain: string | null,
+  feedSettings?: FeedSettings,
+): string {
+  const baseUrl = storeDomain ? `https://${storeDomain}` : "https://newai.sale";
+  
+  // CSV Header with all required and recommended fields
+  let csv = 'id,title,description,link,image_link,additional_image_link,availability,price,sale_price,condition,brand,mpn,gtin,identifier_exists,google_product_category,product_type,item_group_id,size,color,material\n';
+
+  for (const product of products) {
+    const productVariants = variants[product.id] || [];
+    const hasRealVariants = productVariants.length > 1 || 
+      (productVariants.length === 1 && 
+       productVariants[0].title !== 'Default Title' && 
+       (productVariants[0].option1 || productVariants[0].option2 || productVariants[0].option3));
+
+    if (hasRealVariants && productVariants.length > 0) {
+      for (const variant of productVariants) {
+        const itemId = generateProductId(product, variant);
+        const title = truncateText(generateVariantTitle(product, variant), 150);
+        const description = truncateText(getProductDescription(product), 5000);
+        const productUrl = storeDomain ? "https://" + storeDomain + "/products/" + product.handle : "https://newai.sale/product/" + product.handle;
+        const imageUrl = getProductImage(product, variant);
+        const price = getProductPrice(product, variant);
+        const currency = product.currency || feedSettings?.default_currency || "EUR";
+        const availability = getProductAvailability(product);
+        const condition = getProductCondition(product);
+        const brand = getProductBrand(product, feedSettings);
+        const mpn = getProductMpn(product, variant);
+        const googleCategory = getGoogleProductCategory(product);
+
+        if (price <= 0) continue;
+
+        const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+        
+        let priceField = `${price.toFixed(2)} ${currency}`;
+        let salePriceField = '';
+        
+        if (product.compare_at_price) {
+          const comparePrice = parseFloat(product.compare_at_price);
+          if (comparePrice > price) {
+            priceField = `${comparePrice.toFixed(2)} ${currency}`;
+            salePriceField = `${price.toFixed(2)} ${currency}`;
+          }
+        }
+
+        const gtinValue = hasValidGtin ? escapeCSV(product.google_gtin!) : '';
+        const identifierExists = hasValidGtin ? '' : 'false';
+        const categoryValue = googleCategory ? escapeCSV(googleCategory) : '';
+        const productTypeValue = product.product_type ? escapeCSV(product.product_type) : '';
+        const itemGroupId = productVariants.length > 1 ? escapeCSV("group_" + product.id) : '';
+        const sizeValue = variant.option1 ? escapeCSV(variant.option1) : '';
+        const colorValue = variant.option2 ? escapeCSV(variant.option2) : '';
+        const materialValue = variant.option3 ? escapeCSV(variant.option3) : '';
+
+        csv += '"' + escapeCSV(itemId) + '","' + escapeCSV(title) + '","' + escapeCSV(description) + '","' + escapeCSV(productUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(availability) + '","' + escapeCSV(priceField) + '","' + escapeCSV(salePriceField) + '","' + escapeCSV(condition) + '","' + escapeCSV(brand) + '","' + escapeCSV(mpn) + '","' + gtinValue + '","' + identifierExists + '","' + categoryValue + '","' + productTypeValue + '","' + itemGroupId + '","' + sizeValue + '","' + colorValue + '","' + materialValue + '"\n';
+      }
+    } else {
+      const itemId = generateProductId(product);
+      const title = truncateText(product.optimized_title || product.seo_title || product.title, 150);
+      const description = truncateText(getProductDescription(product), 5000);
+      const productUrl = storeDomain ? "https://" + storeDomain + "/products/" + product.handle : "https://newai.sale/product/" + product.handle;
+      const imageUrl = getProductImage(product);
+      const price = getProductPrice(product);
+      const currency = product.currency || feedSettings?.default_currency || "EUR";
+      const availability = getProductAvailability(product);
+      const condition = getProductCondition(product);
+      const brand = getProductBrand(product, feedSettings);
+      const mpn = getProductMpn(product);
+      const googleCategory = getGoogleProductCategory(product);
+
+      if (price <= 0) continue;
+
+      const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+      
+      let priceField = `${price.toFixed(2)} ${currency}`;
+      let salePriceField = '';
+      
+      if (product.compare_at_price) {
+        const comparePrice = parseFloat(product.compare_at_price);
+        if (comparePrice > price) {
+          priceField = `${comparePrice.toFixed(2)} ${currency}`;
+          salePriceField = `${price.toFixed(2)} ${currency}`;
+        }
+      }
+
+      const gtinValue = hasValidGtin ? escapeCSV(product.google_gtin!) : '';
+      const identifierExists = hasValidGtin ? '' : 'false';
+      const categoryValue = googleCategory ? escapeCSV(googleCategory) : '';
+      const productTypeValue = product.product_type ? escapeCSV(product.product_type) : '';
+
+      csv += '"' + escapeCSV(itemId) + '","' + escapeCSV(title) + '","' + escapeCSV(description) + '","' + escapeCSV(productUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(availability) + '","' + escapeCSV(priceField) + '","' + escapeCSV(salePriceField) + '","' + escapeCSV(condition) + '","' + escapeCSV(brand) + '","' + escapeCSV(mpn) + '","' + gtinValue + '","' + identifierExists + '","' + categoryValue + '","' + productTypeValue + '","","","",""\n';
+    }
+  }
+
+  console.log(`Generated CSV feed for seller ${sellerId}`);
+  return csv;
 }
 
 Deno.serve(async (req: Request) => {
@@ -450,13 +567,15 @@ Deno.serve(async (req: Request) => {
 
     // Support URL formats:
     // /shoppingfeed/{store_name}/xml
+    // /shoppingfeed/{store_name}/csv
     // /shoppingfeed/{seller_id}/xml
+    // /shoppingfeed/{seller_id}/csv
     const identifierIndex = pathParts.findIndex((part) => part === "shoppingfeed") + 1;
 
     if (identifierIndex === 0 || identifierIndex >= pathParts.length) {
       return new Response(
         JSON.stringify({
-          error: "Invalid URL format. Use /shoppingfeed/{store_name}/xml or /shoppingfeed/{seller_id}/xml",
+          error: "Invalid URL format. Use /shoppingfeed/{store_name}/xml or /shoppingfeed/{store_name}/csv",
         }),
         {
           status: 400,
@@ -466,9 +585,17 @@ Deno.serve(async (req: Request) => {
     }
 
     const identifier = pathParts[identifierIndex];
+    const format = pathParts[identifierIndex + 1] || 'xml'; // Default to XML
 
-    if (!identifier || identifier === "xml") {
+    if (!identifier || identifier === "xml" || identifier === "csv") {
       return new Response(JSON.stringify({ error: "Store name or Seller ID is required in the path" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (format !== 'xml' && format !== 'csv') {
+      return new Response(JSON.stringify({ error: "Invalid format. Use 'xml' or 'csv'" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -608,21 +735,39 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const xmlFeed = await generateGoogleShoppingFeed(
-      products,
-      variantsByProduct,
-      sellerId,
-      storeDomain,
-      feedSettings || undefined,
-    );
+    if (format === 'csv') {
+      const csvFeed = generateGoogleShoppingCSV(
+        products,
+        variantsByProduct,
+        sellerId,
+        storeDomain,
+        feedSettings || undefined,
+      );
 
-    return new Response(xmlFeed, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/xml; charset=utf-8",
-        "Content-Disposition": `attachment; filename="google-shopping-feed-${identifier}.xml"`,
-      },
-    });
+      return new Response(csvFeed, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="google-shopping-feed-${identifier}.csv"`,
+        },
+      });
+    } else {
+      const xmlFeed = await generateGoogleShoppingFeed(
+        products,
+        variantsByProduct,
+        sellerId,
+        storeDomain,
+        feedSettings || undefined,
+      );
+
+      return new Response(xmlFeed, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/xml; charset=utf-8",
+          "Content-Disposition": `attachment; filename="google-shopping-feed-${identifier}.xml"`,
+        },
+      });
+    }
   } catch (error) {
     console.error("Error generating shopping feed:", error);
     return new Response(
