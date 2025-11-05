@@ -5,6 +5,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Multilingual translations
+const TRANSLATIONS = {
+  fr: {
+    apiKeyNotConfigured: 'LOVABLE_API_KEY non configuré',
+    rateLimitExceeded: 'Limite de taux dépassée. Veuillez réessayer plus tard.',
+    paymentRequired: 'Paiement requis. Veuillez ajouter des crédits à votre espace de travail Lovable.',
+    aiGatewayError: 'Erreur de passerelle IA',
+    aiReturnedInvalidJson: 'L\'IA a retourné un JSON invalide',
+    unknownError: 'Erreur inconnue',
+    errorInAnalyze: 'Erreur dans analyze-seo-with-ai',
+    callingAI: '🤖 Appel de Lovable AI pour une analyse SEO concise...',
+    analysisCompleted: '✅ Analyse IA terminée',
+  },
+  en: {
+    apiKeyNotConfigured: 'LOVABLE_API_KEY not configured',
+    rateLimitExceeded: 'Rate limit exceeded. Please try again later.',
+    paymentRequired: 'Payment required. Please add credits to your Lovable workspace.',
+    aiGatewayError: 'AI Gateway error',
+    aiReturnedInvalidJson: 'AI returned invalid JSON',
+    unknownError: 'Unknown error',
+    errorInAnalyze: 'Error in analyze-seo-with-ai',
+    callingAI: '🤖 Calling Lovable AI for concise SEO analysis...',
+    analysisCompleted: '✅ AI analysis completed',
+  },
+};
+
+function detectLanguage(req: Request): 'fr' | 'en' {
+  const acceptLanguage = req.headers.get('Accept-Language') || '';
+  return acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
+}
+
 interface SeoAnalysisInput {
   storeName: string;
   storeUrl: string;
@@ -24,9 +55,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const lang = detectLanguage(req);
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+      throw new Error(TRANSLATIONS[lang].apiKeyNotConfigured);
     }
 
     const analysisData: SeoAnalysisInput = await req.json();
@@ -102,7 +134,7 @@ RÈGLES STRICTES:
 - Actions automatisées par NewAI (automated: true)
 - Concis, professionnel, actionnable`;
 
-    console.log('🤖 Calling Lovable AI for concise SEO analysis...');
+    console.log(TRANSLATIONS[lang].callingAI);
 
     // Call Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -131,25 +163,25 @@ RÈGLES STRICTES:
     if (!aiResponse.ok) {
       if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+          JSON.stringify({ error: TRANSLATIONS[lang].rateLimitExceeded }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'Payment required. Please add credits to your Lovable workspace.' }),
+          JSON.stringify({ error: TRANSLATIONS[lang].paymentRequired }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       const errorText = await aiResponse.text();
-      console.error('AI Gateway error:', aiResponse.status, errorText);
-      throw new Error(`AI Gateway error: ${aiResponse.status}`);
+      console.error(`${TRANSLATIONS[lang].aiGatewayError}:`, aiResponse.status, errorText);
+      throw new Error(`${TRANSLATIONS[lang].aiGatewayError}: ${aiResponse.status}`);
     }
 
     const aiResult = await aiResponse.json();
     let analysisText = aiResult.choices[0].message.content;
     
-    console.log('✅ AI analysis completed');
+    console.log(TRANSLATIONS[lang].analysisCompleted);
 
     // Strip markdown code fences if present
     analysisText = analysisText.trim();
@@ -168,7 +200,7 @@ RÈGLES STRICTES:
       parsedAnalysis = JSON.parse(analysisText);
     } catch (e) {
       console.error('Failed to parse AI response as JSON:', analysisText);
-      throw new Error('AI returned invalid JSON');
+      throw new Error(TRANSLATIONS[lang].aiReturnedInvalidJson);
     }
 
     // Calculate global score
@@ -190,9 +222,10 @@ RÈGLES STRICTES:
     );
 
   } catch (error: any) {
-    console.error('Error in analyze-seo-with-ai:', error);
+    const lang = detectLanguage(req);
+    console.error(`${TRANSLATIONS[lang].errorInAnalyze}:`, error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Unknown error' }),
+      JSON.stringify({ error: error.message || TRANSLATIONS[lang].unknownError }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

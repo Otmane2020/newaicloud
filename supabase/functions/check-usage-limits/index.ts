@@ -6,12 +6,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Multilingual translations
+const TRANSLATIONS = {
+  fr: {
+    noAuthHeader: 'Aucun en-tête d\'autorisation',
+    unauthorized: 'Non autorisé',
+    couldNotFetchPlan: 'Impossible de récupérer les limites du plan',
+    noPlanConfiguration: 'Aucune configuration de plan trouvée',
+    unknownError: 'Erreur inconnue',
+    errorCheckingLimits: 'Erreur lors de la vérification des limites d\'utilisation',
+  },
+  en: {
+    noAuthHeader: 'No authorization header',
+    unauthorized: 'Unauthorized',
+    couldNotFetchPlan: 'Could not fetch plan limits',
+    noPlanConfiguration: 'No plan configuration found',
+    unknownError: 'Unknown error',
+    errorCheckingLimits: 'Error checking usage limits',
+  },
+};
+
+function detectLanguage(req: Request): 'fr' | 'en' {
+  const acceptLanguage = req.headers.get('Accept-Language') || '';
+  return acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const lang = detectLanguage(req);
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -21,7 +47,7 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('[LIMITS] No authorization header');
-      throw new Error('No authorization header');
+      throw new Error(TRANSLATIONS[lang].noAuthHeader);
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -29,7 +55,7 @@ serve(async (req) => {
     
     if (userError || !user) {
       console.error('[LIMITS] Auth error:', userError);
-      throw new Error('Unauthorized');
+      throw new Error(TRANSLATIONS[lang].unauthorized);
     }
 
     // Get user profile
@@ -78,11 +104,11 @@ serve(async (req) => {
         .limit(1)
         .single();
       
-      if (planError) throw new Error('Could not fetch plan limits');
+      if (planError) throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
       plan = anyPlan;
     }
     
-    if (!plan) throw new Error('No plan configuration found');
+    if (!plan) throw new Error(TRANSLATIONS[lang].noPlanConfiguration);
     
     console.log(`[LIMITS] Using plan: ${plan.id}`);
 
@@ -179,8 +205,9 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error checking usage limits:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const lang = detectLanguage(req);
+    console.error(`${TRANSLATIONS[lang].errorCheckingLimits}:`, error);
+    const errorMessage = error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError;
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -6,18 +6,45 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function getSupabaseClient(authHeader: string) {
+// Multilingual translations
+const TRANSLATIONS = {
+  fr: {
+    missingSupabaseCredentials: "Identifiants Supabase manquants",
+    deepseekNotConfigured: "DEEPSEEK_API_KEY non configuré",
+    deepseekApiError: "Erreur API DeepSeek",
+    productIdsRequired: "Le tableau productIds est requis",
+    errorOptimizingProduct: "Erreur lors de l'optimisation du produit",
+    unknownError: "Erreur inconnue",
+    errorInOptimize: "Erreur dans optimize-shopping-feed",
+  },
+  en: {
+    missingSupabaseCredentials: "Missing Supabase credentials",
+    deepseekNotConfigured: "DEEPSEEK_API_KEY not configured",
+    deepseekApiError: "DeepSeek API error",
+    productIdsRequired: "productIds array is required",
+    errorOptimizingProduct: "Error optimizing product",
+    unknownError: "Unknown error",
+    errorInOptimize: "Error in optimize-shopping-feed",
+  },
+};
+
+function detectLanguage(req: Request): 'fr' | 'en' {
+  const acceptLanguage = req.headers.get('Accept-Language') || '';
+  return acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
+}
+
+function getSupabaseClient(authHeader: string, lang: 'fr' | 'en' = 'en') {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !supabaseKey) throw new Error("Missing Supabase credentials");
+  if (!supabaseUrl || !supabaseKey) throw new Error(TRANSLATIONS[lang].missingSupabaseCredentials);
   return createClient(supabaseUrl, supabaseKey, {
     global: { headers: { Authorization: authHeader } },
   });
 }
 
-async function callDeepSeek(prompt: string): Promise<string> {
+async function callDeepSeek(prompt: string, lang: 'fr' | 'en' = 'en'): Promise<string> {
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
-  if (!apiKey) throw new Error("DEEPSEEK_API_KEY not configured");
+  if (!apiKey) throw new Error(TRANSLATIONS[lang].deepseekNotConfigured);
 
   const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
     method: "POST",
@@ -42,7 +69,7 @@ async function callDeepSeek(prompt: string): Promise<string> {
   });
 
   if (!response.ok) {
-    throw new Error(`DeepSeek API error: ${response.status}`);
+    throw new Error(`${TRANSLATIONS[lang].deepseekApiError}: ${response.status}`);
   }
 
   const data = await response.json();
@@ -55,14 +82,15 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const lang = detectLanguage(req);
     const authHeader = req.headers.get("Authorization") || "";
-    const supabase = getSupabaseClient(authHeader);
+    const supabase = getSupabaseClient(authHeader, lang);
     
     const { productIds } = await req.json();
     
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
       return new Response(
-        JSON.stringify({ error: "productIds array is required" }),
+        JSON.stringify({ error: TRANSLATIONS[lang].productIdsRequired }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -107,7 +135,7 @@ Generate Google Shopping optimized content in JSON format:
 Focus on making the title clear, descriptive, and include key attributes. The description should be compelling and highlight benefits.
 `;
 
-        const aiResponse = await callDeepSeek(prompt);
+        const aiResponse = await callDeepSeek(prompt, lang);
         
         // Clean up AI response (remove markdown code blocks if present)
         let cleanedResponse = aiResponse.trim();
@@ -140,11 +168,11 @@ Focus on making the title clear, descriptive, and include key attributes. The de
           optimizations: updateData
         });
       } catch (error) {
-        console.error(`Error optimizing product ${productId}:`, error);
+        console.error(`${TRANSLATIONS[lang].errorOptimizingProduct} ${productId}:`, error);
         results.push({ 
           productId, 
           status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError
         });
       }
     }
@@ -154,9 +182,10 @@ Focus on making the title clear, descriptive, and include key attributes. The de
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in optimize-shopping-feed:", error);
+    const lang = detectLanguage(req);
+    console.error(`${TRANSLATIONS[lang].errorInOptimize}:`, error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
