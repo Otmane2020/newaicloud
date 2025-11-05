@@ -5,19 +5,48 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function getSupabaseClient(authHeader: string) {
+// Multilingual error messages
+const TRANSLATIONS = {
+  fr: {
+    missingProductIds: "Le tableau productIds est requis",
+    missingSupabaseCredentials: "Identifiants Supabase manquants",
+    errorGeneratingGtin: "Erreur lors de la génération du GTIN pour le produit",
+    couldNotGenerateUnique: "Impossible de générer un GTIN unique après 10 tentatives",
+    generatedInvalidGtin: "GTIN invalide généré",
+    partialGtinError: "Le GTIN partiel doit contenir 12 chiffres pour GTIN-13",
+    unknownError: "Erreur inconnue",
+    errorInGenerateGtin: "Erreur dans generate-gtin",
+  },
+  en: {
+    missingProductIds: "productIds array is required",
+    missingSupabaseCredentials: "Missing Supabase credentials",
+    errorGeneratingGtin: "Error generating GTIN for product",
+    couldNotGenerateUnique: "Could not generate unique GTIN after 10 attempts",
+    generatedInvalidGtin: "Generated invalid GTIN",
+    partialGtinError: "Partial GTIN must be 12 digits for GTIN-13",
+    unknownError: "Unknown error",
+    errorInGenerateGtin: "Error in generate-gtin",
+  },
+};
+
+function detectLanguage(req: Request): 'fr' | 'en' {
+  const acceptLanguage = req.headers.get('Accept-Language') || '';
+  return acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
+}
+
+function getSupabaseClient(authHeader: string, lang: 'fr' | 'en' = 'en') {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !supabaseKey) throw new Error("Missing Supabase credentials");
+  if (!supabaseUrl || !supabaseKey) throw new Error(TRANSLATIONS[lang].missingSupabaseCredentials);
   return createClient(supabaseUrl, supabaseKey, {
     global: { headers: { Authorization: authHeader } },
   });
 }
 
 // Calculate GTIN checksum using the correct GS1 algorithm
-function calculateGTIN13Checksum(partialGtin: string): string {
+function calculateGTIN13Checksum(partialGtin: string, lang: 'fr' | 'en' = 'en'): string {
   if (partialGtin.length !== 12) {
-    throw new Error("Partial GTIN must be 12 digits for GTIN-13");
+    throw new Error(TRANSLATIONS[lang].partialGtinError);
   }
 
   const digits = partialGtin.split("").map(Number);
@@ -56,7 +85,7 @@ function isValidGTIN(gtin: string): boolean {
 }
 
 // Generate proper GTIN-13 based on country code and product ID
-function generateGTIN13(countryCode: string, productId: string, index: number = 0): string {
+function generateGTIN13(countryCode: string, productId: string, index: number = 0, lang: 'fr' | 'en' = 'en'): string {
   // GS1 Country Prefixes (first 2-3 digits)
   const countryPrefixes: { [key: string]: string } = {
     FR: "300", // France (300-379)
@@ -98,8 +127,8 @@ function generateGTIN13(countryCode: string, productId: string, index: number = 
   }
 
   // Calculate checksum
-  const checksum = calculateGTIN13Checksum(partialGtin);
-
+  const checksum = calculateGTIN13Checksum(partialGtin, lang);
+  
   return partialGtin + checksum;
 }
 
@@ -127,11 +156,12 @@ function generateGTIN(
   productId: string,
   index: number = 0,
   type: "gtin-13" | "gtin-8" = "gtin-13",
+  lang: 'fr' | 'en' = 'en'
 ): string {
   if (type === "gtin-8") {
     return generateGTIN8(productId, index);
   } else {
-    return generateGTIN13(countryCode, productId, index);
+    return generateGTIN13(countryCode, productId, index, lang);
   }
 }
 
@@ -141,13 +171,14 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const lang = detectLanguage(req);
     const authHeader = req.headers.get("Authorization") || "";
-    const supabase = getSupabaseClient(authHeader);
+    const supabase = getSupabaseClient(authHeader, lang);
 
     const { productIds, countryCode = "FR", gtinType = "gtin-13" } = await req.json();
 
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
-      return new Response(JSON.stringify({ error: "productIds array is required" }), {
+      return new Response(JSON.stringify({ error: TRANSLATIONS[lang].missingProductIds }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -184,8 +215,8 @@ Deno.serve(async (req: Request) => {
         let isUnique = false;
 
         while (attempts < 10 && !isUnique) {
-          newGtin = generateGTIN(countryCode, productId, i + attempts, gtinType as any);
-
+          newGtin = generateGTIN(countryCode, productId, i + attempts, gtinType as any, lang);
+          
           // Check if this GTIN is already used in this batch
           if (!usedGtins.has(newGtin)) {
             // Check if GTIN exists in database
@@ -204,12 +235,12 @@ Deno.serve(async (req: Request) => {
         }
 
         if (!isUnique || !newGtin) {
-          throw new Error("Could not generate unique GTIN after 10 attempts");
+          throw new Error(TRANSLATIONS[lang].couldNotGenerateUnique);
         }
 
         // Validate the generated GTIN before saving
         if (!isValidGTIN(newGtin)) {
-          throw new Error("Generated invalid GTIN: " + newGtin);
+          throw new Error(TRANSLATIONS[lang].generatedInvalidGtin + ": " + newGtin);
         }
 
         // Update product with generated GTIN
@@ -231,10 +262,10 @@ Deno.serve(async (req: Request) => {
           type: gtinType,
         });
       } catch (error) {
-        console.error(`Error generating GTIN for product ${productId}:`, error);
+        console.error(`${TRANSLATIONS[lang].errorGeneratingGtin} ${productId}:`, error);
         results.push({
           productId,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError,
           status: "error",
           valid: false,
         });
@@ -260,10 +291,11 @@ Deno.serve(async (req: Request) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("Error in generate-gtin:", error);
+    const lang = detectLanguage(req);
+    console.error(`${TRANSLATIONS[lang].errorInGenerateGtin}:`, error);
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError,
         success: false,
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
