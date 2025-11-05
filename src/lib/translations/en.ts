@@ -1410,8 +1410,20 @@ export const translations = {
       optimizeAll: "Optimize All",
       optimizeSelected: "Optimize Selected",
       globalScore: "Global SEO Score",
-      scoreWeighting: "30% non-optimized + 70% AI-optimized",
+      scoreWeighting: "(50% Title + 30% Description + 20% Image)",
       optimized: "optimized",
+      table: {
+        image: "Image",
+        title: "Title",
+        products: "Products",
+        description: "Description",
+        seoTitle: "SEO Title",
+        seoDescription: "SEO Description",
+        seoScore: "SEO Score",
+        status: "Status",
+        synced: "Synced",
+        actions: "Actions"
+      },
       features: {
         intelligent: "Intelligent SEO",
         visibility: "+40% visibility",

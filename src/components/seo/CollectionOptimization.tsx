@@ -827,8 +827,6 @@ export function CollectionOptimization() {
           limit={limits.limits.max_optimizations}
         />
       )}
-      
-      <VisionAIBanner />
 
       <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-6 md:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -896,6 +894,8 @@ export function CollectionOptimization() {
           </div>
         </div>
       </Card>
+
+      <VisionAIBanner />
 
       {/* Clickable Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1267,26 +1267,26 @@ export function CollectionOptimization() {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead className="w-20">Image</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead className="w-24">Produits</TableHead>
-                  <TableHead className="min-w-[200px]">Description</TableHead>
-                  <TableHead className="min-w-[200px]">SEO Title</TableHead>
-                  <TableHead className="min-w-[250px]">SEO Description</TableHead>
+                  <TableHead className="w-20">{t.collections.optimization.table.image}</TableHead>
+                  <TableHead>{t.collections.optimization.table.title}</TableHead>
+                  <TableHead className="w-24">{t.collections.optimization.table.products}</TableHead>
+                  <TableHead className="min-w-[200px]">{t.collections.optimization.table.description}</TableHead>
+                  <TableHead className="min-w-[200px]">{t.collections.optimization.table.seoTitle}</TableHead>
+                  <TableHead className="min-w-[250px]">{t.collections.optimization.table.seoDescription}</TableHead>
                   <TableHead className="w-32">
                     <button
                       onClick={handleSeoScoreSortToggle}
                       className="flex items-center gap-1 hover:text-primary transition-colors"
                     >
-                      SEO Score
+                      {t.collections.optimization.table.seoScore}
                       {seoScoreSort === 'none' && <ArrowUpDown className="w-4 h-4" />}
                       {seoScoreSort === 'asc' && <ArrowUp className="w-4 h-4" />}
                       {seoScoreSort === 'desc' && <ArrowDown className="w-4 h-4" />}
                     </button>
                   </TableHead>
-                  <TableHead className="w-32">Status</TableHead>
-                  <TableHead className="w-32">Synced</TableHead>
-                  <TableHead className="w-24">Actions</TableHead>
+                  <TableHead className="w-32">{t.collections.optimization.table.status}</TableHead>
+                  <TableHead className="w-32">{t.collections.optimization.table.synced}</TableHead>
+                  <TableHead className="w-24">{t.collections.optimization.table.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
