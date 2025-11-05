@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CreditCard } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
+import { getCurrencySymbol } from '@/lib/formatUtils';
 
 interface UpgradeDialogProps {
   open: boolean;
@@ -33,7 +34,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   const [currentPlanData, setCurrentPlanData] = useState<Plan | null>(null);
   const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
 
   const limitTitle = t.dialogs.limit.limitTypes[limitType];
   const limitMessage = tf('dialogs.limit.usageMessage', { 
@@ -187,7 +188,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
               {selectedPlan && (
                 <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 p-3 sm:p-4 rounded-lg border border-primary/30">
                   <h3 className="font-semibold mb-2 sm:mb-3 text-base sm:text-lg">
-                    {selectedPlan.name} - {selectedPlan.price_monthly}€/mois
+                    {selectedPlan.name} - {selectedPlan.price_monthly}{getCurrencySymbol(language)}/mois
                   </h3>
                   <ul className="space-y-1.5 sm:space-y-2">
                     <li className="flex items-start gap-2">

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, CreditCard, Calendar, Package, Check, Zap, Crown } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
+import { getCurrencySymbol } from '@/lib/formatUtils';
 
 
 interface Plan {
@@ -26,6 +28,7 @@ interface Plan {
 
 export function SubscriptionManagement() {
   const { user } = useAuth();
+  const { language } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
@@ -227,7 +230,7 @@ export function SubscriptionManagement() {
                   </div>
                   <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
                   <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-4xl font-bold">${plan.price_monthly}</span>
+                    <span className="text-4xl font-bold">{getCurrencySymbol(language)}{plan.price_monthly}</span>
                     <span className="text-muted-foreground">/mois</span>
                   </div>
                 </div>

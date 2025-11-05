@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useTranslation } from "@/lib/language";
+import { getCurrencySymbol } from "@/lib/formatUtils";
 
 interface Plan {
   id: string;
@@ -36,7 +37,7 @@ export function SubscriptionPlans() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { limits } = useUsageLimits();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -273,7 +274,7 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">${getPrice(starterPlan)}</span>
+                  <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(starterPlan)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
               </div>
@@ -355,7 +356,7 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">${getPrice(selectedPro)}</span>
+                  <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(selectedPro)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
               </div>
@@ -437,7 +438,7 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">${getPrice(selectedEnterprise)}</span>
+                  <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(selectedEnterprise)}</span>
                   <span className="text-muted-foreground">/mois</span>
                 </div>
               </div>

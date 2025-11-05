@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
+import { getCurrencySymbol } from '@/lib/formatUtils';
 
 interface Plan {
   id: string;
@@ -49,7 +50,7 @@ interface Plan {
 
 export default function Onboarding() {
   const { user } = useAuth();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -411,8 +412,8 @@ export default function Onboarding() {
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {billingCycle === 'yearly' 
-                          ? `$${(starterPlan.price_yearly / 12).toFixed(2)}`
-                          : `$${starterPlan.price_monthly.toFixed(2)}`
+                          ? `${getCurrencySymbol(language)}${(starterPlan.price_yearly / 12).toFixed(2)}`
+                          : `${getCurrencySymbol(language)}${starterPlan.price_monthly.toFixed(2)}`
                         }
                       </span>
                       <span className="text-muted-foreground">/mois</span>
@@ -540,8 +541,8 @@ export default function Onboarding() {
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {billingCycle === 'yearly' 
-                          ? `$${(selectedPlan.price_yearly / 12).toFixed(2)}`
-                          : `$${selectedPlan.price_monthly.toFixed(2)}`
+                          ? `${getCurrencySymbol(language)}${(selectedPlan.price_yearly / 12).toFixed(2)}`
+                          : `${getCurrencySymbol(language)}${selectedPlan.price_monthly.toFixed(2)}`
                         }
                       </span>
                       <span className="text-muted-foreground">{t.onboarding.planFeatures.perMonth}</span>
@@ -657,8 +658,8 @@ export default function Onboarding() {
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {billingCycle === 'yearly' 
-                          ? `$${(selectedPlan.price_yearly / 12).toFixed(2)}`
-                          : `$${selectedPlan.price_monthly.toFixed(2)}`
+                          ? `${getCurrencySymbol(language)}${(selectedPlan.price_yearly / 12).toFixed(2)}`
+                          : `${getCurrencySymbol(language)}${selectedPlan.price_monthly.toFixed(2)}`
                         }
                       </span>
                       <span className="text-muted-foreground">{t.onboarding.planFeatures.perMonth}</span>

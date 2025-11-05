@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
+import { getCurrencySymbol } from '@/lib/formatUtils';
 
 interface Plan {
   id: string;
@@ -35,6 +37,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
+  const { language } = useTranslation();
 
   useEffect(() => {
     if (open) {
@@ -182,7 +185,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Plan actuel:</span>
                     <span className="font-medium">
-                      {currentPlan.name} - {currentPrice.toFixed(2)}€/{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                      {currentPlan.name} - {currentPrice.toFixed(2)}{getCurrencySymbol(language)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
                     </span>
                   </div>
                 )}
@@ -190,7 +193,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Nouveau plan:</span>
                   <span className="font-medium">
-                    {selectedPlan.name} - {newPrice.toFixed(2)}€/{billingPeriod === 'monthly' ? 'mois' : 'an'}
+                    {selectedPlan.name} - {newPrice.toFixed(2)}{getCurrencySymbol(language)}/{billingPeriod === 'monthly' ? 'mois' : 'an'}
                   </span>
                 </div>
 
@@ -200,7 +203,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
                       {isUpgrade ? 'Coût supplémentaire' : 'Remboursement'} (prorata):
                     </span>
                     <span className={`font-semibold ${isUpgrade ? 'text-orange-600' : 'text-green-600'}`}>
-                      {isUpgrade ? '+' : ''}{priceChange.toFixed(2)}€
+                      {isUpgrade ? '+' : ''}{priceChange.toFixed(2)}{getCurrencySymbol(language)}
                     </span>
                   </div>
                 )}
