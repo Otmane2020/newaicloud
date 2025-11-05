@@ -13,6 +13,7 @@ import { ProgressDialog, ResultsDialog, SuccessDialog } from '@/components/seo/S
 import { ArticleSyncDialog } from './ArticleSyncDialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { useTranslation } from '@/lib/language';
 import {
   ChevronRight,
   ChevronLeft,
@@ -68,6 +69,7 @@ interface Collection {
 
 export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -97,6 +99,14 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
+
+  // Steps with translations
+  const steps: WizardStep[] = [
+    { id: 1, title: t.wizards.blog.steps.topic, icon: FileText, description: t.wizards.blog.descriptions.topic },
+    { id: 2, title: t.wizards.blog.steps.products, icon: Package, description: t.wizards.blog.descriptions.products },
+    { id: 3, title: t.wizards.blog.steps.keywords, icon: Tag, description: t.wizards.blog.descriptions.keywords },
+    { id: 4, title: t.wizards.blog.steps.generate, icon: Sparkles, description: t.wizards.blog.descriptions.generate },
+  ];
 
   useEffect(() => {
     if (user?.id) {
@@ -139,7 +149,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       setCollections(collectionsWithProducts as any);
     } catch (err) {
       console.error('Error fetching collections:', err);
-      toast.error('Erreur lors du chargement des collections');
+      toast.error(t.wizards.blog.loadingError);
     }
   };
 
@@ -158,7 +168,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       setProducts(data || []);
     } catch (err) {
       console.error('Error fetching products:', err);
-      toast.error('Erreur lors du chargement des produits');
+      toast.error(t.wizards.blog.productsLoadingError);
     }
   };
 
@@ -225,7 +235,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       const finalKeywords = keywords.length > 0 ? keywords : formData.keywords.split(',').map(k => k.trim()).filter(Boolean);
 
       // Animation de génération
-      toast.loading('🎨 Génération en cours...', { id: 'generating' });
+      toast.loading(t.wizards.blog.generating, { id: 'generating' });
 
       const response = await supabase.functions.invoke('generate-blog-article', {
         body: {
@@ -241,7 +251,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
       if (response.error) throw response.error;
 
-      toast.success('✅ Article généré avec succès !', { id: 'generating' });
+      toast.success(t.wizards.blog.articleGenerated, { id: 'generating' });
 
       // Stocker l'article généré et afficher le dialog de résultats
       if (response.data?.article) {
@@ -264,15 +274,15 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
         // Afficher le bon message selon le statut de l'utilisateur
         if (limits?.isTrialing) {
-          toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+          toast.error(t.wizards.blog.trialLimitReached);
         } else if (limits?.isPaid) {
-          toast.error('Limite mensuelle d\'articles atteinte. Passez à un plan supérieur.');
+          toast.error(t.wizards.blog.monthlyLimitReached);
         } else {
-          toast.error('Limite d\'essai atteinte. Activez votre abonnement pour continuer.');
+          toast.error(t.wizards.blog.trialLimitReached);
         }
         setShowUpgradeDialog(true);
       } else {
-        toast.error(error.message || 'Erreur lors de la génération', { id: 'generating' });
+        toast.error(error.message || t.wizards.blog.generationError, { id: 'generating' });
       }
     } finally {
       setGenerating(false);
@@ -292,17 +302,17 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       });
 
       if (syncResponse.error) {
-        toast.error('Erreur de publication Shopify');
+        toast.error(t.wizards.blog.publishError);
         console.error(syncResponse.error);
       } else {
         setIsOptimizationComplete(true);
-        toast.success('Synchronisation terminée !', {
-          description: '1 article synchronisé avec succès sur Shopify'
+        toast.success(t.wizards.blog.syncComplete, {
+          description: t.wizards.blog.articleSynced
         });
       }
     } catch (error) {
       console.error('Error publishing to Shopify:', error);
-      toast.error('Erreur lors de la publication');
+      toast.error(t.wizards.blog.syncError);
     }
   };
 
@@ -317,7 +327,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Créer un Article Blog</h2>
+            <h2 className="text-2xl font-bold">{t.wizards.blog.title}</h2>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
               <X className="w-5 h-5" />
             </button>
@@ -329,11 +339,11 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <AlertDescription className="text-sm">
                 {limits.limitReached.articles ? (
                   <span className="text-orange-900 dark:text-orange-100 font-medium">
-                    ⚠️ Limite d'essai atteinte : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
+                    {t.wizards.blog.limitReached}: {limits.usage.articles_count}/{limits.limits.max_articles} {t.wizards.blog.articlesUsed}
                   </span>
                 ) : (
                   <span>
-                    📊 Essai gratuit : {limits.usage.articles_count}/{limits.limits.max_articles} articles utilisés
+                    {t.wizards.blog.trialUsage}: {limits.usage.articles_count}/{limits.limits.max_articles} {t.wizards.blog.articlesUsed}
                   </span>
                 )}
               </AlertDescription>
@@ -374,14 +384,14 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             {currentStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Langue de l'article</label>
+                  <label className="block text-sm font-medium mb-2">{t.wizards.blog.articleLanguage}</label>
                   <div className="grid grid-cols-5 gap-3">
                     {[
-                      { code: 'fr', label: '🇫🇷 Français', name: 'Français' },
-                      { code: 'en', label: '🇬🇧 English', name: 'Anglais' },
-                      { code: 'es', label: '🇪🇸 Español', name: 'Espagnol' },
-                      { code: 'de', label: '🇩🇪 Deutsch', name: 'Allemand' },
-                      { code: 'it', label: '🇮🇹 Italiano', name: 'Italien' }
+                      { code: 'fr', label: '🇫🇷 Français', name: t.wizards.blog.languages.french },
+                      { code: 'en', label: '🇬🇧 English', name: t.wizards.blog.languages.english },
+                      { code: 'es', label: '🇪🇸 Español', name: t.wizards.blog.languages.spanish },
+                      { code: 'de', label: '🇩🇪 Deutsch', name: t.wizards.blog.languages.german },
+                      { code: 'it', label: '🇮🇹 Italiano', name: t.wizards.blog.languages.italian }
                     ].map((lang) => (
                       <button
                         key={lang.code}
@@ -400,7 +410,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Collection</label>
+                  <label className="block text-sm font-medium mb-2">{t.wizards.blog.collection}</label>
                   <Popover open={collectionSearchOpen} onOpenChange={setCollectionSearchOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -414,19 +424,19 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                             <Layers className="h-4 w-4" />
                             {selectedCollectionData?.title}
                             <Badge variant="secondary" className="ml-auto">
-                              {productsInCollection} produit(s)
+                              {productsInCollection} {t.wizards.blog.products}
                             </Badge>
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">Sélectionner une collection...</span>
+                          <span className="text-muted-foreground">{t.wizards.blog.selectCollection}</span>
                         )}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Rechercher une collection..." />
-                        <CommandEmpty>Aucune collection trouvée.</CommandEmpty>
+                        <CommandInput placeholder={t.wizards.blog.searchPlaceholder} />
+                        <CommandEmpty>{t.wizards.blog.noCollectionFound}</CommandEmpty>
                         <CommandGroup className="max-h-[300px] overflow-auto">
                           <CommandItem
                             value=""
@@ -438,7 +448,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                             <Check
                               className={`mr-2 h-4 w-4 ${!formData.collection_id ? "opacity-100" : "opacity-0"}`}
                             />
-                            <span>Toutes les collections</span>
+                            <span>{t.wizards.blog.allCollections}</span>
                           </CommandItem>
                            {filteredCollections.map((collection) => {
                             const productCount = collection.productCount || 0;
@@ -524,7 +534,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   <Alert className="bg-purple-50 border-purple-200">
                     <Layers className="w-4 h-4 text-purple-600" />
                     <AlertDescription>
-                      <span className="font-medium">Collection sélectionnée:</span>{' '}
+                      <span className="font-medium">{t.wizards.blog.collection}:</span>{' '}
                       <strong>{selectedCollectionData.title}</strong>
                     </AlertDescription>
                   </Alert>
@@ -534,7 +544,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Rechercher des produits..."
+                    placeholder={t.wizards.blog.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -543,7 +553,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
                   <p className="text-sm">
-                    <strong>{selectedProducts.length}</strong> produit(s) sélectionné(s) • <strong>{filteredProducts.length}</strong> produit(s) {formData.collection_id ? 'dans la collection' : 'disponibles'}
+                    <strong>{selectedProducts.length}</strong> {t.wizards.blog.selected} • <strong>{filteredProducts.length}</strong> {t.wizards.blog.products}
                   </p>
                 </div>
 
@@ -597,29 +607,37 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   {filteredProducts.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>Aucun produit trouvé</p>
+                      <p>{t.wizards.blog.noProductFound}</p>
                     </div>
                   )}
                 </div>
+                
+                {selectedProducts.length === 0 && (
+                  <Alert>
+                    <AlertDescription>
+                      {t.wizards.blog.selectAtLeast}
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
 
             {currentStep === 3 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Keywords</label>
+                  <label className="block text-sm font-medium mb-2">{t.wizards.blog.keywordManagement}</label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Add relevant keywords to optimize your article for SEO
+                    {t.wizards.blog.keywordDescription}
                   </p>
                   <div className="flex gap-2">
                     <Input
                       type="text"
-                      placeholder="Enter a keyword..."
+                      placeholder={t.wizards.blog.keywordPlaceholder}
                       value={keywordInput}
                       onChange={(e) => setKeywordInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
                     />
-                    <Button onClick={addKeyword} type="button">Add</Button>
+                    <Button onClick={addKeyword} type="button">{t.wizards.blog.add}</Button>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -638,12 +656,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             {currentStep === 4 && (
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <h3 className="font-semibold mb-4">Résumé</h3>
+                  <h3 className="font-semibold mb-4">{t.common.summary}</h3>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Collection:</strong> {collections.find(c => c.id === formData.collection_id)?.title || 'Aucune'}</p>
-                    <p><strong>Longueur:</strong> {formData.articleLength === '700' ? 'Court (~700 mots)' : formData.articleLength === '2000' ? 'Long (~2000 mots)' : 'Large (~4000 mots)'}</p>
-                    <p><strong>Produits:</strong> {selectedProducts.length}</p>
-                    <p><strong>Mots-clés:</strong> {keywords.join(', ')}</p>
+                    <p><strong>{t.wizards.blog.collection}:</strong> {collections.find(c => c.id === formData.collection_id)?.title || t.common.none}</p>
+                    <p><strong>{t.wizards.blog.articleLength}:</strong> {formData.articleLength === '700' ? `${t.wizards.blog.short} (~700 ${t.wizards.blog.words})` : formData.articleLength === '2000' ? `${t.wizards.blog.medium} (~2000 ${t.wizards.blog.words})` : `${t.wizards.blog.long} (~4000 ${t.wizards.blog.words})`}</p>
+                    <p><strong>{t.wizards.blog.products}:</strong> {selectedProducts.length}</p>
+                    <p><strong>{t.wizards.blog.keywords}:</strong> {keywords.join(', ')}</p>
                   </div>
                 </div>
               </div>
@@ -658,12 +676,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               disabled={currentStep === 1}
             >
               <ChevronLeft className="w-4 h-4 mr-2" />
-              Précédent
+              {t.common.previous}
             </Button>
             
             {currentStep < steps.length ? (
               <Button onClick={handleNext}>
-                Suivant
+                {t.common.next}
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
@@ -671,12 +689,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                 {generating ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Génération...
+                    {t.wizards.blog.generating}
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Générer l'article
+                    {t.wizards.blog.generateArticle}
                   </>
                 )}
               </Button>
