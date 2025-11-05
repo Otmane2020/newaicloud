@@ -37,7 +37,8 @@ import {
   Hash,
   Image as ImageIcon,
   Zap,
-  BookOpen
+  BookOpen,
+  Clock
 } from 'lucide-react';
 import { WhiteBackgroundPreviewDialog } from './WhiteBackgroundPreviewDialog';
 import { ShopifyOptimizationGuide } from './ShopifyOptimizationGuide';
@@ -936,19 +937,15 @@ export function GoogleShopping() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {product.seo_synced_to_shopify ? (
+                      {product.google_product_category && product.google_gtin && product.google_white_background ? (
                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
                           <CheckCircle className="w-3 h-3 mr-1" />
-                          Synchronisé
-                        </Badge>
-                      ) : product.google_product_category ? (
-                        <Badge variant="outline" className="border-orange-300 text-orange-700">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          À synchroniser
+                          Optimisé
                         </Badge>
                       ) : (
-                        <Badge variant="outline">
-                          Non optimisé
+                        <Badge variant="outline" className="border-orange-300 text-orange-700">
+                          <Clock className="w-3 h-3 mr-1" />
+                          En attente
                         </Badge>
                       )}
                     </TableCell>

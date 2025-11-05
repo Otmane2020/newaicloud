@@ -18,6 +18,7 @@ import { AdvancedAnalytics } from '@/components/dashboard/AdvancedAnalytics';
 import { OnboardingTour } from '@/components/OnboardingTour';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/language';
+import { useGoogleShoppingScore } from '@/hooks/useGoogleShoppingScore';
 import {
   ShoppingBag, 
   FileText, 
@@ -66,6 +67,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { t, tf, language } = useTranslation();
   const { trialStatus, showUpgradeDialog, setShowUpgradeDialog } = useTrialLimits();
+  const googleShoppingScore = useGoogleShoppingScore(user?.id);
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0,
     optimizedProducts: 0,
@@ -450,6 +452,7 @@ export default function Dashboard() {
           gradient="from-primary via-accent to-success"
           iconBg="bg-gradient-to-br from-primary/10 to-success/10 text-primary"
           subtitle={stats.seoScore >= 80 ? t.dashboard.quality.excellent : stats.seoScore >= 60 ? t.dashboard.quality.good : t.dashboard.quality.improve}
+          trend={stats.trends.seoScore !== 0 ? `${stats.trends.seoScore > 0 ? '↗' : '↘'} ${Math.abs(stats.trends.seoScore)} pts` : undefined}
         />
         <MetricCard
           title={t.dashboard.cards.articlesPublished}
@@ -474,6 +477,15 @@ export default function Dashboard() {
           gradient="from-primary to-primary-dark"
           iconBg="bg-primary/10 text-primary"
           subtitle={stats.connectedStores > 0 ? t.dashboard.cards.synchronized : t.dashboard.cards.notConnected}
+        />
+        <MetricCard
+          title="Google Shopping"
+          value={`${googleShoppingScore.score}%`}
+          icon={ShoppingBag}
+          gradient="from-blue-500 to-blue-600"
+          iconBg="bg-blue-500/10 text-blue-600"
+          subtitle={`${googleShoppingScore.optimizedProducts}/${googleShoppingScore.totalProducts} produits optimisés`}
+          badge={googleShoppingScore.score >= 80 ? 'Excellent' : googleShoppingScore.score >= 50 ? 'Bon' : 'À améliorer'}
         />
       </div>
 
