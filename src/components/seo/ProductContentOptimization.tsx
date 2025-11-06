@@ -61,9 +61,9 @@ export const ProductContentOptimization = () => {
     else if (wordCount >= 100) score += 15;
     else if (wordCount >= 50) score += 10;
     
-    // SEO keywords (20 points)
-    const seoKeywords = ['qualité', 'premium', 'durable', 'confort', 'design', 'moderne', 'élégant', 'performant'];
-    const keywordCount = seoKeywords.filter(kw => html.toLowerCase().includes(kw)).length;
+    // Marketing keywords (20 points)
+    const marketingKeywords = ['qualité', 'premium', 'durable', 'confort', 'design', 'moderne', 'élégant', 'performant'];
+    const keywordCount = marketingKeywords.filter(kw => html.toLowerCase().includes(kw)).length;
     score += Math.min(20, keywordCount * 3);
     
     // HTML structure (30 points)
@@ -269,17 +269,17 @@ export const ProductContentOptimization = () => {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Générez des descriptions HTML UX haute qualité, mobile-friendly avec intégration automatique des photos produits et analyse vision IA.
+          Générez des descriptions HTML professionnelles avec titres structurés (H1, H2, H3), intégration automatique des photos produits et mise en page optimisée pour mobile et moteurs de recherche.
         </AlertDescription>
       </Alert>
 
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Génération de Descriptions UX
+          Génération de Contenu Produit Premium
         </h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Créez des descriptions HTML professionnelles et engageantes avec mise en page optimisée pour mobile.
+          Créez des descriptions HTML riches avec titres structurés (H1, H2, H3), médias intégrés et mise en page professionnelle pour séduire vos clients et améliorer votre référencement naturel.
         </p>
 
         {/* Template Selector */}
@@ -358,7 +358,7 @@ export const ProductContentOptimization = () => {
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-2" />
-                      Générer HTML UX
+                      Générer Contenu Premium
                     </>
                   )}
                 </Button>
@@ -385,12 +385,12 @@ export const ProductContentOptimization = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {isGenerating && <Loader2 className="h-5 w-5 animate-spin" />}
-              Aperçu Landing Page - {selectedProduct?.title}
+              Aperçu Contenu Premium - {selectedProduct?.title}
             </DialogTitle>
             <DialogDescription>
               {isGenerating 
                 ? "Génération en cours avec analyse Vision IA..." 
-                : "Description HTML UX optimisée - Mobile-friendly"}
+                : "Description HTML structurée avec titres H1, H2, H3 et médias - Mobile-friendly"}
             </DialogDescription>
           </DialogHeader>
 
@@ -424,7 +424,7 @@ export const ProductContentOptimization = () => {
                     </div>
                     <Progress value={qualityScore} className="h-2" />
                     <p className="text-xs text-muted-foreground mt-1">
-                      {qualityScore >= 80 && 'Excellente qualité - Structure complète et optimisée SEO'}
+                      {qualityScore >= 80 && 'Excellente qualité - Structure complète et contenu riche optimisé'}
                       {qualityScore >= 60 && qualityScore < 80 && 'Bonne qualité - Quelques améliorations possibles'}
                       {qualityScore < 60 && 'Qualité moyenne - Ajoutez plus de contenu et de structure'}
                     </p>

@@ -51,7 +51,7 @@ export const translations = {
     dashboard: "Dashboard",
     products: "Products",
     productOptimization: "Product Optimization",
-    titleDescription: "Title & Description",
+    titleDescription: "Optimized Product Content",
     seoOptimization: "SEO Optimization",
     blog: "Blog",
     aiSearch: "AI Search",

@@ -555,10 +555,10 @@ export default function ProductTitleDescription() {
             <div className="space-y-2">
               <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
                 <Sparkles className="h-6 w-6 sm:h-8 sm:h-8 text-primary" />
-                Optimisation Titres & Descriptions
+                Contenu Produit Optimisé
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base">
-                Utilisez l'IA pour optimiser vos titres et descriptions, et améliorer vos images produit
+                Créez des titres captivants et des descriptions riches en HTML pour séduire vos clients et améliorer votre visibilité naturelle
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -821,7 +821,7 @@ export default function ProductTitleDescription() {
                       <p className="font-medium">{product.title}</p>
                       {product.seo_title && (
                         <p className="text-sm text-muted-foreground line-clamp-1">
-                          SEO: {product.seo_title}
+                          Optimisé: {product.seo_title}
                         </p>
                       )}
                     </div>
@@ -838,11 +838,11 @@ export default function ProductTitleDescription() {
                   <TableCell>
                     {hasRichHtmlDescription(product) ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        ✨ HTML UX Optimisé
+                        ✨ Contenu Premium
                       </Badge>
                     ) : product.seo_title || product.seo_description ? (
                       <Badge variant="secondary">
-                        SEO Basique ✓
+                        Contenu Basique ✓
                       </Badge>
                     ) : (
                       <Badge variant="outline">À optimiser</Badge>
