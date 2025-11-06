@@ -16,11 +16,16 @@ export const ProductOptimizationTabs = ({ defaultTab = 'seo' }: ProductOptimizat
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="seo" className="flex items-center gap-2">
           <Sparkles className="h-4 w-4" />
           <span className="hidden sm:inline">Métadonnées SEO</span>
           <span className="sm:hidden">SEO</span>
+        </TabsTrigger>
+        <TabsTrigger value="content" className="flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          <span className="hidden sm:inline">Titre & Description</span>
+          <span className="sm:hidden">Contenu</span>
         </TabsTrigger>
         <TabsTrigger value="media" className="flex items-center gap-2">
           <Image className="h-4 w-4" />
@@ -37,6 +42,16 @@ export const ProductOptimizationTabs = ({ defaultTab = 'seo' }: ProductOptimizat
             </p>
           </div>
           <SeoOptimization />
+        </TabsContent>
+
+        <TabsContent value="content" className="space-y-4">
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold">Titre & Description</h2>
+            <p className="text-muted-foreground">
+              Créez des titres accrocheurs et descriptions riches pour vos produits
+            </p>
+          </div>
+          <ProductContentOptimization />
         </TabsContent>
 
         <TabsContent value="media" className="space-y-4">
