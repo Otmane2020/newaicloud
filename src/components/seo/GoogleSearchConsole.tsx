@@ -269,6 +269,8 @@ export function GoogleSearchConsole() {
 
     try {
       setLoading(true);
+      console.log('Loading Search Console data for:', selectedDomain, 'days:', dateRange);
+      
       const { data, error } = await supabase.functions.invoke('get-search-console-data', {
         body: {
           domain: selectedDomain,
@@ -276,12 +278,28 @@ export function GoogleSearchConsole() {
         },
       });
 
-      if (error) throw error;
+      console.log('Search Console response:', { data, error });
 
-      setData(data?.data || []);
-    } catch (error) {
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data?.data) {
+        throw new Error('Aucune donnée reçue de Google Search Console');
+      }
+
+      setData(data.data);
+      toast.success('Données chargées avec succès');
+    } catch (error: any) {
       console.error('Error loading Search Console data:', error);
-      toast.error('Erreur lors du chargement des données');
+      const errorMessage = error?.message || 'Erreur lors du chargement des données';
+      toast.error(errorMessage);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -655,8 +673,37 @@ export function GoogleSearchConsole() {
             </div>
           )}
 
+          {/* Loading state */}
+          {loading && (
+            <Card className="p-8">
+              <div className="flex flex-col items-center justify-center gap-4">
+                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-muted-foreground">Chargement des données de Google Search Console...</p>
+              </div>
+            </Card>
+          )}
+
+          {/* Empty state */}
+          {!loading && data.length === 0 && (
+            <Card className="p-8">
+              <div className="flex flex-col items-center justify-center gap-4 text-center">
+                <AlertCircle className="h-12 w-12 text-muted-foreground" />
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Aucune donnée disponible</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Aucune donnée Search Console n'est disponible pour ce domaine sur la période sélectionnée.
+                  </p>
+                  <Button onClick={loadSearchConsoleData} variant="outline" className="gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    Réessayer
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Charts */}
-          {data.length > 0 && (
+          {!loading && data.length > 0 && (
             <>
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Évolution des clics et impressions</h3>
