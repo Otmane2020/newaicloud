@@ -20,15 +20,15 @@ serve(async (req) => {
       });
     }
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Generating e-commerce background with OpenAI gpt-image-1 for product:", productType);
+    console.log("Generating e-commerce background with Lovable AI for product:", productType);
 
     // Enhanced prompt for e-commerce
-    const fullPrompt = `Professional e-commerce product photography: ${prompt}
+    const imagePrompt = `Professional e-commerce product photography: ${prompt}
 
 Product type: ${productType || "general product"}
 Style: High-quality professional e-commerce photography with clean, attractive background
@@ -39,24 +39,38 @@ Requirements:
 - Commercial product photography style
 - Background that enhances product appeal without distracting`;
 
-    const response = await fetch("https://api.openai.com/v1/images/generations", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-image-1",
-        prompt: fullPrompt,
-        n: 1,
-        size: "1024x1024",
-        quality: "high",
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: imagePrompt
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageUrl
+                }
+              }
+            ]
+          }
+        ],
+        modalities: ["image", "text"]
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenAI API error:", response.status, errorText);
+      console.error("Lovable AI API error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
@@ -65,14 +79,21 @@ Requirements:
         });
       }
 
-      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Credits depleted. Please add credits to your workspace." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`Lovable AI API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("OpenAI image generated successfully");
+    console.log("Lovable AI image generated successfully");
 
-    // Extract image URL from OpenAI response
-    const generatedImageUrl = data.data?.[0]?.url;
+    // Extract image from Lovable AI response
+    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!generatedImageUrl) {
       console.error("No image data in response:", data);
@@ -87,7 +108,7 @@ Requirements:
         imageUrl: generatedImageUrl,
         metadata: {
           productType: productType,
-          model: model,
+          model: "google/gemini-2.5-flash-image-preview",
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
