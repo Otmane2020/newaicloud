@@ -135,19 +135,17 @@ export const useImageOptimization = () => {
       title, 
       existingDescription,
       images,
-      visionAnalysis,
-      template = 'ecommerce'
+      visionAnalysis
     }: { 
       title: string; 
       existingDescription?: string;
       images?: string[];
       visionAnalysis?: any;
-      template?: 'ecommerce' | 'luxury' | 'technical';
     }) => {
       setIsOptimizing(true);
       
       const { data, error } = await supabase.functions.invoke('generate-product-description-html', {
-        body: { title, existingDescription, images, visionAnalysis, template }
+        body: { title, existingDescription, images, visionAnalysis }
       });
 
       if (error) throw error;

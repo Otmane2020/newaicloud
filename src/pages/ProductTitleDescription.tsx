@@ -42,7 +42,6 @@ import {
 interface Product {
   id: string;
   title: string;
-  description: string | null;
   seo_title: string | null;
   seo_description: string | null;
   image_url: string | null;
@@ -87,7 +86,7 @@ export default function ProductTitleDescription() {
 
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, description, seo_title, seo_description, image_url, shopify_id")
+        .select("id, title, seo_title, seo_description, image_url, shopify_id")
         .eq("seller_id", user.id)
         .order("imported_at", { ascending: false });
 
@@ -137,27 +136,14 @@ export default function ProductTitleDescription() {
         const product = products.find((p) => p.id === productId);
         if (!product) continue;
 
-        const { data, error } = await supabase.functions.invoke("generate-title-description", {
+        const { error } = await supabase.functions.invoke("generate-title-description", {
           body: {
             currentTitle: product.title,
             imageUrl: product.image_url || null,
           },
         });
 
-        if (error) {
-          // Check for specific error types
-          const errorMessage = error.message || String(error);
-          
-          if (errorMessage.includes('CREDITS_DEPLETED') || errorMessage.includes('402')) {
-            throw new Error('CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés. Veuillez ajouter des crédits dans Settings → Workspace → Usage.');
-          }
-          
-          if (errorMessage.includes('RATE_LIMIT') || errorMessage.includes('429')) {
-            throw new Error('RATE_LIMIT: Limite de taux atteinte. Veuillez patienter quelques instants.');
-          }
-          
-          throw error;
-        }
+        if (error) throw error;
 
         // Update local state
         const { data: updatedProduct } = await supabase
@@ -179,24 +165,9 @@ export default function ProductTitleDescription() {
 
       toast.success("Optimisation terminée", { id: toastId });
       setSelectedProducts(new Set());
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error optimizing:", error);
-      
-      const errorMessage = error?.message || String(error);
-      
-      if (errorMessage.includes('CREDITS_DEPLETED')) {
-        toast.error("Crédits IA épuisés", {
-          id: toastId,
-          description: "Ajoutez des crédits dans Settings → Workspace → Usage pour continuer à utiliser l'IA."
-        });
-      } else if (errorMessage.includes('RATE_LIMIT')) {
-        toast.error("Trop de requêtes", {
-          id: toastId,
-          description: "Veuillez patienter quelques instants avant de réessayer."
-        });
-      } else {
-        toast.error("Erreur lors de l'optimisation", { id: toastId });
-      }
+      toast.error("Erreur lors de l'optimisation", { id: toastId });
     } finally {
       setGenerating(false);
     }
@@ -699,13 +670,9 @@ export default function ProductTitleDescription() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {product.description ? (
+                    {product.seo_title || product.seo_description ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700">
-                        ✨ HTML UX Optimisé
-                      </Badge>
-                    ) : product.seo_title || product.seo_description ? (
-                      <Badge variant="secondary">
-                        SEO Basique ✓
+                        Optimisé
                       </Badge>
                     ) : (
                       <Badge variant="outline">À optimiser</Badge>

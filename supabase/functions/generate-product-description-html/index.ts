@@ -11,55 +11,26 @@ serve(async (req) => {
   }
 
   try {
-    const { title, existingDescription, images, visionAnalysis, template = 'ecommerce' } = await req.json();
+    const { title, existingDescription, images, visionAnalysis } = await req.json();
     
     if (!title) {
       throw new Error('Product title is required');
     }
 
-    console.log('Generating HTML description for:', title, 'with template:', template);
+    console.log('Generating HTML description for:', title);
 
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GOOGLE_GEMINI_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Template-specific style guides
-    const templateStyles = {
-      ecommerce: {
-        tone: 'Direct, persuasive, customer-focused. Use simple language and clear benefits.',
-        structure: 'Quick overview, key benefits with icons, technical specs table, call-to-action',
-        language: 'Use action verbs, emphasize value and convenience, include urgency elements'
-      },
-      luxury: {
-        tone: 'Sophisticated, elegant, aspirational. Use refined and exclusive language.',
-        structure: 'Story-driven narrative, craftsmanship details, heritage/materials focus, exclusive features',
-        language: 'Use sensory words, emphasize uniqueness and quality, avoid direct selling'
-      },
-      technical: {
-        tone: 'Precise, detailed, professional. Use industry-specific terminology.',
-        structure: 'Detailed specifications first, technical features, compatibility, performance metrics',
-        language: 'Use technical terms, include measurements and standards, provide detailed specs'
-      }
-    };
-
-    const selectedTemplate = templateStyles[template as keyof typeof templateStyles] || templateStyles.ecommerce;
-
-    const prompt = `Generate a high-quality, mobile-friendly HTML product description in ${template.toUpperCase()} style.
+    const prompt = `Generate a high-quality, mobile-friendly HTML product description.
 
 PRODUCT INFORMATION:
 - Title: ${title}
 ${existingDescription ? `- Existing Description: ${existingDescription}` : '- No existing description'}
 ${visionAnalysis ? `- Visual Analysis: ${JSON.stringify(visionAnalysis)}` : ''}
-${images?.length ? `
-- Product Images (${images.length} photos):
-${images.map((img: any, idx: number) => `  ${idx + 1}. ${img.src || img}`).join('\n')}
-` : '- No images available'}
-
-TEMPLATE STYLE - ${template.toUpperCase()}:
-- Tone: ${selectedTemplate.tone}
-- Structure: ${selectedTemplate.structure}
-- Language: ${selectedTemplate.language}
+${images?.length ? `- Available Images: ${images.length} product photos` : ''}
 
 STRUCTURE REQUIREMENTS:
 1. Hero section with main product benefit (1-2 sentences)
@@ -68,19 +39,12 @@ STRUCTURE REQUIREMENTS:
 4. Product highlights with icons
 5. Usage or care instructions (if applicable)
 
-IMAGE INTEGRATION (CRITICAL):
-- You MUST include actual product images in the HTML using <img> tags
-- Use the provided image URLs from the "Product Images" list above
-- Place images strategically: hero image at top, gallery in middle, detail shots near specs
-- Use responsive image sizing: w-full, h-auto, rounded corners
-- Add proper alt text for each image based on context
-- Example: <img src="IMAGE_URL_FROM_LIST" alt="Product detail view" class="w-full rounded-lg shadow-md mb-4" />
-
 TECHNICAL REQUIREMENTS:
 - Use only Tailwind CSS classes (no custom CSS)
 - Mobile-first responsive design
 - Semantic HTML5 tags (section, article, etc.)
 - Accessibility: proper heading hierarchy, ARIA labels
+- Image-friendly: include placeholder divs for product images
 - Clean, modern, professional design
 - Use spacing utilities (p-4, mb-6, etc.)
 - Use text utilities (text-lg, font-semibold, etc.)
@@ -101,36 +65,27 @@ CONTENT QUALITY:
 - SEO-friendly but natural language
 - Scannable format (headings, lists, short paragraphs)
 
-ALSO GENERATE:
-- An optimized product title (max 70 characters)
-- Title should match the ${template} style and include key benefits
-- Include SEO keywords naturally
-
 OUTPUT FORMAT:
-Return a JSON object with two fields:
-{
-  "title": "Optimized product title here",
-  "html": "Complete HTML description here"
-}
-
+Return ONLY the HTML code (no markdown, no explanations).
 The HTML should be ready to insert directly into a Shopify product description.
 Start with a <div> wrapper and use nested semantic tags.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
-
-    const response = await fetch(url, {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }],
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2000,
-        },
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
       }),
     });
 
@@ -138,37 +93,26 @@ Start with a <div> wrapper and use nested semantic tags.`;
       if (response.status === 429) {
         throw new Error('Rate limit exceeded. Please try again in a few moments.');
       }
+      if (response.status === 402) {
+        throw new Error('AI credits depleted. Please add credits to your workspace.');
+      }
       const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
+      console.error('AI gateway error:', response.status, errorText);
       throw new Error(`AI generation failed: ${response.status}`);
     }
 
     const data = await response.json();
-    let content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    let htmlDescription = data.choices?.[0]?.message?.content;
 
-    if (!content) {
-      throw new Error('No content generated by AI');
+    if (!htmlDescription) {
+      throw new Error('No description generated by AI');
     }
 
     // Clean up the response (remove markdown code blocks if present)
-    content = content
-      .replace(/```json\n?/g, '')
+    htmlDescription = htmlDescription
       .replace(/```html\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
-
-    // Parse JSON response
-    let optimizedTitle = title;
-    let htmlDescription = content;
-    
-    try {
-      const parsed = JSON.parse(content);
-      optimizedTitle = parsed.title || title;
-      htmlDescription = parsed.html || content;
-    } catch (e) {
-      // If not JSON, treat as plain HTML
-      console.log('Response not JSON, using as plain HTML');
-    }
 
     // Calculate basic metrics
     const characteristicsCount = (htmlDescription.match(/<li>/g) || []).length;
@@ -179,7 +123,6 @@ Start with a <div> wrapper and use nested semantic tags.`;
     return new Response(
       JSON.stringify({ 
         success: true,
-        optimizedTitle,
         htmlDescription,
         characteristicsCount,
         mediaCount,
