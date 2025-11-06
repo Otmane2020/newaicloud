@@ -1768,7 +1768,13 @@ export type Database = {
           current_plan_id: string | null
           email: string
           full_name: string | null
+          google_ads_customer_id: string | null
+          google_ads_email: string | null
+          google_ads_oauth_token: string | null
+          google_ads_refresh_token: string | null
+          google_ads_token_expires_at: string | null
           google_console_email: string | null
+          google_merchant_account_id: string | null
           google_merchant_email: string | null
           google_merchant_oauth_token: string | null
           google_merchant_refresh_token: string | null
@@ -1791,7 +1797,13 @@ export type Database = {
           current_plan_id?: string | null
           email: string
           full_name?: string | null
+          google_ads_customer_id?: string | null
+          google_ads_email?: string | null
+          google_ads_oauth_token?: string | null
+          google_ads_refresh_token?: string | null
+          google_ads_token_expires_at?: string | null
           google_console_email?: string | null
+          google_merchant_account_id?: string | null
           google_merchant_email?: string | null
           google_merchant_oauth_token?: string | null
           google_merchant_refresh_token?: string | null
@@ -1814,7 +1826,13 @@ export type Database = {
           current_plan_id?: string | null
           email?: string
           full_name?: string | null
+          google_ads_customer_id?: string | null
+          google_ads_email?: string | null
+          google_ads_oauth_token?: string | null
+          google_ads_refresh_token?: string | null
+          google_ads_token_expires_at?: string | null
           google_console_email?: string | null
+          google_merchant_account_id?: string | null
           google_merchant_email?: string | null
           google_merchant_oauth_token?: string | null
           google_merchant_refresh_token?: string | null

@@ -39,6 +39,7 @@ import LandingPage from "./pages/LandingPage";
 import Account from "./pages/Account";
 import Subscription from "./pages/Subscription";
 import Merchant from "./pages/Merchant";
+import GoogleAds from "./pages/GoogleAds";
 import Shopping from "./pages/Shopping";
 import SearchProducts from "./pages/SearchProducts";
 import ChatHistory from "./pages/ChatHistory";
@@ -212,6 +213,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Merchant />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/google-ads"
+              element={
+                <ProtectedLayout>
+                  <GoogleAds />
                 </ProtectedLayout>
               }
             />

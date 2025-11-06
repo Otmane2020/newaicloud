@@ -125,6 +125,8 @@ export function GoogleMerchantIntegration() {
         if (event.data.type === 'GOOGLE_MERCHANT_OAUTH_CODE' && event.data.code) {
           window.removeEventListener('message', handleMessage);
           
+          toast.loading('Connexion à Google Merchant Center en cours...');
+          
           const { data, error } = await supabase.functions.invoke('google-merchant-oauth-token', {
             body: {
               code: event.data.code,
@@ -139,7 +141,28 @@ export function GoogleMerchantIntegration() {
           }
           
           toast.success('Connexion à Google Merchant Center réussie !');
-          checkGoogleConnection();
+          
+          // Refresh connection status
+          await checkGoogleConnection();
+          
+          // Auto-prepare feed after successful connection
+          setTimeout(async () => {
+            toast.loading('Préparation du flux produits...');
+            
+            // Get user's first merchant account ID if available
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('google_merchant_account_id')
+              .eq('id', (await supabase.auth.getUser()).data.user?.id)
+              .single();
+            
+            if (profile?.google_merchant_account_id) {
+              setSelectedAccount(profile.google_merchant_account_id);
+              toast.success('Prêt à créer le flux dans Google Merchant Center');
+            } else {
+              toast.info('Veuillez entrer votre ID de compte Merchant Center');
+            }
+          }, 1000);
         }
       };
       

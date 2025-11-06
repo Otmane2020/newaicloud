@@ -203,3 +203,13 @@ verify_jwt = true
 
 [functions.daily-gsc-sync]
 verify_jwt = false
+
+[functions.google-oauth-url]
+verify_jwt = false
+
+[functions.google-oauth-token]
+verify_jwt = false
+
+[functions.google-ads-oauth-token]
+verify_jwt = false
+
