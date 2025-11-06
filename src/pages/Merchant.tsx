@@ -3,9 +3,10 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { GoogleMerchant } from "@/components/seo/GoogleMerchant";
 import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings";
 import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncSettings";
+import { GoogleMerchantIntegration } from "@/components/seo/GoogleMerchantIntegration";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw } from "lucide-react";
+import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw, Globe } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 
 export default function Merchant() {
@@ -16,8 +17,10 @@ export default function Merchant() {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && ["feed", "settings", "sync"].includes(tab)) {
+    if (tab && ["integration", "feed", "settings", "sync"].includes(tab)) {
       setActiveTab(tab);
+    } else {
+      setActiveTab("integration");
     }
   }, [searchParams]);
 
@@ -27,6 +30,13 @@ export default function Merchant() {
   };
 
   const tabs = [
+    {
+      id: "integration",
+      label: "Intégration",
+      icon: Globe,
+      description: "Connectez votre compte Google Merchant Center",
+      component: <GoogleMerchantIntegration />,
+    },
     {
       id: "feed",
       label: t.navigation.merchantSubmenu.feed,

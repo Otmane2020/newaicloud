@@ -183,7 +183,10 @@ verify_jwt = true
 [functions.generate-image-background]
 verify_jwt = true
 
-[functions.generate-product-background]
+[functions.google-merchant-oauth-token]
+verify_jwt = true
+
+[functions.create-google-merchant-feed]
 verify_jwt = true
 
 [functions.send-notification]

@@ -1730,6 +1730,10 @@ export type Database = {
           email: string
           full_name: string | null
           google_console_email: string | null
+          google_merchant_email: string | null
+          google_merchant_oauth_token: string | null
+          google_merchant_refresh_token: string | null
+          google_merchant_token_expires_at: string | null
           google_oauth_token: string | null
           google_refresh_token: string | null
           google_token_expires_at: string | null
@@ -1749,6 +1753,10 @@ export type Database = {
           email: string
           full_name?: string | null
           google_console_email?: string | null
+          google_merchant_email?: string | null
+          google_merchant_oauth_token?: string | null
+          google_merchant_refresh_token?: string | null
+          google_merchant_token_expires_at?: string | null
           google_oauth_token?: string | null
           google_refresh_token?: string | null
           google_token_expires_at?: string | null
@@ -1768,6 +1776,10 @@ export type Database = {
           email?: string
           full_name?: string | null
           google_console_email?: string | null
+          google_merchant_email?: string | null
+          google_merchant_oauth_token?: string | null
+          google_merchant_refresh_token?: string | null
+          google_merchant_token_expires_at?: string | null
           google_oauth_token?: string | null
           google_refresh_token?: string | null
           google_token_expires_at?: string | null

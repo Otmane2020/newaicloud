@@ -121,6 +121,7 @@ export function AppSidebar() {
   ];
 
   const merchantSubItems = [
+    { title: "Intégration", url: "/merchant?tab=integration", icon: Globe, key: "integration" },
     { title: t.merchant.submenu.feed, url: "/merchant?tab=feed", icon: FileText, key: "feed" },
     { title: t.merchant.submenu.settings, url: "/merchant?tab=settings", icon: Settings, key: "settings" },
     { title: t.merchant.submenu.sync, url: "/merchant?tab=sync", icon: RefreshCw, key: "sync" },

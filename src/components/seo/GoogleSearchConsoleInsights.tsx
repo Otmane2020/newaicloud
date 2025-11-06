@@ -98,10 +98,52 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
 
   useEffect(() => {
     if (selectedDomain) {
-      loadSearchConsoleData();
-      loadAlerts();
+      loadCachedData();
     }
   }, [selectedDomain, dateRange]);
+
+  const loadCachedData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const daysBack = parseInt(dateRange);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysBack);
+
+      // Try to load cached data first
+      const { data: cachedData, error } = await supabase
+        .from('google_search_console_data')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('domain', selectedDomain)
+        .gte('date', startDate.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+
+      if (cachedData && cachedData.length > 0) {
+        const formattedData = cachedData.map(item => ({
+          date: new Date(item.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
+          clicks: item.clicks,
+          impressions: item.impressions,
+          ctr: parseFloat(item.ctr.toString()),
+          position: parseFloat(item.position.toString())
+        }));
+        setData(formattedData);
+      } else {
+        // If no cached data, fetch from API
+        loadSearchConsoleData();
+      }
+    } catch (error) {
+      console.error('Error loading cached data:', error);
+      loadSearchConsoleData();
+    }
+  };
+
+  useEffect(() => {
+    if (selectedDomain) {
+      loadAlerts();
+    }
+  }, [selectedDomain]);
 
   useEffect(() => {
     loadSyncConfig();
