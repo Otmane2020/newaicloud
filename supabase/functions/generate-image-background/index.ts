@@ -51,7 +51,6 @@ Requirements:
         n: 1,
         size: "1024x1024",
         quality: "high",
-        response_format: "b64_json",
       }),
     });
 
@@ -72,16 +71,13 @@ Requirements:
     const data = await response.json();
     console.log("OpenAI image generated successfully");
 
-    // Extract base64 image from OpenAI response
-    const generatedImageBase64 = data.data?.[0]?.b64_json;
+    // Extract image URL from OpenAI response
+    const generatedImageUrl = data.data?.[0]?.url;
 
-    if (!generatedImageBase64) {
+    if (!generatedImageUrl) {
       console.error("No image data in response:", data);
       throw new Error("No image generated");
     }
-
-    // Convert base64 to data URL
-    const generatedImageUrl = `data:image/png;base64,${generatedImageBase64}`;
 
     console.log("E-commerce background generated successfully");
 
