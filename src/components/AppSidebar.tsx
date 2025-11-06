@@ -91,7 +91,11 @@ export function AppSidebar() {
 
   const mainMenuItems = [
     { title: t.navigation.dashboard, url: "/dashboard", icon: LayoutDashboard, key: "dashboard" },
+  ];
+
+  const productOptimizationSubItems = [
     { title: t.navigation.products, url: "/products", icon: ShoppingBag, key: "products" },
+    { title: t.navigation.titleDescription, url: "/products/title-description", icon: Sparkles, key: "titleDescription" },
   ];
 
   const blogSubItems = [
@@ -192,6 +196,7 @@ export function AppSidebar() {
   const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
   const isPricingActive = currentPath === "/pricing";
   const isAccountActive = currentPath === "/account" || accountSubItems.some((item) => isActive(item.url));
+  const isProductOptimizationActive = currentPath.startsWith("/products") || productOptimizationSubItems.some((item) => isActive(item.url));
 
   return (
     <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
@@ -224,6 +229,33 @@ export function AppSidebar() {
                 </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Product Optimization Menu with Submenu */}
+              <Collapsible defaultOpen={isProductOptimizationActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isProductOptimizationActive}>
+                      <ShoppingBag className="h-4 w-4" />
+                      <span>{t.navigation.productOptimization}</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {productOptimizationSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
 
               {/* SEO Menu with Submenu */}
               <Collapsible defaultOpen={isSeoActive} className="group/collapsible">

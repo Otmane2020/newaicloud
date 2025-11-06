@@ -176,3 +176,6 @@ verify_jwt = true
 
 [functions.generate-white-background]
 verify_jwt = true
+
+[functions.generate-title-description]
+verify_jwt = true

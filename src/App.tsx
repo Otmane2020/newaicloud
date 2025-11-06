@@ -20,6 +20,7 @@ import UpdatePassword from "./pages/UpdatePassword";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
+import ProductTitleDescription from "./pages/ProductTitleDescription";
 import Collections from "./pages/Collections";
 import Blog from "./pages/Blog";
 import ArticleManagement from "./pages/ArticleManagement";
@@ -90,6 +91,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Products />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/products/title-description"
+              element={
+                <ProtectedLayout>
+                  <ProductTitleDescription />
                 </ProtectedLayout>
               }
             />
