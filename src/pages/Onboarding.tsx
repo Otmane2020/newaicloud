@@ -226,23 +226,56 @@ export default function Onboarding() {
     try {
       console.log('🚀 Creating checkout for plan:', planId, 'billing:', billingCycle);
       
-      // Check if user has active trial - if so, force immediate payment
+      // Check if user has active subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('stripe_subscription_id, status')
+        .eq('seller_id', user.id)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle();
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('subscription_status, trial_ends_at')
         .eq('id', user.id)
         .single();
       
+      const hasActiveSubscription = !!subscription?.stripe_subscription_id;
       const hasActiveTrial = Boolean(
         profile?.subscription_status === 'trialing' || 
         (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date())
       );
       
-      console.log('💳 User trial status:', { 
+      console.log('💳 User subscription status:', { 
+        hasActiveSubscription,
         hasActiveTrial, 
         subscriptionStatus: profile?.subscription_status 
       });
+
+      // If user has active subscription, use update-subscription for proration
+      if (hasActiveSubscription) {
+        const selectedPlan = plans.find(p => p.id === planId);
+        if (!selectedPlan) throw new Error('Plan not found');
+
+        const priceId = billingCycle === 'yearly' 
+          ? (selectedPlan as any).stripe_price_id_yearly 
+          : (selectedPlan as any).stripe_price_id_monthly;
+
+        const { data, error } = await supabase.functions.invoke('update-subscription', {
+          body: {
+            new_price_id: priceId,
+            new_plan_id: planId,
+          },
+        });
+
+        if (error) throw error;
+
+        toast.success(t.onboarding.verification.success);
+        setTimeout(() => navigate('/dashboard'), 1500);
+        return;
+      }
       
+      // Otherwise, create new checkout session
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: planId,

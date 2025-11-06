@@ -113,13 +113,21 @@ export function SubscriptionPlans() {
   const handleSelectPlan = async (planId: string) => {
     setCheckoutLoading(planId);
     try {
-      // Check if user is in trial and activating their current plan
+      // Check if user has active subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('stripe_subscription_id, status')
+        .eq('seller_id', user?.id)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle();
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('subscription_status, current_plan_id')
         .eq('id', user?.id)
         .single();
 
+      const hasActiveSubscription = !!subscription?.stripe_subscription_id;
       const isTrialing = profile?.subscription_status === 'trialing';
       const isCurrentPlan = profile?.current_plan_id === planId;
 
@@ -135,15 +143,18 @@ export function SubscriptionPlans() {
           });
           setTimeout(() => window.location.reload(), 1500);
         }
-      } else {
-        // Otherwise use standard checkout
+        return;
+      }
+
+      // If user has active subscription, use update-subscription for proration
+      if (hasActiveSubscription) {
         const selectedPlan = plans.find(p => p.id === planId);
-        
-        // Check if plan has valid Stripe price IDs
+        if (!selectedPlan) throw new Error('Plan not found');
+
         const stripePriceId = billingPeriod === 'yearly' 
-          ? selectedPlan?.stripe_price_id_yearly 
-          : selectedPlan?.stripe_price_id_monthly;
-        
+          ? selectedPlan.stripe_price_id_yearly 
+          : selectedPlan.stripe_price_id_monthly;
+
         if (!stripePriceId || !stripePriceId.startsWith('price_')) {
           toast({
             title: t.errors.missingConfiguration,
@@ -154,21 +165,54 @@ export function SubscriptionPlans() {
           return;
         }
 
-        const { data, error } = await supabase.functions.invoke('create-checkout', {
+        const { data, error } = await supabase.functions.invoke('update-subscription', {
           body: { 
-            plan_id: planId,
-            billing_period: billingPeriod,
-            currency: language === 'fr' ? 'EUR' : 'USD',
-            success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
-            cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
+            new_price_id: stripePriceId,
+            new_plan_id: planId,
           }
         });
 
         if (error) throw error;
-        
-        if (data?.url) {
-          window.open(data.url, '_blank');
+
+        toast({
+          title: t.account.subscription.activationSuccess,
+          description: 'Your plan has been upgraded with prorated billing!',
+        });
+        setTimeout(() => window.location.reload(), 1500);
+        return;
+      }
+
+      // Otherwise, create new checkout session
+      const selectedPlan = plans.find(p => p.id === planId);
+      
+      const stripePriceId = billingPeriod === 'yearly' 
+        ? selectedPlan?.stripe_price_id_yearly 
+        : selectedPlan?.stripe_price_id_monthly;
+      
+      if (!stripePriceId || !stripePriceId.startsWith('price_')) {
+        toast({
+          title: t.errors.missingConfiguration,
+          description: tf('dashboard.plans.errors.missingConfig', { planName: selectedPlan?.name }),
+          variant: "destructive"
+        });
+        setCheckoutLoading(null);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { 
+          plan_id: planId,
+          billing_period: billingPeriod,
+          currency: language === 'fr' ? 'EUR' : 'USD',
+          success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
+          cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
         }
+      });
+
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.open(data.url, '_blank');
       }
     } catch (error) {
       console.error('Error handling plan selection:', error);

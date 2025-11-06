@@ -133,6 +133,39 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Check if user has existing subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('stripe_subscription_id, status')
+        .eq('seller_id', user.id)
+        .in('status', ['active', 'trialing'])
+        .single();
+
+      const hasActiveSubscription = !!subscription?.stripe_subscription_id;
+
+      // If user has active subscription, use update-subscription for proration
+      if (hasActiveSubscription) {
+        const selectedPlan = availablePlans.find(p => p.id === selectedPlanId);
+        if (!selectedPlan) throw new Error('Plan not found');
+
+        const priceId = (selectedPlan as any).stripe_price_id_monthly || (selectedPlan as any).stripe_price_id_yearly;
+
+        const { data, error } = await supabase.functions.invoke('update-subscription', {
+          body: {
+            new_price_id: priceId,
+            new_plan_id: selectedPlanId,
+          },
+        });
+
+        if (error) throw error;
+
+        toast.success('Plan upgraded with prorated billing!');
+        if (onUpgradeComplete) onUpgradeComplete();
+        onOpenChange(false);
+        return;
+      }
+
+      // Otherwise, create new checkout session
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: selectedPlanId,
