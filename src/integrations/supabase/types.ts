@@ -1267,6 +1267,81 @@ export type Database = {
         }
         Relationships: []
       }
+      product_image_history: {
+        Row: {
+          ai_model: string | null
+          ai_prompt: string | null
+          created_at: string | null
+          file_size_kb: number | null
+          id: string
+          image_id: string
+          is_current: boolean | null
+          is_downloaded: boolean | null
+          optimization_type: string
+          optimized_url: string
+          original_url: string
+          product_id: string
+          quality_score: number | null
+          resolution: string | null
+          restored_at: string | null
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          ai_model?: string | null
+          ai_prompt?: string | null
+          created_at?: string | null
+          file_size_kb?: number | null
+          id?: string
+          image_id: string
+          is_current?: boolean | null
+          is_downloaded?: boolean | null
+          optimization_type: string
+          optimized_url: string
+          original_url: string
+          product_id: string
+          quality_score?: number | null
+          resolution?: string | null
+          restored_at?: string | null
+          user_id: string
+          version_number?: number
+        }
+        Update: {
+          ai_model?: string | null
+          ai_prompt?: string | null
+          created_at?: string | null
+          file_size_kb?: number | null
+          id?: string
+          image_id?: string
+          is_current?: boolean | null
+          is_downloaded?: boolean | null
+          optimization_type?: string
+          optimized_url?: string
+          original_url?: string
+          product_id?: string
+          quality_score?: number | null
+          resolution?: string | null
+          restored_at?: string | null
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_image_history_image_id_fkey"
+            columns: ["image_id"]
+            isOneToOne: false
+            referencedRelation: "product_images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_image_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_images: {
         Row: {
           alt_text: string | null
@@ -2977,6 +3052,7 @@ export type Database = {
       }
       cleanup_stuck_syncs: { Args: never; Returns: undefined }
       generate_referral_code: { Args: { user_id: string }; Returns: string }
+      get_next_image_version: { Args: { p_image_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

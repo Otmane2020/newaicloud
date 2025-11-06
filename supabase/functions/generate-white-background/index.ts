@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, productTitle } = await req.json();
+    const { imageUrl, productTitle, resolution = '2000x2000' } = await req.json();
     
     if (!imageUrl) {
       throw new Error('Image URL is required');
@@ -40,9 +40,17 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: `Generate a professional product photo of this item on a pure white background (RGB 255,255,255). 
-The product should be centered, well-lit with soft shadows, and occupy about 80% of the frame. 
-Keep the product details sharp and clear. Remove any existing background completely.
+                text: `Generate a professional product photo on a pure white background (RGB 255,255,255).
+
+QUALITY REQUIREMENTS:
+- Target resolution: ${resolution} pixels (ultra high definition)
+- Product perfectly centered in frame (equal margins on all sides)
+- Soft, professional studio lighting with subtle shadows
+- Product occupies 75-85% of frame
+- Remove existing background completely
+- Maintain all product details, textures, and sharpness
+- Ultra sharp and clear image quality
+
 Product: ${productTitle || 'product'}`
               },
               {
