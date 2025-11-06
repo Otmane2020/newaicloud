@@ -19,7 +19,7 @@ export const ProductOptimizationTabs = ({ defaultTab = 'seo' }: ProductOptimizat
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="seo" className="flex items-center gap-2">
           <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">SEO Optimization</span>
+          <span className="hidden sm:inline">Métadonnées SEO</span>
           <span className="sm:hidden">SEO</span>
         </TabsTrigger>
         <TabsTrigger value="content" className="flex items-center gap-2">
@@ -36,9 +36,9 @@ export const ProductOptimizationTabs = ({ defaultTab = 'seo' }: ProductOptimizat
       <div className="mt-6">
         <TabsContent value="seo" className="space-y-4">
           <div className="mb-4">
-            <h2 className="text-2xl font-bold">Optimisation SEO</h2>
+            <h2 className="text-2xl font-bold">Métadonnées SEO</h2>
             <p className="text-muted-foreground">
-              Optimisez les méta-données SEO pour améliorer votre référencement
+              Optimisez les méta-données SEO (title, description) pour améliorer votre référencement
             </p>
           </div>
           <SeoOptimization />

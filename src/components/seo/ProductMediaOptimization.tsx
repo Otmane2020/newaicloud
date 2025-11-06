@@ -8,6 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { 
   Image as ImageIcon, 
   Palette, 
@@ -196,14 +203,20 @@ export const ProductMediaOptimization = () => {
     }
   };
 
-  const handleDownloadHD = (variantId: string, imageUrl: string) => {
+  const handleDownloadHD = (imageUrl: string, filename: string = 'optimized-image-2000px.png') => {
     const link = document.createElement('a');
     link.href = imageUrl;
-    link.download = `ai-background-${variantId}-2000px.png`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('Téléchargement HD démarré');
+    toast.success('Téléchargement HD démarré (2000x2000px)');
+  };
+
+  const handleDownloadWhiteBg = () => {
+    if (whiteBgResult) {
+      handleDownloadHD(whiteBgResult, `white-bg-${selectedImage?.id}-2000px.png`);
+    }
   };
 
   if (isLoading) {
@@ -412,35 +425,76 @@ export const ProductMediaOptimization = () => {
 
       {/* White Background Preview Dialog */}
       {showWhiteBgPreview && selectedImage && whiteBgResult && (
-        <SingleImagePreviewDialog
-          open={showWhiteBgPreview}
-          onOpenChange={setShowWhiteBgPreview}
-          originalImage={selectedImage.src}
-          optimizedImage={whiteBgResult}
-          onApply={handleApplyWhiteBackground}
-          isApplying={applyOptimizedImage.isPending}
-        />
+        <Dialog open={showWhiteBgPreview} onOpenChange={setShowWhiteBgPreview}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Fond Blanc HD - Résolution 2000x2000px</DialogTitle>
+              <DialogDescription>
+                Comparez l'image originale avec le fond blanc généré
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4 py-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Original</p>
+                <div className="aspect-square rounded-lg overflow-hidden border">
+                  <img src={selectedImage.src} alt="Original" className="w-full h-full object-cover" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Fond Blanc HD</p>
+                <div className="aspect-square rounded-lg overflow-hidden border bg-white">
+                  <img src={whiteBgResult} alt="Optimized" className="w-full h-full object-contain" />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-4 border-t">
+              <Button variant="outline" onClick={handleDownloadWhiteBg}>
+                <Download className="h-4 w-4 mr-2" />
+                Télécharger HD
+              </Button>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowWhiteBgPreview(false)}>
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={handleApplyWhiteBackground}
+                  disabled={applyOptimizedImage.isPending}
+                >
+                  {applyOptimizedImage.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Application...
+                    </>
+                  ) : (
+                    'Appliquer'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* AI Background Variants Selector */}
       {showVariantsSelector && selectedImage && backgroundVariants.length > 0 && (
-        <Card className="fixed inset-4 z-50 overflow-auto p-6">
-          <BackgroundVariantSelector
-            variants={backgroundVariants}
-            originalImage={selectedImage.src}
-            onSelect={(id) => console.log('Selected:', id)}
-            onApply={handleApplyVariant}
-            onDownloadHD={handleDownloadHD}
-            isApplying={applyOptimizedImage.isPending}
-          />
-          <Button
-            variant="ghost"
-            className="absolute top-4 right-4"
-            onClick={() => setShowVariantsSelector(false)}
-          >
-            Fermer
-          </Button>
-        </Card>
+        <Dialog open={showVariantsSelector} onOpenChange={setShowVariantsSelector}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>4 Variantes d'Arrière-plans IA - Résolution HD</DialogTitle>
+              <DialogDescription>
+                Sélectionnez votre variante préférée. Chaque image est générée en 2000x2000px avec le produit parfaitement centré.
+              </DialogDescription>
+            </DialogHeader>
+            <BackgroundVariantSelector
+              variants={backgroundVariants}
+              originalImage={selectedImage.src}
+              onSelect={(id) => console.log('Selected:', id)}
+              onApply={handleApplyVariant}
+              onDownloadHD={(variantId, imageUrl) => handleDownloadHD(imageUrl, `ai-bg-${variantId}-2000px.png`)}
+              isApplying={applyOptimizedImage.isPending}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

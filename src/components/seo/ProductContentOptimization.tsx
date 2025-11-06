@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { 
   FileText, 
   Sparkles, 
@@ -14,7 +15,9 @@ import {
   Eye,
   Smartphone,
   Monitor,
-  Info
+  Info,
+  CheckCircle2,
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
@@ -37,7 +40,10 @@ export const ProductContentOptimization = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showOptimizingDialog, setShowOptimizingDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop'>('desktop');
+  const [syncProgress, setSyncProgress] = useState(0);
   const queryClient = useQueryClient();
 
   const { generateProductDescription } = useImageOptimization();
@@ -89,6 +95,8 @@ export const ProductContentOptimization = () => {
       const product = products?.find(p => p.id === productId);
       if (!product) throw new Error('Product not found');
 
+      setShowOptimizingDialog(true);
+
       // Analyze images with Vision AI if needed
       let visionAnalysis = null;
       if (product.images.length > 0 && !product.description) {
@@ -111,11 +119,13 @@ export const ProductContentOptimization = () => {
       setGeneratedHtml(data.htmlDescription);
       const product = products?.find(p => p.id === productId);
       setSelectedProduct(product || null);
+      setShowOptimizingDialog(false);
       setShowPreview(true);
       queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
     },
     onError: (error) => {
       console.error('Error generating description:', error);
+      setShowOptimizingDialog(false);
       toast.error('Erreur lors de la génération');
     }
   });
@@ -142,10 +152,8 @@ export const ProductContentOptimization = () => {
       });
     },
     onSuccess: () => {
-      toast.success('Description appliquée avec succès');
       setShowPreview(false);
-      setGeneratedHtml(null);
-      setSelectedProduct(null);
+      setShowSyncDialog(true);
       queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
     },
     onError: (error) => {
@@ -153,6 +161,39 @@ export const ProductContentOptimization = () => {
       toast.error('Erreur lors de l\'application');
     }
   });
+
+  const syncToShopify = async () => {
+    if (!selectedProduct) return;
+
+    try {
+      setSyncProgress(30);
+      
+      const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+        body: { 
+          productIds: [selectedProduct.id],
+          syncType: 'description'
+        }
+      });
+
+      setSyncProgress(70);
+
+      if (error) throw error;
+
+      setSyncProgress(100);
+      
+      setTimeout(() => {
+        setShowSyncDialog(false);
+        setSyncProgress(0);
+        setGeneratedHtml(null);
+        setSelectedProduct(null);
+        toast.success('Synchronisation Shopify terminée');
+      }, 1000);
+    } catch (error) {
+      console.error('Sync error:', error);
+      toast.error('Erreur lors de la synchronisation');
+      setSyncProgress(0);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -250,11 +291,34 @@ export const ProductContentOptimization = () => {
         )}
       </Card>
 
+      {/* Optimizing Dialog */}
+      <Dialog open={showOptimizingDialog} onOpenChange={setShowOptimizingDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Optimisation en cours
+            </DialogTitle>
+            <DialogDescription>
+              Génération de la description HTML UX avec analyse Vision IA...
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-8 space-y-4">
+            <div className="flex items-center justify-center">
+              <Sparkles className="h-12 w-12 text-primary animate-pulse" />
+            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              Analyse des images et création d'une présentation mobile-friendly haute qualité
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Prévisualisation - {selectedProduct?.title}</DialogTitle>
+            <DialogTitle>Prévisualisation Landing Page Shopify - {selectedProduct?.title}</DialogTitle>
             <DialogDescription>
               Description HTML UX générée avec IA - Mobile-friendly et optimisée
             </DialogDescription>
@@ -313,13 +377,61 @@ export const ProductContentOptimization = () => {
                   </>
                 ) : (
                   <>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Appliquer
+                    <Upload className="h-4 w-4 mr-2" />
+                    Mettre à jour sur Shopify
                   </>
                 )}
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sync Dialog */}
+      <Dialog open={showSyncDialog} onOpenChange={setShowSyncDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {syncProgress === 100 ? (
+                <>
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  Synchronisation terminée
+                </>
+              ) : (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Synchronisation Shopify
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {syncProgress === 100 
+                ? 'Votre description a été mise à jour avec succès sur Shopify'
+                : 'Mise à jour de la description sur votre boutique Shopify...'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-8 space-y-6">
+            <Progress value={syncProgress} className="w-full" />
+            <div className="flex items-center justify-center">
+              {syncProgress === 100 ? (
+                <CheckCircle2 className="h-16 w-16 text-green-600" />
+              ) : (
+                <Upload className="h-16 w-16 text-primary animate-pulse" />
+              )}
+            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              {syncProgress === 100 
+                ? 'Vos modifications sont maintenant visibles sur Shopify'
+                : 'Synchronisation en cours avec Shopify...'}
+            </p>
+          </div>
+          {syncProgress === 0 && (
+            <div className="flex justify-end">
+              <Button onClick={syncToShopify}>
+                Lancer la synchronisation
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

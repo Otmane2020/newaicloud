@@ -90,6 +90,7 @@ export const useImageOptimization = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product-images'] });
+      queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
     },
     onSettled: () => {
       setIsOptimizing(false);
@@ -204,6 +205,7 @@ export const useImageOptimization = () => {
     onSuccess: () => {
       toast.success('Image appliquée avec succès');
       queryClient.invalidateQueries({ queryKey: ['product-images'] });
+      queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
       queryClient.invalidateQueries({ queryKey: ['image-history'] });
     },
     onError: (error) => {
