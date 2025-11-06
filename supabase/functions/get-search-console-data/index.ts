@@ -112,6 +112,14 @@ serve(async (req) => {
       );
     };
 
+    // Clean domain to remove protocol and trailing slash
+    const cleanDomain = domain
+      .replace(/^https?:\/\//, '')  // Remove http:// or https://
+      .replace(/\/$/, '');           // Remove trailing slash
+
+    console.log('Original domain:', domain);
+    console.log('Cleaned domain:', cleanDomain);
+
     // Get list of accessible sites to find the correct format
     const sitesResponse = await fetch(
       'https://www.googleapis.com/webmasters/v3/sites',
@@ -127,20 +135,27 @@ serve(async (req) => {
       const sitesData = await sitesResponse.json();
       const availableSites = (sitesData.siteEntry || []);
       
+      console.log('Available sites in Search Console:', availableSites.map((s: any) => s.siteUrl));
+      
       // Try to find exact match or domain match
       matchedSiteUrl = availableSites.find((s: any) => {
         const siteUrl = s.siteUrl.toLowerCase();
-        const domainLower = domain.toLowerCase();
+        const domainLower = cleanDomain.toLowerCase();
         return siteUrl === `https://${domainLower}/` || 
                siteUrl === `https://www.${domainLower}/` ||
                siteUrl === `http://${domainLower}/` ||
                siteUrl === `sc-domain:${domainLower}`;
       })?.siteUrl;
+      
+      if (matchedSiteUrl) {
+        console.log('Found exact match:', matchedSiteUrl);
+      }
     }
 
-    // If no match found, try both formats
+    // If no match found, try https:// format first
     if (!matchedSiteUrl) {
-      matchedSiteUrl = `https://${domain}/`;
+      matchedSiteUrl = `https://${cleanDomain}/`;
+      console.log('No match found, trying default:', matchedSiteUrl);
     }
 
     // Fetch data from Google Search Console API
@@ -149,7 +164,7 @@ serve(async (req) => {
     // If failed and we tried https://, try sc-domain: format
     if (!searchConsoleResponse.ok && matchedSiteUrl.startsWith('https://')) {
       console.log(`Failed with ${matchedSiteUrl}, trying sc-domain format`);
-      matchedSiteUrl = `sc-domain:${domain}`;
+      matchedSiteUrl = `sc-domain:${cleanDomain}`;
       searchConsoleResponse = await tryFetchData(matchedSiteUrl);
     }
 
@@ -195,13 +210,13 @@ serve(async (req) => {
       position: row.position,
     }));
 
-    // Cache the data in database
+    // Cache the data in database (use cleaned domain)
     for (const dataPoint of processedData) {
       await supabaseClient
         .from('google_search_console_data')
         .upsert({
           user_id: user.id,
-          domain,
+          domain: cleanDomain,  // Use cleaned domain for consistency
           date: dataPoint.date,
           clicks: dataPoint.clicks,
           impressions: dataPoint.impressions,
