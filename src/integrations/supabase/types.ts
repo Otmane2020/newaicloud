@@ -158,6 +158,80 @@ export type Database = {
         }
         Relationships: []
       }
+      app_notifications: {
+        Row: {
+          action_label: string | null
+          action_url: string | null
+          category: string
+          created_at: string | null
+          due_date: string | null
+          id: string
+          is_archived: boolean | null
+          is_completed: boolean | null
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          priority: string
+          sent_browser: boolean | null
+          sent_email: boolean | null
+          template_code: string | null
+          title: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_url?: string | null
+          category: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_completed?: boolean | null
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          priority?: string
+          sent_browser?: boolean | null
+          sent_email?: boolean | null
+          template_code?: string | null
+          title: string
+          type?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          action_label?: string | null
+          action_url?: string | null
+          category?: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_completed?: boolean | null
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          priority?: string
+          sent_browser?: boolean | null
+          sent_email?: boolean | null
+          template_code?: string | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_notifications_template_code_fkey"
+            columns: ["template_code"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       automation_settings: {
         Row: {
           alt_auto_enabled: boolean | null
@@ -1058,6 +1132,81 @@ export type Database = {
           notify_products?: boolean | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      notification_templates: {
+        Row: {
+          action_label_en: string | null
+          action_label_fr: string | null
+          action_url: string | null
+          category: string
+          code: string
+          created_at: string | null
+          email_body_en: string | null
+          email_body_fr: string | null
+          email_subject_en: string | null
+          email_subject_fr: string | null
+          id: string
+          is_active: boolean | null
+          message_en: string
+          message_fr: string
+          name: string
+          priority: string
+          send_browser: boolean | null
+          send_email: boolean | null
+          send_in_app: boolean | null
+          title_en: string
+          title_fr: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_label_en?: string | null
+          action_label_fr?: string | null
+          action_url?: string | null
+          category: string
+          code: string
+          created_at?: string | null
+          email_body_en?: string | null
+          email_body_fr?: string | null
+          email_subject_en?: string | null
+          email_subject_fr?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_en: string
+          message_fr: string
+          name: string
+          priority?: string
+          send_browser?: boolean | null
+          send_email?: boolean | null
+          send_in_app?: boolean | null
+          title_en: string
+          title_fr: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_label_en?: string | null
+          action_label_fr?: string | null
+          action_url?: string | null
+          category?: string
+          code?: string
+          created_at?: string | null
+          email_body_en?: string | null
+          email_body_fr?: string | null
+          email_subject_en?: string | null
+          email_subject_fr?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_en?: string
+          message_fr?: string
+          name?: string
+          priority?: string
+          send_browser?: boolean | null
+          send_email?: boolean | null
+          send_in_app?: boolean | null
+          title_en?: string
+          title_fr?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

@@ -182,3 +182,6 @@ verify_jwt = true
 
 [functions.generate-image-background]
 verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = false

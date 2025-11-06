@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Bell, Check, X, ExternalLink } from 'lucide-react';
+import { Bell, Check, X, ExternalLink, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/language';
+import { BrowserNotificationService } from '@/lib/notificationService';
 
 interface Notification {
   id: string;
@@ -22,6 +22,9 @@ interface Notification {
   action_label: string | null;
   is_read: boolean;
   is_completed: boolean;
+  is_archived: boolean;
+  sent_browser: boolean;
+  metadata: Record<string, any>;
   created_at: string;
   due_date: string | null;
 }
@@ -40,16 +43,28 @@ export function NotificationCenter() {
 
     // Subscribe to realtime notifications
     const channel = supabase
-      .channel('notifications')
+      .channel('app_notifications')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
-          table: 'seo_notifications'
+          table: 'app_notifications',
+          filter: `user_id=eq.${user.id}`
         },
-        () => {
+        (payload) => {
+          console.log('New notification received:', payload);
           fetchNotifications();
+          
+          // Show browser notification if enabled and not yet sent
+          const newNotif = payload.new as Notification;
+          if (newNotif.sent_browser && BrowserNotificationService.isEnabled()) {
+            BrowserNotificationService.showNotification(newNotif.title, {
+              body: newNotif.message,
+              tag: newNotif.id,
+              requireInteraction: newNotif.priority === 'high',
+            });
+          }
         }
       )
       .subscribe();
@@ -57,87 +72,31 @@ export function NotificationCenter() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
 
   const fetchNotifications = async () => {
     try {
       const { data, error } = await supabase
-        .from('seo_notifications')
+        .from('app_notifications')
         .select('*')
+        .eq('is_archived', false)
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
 
       const dbNotifications = (data || []) as Notification[];
-      
-      // Add 3 sample notifications if no notifications exist
-      const sampleNotifications: Notification[] = dbNotifications.length === 0 ? [
-        {
-          id: 'sample-1',
-          title: t.notifications.samples.optimizeProducts.title,
-          message: t.notifications.samples.optimizeProducts.message,
-          type: 'seo_task',
-          priority: 'high',
-          category: 'products',
-          action_url: '/products',
-          action_label: t.notifications.samples.optimizeProducts.actionLabel,
-          is_read: false,
-          is_completed: false,
-          created_at: new Date().toISOString(),
-          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 'sample-2',
-          title: t.notifications.samples.missingAlts.title,
-          message: t.notifications.samples.missingAlts.message,
-          type: 'seo_task',
-          priority: 'medium',
-          category: 'images',
-          action_url: '/seo?tab=alt',
-          action_label: t.notifications.samples.missingAlts.actionLabel,
-          is_read: false,
-          is_completed: false,
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 'sample-3',
-          title: t.notifications.samples.seoAudit.title,
-          message: t.notifications.samples.seoAudit.message,
-          type: 'report',
-          priority: 'low',
-          category: 'homepage',
-          action_url: '/seo?tab=audit',
-          action_label: t.notifications.samples.seoAudit.actionLabel,
-          is_read: false,
-          is_completed: false,
-          created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-          due_date: null
-        }
-      ] : [];
-
-      const allNotifications = [...dbNotifications, ...sampleNotifications];
-      setNotifications(allNotifications);
-      setUnreadCount(allNotifications.filter(n => !n.is_read).length);
+      setNotifications(dbNotifications);
+      setUnreadCount(dbNotifications.filter(n => !n.is_read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
   };
 
   const markAsRead = async (id: string) => {
-    // Handle sample notifications locally
-    if (id.startsWith('sample-')) {
-      setNotifications(prev => prev.map(n => 
-        n.id === id ? { ...n, is_read: true } : n
-      ));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      return;
-    }
-
     try {
       const { error } = await supabase
-        .from('seo_notifications')
+        .from('app_notifications')
         .update({ is_read: true })
         .eq('id', id);
 
@@ -150,19 +109,9 @@ export function NotificationCenter() {
   };
 
   const markAsCompleted = async (id: string) => {
-    // Handle sample notifications locally
-    if (id.startsWith('sample-')) {
-      setNotifications(prev => prev.map(n => 
-        n.id === id ? { ...n, is_completed: true, is_read: true } : n
-      ));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      toast.success('Tâche marquée comme complétée');
-      return;
-    }
-
     try {
       const { error } = await supabase
-        .from('seo_notifications')
+        .from('app_notifications')
         .update({ is_completed: true, is_read: true })
         .eq('id', id);
 
@@ -176,28 +125,37 @@ export function NotificationCenter() {
     }
   };
 
-  const deleteNotification = async (id: string) => {
-    // Handle sample notifications locally
-    if (id.startsWith('sample-')) {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      toast.success(t.toasts.success.deleted);
-      return;
-    }
-
+  const archiveNotification = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('seo_notifications')
-        .delete()
+        .from('app_notifications')
+        .update({ is_archived: true })
         .eq('id', id);
 
       if (error) throw error;
 
-      toast.success(t.toasts.success.deleted);
+      toast.success(language === 'fr' ? 'Notification archivée' : 'Notification archived');
       fetchNotifications();
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      console.error('Error archiving notification:', error);
       toast.error(t.toasts.error.deleting);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const { error } = await supabase
+        .from('app_notifications')
+        .update({ is_read: true })
+        .eq('is_read', false)
+        .eq('is_archived', false);
+
+      if (error) throw error;
+
+      toast.success(language === 'fr' ? 'Toutes les notifications marquées comme lues' : 'All notifications marked as read');
+      fetchNotifications();
+    } catch (error) {
+      console.error('Error marking all as read:', error);
     }
   };
 
@@ -260,10 +218,22 @@ export function NotificationCenter() {
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            {t.notifications.title}
-          </SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              {t.notifications.title}
+            </SheetTitle>
+            {unreadCount > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={markAllAsRead}
+                className="text-xs"
+              >
+                {language === 'fr' ? 'Tout marquer comme lu' : 'Mark all as read'}
+              </Button>
+            )}
+          </div>
           <SheetDescription>
             {t.notifications.description}
           </SheetDescription>
@@ -310,9 +280,10 @@ export function NotificationCenter() {
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
-                        onClick={() => deleteNotification(notification.id)}
+                        onClick={() => archiveNotification(notification.id)}
+                        title={language === 'fr' ? 'Archiver' : 'Archive'}
                       >
-                        <X className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
