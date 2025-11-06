@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,20 @@ serve(async (req) => {
     if (!imageUrl) throw new Error("Image URL is required");
 
     console.log("🧠 Generating pure white background for:", productTitle);
+
+    // Initialize Supabase client for usage tracking
+    const authHeader = req.headers.get("Authorization");
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader! } } }
+    );
+
+    // Get authenticated user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      console.error("Authentication error:", userError);
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
@@ -70,6 +85,20 @@ Product: ${productTitle || "product"}
     if (!generatedImageUrl) throw new Error("No image returned from Lovable AI.");
 
     console.log("✅ White background generated successfully");
+
+    // Track usage: 1 image generation = 5 optimizations
+    if (user) {
+      try {
+        await supabaseClient.rpc("increment_usage", {
+          p_seller_id: user.id,
+          p_field: "optimizations_count",
+          p_increment: 5
+        });
+        console.log("✅ Usage tracked: 5 optimizations");
+      } catch (trackError) {
+        console.error("⚠️ Failed to track usage:", trackError);
+      }
+    }
 
     return new Response(
       JSON.stringify({
