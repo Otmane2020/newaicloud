@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,12 +20,12 @@ serve(async (req) => {
       });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY non configurée");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY non configurée");
     }
 
-    console.log("🧠 Génération d'arrière-plan e-commerce avec Gemini pour :", productType);
+    console.log("🧠 Génération d'arrière-plan e-commerce avec Lovable AI pour :", productType);
 
     // --- Prompt IA ---
     const imagePrompt = `
@@ -50,62 +49,45 @@ PHOTOGRAPHY REQUIREMENTS:
 - Suitable for Shopify, Amazon or Decora Home presentation
     `.trim();
 
-    // --- Conversion base64 sûre ---
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) {
-      throw new Error(`Impossible de télécharger l'image source : ${imageResponse.status}`);
-    }
-    const buffer = await imageResponse.arrayBuffer();
-    const base64Image = encodeBase64(new Uint8Array(buffer));
-
-    // --- Appel à Gemini (même structure que generate-ai-background-variants) ---
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  inline_data: {
-                    mime_type: "image/jpeg",
-                    data: base64Image,
-                  },
-                },
-                { text: imagePrompt },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.8,
-            topK: 40,
-            topP: 0.95,
-          },
-        }),
+    // --- Appel à Lovable AI (Gemini 2.5 Flash Image) ---
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: imagePrompt },
+              { type: "image_url", image_url: { url: imageUrl } }
+            ]
+          }
+        ],
+        modalities: ["image", "text"]
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ Erreur Gemini :", response.status, errorText);
-      throw new Error(`Erreur API Gemini ${response.status}: ${errorText}`);
+      console.error("❌ Erreur Lovable AI :", response.status, errorText);
+      throw new Error(`Erreur API Lovable AI ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("✅ Réponse Gemini reçue avec succès");
+    console.log("✅ Réponse Lovable AI reçue avec succès");
 
     // --- Extraction image base64 ---
-    const generatedBase64 =
-      data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data ?? data.generatedImages?.[0]?.bytesBase64;
+    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
-    if (!generatedBase64) {
+    if (!generatedImageUrl) {
       console.error("⚠️ Aucune image retournée :", JSON.stringify(data, null, 2));
       throw new Error("Aucune image générée — format de réponse inattendu.");
     }
 
-    const generatedImageUrl = `data:image/png;base64,${generatedBase64}`;
     console.log("🎨 Arrière-plan généré avec succès pour :", productType);
 
     // --- Réponse finale ---
@@ -116,7 +98,7 @@ PHOTOGRAPHY REQUIREMENTS:
         metadata: {
           productType,
           style,
-          model: "gemini-2.0-flash-exp",
+          model: "google/gemini-2.5-flash-image-preview",
           generatedAt: new Date().toISOString(),
         },
       }),

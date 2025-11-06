@@ -16,16 +16,10 @@ serve(async (req) => {
 
     console.log("🧠 Generating pure white background for:", productTitle);
 
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // 🪄 Fetch and convert input image to base64
-    const imgResponse = await fetch(imageUrl);
-    if (!imgResponse.ok) throw new Error(`Failed to fetch image (${imgResponse.status})`);
-    const imgBuffer = await imgResponse.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
-
-    // 🧠 Build Gemini prompt
+    // 🧠 Build prompt
     const prompt = `
 You are a professional product retoucher.
 Your task is to remove the background and place the product on a pure white background (RGB 255,255,255).
@@ -41,37 +35,40 @@ PHOTOGRAPHY REQUIREMENTS:
 Product: ${productTitle || "product"}
     `.trim();
 
-    // 🧩 Generate new image with Gemini 2.5 Flash Image
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateImage?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ inline_data: { mime_type: "image/jpeg", data: base64Image } }, { text: prompt }],
-            },
-          ],
-          generationConfig: { aspectRatio: "1:1" },
-        }),
+    // 🧩 Generate new image with Lovable AI (Gemini 2.5 Flash Image)
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: imageUrl } }
+            ]
+          }
+        ],
+        modalities: ["image", "text"]
+      }),
+    });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Gemini API error:", response.status, errText);
-      throw new Error(`Gemini API error ${response.status}: ${errText}`);
+      console.error("Lovable AI error:", response.status, errText);
+      throw new Error(`Lovable AI error ${response.status}: ${errText}`);
     }
 
     const data = await response.json();
 
-    const generatedBase64 =
-      data.generatedImages?.[0]?.bytesBase64 || data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
-    if (!generatedBase64) throw new Error("No image returned from Gemini.");
+    if (!generatedImageUrl) throw new Error("No image returned from Lovable AI.");
 
-    const generatedImageUrl = `data:image/png;base64,${generatedBase64}`;
     console.log("✅ White background generated successfully");
 
     return new Response(
@@ -79,7 +76,7 @@ Product: ${productTitle || "product"}
         success: true,
         imageUrl: generatedImageUrl,
         metadata: {
-          model: "gemini-2.5-flash-image",
+          model: "google/gemini-2.5-flash-image-preview",
           resolution,
           productTitle,
           generatedAt: new Date().toISOString(),
