@@ -939,18 +939,48 @@ export function GoogleSearchConsole() {
 
           {/* Empty state */}
           {!loading && data.length === 0 && (
-            <Card className="p-8">
-              <div className="flex flex-col items-center justify-center gap-4 text-center">
-                <AlertCircle className="h-12 w-12 text-muted-foreground" />
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Aucune donnée disponible</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Aucune donnée Search Console n'est disponible pour ce domaine sur la période sélectionnée.
+            <Card className="p-8 border-2 border-dashed">
+              <div className="flex flex-col items-center justify-center gap-4 text-center max-w-2xl mx-auto">
+                <div className="p-4 bg-primary/10 rounded-full">
+                  <BarChart3 className="h-12 w-12 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold">Aucune donnée Search Console</h3>
+                  <p className="text-muted-foreground">
+                    Les données Google Search Console n'ont pas encore été synchronisées pour ce domaine.
                   </p>
-                  <Button onClick={loadSearchConsoleData} variant="outline" className="gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Réessayer
+                  {!domains.find(d => d.domain === selectedDomain)?.verified && (
+                    <div className="flex items-center gap-2 justify-center text-orange-600 mt-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <p className="text-sm font-medium">
+                        Ce domaine n'est pas encore vérifié dans Google Search Console
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-3 w-full max-w-md">
+                  <Button 
+                    onClick={loadSearchConsoleData} 
+                    size="lg"
+                    className="gap-2 w-full"
+                  >
+                    <RefreshCw className="h-5 w-5" />
+                    Charger les données depuis Google Search Console
                   </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Cette action récupère vos statistiques de recherche directement depuis Google
+                  </p>
+                </div>
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg w-full">
+                  <h4 className="font-medium mb-2 text-sm flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Comment ça marche ?
+                  </h4>
+                  <ol className="text-sm text-muted-foreground space-y-2 text-left list-decimal list-inside">
+                    <li>Vérifiez que votre domaine est bien ajouté dans Google Search Console</li>
+                    <li>Cliquez sur "Charger les données" pour synchroniser les statistiques</li>
+                    <li>Les données seront mises à jour et affichées automatiquement</li>
+                  </ol>
                 </div>
               </div>
             </Card>
