@@ -1,1 +1,8 @@
+# Sitemap accessibility
+/sitemap.xml /sitemap.xml 200
+
+# Shopping feed proxy
 /shoppingfeed/* https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/:splat 200!
+
+# SPA fallback - must be last
+/* /index.html 200

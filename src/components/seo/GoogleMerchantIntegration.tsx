@@ -101,7 +101,13 @@ export function GoogleMerchantIntegration() {
       
       if (error) {
         console.error('Error fetching accounts:', error);
-        toast.error(t.googleMerchant.integration.errors.loadAccounts);
+        toast.error(t.googleMerchant.integration.errors.loadAccounts + ': ' + (error.message || 'Unknown error'));
+        return;
+      }
+
+      if (!data?.success) {
+        console.error('API returned error:', data?.error);
+        toast.error(data?.error || t.googleMerchant.integration.errors.loadAccounts);
         return;
       }
 
