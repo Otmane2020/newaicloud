@@ -39,14 +39,49 @@ interface Product {
 export const ProductContentOptimization = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+  const [generatedTitle, setGeneratedTitle] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [showOptimizingDialog, setShowOptimizingDialog] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop'>('desktop');
+  const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop' | '360'>('desktop');
   const [syncProgress, setSyncProgress] = useState(0);
+  const [selectedTemplate, setSelectedTemplate] = useState<'ecommerce' | 'luxury' | 'technical'>('ecommerce');
+  const [qualityScore, setQualityScore] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { generateProductDescription } = useImageOptimization();
+
+  // Calculate quality score based on HTML content
+  const calculateQualityScore = (html: string): number => {
+    let score = 0;
+    
+    // Length check (20 points)
+    const wordCount = html.split(/\s+/).length;
+    if (wordCount >= 150) score += 20;
+    else if (wordCount >= 100) score += 15;
+    else if (wordCount >= 50) score += 10;
+    
+    // SEO keywords (20 points)
+    const seoKeywords = ['qualité', 'premium', 'durable', 'confort', 'design', 'moderne', 'élégant', 'performant'];
+    const keywordCount = seoKeywords.filter(kw => html.toLowerCase().includes(kw)).length;
+    score += Math.min(20, keywordCount * 3);
+    
+    // HTML structure (30 points)
+    if (html.includes('<h2>') || html.includes('<h3>')) score += 10;
+    if (html.includes('<ul>') || html.includes('<ol>')) score += 10;
+    if (html.includes('<table>')) score += 10;
+    
+    // Semantic tags (15 points)
+    if (html.includes('<section>')) score += 5;
+    if (html.includes('<article>')) score += 5;
+    if (html.includes('<div class=')) score += 5;
+    
+    // Images/Media placeholders (15 points)
+    const imgCount = (html.match(/<img/g) || []).length;
+    score += Math.min(15, imgCount * 5);
+    
+    return Math.min(100, score);
+  };
 
   // Load products
   const { data: products, isLoading } = useQuery({
@@ -95,7 +130,9 @@ export const ProductContentOptimization = () => {
       const product = products?.find(p => p.id === productId);
       if (!product) throw new Error('Product not found');
 
-      setShowOptimizingDialog(true);
+      setIsGenerating(true);
+      setShowPreview(true);
+      setSelectedProduct(product || null);
 
       // Analyze images with Vision AI if needed
       let visionAnalysis = null;
@@ -110,23 +147,36 @@ export const ProductContentOptimization = () => {
         title: product.title,
         existingDescription: product.description || undefined,
         images: product.images.map(img => img.src),
-        visionAnalysis
+        visionAnalysis,
+        template: selectedTemplate
       });
 
       return result;
     },
-    onSuccess: (data, productId) => {
+    onSuccess: (data) => {
       setGeneratedHtml(data.htmlDescription);
-      const product = products?.find(p => p.id === productId);
-      setSelectedProduct(product || null);
-      setShowOptimizingDialog(false);
-      setShowPreview(true);
+      setGeneratedTitle(data.optimizedTitle || null);
+      setIsGenerating(false);
+      
+      // Calculate quality score
+      const score = calculateQualityScore(data.htmlDescription);
+      setQualityScore(score);
+      
       queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error generating description:', error);
-      setShowOptimizingDialog(false);
-      toast.error('Erreur lors de la génération');
+      setIsGenerating(false);
+      setShowPreview(false);
+      
+      // Better error handling for 402
+      if (error?.message?.includes('402') || error?.message?.includes('credits')) {
+        toast.error('Crédits IA épuisés', {
+          description: 'Veuillez ajouter des crédits à votre workspace Lovable.'
+        });
+      } else {
+        toast.error('Erreur lors de la génération');
+      }
     }
   });
 
@@ -134,12 +184,20 @@ export const ProductContentOptimization = () => {
     mutationFn: async () => {
       if (!selectedProduct || !generatedHtml) throw new Error('No content to apply');
 
+      const updateData: any = { 
+        description: generatedHtml,
+        updated_at: new Date().toISOString()
+      };
+
+      // Save optimized title if generated
+      if (generatedTitle) {
+        updateData.title = generatedTitle;
+        updateData.seo_title = generatedTitle;
+      }
+
       const { error } = await supabase
         .from('shopify_products')
-        .update({ 
-          description: generatedHtml,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', selectedProduct.id);
 
       if (error) throw error;
@@ -151,10 +209,13 @@ export const ProductContentOptimization = () => {
         p_increment: 1
       });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setShowPreview(false);
       setShowSyncDialog(true);
       queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
+      
+      // Lancer automatiquement la synchronisation Shopify
+      await syncToShopify();
     },
     onError: (error) => {
       console.error('Error applying description:', error);
@@ -217,9 +278,35 @@ export const ProductContentOptimization = () => {
           <FileText className="h-5 w-5" />
           Génération de Descriptions UX
         </h3>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-4">
           Créez des descriptions HTML professionnelles et engageantes avec mise en page optimisée pour mobile.
         </p>
+
+        {/* Template Selector */}
+        <div className="mb-6">
+          <label className="text-sm font-medium mb-2 block">Style de description</label>
+          <Tabs value={selectedTemplate} onValueChange={(v) => setSelectedTemplate(v as any)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="ecommerce">
+                <Sparkles className="h-4 w-4 mr-2" />
+                E-commerce
+              </TabsTrigger>
+              <TabsTrigger value="luxury">
+                <FileText className="h-4 w-4 mr-2" />
+                Luxe
+              </TabsTrigger>
+              <TabsTrigger value="technical">
+                <Info className="h-4 w-4 mr-2" />
+                Technique
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <p className="text-xs text-muted-foreground mt-2">
+            {selectedTemplate === 'ecommerce' && 'Style direct et persuasif avec focus sur les bénéfices client'}
+            {selectedTemplate === 'luxury' && 'Ton sophistiqué et élégant avec narration raffinée'}
+            {selectedTemplate === 'technical' && 'Langage précis et professionnel avec spécifications détaillées'}
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {products?.map(product => (
@@ -291,98 +378,159 @@ export const ProductContentOptimization = () => {
         )}
       </Card>
 
-      {/* Optimizing Dialog */}
-      <Dialog open={showOptimizingDialog} onOpenChange={setShowOptimizingDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Optimisation en cours
-            </DialogTitle>
-            <DialogDescription>
-              Génération de la description HTML UX avec analyse Vision IA...
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-8 space-y-4">
-            <div className="flex items-center justify-center">
-              <Sparkles className="h-12 w-12 text-primary animate-pulse" />
-            </div>
-            <p className="text-center text-sm text-muted-foreground">
-              Analyse des images et création d'une présentation mobile-friendly haute qualité
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* Preview Dialog */}
+      {/* Preview Dialog with Generation */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Prévisualisation Landing Page Shopify - {selectedProduct?.title}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {isGenerating && <Loader2 className="h-5 w-5 animate-spin" />}
+              Aperçu Landing Page - {selectedProduct?.title}
+            </DialogTitle>
             <DialogDescription>
-              Description HTML UX générée avec IA - Mobile-friendly et optimisée
+              {isGenerating 
+                ? "Génération en cours avec analyse Vision IA..." 
+                : "Description HTML UX optimisée - Mobile-friendly"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Preview Mode Toggle */}
-            <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as any)}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="desktop">
-                  <Monitor className="h-4 w-4 mr-2" />
-                  Desktop
-                </TabsTrigger>
-                <TabsTrigger value="mobile">
-                  <Smartphone className="h-4 w-4 mr-2" />
-                  Mobile
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="desktop" className="space-y-4">
-                <div className="border rounded-lg p-6 bg-white min-h-[400px]">
-                  <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
+            {isGenerating ? (
+              <div className="py-12 space-y-6">
+                <div className="flex items-center justify-center">
+                  <Sparkles className="h-16 w-16 text-primary animate-pulse" />
                 </div>
-              </TabsContent>
-
-              <TabsContent value="mobile" className="space-y-4">
-                <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
-                  <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            {/* Original Description Comparison */}
-            {selectedProduct?.description && (
-              <div className="space-y-2">
-                <h4 className="font-semibold text-sm">Description originale:</h4>
-                <div className="p-4 bg-muted rounded-lg text-sm">
-                  {selectedProduct.description}
+                <div className="space-y-2">
+                  <p className="text-center font-medium">Optimisation en cours...</p>
+                  <p className="text-center text-sm text-muted-foreground">
+                    Analyse des images et création d'une présentation professionnelle
+                  </p>
                 </div>
               </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button variant="outline" onClick={() => setShowPreview(false)}>
-                Annuler
-              </Button>
-              <Button
-                onClick={() => applyMutation.mutate()}
-                disabled={applyMutation.isPending}
-              >
-                {applyMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Application...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Mettre à jour sur Shopify
-                  </>
+            ) : (
+              <>
+                {/* Quality Score Badge */}
+                {qualityScore !== null && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Score de qualité</span>
+                      <Badge 
+                        variant={qualityScore >= 80 ? "default" : qualityScore >= 60 ? "secondary" : "outline"}
+                        className="gap-1"
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        {qualityScore}/100
+                      </Badge>
+                    </div>
+                    <Progress value={qualityScore} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {qualityScore >= 80 && 'Excellente qualité - Structure complète et optimisée SEO'}
+                      {qualityScore >= 60 && qualityScore < 80 && 'Bonne qualité - Quelques améliorations possibles'}
+                      {qualityScore < 60 && 'Qualité moyenne - Ajoutez plus de contenu et de structure'}
+                    </p>
+                  </div>
                 )}
-              </Button>
-            </div>
+
+                {/* Preview Mode Toggle */}
+                <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as any)}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="desktop">
+                      <Monitor className="h-4 w-4 mr-2" />
+                      Desktop
+                    </TabsTrigger>
+                    <TabsTrigger value="mobile">
+                      <Smartphone className="h-4 w-4 mr-2" />
+                      Mobile
+                    </TabsTrigger>
+                    <TabsTrigger value="360">
+                      <Eye className="h-4 w-4 mr-2" />
+                      Vue 360°
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="desktop" className="space-y-4">
+                    <div className="border rounded-lg p-6 bg-white min-h-[400px]">
+                      <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="mobile" className="space-y-4">
+                    <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
+                      <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="360" className="space-y-4">
+                    <div className="border rounded-lg p-6 bg-gradient-to-br from-background to-muted min-h-[400px]">
+                      <div className="text-center space-y-4">
+                        <div className="relative w-64 h-64 mx-auto">
+                          {selectedProduct?.images[0] && (
+                            <img 
+                              src={selectedProduct.images[0].src}
+                              alt={selectedProduct.title}
+                              className="w-full h-full object-contain rounded-lg shadow-lg animate-pulse"
+                            />
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Eye className="h-16 w-16 text-primary/20" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Badge variant="secondary" className="mb-2">
+                            <Eye className="h-3 w-3 mr-1" />
+                            Vue interactive 360°
+                          </Badge>
+                          <p className="text-sm text-muted-foreground">
+                            Prévisualisation de la rotation produit avec la description
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-6 p-4 border-t">
+                        <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                {/* Original Description Comparison */}
+                {selectedProduct?.description && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm">Description originale:</h4>
+                    <div className="p-4 bg-muted rounded-lg text-sm line-clamp-3">
+                      {selectedProduct.description}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => {
+                    setShowPreview(false);
+                    setGeneratedHtml(null);
+                    setSelectedProduct(null);
+                  }}>
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={() => applyMutation.mutate()}
+                    disabled={applyMutation.isPending}
+                    className="gap-2"
+                  >
+                    {applyMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Synchronisation...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4" />
+                        Synchroniser sur Shopify
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -425,13 +573,6 @@ export const ProductContentOptimization = () => {
                 : 'Synchronisation en cours avec Shopify...'}
             </p>
           </div>
-          {syncProgress === 0 && (
-            <div className="flex justify-end">
-              <Button onClick={syncToShopify}>
-                Lancer la synchronisation
-              </Button>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </div>

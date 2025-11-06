@@ -1,114 +1,101 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { imageUrl, productTitle, resolution = '2000x2000' } = await req.json();
-    
-    if (!imageUrl) {
-      throw new Error('Image URL is required');
-    }
+    const { imageUrl, productTitle, resolution = "2000x2000" } = await req.json();
+    if (!imageUrl) throw new Error("Image URL is required");
 
-    console.log('Generating white background for:', productTitle);
+    console.log("🧠 Generating pure white background for:", productTitle);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
+    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
 
-    // Call Lovable AI with image editing to add white background
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    // 🪄 Fetch and convert input image to base64
+    const imgResponse = await fetch(imageUrl);
+    if (!imgResponse.ok) throw new Error(`Failed to fetch image (${imgResponse.status})`);
+    const imgBuffer = await imgResponse.arrayBuffer();
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+
+    // 🧠 Build Gemini prompt
+    const prompt = `
+You are a professional product retoucher.
+Your task is to remove the background and place the product on a pure white background (RGB 255,255,255).
+
+PHOTOGRAPHY REQUIREMENTS:
+- Resolution: ${resolution} pixels
+- Product perfectly centered in the frame
+- Soft studio lighting with subtle shadow
+- Product occupies 75–85% of the image area
+- Keep all fine details, colors, reflections and textures
+- No crop, no distortion
+- Output must look like a professional e-commerce photo
+Product: ${productTitle || "product"}
+    `.trim();
+
+    // 🧩 Generate new image with Gemini 2.5 Flash Image
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateImage?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ inline_data: { mime_type: "image/jpeg", data: base64Image } }, { text: prompt }],
+            },
+          ],
+          generationConfig: { aspectRatio: "1:1" },
+        }),
       },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image-preview',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Generate a professional product photo on a pure white background (RGB 255,255,255).
-
-QUALITY REQUIREMENTS:
-- Target resolution: ${resolution} pixels (ultra high definition)
-- Product perfectly centered in frame (equal margins on all sides)
-- Soft, professional studio lighting with subtle shadows
-- Product occupies 75-85% of frame
-- Remove existing background completely
-- Maintain all product details, textures, and sharpness
-- Ultra sharp and clear image quality
-
-Product: ${productTitle || 'product'}`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageUrl
-                }
-              }
-            ]
-          }
-        ],
-        modalities: ['image', 'text']
-      }),
-    });
+    );
 
     if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again in a few moments.');
-      }
-      if (response.status === 402) {
-        throw new Error('AI credits depleted. Please add credits to your workspace.');
-      }
-      const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      throw new Error(`AI generation failed: ${response.status}`);
+      const errText = await response.text();
+      console.error("Gemini API error:", response.status, errText);
+      throw new Error(`Gemini API error ${response.status}: ${errText}`);
     }
 
     const data = await response.json();
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
-    if (!generatedImageUrl) {
-      throw new Error('No image generated by AI');
-    }
+    const generatedBase64 =
+      data.generatedImages?.[0]?.bytesBase64 || data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
 
-    console.log('White background generated successfully');
+    if (!generatedBase64) throw new Error("No image returned from Gemini.");
+
+    const generatedImageUrl = `data:image/png;base64,${generatedBase64}`;
+    console.log("✅ White background generated successfully");
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
-        imageUrl: generatedImageUrl 
+        imageUrl: generatedImageUrl,
+        metadata: {
+          model: "gemini-2.5-flash-image",
+          resolution,
+          productTitle,
+          generatedAt: new Date().toISOString(),
+        },
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-
-  } catch (error) {
-    console.error('Error in generate-white-background:', error);
+  } catch (err) {
+    console.error("💥 Error in generate-white-background:", err);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Failed to generate white background',
-        success: false 
+      JSON.stringify({
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+        suggestion: "Try a higher-quality product photo or simpler background.",
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });

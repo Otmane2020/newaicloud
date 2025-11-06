@@ -16,10 +16,10 @@ serve(async (req) => {
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const googleGeminiApiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     
-    if (!lovableApiKey) {
-      throw new Error("LOVABLE_API_KEY not configured");
+    if (!googleGeminiApiKey) {
+      throw new Error("GOOGLE_GEMINI_API_KEY not configured");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -245,30 +245,33 @@ body { font-family: Arial, sans-serif; color: #0F1111; line-height: 1.6; }
 
 Return ONLY the complete HTML document. Start with <!DOCTYPE html>. No markdown, no backticks, no explanations.`;
 
-    console.log("Calling Lovable AI with artistic gallery prompt...");
+    console.log("Calling Google Gemini with artistic gallery prompt...");
     
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.8,
-        max_tokens: 5000,
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${googleGeminiApiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 5000
+          }
+        }),
+      }
+    );
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Lovable AI error:", response.status, errorText);
-      throw new Error(`Lovable AI error: ${response.status}`);
+      console.error("Google Gemini error:", response.status, errorText);
+      throw new Error(`Google Gemini error: ${response.status}`);
     }
     
     const data = await response.json();
-    let generatedCode = data.choices[0]?.message?.content || "";
+    let generatedCode = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     
     // Clean code extraction
     const codeMatch = generatedCode.match(/```(?:tsx|typescript|jsx)?\n([\s\S]*?)```/);

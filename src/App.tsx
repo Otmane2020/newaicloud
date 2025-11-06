@@ -21,6 +21,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import ProductTitleDescription from "./pages/ProductTitleDescription";
+import MediaHistory from "./pages/MediaHistory";
 import Collections from "./pages/Collections";
 import Blog from "./pages/Blog";
 import ArticleManagement from "./pages/ArticleManagement";
@@ -99,6 +100,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ProductTitleDescription />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/products/media-history"
+              element={
+                <ProtectedLayout>
+                  <MediaHistory />
                 </ProtectedLayout>
               }
             />

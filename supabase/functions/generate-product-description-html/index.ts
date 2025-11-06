@@ -1,151 +1,190 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { title, existingDescription, images, visionAnalysis } = await req.json();
-    
+    const { title, existingDescription, images, visionAnalysis, dimensions, template = "ecommerce" } = await req.json();
+
     if (!title) {
-      throw new Error('Product title is required');
+      throw new Error("Product title is required");
     }
 
-    console.log('Generating HTML description for:', title);
+    console.log("🧠 Generating product landing page for:", title);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
     }
 
-    const prompt = `Generate a high-quality, mobile-friendly HTML product description.
-
-PRODUCT INFORMATION:
-- Title: ${title}
-${existingDescription ? `- Existing Description: ${existingDescription}` : '- No existing description'}
-${visionAnalysis ? `- Visual Analysis: ${JSON.stringify(visionAnalysis)}` : ''}
-${images?.length ? `- Available Images: ${images.length} product photos` : ''}
-
-STRUCTURE REQUIREMENTS:
-1. Hero section with main product benefit (1-2 sentences)
-2. Key features grid with 4-6 highlighted benefits
-3. Detailed characteristics/specifications table
-4. Product highlights with icons
-5. Usage or care instructions (if applicable)
-
-TECHNICAL REQUIREMENTS:
-- Use only Tailwind CSS classes (no custom CSS)
-- Mobile-first responsive design
-- Semantic HTML5 tags (section, article, etc.)
-- Accessibility: proper heading hierarchy, ARIA labels
-- Image-friendly: include placeholder divs for product images
-- Clean, modern, professional design
-- Use spacing utilities (p-4, mb-6, etc.)
-- Use text utilities (text-lg, font-semibold, etc.)
-- Use grid/flex for layouts
-
-STYLE GUIDELINES:
-- Clean and readable typography
-- Proper whitespace and spacing
-- Visual hierarchy with headings
-- Bullet points or numbered lists for features
-- Tables for specifications
-- Modern color scheme using Tailwind colors
-
-CONTENT QUALITY:
-- Engaging and persuasive language
-- Focus on benefits, not just features
-- Customer-centric tone
-- SEO-friendly but natural language
-- Scannable format (headings, lists, short paragraphs)
-
-OUTPUT FORMAT:
-Return ONLY the HTML code (no markdown, no explanations).
-The HTML should be ready to insert directly into a Shopify product description.
-Start with a <div> wrapper and use nested semantic tags.`;
-
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    // Template-specific tone and style
+    const templateStyles = {
+      ecommerce: {
+        tone: "Direct, persuasive, focused on conversion and ease of use. Highlight benefits and social proof.",
+        structure: "Hero with main image, feature sections with icons, specs, gallery, reviews, CTA.",
+        language: "Simple, engaging, persuasive. Emphasize value, comfort, and urgency.",
       },
+      luxury: {
+        tone: "Elegant, emotional, sensory. Use aspirational storytelling and subtle persuasion.",
+        structure: "Full-width hero, craftsmanship section, materials story, detail gallery, CTA.",
+        language: "Sophisticated vocabulary. Focus on design, exclusivity, and experience.",
+      },
+      technical: {
+        tone: "Informative, professional, and precise. Focus on data, compatibility, and performance.",
+        structure: "Hero with main specs, features grid, performance table, compatibility section, CTA.",
+        language: "Use technical clarity, avoid fluff, emphasize measurable performance.",
+      },
+    };
+
+    const selectedTemplate = templateStyles[template as keyof typeof templateStyles] || templateStyles.ecommerce;
+
+    // 🔹 Prompt principal
+    const prompt = `
+You are an expert e-commerce UX copywriter and web designer.
+Generate a premium, responsive, mobile-first product *landing page* in Tailwind HTML.
+
+==============================
+INPUT DATA
+==============================
+Title: ${title}
+${existingDescription ? `Existing Description: ${existingDescription}` : ""}
+${visionAnalysis ? `Visual Analysis: ${JSON.stringify(visionAnalysis)}` : ""}
+${dimensions ? `Dimensions: ${JSON.stringify(dimensions)}` : ""}
+${images?.length ? `Product Images:\n${images.map((img: any, i: number) => `  ${i + 1}. ${img.src || img}`).join("\n")}` : "No images"}
+
+==============================
+TEMPLATE STYLE (${template.toUpperCase()})
+==============================
+Tone: ${selectedTemplate.tone}
+Structure: ${selectedTemplate.structure}
+Language: ${selectedTemplate.language}
+
+==============================
+PAGE STRUCTURE REQUIREMENTS
+==============================
+- <div> wrapper with Tailwind classes.
+- HERO SECTION:
+  • Full-width hero image (first image)
+  • Bold headline and 1–2 sentence benefit statement
+  • Prominent CTA button (e.g., “Shop Now”)
+- FEATURE SECTIONS:
+  • 4–6 cards highlighting benefits, each with icon or image
+- PRODUCT GALLERY:
+  • Responsive grid of all images with alt texts
+- SPECIFICATIONS TABLE:
+  • Include product dimensions if provided
+  • Technical details or materials
+- CUSTOMER EXPERIENCE SECTION:
+  • Use storytelling tone, mention how it improves user’s life
+- CTA SECTION:
+  • Reassuring final CTA (“Free Shipping”, “30-Day Guarantee”, etc.)
+
+==============================
+MEDIA INTEGRATION (CRITICAL)
+==============================
+- Use provided image URLs with <img> tags and descriptive alt text.
+- Use responsive classes (w-full, h-auto, rounded-lg, shadow-md).
+- Center hero image, grid gallery for others.
+- If possible, suggest placement for video or 360° media (“<video>” optional).
+
+==============================
+VISUAL DESIGN
+==============================
+- Use Tailwind CSS only (no custom CSS)
+- Clean, modern, premium aesthetic
+- Semantic HTML5 (section, article, figure)
+- Mobile-first layout (flex, grid)
+- Accessibility and SEO best practices
+- Proper heading hierarchy
+
+==============================
+OUTPUT FORMAT
+==============================
+Return valid JSON only:
+{
+  "title": "Optimized product title (≤70 chars)",
+  "html": "Full HTML of the landing page here"
+}
+
+Do NOT wrap output in code blocks or markdown.
+`;
+
+    // 🔹 Appel Gemini
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 3000 },
       }),
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again in a few moments.');
-      }
-      if (response.status === 402) {
-        throw new Error('AI credits depleted. Please add credits to your workspace.');
-      }
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      console.error("Gemini API error:", response.status, errorText);
       throw new Error(`AI generation failed: ${response.status}`);
     }
 
     const data = await response.json();
-    let htmlDescription = data.choices?.[0]?.message?.content;
+    let content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-    if (!htmlDescription) {
-      throw new Error('No description generated by AI');
-    }
+    if (!content) throw new Error("No content generated by AI");
 
-    // Clean up the response (remove markdown code blocks if present)
-    htmlDescription = htmlDescription
-      .replace(/```html\n?/g, '')
-      .replace(/```\n?/g, '')
+    // Nettoyage
+    content = content
+      .replace(/```json/g, "")
+      .replace(/```html/g, "")
+      .replace(/```/g, "")
       .trim();
 
-    // Calculate basic metrics
-    const characteristicsCount = (htmlDescription.match(/<li>/g) || []).length;
-    const mediaCount = images?.length || 0;
+    // Parsing JSON
+    let optimizedTitle = title;
+    let htmlLandingPage = content;
+    try {
+      const parsed = JSON.parse(content);
+      optimizedTitle = parsed.title || title;
+      htmlLandingPage = parsed.html || content;
+    } catch {
+      console.warn("⚠️ AI output not valid JSON, using raw HTML");
+    }
 
-    console.log('HTML description generated successfully');
+    // Metrics
+    const mediaCount = images?.length || 0;
+    const wordCount = htmlLandingPage.split(/\s+/).length;
+
+    console.log("✅ Landing page generated successfully");
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
-        htmlDescription,
-        characteristicsCount,
+        optimizedTitle,
+        htmlLandingPage,
         mediaCount,
         mobileOptimized: true,
-        wordCount: htmlDescription.split(/\s+/).length
+        wordCount,
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
     );
-
   } catch (error) {
-    console.error('Error in generate-product-description-html:', error);
+    console.error("❌ Error generating landing page:", error);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Failed to generate product description',
-        success: false 
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
     );
   }
 });

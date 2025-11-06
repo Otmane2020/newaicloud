@@ -18,51 +18,65 @@ serve(async (req) => {
       throw new Error("Le titre actuel est requis");
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY non configuré");
+    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GOOGLE_GEMINI_API_KEY non configuré");
     }
 
     let visionAnalysis = "";
     
     // Si une URL d'image est fournie, analyser l'image avec Vision AI
     if (imageUrl) {
-      console.log("Analyzing image with Vision AI:", imageUrl);
+      console.log("Analyzing image with Gemini Vision:", imageUrl);
       
-      const visionMessages = [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Analyze this product image and describe the key visual features: colors, patterns, textures, materials, style. Be specific and focus on what makes this product unique visually."
+      try {
+        // Fetch image and convert to base64
+        const imageResponse = await fetch(imageUrl);
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+
+        const visionUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+        
+        const visionResponse = await fetch(visionUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                {
+                  text: "Analyze this product image and describe the key visual features: colors, patterns, textures, materials, style. Be specific and focus on what makes this product unique visually.",
+                },
+                {
+                  inline_data: {
+                    mime_type: "image/jpeg",
+                    data: base64Image,
+                  },
+                },
+              ],
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 500,
             },
-            {
-              type: "image_url",
-              image_url: { url: imageUrl }
-            }
-          ]
+          }),
+        });
+
+        if (!visionResponse.ok) {
+          const errorText = await visionResponse.text();
+          console.error("Gemini Vision error:", visionResponse.status, errorText);
+          
+          if (visionResponse.status === 429) {
+            throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
+          }
+        } else {
+          const visionData = await visionResponse.json();
+          visionAnalysis = visionData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          console.log("Vision analysis completed:", visionAnalysis);
         }
-      ];
-
-      const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: visionMessages,
-        }),
-      });
-
-      if (!visionResponse.ok) {
-        console.error("Vision API error:", await visionResponse.text());
-      } else {
-        const visionData = await visionResponse.json();
-        visionAnalysis = visionData.choices?.[0]?.message?.content || "";
-        console.log("Vision analysis completed:", visionAnalysis);
+      } catch (visionError) {
+        console.error("Error during vision analysis:", visionError);
       }
     }
 
@@ -89,36 +103,56 @@ La description doit:
 
     userPrompt += `\n\nGénère un titre optimisé et une description captivante en JSON avec les clés "title" et "description".`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-        response_format: { type: "json_object" }
+        contents: [{
+          parts: [{ 
+            text: `${systemPrompt}\n\n${userPrompt}` 
+          }],
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 500,
+        },
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI API error:", errorText);
-      throw new Error(`Erreur AI API: ${response.status}`);
+      console.error("Gemini API error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
+      }
+      
+      throw new Error(`Erreur Gemini API: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!content) {
       throw new Error("Aucun contenu généré par l'IA");
     }
 
-    const result = JSON.parse(content);
+    // Clean up the response and parse JSON
+    const cleanedContent = content
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+
+    const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Could not parse JSON from AI response");
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
 
     return new Response(
       JSON.stringify({

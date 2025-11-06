@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
 import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
+import { ProductTitleLandingDialog } from "@/components/seo/ProductTitleLandingDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -42,6 +43,7 @@ import {
 interface Product {
   id: string;
   title: string;
+  description: string | null;
   seo_title: string | null;
   seo_description: string | null;
   image_url: string | null;
@@ -73,6 +75,10 @@ export default function ProductTitleDescription() {
   const [aiBgPreviews, setAiBgPreviews] = useState<PreviewImage[]>([]);
   const [customPrompt, setCustomPrompt] = useState('');
   const [showPromptDialog, setShowPromptDialog] = useState(false);
+  const [showLandingPreviewDialog, setShowLandingPreviewDialog] = useState(false);
+  const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
+  const [syncingToShopify, setSyncingToShopify] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -86,7 +92,7 @@ export default function ProductTitleDescription() {
 
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, seo_title, seo_description, image_url, shopify_id")
+        .select("id, title, description, seo_title, seo_description, image_url, shopify_id")
         .eq("seller_id", user.id)
         .order("imported_at", { ascending: false });
 
@@ -129,30 +135,48 @@ export default function ProductTitleDescription() {
     }
 
     setGenerating(true);
+    setIsOptimizing(true);
+    setShowLandingPreviewDialog(true);
     const toastId = toast.loading(`Optimisation de ${selectedProducts.size} produit(s)...`);
 
     try {
+      const optimizedList: Product[] = [];
+      
       for (const productId of selectedProducts) {
         const product = products.find((p) => p.id === productId);
         if (!product) continue;
 
-        const { error } = await supabase.functions.invoke("generate-title-description", {
+        const { data, error } = await supabase.functions.invoke("generate-title-description", {
           body: {
             currentTitle: product.title,
             imageUrl: product.image_url || null,
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          // Check for specific error types
+          const errorMessage = error.message || String(error);
+          
+          if (errorMessage.includes('CREDITS_DEPLETED') || errorMessage.includes('402')) {
+            throw new Error('CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés. Veuillez ajouter des crédits dans Settings → Workspace → Usage.');
+          }
+          
+          if (errorMessage.includes('RATE_LIMIT') || errorMessage.includes('429')) {
+            throw new Error('RATE_LIMIT: Limite de taux atteinte. Veuillez patienter quelques instants.');
+          }
+          
+          throw error;
+        }
 
         // Update local state
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
-          .select("seo_title, seo_description")
+          .select("id, title, description, seo_title, seo_description, image_url, shopify_id")
           .eq("id", productId)
           .single();
 
         if (updatedProduct) {
+          optimizedList.push(updatedProduct);
           setProducts((prev) =>
             prev.map((p) =>
               p.id === productId
@@ -164,12 +188,29 @@ export default function ProductTitleDescription() {
       }
 
       toast.success("Optimisation terminée", { id: toastId });
+      setOptimizedProducts(optimizedList);
       setSelectedProducts(new Set());
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error optimizing:", error);
-      toast.error("Erreur lors de l'optimisation", { id: toastId });
+      
+      const errorMessage = error?.message || String(error);
+      
+      if (errorMessage.includes('CREDITS_DEPLETED')) {
+        toast.error("Crédits IA épuisés", {
+          id: toastId,
+          description: "Ajoutez des crédits dans Settings → Workspace → Usage pour continuer à utiliser l'IA."
+        });
+      } else if (errorMessage.includes('RATE_LIMIT')) {
+        toast.error("Trop de requêtes", {
+          id: toastId,
+          description: "Veuillez patienter quelques instants avant de réessayer."
+        });
+      } else {
+        toast.error("Erreur lors de l'optimisation", { id: toastId });
+      }
     } finally {
       setGenerating(false);
+      setIsOptimizing(false);
     }
   };
 
@@ -458,6 +499,39 @@ export default function ProductTitleDescription() {
     }
   };
 
+  const handleSyncToShopify = async () => {
+    setSyncingToShopify(true);
+    const toastId = toast.loading("Synchronisation avec Shopify...");
+
+    try {
+      for (const product of optimizedProducts) {
+        if (!product.shopify_id) continue;
+
+        const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+          body: {
+            productId: product.id,
+            shopifyId: product.shopify_id,
+            seoTitle: product.seo_title,
+            seoDescription: product.seo_description,
+          }
+        });
+
+        if (error) {
+          console.error(`Error syncing product ${product.id}:`, error);
+        }
+      }
+
+      toast.success(`${optimizedProducts.length} produit(s) synchronisé(s) avec Shopify`, { id: toastId });
+      setShowLandingPreviewDialog(false);
+      setOptimizedProducts([]);
+    } catch (error) {
+      console.error("Error syncing to Shopify:", error);
+      toast.error("Erreur lors de la synchronisation", { id: toastId });
+    } finally {
+      setSyncingToShopify(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -670,9 +744,13 @@ export default function ProductTitleDescription() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {product.seo_title || product.seo_description ? (
+                    {product.description ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700">
-                        Optimisé
+                        ✨ HTML UX Optimisé
+                      </Badge>
+                    ) : product.seo_title || product.seo_description ? (
+                      <Badge variant="secondary">
+                        SEO Basique ✓
                       </Badge>
                     ) : (
                       <Badge variant="outline">À optimiser</Badge>
@@ -794,6 +872,15 @@ export default function ProductTitleDescription() {
         onRegenerate={handleRegenerateAiBg}
         customPrompt={customPrompt}
         onCustomPromptChange={setCustomPrompt}
+      />
+
+      <ProductTitleLandingDialog
+        open={showLandingPreviewDialog}
+        onOpenChange={setShowLandingPreviewDialog}
+        products={optimizedProducts}
+        isGenerating={isOptimizing}
+        onSync={handleSyncToShopify}
+        syncLoading={syncingToShopify}
       />
     </div>
   );
