@@ -388,11 +388,11 @@ export function SubscriptionPlans() {
                 </SelectTrigger>
                 <SelectContent>
                   {proPlans.map((plan) => (
-                    <SelectItem 
-                      key={plan.id} 
+                    <SelectItem
+                      key={plan.id}
                       value={plan.id}
                     >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, 'monthly'), language)}
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, billingPeriod), language)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -474,7 +474,7 @@ export function SubscriptionPlans() {
                       key={plan.id} 
                       value={plan.id}
                     >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {Math.floor(plan.price_monthly).toLocaleString()}€/mois
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, billingPeriod), language)}
                     </SelectItem>
                   ))}
                 </SelectContent>
