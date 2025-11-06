@@ -1,8 +1,11 @@
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { FileText, CheckCircle, AlertCircle, Scale, CreditCard, Ban } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 export default function Terms() {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen flex flex-col">
       <PublicHeader />
@@ -15,8 +18,8 @@ export default function Terms() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-primary mb-6 shadow-glow">
                 <FileText className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-4xl font-bold mb-4">Conditions Générales d'Utilisation</h1>
-              <p className="text-muted-foreground">Dernière mise à jour : 27 octobre 2025</p>
+              <h1 className="text-4xl font-bold mb-4">{t.terms.title}</h1>
+              <p className="text-muted-foreground">{t.terms.lastUpdated}: 27 octobre 2025</p>
             </div>
 
             {/* Content */}
@@ -28,11 +31,9 @@ export default function Terms() {
                     <CheckCircle className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Acceptation des Conditions</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.terms.acceptance}</h2>
                     <p className="text-muted-foreground leading-relaxed">
-                      En accédant et en utilisant NewAI, vous acceptez d'être lié par ces conditions générales d'utilisation. 
-                      Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services. Votre utilisation continue 
-                      de la plateforme constitue votre acceptation de toute modification de ces conditions.
+                      {t.terms.acceptanceDesc}
                     </p>
                   </div>
                 </div>
@@ -45,30 +46,30 @@ export default function Terms() {
                     <Scale className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Services Fournis</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.terms.services}</h2>
                     <p className="text-muted-foreground leading-relaxed mb-4">
-                      NewAI fournit une plateforme d'optimisation SEO alimentée par l'intelligence artificielle pour les boutiques Shopify, incluant :
+                      {t.terms.servicesDesc}
                     </p>
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Génération automatique de descriptions de produits optimisées</span>
+                        <span>{t.terms.service1}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Optimisation des balises meta et alt texts</span>
+                        <span>{t.terms.service2}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Création d'articles de blog SEO-friendly</span>
+                        <span>{t.terms.service3}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Intégration Google Merchant Center</span>
+                        <span>{t.terms.service4}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Assistant IA pour l'optimisation e-commerce</span>
+                        <span>{t.terms.service5}</span>
                       </li>
                     </ul>
                   </div>
@@ -82,26 +83,26 @@ export default function Terms() {
                     <CreditCard className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Tarification et Paiement</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.terms.pricing}</h2>
                     <p className="text-muted-foreground leading-relaxed mb-4">
-                      Nous proposons plusieurs plans d'abonnement avec différentes fonctionnalités et limites d'utilisation :
+                      {t.terms.pricingDesc}
                     </p>
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Les frais d'abonnement sont facturés mensuellement ou annuellement</span>
+                        <span>{t.terms.pricing1}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Les paiements sont traités via Stripe de manière sécurisée</span>
+                        <span>{t.terms.pricing2}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Les tarifs peuvent être modifiés avec un préavis de 30 jours</span>
+                        <span>{t.terms.pricing3}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Aucun remboursement pour les mois partiellement utilisés</span>
+                        <span>{t.terms.pricing4}</span>
                       </li>
                     </ul>
                   </div>
@@ -115,30 +116,30 @@ export default function Terms() {
                     <Ban className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Utilisation Interdite</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.terms.prohibited}</h2>
                     <p className="text-muted-foreground leading-relaxed mb-4">
-                      Vous vous engagez à ne pas :
+                      {t.terms.prohibitedDesc}
                     </p>
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Utiliser le service pour des activités illégales ou frauduleuses</span>
+                        <span>{t.terms.prohibited1}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Tenter d'accéder aux systèmes de manière non autorisée</span>
+                        <span>{t.terms.prohibited2}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Partager votre compte avec des tiers</span>
+                        <span>{t.terms.prohibited3}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Contourner les limitations d'utilisation de votre plan</span>
+                        <span>{t.terms.prohibited4}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Reproduire, dupliquer ou copier notre technologie</span>
+                        <span>{t.terms.prohibited5}</span>
                       </li>
                     </ul>
                   </div>
@@ -152,11 +153,9 @@ export default function Terms() {
                     <AlertCircle className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Limitation de Responsabilité</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.terms.limitation}</h2>
                     <p className="text-muted-foreground leading-relaxed">
-                      NewAI est fourni "en l'état" sans garantie d'aucune sorte. Nous ne garantissons pas que le service sera 
-                      ininterrompu ou exempt d'erreurs. En aucun cas, nous ne serons responsables des dommages indirects, 
-                      consécutifs ou spéciaux résultant de l'utilisation ou de l'impossibilité d'utiliser nos services.
+                      {t.terms.limitationDesc}
                     </p>
                   </div>
                 </div>
@@ -169,11 +168,9 @@ export default function Terms() {
                     <FileText className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Propriété Intellectuelle</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.terms.intellectual}</h2>
                     <p className="text-muted-foreground leading-relaxed">
-                      Tout le contenu généré par NewAI vous appartient. Cependant, nous conservons tous les droits sur notre 
-                      plateforme, algorithmes, et technologie. Vous nous accordez une licence pour utiliser votre contenu 
-                      uniquement dans le but de fournir nos services.
+                      {t.terms.intellectualDesc}
                     </p>
                   </div>
                 </div>
@@ -186,11 +183,9 @@ export default function Terms() {
                     <CheckCircle className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Résiliation</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.terms.termination}</h2>
                     <p className="text-muted-foreground leading-relaxed">
-                      Vous pouvez résilier votre compte à tout moment depuis vos paramètres. Nous nous réservons le droit de 
-                      suspendre ou résilier votre compte en cas de violation de ces conditions. En cas de résiliation, 
-                      vous perdrez l'accès à vos données après 30 jours.
+                      {t.terms.terminationDesc}
                     </p>
                   </div>
                 </div>
@@ -199,7 +194,7 @@ export default function Terms() {
               {/* Footer note */}
               <div className="pt-6 border-t border-border">
                 <p className="text-sm text-muted-foreground text-center">
-                  Ces conditions sont régies par les lois françaises. Pour toute question : <a href="mailto:legal@newai.com" className="text-primary hover:underline">legal@newai.com</a>
+                  {t.terms.disclaimer} <a href="mailto:legal@newai.com" className="text-primary hover:underline">legal@newai.com</a>
                 </p>
               </div>
             </div>

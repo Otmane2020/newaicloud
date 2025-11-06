@@ -1,8 +1,11 @@
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { Shield, Lock, Eye, Database, UserCheck, Mail } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 export default function Privacy() {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen flex flex-col">
       <PublicHeader />
@@ -15,8 +18,8 @@ export default function Privacy() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-primary mb-6 shadow-glow">
                 <Shield className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-4xl font-bold mb-4">Politique de Confidentialité</h1>
-              <p className="text-muted-foreground">Dernière mise à jour : 27 octobre 2025</p>
+              <h1 className="text-4xl font-bold mb-4">{t.privacy.title}</h1>
+              <p className="text-muted-foreground">{t.privacy.lastUpdated}: 27 octobre 2025</p>
             </div>
 
             {/* Content */}
@@ -28,11 +31,9 @@ export default function Privacy() {
                     <Eye className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Collecte des Données</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.privacy.dataCollection}</h2>
                     <p className="text-muted-foreground leading-relaxed">
-                      Nous collectons les informations que vous nous fournissez directement lors de la création de votre compte, 
-                      y compris votre nom, adresse e-mail et les informations relatives à votre boutique Shopify. Nous collectons 
-                      également automatiquement certaines informations sur votre utilisation de nos services.
+                      {t.privacy.dataCollectionDesc}
                     </p>
                   </div>
                 </div>
@@ -45,26 +46,26 @@ export default function Privacy() {
                     <Database className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Utilisation des Données</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.privacy.dataUsage}</h2>
                     <p className="text-muted-foreground leading-relaxed mb-4">
-                      Vos données sont utilisées pour :
+                      {t.privacy.dataUsageIntro}
                     </p>
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Fournir et améliorer nos services d'optimisation SEO</span>
+                        <span>{t.privacy.dataUsage1}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Générer du contenu optimisé pour vos produits</span>
+                        <span>{t.privacy.dataUsage2}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Communiquer avec vous concernant votre compte</span>
+                        <span>{t.privacy.dataUsage3}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Assurer la sécurité et prévenir la fraude</span>
+                        <span>{t.privacy.dataUsage4}</span>
                       </li>
                     </ul>
                   </div>
@@ -78,11 +79,9 @@ export default function Privacy() {
                     <Lock className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Protection des Données</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.privacy.dataProtection}</h2>
                     <p className="text-muted-foreground leading-relaxed">
-                      Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger 
-                      vos données personnelles contre tout accès non autorisé, modification, divulgation ou destruction. 
-                      Vos données sont stockées sur des serveurs sécurisés et chiffrées en transit.
+                      {t.privacy.dataProtectionDesc}
                     </p>
                   </div>
                 </div>
@@ -95,30 +94,30 @@ export default function Privacy() {
                     <UserCheck className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Vos Droits</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.privacy.yourRights}</h2>
                     <p className="text-muted-foreground leading-relaxed mb-4">
-                      Conformément au RGPD, vous disposez des droits suivants :
+                      {t.privacy.yourRightsIntro}
                     </p>
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Droit d'accès à vos données personnelles</span>
+                        <span>{t.privacy.right1}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Droit de rectification de données inexactes</span>
+                        <span>{t.privacy.right2}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Droit à l'effacement de vos données</span>
+                        <span>{t.privacy.right3}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Droit à la portabilité de vos données</span>
+                        <span>{t.privacy.right4}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>Droit d'opposition au traitement</span>
+                        <span>{t.privacy.right5}</span>
                       </li>
                     </ul>
                   </div>
@@ -132,10 +131,9 @@ export default function Privacy() {
                     <Mail className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold mb-3">Contact</h2>
+                    <h2 className="text-2xl font-semibold mb-3">{t.privacy.contact}</h2>
                     <p className="text-muted-foreground leading-relaxed">
-                      Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits, 
-                      vous pouvez nous contacter à l'adresse : <a href="mailto:privacy@newai.com" className="text-primary hover:underline">privacy@newai.com</a>
+                      {t.privacy.contactDesc} <a href="mailto:privacy@newai.com" className="text-primary hover:underline">privacy@newai.com</a>
                     </p>
                   </div>
                 </div>
@@ -144,8 +142,7 @@ export default function Privacy() {
               {/* Footer note */}
               <div className="pt-6 border-t border-border">
                 <p className="text-sm text-muted-foreground text-center">
-                  Nous nous réservons le droit de modifier cette politique à tout moment. 
-                  Toute modification sera publiée sur cette page avec une date de mise à jour révisée.
+                  {t.privacy.disclaimer}
                 </p>
               </div>
             </div>
