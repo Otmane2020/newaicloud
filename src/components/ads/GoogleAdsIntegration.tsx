@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 import { Megaphone, LogOut, AlertCircle } from 'lucide-react';
 
 export function GoogleAdsIntegration() {
+  const { t } = useTranslation();
   const [isConnected, setIsConnected] = useState(false);
   const [googleAdsEmail, setGoogleAdsEmail] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState('');
@@ -87,7 +89,7 @@ export function GoogleAdsIntegration() {
       );
       
       if (!popup) {
-        toast.error('Veuillez autoriser les popups pour ce site');
+        toast.error(t.errors.generic);
         return;
       }
       
@@ -106,11 +108,11 @@ export function GoogleAdsIntegration() {
           
           if (error || !data?.success) {
             console.error('Error exchanging code:', error);
-            toast.error('Erreur lors de la connexion à Google Ads');
+            toast.error(t.googleAds.integration.errors.connect);
             return;
           }
           
-          toast.success('Connexion à Google Ads réussie !');
+          toast.success(t.googleAds.integration.success.connected);
           checkGoogleAdsConnection();
         }
       };
@@ -123,7 +125,7 @@ export function GoogleAdsIntegration() {
       
     } catch (error) {
       console.error('Error connecting to Google:', error);
-      toast.error('Erreur lors de la connexion à Google');
+      toast.error(t.googleAds.integration.errors.connect);
     }
   };
 
@@ -145,19 +147,19 @@ export function GoogleAdsIntegration() {
 
       if (error) throw error;
 
-      toast.success('Google Ads déconnecté avec succès');
+      toast.success(t.googleAds.integration.success.disconnected);
       setIsConnected(false);
       setGoogleAdsEmail(null);
       setCustomerId('');
     } catch (error) {
       console.error('Error disconnecting Google:', error);
-      toast.error('Impossible de déconnecter Google Ads');
+      toast.error(t.googleAds.integration.errors.disconnect);
     }
   };
 
   const saveCustomerId = async () => {
     if (!customerId) {
-      toast.error('Veuillez entrer un ID client Google Ads');
+      toast.error(t.errors.generic);
       return;
     }
 
@@ -172,10 +174,10 @@ export function GoogleAdsIntegration() {
 
       if (error) throw error;
 
-      toast.success('ID client enregistré avec succès');
+      toast.success(t.common.save);
     } catch (error) {
       console.error('Error saving customer ID:', error);
-      toast.error('Erreur lors de l\'enregistrement de l\'ID client');
+      toast.error(t.errors.generic);
     }
   };
 
@@ -189,9 +191,9 @@ export function GoogleAdsIntegration() {
             </div>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Connecter Google Ads</h2>
+            <h2 className="text-2xl font-bold">{t.googleAds.integration.title}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Connectez votre compte Google Ads pour gérer vos campagnes publicitaires avec l'IA
+              {t.googleAds.integration.description}
             </p>
           </div>
           <div className="space-y-4">
@@ -201,13 +203,13 @@ export function GoogleAdsIntegration() {
               className="gap-2"
             >
               <Megaphone className="h-5 w-5" />
-              Se connecter avec Google
+              {t.googleAds.integration.connect}
             </Button>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>✓ Création automatique de campagnes</p>
-              <p>✓ Optimisation ROAS par IA</p>
-              <p>✓ Suivi des conversions</p>
-              <p>✓ Analytics avancés</p>
+              <p>✓ {t.googleAds.campaigns.createNew}</p>
+              <p>✓ {t.googleAds.optimization.title}</p>
+              <p>✓ {t.googleAds.tracking.title}</p>
+              <p>✓ {t.googleAds.analytics.title}</p>
             </div>
           </div>
         </div>
@@ -221,11 +223,11 @@ export function GoogleAdsIntegration() {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h3 className="text-lg font-semibold">Connexion Google Ads</h3>
+            <h3 className="text-lg font-semibold">{t.googleAds.integration.title}</h3>
             {googleAdsEmail && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Megaphone className="h-3.5 w-3.5" />
-                <span>Connecté avec : <span className="font-medium text-foreground">{googleAdsEmail}</span></span>
+                <span>{t.googleAds.integration.connected}: <span className="font-medium text-foreground">{googleAdsEmail}</span></span>
               </div>
             )}
           </div>
@@ -236,7 +238,7 @@ export function GoogleAdsIntegration() {
             className="gap-2"
           >
             <LogOut className="h-4 w-4" />
-            Déconnecter
+            {t.common.disconnect}
           </Button>
         </div>
       </Card>
@@ -245,7 +247,7 @@ export function GoogleAdsIntegration() {
       <Card className="p-6">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>ID Client Google Ads</Label>
+            <Label>{t.googleAds.integration.selectAccount}</Label>
             <div className="flex gap-2">
               <Input
                 placeholder="123-456-7890"
@@ -253,11 +255,11 @@ export function GoogleAdsIntegration() {
                 onChange={(e) => setCustomerId(e.target.value)}
               />
               <Button onClick={saveCustomerId}>
-                Enregistrer
+                {t.common.save}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Format : XXX-XXX-XXXX (trouvé dans votre compte Google Ads)
+              Format : XXX-XXX-XXXX
             </p>
           </div>
         </div>
@@ -267,20 +269,16 @@ export function GoogleAdsIntegration() {
       <Card className="p-6 bg-muted/50">
         <h3 className="font-semibold mb-4 flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-primary" />
-          Comment trouver votre ID client Google Ads
+          {t.googleAds.integration.title}
         </h3>
         <ol className="space-y-2 text-sm text-muted-foreground">
           <li className="flex gap-2">
             <span className="font-semibold text-foreground">1.</span>
-            Connectez-vous à votre <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">compte Google Ads</a>
+            <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Ads</a>
           </li>
           <li className="flex gap-2">
             <span className="font-semibold text-foreground">2.</span>
-            L'ID client apparaît en haut à droite (format XXX-XXX-XXXX)
-          </li>
-          <li className="flex gap-2">
-            <span className="font-semibold text-foreground">3.</span>
-            Copiez cet ID et collez-le dans le champ ci-dessus
+            {t.googleAds.integration.selectAccount} (XXX-XXX-XXXX)
           </li>
         </ol>
       </Card>

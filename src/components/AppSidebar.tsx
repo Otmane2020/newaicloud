@@ -127,6 +127,14 @@ export function AppSidebar() {
     { title: t.merchant.submenu.sync, url: "/merchant?tab=sync", icon: RefreshCw, key: "sync" },
   ];
 
+  const googleAdsSubItems = [
+    { title: t.googleAds.integration.title, url: "/google-ads?tab=integration", icon: Globe, key: "integration" },
+    { title: t.googleAds.campaigns.title, url: "/google-ads?tab=campaigns", icon: Target, key: "campaigns" },
+    { title: t.googleAds.optimization.title, url: "/google-ads?tab=optimization", icon: TrendingUp, key: "optimization" },
+    { title: t.googleAds.analytics.title, url: "/google-ads?tab=analytics", icon: BarChart3, key: "analytics" },
+    { title: t.googleAds.tracking.title, url: "/google-ads?tab=tracking", icon: Activity, key: "tracking" },
+  ];
+
   const bottomMenuItems = [
     { title: t.navigation.aiSearch, url: "/search", icon: Search, key: "aiSearch" },
     { title: t.navigation.googleShopping, url: "/shopping", icon: ShoppingCart, key: "googleShopping" },
@@ -210,6 +218,7 @@ export function AppSidebar() {
   const isGoogleConsoleActive = googleConsoleSubItems.some((item) => isActive(item.url));
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
   const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
+  const isGoogleAdsActive = currentPath === "/google-ads" || googleAdsSubItems.some((item) => isActive(item.url));
   const isPricingActive = currentPath === "/pricing";
   const isAccountActive = currentPath === "/account" || accountSubItems.some((item) => isActive(item.url));
   const isProductOptimizationActive = currentPath.startsWith("/products") || productOptimizationSubItems.some((item) => isActive(item.url));
@@ -402,6 +411,33 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {merchantSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Google Ads Menu with Submenu */}
+              <Collapsible defaultOpen={isGoogleAdsActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isGoogleAdsActive}>
+                      <Megaphone className="h-4 w-4" />
+                      <span>Google Ads</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {googleAdsSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url}>

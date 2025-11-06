@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Globe } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 export function GoogleAdsAnalytics() {
+  const { t } = useTranslation();
   const [isConnected, setIsConnected] = useState(false);
 
   if (!isConnected) {
@@ -16,14 +18,14 @@ export function GoogleAdsAnalytics() {
             </div>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Connecter Google Analytics</h2>
+            <h2 className="text-2xl font-bold">{t.googleAds.analytics.connect}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Analysez en profondeur les performances de vos campagnes Google Ads
+              {t.googleAds.analytics.description}
             </p>
           </div>
           <Button size="lg" className="gap-2">
             <Globe className="h-5 w-5" />
-            Se connecter à Analytics
+            {t.googleAds.analytics.connect}
           </Button>
         </div>
       </Card>
@@ -33,12 +35,12 @@ export function GoogleAdsAnalytics() {
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Vue d'ensemble des performances</h3>
+        <h3 className="text-lg font-semibold mb-4">{t.googleAds.analytics.overview}</h3>
         <div className="text-center py-12 border-2 border-dashed rounded-lg">
           <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Tableaux de bord en construction</h3>
+          <h3 className="text-lg font-semibold mb-2">{t.googleAds.analytics.dashboards}</h3>
           <p className="text-muted-foreground">
-            Visualisez bientôt toutes vos métriques clés en temps réel
+            {t.googleAds.analytics.dashboardsDesc}
           </p>
         </div>
       </Card>
