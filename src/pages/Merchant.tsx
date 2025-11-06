@@ -5,9 +5,10 @@ import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings"
 import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncSettings";
 import { GoogleMerchantIntegration } from "@/components/seo/GoogleMerchantIntegration";
 import { GoogleMerchantSyncSettings } from "@/components/seo/GoogleMerchantSyncSettings";
+import { GoogleMerchantMonitoring } from "@/components/seo/GoogleMerchantMonitoring";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw, Globe } from "lucide-react";
+import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw, Globe, BarChart3 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 
 export default function Merchant() {
@@ -58,6 +59,13 @@ export default function Merchant() {
       icon: RefreshCw,
       description: "Configurez la synchronisation automatique de vos flux",
       component: <GoogleMerchantSyncSettings />,
+    },
+    {
+      id: "monitoring",
+      label: "Monitoring",
+      icon: BarChart3,
+      description: "Suivez les performances de vos synchronisations",
+      component: <GoogleMerchantMonitoring />,
     },
   ];
 

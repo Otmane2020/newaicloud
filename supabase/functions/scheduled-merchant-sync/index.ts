@@ -36,8 +36,28 @@ serve(async (req) => {
     const results = [];
 
     for (const setting of settings || []) {
+      let syncHistoryId: string | null = null;
+      
       try {
         console.log(`Processing sync for user ${setting.user_id}`);
+
+        // Créer un enregistrement d'historique
+        const { data: syncHistory, error: historyError } = await supabaseClient
+          .from("google_merchant_sync_history")
+          .insert({
+            user_id: setting.user_id,
+            sync_type: "automatic",
+            status: "running",
+            started_at: now.toISOString(),
+          })
+          .select()
+          .single();
+
+        if (historyError) {
+          console.error("Error creating sync history:", historyError);
+        } else {
+          syncHistoryId = syncHistory.id;
+        }
 
         // Vérifier que l'utilisateur a un token Google Merchant valide
         const { data: profile } = await supabaseClient
@@ -48,6 +68,18 @@ serve(async (req) => {
 
         if (!profile?.google_merchant_oauth_token) {
           console.log(`User ${setting.user_id} has no Google Merchant token`);
+          
+          // Mettre à jour l'historique
+          if (syncHistoryId) {
+            await supabaseClient
+              .from("google_merchant_sync_history")
+              .update({
+                status: "failed",
+                completed_at: new Date().toISOString(),
+                error_message: "No Google Merchant token",
+              })
+              .eq("id", syncHistoryId);
+          }
           
           // Créer une notification
           await supabaseClient.from("app_notifications").insert({
@@ -73,6 +105,18 @@ serve(async (req) => {
         const tokenExpiresAt = new Date(profile.google_merchant_token_expires_at);
         if (tokenExpiresAt < now) {
           console.log(`Token expired for user ${setting.user_id}`);
+          
+          // Mettre à jour l'historique
+          if (syncHistoryId) {
+            await supabaseClient
+              .from("google_merchant_sync_history")
+              .update({
+                status: "failed",
+                completed_at: new Date().toISOString(),
+                error_message: "Token expired",
+              })
+              .eq("id", syncHistoryId);
+          }
           
           await supabaseClient.from("app_notifications").insert({
             user_id: setting.user_id,
@@ -104,13 +148,29 @@ serve(async (req) => {
         if (feedError || !feedResult?.success) {
           console.error(`Feed creation failed for user ${setting.user_id}:`, feedError);
           
+          const errorMessage = feedError?.message || "Feed creation failed";
+          const syncEndTime = new Date();
+          
+          // Mettre à jour l'historique
+          if (syncHistoryId) {
+            await supabaseClient
+              .from("google_merchant_sync_history")
+              .update({
+                status: "failed",
+                completed_at: syncEndTime.toISOString(),
+                duration_ms: syncEndTime.getTime() - now.getTime(),
+                error_message: errorMessage,
+              })
+              .eq("id", syncHistoryId);
+          }
+          
           // Incrémenter le compteur d'erreurs
           const newErrorCount = (setting.sync_errors_count || 0) + 1;
           await supabaseClient
             .from("google_merchant_sync_settings")
             .update({
               sync_errors_count: newErrorCount,
-              last_error: feedError?.message || "Feed creation failed",
+              last_error: errorMessage,
             })
             .eq("id", setting.id);
 
@@ -118,18 +178,18 @@ serve(async (req) => {
           await supabaseClient.from("app_notifications").insert({
             user_id: setting.user_id,
             title: "Erreur de synchronisation Google Merchant",
-            message: `La synchronisation automatique a échoué. Erreur: ${feedError?.message || "Erreur inconnue"}`,
+            message: `La synchronisation automatique a échoué. Erreur: ${errorMessage}`,
             type: "error",
             category: "integration",
             priority: "medium",
-            action_url: "/merchant?tab=integration",
+            action_url: "/merchant?tab=monitoring",
             action_label: "Voir les détails",
           });
           
           results.push({
             user_id: setting.user_id,
             success: false,
-            error: feedError?.message || "Feed creation failed",
+            error: errorMessage,
           });
           continue;
         }
@@ -151,6 +211,23 @@ serve(async (req) => {
             nextSyncAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         }
 
+        const syncEndTime = new Date();
+        const productsSynced = feedResult?.products_count || 0;
+        
+        // Mettre à jour l'historique
+        if (syncHistoryId) {
+          await supabaseClient
+            .from("google_merchant_sync_history")
+            .update({
+              status: "completed",
+              completed_at: syncEndTime.toISOString(),
+              duration_ms: syncEndTime.getTime() - now.getTime(),
+              products_synced: productsSynced,
+              feed_url: feedResult?.feed_url,
+            })
+            .eq("id", syncHistoryId);
+        }
+        
         // Mettre à jour les paramètres de synchronisation
         await supabaseClient
           .from("google_merchant_sync_settings")
@@ -166,12 +243,12 @@ serve(async (req) => {
         await supabaseClient.from("app_notifications").insert({
           user_id: setting.user_id,
           title: "Synchronisation Google Merchant réussie",
-          message: `Votre flux Google Merchant a été synchronisé avec succès. Prochaine synchronisation: ${nextSyncAt.toLocaleDateString()}`,
+          message: `${productsSynced} produits synchronisés avec succès. Prochaine synchronisation: ${nextSyncAt.toLocaleDateString()}`,
           type: "success",
           category: "integration",
           priority: "low",
-          action_url: "/merchant?tab=feed",
-          action_label: "Voir le flux",
+          action_url: "/merchant?tab=monitoring",
+          action_label: "Voir les stats",
         });
 
         console.log(`✅ Sync completed for user ${setting.user_id}`);
