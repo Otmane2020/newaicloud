@@ -42,11 +42,45 @@ export const ProductContentOptimization = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop'>('desktop');
+  const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop' | '360'>('desktop');
   const [syncProgress, setSyncProgress] = useState(0);
+  const [selectedTemplate, setSelectedTemplate] = useState<'ecommerce' | 'luxury' | 'technical'>('ecommerce');
+  const [qualityScore, setQualityScore] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { generateProductDescription } = useImageOptimization();
+
+  // Calculate quality score based on HTML content
+  const calculateQualityScore = (html: string): number => {
+    let score = 0;
+    
+    // Length check (20 points)
+    const wordCount = html.split(/\s+/).length;
+    if (wordCount >= 150) score += 20;
+    else if (wordCount >= 100) score += 15;
+    else if (wordCount >= 50) score += 10;
+    
+    // SEO keywords (20 points)
+    const seoKeywords = ['qualité', 'premium', 'durable', 'confort', 'design', 'moderne', 'élégant', 'performant'];
+    const keywordCount = seoKeywords.filter(kw => html.toLowerCase().includes(kw)).length;
+    score += Math.min(20, keywordCount * 3);
+    
+    // HTML structure (30 points)
+    if (html.includes('<h2>') || html.includes('<h3>')) score += 10;
+    if (html.includes('<ul>') || html.includes('<ol>')) score += 10;
+    if (html.includes('<table>')) score += 10;
+    
+    // Semantic tags (15 points)
+    if (html.includes('<section>')) score += 5;
+    if (html.includes('<article>')) score += 5;
+    if (html.includes('<div class=')) score += 5;
+    
+    // Images/Media placeholders (15 points)
+    const imgCount = (html.match(/<img/g) || []).length;
+    score += Math.min(15, imgCount * 5);
+    
+    return Math.min(100, score);
+  };
 
   // Load products
   const { data: products, isLoading } = useQuery({
@@ -112,7 +146,8 @@ export const ProductContentOptimization = () => {
         title: product.title,
         existingDescription: product.description || undefined,
         images: product.images.map(img => img.src),
-        visionAnalysis
+        visionAnalysis,
+        template: selectedTemplate
       });
 
       return result;
@@ -120,6 +155,11 @@ export const ProductContentOptimization = () => {
     onSuccess: (data) => {
       setGeneratedHtml(data.htmlDescription);
       setIsGenerating(false);
+      
+      // Calculate quality score
+      const score = calculateQualityScore(data.htmlDescription);
+      setQualityScore(score);
+      
       queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
     },
     onError: (error) => {
@@ -220,9 +260,35 @@ export const ProductContentOptimization = () => {
           <FileText className="h-5 w-5" />
           Génération de Descriptions UX
         </h3>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-4">
           Créez des descriptions HTML professionnelles et engageantes avec mise en page optimisée pour mobile.
         </p>
+
+        {/* Template Selector */}
+        <div className="mb-6">
+          <label className="text-sm font-medium mb-2 block">Style de description</label>
+          <Tabs value={selectedTemplate} onValueChange={(v) => setSelectedTemplate(v as any)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="ecommerce">
+                <Sparkles className="h-4 w-4 mr-2" />
+                E-commerce
+              </TabsTrigger>
+              <TabsTrigger value="luxury">
+                <FileText className="h-4 w-4 mr-2" />
+                Luxe
+              </TabsTrigger>
+              <TabsTrigger value="technical">
+                <Info className="h-4 w-4 mr-2" />
+                Technique
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <p className="text-xs text-muted-foreground mt-2">
+            {selectedTemplate === 'ecommerce' && 'Style direct et persuasif avec focus sur les bénéfices client'}
+            {selectedTemplate === 'luxury' && 'Ton sophistiqué et élégant avec narration raffinée'}
+            {selectedTemplate === 'technical' && 'Langage précis et professionnel avec spécifications détaillées'}
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {products?.map(product => (
@@ -325,9 +391,31 @@ export const ProductContentOptimization = () => {
               </div>
             ) : (
               <>
+                {/* Quality Score Badge */}
+                {qualityScore !== null && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Score de qualité</span>
+                      <Badge 
+                        variant={qualityScore >= 80 ? "default" : qualityScore >= 60 ? "secondary" : "outline"}
+                        className="gap-1"
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        {qualityScore}/100
+                      </Badge>
+                    </div>
+                    <Progress value={qualityScore} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {qualityScore >= 80 && 'Excellente qualité - Structure complète et optimisée SEO'}
+                      {qualityScore >= 60 && qualityScore < 80 && 'Bonne qualité - Quelques améliorations possibles'}
+                      {qualityScore < 60 && 'Qualité moyenne - Ajoutez plus de contenu et de structure'}
+                    </p>
+                  </div>
+                )}
+
                 {/* Preview Mode Toggle */}
                 <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as any)}>
-                  <TabsList className="grid w-full grid-cols-2">
+                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="desktop">
                       <Monitor className="h-4 w-4 mr-2" />
                       Desktop
@@ -335,6 +423,10 @@ export const ProductContentOptimization = () => {
                     <TabsTrigger value="mobile">
                       <Smartphone className="h-4 w-4 mr-2" />
                       Mobile
+                    </TabsTrigger>
+                    <TabsTrigger value="360">
+                      <Eye className="h-4 w-4 mr-2" />
+                      Vue 360°
                     </TabsTrigger>
                   </TabsList>
 
@@ -347,6 +439,37 @@ export const ProductContentOptimization = () => {
                   <TabsContent value="mobile" className="space-y-4">
                     <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
                       <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="360" className="space-y-4">
+                    <div className="border rounded-lg p-6 bg-gradient-to-br from-background to-muted min-h-[400px]">
+                      <div className="text-center space-y-4">
+                        <div className="relative w-64 h-64 mx-auto">
+                          {selectedProduct?.images[0] && (
+                            <img 
+                              src={selectedProduct.images[0].src}
+                              alt={selectedProduct.title}
+                              className="w-full h-full object-contain rounded-lg shadow-lg animate-pulse"
+                            />
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Eye className="h-16 w-16 text-primary/20" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Badge variant="secondary" className="mb-2">
+                            <Eye className="h-3 w-3 mr-1" />
+                            Vue interactive 360°
+                          </Badge>
+                          <p className="text-sm text-muted-foreground">
+                            Prévisualisation de la rotation produit avec la description
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-6 p-4 border-t">
+                        <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
+                      </div>
                     </div>
                   </TabsContent>
                 </Tabs>

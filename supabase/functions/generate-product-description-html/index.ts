@@ -11,26 +11,52 @@ serve(async (req) => {
   }
 
   try {
-    const { title, existingDescription, images, visionAnalysis } = await req.json();
+    const { title, existingDescription, images, visionAnalysis, template = 'ecommerce' } = await req.json();
     
     if (!title) {
       throw new Error('Product title is required');
     }
 
-    console.log('Generating HTML description for:', title);
+    console.log('Generating HTML description for:', title, 'with template:', template);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const prompt = `Generate a high-quality, mobile-friendly HTML product description.
+    // Template-specific style guides
+    const templateStyles = {
+      ecommerce: {
+        tone: 'Direct, persuasive, customer-focused. Use simple language and clear benefits.',
+        structure: 'Quick overview, key benefits with icons, technical specs table, call-to-action',
+        language: 'Use action verbs, emphasize value and convenience, include urgency elements'
+      },
+      luxury: {
+        tone: 'Sophisticated, elegant, aspirational. Use refined and exclusive language.',
+        structure: 'Story-driven narrative, craftsmanship details, heritage/materials focus, exclusive features',
+        language: 'Use sensory words, emphasize uniqueness and quality, avoid direct selling'
+      },
+      technical: {
+        tone: 'Precise, detailed, professional. Use industry-specific terminology.',
+        structure: 'Detailed specifications first, technical features, compatibility, performance metrics',
+        language: 'Use technical terms, include measurements and standards, provide detailed specs'
+      }
+    };
+
+    const selectedTemplate = templateStyles[template as keyof typeof templateStyles] || templateStyles.ecommerce;
+
+    const prompt = `Generate a high-quality, mobile-friendly HTML product description in ${template.toUpperCase()} style.
 
 PRODUCT INFORMATION:
 - Title: ${title}
 ${existingDescription ? `- Existing Description: ${existingDescription}` : '- No existing description'}
 ${visionAnalysis ? `- Visual Analysis: ${JSON.stringify(visionAnalysis)}` : ''}
 ${images?.length ? `- Available Images: ${images.length} product photos` : ''}
+
+TEMPLATE STYLE - ${template.toUpperCase()}:
+- Tone: ${selectedTemplate.tone}
+- Structure: ${selectedTemplate.structure}
+- Language: ${selectedTemplate.language}
 
 STRUCTURE REQUIREMENTS:
 1. Hero section with main product benefit (1-2 sentences)
