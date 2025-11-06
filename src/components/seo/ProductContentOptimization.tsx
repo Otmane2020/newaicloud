@@ -151,10 +151,13 @@ export const ProductContentOptimization = () => {
         p_increment: 1
       });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setShowPreview(false);
       setShowSyncDialog(true);
       queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
+      
+      // Lancer automatiquement la synchronisation Shopify
+      await syncToShopify();
     },
     onError: (error) => {
       console.error('Error applying description:', error);
@@ -425,13 +428,6 @@ export const ProductContentOptimization = () => {
                 : 'Synchronisation en cours avec Shopify...'}
             </p>
           </div>
-          {syncProgress === 0 && (
-            <div className="flex justify-end">
-              <Button onClick={syncToShopify}>
-                Lancer la synchronisation
-              </Button>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </div>
