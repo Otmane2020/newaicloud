@@ -49,13 +49,23 @@ PHOTOGRAPHY REQUIREMENTS:
 - Suitable for Shopify, Amazon or Decora Home presentation
     `.trim();
 
-    // 🔄 Convert image input en base64
+    // 🔄 Conversion base64 sans overflow
     const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) throw new Error(`Impossible de télécharger l'image source : ${imageResponse.status}`);
+    if (!imageResponse.ok) {
+      throw new Error(`Impossible de télécharger l'image source : ${imageResponse.status}`);
+    }
     const imageArrayBuffer = await imageResponse.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageArrayBuffer)));
+    const bytes = new Uint8Array(imageArrayBuffer);
+    let binary = "";
+    const chunkSize = 0x8000; // 32 768 octets
 
-    // 🧠 Appel à Google Gemini (vrai modèle d'image)
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+
+    const base64Image = btoa(binary);
+
+    // 🧠 Appel au vrai modèle image Gemini 2.5
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateImage?key=${GEMINI_API_KEY}`,
       {
@@ -91,10 +101,8 @@ PHOTOGRAPHY REQUIREMENTS:
     }
 
     const generatedImageUrl = `data:image/png;base64,${generatedBase64}`;
+    console.log("🎨 Arrière-plan généré avec succès pour :", productType);
 
-    console.log("🎨 Arrière-plan généré avec succès pour:", productType);
-
-    // ✅ Réponse finale
     return new Response(
       JSON.stringify({
         success: true,
@@ -106,7 +114,10 @@ PHOTOGRAPHY REQUIREMENTS:
           generatedAt: new Date().toISOString(),
         },
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
     );
   } catch (error) {
     console.error("💥 Erreur génération arrière-plan:", error);
@@ -116,7 +127,10 @@ PHOTOGRAPHY REQUIREMENTS:
         error: error instanceof Error ? error.message : String(error),
         suggestion: "Vérifiez l'URL de l'image et reformulez le prompt avec plus de détails visuels.",
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
