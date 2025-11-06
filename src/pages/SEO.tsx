@@ -12,6 +12,7 @@ import { CollectionOptimization } from '@/components/seo/CollectionOptimization'
 import ArticleManagement from '@/pages/ArticleManagement';
 import { AdsCampaign } from '@/components/seo/AdsCampaign';
 import { SeoAuditDashboard } from '@/components/seo/SeoAuditDashboard';
+import { GoogleSearchConsole } from '@/components/seo/GoogleSearchConsole';
 import { Sparkles, Tags, Image, Settings, FileText, PenSquare, TrendingUp, Package, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,7 @@ export default function SEO() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'automation', 'ads-campaign'].includes(tab)) {
+    if (tab && ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'automation', 'ads-campaign', 'google-console'].includes(tab)) {
       // Redirect old 'optimization' tab to 'products'
       if (tab === 'optimization') {
         setActiveTab('products');
@@ -298,6 +299,7 @@ export default function SEO() {
         {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'automation' && <SeoAutomation />}
         {activeTab === 'ads-campaign' && <AdsCampaign />}
+        {activeTab === 'google-console' && <GoogleSearchConsole />}
       </div>
     </div>
   );

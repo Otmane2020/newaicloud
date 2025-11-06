@@ -911,6 +911,72 @@ export type Database = {
         }
         Relationships: []
       }
+      google_search_console_data: {
+        Row: {
+          clicks: number | null
+          created_at: string
+          ctr: number | null
+          date: string
+          domain: string
+          id: string
+          impressions: number | null
+          position: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clicks?: number | null
+          created_at?: string
+          ctr?: number | null
+          date: string
+          domain: string
+          id?: string
+          impressions?: number | null
+          position?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clicks?: number | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          domain?: string
+          id?: string
+          impressions?: number | null
+          position?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_search_console_domains: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          updated_at: string
+          user_id: string
+          verified: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          verified?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       homepage_images: {
         Row: {
           alt_text: string | null
@@ -1567,6 +1633,9 @@ export type Database = {
           current_plan_id: string | null
           email: string
           full_name: string | null
+          google_oauth_token: string | null
+          google_refresh_token: string | null
+          google_token_expires_at: string | null
           id: string
           onboarding_completed: boolean | null
           preferred_language: string | null
@@ -1582,6 +1651,9 @@ export type Database = {
           current_plan_id?: string | null
           email: string
           full_name?: string | null
+          google_oauth_token?: string | null
+          google_refresh_token?: string | null
+          google_token_expires_at?: string | null
           id: string
           onboarding_completed?: boolean | null
           preferred_language?: string | null
@@ -1597,6 +1669,9 @@ export type Database = {
           current_plan_id?: string | null
           email?: string
           full_name?: string | null
+          google_oauth_token?: string | null
+          google_refresh_token?: string | null
+          google_token_expires_at?: string | null
           id?: string
           onboarding_completed?: boolean | null
           preferred_language?: string | null
