@@ -149,21 +149,29 @@ export default function Onboarding() {
       
       setPlans(formattedPlans);
       
-      // Initialize default selections for Pro and Enterprise
-      const proPlans = formattedPlans.filter(p => 
-        p.id === 'professional' || 
-        p.id === 'pro' || 
-        p.id.startsWith('pro-') || 
-        p.id.startsWith('professional')
-      );
-      const enterprisePlans = formattedPlans.filter(p => 
-        p.id === 'enterprise' || 
-        p.id.startsWith('enterprise')
-      );
+            // Initialize default selections for Pro and Enterprise (lowest price first)
+            const proPlans = formattedPlans.filter(p => 
+              p.id === 'professional' || 
+              p.id === 'pro' || 
+              p.id.startsWith('pro-') || 
+              p.id.startsWith('professional')
+            ).sort((a, b) => {
+              const priceA = a.price_monthly;
+              const priceB = b.price_monthly;
+              return priceA - priceB;
+            });
+            const enterprisePlans = formattedPlans.filter(p => 
+              p.id === 'enterprise' || 
+              p.id.startsWith('enterprise')
+            ).sort((a, b) => {
+              const priceA = a.price_monthly;
+              const priceB = b.price_monthly;
+              return priceA - priceB;
+            });
 
-      if (proPlans.length > 0) {
-        setSelectedProTier(proPlans[0].id);
-      }
+            if (proPlans.length > 0) {
+              setSelectedProTier(proPlans[0].id);
+            }
       if (enterprisePlans.length > 0) {
         setSelectedEnterpriseTier(enterprisePlans[0].id);
       }
@@ -562,7 +570,7 @@ export default function Onboarding() {
                         .sort((a, b) => {
                           const priceA = billingCycle === 'yearly' ? a.price_yearly : a.price_monthly;
                           const priceB = billingCycle === 'yearly' ? b.price_yearly : b.price_monthly;
-                          return priceA - priceB;
+                          return priceA - priceB; // Tri croissant: 49€ en premier
                         })
                         .map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
