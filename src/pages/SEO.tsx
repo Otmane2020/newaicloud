@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SeoOptimization } from '@/components/seo/SeoOptimization';
+import { ProductOptimizationTabs } from '@/components/seo/ProductOptimizationTabs';
 import { TagOptimization } from '@/components/seo/TagOptimization';
 import { SeoAltImage } from '@/components/seo/SeoAltImage';
 import { SeoAutomation } from '@/components/seo/SeoAutomation';
@@ -173,7 +173,7 @@ export default function SEO() {
 
       {/* Tab Content - Navigation via sidebar uniquement */}
       <div className="mt-6">
-        {(activeTab === 'products' || activeTab === 'optimization') && <SeoOptimization />}
+        {(activeTab === 'products' || activeTab === 'optimization') && <ProductOptimizationTabs />}
         {activeTab === 'tags' && <TagOptimization />}
         {activeTab === 'pages' && (
           <>
