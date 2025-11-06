@@ -20,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
 import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
-import { ProductLandingPreviewDialog } from "@/components/seo/ProductLandingPreviewDialog";
+import { ProductTitleLandingDialog } from "@/components/seo/ProductTitleLandingDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -78,6 +78,7 @@ export default function ProductTitleDescription() {
   const [showLandingPreviewDialog, setShowLandingPreviewDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [syncingToShopify, setSyncingToShopify] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -134,9 +135,13 @@ export default function ProductTitleDescription() {
     }
 
     setGenerating(true);
+    setIsOptimizing(true);
+    setShowLandingPreviewDialog(true);
     const toastId = toast.loading(`Optimisation de ${selectedProducts.size} produit(s)...`);
 
     try {
+      const optimizedList: Product[] = [];
+      
       for (const productId of selectedProducts) {
         const product = products.find((p) => p.id === productId);
         if (!product) continue;
@@ -166,11 +171,12 @@ export default function ProductTitleDescription() {
         // Update local state
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
-          .select("seo_title, seo_description")
+          .select("id, title, description, seo_title, seo_description, image_url, shopify_id")
           .eq("id", productId)
           .single();
 
         if (updatedProduct) {
+          optimizedList.push(updatedProduct);
           setProducts((prev) =>
             prev.map((p) =>
               p.id === productId
@@ -182,10 +188,7 @@ export default function ProductTitleDescription() {
       }
 
       toast.success("Optimisation terminée", { id: toastId });
-      
-      const optimized = products.filter(p => selectedProducts.has(p.id));
-      setOptimizedProducts(optimized);
-      setShowLandingPreviewDialog(true);
+      setOptimizedProducts(optimizedList);
       setSelectedProducts(new Set());
     } catch (error: any) {
       console.error("Error optimizing:", error);
@@ -207,6 +210,7 @@ export default function ProductTitleDescription() {
       }
     } finally {
       setGenerating(false);
+      setIsOptimizing(false);
     }
   };
 
@@ -870,12 +874,13 @@ export default function ProductTitleDescription() {
         onCustomPromptChange={setCustomPrompt}
       />
 
-      <ProductLandingPreviewDialog
+      <ProductTitleLandingDialog
         open={showLandingPreviewDialog}
         onOpenChange={setShowLandingPreviewDialog}
         products={optimizedProducts}
-        onConfirm={handleSyncToShopify}
-        loading={syncingToShopify}
+        isGenerating={isOptimizing}
+        onSync={handleSyncToShopify}
+        syncLoading={syncingToShopify}
       />
     </div>
   );
