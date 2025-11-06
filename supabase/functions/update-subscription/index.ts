@@ -1,3 +1,21 @@
+/**
+ * Subscription Upgrade Logic:
+ * 
+ * MID-CYCLE UPGRADE (> 3 days into cycle):
+ * - Applies proration (user pays difference for remaining days)
+ * - Resets monthly usage counters (optimizations, articles, chat, shopify_requests)
+ * - Preserves total counters (products_count, shopify_stores_count)
+ * - Keeps same billing cycle dates
+ * 
+ * RENEWAL UPGRADE (≤ 3 days into cycle):
+ * - No proration (user pays full new plan price)
+ * - No usage reset (cycle just started, counters already at 0)
+ * - Preserves billing cycle anchor
+ * 
+ * This ensures users get immediate access to new limits when upgrading
+ * and proper billing based on upgrade timing.
+ */
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -70,27 +88,56 @@ serve(async (req) => {
       itemsCount: subscription.items.data.length 
     });
 
+    // Calculate days into billing cycle
+    const now = Math.floor(Date.now() / 1000); // Unix timestamp
+    const periodStart = subscription.current_period_start;
+    const periodEnd = subscription.current_period_end;
+    const daysIntoCycle = Math.floor((now - periodStart) / (24 * 60 * 60));
+    const totalCycleDays = Math.floor((periodEnd - periodStart) / (24 * 60 * 60));
+
+    // Determine if this is a renewal (within first 3 days) or mid-cycle upgrade
+    const isRenewalUpgrade = daysIntoCycle <= 3;
+    const isMidCycleUpgrade = !isRenewalUpgrade;
+
+    logStep("Billing cycle analysis", {
+      daysIntoCycle,
+      totalCycleDays,
+      isRenewalUpgrade,
+      isMidCycleUpgrade,
+      periodStart: new Date(periodStart * 1000).toISOString(),
+      periodEnd: new Date(periodEnd * 1000).toISOString()
+    });
+
     // Get the subscription item to update
     const subscriptionItemId = subscription.items.data[0]?.id;
     if (!subscriptionItemId) throw new Error("No subscription item found");
 
-    // Update the subscription with the new price
+    // Update subscription with appropriate proration behavior
+    const updateParams: any = {
+      items: [
+        {
+          id: subscriptionItemId,
+          price: new_price_id,
+        },
+      ],
+      proration_behavior: isMidCycleUpgrade ? 'always_invoice' : 'none',
+    };
+
+    // For renewal upgrades, preserve the billing cycle anchor
+    if (isRenewalUpgrade) {
+      updateParams.billing_cycle_anchor = 'unchanged';
+    }
+
     const updatedSubscription = await stripe.subscriptions.update(
       profile.stripe_subscription_id,
-      {
-        items: [
-          {
-            id: subscriptionItemId,
-            price: new_price_id,
-          },
-        ],
-        proration_behavior: 'always_invoice', // Create invoice for proration
-      }
+      updateParams
     );
 
-    logStep("Subscription updated in Stripe", { 
+    logStep("Subscription updated in Stripe", {
       subscriptionId: updatedSubscription.id,
-      status: updatedSubscription.status 
+      status: updatedSubscription.status,
+      prorationBehavior: updateParams.proration_behavior,
+      periodPreserved: isRenewalUpgrade
     });
 
     // Update profile with new plan
@@ -110,6 +157,50 @@ serve(async (req) => {
       }
     }
 
+    // Reset monthly usage counters for mid-cycle upgrades
+    if (isMidCycleUpgrade) {
+      const currentMonth = new Date();
+      currentMonth.setDate(1);
+      currentMonth.setHours(0, 0, 0, 0);
+      const monthKey = currentMonth.toISOString().split('T')[0];
+
+      // Get current usage to preserve product/store counts
+      const { data: currentUsage } = await supabaseClient
+        .from('usage_tracking')
+        .select('products_count, shopify_stores_count')
+        .eq('seller_id', userData.user.id)
+        .eq('month', monthKey)
+        .single();
+
+      // Reset monthly counters, keep total counters
+      const { error: usageError } = await supabaseClient
+        .from('usage_tracking')
+        .upsert({
+          seller_id: userData.user.id,
+          month: monthKey,
+          optimizations_count: 0,
+          articles_count: 0,
+          chat_responses_count: 0,
+          shopify_requests_count: 0,
+          products_count: currentUsage?.products_count || 0,
+          shopify_stores_count: currentUsage?.shopify_stores_count || 0,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'seller_id,month'
+        });
+
+      if (usageError) {
+        logStep("Warning: Failed to reset usage counters", { error: usageError });
+      } else {
+        logStep("Usage counters reset for mid-cycle upgrade", {
+          preservedProducts: currentUsage?.products_count || 0,
+          preservedStores: currentUsage?.shopify_stores_count || 0
+        });
+      }
+    } else {
+      logStep("Renewal upgrade - usage counters not reset (cycle just started)");
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -118,6 +209,12 @@ serve(async (req) => {
           status: updatedSubscription.status,
           current_period_end: updatedSubscription.current_period_end,
         },
+        upgrade_details: {
+          timing: isMidCycleUpgrade ? 'mid_cycle' : 'renewal',
+          proration_applied: isMidCycleUpgrade,
+          usage_reset: isMidCycleUpgrade,
+          days_into_cycle: daysIntoCycle,
+        }
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

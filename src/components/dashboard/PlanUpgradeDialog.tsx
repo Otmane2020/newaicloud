@@ -112,7 +112,18 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
 
       if (error) throw error;
 
-      toast.success('Abonnement mis à jour avec succès');
+      // Show detailed success message based on upgrade timing
+      const upgradeDetails = data?.upgrade_details;
+      if (upgradeDetails?.timing === 'mid_cycle') {
+        toast.success('Abonnement mis à jour ! Vos compteurs mensuels ont été réinitialisés.', {
+          duration: 5000,
+        });
+      } else {
+        toast.success('Abonnement mis à jour ! Nouveau cycle démarré.', {
+          duration: 5000,
+        });
+      }
+      
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -214,6 +225,29 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
                 <p>✓ {selectedPlan.max_articles_monthly} articles/mois</p>
                 <p>✓ {selectedPlan.max_chat_responses_monthly} réponses chat/mois</p>
               </div>
+            </div>
+          )}
+
+          {/* Upgrade Information Banner */}
+          {selectedPlan && !isSamePlan && (
+            <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                ℹ️ Informations importantes
+              </p>
+              {isUpgrade && (
+                <ul className="space-y-1 text-blue-800 dark:text-blue-200">
+                  <li>• Vous serez facturé au prorata pour le reste du cycle actuel</li>
+                  <li>• Vos compteurs mensuels seront réinitialisés immédiatement</li>
+                  <li>• Votre date de renouvellement reste inchangée</li>
+                </ul>
+              )}
+              {isDowngrade && (
+                <ul className="space-y-1 text-blue-800 dark:text-blue-200">
+                  <li>• Le changement sera effectif immédiatement</li>
+                  <li>• Vous serez crédité pour le reste du cycle</li>
+                  <li>• Vos compteurs mensuels seront ajustés</li>
+                </ul>
+              )}
             </div>
           )}
         </div>
