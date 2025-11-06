@@ -65,9 +65,7 @@ interface FeedSettings {
 interface ShopifyConnection {
   public_domain: string | null;
   store_url: string | null;
-  myshopify_domain: string | null;
   access_token: string;
-  shopify_domain: string;
 }
 
 interface ShopifyShop {
@@ -90,14 +88,17 @@ function getSupabaseClient() {
 // Fonction pour récupérer le vrai domaine depuis l'API Admin Shopify
 async function getShopifyStoreDomain(connection: ShopifyConnection): Promise<string> {
   try {
-    const { shopify_domain, access_token } = connection;
+    const { store_url, access_token } = connection;
     
-    if (!shopify_domain || !access_token) {
+    if (!store_url || !access_token) {
       throw new Error("Missing Shopify domain or access token");
     }
 
+    // Nettoyer le store_url pour obtenir le domaine
+    const cleanStoreUrl = store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    
     // Appel à l'API Admin Shopify pour récupérer les infos du shop
-    const response = await fetch(`https://${shopify_domain}/admin/api/2024-01/shop.json`, {
+    const response = await fetch(`https://${cleanStoreUrl}/admin/api/2024-01/shop.json`, {
       headers: {
         'X-Shopify-Access-Token': access_token,
         'Content-Type': 'application/json',
@@ -123,7 +124,7 @@ async function getShopifyStoreDomain(connection: ShopifyConnection): Promise<str
     console.error('❌ Error fetching Shopify domain:', error);
     
     // Fallback aux données locales si l'API échoue
-    const fallbackDomain = connection.public_domain || connection.store_url || connection.myshopify_domain;
+    const fallbackDomain = connection.public_domain || connection.store_url;
     if (fallbackDomain) {
       const cleanFallback = fallbackDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
       console.log(`🔄 Using fallback domain: ${cleanFallback}`);
@@ -141,7 +142,7 @@ async function getStoreDomain(sellerId: string, feedSettings?: FeedSettings): Pr
     // Récupérer la connexion Shopify avec le token d'accès
     const { data: connection } = await supabase
       .from("shopify_connections")
-      .select("public_domain, store_url, myshopify_domain, access_token, shopify_domain")
+      .select("public_domain, store_url, access_token")
       .eq("user_id", sellerId)
       .eq("is_active", true)
       .single() as { data: ShopifyConnection | null };
@@ -152,10 +153,9 @@ async function getStoreDomain(sellerId: string, feedSettings?: FeedSettings): Pr
     }
 
     console.log('🛍️ Shopify connection data:', {
-      shopify_domain: connection.shopify_domain,
+      store_url: connection.store_url,
       has_access_token: !!connection.access_token,
-      public_domain: connection.public_domain,
-      store_url: connection.store_url
+      public_domain: connection.public_domain
     });
 
     // Essayer de récupérer le domaine depuis l'API Shopify
@@ -166,7 +166,7 @@ async function getStoreDomain(sellerId: string, feedSettings?: FeedSettings): Pr
       console.error('Failed to get domain from Shopify API, using local data:', shopifyError);
       
       // Fallback aux données locales
-      const localDomain = connection.public_domain || connection.store_url || connection.myshopify_domain;
+      const localDomain = connection.public_domain || connection.store_url;
       if (localDomain) {
         const cleanDomain = localDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
         console.log(`🔄 Using local domain: ${cleanDomain}`);
