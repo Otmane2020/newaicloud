@@ -730,64 +730,44 @@ export default function ProductTitleDescription() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handleOptimizeSelected}
-                      disabled={generating || selectedProducts.size === 0}
-                    >
-                      <Wand2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Optimiser ({selectedProducts.size})</p>
-                  </TooltipContent>
-                </Tooltip>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOptimizeSelected}
+                disabled={generating || selectedProducts.size === 0}
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                Optimiser ({selectedProducts.size})
+              </Button>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handleWhiteBackground}
-                      disabled={generatingWhiteBg || selectedProducts.size === 0}
-                    >
-                      {generatingWhiteBg ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Square className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Fond blanc ({selectedProducts.size})</p>
-                  </TooltipContent>
-                </Tooltip>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleWhiteBackground}
+                disabled={generatingWhiteBg || selectedProducts.size === 0}
+              >
+                {generatingWhiteBg ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Square className="h-4 w-4 mr-2" />
+                )}
+                Fond blanc ({selectedProducts.size})
+              </Button>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="default"
-                      size="icon"
-                      onClick={() => setShowPromptDialog(true)}
-                      disabled={generatingAiBg || selectedProducts.size === 0}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
-                    >
-                      {generatingAiBg ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Palette className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Arrière-plan IA ({selectedProducts.size})</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setShowPromptDialog(true)}
+                disabled={generatingAiBg || selectedProducts.size === 0}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
+              >
+                {generatingAiBg ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Palette className="h-4 w-4 mr-2" />
+                )}
+                Arrière-plan IA ({selectedProducts.size})
+              </Button>
             </div>
           </div>
         </Card>
@@ -875,66 +855,52 @@ export default function ProductTitleDescription() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <TooltipProvider>
-                        <div className="flex gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
-                                    setOptimizedProducts([product]);
-                                    setShowLandingPreviewDialog(true);
-                                  } else {
-                                    toast.error("Ce produit n'a pas encore été optimisé");
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
+                              setOptimizedProducts([product]);
+                              setShowLandingPreviewDialog(true);
+                            } else {
+                              toast.error("Ce produit n'a pas encore été optimisé");
+                            }
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Visualiser
+                        </Button>
+                        
+                        {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              const toastId = toast.loading("Synchronisation...");
+                              try {
+                                const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+                                  body: {
+                                    productId: product.id,
+                                    shopifyId: product.shopify_id,
+                                    seoTitle: product.seo_title,
+                                    seoDescription: product.seo_description,
                                   }
-                                }}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Visualiser</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          
-                          {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={async () => {
-                                    const toastId = toast.loading("Synchronisation...");
-                                    try {
-                                      const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-                                        body: {
-                                          productId: product.id,
-                                          shopifyId: product.shopify_id,
-                                          seoTitle: product.seo_title,
-                                          seoDescription: product.seo_description,
-                                        }
-                                      });
-                                      
-                                      if (error) throw error;
-                                      toast.success("Synchronisé avec Shopify", { id: toastId });
-                                    } catch (error) {
-                                      console.error("Sync error:", error);
-                                      toast.error("Erreur lors de la synchronisation", { id: toastId });
-                                    }
-                                  }}
-                                >
-                                  <RefreshCw className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Synchroniser</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                      </TooltipProvider>
+                                });
+                                
+                                if (error) throw error;
+                                toast.success("Synchronisé avec Shopify", { id: toastId });
+                              } catch (error) {
+                                console.error("Sync error:", error);
+                                toast.error("Erreur lors de la synchronisation", { id: toastId });
+                              }
+                            }}
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Synchroniser
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
