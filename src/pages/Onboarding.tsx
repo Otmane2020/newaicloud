@@ -558,9 +558,15 @@ export default function Onboarding() {
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
                     <SelectContent className="bg-background z-50">
-                      {proPlans.map((plan) => (
+                      {proPlans
+                        .sort((a, b) => {
+                          const priceA = billingCycle === 'yearly' ? a.price_yearly : a.price_monthly;
+                          const priceB = billingCycle === 'yearly' ? b.price_yearly : b.price_monthly;
+                          return priceA - priceB;
+                        })
+                        .map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -675,9 +681,15 @@ export default function Onboarding() {
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
                     <SelectContent className="bg-background z-50">
-                      {enterprisePlans.map((plan) => (
+                      {enterprisePlans
+                        .sort((a, b) => {
+                          const priceA = billingCycle === 'yearly' ? a.price_yearly : a.price_monthly;
+                          const priceB = billingCycle === 'yearly' ? b.price_yearly : b.price_monthly;
+                          return priceA - priceB;
+                        })
+                        .map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                         </SelectItem>
                       ))}
                     </SelectContent>
