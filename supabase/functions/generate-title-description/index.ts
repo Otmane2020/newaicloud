@@ -24,6 +24,13 @@ serve(async (req) => {
     }
 
     let visionAnalysis = "";
+    let productDimensions = "";
+    let visualAttributes = {
+      colors: [] as string[],
+      materials: [] as string[],
+      style: "",
+      design: ""
+    };
     
     // Si une URL d'image est fournie, analyser l'image avec Vision AI
     if (imageUrl) {
@@ -46,7 +53,23 @@ serve(async (req) => {
             contents: [{
               parts: [
                 {
-                  text: "Analyze this product image and describe the key visual features: colors, patterns, textures, materials, style. Be specific and focus on what makes this product unique visually.",
+                  text: `Analyze this product image in detail and provide:
+1. Colors: List all visible colors
+2. Materials: Identify materials used
+3. Style: Describe the design style (modern, classic, rustic, etc.)
+4. Design elements: Key visual features
+5. Dimensions: If visible, estimate approximate dimensions
+6. UX aspects: How the product looks in use, ergonomics, user appeal
+
+Format as JSON:
+{
+  "colors": ["color1", "color2"],
+  "materials": ["material1", "material2"],
+  "style": "style description",
+  "design": "design elements description",
+  "dimensions": "dimension info if visible",
+  "ux_appeal": "user experience description"
+}`,
                 },
                 {
                   inline_data: {
@@ -58,7 +81,7 @@ serve(async (req) => {
             }],
             generationConfig: {
               temperature: 0.7,
-              maxOutputTokens: 500,
+              maxOutputTokens: 800,
             },
           }),
         });
@@ -72,36 +95,92 @@ serve(async (req) => {
           }
         } else {
           const visionData = await visionResponse.json();
-          visionAnalysis = visionData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          console.log("Vision analysis completed:", visionAnalysis);
+          const rawAnalysis = visionData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          console.log("Vision analysis completed:", rawAnalysis);
+          
+          // Parse JSON from the response
+          try {
+            const jsonMatch = rawAnalysis.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              visualAttributes = {
+                colors: parsed.colors || [],
+                materials: parsed.materials || [],
+                style: parsed.style || "",
+                design: parsed.design || ""
+              };
+              productDimensions = parsed.dimensions || "";
+              visionAnalysis = parsed.ux_appeal || rawAnalysis;
+            } else {
+              visionAnalysis = rawAnalysis;
+            }
+          } catch (parseError) {
+            console.error("Error parsing vision JSON:", parseError);
+            visionAnalysis = rawAnalysis;
+          }
         }
       } catch (visionError) {
         console.error("Error during vision analysis:", visionError);
       }
     }
 
-    // Générer le titre et la description optimisés
-    const systemPrompt = `Tu es un expert en e-commerce et en copywriting. Ta tâche est de générer un titre optimisé SEO et une description captivante pour un produit.
+    // Générer le titre, la description SEO et la description HTML enrichie
+    const systemPrompt = `Tu es un expert en e-commerce et en copywriting UX. Ta tâche est de générer:
+1. Un titre optimisé SEO (50-70 caractères)
+2. Une meta description SEO (150-300 caractères)
+3. Une description HTML enrichie selon les normes e-commerce avec structure H1, H2, H3
 
-Le titre doit:
-- Être clair, descriptif et optimisé pour le référencement
+Exigences:
+
+**Titre SEO** (50-70 caractères):
+- Clair, descriptif, optimisé pour le référencement
 - Inclure les mots-clés principaux
-- Être attractif pour augmenter le taux de clic
-- Faire entre 50 et 70 caractères
+- Attractif pour augmenter le taux de clic
 
-La description doit:
-- Être engageante et mettre en valeur les bénéfices du produit
-- Incorporer naturellement des mots-clés SEO
-- Faire entre 150 et 300 caractères
-- Être convaincante et inciter à l'achat`;
+**Meta Description** (150-300 caractères):
+- Engageante, met en valeur les bénéfices
+- Incorpore naturellement des mots-clés SEO
+- Convaincante, incite à l'achat
+
+**Description HTML enrichie**:
+Structure obligatoire:
+- H1: Titre principal du produit (avec ${imageUrl ? 'image produit intégrée' : 'titre seul'})
+- H2: "Caractéristiques principales" (liste à puces des bénéfices)
+- H2: "Design & Style" (description visuelle, couleurs, matériaux)
+${productDimensions ? '- H2: "Dimensions" (tableau ou liste des dimensions)\n' : ''}
+- H2: "Expérience Utilisateur" (UX, confort, facilité d'utilisation)
+- H3: Sous-sections si nécessaire
+
+Format HTML professionnel avec:
+- Balises sémantiques (<section>, <article>)
+- Classes CSS: 'product-hero', 'feature-list', 'design-section', 'dimensions-table', 'ux-highlights'
+- Images responsives si URL fournie
+- Mise en page e-commerce moderne`;
 
     let userPrompt = `Titre actuel du produit: "${currentTitle}"`;
     
     if (visionAnalysis) {
-      userPrompt += `\n\nAnalyse visuelle de l'image du produit:\n${visionAnalysis}`;
+      userPrompt += `\n\n**Analyse IA de l'image:**
+${visionAnalysis}
+
+**Attributs visuels détectés:**
+- Couleurs: ${visualAttributes.colors.join(', ') || 'Non détecté'}
+- Matériaux: ${visualAttributes.materials.join(', ') || 'Non détecté'}
+- Style: ${visualAttributes.style || 'Non détecté'}
+- Design: ${visualAttributes.design || 'Non détecté'}`;
     }
 
-    userPrompt += `\n\nGénère un titre optimisé et une description captivante en JSON avec les clés "title" et "description".`;
+    if (productDimensions) {
+      userPrompt += `\n\n**Dimensions du produit:**
+${productDimensions}`;
+    }
+
+    userPrompt += `\n\nGénère en JSON:
+{
+  "title": "titre SEO optimisé",
+  "description": "meta description SEO",
+  "html_description": "description HTML enrichie complète avec H1, H2, H3, sections"
+}`;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -154,11 +233,49 @@ La description doit:
 
     const result = JSON.parse(jsonMatch[0]);
 
+    // Update database with new SEO data
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    // Get auth header to find product
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabaseClient.auth.getUser(token);
+      
+      if (user) {
+        // Find product by title and update
+        const { data: products } = await supabaseClient
+          .from('shopify_products')
+          .select('id')
+          .eq('seller_id', user.id)
+          .eq('title', currentTitle)
+          .limit(1);
+        
+        if (products && products.length > 0) {
+          await supabaseClient
+            .from('shopify_products')
+            .update({
+              seo_title: result.title,
+              seo_description: result.description,
+              description: result.html_description || result.description,
+              optimization_count: supabaseClient.rpc('increment', { x: 1 }),
+              last_optimization_at: new Date().toISOString()
+            })
+            .eq('id', products[0].id);
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({
         title: result.title || "",
         description: result.description || "",
+        html_description: result.html_description || "",
         hasVisionAnalysis: !!visionAnalysis,
+        visualAttributes: visualAttributes,
+        dimensions: productDimensions
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -15,6 +15,7 @@ import {
   Search,
   Paintbrush,
   Palette,
+  Eye,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -49,6 +50,11 @@ interface Product {
   image_url: string | null;
   shopify_id: number | null;
 }
+
+// Check if product has rich HTML description
+const hasRichHtmlDescription = (product: Product): boolean => {
+  return !!(product.description && product.description.includes('<h1'));
+};
 
 interface PreviewImage {
   productId: string;
@@ -574,6 +580,91 @@ export default function ProductTitleDescription() {
                   </>
                 )}
               </Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  const productsToSync = filteredProducts.filter(p => 
+                    p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title)
+                  );
+                  
+                  if (productsToSync.length === 0) {
+                    toast.error("Aucun produit optimisé à synchroniser");
+                    return;
+                  }
+                  
+                  const toastId = toast.loading(`Synchronisation de ${productsToSync.length} produit(s)...`);
+                  
+                  try {
+                    for (const product of productsToSync) {
+                      await supabase.functions.invoke('sync-seo-to-shopify', {
+                        body: {
+                          productId: product.id,
+                          shopifyId: product.shopify_id,
+                          seoTitle: product.seo_title,
+                          seoDescription: product.seo_description,
+                        }
+                      });
+                    }
+                    toast.success(`${productsToSync.length} produit(s) synchronisé(s)`, { id: toastId });
+                  } catch (error) {
+                    console.error("Sync error:", error);
+                    toast.error("Erreur lors de la synchronisation", { id: toastId });
+                  }
+                }}
+                disabled={syncingToShopify}
+                size="lg"
+                className="gap-2"
+              >
+                {syncingToShopify ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Synchroniser tout
+              </Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  const productsToSync = Array.from(selectedProducts)
+                    .map(id => products.find(p => p.id === id))
+                    .filter(p => p && p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title)) as Product[];
+                  
+                  if (productsToSync.length === 0) {
+                    toast.error("Aucun produit sélectionné à synchroniser");
+                    return;
+                  }
+                  
+                  const toastId = toast.loading(`Synchronisation de ${productsToSync.length} produit(s)...`);
+                  
+                  try {
+                    for (const product of productsToSync) {
+                      await supabase.functions.invoke('sync-seo-to-shopify', {
+                        body: {
+                          productId: product.id,
+                          shopifyId: product.shopify_id,
+                          seoTitle: product.seo_title,
+                          seoDescription: product.seo_description,
+                        }
+                      });
+                    }
+                    toast.success(`${productsToSync.length} produit(s) synchronisé(s)`, { id: toastId });
+                    setSelectedProducts(new Set());
+                  } catch (error) {
+                    console.error("Sync error:", error);
+                    toast.error("Erreur lors de la synchronisation", { id: toastId });
+                  }
+                }}
+                disabled={syncingToShopify || selectedProducts.size === 0}
+                size="lg"
+                className="gap-2"
+              >
+                {syncingToShopify ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Synchroniser sélectionnés ({selectedProducts.size})
+              </Button>
             </div>
           </div>
         </Card>
@@ -700,6 +791,7 @@ export default function ProductTitleDescription() {
                 <TableHead>Titre</TableHead>
                 <TableHead className="hidden lg:table-cell">Description</TableHead>
                 <TableHead className="w-32">Statut</TableHead>
+                <TableHead className="w-40">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -744,8 +836,8 @@ export default function ProductTitleDescription() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {product.description ? (
-                      <Badge variant="outline" className="bg-green-50 text-green-700">
+                    {hasRichHtmlDescription(product) ? (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                         ✨ HTML UX Optimisé
                       </Badge>
                     ) : product.seo_title || product.seo_description ? (
@@ -755,6 +847,55 @@ export default function ProductTitleDescription() {
                     ) : (
                       <Badge variant="outline">À optimiser</Badge>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
+                            setOptimizedProducts([product]);
+                            setShowLandingPreviewDialog(true);
+                          } else {
+                            toast.error("Ce produit n'a pas encore été optimisé");
+                          }
+                        }}
+                        className="gap-1"
+                      >
+                        <Eye className="h-3 w-3" />
+                        Visualiser
+                      </Button>
+                      {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const toastId = toast.loading("Synchronisation...");
+                            try {
+                              const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+                                body: {
+                                  productId: product.id,
+                                  shopifyId: product.shopify_id,
+                                  seoTitle: product.seo_title,
+                                  seoDescription: product.seo_description,
+                                }
+                              });
+                              
+                              if (error) throw error;
+                              toast.success("Synchronisé avec Shopify", { id: toastId });
+                            } catch (error) {
+                              console.error("Sync error:", error);
+                              toast.error("Erreur lors de la synchronisation", { id: toastId });
+                            }
+                          }}
+                          className="gap-1"
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          Sync
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

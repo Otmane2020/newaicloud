@@ -10,6 +10,7 @@ import { useState } from "react";
 interface Product {
   id: string;
   title: string;
+  description?: string | null;
   seo_title?: string;
   seo_description?: string;
   image_url?: string;
@@ -53,16 +54,22 @@ const calculateQualityScore = (title: string, description: string): number => {
   return Math.min(100, score);
 };
 
-// Generate simple HTML preview from title and description
+// Generate rich HTML preview from product description or fallback to simple version
 const generateHtmlPreview = (product: Product): string => {
   const title = product.seo_title || product.title;
   const description = product.seo_description || '';
   const imageUrl = product.image_url || '';
   
+  // If we have a rich HTML description in the description field, use it
+  if (product.description && product.description.includes('<h1')) {
+    return product.description;
+  }
+  
+  // Otherwise, generate a basic preview
   return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem;">
       ${imageUrl ? `
-        <div style="margin-bottom: 2rem; border-radius: 0.75rem; overflow: hidden;">
+        <div style="margin-bottom: 2rem; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
           <img src="${imageUrl}" alt="${title}" style="width: 100%; height: auto; display: block;" />
         </div>
       ` : ''}
