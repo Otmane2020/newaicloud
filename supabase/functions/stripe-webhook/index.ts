@@ -67,7 +67,7 @@ serve(async (req) => {
         break;
       
       case 'invoice.payment_succeeded':
-        console.log('📧 Invoice payment succeeded:', event.data.object.id);
+        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
         break;
       
       default:
@@ -464,6 +464,97 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     console.log('✅ Subscription deletion completed');
   } catch (error) {
     console.error('❌ Error in handleSubscriptionDeleted:', error);
+    throw error;
+  }
+}
+
+async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+  try {
+    console.log('💰 Processing invoice.payment_succeeded');
+    const { subscription, customer, billing_reason } = invoice;
+    
+    console.log('📋 Invoice:', invoice.id, 'Billing reason:', billing_reason);
+    
+    // Only reset counters for subscription cycle renewals
+    if (billing_reason !== 'subscription_cycle') {
+      console.log('ℹ️ Not a subscription cycle renewal, skipping quota reset');
+      return;
+    }
+    
+    console.log('🔄 Subscription cycle renewal detected, resetting monthly quotas...');
+    
+    // Find user by subscription or customer
+    let userId: string | null = null;
+    
+    if (subscription && typeof subscription === 'string') {
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('seller_id')
+        .eq('stripe_subscription_id', subscription)
+        .single();
+      
+      userId = subData?.seller_id;
+      console.log('👤 Found user via subscription:', userId);
+    }
+    
+    if (!userId && customer && typeof customer === 'string') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('stripe_customer_id', customer)
+        .single();
+      
+      userId = profile?.id;
+      console.log('👤 Found user via customer:', userId);
+    }
+    
+    if (!userId) {
+      console.warn('⚠️ No user found for invoice, cannot reset quotas');
+      return;
+    }
+    
+    // Reset monthly usage counters (preserve products_count and shopify_stores_count)
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+    const monthKey = currentMonth.toISOString().split('T')[0];
+    
+    // Get current usage to preserve product/store counts
+    const { data: currentUsage } = await supabase
+      .from('usage_tracking')
+      .select('products_count, shopify_stores_count')
+      .eq('seller_id', userId)
+      .eq('month', monthKey)
+      .single();
+    
+    console.log('💾 Resetting monthly counters for user:', userId);
+    const { error: usageError } = await supabase
+      .from('usage_tracking')
+      .upsert({
+        seller_id: userId,
+        month: monthKey,
+        optimizations_count: 0,
+        articles_count: 0,
+        chat_responses_count: 0,
+        shopify_requests_count: 0,
+        campaigns_count: 0,
+        products_count: currentUsage?.products_count || 0,
+        shopify_stores_count: currentUsage?.shopify_stores_count || 0,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'seller_id,month'
+      });
+    
+    if (usageError) {
+      console.error('❌ Error resetting usage counters:', usageError);
+    } else {
+      console.log('✅ Monthly usage counters reset successfully', {
+        preservedProducts: currentUsage?.products_count || 0,
+        preservedStores: currentUsage?.shopify_stores_count || 0
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error in handleInvoicePaymentSucceeded:', error);
     throw error;
   }
 }

@@ -121,12 +121,9 @@ serve(async (req) => {
         },
       ],
       proration_behavior: isMidCycleUpgrade ? 'always_invoice' : 'none',
+      // CRITICAL: Always preserve billing cycle anchor to avoid changing renewal date
+      billing_cycle_anchor: 'unchanged',
     };
-
-    // For renewal upgrades, preserve the billing cycle anchor
-    if (isRenewalUpgrade) {
-      updateParams.billing_cycle_anchor = 'unchanged';
-    }
 
     const updatedSubscription = await stripe.subscriptions.update(
       profile.stripe_subscription_id,
