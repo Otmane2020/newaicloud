@@ -96,6 +96,7 @@ export function AppSidebar() {
   const productOptimizationSubItems = [
     { title: t.navigation.products, url: "/products", icon: ShoppingBag, key: "products" },
     { title: t.navigation.titleDescription, url: "/products/title-description", icon: Sparkles, key: "titleDescription" },
+    { title: "Media - Historique", url: "/products/media-history", icon: History, key: "mediaHistory" },
   ];
 
   const blogSubItems = [
