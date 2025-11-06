@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +28,7 @@ serve(async (req) => {
 
     console.log("🧠 Génération d'arrière-plan e-commerce avec Gemini pour :", productType);
 
-    // 🪄 Prompt amélioré
+    // --- Prompt IA ---
     const imagePrompt = `
 Create a high-quality e-commerce product photo.
 
@@ -44,30 +45,22 @@ PHOTOGRAPHY REQUIREMENTS:
     }
 - Product perfectly centered
 - Sharp focus, subtle reflection or shadow beneath
-- High resolution (1024x1024)
+- High resolution (1024×1024)
 - No watermark, text or logo
 - Suitable for Shopify, Amazon or Decora Home presentation
     `.trim();
 
-    // 🔄 Conversion base64 sans overflow
+    // --- Conversion base64 sûre ---
     const imageResponse = await fetch(imageUrl);
     if (!imageResponse.ok) {
       throw new Error(`Impossible de télécharger l'image source : ${imageResponse.status}`);
     }
-    const imageArrayBuffer = await imageResponse.arrayBuffer();
-    const bytes = new Uint8Array(imageArrayBuffer);
-    let binary = "";
-    const chunkSize = 0x8000; // 32 768 octets
+    const buffer = await imageResponse.arrayBuffer();
+    const base64Image = encode(new Uint8Array(buffer)); // pas de stack overflow
 
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunkSize)));
-    }
-
-    const base64Image = btoa(binary);
-
-    // 🧠 Appel au vrai modèle image Gemini 2.5
+    // --- Appel à Gemini (modèle image actuel) ---
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateImage?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,32 +70,36 @@ PHOTOGRAPHY REQUIREMENTS:
               parts: [{ inline_data: { mime_type: "image/jpeg", data: base64Image } }, { text: imagePrompt }],
             },
           ],
-          generationConfig: { aspectRatio: "1:1" },
+          generationConfig: {
+            responseModalities: ["image"],
+            aspectRatio: "1:1",
+          },
         }),
       },
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ Erreur Gemini:", response.status, errorText);
+      console.error("❌ Erreur Gemini :", response.status, errorText);
       throw new Error(`Erreur API Gemini ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
     console.log("✅ Réponse Gemini reçue avec succès");
 
-    // 🖼️ Extraction image base64
+    // --- Extraction image base64 ---
     const generatedBase64 =
-      data.generatedImages?.[0]?.bytesBase64 || data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+      data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data ?? data.generatedImages?.[0]?.bytesBase64;
 
     if (!generatedBase64) {
       console.error("⚠️ Aucune image retournée :", JSON.stringify(data, null, 2));
-      throw new Error("Aucune image générée - format de réponse inattendu.");
+      throw new Error("Aucune image générée — format de réponse inattendu.");
     }
 
     const generatedImageUrl = `data:image/png;base64,${generatedBase64}`;
     console.log("🎨 Arrière-plan généré avec succès pour :", productType);
 
+    // --- Réponse finale ---
     return new Response(
       JSON.stringify({
         success: true,
@@ -110,7 +107,7 @@ PHOTOGRAPHY REQUIREMENTS:
         metadata: {
           productType,
           style,
-          model: "google/gemini-2.5-flash-image",
+          model: "google/gemini-2.5-flash",
           generatedAt: new Date().toISOString(),
         },
       }),
@@ -120,7 +117,7 @@ PHOTOGRAPHY REQUIREMENTS:
       },
     );
   } catch (error) {
-    console.error("💥 Erreur génération arrière-plan:", error);
+    console.error("💥 Erreur génération arrière-plan :", error);
     return new Response(
       JSON.stringify({
         success: false,

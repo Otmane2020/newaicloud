@@ -1,208 +1,190 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { title, existingDescription, images, visionAnalysis, template = 'ecommerce' } = await req.json();
-    
+    const { title, existingDescription, images, visionAnalysis, dimensions, template = "ecommerce" } = await req.json();
+
     if (!title) {
-      throw new Error('Product title is required');
+      throw new Error("Product title is required");
     }
 
-    console.log('Generating HTML description for:', title, 'with template:', template);
+    console.log("🧠 Generating product landing page for:", title);
 
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
-      throw new Error('GOOGLE_GEMINI_API_KEY is not configured');
+      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
     }
 
-    // Template-specific style guides
+    // Template-specific tone and style
     const templateStyles = {
       ecommerce: {
-        tone: 'Direct, persuasive, customer-focused. Use simple language and clear benefits.',
-        structure: 'Quick overview, key benefits with icons, technical specs table, call-to-action',
-        language: 'Use action verbs, emphasize value and convenience, include urgency elements'
+        tone: "Direct, persuasive, focused on conversion and ease of use. Highlight benefits and social proof.",
+        structure: "Hero with main image, feature sections with icons, specs, gallery, reviews, CTA.",
+        language: "Simple, engaging, persuasive. Emphasize value, comfort, and urgency.",
       },
       luxury: {
-        tone: 'Sophisticated, elegant, aspirational. Use refined and exclusive language.',
-        structure: 'Story-driven narrative, craftsmanship details, heritage/materials focus, exclusive features',
-        language: 'Use sensory words, emphasize uniqueness and quality, avoid direct selling'
+        tone: "Elegant, emotional, sensory. Use aspirational storytelling and subtle persuasion.",
+        structure: "Full-width hero, craftsmanship section, materials story, detail gallery, CTA.",
+        language: "Sophisticated vocabulary. Focus on design, exclusivity, and experience.",
       },
       technical: {
-        tone: 'Precise, detailed, professional. Use industry-specific terminology.',
-        structure: 'Detailed specifications first, technical features, compatibility, performance metrics',
-        language: 'Use technical terms, include measurements and standards, provide detailed specs'
-      }
+        tone: "Informative, professional, and precise. Focus on data, compatibility, and performance.",
+        structure: "Hero with main specs, features grid, performance table, compatibility section, CTA.",
+        language: "Use technical clarity, avoid fluff, emphasize measurable performance.",
+      },
     };
 
     const selectedTemplate = templateStyles[template as keyof typeof templateStyles] || templateStyles.ecommerce;
 
-    const prompt = `Generate a high-quality, mobile-friendly HTML product description in ${template.toUpperCase()} style.
+    // 🔹 Prompt principal
+    const prompt = `
+You are an expert e-commerce UX copywriter and web designer.
+Generate a premium, responsive, mobile-first product *landing page* in Tailwind HTML.
 
-PRODUCT INFORMATION:
-- Title: ${title}
-${existingDescription ? `- Existing Description: ${existingDescription}` : '- No existing description'}
-${visionAnalysis ? `- Visual Analysis: ${JSON.stringify(visionAnalysis)}` : ''}
-${images?.length ? `
-- Product Images (${images.length} photos):
-${images.map((img: any, idx: number) => `  ${idx + 1}. ${img.src || img}`).join('\n')}
-` : '- No images available'}
+==============================
+INPUT DATA
+==============================
+Title: ${title}
+${existingDescription ? `Existing Description: ${existingDescription}` : ""}
+${visionAnalysis ? `Visual Analysis: ${JSON.stringify(visionAnalysis)}` : ""}
+${dimensions ? `Dimensions: ${JSON.stringify(dimensions)}` : ""}
+${images?.length ? `Product Images:\n${images.map((img: any, i: number) => `  ${i + 1}. ${img.src || img}`).join("\n")}` : "No images"}
 
-TEMPLATE STYLE - ${template.toUpperCase()}:
-- Tone: ${selectedTemplate.tone}
-- Structure: ${selectedTemplate.structure}
-- Language: ${selectedTemplate.language}
+==============================
+TEMPLATE STYLE (${template.toUpperCase()})
+==============================
+Tone: ${selectedTemplate.tone}
+Structure: ${selectedTemplate.structure}
+Language: ${selectedTemplate.language}
 
-STRUCTURE REQUIREMENTS:
-1. Hero section with main product benefit (1-2 sentences)
-2. Key features grid with 4-6 highlighted benefits
-3. Detailed characteristics/specifications table
-4. Product highlights with icons
-5. Usage or care instructions (if applicable)
+==============================
+PAGE STRUCTURE REQUIREMENTS
+==============================
+- <div> wrapper with Tailwind classes.
+- HERO SECTION:
+  • Full-width hero image (first image)
+  • Bold headline and 1–2 sentence benefit statement
+  • Prominent CTA button (e.g., “Shop Now”)
+- FEATURE SECTIONS:
+  • 4–6 cards highlighting benefits, each with icon or image
+- PRODUCT GALLERY:
+  • Responsive grid of all images with alt texts
+- SPECIFICATIONS TABLE:
+  • Include product dimensions if provided
+  • Technical details or materials
+- CUSTOMER EXPERIENCE SECTION:
+  • Use storytelling tone, mention how it improves user’s life
+- CTA SECTION:
+  • Reassuring final CTA (“Free Shipping”, “30-Day Guarantee”, etc.)
 
-IMAGE INTEGRATION (CRITICAL):
-- You MUST include actual product images in the HTML using <img> tags
-- Use the provided image URLs from the "Product Images" list above
-- Place images strategically: hero image at top, gallery in middle, detail shots near specs
-- Use responsive image sizing: w-full, h-auto, rounded corners
-- Add proper alt text for each image based on context
-- Example: <img src="IMAGE_URL_FROM_LIST" alt="Product detail view" class="w-full rounded-lg shadow-md mb-4" />
+==============================
+MEDIA INTEGRATION (CRITICAL)
+==============================
+- Use provided image URLs with <img> tags and descriptive alt text.
+- Use responsive classes (w-full, h-auto, rounded-lg, shadow-md).
+- Center hero image, grid gallery for others.
+- If possible, suggest placement for video or 360° media (“<video>” optional).
 
-TECHNICAL REQUIREMENTS:
-- Use only Tailwind CSS classes (no custom CSS)
-- Mobile-first responsive design
-- Semantic HTML5 tags (section, article, etc.)
-- Accessibility: proper heading hierarchy, ARIA labels
-- Clean, modern, professional design
-- Use spacing utilities (p-4, mb-6, etc.)
-- Use text utilities (text-lg, font-semibold, etc.)
-- Use grid/flex for layouts
+==============================
+VISUAL DESIGN
+==============================
+- Use Tailwind CSS only (no custom CSS)
+- Clean, modern, premium aesthetic
+- Semantic HTML5 (section, article, figure)
+- Mobile-first layout (flex, grid)
+- Accessibility and SEO best practices
+- Proper heading hierarchy
 
-STYLE GUIDELINES:
-- Clean and readable typography
-- Proper whitespace and spacing
-- Visual hierarchy with headings
-- Bullet points or numbered lists for features
-- Tables for specifications
-- Modern color scheme using Tailwind colors
-
-CONTENT QUALITY:
-- Engaging and persuasive language
-- Focus on benefits, not just features
-- Customer-centric tone
-- SEO-friendly but natural language
-- Scannable format (headings, lists, short paragraphs)
-
-ALSO GENERATE:
-- An optimized product title (max 70 characters)
-- Title should match the ${template} style and include key benefits
-- Include SEO keywords naturally
-
-OUTPUT FORMAT:
-Return a JSON object with two fields:
+==============================
+OUTPUT FORMAT
+==============================
+Return valid JSON only:
 {
-  "title": "Optimized product title here",
-  "html": "Complete HTML description here"
+  "title": "Optimized product title (≤70 chars)",
+  "html": "Full HTML of the landing page here"
 }
 
-The HTML should be ready to insert directly into a Shopify product description.
-Start with a <div> wrapper and use nested semantic tags.`;
+Do NOT wrap output in code blocks or markdown.
+`;
 
+    // 🔹 Appel Gemini
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
 
     const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }],
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2000,
-        },
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 3000 },
       }),
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again in a few moments.');
-      }
       const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
+      console.error("Gemini API error:", response.status, errorText);
       throw new Error(`AI generation failed: ${response.status}`);
     }
 
     const data = await response.json();
-    let content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    let content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-    if (!content) {
-      throw new Error('No content generated by AI');
-    }
+    if (!content) throw new Error("No content generated by AI");
 
-    // Clean up the response (remove markdown code blocks if present)
+    // Nettoyage
     content = content
-      .replace(/```json\n?/g, '')
-      .replace(/```html\n?/g, '')
-      .replace(/```\n?/g, '')
+      .replace(/```json/g, "")
+      .replace(/```html/g, "")
+      .replace(/```/g, "")
       .trim();
 
-    // Parse JSON response
+    // Parsing JSON
     let optimizedTitle = title;
-    let htmlDescription = content;
-    
+    let htmlLandingPage = content;
     try {
       const parsed = JSON.parse(content);
       optimizedTitle = parsed.title || title;
-      htmlDescription = parsed.html || content;
-    } catch (e) {
-      // If not JSON, treat as plain HTML
-      console.log('Response not JSON, using as plain HTML');
+      htmlLandingPage = parsed.html || content;
+    } catch {
+      console.warn("⚠️ AI output not valid JSON, using raw HTML");
     }
 
-    // Calculate basic metrics
-    const characteristicsCount = (htmlDescription.match(/<li>/g) || []).length;
+    // Metrics
     const mediaCount = images?.length || 0;
+    const wordCount = htmlLandingPage.split(/\s+/).length;
 
-    console.log('HTML description generated successfully');
+    console.log("✅ Landing page generated successfully");
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         optimizedTitle,
-        htmlDescription,
-        characteristicsCount,
+        htmlLandingPage,
         mediaCount,
         mobileOptimized: true,
-        wordCount: htmlDescription.split(/\s+/).length
+        wordCount,
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
     );
-
   } catch (error) {
-    console.error('Error in generate-product-description-html:', error);
+    console.error("❌ Error generating landing page:", error);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Failed to generate product description',
-        success: false 
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
     );
   }
 });
