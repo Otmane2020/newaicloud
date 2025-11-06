@@ -76,7 +76,8 @@ export function GoogleMerchantMonitoring() {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(period));
 
-      const { data, error } = await supabase
+      // Use type assertion to bypass type checking for new table
+      const { data, error } = await (supabase as any)
         .from("google_merchant_sync_history")
         .select("*")
         .eq("user_id", user.id)
@@ -86,8 +87,8 @@ export function GoogleMerchantMonitoring() {
 
       if (error) throw error;
 
-      setHistory(data || []);
-      calculateStats(data || []);
+      setHistory((data || []) as SyncHistory[]);
+      calculateStats((data || []) as SyncHistory[]);
     } catch (error) {
       console.error("Error loading sync history:", error);
       toast.error("Impossible de charger l'historique des synchronisations");
