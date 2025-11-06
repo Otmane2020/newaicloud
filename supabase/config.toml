@@ -213,3 +213,6 @@ verify_jwt = false
 [functions.google-ads-oauth-token]
 verify_jwt = false
 
+[functions.list-merchant-accounts]
+verify_jwt = true
+

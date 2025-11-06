@@ -27,8 +27,7 @@ import {
 
 interface GoogleMerchantAccount {
   id: string;
-  name: string;
-  created_at: string;
+  type: 'merchant' | 'aggregator';
 }
 
 export function GoogleMerchantIntegration() {
@@ -36,8 +35,8 @@ export function GoogleMerchantIntegration() {
   const [googleMerchantEmail, setGoogleMerchantEmail] = useState<string | null>(null);
   const [merchantAccounts, setMerchantAccounts] = useState<GoogleMerchantAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
-  const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
-  const [newAccountId, setNewAccountId] = useState('');
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+  const [isCreatingFeed, setIsCreatingFeed] = useState(false);
 
   useEffect(() => {
     checkGoogleConnection();
@@ -70,14 +69,63 @@ export function GoogleMerchantIntegration() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('google_merchant_oauth_token, google_merchant_email')
+        .select('google_merchant_oauth_token, google_merchant_email, google_merchant_account_id')
         .eq('id', user.id)
         .single();
 
-      setIsConnected(!!profile?.google_merchant_oauth_token);
+      const connected = !!profile?.google_merchant_oauth_token;
+      setIsConnected(connected);
       setGoogleMerchantEmail(profile?.google_merchant_email || null);
+      
+      if (connected) {
+        // Auto-fetch merchant accounts
+        await fetchMerchantAccounts();
+        
+        // Set selected account if saved
+        if (profile?.google_merchant_account_id) {
+          setSelectedAccount(profile.google_merchant_account_id);
+        }
+      }
     } catch (error) {
       console.error('Error checking Google connection:', error);
+    }
+  };
+
+  const fetchMerchantAccounts = async () => {
+    try {
+      setIsLoadingAccounts(true);
+      
+      const { data, error } = await supabase.functions.invoke('list-merchant-accounts');
+      
+      if (error) {
+        console.error('Error fetching accounts:', error);
+        toast.error('Erreur lors de la récupération des comptes');
+        return;
+      }
+
+      if (data?.success && data.accounts) {
+        setMerchantAccounts(data.accounts);
+        
+        // Auto-select first account if none selected
+        if (data.accounts.length > 0 && !selectedAccount) {
+          const firstAccount = data.accounts[0];
+          setSelectedAccount(firstAccount.id);
+          
+          // Save to profile
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from('profiles')
+              .update({ google_merchant_account_id: firstAccount.id })
+              .eq('id', user.id);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching merchant accounts:', error);
+      toast.error('Erreur lors de la récupération des comptes');
+    } finally {
+      setIsLoadingAccounts(false);
     }
   };
 
@@ -142,27 +190,15 @@ export function GoogleMerchantIntegration() {
           
           toast.success('Connexion à Google Merchant Center réussie !');
           
-          // Refresh connection status
+          // Refresh connection and fetch accounts
           await checkGoogleConnection();
           
-          // Auto-prepare feed after successful connection
+          // Auto-create feed after accounts are loaded
           setTimeout(async () => {
-            toast.loading('Préparation du flux produits...');
-            
-            // Get user's first merchant account ID if available
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('google_merchant_account_id')
-              .eq('id', (await supabase.auth.getUser()).data.user?.id)
-              .single();
-            
-            if (profile?.google_merchant_account_id) {
-              setSelectedAccount(profile.google_merchant_account_id);
-              toast.success('Prêt à créer le flux dans Google Merchant Center');
-            } else {
-              toast.info('Veuillez entrer votre ID de compte Merchant Center');
+            if (merchantAccounts.length > 0 && selectedAccount) {
+              await autoCreateAndSyncFeed();
             }
-          }, 1000);
+          }, 2000);
         }
       };
       
@@ -204,32 +240,64 @@ export function GoogleMerchantIntegration() {
     }
   };
 
+  const autoCreateAndSyncFeed = async () => {
+    if (!selectedAccount) {
+      toast.error('Aucun compte Merchant Center sélectionné');
+      return;
+    }
+
+    setIsCreatingFeed(true);
+    const toastId = toast.loading('Création et synchronisation du flux...');
+    
+    try {
+      // Step 1: Create feed in Google Merchant Center
+      const { data: feedData, error: feedError } = await supabase.functions.invoke('create-google-merchant-feed', {
+        body: {
+          merchantAccountId: selectedAccount,
+        }
+      });
+
+      if (feedError) throw feedError;
+
+      if (!feedData?.success) {
+        throw new Error(feedData?.error || 'Échec de la création du flux');
+      }
+
+      toast.loading('Flux créé, synchronisation en cours...', { id: toastId });
+
+      // Step 2: Trigger sync to push products to Google Merchant
+      const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-shopify-to-feed', {
+        body: {
+          merchantAccountId: selectedAccount,
+        }
+      });
+
+      if (syncError) {
+        console.error('Sync error:', syncError);
+        toast.warning('Flux créé mais erreur de synchronisation', { id: toastId });
+        return;
+      }
+
+      if (syncData?.success) {
+        toast.success(`Flux créé et ${syncData.syncedCount || 0} produits synchronisés !`, { id: toastId });
+      } else {
+        toast.success('Flux créé avec succès', { id: toastId });
+      }
+    } catch (error: any) {
+      console.error('Error in auto create and sync:', error);
+      toast.error(error.message || 'Erreur lors de la création du flux', { id: toastId });
+    } finally {
+      setIsCreatingFeed(false);
+    }
+  };
+
   const createFeedInMerchant = async () => {
     if (!selectedAccount) {
       toast.error('Veuillez sélectionner un compte Merchant Center');
       return;
     }
 
-    const toastId = toast.loading('Création du flux dans Google Merchant Center...');
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('create-google-merchant-feed', {
-        body: {
-          merchantAccountId: selectedAccount,
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success('Flux créé avec succès dans Google Merchant Center', { id: toastId });
-      } else {
-        throw new Error(data?.error || 'Échec de la création du flux');
-      }
-    } catch (error: any) {
-      console.error('Error creating feed:', error);
-      toast.error(error.message || 'Erreur lors de la création du flux', { id: toastId });
-    }
+    await autoCreateAndSyncFeed();
   };
 
   if (!isConnected) {
@@ -299,33 +367,65 @@ export function GoogleMerchantIntegration() {
       <Card className="p-6">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Compte Merchant Center</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="ID du compte (ex: 123456789)"
-                value={selectedAccount}
-                onChange={(e) => setSelectedAccount(e.target.value)}
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowAddAccountDialog(true)}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center justify-between">
+              <Label>Comptes Merchant Center</Label>
+              {isLoadingAccounts && (
+                <span className="text-xs text-muted-foreground">Chargement...</span>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Entrez l'ID de votre compte Google Merchant Center
-            </p>
+            
+            {merchantAccounts.length > 0 ? (
+              <div className="space-y-2">
+                {merchantAccounts.map((account) => (
+                  <div
+                    key={account.id}
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      selectedAccount === account.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setSelectedAccount(account.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{account.id}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Type: {account.type === 'merchant' ? 'Merchant' : 'Aggregator'}
+                        </p>
+                      </div>
+                      {selectedAccount === account.id && (
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 border-2 border-dashed rounded-lg text-center">
+                <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  {isLoadingAccounts ? 'Chargement des comptes...' : 'Aucun compte trouvé'}
+                </p>
+              </div>
+            )}
           </div>
 
           <Button
             onClick={createFeedInMerchant}
-            disabled={!selectedAccount}
+            disabled={!selectedAccount || isCreatingFeed}
             className="w-full gap-2"
           >
-            <Upload className="h-4 w-4" />
-            Créer le flux dans Google Merchant Center
+            {isCreatingFeed ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Création et synchronisation...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                Créer le flux et synchroniser
+              </>
+            )}
           </Button>
         </div>
       </Card>
