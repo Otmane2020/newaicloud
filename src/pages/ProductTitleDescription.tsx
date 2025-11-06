@@ -157,8 +157,8 @@ export default function ProductTitleDescription() {
         if (!product) continue;
 
         // Add timeout to edge function call (60 seconds)
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('TIMEOUT')), 60000)
+        const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: { message: 'TIMEOUT' } }), 60000)
         );
 
         const invokePromise = supabase.functions.invoke("generate-title-description", {
@@ -168,17 +168,7 @@ export default function ProductTitleDescription() {
           },
         });
 
-        let result;
-        try {
-          result = await Promise.race([invokePromise, timeoutPromise]);
-        } catch (timeoutError: any) {
-          if (timeoutError.message === 'TIMEOUT') {
-            throw new Error('TIMEOUT: La génération prend trop de temps. Le contenu demandé est peut-être trop complexe.');
-          }
-          throw timeoutError;
-        }
-
-        const { data, error } = result;
+        const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
 
         if (error) {
           // Check for specific error types

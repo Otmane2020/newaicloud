@@ -23,57 +23,88 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY non configuré");
     }
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
     let visionAnalysis = "";
     
-    // Si une URL d'image est fournie, analyser avec Lovable AI Vision
+    // Si une URL d'image est fournie, vérifier le cache puis analyser avec Lovable AI Vision
     if (imageUrl) {
-      console.log("Analyzing image with Lovable AI Vision:", imageUrl);
+      console.log("Checking cache for image:", imageUrl);
       
-      try {
-        const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-pro",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "text",
-                    text: "Analyse ce produit et décris ses couleurs, matériaux, style et design en 2-3 phrases concises."
-                  },
-                  {
-                    type: "image_url",
-                    image_url: { url: imageUrl }
-                  }
-                ]
-              }
-            ],
-            max_tokens: 300
-          }),
-        });
+      // Vérifier si l'analyse existe déjà en cache
+      const { data: cachedAnalysis } = await supabaseClient
+        .from('vision_ai_cache')
+        .select('analysis_result')
+        .eq('image_url', imageUrl)
+        .single();
+      
+      if (cachedAnalysis) {
+        console.log("✅ Cache hit - Using cached vision analysis");
+        visionAnalysis = cachedAnalysis.analysis_result;
+      } else {
+        console.log("❌ Cache miss - Analyzing image with Lovable AI Vision");
+        
+        try {
+          const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: "Analyse ce produit et décris ses couleurs, matériaux, style et design en 2-3 phrases concises."
+                    },
+                    {
+                      type: "image_url",
+                      image_url: { url: imageUrl }
+                    }
+                  ]
+                }
+              ],
+              max_tokens: 200
+            }),
+          });
 
-        if (!visionResponse.ok) {
-          const errorText = await visionResponse.text();
-          console.error("Lovable AI Vision error:", visionResponse.status, errorText);
-          
-          if (visionResponse.status === 429) {
-            throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
+          if (!visionResponse.ok) {
+            const errorText = await visionResponse.text();
+            console.error("Lovable AI Vision error:", visionResponse.status, errorText);
+            
+            if (visionResponse.status === 429) {
+              throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
+            }
+            if (visionResponse.status === 402) {
+              throw new Error("CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés.");
+            }
+          } else {
+            const visionData = await visionResponse.json();
+            visionAnalysis = visionData.choices?.[0]?.message?.content || "";
+            console.log("Vision analysis completed:", visionAnalysis);
+            
+            // Sauvegarder dans le cache pour utilisation future
+            if (visionAnalysis) {
+              await supabaseClient
+                .from('vision_ai_cache')
+                .upsert({ 
+                  image_url: imageUrl, 
+                  analysis_result: visionAnalysis 
+                }, { 
+                  onConflict: 'image_url' 
+                });
+              console.log("✅ Vision analysis cached");
+            }
           }
-          if (visionResponse.status === 402) {
-            throw new Error("CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés.");
-          }
-        } else {
-          const visionData = await visionResponse.json();
-          visionAnalysis = visionData.choices?.[0]?.message?.content || "";
-          console.log("Vision analysis completed:", visionAnalysis);
+        } catch (visionError) {
+          console.error("Error during vision analysis:", visionError);
         }
-      } catch (visionError) {
-        console.error("Error during vision analysis:", visionError);
       }
     }
 
@@ -186,9 +217,6 @@ Remplir tous les placeholders avec contenu réel`
     const result = JSON.parse(toolCall.function.arguments);
 
     // Update database with new SEO data
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     // Get auth header to find product
     const authHeader = req.headers.get('Authorization');

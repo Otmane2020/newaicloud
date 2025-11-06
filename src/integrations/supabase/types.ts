@@ -3206,6 +3206,30 @@ export type Database = {
         }
         Relationships: []
       }
+      vision_ai_cache: {
+        Row: {
+          analysis_result: string
+          created_at: string | null
+          id: string
+          image_url: string
+          updated_at: string | null
+        }
+        Insert: {
+          analysis_result: string
+          created_at?: string | null
+          id?: string
+          image_url: string
+          updated_at?: string | null
+        }
+        Update: {
+          analysis_result?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -3224,6 +3248,7 @@ export type Database = {
         }
         Returns: Json
       }
+      cleanup_old_vision_cache: { Args: never; Returns: undefined }
       cleanup_stuck_syncs: { Args: never; Returns: undefined }
       generate_referral_code: { Args: { user_id: string }; Returns: string }
       get_next_image_version: { Args: { p_image_id: string }; Returns: number }
