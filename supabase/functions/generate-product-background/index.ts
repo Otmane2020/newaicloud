@@ -156,15 +156,16 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
 
     console.log("🎨 Beautiful background generated successfully");
 
-    // Track usage: 1 image generation = 5 optimizations
+    // Track usage: fond blanc = 3 optimizations, arrière-plan IA = 5 optimizations
     if (user) {
       try {
+        const optimizationCost = style === "white" ? 3 : 5;
         await supabaseClient.rpc("increment_usage", {
           p_seller_id: user.id,
           p_field: "optimizations_count",
-          p_increment: 5
+          p_increment: optimizationCost
         });
-        console.log("✅ Usage tracked: 5 optimizations");
+        console.log(`✅ Usage tracked: ${optimizationCost} optimizations (${style})`);
       } catch (trackError) {
         console.error("⚠️ Failed to track usage:", trackError);
       }

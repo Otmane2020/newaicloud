@@ -175,6 +175,9 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get("Authorization") || "";
     const supabase = getSupabaseClient(authHeader, lang);
 
+    // Get authenticated user for usage tracking
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { productIds, countryCode = "FR", gtinType = "gtin-13" } = await req.json();
 
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
@@ -253,6 +256,19 @@ Deno.serve(async (req: Request) => {
           .eq("id", productId);
 
         if (updateError) throw updateError;
+
+        // Incrémenter le compteur d'optimisations (2 optimisations par GTIN généré)
+        if (user) {
+          const { error: usageError } = await supabase.rpc("increment_usage", {
+            p_seller_id: user.id,
+            p_field: "optimizations_count",
+            p_increment: 2,
+          });
+
+          if (usageError) {
+            console.error("Error updating usage:", usageError);
+          }
+        }
 
         results.push({
           productId,
