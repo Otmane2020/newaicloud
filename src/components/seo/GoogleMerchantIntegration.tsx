@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 import {
   ShoppingCart,
   Plus,
@@ -31,6 +32,7 @@ interface GoogleMerchantAccount {
 }
 
 export function GoogleMerchantIntegration() {
+  const { t } = useTranslation();
   const [isConnected, setIsConnected] = useState(false);
   const [googleMerchantEmail, setGoogleMerchantEmail] = useState<string | null>(null);
   const [merchantAccounts, setMerchantAccounts] = useState<GoogleMerchantAccount[]>([]);
@@ -99,7 +101,7 @@ export function GoogleMerchantIntegration() {
       
       if (error) {
         console.error('Error fetching accounts:', error);
-        toast.error('Erreur lors de la récupération des comptes');
+        toast.error(t.googleMerchant.integration.errors.loadAccounts);
         return;
       }
 
@@ -123,7 +125,7 @@ export function GoogleMerchantIntegration() {
       }
     } catch (error) {
       console.error('Error fetching merchant accounts:', error);
-      toast.error('Erreur lors de la récupération des comptes');
+      toast.error(t.googleMerchant.integration.errors.loadAccounts);
     } finally {
       setIsLoadingAccounts(false);
     }
@@ -163,7 +165,7 @@ export function GoogleMerchantIntegration() {
       );
       
       if (!popup) {
-        toast.error('Veuillez autoriser les popups pour ce site');
+        toast.error(t.errors.generic);
         return;
       }
       
@@ -173,7 +175,7 @@ export function GoogleMerchantIntegration() {
         if (event.data.type === 'GOOGLE_MERCHANT_OAUTH_CODE' && event.data.code) {
           window.removeEventListener('message', handleMessage);
           
-          toast.loading('Connexion à Google Merchant Center en cours...');
+          toast.loading(t.googleMerchant.sync.syncing);
           
           const { data, error } = await supabase.functions.invoke('google-merchant-oauth-token', {
             body: {
@@ -184,11 +186,11 @@ export function GoogleMerchantIntegration() {
           
           if (error || !data?.success) {
             console.error('Error exchanging code:', error);
-            toast.error('Erreur lors de la connexion à Google Merchant Center');
+            toast.error(t.googleMerchant.integration.errors.connect);
             return;
           }
           
-          toast.success('Connexion à Google Merchant Center réussie !');
+          toast.success(t.googleMerchant.integration.success.connected);
           
           // Refresh connection and fetch accounts
           await checkGoogleConnection();
@@ -210,7 +212,7 @@ export function GoogleMerchantIntegration() {
       
     } catch (error) {
       console.error('Error connecting to Google:', error);
-      toast.error('Erreur lors de la connexion à Google');
+      toast.error(t.googleMerchant.integration.errors.connect);
     }
   };
 
@@ -231,23 +233,23 @@ export function GoogleMerchantIntegration() {
 
       if (error) throw error;
 
-      toast.success('Google Merchant Center déconnecté avec succès');
+      toast.success(t.googleMerchant.integration.success.disconnected);
       setIsConnected(false);
       setGoogleMerchantEmail(null);
     } catch (error) {
       console.error('Error disconnecting Google:', error);
-      toast.error('Impossible de déconnecter Google Merchant Center');
+      toast.error(t.googleMerchant.integration.errors.disconnect);
     }
   };
 
   const autoCreateAndSyncFeed = async () => {
     if (!selectedAccount) {
-      toast.error('Aucun compte Merchant Center sélectionné');
+      toast.error(t.googleMerchant.integration.errors.createFeed);
       return;
     }
 
     setIsCreatingFeed(true);
-    const toastId = toast.loading('Création et synchronisation du flux...');
+    const toastId = toast.loading(t.googleMerchant.sync.syncing);
     
     try {
       // Step 1: Create feed in Google Merchant Center
@@ -260,10 +262,10 @@ export function GoogleMerchantIntegration() {
       if (feedError) throw feedError;
 
       if (!feedData?.success) {
-        throw new Error(feedData?.error || 'Échec de la création du flux');
+        throw new Error(feedData?.error || t.googleMerchant.integration.errors.createFeed);
       }
 
-      toast.loading('Flux créé, synchronisation en cours...', { id: toastId });
+      toast.loading(t.googleMerchant.sync.syncing, { id: toastId });
 
       // Step 2: Trigger sync to push products to Google Merchant
       const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-shopify-to-feed', {
@@ -274,18 +276,18 @@ export function GoogleMerchantIntegration() {
 
       if (syncError) {
         console.error('Sync error:', syncError);
-        toast.warning('Flux créé mais erreur de synchronisation', { id: toastId });
+        toast.warning(t.errors.generic, { id: toastId });
         return;
       }
 
       if (syncData?.success) {
-        toast.success(`Flux créé et ${syncData.syncedCount || 0} produits synchronisés !`, { id: toastId });
+        toast.success(t.googleMerchant.integration.success.feedCreated + ` (${syncData.syncedCount || 0})`, { id: toastId });
       } else {
-        toast.success('Flux créé avec succès', { id: toastId });
+        toast.success(t.googleMerchant.integration.success.feedCreated, { id: toastId });
       }
     } catch (error: any) {
       console.error('Error in auto create and sync:', error);
-      toast.error(error.message || 'Erreur lors de la création du flux', { id: toastId });
+      toast.error(error.message || t.googleMerchant.integration.errors.createFeed, { id: toastId });
     } finally {
       setIsCreatingFeed(false);
     }
@@ -293,7 +295,7 @@ export function GoogleMerchantIntegration() {
 
   const createFeedInMerchant = async () => {
     if (!selectedAccount) {
-      toast.error('Veuillez sélectionner un compte Merchant Center');
+      toast.error(t.googleMerchant.integration.selectAccount);
       return;
     }
 
@@ -310,10 +312,9 @@ export function GoogleMerchantIntegration() {
             </div>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Connecter Google Merchant Center</h2>
+            <h2 className="text-2xl font-bold">{t.googleMerchant.integration.title}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Connectez votre compte Google pour créer et gérer vos flux produits
-              directement dans Google Merchant Center.
+              {t.googleMerchant.integration.description}
             </p>
           </div>
           <div className="space-y-4">
@@ -323,13 +324,13 @@ export function GoogleMerchantIntegration() {
               className="gap-2"
             >
               <ShoppingCart className="h-5 w-5" />
-              Se connecter avec Google
+              {t.googleMerchant.integration.connect}
             </Button>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>✓ Création automatique de flux</p>
-              <p>✓ Synchronisation produits</p>
-              <p>✓ Gestion des comptes Merchant</p>
-              <p>✓ Suivi des performances</p>
+              <p>✓ {t.googleMerchant.integration.autoCreate}</p>
+              <p>✓ {t.googleMerchant.sync.subtitle}</p>
+              <p>✓ {t.googleMerchant.integration.accounts}</p>
+              <p>✓ {t.googleMerchant.monitoring.subtitle}</p>
             </div>
           </div>
         </div>
@@ -343,11 +344,11 @@ export function GoogleMerchantIntegration() {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h3 className="text-lg font-semibold">Connexion Google Merchant</h3>
+            <h3 className="text-lg font-semibold">{t.googleMerchant.integration.title}</h3>
             {googleMerchantEmail && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <ShoppingCart className="h-3.5 w-3.5" />
-                <span>Connecté avec : <span className="font-medium text-foreground">{googleMerchantEmail}</span></span>
+                <span>{t.googleMerchant.integration.connected}: <span className="font-medium text-foreground">{googleMerchantEmail}</span></span>
               </div>
             )}
           </div>
@@ -358,7 +359,7 @@ export function GoogleMerchantIntegration() {
             className="gap-2"
           >
             <LogOut className="h-4 w-4" />
-            Déconnecter
+            {t.common.disconnect}
           </Button>
         </div>
       </Card>
@@ -368,9 +369,9 @@ export function GoogleMerchantIntegration() {
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Comptes Merchant Center</Label>
+              <Label>{t.googleMerchant.integration.accounts}</Label>
               {isLoadingAccounts && (
-                <span className="text-xs text-muted-foreground">Chargement...</span>
+                <span className="text-xs text-muted-foreground">{t.common.loading}</span>
               )}
             </div>
             
@@ -404,7 +405,7 @@ export function GoogleMerchantIntegration() {
               <div className="p-4 border-2 border-dashed rounded-lg text-center">
                 <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  {isLoadingAccounts ? 'Chargement des comptes...' : 'Aucun compte trouvé'}
+                  {isLoadingAccounts ? t.common.loading : t.googleMerchant.integration.noAccounts}
                 </p>
               </div>
             )}
@@ -418,12 +419,12 @@ export function GoogleMerchantIntegration() {
             {isCreatingFeed ? (
               <>
                 <RefreshCw className="h-4 w-4 animate-spin" />
-                Création et synchronisation...
+                {t.googleMerchant.sync.syncing}
               </>
             ) : (
               <>
                 <Upload className="h-4 w-4" />
-                Créer le flux et synchroniser
+                {t.googleMerchant.integration.createFeed}
               </>
             )}
           </Button>
