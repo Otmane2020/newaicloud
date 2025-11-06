@@ -1,209 +1,682 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Wand2, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/lib/language";
+import {
+  Sparkles,
+  Wand2,
+  Image as ImageIcon,
+  Loader2,
+  Search,
+  Paintbrush,
+  Palette,
+} from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
+import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
+import { useBackgroundRemoval } from "@/hooks/useBackgroundRemoval";
+
+interface Product {
+  id: string;
+  title: string;
+  seo_title: string | null;
+  seo_description: string | null;
+  image_url: string | null;
+  shopify_id: number | null;
+}
+
+interface PreviewImage {
+  productId: string;
+  productTitle: string;
+  originalUrl: string;
+  generatedUrl: string | null;
+  status: 'pending' | 'generating' | 'success' | 'error';
+  error?: string;
+}
 
 export default function ProductTitleDescription() {
   const { t } = useTranslation();
-  const [currentTitle, setCurrentTitle] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedTitle, setGeneratedTitle] = useState("");
-  const [generatedDescription, setGeneratedDescription] = useState("");
+  const { removeBackgroundAndAddWhite } = useBackgroundRemoval();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generatingWhiteBg, setGeneratingWhiteBg] = useState(false);
+  const [generatingAiBg, setGeneratingAiBg] = useState(false);
+  const [showWhiteBgDialog, setShowWhiteBgDialog] = useState(false);
+  const [showAiBgDialog, setShowAiBgDialog] = useState(false);
+  const [whiteBgPreviews, setWhiteBgPreviews] = useState<PreviewImage[]>([]);
+  const [aiBgPreviews, setAiBgPreviews] = useState<PreviewImage[]>([]);
+  const [customPrompt, setCustomPrompt] = useState('');
 
-  const handleGenerate = async () => {
-    if (!currentTitle.trim()) {
-      toast.error("Veuillez entrer un titre existant");
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("shopify_products")
+        .select("id, title, seo_title, seo_description, image_url, shopify_id")
+        .eq("seller_id", user.id)
+        .order("imported_at", { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Erreur lors du chargement des produits");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProducts = products.filter((product) =>
+    product.title?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelectAll = () => {
+    if (selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map((p) => p.id)));
+    }
+  };
+
+  const handleSelectProduct = (productId: string) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  const handleOptimizeSelected = async () => {
+    if (selectedProducts.size === 0) {
+      toast.error("Aucun produit sélectionné");
       return;
     }
 
-    setIsGenerating(true);
+    setGenerating(true);
+    const toastId = toast.loading(`Optimisation de ${selectedProducts.size} produit(s)...`);
+
     try {
-      const { data, error } = await supabase.functions.invoke("generate-title-description", {
+      for (const productId of selectedProducts) {
+        const product = products.find((p) => p.id === productId);
+        if (!product) continue;
+
+        const { error } = await supabase.functions.invoke("generate-title-description", {
+          body: {
+            currentTitle: product.title,
+            imageUrl: product.image_url || null,
+          },
+        });
+
+        if (error) throw error;
+
+        // Update local state
+        const { data: updatedProduct } = await supabase
+          .from("shopify_products")
+          .select("seo_title, seo_description")
+          .eq("id", productId)
+          .single();
+
+        if (updatedProduct) {
+          setProducts((prev) =>
+            prev.map((p) =>
+              p.id === productId
+                ? { ...p, seo_title: updatedProduct.seo_title, seo_description: updatedProduct.seo_description }
+                : p
+            )
+          );
+        }
+      }
+
+      toast.success("Optimisation terminée", { id: toastId });
+      setSelectedProducts(new Set());
+    } catch (error) {
+      console.error("Error optimizing:", error);
+      toast.error("Erreur lors de l'optimisation", { id: toastId });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleOptimizeAll = async () => {
+    if (filteredProducts.length === 0) {
+      toast.error("Aucun produit à optimiser");
+      return;
+    }
+
+    setSelectedProducts(new Set(filteredProducts.map((p) => p.id)));
+    setTimeout(() => handleOptimizeSelected(), 100);
+  };
+
+  const handleWhiteBackground = async () => {
+    if (selectedProducts.size === 0) {
+      toast.error("Veuillez sélectionner au moins un produit");
+      return;
+    }
+
+    const selectedProductsList = products.filter((p) => 
+      selectedProducts.has(p.id) && p.image_url
+    );
+
+    if (selectedProductsList.length === 0) {
+      toast.error("Aucun produit sélectionné n'a d'image");
+      return;
+    }
+
+    setGeneratingWhiteBg(true);
+    const previews: PreviewImage[] = selectedProductsList.map((p) => ({
+      productId: p.id,
+      productTitle: p.title,
+      originalUrl: p.image_url!,
+      generatedUrl: null,
+      status: 'pending' as const,
+    }));
+
+    setWhiteBgPreviews(previews);
+    setShowWhiteBgDialog(true);
+
+    for (let i = 0; i < selectedProductsList.length; i++) {
+      const product = selectedProductsList[i];
+      
+      setWhiteBgPreviews((prev) =>
+        prev.map((p) =>
+          p.productId === product.id ? { ...p, status: 'generating' } : p
+        )
+      );
+
+      try {
+        const imageUrl = await removeBackgroundAndAddWhite(product.image_url!);
+        
+        setWhiteBgPreviews((prev) =>
+          prev.map((p) =>
+            p.productId === product.id
+              ? { ...p, status: 'success', generatedUrl: imageUrl }
+              : p
+          )
+        );
+      } catch (error) {
+        console.error('Error generating white background:', error);
+        setWhiteBgPreviews((prev) =>
+          prev.map((p) =>
+            p.productId === product.id
+              ? { ...p, status: 'error', error: 'Erreur de génération' }
+              : p
+          )
+        );
+      }
+    }
+
+    setGeneratingWhiteBg(false);
+  };
+
+  const handleAiBackground = async () => {
+    if (selectedProducts.size === 0) {
+      toast.error("Veuillez sélectionner au moins un produit");
+      return;
+    }
+
+    if (!customPrompt.trim()) {
+      toast.error("Veuillez saisir ou sélectionner un prompt");
+      return;
+    }
+
+    const selectedProductsList = products.filter((p) => 
+      selectedProducts.has(p.id) && p.image_url
+    );
+
+    if (selectedProductsList.length === 0) {
+      toast.error("Aucun produit sélectionné n'a d'image");
+      return;
+    }
+
+    setGeneratingAiBg(true);
+    const previews: PreviewImage[] = selectedProductsList.map((p) => ({
+      productId: p.id,
+      productTitle: p.title,
+      originalUrl: p.image_url!,
+      generatedUrl: null,
+      status: 'pending' as const,
+    }));
+
+    setAiBgPreviews(previews);
+    setShowAiBgDialog(true);
+
+    for (let i = 0; i < selectedProductsList.length; i++) {
+      const product = selectedProductsList[i];
+      
+      setAiBgPreviews((prev) =>
+        prev.map((p) =>
+          p.productId === product.id ? { ...p, status: 'generating' } : p
+        )
+      );
+
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-image-background', {
+          body: {
+            imageUrl: product.image_url,
+            prompt: customPrompt,
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.success && data.imageUrl) {
+          setAiBgPreviews((prev) =>
+            prev.map((p) =>
+              p.productId === product.id
+                ? { ...p, status: 'success', generatedUrl: data.imageUrl }
+                : p
+            )
+          );
+        } else {
+          throw new Error('No image generated');
+        }
+      } catch (error: any) {
+        console.error('Error generating AI background:', error);
+        setAiBgPreviews((prev) =>
+          prev.map((p) =>
+            p.productId === product.id
+              ? { ...p, status: 'error', error: error.message || 'Erreur de génération' }
+              : p
+          )
+        );
+      }
+    }
+
+    setGeneratingAiBg(false);
+  };
+
+  const handleApplyWhiteBackground = async (productIds: string[]) => {
+    const toastId = toast.loading("Application des images...");
+
+    try {
+      for (const productId of productIds) {
+        const preview = whiteBgPreviews.find((p) => p.productId === productId);
+        if (!preview?.generatedUrl) continue;
+
+        await supabase
+          .from("shopify_products")
+          .update({ image_url: preview.generatedUrl })
+          .eq("id", productId);
+      }
+
+      toast.success("Images appliquées avec succès", { id: toastId });
+      await fetchProducts();
+      setWhiteBgPreviews([]);
+    } catch (error) {
+      console.error("Error applying images:", error);
+      toast.error("Erreur lors de l'application", { id: toastId });
+    }
+  };
+
+  const handleApplyAiBackground = async (productIds: string[]) => {
+    const toastId = toast.loading("Application des images...");
+
+    try {
+      for (const productId of productIds) {
+        const preview = aiBgPreviews.find((p) => p.productId === productId);
+        if (!preview?.generatedUrl) continue;
+
+        await supabase
+          .from("shopify_products")
+          .update({ image_url: preview.generatedUrl })
+          .eq("id", productId);
+      }
+
+      toast.success("Images appliquées avec succès", { id: toastId });
+      await fetchProducts();
+      setAiBgPreviews([]);
+    } catch (error) {
+      console.error("Error applying images:", error);
+      toast.error("Erreur lors de l'application", { id: toastId });
+    }
+  };
+
+  const handleRegenerateWhiteBg = async (productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product?.image_url) return;
+
+    setWhiteBgPreviews((prev) =>
+      prev.map((p) =>
+        p.productId === productId ? { ...p, status: 'generating', error: undefined } : p
+      )
+    );
+
+    try {
+      const imageUrl = await removeBackgroundAndAddWhite(product.image_url);
+      
+      setWhiteBgPreviews((prev) =>
+        prev.map((p) =>
+          p.productId === productId
+            ? { ...p, status: 'success', generatedUrl: imageUrl }
+            : p
+        )
+      );
+    } catch (error) {
+      console.error('Error regenerating:', error);
+      setWhiteBgPreviews((prev) =>
+        prev.map((p) =>
+          p.productId === productId
+            ? { ...p, status: 'error', error: 'Erreur de génération' }
+            : p
+        )
+      );
+    }
+  };
+
+  const handleRegenerateAiBg = async (productId: string, prompt?: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product?.image_url) return;
+
+    const promptToUse = prompt || customPrompt;
+
+    setAiBgPreviews((prev) =>
+      prev.map((p) =>
+        p.productId === productId ? { ...p, status: 'generating', error: undefined } : p
+      )
+    );
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-image-background', {
         body: {
-          currentTitle,
-          imageUrl: imageUrl.trim() || null,
-        },
+          imageUrl: product.image_url,
+          prompt: promptToUse,
+        }
       });
 
       if (error) throw error;
 
-      setGeneratedTitle(data.title || "");
-      setGeneratedDescription(data.description || "");
-      toast.success("Titre et description générés avec succès");
-    } catch (error) {
-      console.error("Error generating content:", error);
-      toast.error("Erreur lors de la génération du contenu");
-    } finally {
-      setIsGenerating(false);
+      if (data.success && data.imageUrl) {
+        setAiBgPreviews((prev) =>
+          prev.map((p) =>
+            p.productId === productId
+              ? { ...p, status: 'success', generatedUrl: data.imageUrl }
+              : p
+          )
+        );
+      } else {
+        throw new Error('No image generated');
+      }
+    } catch (error: any) {
+      console.error('Error regenerating:', error);
+      setAiBgPreviews((prev) =>
+        prev.map((p) =>
+          p.productId === productId
+            ? { ...p, status: 'error', error: error.message || 'Erreur de génération' }
+            : p
+        )
+      );
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-            <Sparkles className="h-6 w-6 sm:h-8 sm:h-8 text-primary" />
-            Génération de Titre et Description
-          </h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Utilisez l'IA pour générer des titres optimisés et des descriptions captivantes à partir de vos produits
-          </p>
-        </div>
-
-        {/* Input Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wand2 className="h-5 w-5" />
-              Informations du Produit
-            </CardTitle>
-            <CardDescription>
-              Entrez le titre actuel de votre produit et optionnellement l'URL d'une image pour une analyse Vision AI
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Hero Banner */}
+        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-primary/20 p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
-              <Label htmlFor="current-title">Titre actuel du produit *</Label>
-              <Input
-                id="current-title"
-                placeholder="Ex: T-shirt en coton bio"
-                value={currentTitle}
-                onChange={(e) => setCurrentTitle(e.target.value)}
-                className="w-full"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="image-url" className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4" />
-                URL de l'image (optionnel pour Vision AI)
-              </Label>
-              <Input
-                id="image-url"
-                placeholder="https://example.com/image.jpg"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground">
-                L'analyse Vision AI permettra d'enrichir le titre et la description avec des détails visuels
+              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+                <Sparkles className="h-6 w-6 sm:h-8 sm:h-8 text-primary" />
+                Optimisation Titres & Descriptions
+              </h1>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                Utilisez l'IA pour optimiser vos titres et descriptions, et améliorer vos images produit
               </p>
             </div>
-
-            <Button
-              onClick={handleGenerate}
-              disabled={isGenerating || !currentTitle.trim()}
-              className="w-full sm:w-auto"
-              size="lg"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Génération en cours...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Générer Titre et Description
-                </>
-              )}
-            </Button>
-          </CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleOptimizeAll}
+                disabled={generating || filteredProducts.length === 0}
+                size="lg"
+                className="gap-2"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Optimisation...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-4 w-4" />
+                    Optimiser tout
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </Card>
 
-        {/* Results Section */}
-        {(generatedTitle || generatedDescription) && (
-          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-            {/* Generated Title */}
-            {generatedTitle && (
-              <Card className="border-primary/20">
-                <CardHeader>
-                  <CardTitle className="text-lg">Titre Optimisé</CardTitle>
-                  <CardDescription>Titre généré par l'IA pour un meilleur référencement</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <Textarea
-                      value={generatedTitle}
-                      onChange={(e) => setGeneratedTitle(e.target.value)}
-                      className="min-h-[80px] font-medium"
-                      rows={3}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(generatedTitle);
-                        toast.success("Titre copié dans le presse-papier");
-                      }}
-                      className="w-full"
-                    >
-                      Copier le titre
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+        {/* Stats & Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <ImageIcon className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total produits</p>
+                <p className="text-2xl font-bold">{products.length}</p>
+              </div>
+            </div>
+          </Card>
 
-            {/* Generated Description */}
-            {generatedDescription && (
-              <Card className="border-primary/20">
-                <CardHeader>
-                  <CardTitle className="text-lg">Description Optimisée</CardTitle>
-                  <CardDescription>Description enrichie par l'analyse IA</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <Textarea
-                      value={generatedDescription}
-                      onChange={(e) => setGeneratedDescription(e.target.value)}
-                      className="min-h-[120px]"
-                      rows={6}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(generatedDescription);
-                        toast.success("Description copiée dans le presse-papier");
-                      }}
-                      className="w-full"
-                    >
-                      Copier la description
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* Info Card */}
-        <Card className="bg-primary/5 border-primary/10">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <ImageIcon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <div className="space-y-1">
-                <p className="font-medium text-sm">Vision AI pour l'analyse d'image</p>
-                <p className="text-sm text-muted-foreground">
-                  Lorsque vous fournissez une URL d'image, notre technologie Vision AI analyse l'image pour identifier les couleurs, 
-                  les motifs, les textures et d'autres caractéristiques visuelles. Ces informations sont ensuite utilisées pour créer 
-                  des titres et descriptions plus précis et attractifs.
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <Sparkles className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Optimisés</p>
+                <p className="text-2xl font-bold">
+                  {products.filter((p) => p.seo_title || p.seo_description).length}
                 </p>
               </div>
             </div>
-          </CardContent>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <Wand2 className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Sélectionnés</p>
+                <p className="text-2xl font-bold">{selectedProducts.size}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Actions Bar */}
+        <Card className="p-4">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 justify-between">
+            <div className="flex-1 w-full lg:max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher un produit..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={handleOptimizeSelected}
+                disabled={generating || selectedProducts.size === 0}
+                className="gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Optimiser ({selectedProducts.size})
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleWhiteBackground}
+                disabled={generatingWhiteBg || selectedProducts.size === 0}
+                className="gap-2"
+              >
+                {generatingWhiteBg ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Paintbrush className="h-4 w-4" />
+                )}
+                Fond blanc ({selectedProducts.size})
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleAiBackground}
+                disabled={generatingAiBg || selectedProducts.size === 0}
+                className="gap-2"
+              >
+                {generatingAiBg ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Palette className="h-4 w-4" />
+                )}
+                Arrière-plan IA ({selectedProducts.size})
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Info Alert */}
+        <Alert>
+          <ImageIcon className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Fond blanc :</strong> Supprime automatiquement l'arrière-plan et ajoute un fond blanc professionnel.
+            {" "}<strong>Arrière-plan IA :</strong> Génère un nouvel arrière-plan personnalisé avec l'intelligence artificielle.
+          </AlertDescription>
+        </Alert>
+
+        {/* Products Table */}
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+                <TableHead className="w-20">Image</TableHead>
+                <TableHead>Titre</TableHead>
+                <TableHead className="hidden lg:table-cell">Description</TableHead>
+                <TableHead className="w-32">Statut</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.map((product) => (
+                <TableRow key={product.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedProducts.has(product.id)}
+                      onCheckedChange={() => handleSelectProduct(product.id)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.title}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <p className="font-medium">{product.title}</p>
+                      {product.seo_title && (
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                          SEO: {product.seo_title}
+                        </p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {product.seo_description ? (
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {product.seo_description}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Aucune description</p>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {product.seo_title || product.seo_description ? (
+                      <Badge variant="outline" className="bg-green-50 text-green-700">
+                        Optimisé
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">À optimiser</Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {filteredProducts.length === 0 && (
+            <div className="p-8 text-center text-muted-foreground">
+              Aucun produit trouvé
+            </div>
+          )}
         </Card>
       </div>
+
+      {/* Dialogs */}
+      <WhiteBackgroundPreviewDialog
+        open={showWhiteBgDialog}
+        onOpenChange={setShowWhiteBgDialog}
+        previews={whiteBgPreviews}
+        onApply={handleApplyWhiteBackground}
+        onRegenerate={handleRegenerateWhiteBg}
+      />
+
+      <BackgroundDialog
+        open={showAiBgDialog}
+        onOpenChange={setShowAiBgDialog}
+        previews={aiBgPreviews}
+        onApply={handleApplyAiBackground}
+        onRegenerate={handleRegenerateAiBg}
+        customPrompt={customPrompt}
+        onCustomPromptChange={setCustomPrompt}
+      />
     </div>
   );
 }
