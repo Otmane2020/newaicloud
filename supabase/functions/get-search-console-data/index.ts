@@ -92,23 +92,66 @@ serve(async (req) => {
 
     const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
-    // Fetch data from Google Search Console API
-    const searchConsoleResponse = await fetch(
-      `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent('sc-domain:' + domain)}/searchAnalytics/query`,
+    // Helper function to try fetching data with different domain formats
+    const tryFetchData = async (siteUrl: string) => {
+      return await fetch(
+        `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            startDate: formatDate(startDate),
+            endDate: formatDate(endDate),
+            dimensions: ['date'],
+            rowLimit: 25000,
+          }),
+        }
+      );
+    };
+
+    // Get list of accessible sites to find the correct format
+    const sitesResponse = await fetch(
+      'https://www.googleapis.com/webmasters/v3/sites',
       {
-        method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          startDate: formatDate(startDate),
-          endDate: formatDate(endDate),
-          dimensions: ['date'],
-          rowLimit: 25000,
-        }),
       }
     );
+
+    let matchedSiteUrl = null;
+    if (sitesResponse.ok) {
+      const sitesData = await sitesResponse.json();
+      const availableSites = (sitesData.siteEntry || []);
+      
+      // Try to find exact match or domain match
+      matchedSiteUrl = availableSites.find((s: any) => {
+        const siteUrl = s.siteUrl.toLowerCase();
+        const domainLower = domain.toLowerCase();
+        return siteUrl === `https://${domainLower}/` || 
+               siteUrl === `https://www.${domainLower}/` ||
+               siteUrl === `http://${domainLower}/` ||
+               siteUrl === `sc-domain:${domainLower}`;
+      })?.siteUrl;
+    }
+
+    // If no match found, try both formats
+    if (!matchedSiteUrl) {
+      matchedSiteUrl = `https://${domain}/`;
+    }
+
+    // Fetch data from Google Search Console API
+    let searchConsoleResponse = await tryFetchData(matchedSiteUrl);
+
+    // If failed and we tried https://, try sc-domain: format
+    if (!searchConsoleResponse.ok && matchedSiteUrl.startsWith('https://')) {
+      console.log(`Failed with ${matchedSiteUrl}, trying sc-domain format`);
+      matchedSiteUrl = `sc-domain:${domain}`;
+      searchConsoleResponse = await tryFetchData(matchedSiteUrl);
+    }
 
     if (!searchConsoleResponse.ok) {
       const errorText = await searchConsoleResponse.text();
