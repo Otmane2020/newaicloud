@@ -824,10 +824,10 @@ export default function ProductTitleDescription() {
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <p className="font-medium">{product.title}</p>
-                        {product.seo_title && (
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            Optimisé: {product.seo_title}
+                        <p className="font-medium">{product.seo_title || product.title}</p>
+                        {product.seo_title && product.title !== product.seo_title && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            Original: {product.title}
                           </p>
                         )}
                       </div>
@@ -838,7 +838,7 @@ export default function ProductTitleDescription() {
                           {product.seo_description}
                         </p>
                       ) : (
-                        <p className="text-sm text-muted-foreground italic">Aucune description</p>
+                        <p className="text-sm text-muted-foreground italic">Aucune description optimisée</p>
                       )}
                     </TableCell>
                     <TableCell>
@@ -867,7 +867,7 @@ export default function ProductTitleDescription() {
                               }}
                               disabled={generating}
                             >
-                              <Wand2 className="h-4 w-4" />
+                              <Sparkles className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
