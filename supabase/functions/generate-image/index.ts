@@ -6,13 +6,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ===== MAIN FUNCTION =====
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { prompt, article_id, collection_id, type, product_type, style = "professional" } = await req.json();
+    const {
+      prompt,
+      article_id,
+      collection_id,
+      product_type,
+      style = "professional",
+      type = "white",
+    } = await req.json();
 
     if (!prompt) {
       return new Response(JSON.stringify({ error: "Prompt requis" }), {
@@ -21,154 +29,135 @@ serve(async (req) => {
       });
     }
 
-    console.log("Generating e-commerce image with prompt:", prompt);
-
+    // --- CONFIG ---
     const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     if (!GOOGLE_GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+      throw new Error("GOOGLE_GEMINI_API_KEY non configurée");
     }
 
-    // Enhanced prompt for better e-commerce results
+    console.log("🧠 Generating Gemini image for:", prompt);
+
+    // --- IMPROVED PROMPT ---
     const enhancedPrompt = `
-      E-COMMERCE PRODUCT IMAGE - PROFESSIONAL PHOTOGRAPHY
+You are a professional e-commerce photographer.
 
-      CONTEXT: You are creating a professional e-commerce product image for an online store.
+GOAL:
+Generate a high-quality, realistic product photo for an online store.
 
-      PROMPT: ${prompt}
+PRODUCT:
+${prompt}
 
-      PRODUCT TYPE: ${product_type || "general product"}
-      STYLE: ${style}
+CATEGORY: ${product_type || "general home decor"}
+STYLE: ${style}
 
-      TECHNICAL REQUIREMENTS:
-      - Square format (1:1 aspect ratio)
-      - High resolution (1024x1024 pixels minimum)
-      - Professional product photography style
-      - Clean, well-lit composition
-      - Sharp focus on the product
-      - Commercial-ready quality
+REQUIREMENTS:
+- Square format (1:1)
+- Resolution 1024x1024 or higher
+- ${
+      type === "white"
+        ? "Pure white background (RGB 255,255,255), subtle ground shadow."
+        : "Realistic lifestyle background (natural light, elegant room setting)."
+    }
+- Professional studio lighting
+- Realistic texture, natural shadows, perfect focus
+- No watermark, text, border or logo
+- Commercial-grade quality, suitable for Shopify or Amazon
+    `.trim();
 
-      VISUAL GUIDELINES:
-      - Natural, professional lighting
-      - Clean background that complements the product
-      - Product should be the main focus
-      - Professional color grading
-      - No distortions or artifacts
-      - Suitable for e-commerce platforms
-
-      IMPORTANT: Generate a square image (1:1 aspect ratio) with professional e-commerce standards.
-    `;
-
-    // Generate image using Google Gemini
+    // --- GEMINI IMAGE GENERATION ---
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateImage?key=${GOOGLE_GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: enhancedPrompt }]
-          }],
-          generationConfig: {
-            responseModalities: ["image"],
-            maxOutputTokens: 500
-          }
+          contents: [
+            {
+              parts: [{ text: enhancedPrompt }],
+            },
+          ],
+          generationConfig: { aspectRatio: "1:1" },
         }),
-      }
+      },
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google Gemini error:", response.status, errorText);
+      console.error("Gemini API Error:", response.status, errorText);
 
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de taux dépassée. Veuillez réessayer plus tard." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            error: "Limite de taux dépassée. Réessayez dans quelques secondes.",
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
-      throw new Error(`Erreur API Google Gemini: ${response.status}`);
+      throw new Error(`Erreur API Gemini: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("API Response received, extracting image...");
+    console.log("✅ Gemini response received");
 
-    // Extract base64 image from Gemini response
-    const base64Image = data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
-    
+    // --- EXTRACT IMAGE BASE64 ---
+    const base64Image =
+      data.generatedImages?.[0]?.bytesBase64 || data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+
     if (!base64Image) {
-      console.error("No image data found in response:", JSON.stringify(data, null, 2));
-      throw new Error("Aucune image générée - format de réponse inattendu");
+      console.error("❌ Aucune image détectée :", JSON.stringify(data, null, 2));
+      throw new Error("Aucune image générée - format inattendu.");
     }
 
-    // Convert base64 to data URL
-    const imageUrl = `data:image/png;base64,${base64Image}`;
+    const imageBuffer = Uint8Array.from(atob(base64Image), (c) => c.charCodeAt(0));
 
-    console.log("Image generated successfully, processing...");
-
-    // Upload to Supabase Storage if collection_id or article_id is provided
-    let publicUrl = imageUrl;
+    // --- SUPABASE UPLOAD ---
+    let publicUrl = null;
     let storageMetadata = null;
 
     if (collection_id || article_id) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-      try {
-        // Convert base64 data URL to binary
-        const base64Data = imageUrl.split(',')[1];
-        const binaryData = atob(base64Data);
-        const uint8Array = new Uint8Array(binaryData.length);
-        for (let i = 0; i < binaryData.length; i++) {
-          uint8Array[i] = binaryData.charCodeAt(i);
-        }
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const filename = `gemini_${collection_id || "product"}_${article_id || "img"}_${Date.now()}.png`;
 
-        // Create filename with timestamp and identifiers
-        const timestamp = Date.now();
-        const filename = `ecommerce_${collection_id || "product"}_${article_id || "img"}_${timestamp}.png`;
+        const { error: uploadError } = await supabase.storage.from("generated-images").upload(filename, imageBuffer, {
+          contentType: "image/png",
+        });
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("generated-images")
-          .upload(filename, uint8Array, {
-            contentType: "image/png",
-            upsert: false,
-          });
-
-        if (uploadError) {
-          console.error("Storage upload error:", uploadError);
-          // Continue with data URL if upload fails
-        } else {
-          // Get public URL
+        if (!uploadError) {
           const { data: urlData } = supabase.storage.from("generated-images").getPublicUrl(filename);
-
           publicUrl = urlData.publicUrl;
           storageMetadata = {
-            filename: filename,
+            filename,
             bucket: "generated-images",
             uploaded_at: new Date().toISOString(),
           };
-          console.log("Image successfully uploaded to storage:", filename);
+          console.log("☁️ Upload réussi:", filename);
+        } else {
+          console.error("Erreur upload Supabase:", uploadError);
         }
-      } catch (uploadError) {
-        console.error("Error during upload process:", uploadError);
-        // Continue with data URL
       }
     }
 
+    // --- SUCCESS RESPONSE ---
     return new Response(
       JSON.stringify({
         success: true,
-        image_url: publicUrl,
+        image_url: publicUrl || `data:image/png;base64,${base64Image}`,
         metadata: {
-          product_type: product_type,
-          style: style,
+          model: "gemini-2.5-flash-image",
+          product_type,
+          style,
           format: "square",
           resolution: "1024x1024",
-          storage: storageMetadata,
           generated_at: new Date().toISOString(),
+          storage: storageMetadata,
         },
       }),
       {
@@ -177,12 +166,12 @@ serve(async (req) => {
       },
     );
   } catch (error) {
-    console.error("Error in e-commerce image generation:", error);
+    console.error("❌ Image generation error:", error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Erreur lors de la génération de l'image",
-        suggestion: "Vérifiez votre prompt et réessayez avec une description plus détaillée",
+        error: error.message,
+        suggestion: "Vérifiez votre prompt ou essayez un texte plus précis (couleur, matériau, ambiance).",
       }),
       {
         status: 500,
