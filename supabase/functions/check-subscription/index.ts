@@ -57,8 +57,9 @@ serve(async (req) => {
         .single();
       
       if (profile?.subscription_status === 'trialing' && profile.trial_ends_at) {
-        const trialEnd = new Date(profile.trial_ends_at);
-        if (trialEnd > new Date()) {
+        try {
+          const trialEnd = new Date(profile.trial_ends_at);
+          if (!isNaN(trialEnd.getTime()) && trialEnd > new Date()) {
           logStep('Valid trial found in database');
           return new Response(JSON.stringify({ 
             subscribed: true,
@@ -69,6 +70,9 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
           });
+          }
+        } catch (dateError) {
+          logStep('Invalid trial_ends_at date', { trial_ends_at: profile.trial_ends_at });
         }
       }
       
@@ -93,8 +97,8 @@ serve(async (req) => {
       subscriptions: subscriptions.data.map((s: Stripe.Subscription) => ({ 
         id: s.id, 
         status: s.status,
-        created: new Date(s.created * 1000).toISOString(),
-        current_period_end: new Date(s.current_period_end * 1000).toISOString()
+        created: s.created ? new Date(s.created * 1000).toISOString() : null,
+        current_period_end: s.current_period_end ? new Date(s.current_period_end * 1000).toISOString() : null
       }))
     });
     
