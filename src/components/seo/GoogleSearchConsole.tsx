@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +11,8 @@ import { GoogleSearchConsoleArticles } from './GoogleSearchConsoleArticles';
 import { TrendingUp, Package, FileText, Link } from 'lucide-react';
 
 export function GoogleSearchConsole() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subtab = searchParams.get('subtab') || 'integration';
   const [isConnected, setIsConnected] = useState(false);
   const [googleConsoleEmail, setGoogleConsoleEmail] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
@@ -18,6 +21,10 @@ export function GoogleSearchConsole() {
     checkGoogleConnection();
     handleOAuthCallback();
   }, []);
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: 'google-console', subtab: value });
+  };
 
   const handleOAuthCallback = async () => {
     try {
@@ -75,7 +82,7 @@ export function GoogleSearchConsole() {
           onConnectionChange={checkGoogleConnection}
         />
       ) : (
-        <Tabs defaultValue="integration" className="space-y-6">
+        <Tabs value={subtab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="integration" className="gap-2">
               <Link className="h-4 w-4" />

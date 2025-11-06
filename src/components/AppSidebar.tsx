@@ -33,6 +33,10 @@ import {
   Target,
   List,
   TrendingUp,
+  Globe,
+  Activity,
+  Map,
+  Edit3,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -79,8 +83,15 @@ export function AppSidebar() {
     { title: t.seo.submenu.altimage, url: "/seo?tab=alt", icon: Image, key: "altimage" },
     { title: t.seo.submenu.homepage, url: "/seo?tab=homepage", icon: Home, key: "homepage" },
     { title: t.seo.submenu.tags, url: "/seo?tab=tags", icon: Tags, key: "tags" },
-    { title: "Google Search Console", url: "/seo?tab=google-console", icon: TrendingUp, key: "google-console" },
     { title: t.seo.submenu.automation, url: "/seo?tab=automation", icon: Settings, key: "automation" },
+  ];
+
+  const googleConsoleSubItems = [
+    { title: "Intégration", url: "/seo?tab=google-console&subtab=integration", icon: Globe, key: "gsc-integration" },
+    { title: "Insights", url: "/seo?tab=google-console&subtab=insights", icon: Activity, key: "gsc-insights" },
+    { title: "Produits", url: "/seo?tab=google-console&subtab=products", icon: ShoppingBag, key: "gsc-products" },
+    { title: "Sitemaps", url: "/seo?tab=google-console&subtab=sitemaps", icon: Map, key: "gsc-sitemaps" },
+    { title: "Articles", url: "/seo?tab=google-console&subtab=articles", icon: Edit3, key: "gsc-articles" },
   ];
 
   const auditSubItems = [
@@ -193,8 +204,9 @@ export function AppSidebar() {
     currentPath.startsWith("/chat") ||
     currentPath === "/product-source" ||
     chatSubItems.some((item) => isActive(item.url));
-  const isSeoActive = currentPath === "/seo" || seoSubItems.some((item) => isActive(item.url)) || auditSubItems.some((item) => isActive(item.url));
+  const isSeoActive = currentPath === "/seo" || seoSubItems.some((item) => isActive(item.url)) || auditSubItems.some((item) => isActive(item.url)) || googleConsoleSubItems.some((item) => isActive(item.url));
   const isAuditActive = auditSubItems.some((item) => isActive(item.url));
+  const isGoogleConsoleActive = googleConsoleSubItems.some((item) => isActive(item.url));
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
   const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
   const isPricingActive = currentPath === "/pricing";
@@ -283,6 +295,31 @@ export function AppSidebar() {
                         </SidebarMenuSubItem>
                       ))}
                       
+                      {/* Nested Google Search Console submenu */}
+                      <Collapsible defaultOpen={isGoogleConsoleActive} className="group/gsc">
+                        <SidebarMenuSubItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuSubButton isActive={isGoogleConsoleActive}>
+                              <TrendingUp className="h-4 w-4" />
+                              <span>Google Search Console</span>
+                              <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/gsc:rotate-90" />
+                            </SidebarMenuSubButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="ml-4 border-l-2 border-border pl-2 space-y-1">
+                              {googleConsoleSubItems.map((gscItem) => (
+                                <SidebarMenuSubButton key={gscItem.title} asChild isActive={isActive(gscItem.url)} className="pl-2">
+                                  <NavLink to={gscItem.url}>
+                                    <gscItem.icon className="h-3 w-3" />
+                                    <span className="text-xs">{gscItem.title}</span>
+                                  </NavLink>
+                                </SidebarMenuSubButton>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </SidebarMenuSubItem>
+                      </Collapsible>
+
                       {/* Nested Audit SEO submenu */}
                       <Collapsible defaultOpen={isAuditActive} className="group/audit">
                         <SidebarMenuSubItem>
