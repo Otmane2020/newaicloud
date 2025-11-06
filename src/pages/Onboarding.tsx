@@ -566,7 +566,7 @@ export default function Onboarding() {
                         })
                         .map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)} - {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -689,7 +689,7 @@ export default function Onboarding() {
                         })
                         .map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)} - {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations}
+                          {plan.max_optimizations_monthly.toLocaleString()} {t.onboarding.planFeatures.optimizations} - {formatPrice(getPriceByLanguage(plan, language, billingCycle), language)}
                         </SelectItem>
                       ))}
                     </SelectContent>
