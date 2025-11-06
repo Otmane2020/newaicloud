@@ -21,6 +21,23 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
 import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
 import { useBackgroundRemoval } from "@/hooks/useBackgroundRemoval";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Product {
   id: string;
@@ -55,6 +72,7 @@ export default function ProductTitleDescription() {
   const [whiteBgPreviews, setWhiteBgPreviews] = useState<PreviewImage[]>([]);
   const [aiBgPreviews, setAiBgPreviews] = useState<PreviewImage[]>([]);
   const [customPrompt, setCustomPrompt] = useState('');
+  const [showPromptDialog, setShowPromptDialog] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -226,17 +244,7 @@ export default function ProductTitleDescription() {
     setGeneratingWhiteBg(false);
   };
 
-  const handleAiBackground = async () => {
-    if (selectedProducts.size === 0) {
-      toast.error("Veuillez sélectionner au moins un produit");
-      return;
-    }
-
-    if (!customPrompt.trim()) {
-      toast.error("Veuillez saisir ou sélectionner un prompt");
-      return;
-    }
-
+  const handleStartAiBackground = async (prompt: string) => {
     const selectedProductsList = products.filter((p) => 
       selectedProducts.has(p.id) && p.image_url
     );
@@ -246,7 +254,9 @@ export default function ProductTitleDescription() {
       return;
     }
 
+    setShowPromptDialog(false);
     setGeneratingAiBg(true);
+    
     const previews: PreviewImage[] = selectedProductsList.map((p) => ({
       productId: p.id,
       productTitle: p.title,
@@ -271,7 +281,7 @@ export default function ProductTitleDescription() {
         const { data, error } = await supabase.functions.invoke('generate-image-background', {
           body: {
             imageUrl: product.image_url,
-            prompt: customPrompt,
+            prompt: prompt,
           }
         });
 
@@ -554,10 +564,10 @@ export default function ProductTitleDescription() {
               </Button>
 
               <Button
-                variant="outline"
-                onClick={handleAiBackground}
+                variant="default"
+                onClick={() => setShowPromptDialog(true)}
                 disabled={generatingAiBg || selectedProducts.size === 0}
-                className="gap-2"
+                className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
               >
                 {generatingAiBg ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -667,6 +677,92 @@ export default function ProductTitleDescription() {
         onApply={handleApplyWhiteBackground}
         onRegenerate={handleRegenerateWhiteBg}
       />
+
+      {/* Prompt Configuration Dialog */}
+      <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5 text-primary" />
+              Configuration de l'arrière-plan IA
+            </DialogTitle>
+            <DialogDescription>
+              Choisissez un style prédéfini ou créez votre propre prompt pour générer des arrière-plans personnalisés
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="preset-select">Style prédéfini</Label>
+              <Select
+                value={customPrompt}
+                onValueChange={setCustomPrompt}
+              >
+                <SelectTrigger id="preset-select">
+                  <SelectValue placeholder="Choisir un style..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Place this product in a professional studio setting with soft lighting and neutral gray backdrop">
+                    🎬 Studio professionnel
+                  </SelectItem>
+                  <SelectItem value="Place this product in a luxurious natural environment with elegant plants and soft natural lighting">
+                    🌿 Nature luxueuse
+                  </SelectItem>
+                  <SelectItem value="Place this product in a modern minimalist setting with clean lines and geometric shapes">
+                    ⚪ Minimaliste moderne
+                  </SelectItem>
+                  <SelectItem value="Place this product in a warm lifestyle scene with cozy home elements and soft ambient lighting">
+                    🏠 Lifestyle chaleureux
+                  </SelectItem>
+                  <SelectItem value="Place this product in a contemporary urban setting with industrial elements and modern aesthetics">
+                    🏙️ Urbain contemporain
+                  </SelectItem>
+                  <SelectItem value="Place this product in an elegant classical setting with refined decorative elements and soft warm lighting">
+                    ✨ Élégance classique
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="custom-prompt">Ou créez votre propre prompt (en anglais)</Label>
+              <Textarea
+                id="custom-prompt"
+                placeholder="Ex: Place this product on a wooden table with natural sunlight..."
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowPromptDialog(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={() => {
+                if (!customPrompt.trim()) {
+                  toast.error("Veuillez saisir ou sélectionner un prompt");
+                  return;
+                }
+                handleStartAiBackground(customPrompt);
+              }}
+              className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              <Sparkles className="h-4 w-4" />
+              Générer les arrière-plans
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <BackgroundDialog
         open={showAiBgDialog}
