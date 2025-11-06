@@ -32,8 +32,16 @@ async function syncProductsFromShopify(userId: string, supabase: any) {
   const storeUrl = connection.store_url;
   const accessToken = connection.access_token;
 
+  if (!storeUrl || !accessToken) {
+    throw new Error("Could not determine store domain. Please check Shopify connection.");
+  }
+
+  // Clean the store URL (remove https://, http://, trailing slashes)
+  const cleanStoreUrl = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  console.log(`Using cleaned store URL: ${cleanStoreUrl}`);
+
   // Fetch products from Shopify API
-  const shopifyApiUrl = `https://${storeUrl}/admin/api/2024-01/products.json`;
+  const shopifyApiUrl = `https://${cleanStoreUrl}/admin/api/2024-01/products.json`;
   const response = await fetch(shopifyApiUrl, {
     headers: {
       "X-Shopify-Access-Token": accessToken,
