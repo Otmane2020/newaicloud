@@ -25,7 +25,7 @@ interface ProductTitleLandingDialogProps {
   syncLoading?: boolean;
 }
 
-// Calculate quality score based on SEO content
+// Calculate quality score based on content optimization
 const calculateQualityScore = (title: string, description: string): number => {
   let score = 0;
   
@@ -45,10 +45,10 @@ const calculateQualityScore = (title: string, description: string): number => {
     else if (descLength >= 100) score += 20;
   }
   
-  // SEO keywords (30 points)
-  const seoKeywords = ['qualité', 'premium', 'professionnel', 'élégant', 'moderne', 'durable', 'design', 'exclusif'];
+  // Marketing keywords (30 points)
+  const marketingKeywords = ['qualité', 'premium', 'professionnel', 'élégant', 'moderne', 'durable', 'design', 'exclusif'];
   const combinedText = `${title} ${description}`.toLowerCase();
-  const keywordCount = seoKeywords.filter(kw => combinedText.includes(kw)).length;
+  const keywordCount = marketingKeywords.filter(kw => combinedText.includes(kw)).length;
   score += Math.min(30, keywordCount * 5);
   
   return Math.min(100, score);
@@ -116,11 +116,11 @@ export function ProductTitleLandingDialog({
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             {isGenerating && <Loader2 className="h-5 w-5 animate-spin" />}
-            Aperçu Landing Page - Optimisation SEO
+            Aperçu Contenu Produit Optimisé
           </DialogTitle>
           <DialogDescription>
             {isGenerating 
-              ? "Génération des titres et descriptions SEO en cours..." 
+              ? "Génération des titres et descriptions optimisés en cours..." 
               : `${products.length} produit(s) optimisé(s) - Vérifiez avant de synchroniser avec Shopify`}
           </DialogDescription>
         </DialogHeader>
@@ -133,7 +133,7 @@ export function ProductTitleLandingDialog({
             <div className="space-y-2">
               <p className="text-center font-medium">Optimisation en cours...</p>
               <p className="text-center text-sm text-muted-foreground">
-                Génération de titres et descriptions SEO optimisés
+                Génération de titres captivants et descriptions enrichies avec médias
               </p>
               <div className="max-w-md mx-auto">
                 <Progress value={33} className="h-2" />
@@ -163,7 +163,7 @@ export function ProductTitleLandingDialog({
             {qualityScore > 0 && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Score SEO</span>
+                  <span className="text-sm font-medium">Score Qualité</span>
                   <Badge 
                     variant={qualityScore >= 80 ? "default" : qualityScore >= 60 ? "secondary" : "outline"}
                     className="gap-1"
@@ -174,9 +174,9 @@ export function ProductTitleLandingDialog({
                 </div>
                 <Progress value={qualityScore} className="h-2" />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {qualityScore >= 80 && 'Excellent - Titre et description parfaitement optimisés'}
-                  {qualityScore >= 60 && qualityScore < 80 && 'Bon - Optimisation correcte avec potentiel d\'amélioration'}
-                  {qualityScore < 60 && 'À améliorer - Titre ou description trop courts'}
+                  {qualityScore >= 80 && 'Excellent - Contenu riche avec structure optimale et médias'}
+                  {qualityScore >= 60 && qualityScore < 80 && 'Bon - Contenu structuré avec potentiel d\'amélioration'}
+                  {qualityScore < 60 && 'À améliorer - Enrichir le contenu et la structure'}
                 </p>
               </div>
             )}
@@ -194,7 +194,7 @@ export function ProductTitleLandingDialog({
                 </TabsTrigger>
                 <TabsTrigger value="360">
                   <Eye className="h-4 w-4 mr-2" />
-                  Détails SEO
+                  Détails Contenu
                 </TabsTrigger>
               </TabsList>
 
@@ -213,24 +213,24 @@ export function ProductTitleLandingDialog({
               <TabsContent value="360" className="space-y-4">
                 <div className="border rounded-lg p-6 bg-muted min-h-[400px] space-y-6">
                   <div>
-                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Titre SEO</h3>
+                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Titre Optimisé</h3>
                     <p className="text-base font-medium">{selectedProduct?.seo_title || selectedProduct?.title}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {(selectedProduct?.seo_title || selectedProduct?.title || '').length} caractères
                       {(selectedProduct?.seo_title || selectedProduct?.title || '').length >= 50 && 
                        (selectedProduct?.seo_title || selectedProduct?.title || '').length <= 60 && 
-                       ' ✓ Longueur optimale'}
+                       ' ✓ Longueur idéale pour l\'engagement client'}
                     </p>
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Description SEO</h3>
+                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Description Enrichie</h3>
                     <p className="text-sm leading-relaxed">{selectedProduct?.seo_description}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {(selectedProduct?.seo_description || '').length} caractères
                       {(selectedProduct?.seo_description || '').length >= 140 && 
                        (selectedProduct?.seo_description || '').length <= 160 && 
-                       ' ✓ Longueur optimale'}
+                       ' ✓ Description complète et engageante'}
                     </p>
                   </div>
 
