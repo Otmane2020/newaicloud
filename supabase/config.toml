@@ -185,3 +185,9 @@ verify_jwt = true
 
 [functions.send-notification]
 verify_jwt = false
+
+[functions.analyze-gsc-anomalies]
+verify_jwt = true
+
+[functions.daily-gsc-sync]
+verify_jwt = false

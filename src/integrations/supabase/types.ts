@@ -977,6 +977,102 @@ export type Database = {
         }
         Relationships: []
       }
+      gsc_alerts: {
+        Row: {
+          alert_type: string
+          change_percentage: number
+          created_at: string
+          current_value: number
+          detection_date: string
+          domain: string
+          id: string
+          is_read: boolean | null
+          is_resolved: boolean | null
+          metadata: Json | null
+          metric_name: string
+          previous_value: number
+          resolved_at: string | null
+          severity: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          change_percentage: number
+          created_at?: string
+          current_value: number
+          detection_date?: string
+          domain: string
+          id?: string
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          metric_name: string
+          previous_value: number
+          resolved_at?: string | null
+          severity: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          change_percentage?: number
+          created_at?: string
+          current_value?: number
+          detection_date?: string
+          domain?: string
+          id?: string
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          metric_name?: string
+          previous_value?: number
+          resolved_at?: string | null
+          severity?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gsc_sync_config: {
+        Row: {
+          alert_thresholds: Json | null
+          auto_sync_enabled: boolean | null
+          created_at: string
+          id: string
+          last_sync_at: string | null
+          next_sync_at: string | null
+          notification_enabled: boolean | null
+          sync_frequency: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_thresholds?: Json | null
+          auto_sync_enabled?: boolean | null
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          next_sync_at?: string | null
+          notification_enabled?: boolean | null
+          sync_frequency?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_thresholds?: Json | null
+          auto_sync_enabled?: boolean | null
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          next_sync_at?: string | null
+          notification_enabled?: boolean | null
+          sync_frequency?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       homepage_images: {
         Row: {
           alt_text: string | null

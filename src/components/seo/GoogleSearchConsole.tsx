@@ -47,7 +47,11 @@ import {
   RefreshCw,
   Calendar,
   LogOut,
+  Bell,
+  BellOff,
+  Settings,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 interface Domain {
   id: string;
@@ -116,12 +120,23 @@ export function GoogleSearchConsole() {
   const [newDomain, setNewDomain] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [googleConsoleEmail, setGoogleConsoleEmail] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [syncConfig, setSyncConfig] = useState<any>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [analyzingAnomalies, setAnalyzingAnomalies] = useState(false);
 
   useEffect(() => {
     checkGoogleConnection();
     loadDomains();
     handleOAuthCallback();
+    loadSyncConfig();
   }, []);
+  
+  useEffect(() => {
+    if (selectedDomain) {
+      loadAlerts();
+    }
+  }, [selectedDomain]);
 
   const handleOAuthCallback = async () => {
     try {
@@ -261,6 +276,122 @@ export function GoogleSearchConsole() {
       }
     } catch (error) {
       console.error('Error loading domains:', error);
+    }
+  };
+
+  const loadAlerts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('gsc_alerts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('domain', selectedDomain)
+        .eq('is_resolved', false)
+        .order('detection_date', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setAlerts(data || []);
+    } catch (error) {
+      console.error('Error loading alerts:', error);
+    }
+  };
+
+  const loadSyncConfig = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('gsc_sync_config')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setSyncConfig(data);
+    } catch (error) {
+      console.error('Error loading sync config:', error);
+    }
+  };
+
+  const analyzeAnomalies = async () => {
+    if (!selectedDomain) return;
+    
+    try {
+      setAnalyzingAnomalies(true);
+      const { data, error } = await supabase.functions.invoke('analyze-gsc-anomalies', {
+        body: { domain: selectedDomain, days: parseInt(dateRange) },
+      });
+
+      if (error) throw error;
+
+      if (data?.summary?.total_alerts > 0) {
+        toast.success(`${data.summary.total_alerts} alerte(s) détectée(s)`);
+        await loadAlerts();
+      } else {
+        toast.success('Aucune anomalie détectée');
+      }
+    } catch (error: any) {
+      console.error('Error analyzing anomalies:', error);
+      toast.error('Erreur lors de l\'analyse des anomalies');
+    } finally {
+      setAnalyzingAnomalies(false);
+    }
+  };
+
+  const updateSyncConfig = async (field: string, value: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('gsc_sync_config')
+        .upsert({
+          user_id: user.id,
+          [field]: value,
+        });
+
+      if (error) throw error;
+
+      setSyncConfig((prev: any) => ({ ...prev, [field]: value }));
+      toast.success('Configuration mise à jour');
+    } catch (error) {
+      console.error('Error updating sync config:', error);
+      toast.error('Erreur lors de la mise à jour');
+    }
+  };
+
+  const markAlertAsRead = async (alertId: string) => {
+    try {
+      const { error } = await supabase
+        .from('gsc_alerts')
+        .update({ is_read: true })
+        .eq('id', alertId);
+
+      if (error) throw error;
+      await loadAlerts();
+    } catch (error) {
+      console.error('Error marking alert as read:', error);
+    }
+  };
+
+  const resolveAlert = async (alertId: string) => {
+    try {
+      const { error } = await supabase
+        .from('gsc_alerts')
+        .update({ is_resolved: true, resolved_at: new Date().toISOString() })
+        .eq('id', alertId);
+
+      if (error) throw error;
+      toast.success('Alerte résolue');
+      await loadAlerts();
+    } catch (error) {
+      console.error('Error resolving alert:', error);
+      toast.error('Erreur lors de la résolution');
     }
   };
 
@@ -621,22 +752,145 @@ export function GoogleSearchConsole() {
 
       {selectedDomain && (
         <>
-          {/* Date range selector */}
+          {/* Alerts panel */}
+          {alerts.length > 0 && (
+            <Card className="p-6 border-orange-200 bg-orange-50/50">
+              <div className="flex items-start gap-4">
+                <AlertCircle className="h-6 w-6 text-orange-600 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold mb-2 text-orange-900">
+                    Alertes détectées ({alerts.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {alerts.map((alert) => (
+                      <div
+                        key={alert.id}
+                        className="flex items-start justify-between gap-4 p-3 bg-white rounded-lg border border-orange-200"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant={
+                              alert.severity === 'critical' ? 'destructive' :
+                              alert.severity === 'high' ? 'default' :
+                              'secondary'
+                            }>
+                              {alert.severity === 'critical' ? 'Critique' :
+                               alert.severity === 'high' ? 'Important' :
+                               alert.severity === 'medium' ? 'Moyen' : 'Faible'}
+                            </Badge>
+                            <span className="font-medium text-sm">{alert.metric_name}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Baisse de {Math.abs(alert.change_percentage).toFixed(1)}% 
+                            ({alert.previous_value.toLocaleString()} → {alert.current_value.toLocaleString()})
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          {!alert.is_read && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => markAlertAsRead(alert.id)}
+                            >
+                              Marquer lu
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => resolveAlert(alert.id)}
+                          >
+                            Résoudre
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Date range selector with settings */}
           <Card className="p-6">
-            <div className="flex items-center gap-4">
-              <Calendar className="h-5 w-5 text-primary" />
-              <Label>Période d'analyse</Label>
-              <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">7 derniers jours</SelectItem>
-                  <SelectItem value="30">30 derniers jours</SelectItem>
-                  <SelectItem value="90">90 derniers jours</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Calendar className="h-5 w-5 text-primary" />
+                <Label>Période d'analyse</Label>
+                <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">7 derniers jours</SelectItem>
+                    <SelectItem value="30">30 derniers jours</SelectItem>
+                    <SelectItem value="90">90 derniers jours</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={analyzeAnomalies}
+                  disabled={analyzingAnomalies}
+                  className="gap-2"
+                >
+                  {analyzingAnomalies ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4" />
+                  )}
+                  Analyser les anomalies
+                </Button>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSettings(!showSettings)}
+                className="gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Paramètres
+              </Button>
             </div>
+
+            {/* Settings panel */}
+            {showSettings && (
+              <div className="mt-6 pt-6 border-t space-y-4">
+                <h4 className="font-semibold mb-4">Paramètres de synchronisation automatique</h4>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Synchronisation automatique</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Synchroniser automatiquement les données quotidiennement
+                    </p>
+                  </div>
+                  <Switch
+                    checked={syncConfig?.auto_sync_enabled ?? true}
+                    onCheckedChange={(checked) => updateSyncConfig('auto_sync_enabled', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Recevoir des notifications pour les alertes et synchronisations
+                    </p>
+                  </div>
+                  <Switch
+                    checked={syncConfig?.notification_enabled ?? true}
+                    onCheckedChange={(checked) => updateSyncConfig('notification_enabled', checked)}
+                  />
+                </div>
+
+                {syncConfig?.last_sync_at && (
+                  <div className="text-sm text-muted-foreground">
+                    Dernière synchronisation : {new Date(syncConfig.last_sync_at).toLocaleString('fr-FR')}
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
 
           {/* Metrics cards */}
