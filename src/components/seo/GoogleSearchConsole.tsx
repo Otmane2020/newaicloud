@@ -120,38 +120,20 @@ export function GoogleSearchConsole() {
 
   const handleOAuthCallback = async () => {
     try {
-      const isPending = sessionStorage.getItem('google_oauth_pending');
-      if (!isPending) return;
-
-      // Check if we have a session with provider token
-      const { data: { session } } = await supabase.auth.getSession();
+      // Check if we have an OAuth code in the URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
       
-      if (session?.provider_token) {
-        console.log('OAuth callback detected, storing token...');
+      if (code && window.opener) {
+        // We're in the popup - send code to parent window
+        window.opener.postMessage({
+          type: 'GOOGLE_OAUTH_CODE',
+          code: code,
+        }, window.location.origin);
         
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // Store the OAuth tokens in profiles
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            google_oauth_token: session.provider_token,
-            google_refresh_token: session.provider_refresh_token,
-            google_token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
-          })
-          .eq('id', user.id);
-
-        if (error) {
-          console.error('Error storing OAuth token:', error);
-          toast.error('Erreur lors de la sauvegarde du token Google');
-        } else {
-          console.log('OAuth token stored successfully');
-          toast.success('Connexion à Google réussie !');
-          setIsConnected(true);
-        }
-
-        sessionStorage.removeItem('google_oauth_pending');
+        // Show success and close popup
+        toast.success('Autorisation accordée, fermeture...');
+        setTimeout(() => window.close(), 1000);
       }
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
@@ -184,26 +166,70 @@ export function GoogleSearchConsole() {
 
   const connectWithGoogle = async () => {
     try {
-      // Store a flag to handle the callback
-      sessionStorage.setItem('google_oauth_pending', 'true');
-      sessionStorage.setItem('oauth_return_tab', 'google-console');
+      const redirectUri = `${window.location.origin}/seo?tab=google-console`;
       
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/webmasters.readonly',
-          redirectTo: `${window.location.origin}/seo?tab=google-console`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
+      // Get Google OAuth URL from edge function (to avoid exposing CLIENT_ID)
+      const { data: urlData, error: urlError } = await supabase.functions.invoke('google-oauth-url', {
+        body: { redirectUri },
       });
-
-      if (error) throw error;
-      toast.success('Connexion à Google en cours...');
+      
+      if (urlError || !urlData?.url) {
+        throw new Error('Failed to generate OAuth URL');
+      }
+      
+      // Open in popup to avoid full page redirect
+      const width = 600;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      
+      const popup = window.open(
+        urlData.url,
+        'Google Search Console Authorization',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      
+      if (!popup) {
+        toast.error('Veuillez autoriser les popups pour ce site');
+        return;
+      }
+      
+      // Listen for the callback
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        
+        if (event.data.type === 'GOOGLE_OAUTH_CODE' && event.data.code) {
+          window.removeEventListener('message', handleMessage);
+          
+          // Exchange code for tokens via edge function
+          const { data, error } = await supabase.functions.invoke('google-oauth-token', {
+            body: {
+              code: event.data.code,
+              state: redirectUri,
+            },
+          });
+          
+          if (error || !data?.success) {
+            console.error('Error exchanging code:', error);
+            toast.error('Erreur lors de la connexion à Google');
+            return;
+          }
+          
+          toast.success('Connexion à Google Search Console réussie !');
+          setIsConnected(true);
+          await loadDomains();
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+      // Clean up after 5 minutes
+      setTimeout(() => {
+        window.removeEventListener('message', handleMessage);
+      }, 5 * 60 * 1000);
+      
     } catch (error) {
-      console.error('Error connecting with Google:', error);
+      console.error('Error connecting to Google:', error);
       toast.error('Erreur lors de la connexion à Google');
     }
   };
