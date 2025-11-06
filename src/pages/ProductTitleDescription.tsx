@@ -16,12 +16,16 @@ import {
   Paintbrush,
   Palette,
   Eye,
+  RefreshCw,
+  Square,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
 import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
 import { ProductTitleLandingDialog } from "@/components/seo/ProductTitleLandingDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -726,43 +730,64 @@ export default function ProductTitleDescription() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                onClick={handleOptimizeSelected}
-                disabled={generating || selectedProducts.size === 0}
-                className="gap-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                Optimiser ({selectedProducts.size})
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleOptimizeSelected}
+                      disabled={generating || selectedProducts.size === 0}
+                    >
+                      <Wand2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Optimiser ({selectedProducts.size})</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              <Button
-                variant="outline"
-                onClick={handleWhiteBackground}
-                disabled={generatingWhiteBg || selectedProducts.size === 0}
-                className="gap-2"
-              >
-                {generatingWhiteBg ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Paintbrush className="h-4 w-4" />
-                )}
-                Fond blanc ({selectedProducts.size})
-              </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleWhiteBackground}
+                      disabled={generatingWhiteBg || selectedProducts.size === 0}
+                    >
+                      {generatingWhiteBg ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Square className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Fond blanc ({selectedProducts.size})</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              <Button
-                variant="default"
-                onClick={() => setShowPromptDialog(true)}
-                disabled={generatingAiBg || selectedProducts.size === 0}
-                className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
-              >
-                {generatingAiBg ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Palette className="h-4 w-4" />
-                )}
-                Arrière-plan IA ({selectedProducts.size})
-              </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="icon"
+                      onClick={() => setShowPromptDialog(true)}
+                      disabled={generatingAiBg || selectedProducts.size === 0}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
+                    >
+                      {generatingAiBg ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Palette className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Arrière-plan IA ({selectedProducts.size})</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </Card>
@@ -777,136 +802,151 @@ export default function ProductTitleDescription() {
         </Alert>
 
         {/* Products Table */}
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </TableHead>
-                <TableHead className="w-20">Image</TableHead>
-                <TableHead>Titre</TableHead>
-                <TableHead className="hidden lg:table-cell">Description</TableHead>
-                <TableHead className="w-32">Statut</TableHead>
-                <TableHead className="w-40">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>
+        <Card className="overflow-hidden">
+          <ScrollArea className="h-[600px]">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow>
+                  <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedProducts.has(product.id)}
-                      onCheckedChange={() => handleSelectProduct(product.id)}
+                      checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                      onCheckedChange={handleSelectAll}
                     />
-                  </TableCell>
-                  <TableCell>
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.title}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="font-medium">{product.title}</p>
-                      {product.seo_title && (
-                        <p className="text-sm text-muted-foreground line-clamp-1">
-                          Optimisé: {product.seo_title}
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    {product.seo_description ? (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {product.seo_description}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic">Aucune description</p>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {hasRichHtmlDescription(product) ? (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        ✨ Contenu Premium
-                      </Badge>
-                    ) : product.seo_title || product.seo_description ? (
-                      <Badge variant="secondary">
-                        Contenu Basique ✓
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">À optimiser</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
-                            setOptimizedProducts([product]);
-                            setShowLandingPreviewDialog(true);
-                          } else {
-                            toast.error("Ce produit n'a pas encore été optimisé");
-                          }
-                        }}
-                        className="gap-1"
-                      >
-                        <Eye className="h-3 w-3" />
-                        Visualiser
-                      </Button>
-                      {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            const toastId = toast.loading("Synchronisation...");
-                            try {
-                              const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-                                body: {
-                                  productId: product.id,
-                                  shopifyId: product.shopify_id,
-                                  seoTitle: product.seo_title,
-                                  seoDescription: product.seo_description,
-                                }
-                              });
-                              
-                              if (error) throw error;
-                              toast.success("Synchronisé avec Shopify", { id: toastId });
-                            } catch (error) {
-                              console.error("Sync error:", error);
-                              toast.error("Erreur lors de la synchronisation", { id: toastId });
-                            }
-                          }}
-                          className="gap-1"
-                        >
-                          <Sparkles className="h-3 w-3" />
-                          Sync
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
+                  </TableHead>
+                  <TableHead className="w-20">Image</TableHead>
+                  <TableHead>Titre</TableHead>
+                  <TableHead className="hidden lg:table-cell">Description</TableHead>
+                  <TableHead className="w-32">Statut</TableHead>
+                  <TableHead className="w-40">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedProducts.has(product.id)}
+                        onCheckedChange={() => handleSelectProduct(product.id)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.title}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                          <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-medium">{product.title}</p>
+                        {product.seo_title && (
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            Optimisé: {product.seo_title}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {product.seo_description ? (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {product.seo_description}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">Aucune description</p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {hasRichHtmlDescription(product) ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          ✨ Contenu Premium
+                        </Badge>
+                      ) : product.seo_title || product.seo_description ? (
+                        <Badge variant="secondary">
+                          Contenu Basique ✓
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">À optimiser</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <TooltipProvider>
+                        <div className="flex gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
+                                    setOptimizedProducts([product]);
+                                    setShowLandingPreviewDialog(true);
+                                  } else {
+                                    toast.error("Ce produit n'a pas encore été optimisé");
+                                  }
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Visualiser</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          
+                          {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={async () => {
+                                    const toastId = toast.loading("Synchronisation...");
+                                    try {
+                                      const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+                                        body: {
+                                          productId: product.id,
+                                          shopifyId: product.shopify_id,
+                                          seoTitle: product.seo_title,
+                                          seoDescription: product.seo_description,
+                                        }
+                                      });
+                                      
+                                      if (error) throw error;
+                                      toast.success("Synchronisé avec Shopify", { id: toastId });
+                                    } catch (error) {
+                                      console.error("Sync error:", error);
+                                      toast.error("Erreur lors de la synchronisation", { id: toastId });
+                                    }
+                                  }}
+                                >
+                                  <RefreshCw className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Synchroniser</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </TooltipProvider>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
 
-          {filteredProducts.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">
-              Aucun produit trouvé
-            </div>
-          )}
+            {filteredProducts.length === 0 && (
+              <div className="p-8 text-center text-muted-foreground">
+                Aucun produit trouvé
+              </div>
+            )}
+          </ScrollArea>
         </Card>
       </div>
 
