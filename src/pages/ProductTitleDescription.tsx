@@ -855,50 +855,128 @@ export default function ProductTitleDescription() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
-                              setOptimizedProducts([product]);
-                              setShowLandingPreviewDialog(true);
-                            } else {
-                              toast.error("Ce produit n'a pas encore été optimisé");
-                            }
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Visualiser
-                        </Button>
+                      <div className="flex gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedProducts(new Set([product.id]));
+                                handleOptimizeSelected();
+                              }}
+                              disabled={generating}
+                            >
+                              <Wand2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Optimiser</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedProducts(new Set([product.id]));
+                                handleWhiteBackground();
+                              }}
+                              disabled={generatingWhiteBg}
+                            >
+                              {generatingWhiteBg && selectedProducts.has(product.id) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Square className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Fond blanc</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedProducts(new Set([product.id]));
+                                setShowPromptDialog(true);
+                              }}
+                              disabled={generatingAiBg}
+                              className="hover:bg-purple-50 dark:hover:bg-purple-950"
+                            >
+                              {generatingAiBg && selectedProducts.has(product.id) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Palette className="h-4 w-4 text-purple-600" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Arrière-plan IA</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
+                                  setOptimizedProducts([product]);
+                                  setShowLandingPreviewDialog(true);
+                                } else {
+                                  toast.error("Ce produit n'a pas encore été optimisé");
+                                }
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Visualiser</p>
+                          </TooltipContent>
+                        </Tooltip>
                         
                         {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                              const toastId = toast.loading("Synchronisation...");
-                              try {
-                                const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-                                  body: {
-                                    productId: product.id,
-                                    shopifyId: product.shopify_id,
-                                    seoTitle: product.seo_title,
-                                    seoDescription: product.seo_description,
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={async () => {
+                                  const toastId = toast.loading("Synchronisation...");
+                                  try {
+                                    const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+                                      body: {
+                                        productId: product.id,
+                                        shopifyId: product.shopify_id,
+                                        seoTitle: product.seo_title,
+                                        seoDescription: product.seo_description,
+                                      }
+                                    });
+                                    
+                                    if (error) throw error;
+                                    toast.success("Synchronisé avec Shopify", { id: toastId });
+                                  } catch (error) {
+                                    console.error("Sync error:", error);
+                                    toast.error("Erreur lors de la synchronisation", { id: toastId });
                                   }
-                                });
-                                
-                                if (error) throw error;
-                                toast.success("Synchronisé avec Shopify", { id: toastId });
-                              } catch (error) {
-                                console.error("Sync error:", error);
-                                toast.error("Erreur lors de la synchronisation", { id: toastId });
-                              }
-                            }}
-                          >
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Synchroniser
-                          </Button>
+                                }}
+                              >
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Synchroniser</p>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                     </TableCell>
