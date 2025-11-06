@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { redirectUri } = await req.json();
+    const { redirectUri, scopes, state } = await req.json();
 
     if (!redirectUri) {
       throw new Error("Redirect URI is required");
@@ -22,15 +22,20 @@ serve(async (req) => {
       throw new Error("GOOGLE_CLIENT_ID not configured");
     }
 
+    // Default scope for Search Console if none provided
+    const defaultScope = 'https://www.googleapis.com/auth/webmasters.readonly';
+    const scopeToUse = scopes || defaultScope;
+    const stateToUse = state || redirectUri;
+
     // Build Google OAuth URL
     const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     googleAuthUrl.searchParams.set('client_id', clientId);
     googleAuthUrl.searchParams.set('redirect_uri', redirectUri);
     googleAuthUrl.searchParams.set('response_type', 'code');
-    googleAuthUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/webmasters.readonly');
+    googleAuthUrl.searchParams.set('scope', scopeToUse);
     googleAuthUrl.searchParams.set('access_type', 'offline');
     googleAuthUrl.searchParams.set('prompt', 'consent');
-    googleAuthUrl.searchParams.set('state', redirectUri);
+    googleAuthUrl.searchParams.set('state', stateToUse);
 
     return new Response(
       JSON.stringify({ 
