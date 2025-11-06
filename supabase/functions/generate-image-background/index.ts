@@ -58,7 +58,7 @@ PHOTOGRAPHY REQUIREMENTS:
     const buffer = await imageResponse.arrayBuffer();
     const base64Image = encodeBase64(new Uint8Array(buffer));
 
-    // --- Appel à Gemini (modèle image-to-image) ---
+    // --- Appel à Gemini (même structure que generate-ai-background-variants) ---
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -67,12 +67,21 @@ PHOTOGRAPHY REQUIREMENTS:
         body: JSON.stringify({
           contents: [
             {
-              parts: [{ inline_data: { mime_type: "image/jpeg", data: base64Image } }, { text: imagePrompt }],
+              parts: [
+                {
+                  inline_data: {
+                    mime_type: "image/jpeg",
+                    data: base64Image,
+                  },
+                },
+                { text: imagePrompt },
+              ],
             },
           ],
           generationConfig: {
-            responseModalities: ["image"],
-            aspectRatio: "1:1",
+            temperature: 0.8,
+            topK: 40,
+            topP: 0.95,
           },
         }),
       },
