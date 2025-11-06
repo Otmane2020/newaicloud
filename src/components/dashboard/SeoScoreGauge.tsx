@@ -127,14 +127,6 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
       link: "/seo?tab=alt",
       key: "images" as const
     },
-    {
-      name: t.seoGauge.categoryNames.technical,
-      description: t.seoGauge.categoryDescriptions.technical,
-      value: Math.round(categoryScores.technical),
-      max: 100,
-      link: "/integration",
-      key: "technical" as const
-    },
   ];
 
   const gaugeGradient = getGaugeGradient();
@@ -255,7 +247,7 @@ export function SeoScoreGauge({ score, categories: categoryScores }: SeoScoreGau
         {/* Breakdown des catégories - Cliquables avec design premium */}
         <div className="space-y-3 sm:space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2 sm:mb-4">
-            <h4 className="text-sm sm:text-base font-bold text-foreground">6 {t.seoGauge.categories}</h4>
+            <h4 className="text-sm sm:text-base font-bold text-foreground">5 {t.seoGauge.categories}</h4>
             <Badge variant="outline" className="text-xs flex-shrink-0">
               {tf('seoGauge.excellentCount', { count: categories.filter((c) => c.value >= 80).length })}
             </Badge>
