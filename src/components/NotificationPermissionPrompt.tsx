@@ -7,12 +7,17 @@ import { useTranslation } from '@/lib/language';
 import { toast } from 'sonner';
 import { responsiveDialogClasses } from '@/lib/dialogUtils';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function NotificationPermissionPrompt() {
   const [show, setShow] = useState(false);
   const { t, language } = useTranslation();
+  const { user } = useAuth();
   
   useEffect(() => {
+    // Only show prompt for logged in users
+    if (!user) return;
+    
     // Show prompt after 10 seconds if notification permission not yet requested
     const timer = setTimeout(() => {
       if (BrowserNotificationService.getPermission() === 'default') {
@@ -21,7 +26,7 @@ export function NotificationPermissionPrompt() {
     }, 10000); // 10 seconds
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [user]);
   
   const handleAllow = async () => {
     const currentPermission = BrowserNotificationService.getPermission();
