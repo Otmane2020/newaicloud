@@ -19,7 +19,8 @@ import {
   ArrowUpDown,
   RefreshCw,
   Info,
-  Truck
+  Truck,
+  Image
 } from 'lucide-react';
 import {
   Select,
@@ -45,6 +46,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { WhiteBgPreviewDialog } from '@/components/seo/WhiteBgPreviewDialog';
 
 interface CompetitorPrice {
   url: string;
@@ -83,6 +85,15 @@ interface BulkOperation {
   collection: string;
 }
 
+interface PreviewImage {
+  productId: string;
+  productTitle: string;
+  originalUrl: string;
+  generatedUrl: string | null;
+  status: 'pending' | 'generating' | 'success' | 'error';
+  error?: string;
+}
+
 export function SmartPricingAI() {
   const [products, setProducts] = useState<ProductPricing[]>([]);
   const [collections, setCollections] = useState<{ id: string; title: string }[]>([]);
@@ -101,6 +112,9 @@ export function SmartPricingAI() {
     amount: 0,
     collection: 'all'
   });
+  const [isGeneratingWhiteBg, setIsGeneratingWhiteBg] = useState(false);
+  const [whiteBgPreviews, setWhiteBgPreviews] = useState<PreviewImage[]>([]);
+  const [showWhiteBgPreview, setShowWhiteBgPreview] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -624,6 +638,147 @@ export function SmartPricingAI() {
     }
   };
 
+  const handleWhiteBackground = async () => {
+    const selected = products.filter(p => p.selected);
+    
+    if (selected.length === 0) {
+      toast.error('Veuillez sélectionner au moins un produit');
+      return;
+    }
+
+    setIsGeneratingWhiteBg(true);
+    
+    const newPreviews: PreviewImage[] = selected.map(p => ({
+      productId: p.id,
+      productTitle: p.title,
+      originalUrl: p.image_url || '',
+      generatedUrl: null,
+      status: 'pending'
+    }));
+    
+    setWhiteBgPreviews(newPreviews);
+    setShowWhiteBgPreview(true);
+
+    try {
+      for (const product of selected) {
+        if (!product.image_url) continue;
+
+        setWhiteBgPreviews(prev => prev.map(p => 
+          p.productId === product.id 
+            ? { ...p, status: 'generating' as const }
+            : p
+        ));
+
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-white-background', {
+            body: { 
+              imageUrl: product.image_url,
+              productTitle: product.title
+            }
+          });
+
+          if (error) throw error;
+
+          if (data.success && data.imageUrl) {
+            setWhiteBgPreviews(prev => prev.map(p =>
+              p.productId === product.id
+                ? { ...p, generatedUrl: data.imageUrl, status: 'success' as const }
+                : p
+            ));
+          } else {
+            throw new Error(data.error || 'Échec de la génération');
+          }
+        } catch (error: any) {
+          console.error(`Error for product ${product.id}:`, error);
+          setWhiteBgPreviews(prev => prev.map(p =>
+            p.productId === product.id
+              ? { ...p, status: 'error' as const, error: error.message }
+              : p
+          ));
+        }
+      }
+      
+      toast.success(`Fond blanc généré pour ${selected.length} produit(s)`);
+    } catch (error: any) {
+      console.error('White background error:', error);
+      toast.error('Erreur lors de la génération des fonds blancs');
+    } finally {
+      setIsGeneratingWhiteBg(false);
+    }
+  };
+
+  const handleApplyWhiteBackground = async (selectedPreviews: string[]) => {
+    const successfulPreviews = whiteBgPreviews.filter(
+      p => selectedPreviews.includes(p.productId) && p.status === 'success' && p.generatedUrl
+    );
+
+    if (successfulPreviews.length === 0) {
+      toast.error('Aucune image à appliquer');
+      return;
+    }
+
+    const toastId = toast.loading(`Application de ${successfulPreviews.length} image(s)...`);
+
+    try {
+      for (const preview of successfulPreviews) {
+        await supabase
+          .from('shopify_products')
+          .update({ image_url: preview.generatedUrl })
+          .eq('id', preview.productId);
+      }
+
+      await fetchData();
+      setShowWhiteBgPreview(false);
+      setWhiteBgPreviews([]);
+      
+      toast.success(`✅ ${successfulPreviews.length} image(s) mise(s) à jour`, { id: toastId });
+    } catch (error: any) {
+      console.error('Apply white background error:', error);
+      toast.error('Erreur lors de l\'application des images', { id: toastId });
+    }
+  };
+
+  const handleRegenerateWhiteBg = async (productId: string) => {
+    const preview = whiteBgPreviews.find(p => p.productId === productId);
+    if (!preview) return;
+
+    setWhiteBgPreviews(prev => prev.map(p =>
+      p.productId === productId
+        ? { ...p, status: 'generating' as const, error: undefined }
+        : p
+    ));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-white-background', {
+        body: { 
+          imageUrl: preview.originalUrl,
+          productTitle: preview.productTitle
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.imageUrl) {
+        setWhiteBgPreviews(prev => prev.map(p =>
+          p.productId === productId
+            ? { ...p, generatedUrl: data.imageUrl, status: 'success' as const }
+            : p
+        ));
+        toast.success('Image régénérée avec succès');
+      } else {
+        throw new Error(data.error || 'Échec de la régénération');
+      }
+    } catch (error: any) {
+      console.error('Regenerate error:', error);
+      setWhiteBgPreviews(prev => prev.map(p =>
+        p.productId === productId
+          ? { ...p, status: 'error' as const, error: error.message }
+          : p
+      ));
+      toast.error('Erreur lors de la régénération');
+    }
+  };
+
   const filteredProducts = products.filter(product => {
     const matchesCollection = selectedCollection === 'all' || product.collection_ids.includes(selectedCollection);
     const matchesSearch = !searchQuery || 
@@ -883,6 +1038,19 @@ export function SmartPricingAI() {
           >
             <CheckCheck className="w-4 h-4" />
             Appliquer Smart Price
+          </Button>
+          <Button
+            variant="default"
+            onClick={handleWhiteBackground}
+            disabled={isGeneratingWhiteBg || selectedCount === 0}
+            className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+          >
+            {isGeneratingWhiteBg ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Image className="w-4 h-4" />
+            )}
+            Fond blanc
           </Button>
           <TooltipProvider>
             <Tooltip>
@@ -1327,6 +1495,15 @@ export function SmartPricingAI() {
           </p>
         </Card>
       )}
+
+      {/* White Background Preview Dialog */}
+      <WhiteBgPreviewDialog
+        open={showWhiteBgPreview}
+        onOpenChange={setShowWhiteBgPreview}
+        previews={whiteBgPreviews}
+        onApply={handleApplyWhiteBackground}
+        onRegenerate={handleRegenerateWhiteBg}
+      />
     </div>
   );
 }

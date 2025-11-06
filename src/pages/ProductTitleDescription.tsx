@@ -20,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
 import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
-import { useBackgroundRemoval } from "@/hooks/useBackgroundRemoval";
+// Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
   DialogContent,
@@ -59,7 +59,7 @@ interface PreviewImage {
 
 export default function ProductTitleDescription() {
   const { t } = useTranslation();
-  const { removeBackgroundAndAddWhite } = useBackgroundRemoval();
+  // Removed local background removal hook - using edge function instead
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -220,21 +220,32 @@ export default function ProductTitleDescription() {
       );
 
       try {
-        const imageUrl = await removeBackgroundAndAddWhite(product.image_url!);
-        
-        setWhiteBgPreviews((prev) =>
-          prev.map((p) =>
-            p.productId === product.id
-              ? { ...p, status: 'success', generatedUrl: imageUrl }
-              : p
-          )
-        );
-      } catch (error) {
+        const { data, error } = await supabase.functions.invoke('generate-white-background', {
+          body: { 
+            imageUrl: product.image_url,
+            productTitle: product.title
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.success && data.imageUrl) {
+          setWhiteBgPreviews((prev) =>
+            prev.map((p) =>
+              p.productId === product.id
+                ? { ...p, status: 'success', generatedUrl: data.imageUrl }
+                : p
+            )
+          );
+        } else {
+          throw new Error(data.error || 'Échec de la génération');
+        }
+      } catch (error: any) {
         console.error('Error generating white background:', error);
         setWhiteBgPreviews((prev) =>
           prev.map((p) =>
             p.productId === product.id
-              ? { ...p, status: 'error', error: 'Erreur de génération' }
+              ? { ...p, status: 'error', error: error.message || 'Erreur de génération' }
               : p
           )
         );
@@ -370,21 +381,32 @@ export default function ProductTitleDescription() {
     );
 
     try {
-      const imageUrl = await removeBackgroundAndAddWhite(product.image_url);
-      
-      setWhiteBgPreviews((prev) =>
-        prev.map((p) =>
-          p.productId === productId
-            ? { ...p, status: 'success', generatedUrl: imageUrl }
-            : p
-        )
-      );
-    } catch (error) {
+      const { data, error } = await supabase.functions.invoke('generate-white-background', {
+        body: { 
+          imageUrl: product.image_url,
+          productTitle: product.title
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.imageUrl) {
+        setWhiteBgPreviews((prev) =>
+          prev.map((p) =>
+            p.productId === productId
+              ? { ...p, status: 'success', generatedUrl: data.imageUrl }
+              : p
+          )
+        );
+      } else {
+        throw new Error(data.error || 'Échec de la régénération');
+      }
+    } catch (error: any) {
       console.error('Error regenerating:', error);
       setWhiteBgPreviews((prev) =>
         prev.map((p) =>
           p.productId === productId
-            ? { ...p, status: 'error', error: 'Erreur de génération' }
+            ? { ...p, status: 'error', error: error.message || 'Erreur de génération' }
             : p
         )
       );
