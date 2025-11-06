@@ -17,7 +17,8 @@ import {
   FileText,
   MessageSquare,
   Shield,
-  Star
+  Star,
+  LogOut
 } from 'lucide-react';
 import {
   Select,
@@ -49,7 +50,7 @@ interface Plan {
 }
 
 export default function Onboarding() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { t, tf, language } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -381,6 +382,21 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-gradient-subtle p-8">
       <div className="container mx-auto max-w-7xl">
+        {/* Logout Button */}
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={async () => {
+              await signOut();
+              navigate('/auth');
+            }}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
+        </div>
+
       {/* Header */}
       <div className="text-center mb-12">
         {plans.some(p => p.trial_days > 0) && (
@@ -453,10 +469,20 @@ export default function Onboarding() {
                   <div className="flex flex-col items-center justify-center mb-2">
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        {formatPrice(getPriceByLanguage(starterPlan, language, billingCycle), language)}
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? getPriceByLanguage(starterPlan, language, billingCycle) / 12 
+                            : getPriceByLanguage(starterPlan, language, billingCycle), 
+                          language
+                        )}
                       </span>
                       <span className="text-muted-foreground">{language === 'fr' ? '/mois' : '/month'}</span>
                     </div>
+                    {billingCycle === 'yearly' && (
+                      <span className="text-sm text-muted-foreground">
+                        {formatPrice(getPriceByLanguage(starterPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -585,13 +611,20 @@ export default function Onboarding() {
                   <div className="flex flex-col items-center justify-center mb-2">
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        {billingCycle === 'yearly' 
-                          ? `${getCurrencySymbol(language)}${(selectedPlan.price_yearly / 12).toFixed(2)}`
-                          : `${getCurrencySymbol(language)}${selectedPlan.price_monthly.toFixed(2)}`
-                        }
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
+                            : getPriceByLanguage(selectedPlan, language, billingCycle), 
+                          language
+                        )}
                       </span>
                       <span className="text-muted-foreground">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
+                    {billingCycle === 'yearly' && (
+                      <span className="text-sm text-muted-foreground">
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -708,13 +741,20 @@ export default function Onboarding() {
                   <div className="flex flex-col items-center justify-center mb-2">
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        {billingCycle === 'yearly' 
-                          ? `${getCurrencySymbol(language)}${(selectedPlan.price_yearly / 12).toFixed(2)}`
-                          : `${getCurrencySymbol(language)}${selectedPlan.price_monthly.toFixed(2)}`
-                        }
+                        {formatPrice(
+                          billingCycle === 'yearly' 
+                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
+                            : getPriceByLanguage(selectedPlan, language, billingCycle), 
+                          language
+                        )}
                       </span>
                       <span className="text-muted-foreground">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
+                    {billingCycle === 'yearly' && (
+                      <span className="text-sm text-muted-foreground">
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                      </span>
+                    )}
                   </div>
                 </div>
 
