@@ -109,46 +109,42 @@ serve(async (req) => {
     }
 
     // Générer le contenu avec Lovable AI et tool calling pour forcer JSON structuré
-    const systemPrompt = `Tu es un expert SEO e-commerce spécialisé dans la conversion. 
-Ton objectif : créer du contenu qui se démarque, attire et convertit.
-NE COPIE JAMAIS le titre existant - AMÉLIORE-LE toujours avec des mots-clés pertinents et des bénéfices clients.`;
+    const systemPrompt = `Tu es un expert SEO e-commerce et UX designer spécialisé dans la conversion. 
+Ton objectif : créer du contenu optimisé SEO qui convertit avec un HTML moderne et professionnel.
 
-    let userPrompt = `Titre actuel à OPTIMISER (ne pas copier) : "${currentTitle}"`;
+🎯 RÈGLES SEO STRICTES:
+- Titre: 50-60 caractères max avec mot-clé principal + bénéfice
+- Meta: 150-160 caractères avec USP + CTA
+- HTML: Structure sémantique, responsive, accessible`;
+
+    let userPrompt = `Produit à optimiser: "${currentTitle}"`;
     
     if (visionAnalysis) {
-      userPrompt += `\n\n📸 Analyse visuelle du produit:\n${visionAnalysis}`;
+      userPrompt += `\n\n📸 Analyse visuelle:\n${visionAnalysis}`;
     }
 
     if (imageUrl) {
-      userPrompt += `\n\n🖼️ Image disponible: ${imageUrl}`;
+      userPrompt += `\n\n🖼️ Image: ${imageUrl}`;
     }
 
-    userPrompt += `\n\n🎯 MISSION - Créer du contenu SEO OPTIMISÉ et DIFFÉRENT:
+    userPrompt += `\n\n✨ GÉNÉRER:
 
-1. ✨ TITRE SEO (50-60 caractères):
-   - TRANSFORME le titre basique en titre attractif
-   - Ajoute des mots-clés pertinents (matériaux, style, usage)
-   - Inclus un bénéfice client ou USP si possible
-   - Exemple: "Chaussures running" → "Chaussures Running Ultra-Légères - Confort Premium"
-
-2. 📝 META DESCRIPTION (150-160 caractères):
-   - Mets en avant les bénéfices principaux
-   - Utilise des mots d'action (découvrez, profitez, adoptez)
-   - Inclus un appel à l'action subtil
-   - Ajoute des éléments de réassurance (qualité, livraison, etc.)
-
-3. 📄 DESCRIPTION HTML ENRICHIE (300-500 mots):
-   - Commence par un paragraphe accrocheur sur les bénéfices
-   - Ajoute une section "Pourquoi choisir ce produit?"
-   - Liste des caractéristiques CONCRÈTES avec émojis
-   - Inclus des détails sur l'usage, l'entretien
-   - Termine par un CTA motivant
+1️⃣ TITRE SEO OPTIMISÉ (50-60 car):
+   Format: [Produit] + [Caractéristique unique] + [Bénéfice]
+   Exemples:
+   - "T-shirt" → "T-shirt Premium Coton Bio - Confort Maximum"
+   - "Lampe" → "Lampe LED Design - Économie Énergie 80%"
    
-⚠️ RÈGLES STRICTES:
-- NE JAMAIS copier le titre existant tel quel
-- Toujours ajouter de la valeur (caractéristiques, bénéfices, contexte d'usage)
-- Rendre le contenu unique et optimisé pour le SEO
-- Utiliser un ton professionnel mais engageant`;
+2️⃣ META DESCRIPTION (150-160 car):
+   Structure: [Bénéfice] + [Caractéristiques clés] + [CTA] + [Réassurance]
+   Exemple: "Découvrez notre produit X en matériau Y. Livraison 48h offerte ✓"
+
+3️⃣ HTML BODY (landing page professionnelle):
+   - Design moderne responsive
+   - Sections bien structurées
+   - Intégration image produit
+   - Call-to-actions clairs
+   - Informations pratiques`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -181,29 +177,89 @@ NE COPIE JAMAIS le titre existant - AMÉLIORE-LE toujours avec des mots-clés pe
                   },
                   html_description: {
                     type: "string",
-                    description: `Description HTML structurée (300-500 mots):
+                    description: `HTML landing page moderne et responsive (structure complète):
 
-<div style="max-width: 1200px; margin: 0 auto; padding: 2rem; font-family: system-ui;">
-  <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1.5rem;">[Titre Produit]</h1>
-  ${imageUrl ? '<img src="${imageUrl}" alt="[Alt]" style="width: 100%; max-width: 600px; border-radius: 12px; margin: 2rem 0;"/>' : ''}
+<div style="max-width: 1200px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; line-height: 1.6;">
   
-  <p style="font-size: 1.2rem; line-height: 1.75; margin-bottom: 2rem;">[Introduction 2-3 phrases]</p>
-  
-  <h2 style="font-size: 2rem; margin: 2rem 0 1rem;">✨ Caractéristiques</h2>
-  <ul style="list-style: none; padding: 0;">
-    <li style="margin: 0.75rem 0;"><strong>✓</strong> [Caractéristique 1]</li>
-    <li style="margin: 0.75rem 0;"><strong>✓</strong> [Caractéristique 2]</li>
-    <li style="margin: 0.75rem 0;"><strong>✓</strong> [Caractéristique 3]</li>
-    <li style="margin: 0.75rem 0;"><strong>✓</strong> [Caractéristique 4]</li>
-  </ul>
-  
-  <h2 style="font-size: 2rem; margin: 2rem 0 1rem;">🎨 Design & Qualité</h2>
-  <p style="line-height: 1.75;">[Description design et matériaux 100-150 mots]</p>
-  
-  ${visionAnalysis ? '<h2 style="font-size: 2rem; margin: 2rem 0 1rem;">🔍 Analyse Vision</h2><p style="line-height: 1.75;">[Intégrer analyse vision]</p>' : ''}
+  <!-- Hero Section -->
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 3rem; color: white; margin-bottom: 3rem; text-align: center;">
+    <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.2;">[Titre Produit Optimisé]</h1>
+    <p style="font-size: 1.25rem; opacity: 0.95; max-width: 600px; margin: 0 auto;">[Phrase d'accroche bénéfices]</p>
+  </div>
+
+  ${imageUrl ? `<!-- Image Produit -->
+  <div style="text-align: center; margin: 3rem 0;">
+    <img src="${imageUrl}" alt="[Description SEO]" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);"/>
+  </div>` : ''}
+
+  <!-- Introduction -->
+  <div style="background: #f8f9fa; border-radius: 12px; padding: 2rem; margin-bottom: 3rem;">
+    <p style="font-size: 1.15rem; margin: 0;">[Paragraphe intro 3-4 phrases sur bénéfices principaux]</p>
+  </div>
+
+  <!-- Caractéristiques Clés -->
+  <h2 style="font-size: 2rem; font-weight: 700; margin: 3rem 0 1.5rem; color: #2d3748;">✨ Caractéristiques principales</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
+      <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">[Caractéristique 1]</h3>
+      <p style="color: #718096; margin: 0;">[Détail]</p>
+    </div>
+    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚡</div>
+      <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">[Caractéristique 2]</h3>
+      <p style="color: #718096; margin: 0;">[Détail]</p>
+    </div>
+    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">💎</div>
+      <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">[Caractéristique 3]</h3>
+      <p style="color: #718096; margin: 0;">[Détail]</p>
+    </div>
+  </div>
+
+  <!-- Description Détaillée -->
+  <h2 style="font-size: 2rem; font-weight: 700; margin: 3rem 0 1.5rem; color: #2d3748;">📋 Description complète</h2>
+  <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+    <p style="margin-bottom: 1.5rem;">[Paragraphe détaillé sur le produit, ses usages, ses matériaux - 150 mots]</p>
+    ${visionAnalysis ? `<div style="background: #edf2f7; border-left: 4px solid #667eea; padding: 1.5rem; margin: 1.5rem 0;">
+      <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">🔍 Analyse visuelle</h3>
+      <p style="margin: 0;">[Intégrer l'analyse vision ici]</p>
+    </div>` : ''}
+  </div>
+
+  <!-- Spécifications -->
+  <h2 style="font-size: 2rem; font-weight: 700; margin: 3rem 0 1.5rem; color: #2d3748;">🔧 Spécifications techniques</h2>
+  <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+    <tr style="background: #f7fafc;">
+      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Matériau</td>
+      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0;">[Valeur]</td>
+    </tr>
+    <tr>
+      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Dimensions</td>
+      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0;">[Valeur]</td>
+    </tr>
+    <tr style="background: #f7fafc;">
+      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Poids</td>
+      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0;">[Valeur]</td>
+    </tr>
+    <tr>
+      <td style="padding: 1rem; font-weight: 600;">Garantie</td>
+      <td style="padding: 1rem;">[Valeur]</td>
+    </tr>
+  </table>
+
+  <!-- CTA Final -->
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 3rem; margin-top: 3rem; text-align: center; color: white;">
+    <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">Prêt à passer commande ?</h2>
+    <p style="font-size: 1.15rem; margin-bottom: 2rem; opacity: 0.95;">[Message de réassurance: livraison, garantie, etc.]</p>
+    <div style="display: inline-block; background: white; color: #667eea; padding: 1rem 2.5rem; border-radius: 8px; font-weight: 700; font-size: 1.1rem;">
+      Commander maintenant →
+    </div>
+  </div>
+
 </div>
 
-Remplir tous les placeholders avec contenu réel`
+IMPORTANT: Remplace TOUS les placeholders [...] avec du contenu réel et pertinent`
                   }
                 },
                 required: ["title", "description", "html_description"],
@@ -258,16 +314,22 @@ Remplir tous les placeholders avec contenu réel`
           .limit(1);
         
         if (products && products.length > 0) {
+          const productId = products[0].id;
+          
+          // Update product with optimized SEO title and rich HTML body
           await supabaseClient
             .from('shopify_products')
             .update({
+              title: result.title, // Update main title with SEO-optimized version
               seo_title: result.title,
               seo_description: result.description,
-              description: result.html_description || result.description,
+              description: result.html_description || result.description, // Rich HTML for Body field
               optimization_count: supabaseClient.rpc('increment', { x: 1 }),
               last_optimization_at: new Date().toISOString()
             })
-            .eq('id', products[0].id);
+            .eq('id', productId);
+          
+          console.log(`✅ Product ${productId} updated with SEO title and rich HTML body`);
         }
       }
     }
