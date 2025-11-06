@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,11 +56,11 @@ PHOTOGRAPHY REQUIREMENTS:
       throw new Error(`Impossible de télécharger l'image source : ${imageResponse.status}`);
     }
     const buffer = await imageResponse.arrayBuffer();
-    const base64Image = encode(new Uint8Array(buffer)); // pas de stack overflow
+    const base64Image = encodeBase64(new Uint8Array(buffer));
 
-    // --- Appel à Gemini (modèle image actuel) ---
+    // --- Appel à Gemini (modèle image-to-image) ---
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -107,7 +107,7 @@ PHOTOGRAPHY REQUIREMENTS:
         metadata: {
           productType,
           style,
-          model: "google/gemini-2.5-flash",
+          model: "gemini-2.0-flash-exp",
           generatedAt: new Date().toISOString(),
         },
       }),
