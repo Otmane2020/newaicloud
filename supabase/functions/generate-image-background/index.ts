@@ -60,7 +60,7 @@ PHOTOGRAPHY REQUIREMENTS:
     const chunkSize = 0x8000; // 32 768 octets
 
     for (let i = 0; i < bytes.length; i += chunkSize) {
-      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunkSize)));
     }
 
     const base64Image = btoa(binary);
