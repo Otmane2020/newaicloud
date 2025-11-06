@@ -40,7 +40,7 @@ export const ProductContentOptimization = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [showOptimizingDialog, setShowOptimizingDialog] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop'>('desktop');
   const [syncProgress, setSyncProgress] = useState(0);
@@ -95,7 +95,9 @@ export const ProductContentOptimization = () => {
       const product = products?.find(p => p.id === productId);
       if (!product) throw new Error('Product not found');
 
-      setShowOptimizingDialog(true);
+      setIsGenerating(true);
+      setShowPreview(true);
+      setSelectedProduct(product || null);
 
       // Analyze images with Vision AI if needed
       let visionAnalysis = null;
@@ -115,17 +117,15 @@ export const ProductContentOptimization = () => {
 
       return result;
     },
-    onSuccess: (data, productId) => {
+    onSuccess: (data) => {
       setGeneratedHtml(data.htmlDescription);
-      const product = products?.find(p => p.id === productId);
-      setSelectedProduct(product || null);
-      setShowOptimizingDialog(false);
-      setShowPreview(true);
+      setIsGenerating(false);
       queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
     },
     onError: (error) => {
       console.error('Error generating description:', error);
-      setShowOptimizingDialog(false);
+      setIsGenerating(false);
+      setShowPreview(false);
       toast.error('Erreur lors de la génération');
     }
   });
@@ -294,98 +294,102 @@ export const ProductContentOptimization = () => {
         )}
       </Card>
 
-      {/* Optimizing Dialog */}
-      <Dialog open={showOptimizingDialog} onOpenChange={setShowOptimizingDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Optimisation en cours
-            </DialogTitle>
-            <DialogDescription>
-              Génération de la description HTML UX avec analyse Vision IA...
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-8 space-y-4">
-            <div className="flex items-center justify-center">
-              <Sparkles className="h-12 w-12 text-primary animate-pulse" />
-            </div>
-            <p className="text-center text-sm text-muted-foreground">
-              Analyse des images et création d'une présentation mobile-friendly haute qualité
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* Preview Dialog */}
+      {/* Preview Dialog with Generation */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Prévisualisation Landing Page Shopify - {selectedProduct?.title}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {isGenerating && <Loader2 className="h-5 w-5 animate-spin" />}
+              Aperçu Landing Page - {selectedProduct?.title}
+            </DialogTitle>
             <DialogDescription>
-              Description HTML UX générée avec IA - Mobile-friendly et optimisée
+              {isGenerating 
+                ? "Génération en cours avec analyse Vision IA..." 
+                : "Description HTML UX optimisée - Mobile-friendly"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Preview Mode Toggle */}
-            <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as any)}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="desktop">
-                  <Monitor className="h-4 w-4 mr-2" />
-                  Desktop
-                </TabsTrigger>
-                <TabsTrigger value="mobile">
-                  <Smartphone className="h-4 w-4 mr-2" />
-                  Mobile
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="desktop" className="space-y-4">
-                <div className="border rounded-lg p-6 bg-white min-h-[400px]">
-                  <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
+            {isGenerating ? (
+              <div className="py-12 space-y-6">
+                <div className="flex items-center justify-center">
+                  <Sparkles className="h-16 w-16 text-primary animate-pulse" />
                 </div>
-              </TabsContent>
-
-              <TabsContent value="mobile" className="space-y-4">
-                <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
-                  <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            {/* Original Description Comparison */}
-            {selectedProduct?.description && (
-              <div className="space-y-2">
-                <h4 className="font-semibold text-sm">Description originale:</h4>
-                <div className="p-4 bg-muted rounded-lg text-sm">
-                  {selectedProduct.description}
+                <div className="space-y-2">
+                  <p className="text-center font-medium">Optimisation en cours...</p>
+                  <p className="text-center text-sm text-muted-foreground">
+                    Analyse des images et création d'une présentation professionnelle
+                  </p>
                 </div>
               </div>
-            )}
+            ) : (
+              <>
+                {/* Preview Mode Toggle */}
+                <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as any)}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="desktop">
+                      <Monitor className="h-4 w-4 mr-2" />
+                      Desktop
+                    </TabsTrigger>
+                    <TabsTrigger value="mobile">
+                      <Smartphone className="h-4 w-4 mr-2" />
+                      Mobile
+                    </TabsTrigger>
+                  </TabsList>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button variant="outline" onClick={() => setShowPreview(false)}>
-                Annuler
-              </Button>
-              <Button
-                onClick={() => applyMutation.mutate()}
-                disabled={applyMutation.isPending}
-              >
-                {applyMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Application...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Mettre à jour sur Shopify
-                  </>
+                  <TabsContent value="desktop" className="space-y-4">
+                    <div className="border rounded-lg p-6 bg-white min-h-[400px]">
+                      <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="mobile" className="space-y-4">
+                    <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
+                      <div dangerouslySetInnerHTML={{ __html: generatedHtml || '' }} />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                {/* Original Description Comparison */}
+                {selectedProduct?.description && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm">Description originale:</h4>
+                    <div className="p-4 bg-muted rounded-lg text-sm line-clamp-3">
+                      {selectedProduct.description}
+                    </div>
+                  </div>
                 )}
-              </Button>
-            </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => {
+                    setShowPreview(false);
+                    setGeneratedHtml(null);
+                    setSelectedProduct(null);
+                  }}>
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={() => applyMutation.mutate()}
+                    disabled={applyMutation.isPending}
+                    className="gap-2"
+                  >
+                    {applyMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Synchronisation...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4" />
+                        Synchroniser sur Shopify
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
