@@ -56,6 +56,19 @@ serve(async (req) => {
 
     const tokenData = await tokenResponse.json();
 
+    // Fetch user info from Google to get the email
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    });
+
+    let googleEmail = null;
+    if (userInfoResponse.ok) {
+      const userInfo = await userInfoResponse.json();
+      googleEmail = userInfo.email;
+    }
+
     // Store tokens in user profile (without changing the Supabase session)
     const { error: updateError } = await supabaseClient
       .from('profiles')
@@ -63,6 +76,7 @@ serve(async (req) => {
         google_oauth_token: tokenData.access_token,
         google_refresh_token: tokenData.refresh_token,
         google_token_expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
+        google_console_email: googleEmail,
       })
       .eq('id', user.id);
 

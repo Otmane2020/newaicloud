@@ -46,6 +46,7 @@ import {
   AlertCircle,
   RefreshCw,
   Calendar,
+  LogOut,
 } from 'lucide-react';
 
 interface Domain {
@@ -114,6 +115,7 @@ export function GoogleSearchConsole() {
   const [loadingAvailableSites, setLoadingAvailableSites] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const [isConnected, setIsConnected] = useState(false);
+  const [googleConsoleEmail, setGoogleConsoleEmail] = useState<string | null>(null);
 
   useEffect(() => {
     checkGoogleConnection();
@@ -157,11 +159,12 @@ export function GoogleSearchConsole() {
       // Check if user has Google OAuth connected
       const { data: profile } = await supabase
         .from('profiles')
-        .select('google_oauth_token')
+        .select('google_oauth_token, google_console_email')
         .eq('id', user.id)
         .single();
 
       setIsConnected(!!profile?.google_oauth_token);
+      setGoogleConsoleEmail(profile?.google_console_email || null);
     } catch (error) {
       console.error('Error checking Google connection:', error);
     }
@@ -220,6 +223,7 @@ export function GoogleSearchConsole() {
           
           toast.success('Connexion à Google Search Console réussie !');
           setIsConnected(true);
+          await checkGoogleConnection();
           await loadDomains();
         }
       };
@@ -308,6 +312,32 @@ export function GoogleSearchConsole() {
     } catch (error) {
       console.error('Error adding domain:', error);
       toast.error('Erreur lors de l\'ajout du domaine');
+    }
+  };
+
+  const disconnectGoogle = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          google_oauth_token: null,
+          google_refresh_token: null,
+          google_token_expires_at: null,
+          google_console_email: null,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setIsConnected(false);
+      setGoogleConsoleEmail(null);
+      toast.success('Google Search Console déconnecté avec succès');
+    } catch (error) {
+      console.error('Error disconnecting Google:', error);
+      toast.error('Impossible de déconnecter Google Search Console');
     }
   };
 
@@ -461,6 +491,12 @@ export function GoogleSearchConsole() {
             <p className="text-muted-foreground">
               Analyse de performance SEO et évolution du trafic
             </p>
+            {googleConsoleEmail && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                <Globe className="h-3.5 w-3.5" />
+                <span>Connecté avec : <span className="font-medium text-foreground">{googleConsoleEmail}</span></span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -495,6 +531,15 @@ export function GoogleSearchConsole() {
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Actualiser
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={disconnectGoogle}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Déconnecter
             </Button>
           </div>
         </div>

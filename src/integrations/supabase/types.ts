@@ -1633,6 +1633,7 @@ export type Database = {
           current_plan_id: string | null
           email: string
           full_name: string | null
+          google_console_email: string | null
           google_oauth_token: string | null
           google_refresh_token: string | null
           google_token_expires_at: string | null
@@ -1651,6 +1652,7 @@ export type Database = {
           current_plan_id?: string | null
           email: string
           full_name?: string | null
+          google_console_email?: string | null
           google_oauth_token?: string | null
           google_refresh_token?: string | null
           google_token_expires_at?: string | null
@@ -1669,6 +1671,7 @@ export type Database = {
           current_plan_id?: string | null
           email?: string
           full_name?: string | null
+          google_console_email?: string | null
           google_oauth_token?: string | null
           google_refresh_token?: string | null
           google_token_expires_at?: string | null
