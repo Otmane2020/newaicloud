@@ -20,68 +20,44 @@ serve(async (req) => {
       });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    console.log("Generating e-commerce background for product:", productType);
+    console.log("Generating e-commerce background with OpenAI gpt-image-1 for product:", productType);
 
-    // Prompt optimisé pour l'e-commerce
-    const enhancedPrompt = `
-      EN: Create a professional e-commerce product background. ${prompt}
-      - Keep the main product perfectly intact and unchanged
-      - Create a clean, professional background suitable for online store
-      - Use natural lighting and professional photography style
-      - Ensure the background complements the product without distracting
-      - Maintain high resolution and sharp product details
-      - Background should be consistent with product type: ${productType || "general product"}
-      
-      FR: Créez un arrière-plan professionnel pour produit e-commerce. ${prompt}
-      - Gardez le produit principal parfaitement intact et inchangé
-      - Créez un arrière-plan propre et professionnel adapté à la vente en ligne
-      - Utilisez un éclairage naturel et un style photographique professionnel
-      - Assurez-vous que l'arrière-plan met en valeur le produit sans le distraire
-      - Maintenez une haute résolution et des détails produits nets
-      - L'arrière-plan doit être cohérent avec le type de produit : ${productType || "produit général"}
-    `;
+    // Enhanced prompt for e-commerce
+    const fullPrompt = `Professional e-commerce product photography: ${prompt}
 
-    // Fetch and convert image to base64
-    const imageResponse = await fetch(imageUrl);
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+Product type: ${productType || "general product"}
+Style: High-quality professional e-commerce photography with clean, attractive background
+Requirements:
+- Professional studio lighting
+- Clean, uncluttered background that complements the product
+- Sharp focus and high resolution
+- Commercial product photography style
+- Background that enhances product appeal without distracting`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
-
-    const response = await fetch(url, {
+    const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              text: enhancedPrompt,
-            },
-            {
-              inline_data: {
-                mime_type: "image/jpeg",
-                data: base64Image,
-              },
-            },
-          ],
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1000,
-        },
+        model: "gpt-image-1",
+        prompt: fullPrompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "high",
+        response_format: "b64_json",
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
+      console.error("OpenAI API error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
@@ -90,30 +66,17 @@ serve(async (req) => {
         });
       }
 
-      throw new Error(`Gemini API error: ${response.status} ${errorText}`);
+      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("Gemini Response received");
+    console.log("OpenAI image generated successfully");
 
-    // Extract generated image from Gemini response
-    const parts = data.candidates?.[0]?.content?.parts;
-    if (!parts) {
-      console.error("No parts found in response:", data);
-      throw new Error("No image generated - invalid API response");
-    }
-
-    // Find the image in the parts array
-    let generatedImageBase64 = null;
-    for (const part of parts) {
-      if (part.inline_data?.data) {
-        generatedImageBase64 = part.inline_data.data;
-        break;
-      }
-    }
+    // Extract base64 image from OpenAI response
+    const generatedImageBase64 = data.data?.[0]?.b64_json;
 
     if (!generatedImageBase64) {
-      console.error("No image data found in response:", data);
+      console.error("No image data in response:", data);
       throw new Error("No image generated");
     }
 
