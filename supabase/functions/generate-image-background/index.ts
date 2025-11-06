@@ -20,12 +20,12 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GOOGLE_GEMINI_API_KEY) {
+      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
     }
 
-    console.log("Generating e-commerce background with Lovable AI for product:", productType);
+    console.log("Generating e-commerce background with Google Gemini for product:", productType);
 
     // Enhanced prompt for e-commerce
     const imagePrompt = `Professional e-commerce product photography: ${prompt}
@@ -34,43 +34,41 @@ Product type: ${productType || "general product"}
 Style: High-quality professional e-commerce photography with clean, attractive background
 Requirements:
 - Professional studio lighting
-- Clean, uncluttered background that complements the product
-- Sharp focus and high resolution
+- Clean, commercial-ready composition  
+- High resolution suitable for e-commerce
+- Product-focused framing
 - Commercial product photography style
 - Background that enhances product appeal without distracting`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: imagePrompt
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: imageUrl
-                }
-              }
+    // Fetch and convert image to base64
+    const imgResponse = await fetch(imageUrl);
+    const imgBuffer = await imgResponse.arrayBuffer();
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: "image/jpeg", data: base64Image } },
+              { text: imagePrompt }
             ]
+          }],
+          generationConfig: {
+            responseModalities: ["image"]
           }
-        ],
-        modalities: ["image", "text"]
-      }),
-    });
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Lovable AI API error:", response.status, errorText);
+      console.error("Google Gemini error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
@@ -79,26 +77,21 @@ Requirements:
         });
       }
 
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Credits depleted. Please add credits to your workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      throw new Error(`Lovable AI API error: ${response.status} ${errorText}`);
+      throw new Error(`Google Gemini API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("Lovable AI image generated successfully");
+    console.log("Google Gemini image generated successfully");
 
-    // Extract image from Lovable AI response
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Extract base64 image from Gemini response
+    const generatedBase64 = data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
 
-    if (!generatedImageUrl) {
+    if (!generatedBase64) {
       console.error("No image data in response:", data);
-      throw new Error("No image generated");
+      throw new Error("No background generated");
     }
+
+    const generatedImageUrl = `data:image/png;base64,${generatedBase64}`;
 
     console.log("E-commerce background generated successfully");
 
