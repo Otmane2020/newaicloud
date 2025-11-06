@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,7 +24,7 @@ serve(async (req) => {
     const imgResponse = await fetch(imageUrl);
     if (!imgResponse.ok) throw new Error(`Failed to fetch image (${imgResponse.status})`);
     const imgBuffer = await imgResponse.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+    const base64Image = encodeBase64(new Uint8Array(imgBuffer));
 
     // 🧠 Build Gemini prompt
     const prompt = `
