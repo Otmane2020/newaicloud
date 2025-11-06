@@ -42,6 +42,7 @@ import {
 interface Product {
   id: string;
   title: string;
+  description: string | null;
   seo_title: string | null;
   seo_description: string | null;
   image_url: string | null;
@@ -86,7 +87,7 @@ export default function ProductTitleDescription() {
 
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, seo_title, seo_description, image_url, shopify_id")
+        .select("id, title, description, seo_title, seo_description, image_url, shopify_id")
         .eq("seller_id", user.id)
         .order("imported_at", { ascending: false });
 
@@ -670,9 +671,13 @@ export default function ProductTitleDescription() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {product.seo_title || product.seo_description ? (
+                    {product.description ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700">
-                        Optimisé
+                        ✨ HTML UX Optimisé
+                      </Badge>
+                    ) : product.seo_title || product.seo_description ? (
+                      <Badge variant="secondary">
+                        SEO Basique ✓
                       </Badge>
                     ) : (
                       <Badge variant="outline">À optimiser</Badge>

@@ -39,6 +39,7 @@ interface Product {
 export const ProductContentOptimization = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+  const [generatedTitle, setGeneratedTitle] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
@@ -154,6 +155,7 @@ export const ProductContentOptimization = () => {
     },
     onSuccess: (data) => {
       setGeneratedHtml(data.htmlDescription);
+      setGeneratedTitle(data.optimizedTitle || null);
       setIsGenerating(false);
       
       // Calculate quality score
@@ -162,11 +164,19 @@ export const ProductContentOptimization = () => {
       
       queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error generating description:', error);
       setIsGenerating(false);
       setShowPreview(false);
-      toast.error('Erreur lors de la génération');
+      
+      // Better error handling for 402
+      if (error?.message?.includes('402') || error?.message?.includes('credits')) {
+        toast.error('Crédits IA épuisés', {
+          description: 'Veuillez ajouter des crédits à votre workspace Lovable.'
+        });
+      } else {
+        toast.error('Erreur lors de la génération');
+      }
     }
   });
 
@@ -174,12 +184,20 @@ export const ProductContentOptimization = () => {
     mutationFn: async () => {
       if (!selectedProduct || !generatedHtml) throw new Error('No content to apply');
 
+      const updateData: any = { 
+        description: generatedHtml,
+        updated_at: new Date().toISOString()
+      };
+
+      // Save optimized title if generated
+      if (generatedTitle) {
+        updateData.title = generatedTitle;
+        updateData.seo_title = generatedTitle;
+      }
+
       const { error } = await supabase
         .from('shopify_products')
-        .update({ 
-          description: generatedHtml,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', selectedProduct.id);
 
       if (error) throw error;
