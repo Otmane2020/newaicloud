@@ -5,13 +5,7 @@ import { Sparkles, FileText, Image } from 'lucide-react';
 import { SeoOptimization } from './SeoOptimization';
 
 import { ProductMediaOptimization } from './ProductMediaOptimization';
-
-// Placeholder component - will be enhanced next
-const ProductContentOptimization = () => (
-  <Card className="p-6">
-    <p className="text-muted-foreground">Titre & Description - En développement</p>
-  </Card>
-);
+import { ProductContentOptimization } from './ProductContentOptimization';
 
 interface ProductOptimizationTabsProps {
   defaultTab?: string;
