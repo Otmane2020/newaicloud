@@ -317,37 +317,48 @@ export const translations = {
     },
     monitoring: {
       title: "Monitoring des Synchronisations",
-      subtitle: "Suivi en temps réel de vos synchronisations",
-      stats: {
-        totalSync: "Total Syncs",
-        successRate: "Taux de Réussite",
-        lastSync: "Dernière Sync",
-        avgDuration: "Durée Moyenne",
-        totalProducts: "Total Produits",
-        synced: "Synchronisés",
-        errors: "Erreurs",
+      subtitle: "Performances et statistiques détaillées",
+      errorLoading: "Impossible de charger l'historique des synchronisations",
+      noSyncs: "Aucune synchronisation trouvée pour cette période",
+      
+      periods: {
+        last7days: "7 derniers jours",
+        last30days: "30 derniers jours",
+        last90days: "90 derniers jours",
+      },
+      
+      status: {
+        completed: "Réussi",
+        failed: "Échoué",
+        running: "En cours",
         pending: "En attente",
       },
-      chart: {
-        title: "Performance des Synchronisations",
-        success: "Succès",
-        errors: "Erreurs",
-        last7Days: "7 derniers jours",
+      
+      stats: {
+        totalSyncs: "Total Syncs",
+        successRate: "Taux de Succès",
+        avgDuration: "Durée Moyenne",
+        productsSynced: "Produits Synchronisés",
+        successful: "réussis",
+        failed: "échoués",
       },
-      history: {
-        title: "Historique des Synchronisations",
-        status: "Statut",
-        date: "Date",
+      
+      charts: {
+        syncDuration: "Durée des Synchronisations (secondes)",
+        productsSync: "Produits Synchronisés",
+        statusDistribution: "Répartition Succès/Échecs",
+        successRate: "Taux de Succès",
         duration: "Durée",
         products: "Produits",
-        viewDetails: "Voir détails",
-        noHistory: "Aucun historique de synchronisation",
-      },
-      status: {
         success: "Succès",
-        error: "Erreur",
-        pending: "En attente",
-        inProgress: "En cours",
+      },
+      
+      history: {
+        title: "Historique Détaillé",
+        sync: "Sync",
+        duration: "Durée",
+        productsSynced: "produits synchronisés",
+        failures: "échecs",
       },
     },
   },
@@ -373,41 +384,42 @@ export const translations = {
       },
     },
     campaigns: {
-      title: "Campagnes",
-      description: "Gérez et créez vos campagnes Google Ads",
+      title: "Vos Campagnes Google Ads",
+      subtitle: "Créez et gérez vos campagnes automatiquement",
+      newCampaign: "Nouvelle campagne",
       createNew: "Créer une Nouvelle Campagne",
-      createWithAI: "Créer une Campagne avec l'IA",
-      noCampaigns: "Aucune campagne pour le moment",
       firstCampaign: "Créez votre première campagne",
-      aiHelp: "Laissez l'IA vous aider à créer des campagnes optimisées",
-      upcoming: "Fonctionnalités à venir",
-      upcomingDesc: "Bientôt, vous pourrez :",
-      features: {
-        autoCampaigns: "Créer des campagnes automatisées",
-        aiBidding: "Enchères pilotées par l'IA",
-        adGeneration: "Génération automatique d'annonces",
-        budgetManagement: "Gestion intelligente du budget",
+      firstCampaignDesc: "L'IA vous aidera à créer des campagnes optimisées automatiquement",
+      createWithAI: "Créer avec l'IA",
+      
+      upcomingFeatures: {
+        title: "Fonctionnalités à venir",
+        feature1: "Création automatique de campagnes basée sur vos produits",
+        feature2: "Optimisation des enchères par l'IA",
+        feature3: "Génération automatique d'annonces",
+        feature4: "Gestion des budgets intelligente",
       },
     },
     optimization: {
       title: "Optimisation",
-      description: "Optimisation pilotée par l'IA pour vos campagnes",
+      
       metrics: {
-        roas: "ROAS",
+        currentROAS: "ROAS Actuel",
         conversionRate: "Taux de Conversion",
-        cpc: "CPC Moyen",
+        avgCPC: "CPC Moyen",
         qualityScore: "Score de Qualité",
       },
-      aiOptimization: {
-        title: "Optimisation IA du ROAS",
-        description: "Notre IA analyse en continu vos campagnes pour maximiser le retour sur investissement publicitaire",
-        automatic: "Optimisations Automatiques",
-        features: {
-          bidAdjustments: "Ajustements des enchères selon les performances",
-          budgetReallocation: "Réallocation du budget vers les campagnes les plus performantes",
-          negativeKeywords: "Suggestions automatiques de mots-clés négatifs",
-          adOptimization: "Optimisation des annonces sous-performantes",
-        },
+      
+      roasTitle: "Optimisation ROAS par IA",
+      optimizeAuto: "Optimisez automatiquement vos campagnes",
+      optimizeAutoDesc: "L'IA analysera vos performances et optimisera automatiquement vos enchères, budgets et ciblages pour maximiser votre retour sur investissement",
+      
+      automaticOptimizations: {
+        title: "Optimisations automatiques",
+        feature1: "Ajustement automatique des enchères selon les performances",
+        feature2: "Réallocation du budget vers les campagnes performantes",
+        feature3: "Suggestions de mots-clés négatifs",
+        feature4: "Optimisation des annonces sous-performantes",
       },
     },
     analytics: {
@@ -419,31 +431,32 @@ export const translations = {
       dashboardsDesc: "Visualisez bientôt toutes vos métriques clés en temps réel",
     },
     tracking: {
-      title: "Suivi des Conversions",
-      description: "Configurez le suivi des conversions pour vos campagnes",
-      setup: {
-        purchases: {
-          title: "Suivi des Achats",
-          description: "Suivez les conversions e-commerce",
-          action: "Configurer",
-        },
-        tag: {
-          title: "Tag Google Ads",
-          description: "Installez le tag de suivi sur votre site",
-          action: "Installer",
-        },
-        events: {
-          title: "Événements Personnalisés",
-          description: "Suivez des actions utilisateur spécifiques",
-          action: "Configurer",
-        },
+      title: "Configuration du suivi des conversions",
+      
+      purchaseTracking: {
+        title: "Suivi des achats",
+        description: "Suivez automatiquement les conversions d'achat sur votre site",
+        action: "Configurer",
       },
-      features: {
-        title: "Fonctionnalités de Suivi",
-        ecommerce: "Suivi des conversions e-commerce",
-        attribution: "Attribution pilotée par l'IA",
-        crossDevice: "Analyse cross-device",
-        realtime: "Rapports en temps réel",
+      
+      googleTag: {
+        title: "Tag Google Ads",
+        description: "Installez le tag de conversion Google Ads sur votre site",
+        action: "Obtenir le code",
+      },
+      
+      customEvents: {
+        title: "Événements personnalisés",
+        description: "Créez des conversions personnalisées pour vos objectifs spécifiques",
+        action: "Créer un événement",
+      },
+      
+      trackingFeatures: {
+        title: "Fonctionnalités de tracking",
+        feature1: "Tracking automatique des conversions e-commerce",
+        feature2: "Attribution multi-touch avec IA",
+        feature3: "Analyses cross-device",
+        feature4: "Rapports de conversion en temps réel",
       },
     },
   },

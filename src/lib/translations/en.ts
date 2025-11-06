@@ -315,37 +315,48 @@ export const translations = {
     },
     monitoring: {
       title: "Sync Monitoring",
-      subtitle: "Real-time tracking of your synchronizations",
-      stats: {
-        totalSync: "Total Syncs",
-        successRate: "Success Rate",
-        lastSync: "Last Sync",
-        avgDuration: "Avg Duration",
-        totalProducts: "Total Products",
-        synced: "Synced",
-        errors: "Errors",
+      subtitle: "Detailed performance and statistics",
+      errorLoading: "Unable to load sync history",
+      noSyncs: "No syncs found for this period",
+      
+      periods: {
+        last7days: "Last 7 days",
+        last30days: "Last 30 days",
+        last90days: "Last 90 days",
+      },
+      
+      status: {
+        completed: "Completed",
+        failed: "Failed",
+        running: "Running",
         pending: "Pending",
       },
-      chart: {
-        title: "Sync Performance",
-        success: "Success",
-        errors: "Errors",
-        last7Days: "Last 7 days",
+      
+      stats: {
+        totalSyncs: "Total Syncs",
+        successRate: "Success Rate",
+        avgDuration: "Average Duration",
+        productsSynced: "Products Synced",
+        successful: "successful",
+        failed: "failed",
       },
-      history: {
-        title: "Sync History",
-        status: "Status",
-        date: "Date",
+      
+      charts: {
+        syncDuration: "Sync Duration (seconds)",
+        productsSync: "Products Synced",
+        statusDistribution: "Success/Failure Distribution",
+        successRate: "Success Rate",
         duration: "Duration",
         products: "Products",
-        viewDetails: "View details",
-        noHistory: "No sync history yet",
-      },
-      status: {
         success: "Success",
-        error: "Error",
-        pending: "Pending",
-        inProgress: "In progress",
+      },
+      
+      history: {
+        title: "Detailed History",
+        sync: "Sync",
+        duration: "Duration",
+        productsSynced: "products synced",
+        failures: "failures",
       },
     },
   },
@@ -371,41 +382,42 @@ export const translations = {
       },
     },
     campaigns: {
-      title: "Campaigns",
-      description: "Manage and create your Google Ads campaigns",
+      title: "Your Google Ads Campaigns",
+      subtitle: "Create and manage your campaigns automatically",
+      newCampaign: "New Campaign",
       createNew: "Create New Campaign",
-      createWithAI: "Create Campaign with AI",
-      noCampaigns: "No campaigns yet",
       firstCampaign: "Create your first campaign",
-      aiHelp: "Let AI help you create optimized campaigns",
-      upcoming: "Upcoming Features",
-      upcomingDesc: "Soon you'll be able to:",
-      features: {
-        autoCampaigns: "Create automated campaigns",
-        aiBidding: "AI-powered bidding",
-        adGeneration: "Automatic ad generation",
-        budgetManagement: "Smart budget management",
+      firstCampaignDesc: "AI will help you create optimized campaigns automatically",
+      createWithAI: "Create with AI",
+      
+      upcomingFeatures: {
+        title: "Upcoming Features",
+        feature1: "Automatic campaign creation based on your products",
+        feature2: "AI-powered bid optimization",
+        feature3: "Automatic ad generation",
+        feature4: "Smart budget management",
       },
     },
     optimization: {
       title: "Optimization",
-      description: "AI-powered optimization for your campaigns",
+      
       metrics: {
-        roas: "ROAS",
+        currentROAS: "Current ROAS",
         conversionRate: "Conversion Rate",
-        cpc: "Avg CPC",
+        avgCPC: "Average CPC",
         qualityScore: "Quality Score",
       },
-      aiOptimization: {
-        title: "AI ROAS Optimization",
-        description: "Our AI continuously analyzes your campaigns to maximize return on ad spend",
-        automatic: "Automatic Optimizations",
-        features: {
-          bidAdjustments: "Bid adjustments based on performance",
-          budgetReallocation: "Budget reallocation to best-performing campaigns",
-          negativeKeywords: "Automatic negative keyword suggestions",
-          adOptimization: "Optimization of underperforming ads",
-        },
+      
+      roasTitle: "ROAS AI Optimization",
+      optimizeAuto: "Automatically optimize your campaigns",
+      optimizeAutoDesc: "AI will analyze your performance and automatically optimize your bids, budgets and targeting to maximize your ROI",
+      
+      automaticOptimizations: {
+        title: "Automatic Optimizations",
+        feature1: "Automatic bid adjustment based on performance",
+        feature2: "Budget reallocation to performing campaigns",
+        feature3: "Negative keyword suggestions",
+        feature4: "Underperforming ad optimization",
       },
     },
     analytics: {
@@ -417,31 +429,32 @@ export const translations = {
       dashboardsDesc: "Soon you'll visualize all your key metrics in real-time",
     },
     tracking: {
-      title: "Conversion Tracking",
-      description: "Configure conversion tracking for your campaigns",
-      setup: {
-        purchases: {
-          title: "Purchase Tracking",
-          description: "Track e-commerce conversions",
-          action: "Configure",
-        },
-        tag: {
-          title: "Google Ads Tag",
-          description: "Install the tracking tag on your site",
-          action: "Install",
-        },
-        events: {
-          title: "Custom Events",
-          description: "Track specific user actions",
-          action: "Configure",
-        },
+      title: "Conversion Tracking Setup",
+      
+      purchaseTracking: {
+        title: "Purchase Tracking",
+        description: "Automatically track purchase conversions on your site",
+        action: "Configure",
       },
-      features: {
+      
+      googleTag: {
+        title: "Google Ads Tag",
+        description: "Install the Google Ads conversion tag on your site",
+        action: "Get the code",
+      },
+      
+      customEvents: {
+        title: "Custom Events",
+        description: "Create custom conversions for your specific goals",
+        action: "Create an event",
+      },
+      
+      trackingFeatures: {
         title: "Tracking Features",
-        ecommerce: "E-commerce conversion tracking",
-        attribution: "AI-powered attribution",
-        crossDevice: "Cross-device analysis",
-        realtime: "Real-time reports",
+        feature1: "Automatic e-commerce conversion tracking",
+        feature2: "AI-powered multi-touch attribution",
+        feature3: "Cross-device analysis",
+        feature4: "Real-time conversion reports",
       },
     },
   },

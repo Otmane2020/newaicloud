@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "@/lib/language";
 
 interface SyncHistory {
   id: string;
@@ -59,6 +60,7 @@ interface Stats {
 }
 
 export function GoogleMerchantMonitoring() {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<SyncHistory[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ export function GoogleMerchantMonitoring() {
       calculateStats((data || []) as SyncHistory[]);
     } catch (error) {
       console.error("Error loading sync history:", error);
-      toast.error("Impossible de charger l'historique des synchronisations");
+      toast.error(t.googleMerchant.monitoring.errorLoading);
     } finally {
       setLoading(false);
     }
@@ -122,10 +124,10 @@ export function GoogleMerchantMonitoring() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; icon: any; label: string }> = {
-      completed: { variant: "default", icon: CheckCircle2, label: "Réussi" },
-      failed: { variant: "destructive", icon: XCircle, label: "Échoué" },
-      running: { variant: "secondary", icon: RefreshCw, label: "En cours" },
-      pending: { variant: "outline", icon: Clock, label: "En attente" },
+      completed: { variant: "default", icon: CheckCircle2, label: t.googleMerchant.monitoring.status.completed },
+      failed: { variant: "destructive", icon: XCircle, label: t.googleMerchant.monitoring.status.failed },
+      running: { variant: "secondary", icon: RefreshCw, label: t.googleMerchant.monitoring.status.running },
+      pending: { variant: "outline", icon: Clock, label: t.googleMerchant.monitoring.status.pending },
     };
 
     const config = variants[status] || variants.pending;
@@ -166,14 +168,14 @@ export function GoogleMerchantMonitoring() {
         day: "2-digit",
         month: "short",
       }),
-      durée: sync.duration_ms ? Math.round(sync.duration_ms / 1000) : 0,
-      produits: sync.products_synced,
-      succès: sync.status === "completed" ? 1 : 0,
+      [t.googleMerchant.monitoring.charts.duration]: sync.duration_ms ? Math.round(sync.duration_ms / 1000) : 0,
+      [t.googleMerchant.monitoring.charts.products]: sync.products_synced,
+      [t.googleMerchant.monitoring.charts.success]: sync.status === "completed" ? 1 : 0,
     }));
 
   const statusData = [
-    { name: "Réussis", value: stats?.successful_syncs || 0, color: "#22c55e" },
-    { name: "Échoués", value: stats?.failed_syncs || 0, color: "#ef4444" },
+    { name: t.googleMerchant.monitoring.charts.success, value: stats?.successful_syncs || 0, color: "#22c55e" },
+    { name: t.googleMerchant.monitoring.status.failed, value: stats?.failed_syncs || 0, color: "#ef4444" },
   ];
 
   if (loading) {
@@ -193,10 +195,10 @@ export function GoogleMerchantMonitoring() {
         <div className="space-y-1">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Monitoring des Synchronisations
+            {t.googleMerchant.monitoring.title}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Performances et statistiques détaillées
+            {t.googleMerchant.monitoring.subtitle}
           </p>
         </div>
         <Select value={period} onValueChange={setPeriod}>
@@ -204,9 +206,9 @@ export function GoogleMerchantMonitoring() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="7">7 derniers jours</SelectItem>
-            <SelectItem value="30">30 derniers jours</SelectItem>
-            <SelectItem value="90">90 derniers jours</SelectItem>
+            <SelectItem value="7">{t.googleMerchant.monitoring.periods.last7days}</SelectItem>
+            <SelectItem value="30">{t.googleMerchant.monitoring.periods.last30days}</SelectItem>
+            <SelectItem value="90">{t.googleMerchant.monitoring.periods.last90days}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -217,7 +219,7 @@ export function GoogleMerchantMonitoring() {
           <Card className="p-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total Syncs</span>
+                <span className="text-sm text-muted-foreground">{t.googleMerchant.monitoring.stats.totalSyncs}</span>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="text-2xl font-bold">{stats.total_syncs}</div>
@@ -227,7 +229,7 @@ export function GoogleMerchantMonitoring() {
           <Card className="p-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Taux de Succès</span>
+                <span className="text-sm text-muted-foreground">{t.googleMerchant.monitoring.stats.successRate}</span>
                 {stats.success_rate >= 90 ? (
                   <TrendingUp className="h-4 w-4 text-green-600" />
                 ) : (
@@ -238,7 +240,7 @@ export function GoogleMerchantMonitoring() {
                 {stats.success_rate.toFixed(1)}%
               </div>
               <p className="text-xs text-muted-foreground">
-                {stats.successful_syncs} réussis / {stats.failed_syncs} échoués
+                {stats.successful_syncs} {t.googleMerchant.monitoring.stats.successful} / {stats.failed_syncs} {t.googleMerchant.monitoring.stats.failed}
               </p>
             </div>
           </Card>
@@ -246,7 +248,7 @@ export function GoogleMerchantMonitoring() {
           <Card className="p-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Durée Moyenne</span>
+                <span className="text-sm text-muted-foreground">{t.googleMerchant.monitoring.stats.avgDuration}</span>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="text-2xl font-bold">
@@ -258,7 +260,7 @@ export function GoogleMerchantMonitoring() {
           <Card className="p-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Produits Synchronisés</span>
+                <span className="text-sm text-muted-foreground">{t.googleMerchant.monitoring.stats.productsSynced}</span>
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
               </div>
               <div className="text-2xl font-bold">{stats.total_products_synced}</div>
@@ -271,7 +273,7 @@ export function GoogleMerchantMonitoring() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Graphique de durée */}
         <Card className="p-6">
-          <h4 className="text-sm font-semibold mb-4">Durée des Synchronisations (secondes)</h4>
+          <h4 className="text-sm font-semibold mb-4">{t.googleMerchant.monitoring.charts.syncDuration}</h4>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -281,7 +283,7 @@ export function GoogleMerchantMonitoring() {
               <Legend />
               <Line
                 type="monotone"
-                dataKey="durée"
+                dataKey={t.googleMerchant.monitoring.charts.duration}
                 stroke="#3b82f6"
                 strokeWidth={2}
                 dot={{ r: 4 }}
@@ -292,7 +294,7 @@ export function GoogleMerchantMonitoring() {
 
         {/* Graphique de produits */}
         <Card className="p-6">
-          <h4 className="text-sm font-semibold mb-4">Produits Synchronisés</h4>
+          <h4 className="text-sm font-semibold mb-4">{t.googleMerchant.monitoring.charts.productsSync}</h4>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -300,14 +302,14 @@ export function GoogleMerchantMonitoring() {
               <YAxis fontSize={12} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="produits" fill="#22c55e" radius={[8, 8, 0, 0]} />
+              <Bar dataKey={t.googleMerchant.monitoring.charts.products} fill="#22c55e" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
         {/* Répartition succès/échecs */}
         <Card className="p-6">
-          <h4 className="text-sm font-semibold mb-4">Répartition Succès/Échecs</h4>
+          <h4 className="text-sm font-semibold mb-4">{t.googleMerchant.monitoring.charts.statusDistribution}</h4>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -331,7 +333,7 @@ export function GoogleMerchantMonitoring() {
 
         {/* Taux de succès dans le temps */}
         <Card className="p-6">
-          <h4 className="text-sm font-semibold mb-4">Taux de Succès</h4>
+          <h4 className="text-sm font-semibold mb-4">{t.googleMerchant.monitoring.charts.successRate}</h4>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -341,7 +343,7 @@ export function GoogleMerchantMonitoring() {
               <Legend />
               <Line
                 type="stepAfter"
-                dataKey="succès"
+                dataKey={t.googleMerchant.monitoring.charts.success}
                 stroke="#22c55e"
                 strokeWidth={2}
                 dot={{ r: 4 }}
@@ -355,12 +357,12 @@ export function GoogleMerchantMonitoring() {
       <Card className="p-6">
         <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          Historique Détaillé
+          {t.googleMerchant.monitoring.history.title}
         </h4>
         <div className="space-y-3">
           {history.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Aucune synchronisation trouvée pour cette période
+              {t.googleMerchant.monitoring.noSyncs}
             </p>
           ) : (
             history.map((sync) => (
@@ -372,7 +374,7 @@ export function GoogleMerchantMonitoring() {
                   <div className="flex items-center gap-3">
                     {getStatusBadge(sync.status)}
                     <span className="text-sm font-medium capitalize">
-                      Sync {sync.sync_type}
+                      {t.googleMerchant.monitoring.history.sync} {sync.sync_type}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -381,14 +383,14 @@ export function GoogleMerchantMonitoring() {
                       {formatDate(sync.started_at)}
                     </span>
                     {sync.duration_ms && (
-                      <span>Durée: {formatDuration(sync.duration_ms)}</span>
+                      <span>{t.googleMerchant.monitoring.history.duration}: {formatDuration(sync.duration_ms)}</span>
                     )}
                     <span className="text-green-600">
-                      {sync.products_synced} produits synchronisés
+                      {sync.products_synced} {t.googleMerchant.monitoring.history.productsSynced}
                     </span>
                     {sync.products_failed > 0 && (
                       <span className="text-red-600">
-                        {sync.products_failed} échecs
+                        {sync.products_failed} {t.googleMerchant.monitoring.history.failures}
                       </span>
                     )}
                   </div>
