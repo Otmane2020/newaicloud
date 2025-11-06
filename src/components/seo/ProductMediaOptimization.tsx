@@ -27,7 +27,13 @@ interface ProductImage {
   id: string;
   src: string;
   position: number;
-  product_id: string;
+  product_id?: string;
+}
+
+interface ProductWithImages {
+  id: string;
+  title: string;
+  product_images: ProductImage[];
 }
 
 export const ProductMediaOptimization = () => {
@@ -49,26 +55,48 @@ export const ProductMediaOptimization = () => {
   // Load products with images
   const { data: products, isLoading } = useQuery({
     queryKey: ['products-with-images'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+    queryFn: async (): Promise<ProductWithImages[]> => {
+      try {
+        const userResponse: any = await (supabase as any).auth.getUser();
+        const user = userResponse?.data?.user;
+        if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('shopify_products')
-        .select(`
-          id,
-          title,
-          product_images (
-            id,
-            src,
-            position
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('title');
+        // Load products - using any to avoid TS infinite type recursion
+        const productsResponse: any = await (supabase as any)
+          .from('shopify_products')
+          .select('id, title')
+          .eq('user_id', user.id)
+          .order('title');
 
-      if (error) throw error;
-      return data;
+        if (productsResponse.error) throw productsResponse.error;
+        if (!productsResponse.data) return [];
+
+        const productsData = productsResponse.data as Array<{ id: string; title: string }>;
+        if (productsData.length === 0) return [];
+
+        // Load images for all products
+        const imagesResponse: any = await (supabase as any)
+          .from('product_images')
+          .select('id, src, position, product_id')
+          .in('product_id', productsData.map((p: any) => p.id))
+          .order('position');
+
+        if (imagesResponse.error) throw imagesResponse.error;
+
+        const imagesData = (imagesResponse.data || []) as ProductImage[];
+
+        // Combine data
+        const result: ProductWithImages[] = productsData.map((product: any) => ({
+          id: product.id,
+          title: product.title,
+          product_images: imagesData.filter((img: any) => img.product_id === product.id)
+        }));
+
+        return result;
+      } catch (error) {
+        console.error('Error loading products:', error);
+        return [];
+      }
     }
   });
 
