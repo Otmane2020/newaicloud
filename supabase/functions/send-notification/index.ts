@@ -61,6 +61,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     let shouldSendEmail = force_email;
     let shouldSendBrowser = force_browser;
+    
+    // Email data stored separately (not in app_notifications table)
+    let emailSubject: string | null = null;
+    let emailBody: string | null = null;
 
     // If template_code is provided, load template
     if (template_code) {
@@ -97,13 +101,13 @@ const handler = async (req: Request): Promise<Response> => {
       shouldSendEmail = shouldSendEmail || template.send_email;
       shouldSendBrowser = shouldSendBrowser || template.send_browser;
 
-      // Store email content if needed
+      // Store email content separately (not in notificationData)
       if (shouldSendEmail) {
-        notificationData.email_subject = replaceVars(
+        emailSubject = replaceVars(
           language === 'fr' ? template.email_subject_fr : template.email_subject_en,
           metadata
         );
-        notificationData.email_body = replaceVars(
+        emailBody = replaceVars(
           language === 'fr' ? template.email_body_fr : template.email_body_en,
           metadata
         );
@@ -164,8 +168,8 @@ const handler = async (req: Request): Promise<Response> => {
           },
         });
 
-        const emailSubject = notificationData.email_subject || notificationData.title;
-        const emailBody = notificationData.email_body || `
+        const finalEmailSubject = emailSubject || notificationData.title;
+        const finalEmailBody = emailBody || `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2>${notificationData.title}</h2>
             <p>${notificationData.message}</p>
@@ -180,8 +184,8 @@ const handler = async (req: Request): Promise<Response> => {
         await client.send({
           from: `${Deno.env.get('FROM_NAME')} <${Deno.env.get('FROM_EMAIL')}>`,
           to: profile.email,
-          subject: emailSubject,
-          html: emailBody,
+          subject: finalEmailSubject,
+          html: finalEmailBody,
         });
 
         await client.close();
