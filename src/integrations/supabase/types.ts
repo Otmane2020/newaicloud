@@ -911,6 +911,45 @@ export type Database = {
         }
         Relationships: []
       }
+      google_merchant_sync_settings: {
+        Row: {
+          auto_sync_enabled: boolean | null
+          created_at: string | null
+          id: string
+          last_error: string | null
+          last_sync_at: string | null
+          next_sync_at: string | null
+          sync_errors_count: number | null
+          sync_frequency: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_sync_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          next_sync_at?: string | null
+          sync_errors_count?: number | null
+          sync_frequency?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_sync_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          next_sync_at?: string | null
+          sync_errors_count?: number | null
+          sync_frequency?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       google_search_console_data: {
         Row: {
           clicks: number | null

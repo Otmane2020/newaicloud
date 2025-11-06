@@ -184,10 +184,16 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.google-merchant-oauth-token]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-google-merchant-feed]
-verify_jwt = true
+verify_jwt = false
+
+[functions.refresh-google-merchant-token]
+verify_jwt = false
+
+[functions.scheduled-merchant-sync]
+verify_jwt = false
 
 [functions.send-notification]
 verify_jwt = false

@@ -4,6 +4,7 @@ import { GoogleMerchant } from "@/components/seo/GoogleMerchant";
 import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings";
 import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncSettings";
 import { GoogleMerchantIntegration } from "@/components/seo/GoogleMerchantIntegration";
+import { GoogleMerchantSyncSettings } from "@/components/seo/GoogleMerchantSyncSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw, Globe } from "lucide-react";
@@ -53,10 +54,10 @@ export default function Merchant() {
     },
     {
       id: "sync",
-      label: t.navigation.merchantSubmenu.synchronization,
+      label: "Synchronisation Auto",
       icon: RefreshCw,
-      description: t.merchant.tabs.sync.description,
-      component: <GoogleShoppingSyncSettings />,
+      description: "Configurez la synchronisation automatique de vos flux",
+      component: <GoogleMerchantSyncSettings />,
     },
   ];
 
