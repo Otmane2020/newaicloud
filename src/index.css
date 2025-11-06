@@ -210,6 +210,11 @@ body {
   }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 .animate-sound-wave-1 {
   animation: sound-wave 0.8s ease-in-out infinite;
 }
@@ -250,6 +255,10 @@ body {
 
 .animate-fade-in {
   animation: fade-in 1s ease-out forwards;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
 }
 
 /* Grid pattern backgrounds for landing pages */

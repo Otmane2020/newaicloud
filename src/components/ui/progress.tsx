@@ -24,9 +24,20 @@ const Progress = React.forwardRef<
       {...props}
     >
       <ProgressPrimitive.Indicator
-        className="h-full w-full flex-1 bg-primary transition-all duration-500 ease-out"
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-      />
+        className="h-full w-full flex-1 transition-all duration-500 ease-out relative overflow-hidden"
+        style={{ 
+          transform: `translateX(-${100 - (value || 0)}%)`,
+          background: 'linear-gradient(90deg, hsl(var(--primary-dark)) 0%, hsl(var(--primary)) 50%, hsl(var(--primary-light)) 100%)'
+        }}
+      >
+        <div 
+          className="absolute inset-0 animate-shimmer"
+          style={{
+            background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
+            backgroundSize: '200% 100%',
+          }}
+        />
+      </ProgressPrimitive.Indicator>
     </ProgressPrimitive.Root>
   </div>
 ));
