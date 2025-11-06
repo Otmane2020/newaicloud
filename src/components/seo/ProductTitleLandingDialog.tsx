@@ -58,14 +58,20 @@ const calculateQualityScore = (title: string, description: string): number => {
 const generateHtmlPreview = (product: Product): string => {
   const title = product.seo_title || product.title;
   const description = product.seo_description || '';
+  const htmlDescription = product.description || '';
   const imageUrl = product.image_url || '';
   
-  // If we have a rich HTML description in the description field, use it
-  if (product.description && product.description.includes('<h1')) {
-    return product.description;
+  // If we have a rich HTML description in the description field, use it directly
+  if (htmlDescription && (htmlDescription.includes('<div') || htmlDescription.includes('<section'))) {
+    // Wrap in a container for consistent styling
+    return `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        ${htmlDescription}
+      </div>
+    `;
   }
   
-  // Otherwise, generate a basic preview
+  // Otherwise, generate a preview from available data
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem;">
       ${imageUrl ? `
@@ -78,11 +84,20 @@ const generateHtmlPreview = (product: Product): string => {
         ${title}
       </h1>
       
-      <div style="font-size: 1.125rem; color: #4a5568; line-height: 1.75; margin-bottom: 2rem;">
+      <div style="font-size: 1.125rem; color: #4a5568; line-height: 1.75; margin-bottom: 2rem; white-space: pre-wrap;">
         ${description}
       </div>
       
-      <div style="display: inline-flex; gap: 1rem; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+      ${htmlDescription && htmlDescription !== description ? `
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e2e8f0;">
+          <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Détails du produit</h2>
+          <div style="color: #4a5568; line-height: 1.75;">
+            ${htmlDescription}
+          </div>
+        </div>
+      ` : ''}
+      
+      <div style="display: inline-flex; gap: 1rem; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); margin-top: 2rem;">
         <span>Voir sur Shopify</span>
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M7 3L14 10L7 17" />
