@@ -115,7 +115,48 @@ export function GoogleSearchConsole() {
   useEffect(() => {
     checkGoogleConnection();
     loadDomains();
+    handleOAuthCallback();
   }, []);
+
+  const handleOAuthCallback = async () => {
+    try {
+      const isPending = sessionStorage.getItem('google_oauth_pending');
+      if (!isPending) return;
+
+      // Check if we have a session with provider token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.provider_token) {
+        console.log('OAuth callback detected, storing token...');
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Store the OAuth tokens in profiles
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            google_oauth_token: session.provider_token,
+            google_refresh_token: session.provider_refresh_token,
+            google_token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+          })
+          .eq('id', user.id);
+
+        if (error) {
+          console.error('Error storing OAuth token:', error);
+          toast.error('Erreur lors de la sauvegarde du token Google');
+        } else {
+          console.log('OAuth token stored successfully');
+          toast.success('Connexion à Google réussie !');
+          setIsConnected(true);
+        }
+
+        sessionStorage.removeItem('google_oauth_pending');
+      }
+    } catch (error) {
+      console.error('Error handling OAuth callback:', error);
+    }
+  };
 
   useEffect(() => {
     if (selectedDomain) {
@@ -143,11 +184,19 @@ export function GoogleSearchConsole() {
 
   const connectWithGoogle = async () => {
     try {
+      // Store a flag to handle the callback
+      sessionStorage.setItem('google_oauth_pending', 'true');
+      sessionStorage.setItem('oauth_return_tab', 'google-console');
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           scopes: 'https://www.googleapis.com/auth/webmasters.readonly',
           redirectTo: `${window.location.origin}/seo?tab=google-console`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 

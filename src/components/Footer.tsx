@@ -1,8 +1,14 @@
 import { Sparkles } from "lucide-react";
 import { useTranslation } from "@/lib/language";
+import { Button } from "@/components/ui/button";
+import { Globe } from "lucide-react";
 
 export function Footer() {
-  const { t } = useTranslation();
+  const { t, language, setLanguage } = useTranslation();
+  
+  const toggleLanguage = () => {
+    setLanguage(language === 'fr' ? 'en' : 'fr');
+  };
   
   return (
     <footer className="bg-background border-t border-border">
@@ -61,8 +67,21 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© 2024 NewAI. {t.footer.allRightsReserved}</p>
+        <div className="mt-12 pt-8 border-t border-border">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground text-center sm:text-left">
+              © 2024 NewAI. {t.footer.allRightsReserved}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleLanguage}
+              className="gap-2"
+            >
+              <Globe className="h-4 w-4" />
+              {language === 'fr' ? 'English' : 'Français'}
+            </Button>
+          </div>
         </div>
       </div>
     </footer>

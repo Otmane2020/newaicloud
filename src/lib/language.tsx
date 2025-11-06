@@ -21,6 +21,12 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     try {
       const saved = localStorage.getItem('app-language');
       if (saved === 'fr' || saved === 'en') return saved;
+      
+      // Auto-detect browser language on first visit
+      const browserLang = navigator.language.toLowerCase();
+      if (browserLang.startsWith('fr')) {
+        return 'fr';
+      }
       return 'en'; // Default to English
     } catch {
       return 'en';
