@@ -137,14 +137,27 @@ export default function ProductTitleDescription() {
         const product = products.find((p) => p.id === productId);
         if (!product) continue;
 
-        const { error } = await supabase.functions.invoke("generate-title-description", {
+        const { data, error } = await supabase.functions.invoke("generate-title-description", {
           body: {
             currentTitle: product.title,
             imageUrl: product.image_url || null,
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          // Check for specific error types
+          const errorMessage = error.message || String(error);
+          
+          if (errorMessage.includes('CREDITS_DEPLETED') || errorMessage.includes('402')) {
+            throw new Error('CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés. Veuillez ajouter des crédits dans Settings → Workspace → Usage.');
+          }
+          
+          if (errorMessage.includes('RATE_LIMIT') || errorMessage.includes('429')) {
+            throw new Error('RATE_LIMIT: Limite de taux atteinte. Veuillez patienter quelques instants.');
+          }
+          
+          throw error;
+        }
 
         // Update local state
         const { data: updatedProduct } = await supabase
@@ -166,9 +179,24 @@ export default function ProductTitleDescription() {
 
       toast.success("Optimisation terminée", { id: toastId });
       setSelectedProducts(new Set());
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error optimizing:", error);
-      toast.error("Erreur lors de l'optimisation", { id: toastId });
+      
+      const errorMessage = error?.message || String(error);
+      
+      if (errorMessage.includes('CREDITS_DEPLETED')) {
+        toast.error("Crédits IA épuisés", {
+          id: toastId,
+          description: "Ajoutez des crédits dans Settings → Workspace → Usage pour continuer à utiliser l'IA."
+        });
+      } else if (errorMessage.includes('RATE_LIMIT')) {
+        toast.error("Trop de requêtes", {
+          id: toastId,
+          description: "Veuillez patienter quelques instants avant de réessayer."
+        });
+      } else {
+        toast.error("Erreur lors de l'optimisation", { id: toastId });
+      }
     } finally {
       setGenerating(false);
     }

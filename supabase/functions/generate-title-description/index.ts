@@ -58,7 +58,16 @@ serve(async (req) => {
       });
 
       if (!visionResponse.ok) {
-        console.error("Vision API error:", await visionResponse.text());
+        const errorText = await visionResponse.text();
+        console.error("Vision API error:", visionResponse.status, errorText);
+        
+        if (visionResponse.status === 402) {
+          throw new Error("CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés. Veuillez ajouter des crédits à votre workspace dans Settings → Workspace → Usage.");
+        }
+        
+        if (visionResponse.status === 429) {
+          throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
+        }
       } else {
         const visionData = await visionResponse.json();
         visionAnalysis = visionData.choices?.[0]?.message?.content || "";
@@ -107,7 +116,16 @@ La description doit:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI API error:", errorText);
+      console.error("AI API error:", response.status, errorText);
+      
+      if (response.status === 402) {
+        throw new Error("CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés. Veuillez ajouter des crédits à votre workspace dans Settings → Workspace → Usage.");
+      }
+      
+      if (response.status === 429) {
+        throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
+      }
+      
       throw new Error(`Erreur AI API: ${response.status}`);
     }
 
