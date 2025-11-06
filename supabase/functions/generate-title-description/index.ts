@@ -18,220 +18,154 @@ serve(async (req) => {
       throw new Error("Le titre actuel est requis");
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY non configuré");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY non configuré");
     }
 
     let visionAnalysis = "";
-    let productDimensions = "";
-    let visualAttributes = {
-      colors: [] as string[],
-      materials: [] as string[],
-      style: "",
-      design: ""
-    };
     
-    // Si une URL d'image est fournie, analyser l'image avec Vision AI
+    // Si une URL d'image est fournie, analyser avec Lovable AI Vision
     if (imageUrl) {
-      console.log("Analyzing image with Gemini Vision:", imageUrl);
+      console.log("Analyzing image with Lovable AI Vision:", imageUrl);
       
       try {
-        // Fetch image and convert to base64
-        const imageResponse = await fetch(imageUrl);
-        const imageBuffer = await imageResponse.arrayBuffer();
-        const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
-
-        const visionUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
-        
-        const visionResponse = await fetch(visionUrl, {
+        const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            contents: [{
-              parts: [
-                {
-                  text: `Analyze this product image in detail and provide:
-1. Colors: List all visible colors
-2. Materials: Identify materials used
-3. Style: Describe the design style (modern, classic, rustic, etc.)
-4. Design elements: Key visual features
-5. Dimensions: If visible, estimate approximate dimensions
-6. UX aspects: How the product looks in use, ergonomics, user appeal
-
-Format as JSON:
-{
-  "colors": ["color1", "color2"],
-  "materials": ["material1", "material2"],
-  "style": "style description",
-  "design": "design elements description",
-  "dimensions": "dimension info if visible",
-  "ux_appeal": "user experience description"
-}`,
-                },
-                {
-                  inline_data: {
-                    mime_type: "image/jpeg",
-                    data: base64Image,
+            model: "google/gemini-2.5-pro",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: "Analyse ce produit et décris ses couleurs, matériaux, style et design en 2-3 phrases concises."
                   },
-                },
-              ],
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 800,
-            },
+                  {
+                    type: "image_url",
+                    image_url: { url: imageUrl }
+                  }
+                ]
+              }
+            ],
+            max_tokens: 300
           }),
         });
 
         if (!visionResponse.ok) {
           const errorText = await visionResponse.text();
-          console.error("Gemini Vision error:", visionResponse.status, errorText);
+          console.error("Lovable AI Vision error:", visionResponse.status, errorText);
           
           if (visionResponse.status === 429) {
             throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
           }
+          if (visionResponse.status === 402) {
+            throw new Error("CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés.");
+          }
         } else {
           const visionData = await visionResponse.json();
-          const rawAnalysis = visionData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          console.log("Vision analysis completed:", rawAnalysis);
-          
-          // Parse JSON from the response
-          try {
-            const jsonMatch = rawAnalysis.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              visualAttributes = {
-                colors: parsed.colors || [],
-                materials: parsed.materials || [],
-                style: parsed.style || "",
-                design: parsed.design || ""
-              };
-              productDimensions = parsed.dimensions || "";
-              visionAnalysis = parsed.ux_appeal || rawAnalysis;
-            } else {
-              visionAnalysis = rawAnalysis;
-            }
-          } catch (parseError) {
-            console.error("Error parsing vision JSON:", parseError);
-            visionAnalysis = rawAnalysis;
-          }
+          visionAnalysis = visionData.choices?.[0]?.message?.content || "";
+          console.log("Vision analysis completed:", visionAnalysis);
         }
       } catch (visionError) {
         console.error("Error during vision analysis:", visionError);
       }
     }
 
-    // Générer le titre, la description SEO et la description HTML enrichie
-    const systemPrompt = `Tu es un expert en e-commerce et en copywriting UX. Ta tâche est de générer:
-1. Un titre optimisé SEO (50-70 caractères)
-2. Une meta description SEO (150-300 caractères)
-3. Une description HTML enrichie selon les normes e-commerce avec structure H1, H2, H3
+    // Générer le contenu avec Lovable AI et tool calling pour forcer JSON structuré
+    const systemPrompt = `Tu es un expert en e-commerce et en copywriting. Génère du contenu optimisé pour augmenter les ventes.`;
 
-Exigences:
-
-**Titre SEO** (50-70 caractères):
-- Clair, descriptif, optimisé pour le référencement
-- Inclure les mots-clés principaux
-- Attractif pour augmenter le taux de clic
-
-**Meta Description** (150-300 caractères):
-- Engageante, met en valeur les bénéfices
-- Incorpore naturellement des mots-clés SEO
-- Convaincante, incite à l'achat
-
-**Description HTML enrichie**:
-Structure obligatoire:
-- H1: Titre principal du produit (avec ${imageUrl ? 'image produit intégrée' : 'titre seul'})
-- H2: "Caractéristiques principales" (liste à puces des bénéfices)
-- H2: "Design & Style" (description visuelle, couleurs, matériaux)
-${productDimensions ? '- H2: "Dimensions" (tableau ou liste des dimensions)\n' : ''}
-- H2: "Expérience Utilisateur" (UX, confort, facilité d'utilisation)
-- H3: Sous-sections si nécessaire
-
-Format HTML professionnel avec:
-- Balises sémantiques (<section>, <article>)
-- Classes CSS: 'product-hero', 'feature-list', 'design-section', 'dimensions-table', 'ux-highlights'
-- Images responsives si URL fournie
-- Mise en page e-commerce moderne`;
-
-    let userPrompt = `Titre actuel du produit: "${currentTitle}"`;
+    let userPrompt = `Produit: "${currentTitle}"`;
     
     if (visionAnalysis) {
-      userPrompt += `\n\n**Analyse IA de l'image:**
-${visionAnalysis}
-
-**Attributs visuels détectés:**
-- Couleurs: ${visualAttributes.colors.join(', ') || 'Non détecté'}
-- Matériaux: ${visualAttributes.materials.join(', ') || 'Non détecté'}
-- Style: ${visualAttributes.style || 'Non détecté'}
-- Design: ${visualAttributes.design || 'Non détecté'}`;
+      userPrompt += `\n\nAnalyse visuelle du produit:\n${visionAnalysis}`;
     }
 
-    if (productDimensions) {
-      userPrompt += `\n\n**Dimensions du produit:**
-${productDimensions}`;
+    if (imageUrl) {
+      userPrompt += `\n\nImage du produit disponible: ${imageUrl}`;
     }
 
-    userPrompt += `\n\nGénère en JSON:
-{
-  "title": "titre SEO optimisé",
-  "description": "meta description SEO",
-  "html_description": "description HTML enrichie complète avec H1, H2, H3, sections"
-}`;
+    userPrompt += `\n\nGénère du contenu marketing pour ce produit.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
-
-    const response = await fetch(url, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ 
-            text: `${systemPrompt}\n\n${userPrompt}` 
-          }],
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 500,
-        },
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "generate_product_content",
+              description: "Génère un titre optimisé, une meta description et une description HTML enrichie pour un produit e-commerce",
+              parameters: {
+                type: "object",
+                properties: {
+                  title: {
+                    type: "string",
+                    description: "Titre optimisé de 50-70 caractères, clair et attractif pour augmenter le taux de clic"
+                  },
+                  description: {
+                    type: "string",
+                    description: "Meta description de 150-300 caractères, engageante et convaincante"
+                  },
+                  html_description: {
+                    type: "string",
+                    description: `Description HTML enrichie avec structure complète:
+- <h1> avec image si disponible
+- <h2>Caractéristiques principales</h2> avec liste à puces
+- <h2>Design & Style</h2> avec description visuelle
+- <h2>Expérience Utilisateur</h2>
+- Classes CSS: product-hero, feature-list, design-section, ux-highlights
+- Balises sémantiques <section>, <article>
+- HTML professionnel et moderne`
+                  }
+                },
+                required: ["title", "description", "html_description"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "generate_product_content" } }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
+      console.error("Lovable AI error:", response.status, errorText);
       
       if (response.status === 429) {
         throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
       }
+      if (response.status === 402) {
+        throw new Error("CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés.");
+      }
       
-      throw new Error(`Erreur Gemini API: ${response.status}`);
+      throw new Error(`Erreur Lovable AI: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    console.log("AI response:", JSON.stringify(data, null, 2));
     
-    if (!content) {
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall || !toolCall.function?.arguments) {
       throw new Error("Aucun contenu généré par l'IA");
     }
 
-    // Clean up the response and parse JSON
-    const cleanedContent = content
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
-
-    const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Could not parse JSON from AI response");
-    }
-
-    const result = JSON.parse(jsonMatch[0]);
+    const result = JSON.parse(toolCall.function.arguments);
 
     // Update database with new SEO data
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -273,9 +207,7 @@ ${productDimensions}`;
         title: result.title || "",
         description: result.description || "",
         html_description: result.html_description || "",
-        hasVisionAnalysis: !!visionAnalysis,
-        visualAttributes: visualAttributes,
-        dimensions: productDimensions
+        hasVisionAnalysis: !!visionAnalysis
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
