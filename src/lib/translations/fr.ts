@@ -2724,6 +2724,43 @@ export const translations = {
     disclaimer: "Ces conditions sont régies par les lois françaises. Pour toute question :",
   },
 
+  blogPage: {
+    title: "Blog NewAI",
+    subtitle: "Découvrez comment l'IA révolutionne le SEO e-commerce, Google Merchant Center et l'assistance intelligente aux ventes",
+    searchPlaceholder: "Rechercher des articles...",
+    allArticles: "Tous les Articles",
+    loading: "Chargement des articles...",
+    min: "min",
+    minRead: "min de lecture",
+    readArticle: "Lire l'Article",
+    noArticles: "Aucun article ne correspond à votre recherche",
+    backToArticles: "Retour aux Articles",
+    ctaTitle: "Prêt à Transformer Votre Boutique ?",
+    ctaDescription: "Rejoignez des centaines de commerçants qui utilisent NewAI pour automatiser leur SEO et booster leurs ventes.",
+    ctaMainTitle: "Prêt à Booster Votre E-commerce avec l'IA ?",
+    ctaMainDescription: "Rejoignez des centaines de commerçants qui automatisent leur SEO et multiplient leurs ventes avec NewAI",
+    startTrial: "Commencer l'Essai Gratuit",
+    learnMore: "En Savoir Plus",
+    articleNotFound: "Article introuvable",
+    articleNotFoundDesc: "L'article que vous recherchez n'existe pas",
+    errorLoading: "Erreur de chargement",
+    errorLoadingDesc: "Impossible de charger les articles du blog",
+  },
+
+  docPage: {
+    badge: "Documentation Complète",
+    title: "Documentation",
+    subtitle: "Tout ce dont vous avez besoin pour optimiser votre boutique Shopify avec des outils alimentés par l'IA",
+    tabs: {
+      gettingStarted: "Premiers Pas",
+      demo: "Démo & Guides",
+      features: "Fonctionnalités",
+      integration: "Intégration",
+      guides: "Guides",
+      faq: "FAQ",
+    },
+  },
+
   documentation: {
     title: "Documentation",
     gettingStarted: "Premiers Pas",

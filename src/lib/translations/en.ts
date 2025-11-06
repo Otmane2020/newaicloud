@@ -2632,6 +2632,43 @@ export const translations = {
     disclaimer: "These terms are governed by French law. For any questions:",
   },
 
+  blogPage: {
+    title: "NewAI Blog",
+    subtitle: "Discover how AI revolutionizes e-commerce SEO, Google Merchant Center, and intelligent sales assistance",
+    searchPlaceholder: "Search articles...",
+    allArticles: "All Articles",
+    loading: "Loading articles...",
+    min: "min",
+    minRead: "min read",
+    readArticle: "Read Article",
+    noArticles: "No articles match your search",
+    backToArticles: "Back to Articles",
+    ctaTitle: "Ready to Transform Your Store?",
+    ctaDescription: "Join hundreds of merchants using NewAI to automate their SEO and boost their sales.",
+    ctaMainTitle: "Ready to Boost Your E-commerce with AI?",
+    ctaMainDescription: "Join hundreds of merchants automating their SEO and multiplying their sales with NewAI",
+    startTrial: "Start Free Trial",
+    learnMore: "Learn More",
+    articleNotFound: "Article not found",
+    articleNotFoundDesc: "The article you're looking for doesn't exist",
+    errorLoading: "Error loading articles",
+    errorLoadingDesc: "Could not load blog articles",
+  },
+
+  docPage: {
+    badge: "Complete Documentation",
+    title: "Documentation",
+    subtitle: "Everything you need to know to optimize your Shopify store with AI-powered tools",
+    tabs: {
+      gettingStarted: "Getting Started",
+      demo: "Demo & Guides",
+      features: "Features",
+      integration: "Integration",
+      guides: "Guides",
+      faq: "FAQ",
+    },
+  },
+
   documentation: {
     title: "Documentation",
     gettingStarted: "Getting Started",

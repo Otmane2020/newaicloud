@@ -32,9 +32,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/lib/language";
 
 const Documentation = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -49,18 +51,18 @@ const Documentation = () => {
           <div className="flex flex-col items-center text-center space-y-6">
             <Badge className="bg-primary/20 text-primary-foreground border-primary/30 px-6 py-2">
               <BookOpen className="w-4 h-4 mr-2" />
-              Complete Documentation
+              {t.docPage.badge}
             </Badge>
             
             <h1 className="text-5xl md:text-6xl font-bold text-white max-w-4xl leading-tight">
               NewAI{" "}
               <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
-                Documentation
+                {t.docPage.title}
               </span>
             </h1>
             
             <p className="text-xl text-gray-300 max-w-2xl">
-              Everything you need to know to optimize your Shopify store with AI-powered tools
+              {t.docPage.subtitle}
             </p>
           </div>
         </div>
@@ -72,27 +74,27 @@ const Documentation = () => {
           <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 gap-2">
             <TabsTrigger value="getting-started" className="gap-2">
               <Rocket className="w-4 h-4" />
-              <span className="hidden sm:inline">Getting Started</span>
+              <span className="hidden sm:inline">{t.docPage.tabs.gettingStarted}</span>
             </TabsTrigger>
             <TabsTrigger value="demo" className="gap-2">
               <Play className="w-4 h-4" />
-              <span className="hidden sm:inline">Demo & Guides</span>
+              <span className="hidden sm:inline">{t.docPage.tabs.demo}</span>
             </TabsTrigger>
             <TabsTrigger value="features" className="gap-2">
               <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Features</span>
+              <span className="hidden sm:inline">{t.docPage.tabs.features}</span>
             </TabsTrigger>
             <TabsTrigger value="integration" className="gap-2">
               <Link2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Integration</span>
+              <span className="hidden sm:inline">{t.docPage.tabs.integration}</span>
             </TabsTrigger>
             <TabsTrigger value="guides" className="gap-2">
               <BookOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">Guides</span>
+              <span className="hidden sm:inline">{t.docPage.tabs.guides}</span>
             </TabsTrigger>
             <TabsTrigger value="faq" className="gap-2">
               <HelpCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">FAQ</span>
+              <span className="hidden sm:inline">{t.docPage.tabs.faq}</span>
             </TabsTrigger>
           </TabsList>
 
