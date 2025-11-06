@@ -10,11 +10,13 @@ const corsHeaders = {
 const welcomeEmailSchema = z.object({
   email: z.string().email().max(255),
   fullName: z.string().trim().min(1).max(100),
+  language: z.enum(['fr', 'en']).optional(),
 });
 
 interface WelcomeEmailRequest {
   email: string;
   fullName: string;
+  language?: 'fr' | 'en';
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -38,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { email, fullName } = validation.data;
+    const { email, fullName, language = 'fr' } = validation.data;
     
     console.log('Sending welcome email to:', email);
 
@@ -54,10 +56,33 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
+    const translations = {
+      fr: {
+        subject: 'Bienvenue sur New AI !',
+        title: 'Bienvenue sur New AI !',
+        greeting: 'Bonjour',
+        thankYou: 'Merci de vous être inscrit sur New AI, votre plateforme d\'optimisation SEO pour Shopify !',
+        message: 'Nous sommes ravis de vous compter parmi nous. Vous pouvez dès maintenant accéder à toutes nos fonctionnalités pour booster votre visibilité en ligne.',
+        button: 'Accéder à mon compte',
+        signature: 'À très bientôt,<br>L\'équipe New AI'
+      },
+      en: {
+        subject: 'Welcome to New AI!',
+        title: 'Welcome to New AI!',
+        greeting: 'Hello',
+        thankYou: 'Thank you for signing up to New AI, your SEO optimization platform for Shopify!',
+        message: 'We are delighted to have you with us. You can now access all our features to boost your online visibility.',
+        button: 'Access my account',
+        signature: 'See you soon,<br>The New AI Team'
+      }
+    };
+
+    const t = translations[language];
+
     await client.send({
       from: `${Deno.env.get('FROM_NAME')} <${Deno.env.get('FROM_EMAIL')}>`,
       to: email,
-      subject: 'Bienvenue sur New AI !',
+      subject: t.subject,
       html: `
         <!DOCTYPE html>
         <html>
@@ -73,14 +98,14 @@ const handler = async (req: Request): Promise<Response> => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>Bienvenue sur New AI !</h1>
+              <h1>${t.title}</h1>
             </div>
             <div class="content">
-              <h2>Bonjour ${fullName || 'cher utilisateur'} 👋</h2>
-              <p>Merci de vous être inscrit sur New AI, votre plateforme d'optimisation SEO pour Shopify !</p>
-              <p>Nous sommes ravis de vous compter parmi nous. Vous pouvez dès maintenant accéder à toutes nos fonctionnalités pour booster votre visibilité en ligne.</p>
-              <a href="${Deno.env.get('SUPABASE_URL')?.replace('https://nekqqlhrjgmyudmmewas.supabase.co', 'https://affable-calm-newai.lovable.app')}/dashboard" class="button">Accéder à mon compte</a>
-              <p>À très bientôt,<br>L'équipe New AI</p>
+              <h2>${t.greeting} ${fullName || (language === 'fr' ? 'cher utilisateur' : 'dear user')} 👋</h2>
+              <p>${t.thankYou}</p>
+              <p>${t.message}</p>
+              <a href="${Deno.env.get('SUPABASE_URL')?.replace('https://nekqqlhrjgmyudmmewas.supabase.co', 'https://affable-calm-newai.lovable.app')}/dashboard" class="button">${t.button}</a>
+              <p>${t.signature}</p>
             </div>
           </div>
         </body>

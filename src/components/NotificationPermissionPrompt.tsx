@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 export function NotificationPermissionPrompt() {
   const [show, setShow] = useState(false);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   
   useEffect(() => {
     // Show prompt after 10 seconds if notification permission not yet requested
@@ -24,11 +24,30 @@ export function NotificationPermissionPrompt() {
   }, []);
   
   const handleAllow = async () => {
+    const currentPermission = BrowserNotificationService.getPermission();
+    
+    // If already denied, show instructions to enable manually
+    if (currentPermission === 'denied') {
+      toast.error(
+        language === 'fr' 
+          ? 'Les notifications sont bloquées. Veuillez les activer dans les paramètres de votre navigateur (icône de cadenas dans la barre d\'adresse).' 
+          : 'Notifications are blocked. Please enable them in your browser settings (lock icon in the address bar).',
+        { duration: 8000 }
+      );
+      setShow(false);
+      return;
+    }
+    
     const permission = await BrowserNotificationService.requestPermission();
     if (permission === 'granted') {
       toast.success(t.integration.browser.enabled);
-    } else {
-      toast.error(t.integration.browser.denied);
+    } else if (permission === 'denied') {
+      toast.error(
+        language === 'fr' 
+          ? 'Les notifications sont bloquées. Pour les activer : cliquez sur l\'icône de cadenas dans la barre d\'adresse → Paramètres du site → Notifications → Autoriser' 
+          : 'Notifications are blocked. To enable: click the lock icon in the address bar → Site settings → Notifications → Allow',
+        { duration: 8000 }
+      );
     }
     setShow(false);
   };

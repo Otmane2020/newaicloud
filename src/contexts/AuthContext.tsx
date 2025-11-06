@@ -59,10 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       toast.error(error.message);
     } else {
-      // Send welcome email
+      // Send welcome email with user's language preference
       try {
+        const language = (localStorage.getItem('app-language') || 'en') as 'fr' | 'en';
         await supabase.functions.invoke('send-welcome-email', {
-          body: { email, fullName }
+          body: { email, fullName, language }
         });
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
