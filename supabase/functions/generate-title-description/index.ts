@@ -109,22 +109,46 @@ serve(async (req) => {
     }
 
     // Générer le contenu avec Lovable AI et tool calling pour forcer JSON structuré
-    const systemPrompt = `Tu es un expert en e-commerce. Crée du contenu HTML riche et structuré.`;
+    const systemPrompt = `Tu es un expert SEO e-commerce spécialisé dans la conversion. 
+Ton objectif : créer du contenu qui se démarque, attire et convertit.
+NE COPIE JAMAIS le titre existant - AMÉLIORE-LE toujours avec des mots-clés pertinents et des bénéfices clients.`;
 
-    let userPrompt = `Produit: "${currentTitle}"`;
+    let userPrompt = `Titre actuel à OPTIMISER (ne pas copier) : "${currentTitle}"`;
     
     if (visionAnalysis) {
-      userPrompt += `\n\nAnalyse visuelle:\n${visionAnalysis}`;
+      userPrompt += `\n\n📸 Analyse visuelle du produit:\n${visionAnalysis}`;
     }
 
     if (imageUrl) {
-      userPrompt += `\n\nImage: ${imageUrl}`;
+      userPrompt += `\n\n🖼️ Image disponible: ${imageUrl}`;
     }
 
-    userPrompt += `\n\nCrée:
-1. Titre SEO (50-60 caractères)
-2. Meta description (150-160 caractères)
-3. Description HTML avec H1, H2, caractéristiques (300-500 mots max)`;
+    userPrompt += `\n\n🎯 MISSION - Créer du contenu SEO OPTIMISÉ et DIFFÉRENT:
+
+1. ✨ TITRE SEO (50-60 caractères):
+   - TRANSFORME le titre basique en titre attractif
+   - Ajoute des mots-clés pertinents (matériaux, style, usage)
+   - Inclus un bénéfice client ou USP si possible
+   - Exemple: "Chaussures running" → "Chaussures Running Ultra-Légères - Confort Premium"
+
+2. 📝 META DESCRIPTION (150-160 caractères):
+   - Mets en avant les bénéfices principaux
+   - Utilise des mots d'action (découvrez, profitez, adoptez)
+   - Inclus un appel à l'action subtil
+   - Ajoute des éléments de réassurance (qualité, livraison, etc.)
+
+3. 📄 DESCRIPTION HTML ENRICHIE (300-500 mots):
+   - Commence par un paragraphe accrocheur sur les bénéfices
+   - Ajoute une section "Pourquoi choisir ce produit?"
+   - Liste des caractéristiques CONCRÈTES avec émojis
+   - Inclus des détails sur l'usage, l'entretien
+   - Termine par un CTA motivant
+   
+⚠️ RÈGLES STRICTES:
+- NE JAMAIS copier le titre existant tel quel
+- Toujours ajouter de la valeur (caractéristiques, bénéfices, contexte d'usage)
+- Rendre le contenu unique et optimisé pour le SEO
+- Utiliser un ton professionnel mais engageant`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
