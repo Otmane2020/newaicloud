@@ -172,6 +172,7 @@ export function GoogleSearchConsole() {
 
   const connectWithGoogle = async () => {
     try {
+      // Use the full current URL as redirect URI to match Google Cloud Console configuration
       const redirectUri = `${window.location.origin}/seo?tab=google-console`;
       
       // Get Google OAuth URL from edge function (to avoid exposing CLIENT_ID)
