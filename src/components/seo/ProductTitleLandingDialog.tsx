@@ -5,7 +5,7 @@ import { responsiveDialogClasses, responsivePadding } from "@/lib/dialogUtils";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Product {
   id: string;
@@ -102,6 +102,23 @@ export function ProductTitleLandingDialog({
 }: ProductTitleLandingDialogProps) {
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile' | '360'>('desktop');
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  
+  // Animate progress from 0 to 100% when generating
+  useEffect(() => {
+    if (isGenerating) {
+      setProgress(0);
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 95) return prev;
+          return prev + 1;
+        });
+      }, 150);
+      return () => clearInterval(interval);
+    } else {
+      setProgress(100);
+    }
+  }, [isGenerating]);
   
   const selectedProduct = products[selectedProductIndex];
   const qualityScore = selectedProduct?.seo_title && selectedProduct?.seo_description
@@ -135,8 +152,11 @@ export function ProductTitleLandingDialog({
               <p className="text-center text-sm text-muted-foreground">
                 Génération de titres captivants et descriptions enrichies avec médias
               </p>
-              <div className="max-w-md mx-auto">
-                <Progress value={33} className="h-2" />
+              <div className="max-w-md mx-auto space-y-2">
+                <Progress value={progress} className="h-2" />
+                <p className="text-center text-xs text-muted-foreground">
+                  Progression {progress}%
+                </p>
               </div>
             </div>
           </div>
@@ -224,7 +244,7 @@ export function ProductTitleLandingDialog({
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Description Enrichie</h3>
+                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Description</h3>
                     <p className="text-sm leading-relaxed">{selectedProduct?.seo_description}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {(selectedProduct?.seo_description || '').length} caractères
