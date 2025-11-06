@@ -20,9 +20,9 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
     }
 
     console.log("Generating e-commerce background for product:", productType);
@@ -46,40 +46,42 @@ serve(async (req) => {
       - L'arrière-plan doit être cohérent avec le type de produit : ${productType || "produit général"}
     `;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Fetch and convert image to base64
+    const imageResponse = await fetch(imageUrl);
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: model,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: enhancedPrompt,
+        contents: [{
+          parts: [
+            {
+              text: enhancedPrompt,
+            },
+            {
+              inline_data: {
+                mime_type: "image/jpeg",
+                data: base64Image,
               },
-              {
-                type: "image_url",
-                image_url: {
-                  url: imageUrl,
-                  detail: "high", // Pour une meilleure qualité d'image
-                },
-              },
-            ],
-          },
-        ],
-        max_tokens: 1000,
-        modalities: ["image", "text"],
+            },
+          ],
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1000,
+        },
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("Gemini API error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
@@ -88,35 +90,35 @@ serve(async (req) => {
         });
       }
 
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required. Please add credits to your workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      throw new Error(`AI gateway error: ${response.status} ${errorText}`);
+      throw new Error(`Gemini API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("API Response:", JSON.stringify(data, null, 2));
+    console.log("Gemini Response received");
 
-    // Extraction améliorée de l'URL de l'image
-    let generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Extract generated image from Gemini response
+    const parts = data.candidates?.[0]?.content?.parts;
+    if (!parts) {
+      console.error("No parts found in response:", data);
+      throw new Error("No image generated - invalid API response");
+    }
 
-    // Alternative extraction path
-    if (!generatedImageUrl && data.choices?.[0]?.message?.content) {
-      const content = data.choices[0].message.content;
-      const imageMatch = content.match(/!\[.*?\]\((.*?)\)/);
-      if (imageMatch) {
-        generatedImageUrl = imageMatch[1];
+    // Find the image in the parts array
+    let generatedImageBase64 = null;
+    for (const part of parts) {
+      if (part.inline_data?.data) {
+        generatedImageBase64 = part.inline_data.data;
+        break;
       }
     }
 
-    if (!generatedImageUrl) {
-      console.error("No image URL found in response:", data);
-      throw new Error("No image generated - check the API response format");
+    if (!generatedImageBase64) {
+      console.error("No image data found in response:", data);
+      throw new Error("No image generated");
     }
+
+    // Convert base64 to data URL
+    const generatedImageUrl = `data:image/png;base64,${generatedImageBase64}`;
 
     console.log("E-commerce background generated successfully");
 
