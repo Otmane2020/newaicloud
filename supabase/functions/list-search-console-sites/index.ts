@@ -12,12 +12,6 @@ serve(async (req) => {
   }
 
   try {
-    const { domain, days = 30 } = await req.json();
-
-    if (!domain) {
-      throw new Error("Domain is required");
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
@@ -51,7 +45,6 @@ serve(async (req) => {
     if (profile.google_token_expires_at) {
       const expiresAt = new Date(profile.google_token_expires_at);
       if (expiresAt < new Date()) {
-        // Token expired, refresh it
         if (!profile.google_refresh_token) {
           throw new Error("Token expired and no refresh token available");
         }
@@ -74,7 +67,6 @@ serve(async (req) => {
         const refreshData = await refreshResponse.json();
         accessToken = refreshData.access_token;
 
-        // Update profile with new token
         await supabaseClient
           .from('profiles')
           .update({
@@ -85,101 +77,34 @@ serve(async (req) => {
       }
     }
 
-    // Calculate date range
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    const formatDate = (date: Date) => date.toISOString().split('T')[0];
-
-    // Fetch data from Google Search Console API
-    const searchConsoleResponse = await fetch(
-      `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent('sc-domain:' + domain)}/searchAnalytics/query`,
+    // Fetch list of sites from Google Search Console
+    const sitesResponse = await fetch(
+      'https://www.googleapis.com/webmasters/v3/sites',
       {
-        method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          startDate: formatDate(startDate),
-          endDate: formatDate(endDate),
-          dimensions: ['date'],
-          rowLimit: 25000,
-        }),
       }
     );
 
-    if (!searchConsoleResponse.ok) {
-      const errorText = await searchConsoleResponse.text();
-      console.error('Search Console API error:', searchConsoleResponse.status, errorText);
-      
-      if (searchConsoleResponse.status === 403) {
-        // Get list of accessible sites to provide helpful error message
-        const sitesResponse = await fetch(
-          'https://www.googleapis.com/webmasters/v3/sites',
-          {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-          }
-        );
-
-        let availableSites = [];
-        if (sitesResponse.ok) {
-          const sitesData = await sitesResponse.json();
-          availableSites = (sitesData.siteEntry || []).map((s: any) => s.siteUrl);
-        }
-
-        if (availableSites.length === 0) {
-          throw new Error(`Accès refusé à '${domain}'. Votre compte Google n'a accès à aucun domaine dans Search Console. Veuillez ajouter ${domain} dans Google Search Console ou demander l'accès au propriétaire.`);
-        } else {
-          throw new Error(`Accès refusé à '${domain}'. Votre compte a accès à: ${availableSites.join(', ')}. Veuillez vérifier que le bon domaine est sélectionné ou demander l'accès à ${domain}.`);
-        }
-      }
-      
-      throw new Error(`Search Console API error: ${searchConsoleResponse.status}`);
+    if (!sitesResponse.ok) {
+      const errorText = await sitesResponse.text();
+      console.error('Search Console sites API error:', sitesResponse.status, errorText);
+      throw new Error(`Failed to fetch sites: ${sitesResponse.status}`);
     }
 
-    const searchConsoleData = await searchConsoleResponse.json();
+    const sitesData = await sitesResponse.json();
     
-    // Process and cache the data
-    const processedData = (searchConsoleData.rows || []).map((row: any) => ({
-      date: row.keys[0],
-      clicks: row.clicks,
-      impressions: row.impressions,
-      ctr: row.ctr * 100, // Convert to percentage
-      position: row.position,
-    }));
-
-    // Cache the data in database
-    for (const dataPoint of processedData) {
-      await supabaseClient
-        .from('google_search_console_data')
-        .upsert({
-          user_id: user.id,
-          domain,
-          date: dataPoint.date,
-          clicks: dataPoint.clicks,
-          impressions: dataPoint.impressions,
-          ctr: dataPoint.ctr,
-          position: dataPoint.position,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id,domain,date'
-        });
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
-        data: processedData,
+        sites: sitesData.siteEntry || [],
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error("Error in get-search-console-data:", error);
+    console.error("Error in list-search-console-sites:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ error: errorMessage }),

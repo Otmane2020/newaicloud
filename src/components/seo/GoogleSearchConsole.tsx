@@ -109,6 +109,9 @@ export function GoogleSearchConsole() {
   const [data, setData] = useState<SearchConsoleData[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddDomainDialog, setShowAddDomainDialog] = useState(false);
+  const [showAvailableSitesDialog, setShowAvailableSitesDialog] = useState(false);
+  const [availableSites, setAvailableSites] = useState<string[]>([]);
+  const [loadingAvailableSites, setLoadingAvailableSites] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const [isConnected, setIsConnected] = useState(false);
 
@@ -289,19 +292,11 @@ export function GoogleSearchConsole() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Validate domain format
-      const domainRegex = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/i;
-      if (!domainRegex.test(newDomain)) {
-        toast.error('Format de domaine invalide');
-        return;
-      }
-
       const { error } = await supabase
         .from('google_search_console_domains')
         .insert({
           user_id: user.id,
-          domain: newDomain.toLowerCase(),
-          verified: false,
+          domain: newDomain.trim(),
         });
 
       if (error) throw error;
@@ -309,14 +304,32 @@ export function GoogleSearchConsole() {
       toast.success('Domaine ajouté avec succès');
       setNewDomain('');
       setShowAddDomainDialog(false);
-      loadDomains();
-    } catch (error: any) {
+      await loadDomains();
+    } catch (error) {
       console.error('Error adding domain:', error);
-      if (error.code === '23505') {
-        toast.error('Ce domaine est déjà ajouté');
+      toast.error('Erreur lors de l\'ajout du domaine');
+    }
+  };
+
+  const checkAvailableSites = async () => {
+    try {
+      setLoadingAvailableSites(true);
+      const { data, error } = await supabase.functions.invoke('list-search-console-sites');
+
+      if (error) throw error;
+
+      if (data?.sites && data.sites.length > 0) {
+        const siteUrls = data.sites.map((s: any) => s.siteUrl.replace('sc-domain:', ''));
+        setAvailableSites(siteUrls);
+        setShowAvailableSitesDialog(true);
       } else {
-        toast.error('Erreur lors de l\'ajout du domaine');
+        toast.error('Aucun site trouvé dans votre Google Search Console');
       }
+    } catch (error) {
+      console.error('Error fetching available sites:', error);
+      toast.error('Erreur lors de la récupération des sites disponibles');
+    } finally {
+      setLoadingAvailableSites(false);
     }
   };
 
@@ -400,14 +413,32 @@ export function GoogleSearchConsole() {
             </p>
           </div>
           <div className="space-y-4">
-            <Button
-              onClick={connectWithGoogle}
-              size="lg"
-              className="gap-2"
-            >
-              <Globe className="h-5 w-5" />
-              Se connecter avec Google
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button
+                onClick={connectWithGoogle}
+                size="lg"
+                className="gap-2"
+              >
+                <Globe className="h-5 w-5" />
+                Se connecter avec Google
+              </Button>
+              {isConnected && (
+                <Button
+                  onClick={checkAvailableSites}
+                  size="lg"
+                  variant="outline"
+                  disabled={loadingAvailableSites}
+                  className="gap-2"
+                >
+                  {loadingAvailableSites ? (
+                    <RefreshCw className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <BarChart3 className="h-5 w-5" />
+                  )}
+                  Voir mes sites disponibles
+                </Button>
+              )}
+            </div>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>✓ Analyse de performance SEO</p>
               <p>✓ Évolution du trafic par période</p>
@@ -432,6 +463,20 @@ export function GoogleSearchConsole() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={checkAvailableSites}
+              disabled={loadingAvailableSites}
+              className="gap-2"
+            >
+              {loadingAvailableSites ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <BarChart3 className="h-4 w-4" />
+              )}
+              Mes sites
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -676,6 +721,57 @@ export function GoogleSearchConsole() {
             </Button>
             <Button onClick={addDomain}>
               Ajouter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Available sites dialog */}
+      <Dialog open={showAvailableSitesDialog} onOpenChange={setShowAvailableSitesDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sites disponibles dans Google Search Console</DialogTitle>
+            <DialogDescription>
+              Voici les domaines auxquels votre compte Google a accès dans Search Console
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {availableSites.length > 0 ? (
+              <div className="space-y-2">
+                {availableSites.map((site, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span className="font-medium">{site}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setNewDomain(site);
+                        setShowAvailableSitesDialog(false);
+                        setShowAddDomainDialog(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Ajouter
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertCircle className="h-12 w-12 mx-auto mb-4" />
+                <p>Aucun site trouvé dans votre Google Search Console</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAvailableSitesDialog(false)}>
+              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>
