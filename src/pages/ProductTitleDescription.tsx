@@ -20,7 +20,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
 import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
-import { ProductTitleLandingDialog } from "@/components/seo/ProductTitleLandingDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -75,10 +74,6 @@ export default function ProductTitleDescription() {
   const [aiBgPreviews, setAiBgPreviews] = useState<PreviewImage[]>([]);
   const [customPrompt, setCustomPrompt] = useState('');
   const [showPromptDialog, setShowPromptDialog] = useState(false);
-  const [showLandingPreviewDialog, setShowLandingPreviewDialog] = useState(false);
-  const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
-  const [syncingToShopify, setSyncingToShopify] = useState(false);
-  const [isOptimizing, setIsOptimizing] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -135,13 +130,9 @@ export default function ProductTitleDescription() {
     }
 
     setGenerating(true);
-    setIsOptimizing(true);
-    setShowLandingPreviewDialog(true);
     const toastId = toast.loading(`Optimisation de ${selectedProducts.size} produit(s)...`);
 
     try {
-      const optimizedList: Product[] = [];
-      
       for (const productId of selectedProducts) {
         const product = products.find((p) => p.id === productId);
         if (!product) continue;
@@ -171,12 +162,11 @@ export default function ProductTitleDescription() {
         // Update local state
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
-          .select("id, title, description, seo_title, seo_description, image_url, shopify_id")
+          .select("seo_title, seo_description")
           .eq("id", productId)
           .single();
 
         if (updatedProduct) {
-          optimizedList.push(updatedProduct);
           setProducts((prev) =>
             prev.map((p) =>
               p.id === productId
@@ -188,7 +178,6 @@ export default function ProductTitleDescription() {
       }
 
       toast.success("Optimisation terminée", { id: toastId });
-      setOptimizedProducts(optimizedList);
       setSelectedProducts(new Set());
     } catch (error: any) {
       console.error("Error optimizing:", error);
@@ -210,7 +199,6 @@ export default function ProductTitleDescription() {
       }
     } finally {
       setGenerating(false);
-      setIsOptimizing(false);
     }
   };
 
@@ -496,39 +484,6 @@ export default function ProductTitleDescription() {
             : p
         )
       );
-    }
-  };
-
-  const handleSyncToShopify = async () => {
-    setSyncingToShopify(true);
-    const toastId = toast.loading("Synchronisation avec Shopify...");
-
-    try {
-      for (const product of optimizedProducts) {
-        if (!product.shopify_id) continue;
-
-        const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: {
-            productId: product.id,
-            shopifyId: product.shopify_id,
-            seoTitle: product.seo_title,
-            seoDescription: product.seo_description,
-          }
-        });
-
-        if (error) {
-          console.error(`Error syncing product ${product.id}:`, error);
-        }
-      }
-
-      toast.success(`${optimizedProducts.length} produit(s) synchronisé(s) avec Shopify`, { id: toastId });
-      setShowLandingPreviewDialog(false);
-      setOptimizedProducts([]);
-    } catch (error) {
-      console.error("Error syncing to Shopify:", error);
-      toast.error("Erreur lors de la synchronisation", { id: toastId });
-    } finally {
-      setSyncingToShopify(false);
     }
   };
 
@@ -872,15 +827,6 @@ export default function ProductTitleDescription() {
         onRegenerate={handleRegenerateAiBg}
         customPrompt={customPrompt}
         onCustomPromptChange={setCustomPrompt}
-      />
-
-      <ProductTitleLandingDialog
-        open={showLandingPreviewDialog}
-        onOpenChange={setShowLandingPreviewDialog}
-        products={optimizedProducts}
-        isGenerating={isOptimizing}
-        onSync={handleSyncToShopify}
-        syncLoading={syncingToShopify}
       />
     </div>
   );

@@ -17,8 +17,8 @@ interface CompetitorPrice {
 }
 
 async function generateSearchQueries(productTitle: string): Promise<string[]> {
-  const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-  if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
   const prompt = `Génère 3 requêtes de recherche Google optimales pour trouver ce produit en ligne:
 "${productTitle}"
@@ -27,23 +27,22 @@ Réponds UNIQUEMENT avec un tableau JSON de 3 chaînes de caractères, sans mark
 ["requête 1", "requête 2", "requête 3"]`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
 
     if (!response.ok) return [productTitle, `${productTitle} prix`, `acheter ${productTitle}`];
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const content = data.choices?.[0]?.message?.content;
     
     const jsonMatch = content.match(/\[[\s\S]*?\]/);
     if (jsonMatch) {
@@ -176,47 +175,36 @@ async function compareProductImages(
 ): Promise<number> {
   if (!productImage || !competitorImage) return 0.8; // Default similarity
 
-  const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-  if (!GOOGLE_GEMINI_API_KEY) return 0.8;
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) return 0.8;
 
   try {
-    // Fetch images and convert to base64
-    const [img1Response, img2Response] = await Promise.all([
-      fetch(productImage),
-      fetch(competitorImage)
-    ]);
-    
-    const [img1Buffer, img2Buffer] = await Promise.all([
-      img1Response.arrayBuffer(),
-      img2Response.arrayBuffer()
-    ]);
-    
-    const base64Img1 = btoa(String.fromCharCode(...new Uint8Array(img1Buffer)));
-    const base64Img2 = btoa(String.fromCharCode(...new Uint8Array(img2Buffer)));
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: "image/jpeg", data: base64Img1 } },
-              { inline_data: { mime_type: "image/jpeg", data: base64Img2 } },
-              { text: "Ces deux produits sont-ils identiques ou très similaires? Réponds uniquement avec un score de 0.0 à 1.0" }
-            ]
-          }]
-        }),
-      }
-    );
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image_url", image_url: { url: productImage } },
+            { type: "image_url", image_url: { url: competitorImage } },
+            { 
+              type: "text", 
+              text: "Ces deux produits sont-ils identiques ou très similaires? Réponds uniquement avec un score de 0.0 à 1.0" 
+            }
+          ]
+        }]
+      }),
+    });
 
     if (!response.ok) return 0.8;
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const content = data.choices?.[0]?.message?.content;
     const score = parseFloat(content);
     
     return isNaN(score) ? 0.8 : Math.max(0, Math.min(1, score));
@@ -246,8 +234,8 @@ async function analyzeWithAI(
   competitorPrices: CompetitorPrice[],
   taxRate: number
 ): Promise<{ marketPrice: number | null; smartPrice: number | null; reasoning: string; competitors: CompetitorPrice[] }> {
-  const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-  if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
   // CRITICAL: Ne calculer un prix QUE si on a de vrais concurrents
   if (!competitorPrices || competitorPrices.length < 3) {
@@ -293,28 +281,30 @@ Réponds UNIQUEMENT avec un objet JSON (sans markdown):
 }`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
 
     if (!response.ok) {
       if (response.status === 429) {
         throw new Error("Rate limit atteint. Réessayez dans quelques instants.");
       }
+      if (response.status === 402) {
+        throw new Error("Crédits épuisés. Ajoutez des crédits à votre workspace Lovable.");
+      }
       throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const content = data.choices?.[0]?.message?.content;
     
     if (!content) throw new Error("No AI response");
 

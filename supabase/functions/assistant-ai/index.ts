@@ -20,16 +20,16 @@ serve(async (req) => {
       );
     }
 
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) {
-      console.error("GOOGLE_GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY is not configured");
       return new Response(
         JSON.stringify({ error: "AI service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Calling Google Gemini with", messages.length, "messages, language:", language);
+    console.log("Calling Lovable AI with", messages.length, "messages, language:", language);
 
     // System prompt based on language
     const systemPrompt = language === 'fr' 
@@ -60,35 +60,24 @@ Main features of NewAI.sale:
 
 Be helpful and professional. If you don't know the answer, say so honestly.`;
 
-    // Convert messages to Gemini format
-    const geminiContents = [];
-    
-    // Add system prompt as first user message
-    geminiContents.push({
-      role: "user",
-      parts: [{ text: systemPrompt }]
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          ...messages,
+        ],
+        stream: true,
+      }),
     });
-    
-    // Add conversation history
-    for (const msg of messages) {
-      geminiContents.push({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.content }]
-      });
-    }
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:streamGenerateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: geminiContents,
-        }),
-      }
-    );
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -97,8 +86,14 @@ Be helpful and professional. If you don't know the answer, say so honestly.`;
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Crédits insuffisants. Veuillez recharger votre compte." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const errorText = await response.text();
-      console.error("Google Gemini error:", response.status, errorText);
+      console.error("Lovable AI error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "Erreur du service IA" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

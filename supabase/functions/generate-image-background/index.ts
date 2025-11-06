@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,131 +11,99 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, prompt, productType, style = "professional" } = await req.json();
+    const { imageUrl, prompt, model = "google/gemini-2.5-flash-image-preview", productType } = await req.json();
 
     if (!imageUrl || !prompt) {
-      return new Response(JSON.stringify({ error: "imageUrl et prompt sont requis." }), {
+      return new Response(JSON.stringify({ error: "Missing imageUrl or prompt" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY non configurée");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    console.log("🧠 Génération d'arrière-plan e-commerce avec Gemini pour :", productType);
+    console.log("Generating e-commerce background with OpenAI gpt-image-1 for product:", productType);
 
-    // --- Prompt IA ---
-    const imagePrompt = `
-Create a high-quality e-commerce product photo.
+    // Enhanced prompt for e-commerce
+    const fullPrompt = `Professional e-commerce product photography: ${prompt}
 
-PRODUCT: ${productType || "general item"}
-PROMPT: ${prompt}
-STYLE: ${style}
+Product type: ${productType || "general product"}
+Style: High-quality professional e-commerce photography with clean, attractive background
+Requirements:
+- Professional studio lighting
+- Clean, uncluttered background that complements the product
+- Sharp focus and high resolution
+- Commercial product photography style
+- Background that enhances product appeal without distracting`;
 
-PHOTOGRAPHY REQUIREMENTS:
-- Professional lighting and realistic texture
-- ${
-      style === "professional"
-        ? "Clean, white or soft neutral gradient studio background"
-        : "Natural lifestyle scene with warm light and contextually realistic environment"
-    }
-- Product perfectly centered
-- Sharp focus, subtle reflection or shadow beneath
-- High resolution (1024×1024)
-- No watermark, text or logo
-- Suitable for Shopify, Amazon or Decora Home presentation
-    `.trim();
-
-    // --- Conversion base64 sûre ---
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) {
-      throw new Error(`Impossible de télécharger l'image source : ${imageResponse.status}`);
-    }
-    const buffer = await imageResponse.arrayBuffer();
-    const base64Image = encodeBase64(new Uint8Array(buffer));
-
-    // --- Appel à Gemini (même structure que generate-ai-background-variants) ---
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  inline_data: {
-                    mime_type: "image/jpeg",
-                    data: base64Image,
-                  },
-                },
-                { text: imagePrompt },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.8,
-            topK: 40,
-            topP: 0.95,
-          },
-        }),
+    const response = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: "gpt-image-1",
+        prompt: fullPrompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "high",
+        response_format: "b64_json",
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ Erreur Gemini :", response.status, errorText);
-      throw new Error(`Erreur API Gemini ${response.status}: ${errorText}`);
+      console.error("OpenAI API error:", response.status, errorText);
+
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("✅ Réponse Gemini reçue avec succès");
+    console.log("OpenAI image generated successfully");
 
-    // --- Extraction image base64 ---
-    const generatedBase64 =
-      data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data ?? data.generatedImages?.[0]?.bytesBase64;
+    // Extract base64 image from OpenAI response
+    const generatedImageBase64 = data.data?.[0]?.b64_json;
 
-    if (!generatedBase64) {
-      console.error("⚠️ Aucune image retournée :", JSON.stringify(data, null, 2));
-      throw new Error("Aucune image générée — format de réponse inattendu.");
+    if (!generatedImageBase64) {
+      console.error("No image data in response:", data);
+      throw new Error("No image generated");
     }
 
-    const generatedImageUrl = `data:image/png;base64,${generatedBase64}`;
-    console.log("🎨 Arrière-plan généré avec succès pour :", productType);
+    // Convert base64 to data URL
+    const generatedImageUrl = `data:image/png;base64,${generatedImageBase64}`;
 
-    // --- Réponse finale ---
+    console.log("E-commerce background generated successfully");
+
     return new Response(
       JSON.stringify({
         success: true,
         imageUrl: generatedImageUrl,
         metadata: {
-          productType,
-          style,
-          model: "gemini-2.0-flash-exp",
-          generatedAt: new Date().toISOString(),
+          productType: productType,
+          model: model,
         },
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      },
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (error) {
-    console.error("💥 Erreur génération arrière-plan :", error);
+  } catch (error: any) {
+    console.error("Error generating e-commerce background:", error);
     return new Response(
       JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        suggestion: "Vérifiez l'URL de l'image et reformulez le prompt avec plus de détails visuels.",
+        error: error.message || "An unexpected error occurred",
+        suggestion: "Please check your image URL and try again with a more specific prompt",
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
