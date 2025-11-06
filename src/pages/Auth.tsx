@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Sparkles, Gift } from 'lucide-react';
+import { Sparkles, Gift, Chrome } from 'lucide-react';
 import { toast } from 'sonner';
+import { Separator } from '@/components/ui/separator';
 import { loginSchema, signupSchema } from '@/lib/validationSchemas';
 import { useTranslation } from '@/lib/language';
 
@@ -20,8 +21,9 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -69,6 +71,12 @@ export default function Auth() {
     }
 
     setLoading(false);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    await signInWithGoogle();
+    setGoogleLoading(false);
   };
 
   return (
@@ -187,7 +195,7 @@ export default function Auth() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading}
+              disabled={loading || googleLoading}
             >
               {loading
                 ? mode === 'signup'
@@ -198,6 +206,23 @@ export default function Auth() {
                 : t.auth.signup}
             </Button>
           </form>
+
+          <div className="my-6 flex items-center gap-4">
+            <Separator className="flex-1" />
+            <span className="text-sm text-muted-foreground">ou</span>
+            <Separator className="flex-1" />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleSignIn}
+            disabled={loading || googleLoading}
+          >
+            <Chrome className="w-5 h-5 mr-2" />
+            {googleLoading ? t.common.loading : `${mode === 'signup' ? 'S\'inscrire' : 'Se connecter'} avec Google`}
+          </Button>
 
           <div className="mt-6 text-center">
             <button
