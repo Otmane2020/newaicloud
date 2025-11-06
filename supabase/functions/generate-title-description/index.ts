@@ -78,29 +78,22 @@ serve(async (req) => {
     }
 
     // Générer le contenu avec Lovable AI et tool calling pour forcer JSON structuré
-    const systemPrompt = `Tu es un expert en e-commerce, copywriting et design UX. Tu crées du contenu HTML riche et structuré qui convertit les visiteurs en clients.`;
+    const systemPrompt = `Tu es un expert en e-commerce. Crée du contenu HTML riche et structuré.`;
 
     let userPrompt = `Produit: "${currentTitle}"`;
     
     if (visionAnalysis) {
-      userPrompt += `\n\nAnalyse visuelle du produit (Vision AI):\n${visionAnalysis}`;
+      userPrompt += `\n\nAnalyse visuelle:\n${visionAnalysis}`;
     }
 
     if (imageUrl) {
-      userPrompt += `\n\nImage du produit: ${imageUrl}`;
+      userPrompt += `\n\nImage: ${imageUrl}`;
     }
 
-    userPrompt += `\n\nCrée une page produit e-commerce complète avec:
-1. Titre accrocheur optimisé SEO (50-70 caractères)
-2. Meta description engageante (150-300 caractères)
-3. Description HTML enrichie professionnelle avec:
-   - H1 principal avec image si disponible
-   - H2 "Caractéristiques Principales" avec 4-6 points clés
-   - H2 "Design & Matériaux" avec analyse détaillée
-   ${visionAnalysis ? '- H2 "Analyse Vision AI" avec les insights de l\'analyse visuelle' : ''}
-   - H2 "Points Forts" avec liste à puces
-   - Structure sémantique (section, article)
-   - Classes CSS: product-hero, features-grid, design-analysis, vision-insights, highlights-list`;
+    userPrompt += `\n\nCrée:
+1. Titre SEO (50-60 caractères)
+2. Meta description (150-160 caractères)
+3. Description HTML avec H1, H2, caractéristiques (300-500 mots max)`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -119,86 +112,43 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "generate_product_content",
-              description: "Génère un titre optimisé, une meta description et une description HTML enrichie professionnelle pour un produit e-commerce",
+              description: "Génère titre, meta description et description HTML enrichie pour e-commerce",
               parameters: {
                 type: "object",
                 properties: {
                   title: {
                     type: "string",
-                    description: "Titre SEO optimisé de 50-70 caractères, accrocheur et descriptif"
+                    description: "Titre SEO optimisé 50-60 caractères"
                   },
                   description: {
                     type: "string",
-                    description: "Meta description SEO de 150-300 caractères, persuasive et engageante"
+                    description: "Meta description SEO 150-160 caractères"
                   },
                   html_description: {
                     type: "string",
-                    description: `Description HTML COMPLÈTE et ENRICHIE (minimum 800-1200 mots) avec cette structure EXACTE:
+                    description: `Description HTML structurée (300-500 mots):
 
-<div class="product-page-container" style="max-width: 1200px; margin: 0 auto; padding: 2rem; font-family: system-ui, -apple-system, sans-serif;">
+<div style="max-width: 1200px; margin: 0 auto; padding: 2rem; font-family: system-ui;">
+  <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1.5rem;">[Titre Produit]</h1>
+  ${imageUrl ? '<img src="${imageUrl}" alt="[Alt]" style="width: 100%; max-width: 600px; border-radius: 12px; margin: 2rem 0;"/>' : ''}
   
-  <section class="product-hero" style="margin-bottom: 3rem;">
-    <h1 style="font-size: 2.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 1.5rem; line-height: 1.2;">[TITRE PRODUIT CAPTIVANT]</h1>
-    ${imageUrl ? '<div class="hero-image" style="margin: 2rem 0; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.12);"><img src="${imageUrl}" alt="[ALT]" style="width: 100%; height: auto; display: block;"/></div>' : ''}
-    <p style="font-size: 1.25rem; color: #4a5568; line-height: 1.75; margin-bottom: 2rem;">[Introduction engageante 2-3 phrases]</p>
-  </section>
-
-  <section class="features-section" style="margin-bottom: 3rem; padding: 2rem; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
-    <h2 style="font-size: 2rem; font-weight: 600; color: #2d3748; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-      <span style="color: #3b82f6;">✨</span> Caractéristiques Principales
-    </h2>
-    <ul class="features-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; list-style: none; padding: 0; margin: 0;">
-      <li style="display: flex; gap: 1rem; padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-        <span style="color: #10b981; font-size: 1.5rem;">✓</span>
-        <div><strong style="display: block; margin-bottom: 0.5rem; color: #1a1a1a;">[Point Fort 1]</strong><p style="margin: 0; color: #6b7280; font-size: 0.95rem;">[Détail]</p></div>
-      </li>
-      [RÉPÉTER POUR 4-6 CARACTÉRISTIQUES]
-    </ul>
-  </section>
-
-  <section class="design-section" style="margin-bottom: 3rem;">
-    <h2 style="font-size: 2rem; font-weight: 600; color: #2d3748; margin-bottom: 1.5rem;">🎨 Design & Matériaux</h2>
-    <article style="line-height: 1.8; color: #4a5568; font-size: 1.05rem;">
-      <p style="margin-bottom: 1.5rem;">[Paragraphe détaillé sur le design, l'esthétique, les matériaux utilisés - minimum 150 mots]</p>
-      <p style="margin-bottom: 1.5rem;">[Paragraphe sur la qualité de fabrication et finitions - minimum 100 mots]</p>
-    </article>
-  </section>
-
-  ${visionAnalysis ? `
-  <section class="vision-insights" style="margin-bottom: 3rem; padding: 2rem; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; border-left: 4px solid #3b82f6;">
-    <h2 style="font-size: 2rem; font-weight: 600; color: #1e40af; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-      <span>🔍</span> Analyse Vision AI
-    </h2>
-    <div style="background: white; padding: 1.5rem; border-radius: 8px; line-height: 1.8; color: #475569;">
-      <p style="margin: 0;">[Intégrer l'analyse vision: ${visionAnalysis}]</p>
-    </div>
-  </section>
-  ` : ''}
-
-  <section class="highlights" style="margin-bottom: 3rem;">
-    <h2 style="font-size: 2rem; font-weight: 600; color: #2d3748; margin-bottom: 1.5rem;">⭐ Points Forts</h2>
-    <ul class="highlights-list" style="display: grid; gap: 1rem; list-style: none; padding: 0;">
-      <li style="display: flex; align-items: start; gap: 1rem; padding: 1rem; background: #f9fafb; border-radius: 8px;">
-        <span style="color: #f59e0b; font-size: 1.25rem;">★</span>
-        <p style="margin: 0; color: #374151; font-size: 1.05rem;">[Point fort détaillé 1]</p>
-      </li>
-      [RÉPÉTER POUR 4-5 POINTS FORTS]
-    </ul>
-  </section>
-
-  <section class="cta-section" style="text-align: center; padding: 3rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
-    <h3 style="font-size: 1.75rem; font-weight: 600; margin-bottom: 1rem;">Prêt à Commander ?</h3>
-    <p style="font-size: 1.125rem; margin-bottom: 2rem; opacity: 0.95;">[Phrase d'appel à l'action convaincante]</p>
-  </section>
-
+  <p style="font-size: 1.2rem; line-height: 1.75; margin-bottom: 2rem;">[Introduction 2-3 phrases]</p>
+  
+  <h2 style="font-size: 2rem; margin: 2rem 0 1rem;">✨ Caractéristiques</h2>
+  <ul style="list-style: none; padding: 0;">
+    <li style="margin: 0.75rem 0;"><strong>✓</strong> [Caractéristique 1]</li>
+    <li style="margin: 0.75rem 0;"><strong>✓</strong> [Caractéristique 2]</li>
+    <li style="margin: 0.75rem 0;"><strong>✓</strong> [Caractéristique 3]</li>
+    <li style="margin: 0.75rem 0;"><strong>✓</strong> [Caractéristique 4]</li>
+  </ul>
+  
+  <h2 style="font-size: 2rem; margin: 2rem 0 1rem;">🎨 Design & Qualité</h2>
+  <p style="line-height: 1.75;">[Description design et matériaux 100-150 mots]</p>
+  
+  ${visionAnalysis ? '<h2 style="font-size: 2rem; margin: 2rem 0 1rem;">🔍 Analyse Vision</h2><p style="line-height: 1.75;">[Intégrer analyse vision]</p>' : ''}
 </div>
 
-IMPORTANT: 
-- Remplir TOUS les placeholders avec du contenu réel et détaillé
-- Minimum 800-1200 mots au total
-- Utiliser les informations du titre et de l'analyse vision
-- Ton professionnel, engageant et persuasif
-- Descriptions riches en détails visuels et tactiles`
+Remplir tous les placeholders avec contenu réel`
                   }
                 },
                 required: ["title", "description", "html_description"],

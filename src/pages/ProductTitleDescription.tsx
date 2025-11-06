@@ -156,12 +156,29 @@ export default function ProductTitleDescription() {
         const product = products.find((p) => p.id === productId);
         if (!product) continue;
 
-        const { data, error } = await supabase.functions.invoke("generate-title-description", {
+        // Add timeout to edge function call (60 seconds)
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT')), 60000)
+        );
+
+        const invokePromise = supabase.functions.invoke("generate-title-description", {
           body: {
             currentTitle: product.title,
             imageUrl: product.image_url || null,
           },
         });
+
+        let result;
+        try {
+          result = await Promise.race([invokePromise, timeoutPromise]);
+        } catch (timeoutError: any) {
+          if (timeoutError.message === 'TIMEOUT') {
+            throw new Error('TIMEOUT: La génération prend trop de temps. Le contenu demandé est peut-être trop complexe.');
+          }
+          throw timeoutError;
+        }
+
+        const { data, error } = result;
 
         if (error) {
           // Check for specific error types
@@ -173,6 +190,14 @@ export default function ProductTitleDescription() {
           
           if (errorMessage.includes('RATE_LIMIT') || errorMessage.includes('429')) {
             throw new Error('RATE_LIMIT: Limite de taux atteinte. Veuillez patienter quelques instants.');
+          }
+
+          if (errorMessage.includes('TIMEOUT')) {
+            throw new Error('TIMEOUT: La génération prend trop de temps. Le contenu demandé est peut-être trop complexe.');
+          }
+
+          if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+            throw new Error('NETWORK: Erreur réseau. Vérifiez votre connexion et réessayez.');
           }
           
           throw error;
@@ -215,8 +240,21 @@ export default function ProductTitleDescription() {
           id: toastId,
           description: "Veuillez patienter quelques instants avant de réessayer."
         });
+      } else if (errorMessage.includes('TIMEOUT')) {
+        toast.error("Timeout - Génération trop longue", {
+          id: toastId,
+          description: "L'IA prend trop de temps à générer. Réessayez avec un produit plus simple."
+        });
+      } else if (errorMessage.includes('NETWORK')) {
+        toast.error("Erreur réseau", {
+          id: toastId,
+          description: "Impossible de se connecter au serveur. Vérifiez votre connexion internet."
+        });
       } else {
-        toast.error("Erreur lors de l'optimisation", { id: toastId });
+        toast.error("Erreur lors de l'optimisation", { 
+          id: toastId,
+          description: errorMessage || "Une erreur inconnue s'est produite"
+        });
       }
     } finally {
       setGenerating(false);
