@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AIAssistant } from "@/components/AIAssistant";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
+import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
@@ -56,11 +57,17 @@ import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient();
 
+function AppQuotaMonitor() {
+  useQuotaMonitoring();
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
+          <AppQuotaMonitor />
           <div className="overflow-x-hidden max-w-full">
             <Routes>
             <Route path="/" element={<Index />} />

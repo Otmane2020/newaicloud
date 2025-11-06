@@ -11,6 +11,7 @@ import { SeoScoreGauge } from '@/components/dashboard/SeoScoreGauge';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
 import { SmartBanner } from '@/components/dashboard/SmartBanner';
+import { QuotaAlerts } from '@/components/dashboard/QuotaAlerts';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
 import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
 import { AIRecommendations } from '@/components/dashboard/AIRecommendations';
@@ -662,6 +663,9 @@ export default function Dashboard() {
             onAction={() => window.location.href = '/seo'}
           />
         )}
+
+        {/* Quota Alerts */}
+        <QuotaAlerts />
       </div>
 
       {/* Advanced Analytics */}
