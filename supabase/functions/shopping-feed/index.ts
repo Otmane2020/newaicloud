@@ -322,19 +322,27 @@ function getProductMpn(product: Product, variant?: Variant): string {
   return product.google_mpn || variant?.sku || product.vendor || `MPN-${product.id}`;
 }
 
-function getGoogleProductCategory(product: Product): string | null {
+function getGoogleProductCategory(product: Product): string {
   const category = product.google_product_category;
   
   if (!category) {
-    console.warn(`⚠️ Product ${product.id} (${product.title}) missing google_product_category`);
-    return null;
+    console.warn(`⚠️ Product ${product.id} (${product.title}) missing google_product_category - using default`);
+    return "166"; // Default: Apparel & Accessories
   }
 
+  // If it's already a numeric ID, return it
   if (/^\d+$/.test(category)) {
     return category;
   }
 
-  return escapeXml(category);
+  // If it's a text category, try to extract the numeric ID if present
+  const numericMatch = category.match(/^(\d+)/);
+  if (numericMatch) {
+    return numericMatch[1];
+  }
+
+  console.warn(`⚠️ Product ${product.id} has invalid category format: ${category} - using default`);
+  return "166"; // Default fallback
 }
 
 function shouldUseIdentifierExists(product: Product, variant?: Variant): boolean {
@@ -452,19 +460,17 @@ async function generateGoogleShoppingFeed(
       <g:product_type>${escapeXml(product.product_type)}</g:product_type>`;
         }
 
-        if (googleCategory) {
-          xml += `
-      <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
-        }
+        // Always include Google category (required field)
+        xml += `
+      <g:google_product_category>${googleCategory}</g:google_product_category>`;
 
-        const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+        // Always include GTIN if valid, regardless of settings
+        const hasValidGtin = isValidGTIN(product.google_gtin);
         
-        if (hasValidGtin) {
+        if (hasValidGtin && product.google_gtin) {
           xml += `
-      <g:gtin>${escapeXml(product.google_gtin!)}</g:gtin>`;
-        }
-
-        if (useIdentifierExists && !hasValidGtin) {
+      <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
+        } else if (useIdentifierExists) {
           xml += `
       <g:identifier_exists>false</g:identifier_exists>`;
         }
@@ -561,19 +567,17 @@ async function generateGoogleShoppingFeed(
       <g:product_type>${escapeXml(product.product_type)}</g:product_type>`;
       }
 
-      if (googleCategory) {
-        xml += `
-      <g:google_product_category>${escapeXml(googleCategory)}</g:google_product_category>`;
-      }
+      // Always include Google category (required field)
+      xml += `
+      <g:google_product_category>${googleCategory}</g:google_product_category>`;
 
-      const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+      // Always include GTIN if valid, regardless of settings
+      const hasValidGtin = isValidGTIN(product.google_gtin);
       
-      if (hasValidGtin) {
+      if (hasValidGtin && product.google_gtin) {
         xml += `
-      <g:gtin>${escapeXml(product.google_gtin!)}</g:gtin>`;
-      }
-
-      if (useIdentifierExists && !hasValidGtin) {
+      <g:gtin>${escapeXml(product.google_gtin)}</g:gtin>`;
+      } else if (useIdentifierExists) {
         xml += `
       <g:identifier_exists>false</g:identifier_exists>`;
       }
@@ -629,7 +633,8 @@ function generateGoogleShoppingCSV(
 
         if (price <= 0) continue;
 
-        const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+        // Always include GTIN if valid, regardless of settings
+        const hasValidGtin = isValidGTIN(product.google_gtin);
         
         let priceField = `${price.toFixed(2)} ${currency}`;
         let salePriceField = '';
@@ -642,9 +647,9 @@ function generateGoogleShoppingCSV(
           }
         }
 
-        const gtinValue = hasValidGtin ? escapeCSV(product.google_gtin!) : '';
+        const gtinValue = (hasValidGtin && product.google_gtin) ? escapeCSV(product.google_gtin) : '';
         const identifierExists = (useIdentifierExists && !hasValidGtin) ? 'false' : '';
-        const categoryValue = googleCategory ? escapeCSV(googleCategory) : '';
+        const categoryValue = escapeCSV(googleCategory); // Always include category
         const productTypeValue = product.product_type ? escapeCSV(product.product_type) : '';
         const itemGroupId = productVariants.length > 1 ? escapeCSV("group_" + product.id) : '';
         const sizeValue = variant.option1 ? escapeCSV(variant.option1) : '';
@@ -670,7 +675,8 @@ function generateGoogleShoppingCSV(
 
       if (price <= 0) continue;
 
-      const hasValidGtin = isValidGTIN(product.google_gtin) && (feedSettings?.generate_gtin_enabled !== false);
+      // Always include GTIN if valid, regardless of settings
+      const hasValidGtin = isValidGTIN(product.google_gtin);
       
       let priceField = `${price.toFixed(2)} ${currency}`;
       let salePriceField = '';
@@ -683,9 +689,9 @@ function generateGoogleShoppingCSV(
         }
       }
 
-      const gtinValue = hasValidGtin ? escapeCSV(product.google_gtin!) : '';
+      const gtinValue = (hasValidGtin && product.google_gtin) ? escapeCSV(product.google_gtin) : '';
       const identifierExists = (useIdentifierExists && !hasValidGtin) ? 'false' : '';
-      const categoryValue = googleCategory ? escapeCSV(googleCategory) : '';
+      const categoryValue = escapeCSV(googleCategory); // Always include category
       const productTypeValue = product.product_type ? escapeCSV(product.product_type) : '';
 
       csv += '"' + escapeCSV(itemId) + '","' + escapeCSV(title) + '","' + escapeCSV(description) + '","' + escapeCSV(productUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(imageUrl) + '","' + escapeCSV(availability) + '","' + escapeCSV(priceField) + '","' + escapeCSV(salePriceField) + '","' + escapeCSV(condition) + '","' + escapeCSV(brand) + '","' + escapeCSV(mpn) + '","' + gtinValue + '","' + identifierExists + '","' + categoryValue + '","' + productTypeValue + '","","","",""\n';
