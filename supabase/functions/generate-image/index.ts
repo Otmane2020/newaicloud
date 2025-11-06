@@ -23,9 +23,9 @@ serve(async (req) => {
 
     console.log("Generating e-commerce image with prompt:", prompt);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GOOGLE_GEMINI_API_KEY) {
+      throw new Error("GOOGLE_GEMINI_API_KEY not configured");
     }
 
     // Enhanced prompt for better e-commerce results
@@ -58,29 +58,29 @@ serve(async (req) => {
       IMPORTANT: Generate a square image (1:1 aspect ratio) with professional e-commerce standards.
     `;
 
-    // Generate image using Lovable AI
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: enhancedPrompt,
-          },
-        ],
-        max_tokens: 500,
-        modalities: ["image", "text"],
-      }),
-    });
+    // Generate image using Google Gemini
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: enhancedPrompt }]
+          }],
+          generationConfig: {
+            responseModalities: ["image"],
+            maxOutputTokens: 500
+          }
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Lovable AI error:", response.status, errorText);
+      console.error("Google Gemini error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de taux dépassée. Veuillez réessayer plus tard." }), {
@@ -89,35 +89,22 @@ serve(async (req) => {
         });
       }
 
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Crédits insuffisants. Veuillez recharger votre compte Lovable AI." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      throw new Error(`Erreur API Lovable AI: ${response.status}`);
+      throw new Error(`Erreur API Google Gemini: ${response.status}`);
     }
 
     const data = await response.json();
     console.log("API Response received, extracting image...");
 
-    // Multiple extraction methods for image URL
-    let imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-    // Alternative extraction from content if needed
-    if (!imageUrl && data.choices?.[0]?.message?.content) {
-      const content = data.choices[0].message.content;
-      const imageMatch = content.match(/!\[.*?\]\((.*?)\)/);
-      if (imageMatch) {
-        imageUrl = imageMatch[1];
-      }
-    }
-
-    if (!imageUrl) {
-      console.error("No image URL found in response:", JSON.stringify(data, null, 2));
+    // Extract base64 image from Gemini response
+    const base64Image = data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+    
+    if (!base64Image) {
+      console.error("No image data found in response:", JSON.stringify(data, null, 2));
       throw new Error("Aucune image générée - format de réponse inattendu");
     }
+
+    // Convert base64 to data URL
+    const imageUrl = `data:image/png;base64,${base64Image}`;
 
     console.log("Image generated successfully, processing...");
 
@@ -131,15 +118,13 @@ serve(async (req) => {
       const supabase = createClient(supabaseUrl, supabaseKey);
 
       try {
-        // Download the image from the generated URL
-        const imageResponse = await fetch(imageUrl);
-        if (!imageResponse.ok) {
-          throw new Error(`Failed to download image: ${imageResponse.status}`);
+        // Convert base64 data URL to binary
+        const base64Data = imageUrl.split(',')[1];
+        const binaryData = atob(base64Data);
+        const uint8Array = new Uint8Array(binaryData.length);
+        for (let i = 0; i < binaryData.length; i++) {
+          uint8Array[i] = binaryData.charCodeAt(i);
         }
-
-        const imageBlob = await imageResponse.blob();
-        const arrayBuffer = await imageBlob.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
 
         // Create filename with timestamp and identifiers
         const timestamp = Date.now();
@@ -154,7 +139,7 @@ serve(async (req) => {
 
         if (uploadError) {
           console.error("Storage upload error:", uploadError);
-          // Continue with original URL if upload fails
+          // Continue with data URL if upload fails
         } else {
           // Get public URL
           const { data: urlData } = supabase.storage.from("generated-images").getPublicUrl(filename);
@@ -169,7 +154,7 @@ serve(async (req) => {
         }
       } catch (uploadError) {
         console.error("Error during upload process:", uploadError);
-        // Continue with original URL
+        // Continue with data URL
       }
     }
 

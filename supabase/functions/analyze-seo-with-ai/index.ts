@@ -56,9 +56,9 @@ Deno.serve(async (req) => {
 
   try {
     const lang = detectLanguage(req);
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error(TRANSLATIONS[lang].apiKeyNotConfigured);
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GOOGLE_GEMINI_API_KEY) {
+      throw new Error(TRANSLATIONS[lang].apiKeyNotConfigured.replace('LOVABLE_API_KEY', 'GOOGLE_GEMINI_API_KEY'));
     }
 
     const analysisData: SeoAnalysisInput = await req.json();
@@ -134,31 +134,29 @@ RÈGLES STRICTES:
 - Actions automatisées par NewAI (automated: true)
 - Concis, professionnel, actionnable`;
 
-    console.log(TRANSLATIONS[lang].callingAI);
+    console.log(TRANSLATIONS[lang].callingAI.replace('Lovable AI', 'Google Gemini'));
 
-    // Call Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'Expert SEO e-commerce. Réponds UNIQUEMENT avec un JSON valide, sans texte avant/après. SOIS CONCIS.'
-          },
-          {
-            role: 'user',
-            content: analysisPrompt
+    // Call Google Gemini
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: 'Expert SEO e-commerce. Réponds UNIQUEMENT avec un JSON valide, sans texte avant/après. SOIS CONCIS.\n\n' + analysisPrompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2000
           }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      }),
-    });
+        }),
+      }
+    );
 
     if (!aiResponse.ok) {
       if (aiResponse.status === 429) {
@@ -167,19 +165,13 @@ RÈGLES STRICTES:
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: TRANSLATIONS[lang].paymentRequired }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
       const errorText = await aiResponse.text();
       console.error(`${TRANSLATIONS[lang].aiGatewayError}:`, aiResponse.status, errorText);
       throw new Error(`${TRANSLATIONS[lang].aiGatewayError}: ${aiResponse.status}`);
     }
 
     const aiResult = await aiResponse.json();
-    let analysisText = aiResult.choices[0].message.content;
+    let analysisText = aiResult.candidates?.[0]?.content?.parts?.[0]?.text;
     
     console.log(TRANSLATIONS[lang].analysisCompleted);
 
