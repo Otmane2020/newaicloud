@@ -89,6 +89,8 @@ export default function ProductTitleDescription() {
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [syncingToShopify, setSyncingToShopify] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [selectedImageType, setSelectedImageType] = useState<"primary" | "secondary">("primary");
+  const [showWhiteBgConfigDialog, setShowWhiteBgConfigDialog] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -277,6 +279,8 @@ export default function ProductTitleDescription() {
       return;
     }
 
+    // Close config dialog and start generation
+    setShowWhiteBgConfigDialog(false);
     setGeneratingWhiteBg(true);
     const previews: PreviewImage[] = selectedProductsList.map((p) => ({
       productId: p.id,
@@ -302,7 +306,8 @@ export default function ProductTitleDescription() {
         const { data, error } = await supabase.functions.invoke('generate-white-background', {
           body: { 
             imageUrl: product.image_url,
-            productTitle: product.title
+            productTitle: product.title,
+            imageType: selectedImageType
           }
         });
 
@@ -372,6 +377,8 @@ export default function ProductTitleDescription() {
           body: {
             imageUrl: product.image_url,
             prompt: prompt,
+            productTitle: product.title,
+            imageType: selectedImageType
           }
         });
 
@@ -459,13 +466,14 @@ export default function ProductTitleDescription() {
       )
     );
 
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-white-background', {
-        body: { 
-          imageUrl: product.image_url,
-          productTitle: product.title
-        }
-      });
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-white-background', {
+          body: { 
+            imageUrl: product.image_url,
+            productTitle: product.title,
+            imageType: selectedImageType
+          }
+        });
 
       if (error) throw error;
 
@@ -509,6 +517,8 @@ export default function ProductTitleDescription() {
         body: {
           imageUrl: product.image_url,
           prompt: promptToUse,
+          productTitle: product.title,
+          imageType: selectedImageType
         }
       });
 
@@ -771,7 +781,7 @@ export default function ProductTitleDescription() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleWhiteBackground}
+                onClick={() => setShowWhiteBgConfigDialog(true)}
                 disabled={generatingWhiteBg || selectedProducts.size === 0}
               >
                 {generatingWhiteBg ? (
@@ -910,7 +920,7 @@ export default function ProductTitleDescription() {
                               size="icon"
                               onClick={() => {
                                 setSelectedProducts(new Set([product.id]));
-                                handleWhiteBackground();
+                                setShowWhiteBgConfigDialog(true);
                               }}
                               disabled={generatingWhiteBg}
                             >
@@ -1023,6 +1033,95 @@ export default function ProductTitleDescription() {
       </div>
 
       {/* Dialogs */}
+      {/* White Background Configuration Dialog */}
+      <Dialog open={showWhiteBgConfigDialog} onOpenChange={setShowWhiteBgConfigDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Square className="h-5 w-5 text-primary" />
+              Configuration Fond Blanc
+            </DialogTitle>
+            <DialogDescription>
+              Choisissez le type d'image pour la génération
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Type d'image (obligatoire) *</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Card 
+                  className={`p-4 cursor-pointer transition-all ${
+                    selectedImageType === "primary" 
+                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
+                      : "hover:border-primary/50"
+                  }`}
+                  onClick={() => setSelectedImageType("primary")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                      selectedImageType === "primary" 
+                        ? "border-primary bg-primary" 
+                        : "border-muted-foreground"
+                    }`}>
+                      {selectedImageType === "primary" && (
+                        <div className="w-2.5 h-2.5 bg-white rounded-full" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <h4 className="font-semibold text-sm">Image Principale</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Produit <strong>centré</strong> et bien visible sur fond blanc. Format carré professionnel.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+                <Card 
+                  className={`p-4 cursor-pointer transition-all ${
+                    selectedImageType === "secondary" 
+                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
+                      : "hover:border-primary/50"
+                  }`}
+                  onClick={() => setSelectedImageType("secondary")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                      selectedImageType === "secondary" 
+                        ? "border-primary bg-primary" 
+                        : "border-muted-foreground"
+                    }`}>
+                      {selectedImageType === "secondary" && (
+                        <div className="w-2.5 h-2.5 bg-white rounded-full" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <h4 className="font-semibold text-sm">Image Secondaire</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Photo d'ambiance sur fond blanc. Composition créative, centrage non obligatoire.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowWhiteBgConfigDialog(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleWhiteBackground}
+              className="gap-2"
+            >
+              <Square className="h-4 w-4" />
+              Générer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <WhiteBackgroundPreviewDialog
         open={showWhiteBgDialog}
         onOpenChange={setShowWhiteBgDialog}
@@ -1040,11 +1139,71 @@ export default function ProductTitleDescription() {
               Configuration de l'arrière-plan IA
             </DialogTitle>
             <DialogDescription>
-              Choisissez un style prédéfini ou créez votre propre prompt pour générer des arrière-plans personnalisés
+              Choisissez le type d'image et le style d'arrière-plan
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-4">
+            {/* Image Type Selection */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Type d'image (obligatoire) *</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Card 
+                  className={`p-4 cursor-pointer transition-all ${
+                    selectedImageType === "primary" 
+                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
+                      : "hover:border-primary/50"
+                  }`}
+                  onClick={() => setSelectedImageType("primary")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                      selectedImageType === "primary" 
+                        ? "border-primary bg-primary" 
+                        : "border-muted-foreground"
+                    }`}>
+                      {selectedImageType === "primary" && (
+                        <div className="w-2.5 h-2.5 bg-white rounded-full" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <h4 className="font-semibold text-sm">Image Principale</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Produit <strong>centré</strong> et bien visible, format carré professionnel. Idéal pour la photo principale de vos fiches produits.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+                <Card 
+                  className={`p-4 cursor-pointer transition-all ${
+                    selectedImageType === "secondary" 
+                      ? "border-primary bg-primary/5 ring-2 ring-primary" 
+                      : "hover:border-primary/50"
+                  }`}
+                  onClick={() => setSelectedImageType("secondary")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                      selectedImageType === "secondary" 
+                        ? "border-primary bg-primary" 
+                        : "border-muted-foreground"
+                    }`}>
+                      {selectedImageType === "secondary" && (
+                        <div className="w-2.5 h-2.5 bg-white rounded-full" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <h4 className="font-semibold text-sm">Image Secondaire</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Photo d'ambiance lifestyle. Composition créative, centrage non obligatoire. Format carré.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+
+            {/* Style Selection */}
             <div className="space-y-2">
               <Label htmlFor="preset-select">Style prédéfini</Label>
               <Select
@@ -1077,6 +1236,7 @@ export default function ProductTitleDescription() {
               </Select>
             </div>
 
+            {/* Custom Prompt */}
             <div className="space-y-2">
               <Label htmlFor="custom-prompt">Ou créez votre propre prompt (en anglais)</Label>
               <Textarea

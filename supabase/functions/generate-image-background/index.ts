@@ -12,16 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, productTitle, style = "contextual", imageType = "primary" } = await req.json();
+    const { imageUrl, prompt, productTitle, imageType = "secondary" } = await req.json();
 
-    if (!imageUrl || !productTitle) {
+    if (!imageUrl || !prompt) {
       return new Response(
-        JSON.stringify({ error: "imageUrl and productTitle are required" }),
+        JSON.stringify({ error: "imageUrl and prompt are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("🎨 Generating beautiful contextual background for:", productTitle, "imageType:", imageType);
+    console.log("🎨 Generating AI background:", { prompt, imageType });
 
     // Initialize Supabase client for usage tracking
     const authHeader = req.headers.get("Authorization");
@@ -42,65 +42,53 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Create contextual prompt based on product title and image type
+    // Create prompt based on image type
     const isMainImage = imageType === "primary";
-    const contextualPrompt = `
-You are a professional e-commerce product photographer with expertise in creating stunning product images.
+    const photographyPrompt = `
+You are a professional e-commerce product photographer.
 
-PRODUCT: ${productTitle}
-IMAGE TYPE: ${isMainImage ? "MAIN PRODUCT IMAGE" : "SECONDARY/LIFESTYLE IMAGE"}
+PRODUCT: ${productTitle || "Product"}
+USER REQUEST: ${prompt}
 
 YOUR MISSION:
-Create a beautiful, high-quality product photo with a contextual background that complements and enhances the product.
+Create a ${isMainImage ? "main product" : "lifestyle/ambiance"} photo with custom background.
 
 REQUIREMENTS:
 ${isMainImage ? `
 1. MAIN IMAGE REQUIREMENTS (CRITICAL):
-   - Product MUST be perfectly centered and sharp
-   - Product occupies 70-80% of the frame
+   - Product MUST be perfectly centered in the frame
+   - Product must be clear, sharp, and prominent (70-80% of frame)
    - Product should face the camera directly
    - All product details must be clearly visible
-   - Preserve all product details, textures, and colors
-   - Natural product shadows for depth
-   - Clean, professional look suitable for main product listing
+   - Clean, professional look suitable for e-commerce
+   - Square format (1024x1024)
+   
+2. BACKGROUND:
+   - Apply the requested style: "${prompt}"
+   - Background should complement but not distract from product
+   - Professional lighting to highlight product
 ` : `
-1. LIFESTYLE/AMBIANCE IMAGE:
-   - Creative composition (centering not mandatory)
+1. AMBIANCE/LIFESTYLE IMAGE:
+   - Creative composition (centering not required)
    - Product can be positioned artistically
-   - More creative freedom with framing and angles
-   - Contextual, lifestyle setting
-   - Preserve product details but focus on atmosphere
+   - Lifestyle/contextual setting
+   - More creative freedom with composition
+   - Square format (1024x1024)
+   
+2. BACKGROUND:
+   - Apply the requested style: "${prompt}"
+   - Create atmospheric, lifestyle setting
+   - Background is part of the storytelling
 `}
 
-2. BACKGROUND STYLE (${style}):
-   ${style === "white" ? `
-   - Pure white background (RGB 255,255,255)
-   - Soft studio lighting
-   - Minimal shadow beneath product
-   - Clean, professional e-commerce look
-   ` : `
-   - Create a beautiful, themed background that relates to "${productTitle}"
-   - Use complementary colors and professional lighting
-   - Add depth with subtle bokeh or gradient effects
-   - Background should enhance, not distract from the product
-   - Think lifestyle/editorial photography style
-   `}
-
 3. TECHNICAL SPECS:
-   - Square format (1024×1024)
+   - High resolution (1024×1024)
    - Professional color grading
    - Balanced exposure and contrast
    - No watermarks, text, or logos
-   - Ready for ${isMainImage ? "main product listing (Shopify/Amazon)" : "lifestyle/gallery display"}
+   - Ready for e-commerce use
 
-4. CREATIVE DIRECTION:
-   - If product is food: warm, appetizing environment
-   - If product is tech: modern, sleek setting
-   - If product is fashion: elegant, stylish backdrop
-   - If product is home decor: cozy, lifestyle scene
-   - Match the mood to the product category
-
-RESULT: A stunning, professional ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} that looks like it was shot by a top e-commerce photographer.
+RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} with custom background.
     `.trim();
 
     // Call Lovable AI
@@ -116,7 +104,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
           {
             role: "user",
             content: [
-              { type: "text", text: contextualPrompt },
+              { type: "text", text: photographyPrompt },
               { type: "image_url", image_url: { url: imageUrl } }
             ]
           }
@@ -129,7 +117,6 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
       const errorText = await response.text();
       console.error("❌ Lovable AI error:", response.status, errorText);
       
-      // Handle rate limiting
       if (response.status === 429) {
         return new Response(
           JSON.stringify({
@@ -154,7 +141,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
       throw new Error("No image generated - unexpected response format");
     }
 
-    console.log("🎨 Beautiful background generated successfully");
+    console.log("🎨 AI background generated successfully");
 
     // Track usage: 1 image generation = 5 optimizations
     if (user) {
@@ -175,9 +162,9 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
         success: true,
         imageUrl: generatedImageUrl,
         metadata: {
-          productTitle,
-          style,
+          prompt,
           imageType,
+          productTitle,
           model: "google/gemini-2.5-flash-image-preview",
           generatedAt: new Date().toISOString(),
         },
@@ -185,7 +172,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("💥 Error in generate-product-background:", error);
+    console.error("💥 Error in generate-image-background:", error);
     return new Response(
       JSON.stringify({
         success: false,
