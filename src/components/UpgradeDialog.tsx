@@ -16,6 +16,7 @@ interface UpgradeDialogProps {
   usage?: number;
   limit?: number;
   currentPlan?: string;
+  onUpgradeComplete?: () => void;
 }
 
 interface Plan {
@@ -29,11 +30,12 @@ interface Plan {
   max_shopify_stores: number;
 }
 
-export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, currentPlan = "Trial" }: UpgradeDialogProps) {
+export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, currentPlan = "Trial", onUpgradeComplete }: UpgradeDialogProps) {
   const [loading, setLoading] = useState(false);
   const [currentPlanData, setCurrentPlanData] = useState<Plan | null>(null);
   const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
+  const [subscriptionChannel, setSubscriptionChannel] = useState<any>(null);
   const { t, tf, language } = useTranslation();
 
   const limitTitle = t.dialogs.limit.limitTypes[limitType];
@@ -42,6 +44,14 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
     limit: limit || 0, 
     type: limitTitle 
   });
+
+  // Cleanup subscription listener when dialog closes
+  useEffect(() => {
+    if (!open && subscriptionChannel) {
+      subscriptionChannel.unsubscribe();
+      setSubscriptionChannel(null);
+    }
+  }, [open, subscriptionChannel]);
 
   useEffect(() => {
     const loadPlanData = async () => {
@@ -120,6 +130,9 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: selectedPlanId,
@@ -131,6 +144,33 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
       if (error) throw error;
 
       if (data?.url) {
+        // Setup realtime listener for subscription updates
+        if (onUpgradeComplete) {
+          const channel = supabase
+            .channel(`subscription-updates-${user.id}`)
+            .on('postgres_changes', {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'profiles',
+              filter: `id=eq.${user.id}`
+            }, (payload) => {
+              if (payload.new.subscription_status === 'active') {
+                toast.success('Plan upgraded successfully!');
+                onUpgradeComplete();
+                channel.unsubscribe();
+              }
+            })
+            .subscribe();
+          
+          setSubscriptionChannel(channel);
+          
+          // Auto cleanup after 5 minutes
+          setTimeout(() => {
+            channel.unsubscribe();
+            setSubscriptionChannel(null);
+          }, 5 * 60 * 1000);
+        }
+        
         window.open(data.url, '_blank');
         onOpenChange(false);
       } else {

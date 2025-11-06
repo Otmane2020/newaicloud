@@ -67,6 +67,7 @@ export default function ShopifyConnectionsList() {
   // Upgrade dialog state
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [usageLimits, setUsageLimits] = useState<any>(null);
+  const [pendingImportStore, setPendingImportStore] = useState<ShopifyConnection | null>(null);
   
   // Delete confirmation dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -747,6 +748,13 @@ export default function ShopifyConnectionsList() {
         } else if (job.status === 'quota_reached') {
           setLimitReached(true);
           setImportPhase('complete');
+          // Save the store for resuming after upgrade
+          if (job.store_id) {
+            const store = connections.find(c => c.id === job.store_id);
+            if (store) {
+              setPendingImportStore(store);
+            }
+          }
           clearInterval(pollInterval);
         } else if (job.status === 'failed') {
           clearInterval(pollInterval);
@@ -758,6 +766,31 @@ export default function ShopifyConnectionsList() {
     
     return () => clearInterval(pollInterval);
   }, [importJobId, showProgressDialog]);
+
+  const handleUpgradeFromImport = () => {
+    setShowProgressDialog(false);
+    setShowUpgradeDialog(true);
+  };
+
+  const handleUpgradeComplete = async () => {
+    setShowUpgradeDialog(false);
+    
+    // Wait a bit for the subscription to be fully updated
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Refresh limits
+    await checkUsageLimits();
+    
+    toast.success('Plan upgraded! Resuming import...', {
+      description: 'Importing remaining products from your store'
+    });
+    
+    // Resume import with the pending store
+    if (pendingImportStore) {
+      await importAllContent(pendingImportStore);
+      setPendingImportStore(null);
+    }
+  };
 
   const importAllContent = async (store: ShopifyConnection) => {
     try {
@@ -782,6 +815,7 @@ export default function ShopifyConnectionsList() {
       
       // If no slots available, show upgrade dialog
       if (availableSlots === 0) {
+        setPendingImportStore(store);
         setShowUpgradeDialog(true);
         setImportingStoreId(null);
         return;
@@ -1193,12 +1227,17 @@ export default function ShopifyConnectionsList() {
         limitReached={limitReached}
         maxProducts={maxProducts}
         totalShopifyProducts={totalShopifyProducts}
+        onUpgrade={handleUpgradeFromImport}
       />
 
       <UpgradeDialog
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
         limitType="optimizations"
+        usage={usageLimits?.usage?.products_count}
+        limit={usageLimits?.limits?.max_products}
+        currentPlan={usageLimits?.plan_name}
+        onUpgradeComplete={handleUpgradeComplete}
       />
 
       <SimpleSyncProgress

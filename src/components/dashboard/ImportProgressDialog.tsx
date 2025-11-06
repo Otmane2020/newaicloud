@@ -41,6 +41,7 @@ interface ImportProgressDialogProps {
   limitReached: boolean;
   maxProducts: number;
   totalShopifyProducts?: number;
+  onUpgrade?: () => void;
 }
 
 export function ImportProgressDialog({
@@ -55,6 +56,7 @@ export function ImportProgressDialog({
   limitReached,
   maxProducts,
   totalShopifyProducts = 0,
+  onUpgrade,
 }: ImportProgressDialogProps) {
   const navigate = useNavigate();
   
@@ -74,8 +76,12 @@ export function ImportProgressDialog({
   const recommendedPlan = getRecommendedPlan();
 
   const handleUpgrade = () => {
-    navigate("/subscription");
-    onOpenChange(false);
+    if (onUpgrade) {
+      onUpgrade();
+    } else {
+      navigate("/subscription");
+      onOpenChange(false);
+    }
   };
 
   // Calculate smooth overall progress (0-100%)
