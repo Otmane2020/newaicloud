@@ -25,7 +25,7 @@ serve(async (req) => {
       throw new Error("GOOGLE_GEMINI_API_KEY non configurée");
     }
 
-    console.log("🧠 Génération d’arrière-plan e-commerce avec Gemini pour :", productType);
+    console.log("🧠 Génération d'arrière-plan e-commerce avec Gemini pour :", productType);
 
     // 🪄 Prompt amélioré
     const imagePrompt = `
@@ -51,11 +51,11 @@ PHOTOGRAPHY REQUIREMENTS:
 
     // 🔄 Convert image input en base64
     const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) throw new Error(`Impossible de télécharger l’image source : ${imageResponse.status}`);
+    if (!imageResponse.ok) throw new Error(`Impossible de télécharger l'image source : ${imageResponse.status}`);
     const imageArrayBuffer = await imageResponse.arrayBuffer();
     const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageArrayBuffer)));
 
-    // 🧠 Appel à Google Gemini (vrai modèle d’image)
+    // 🧠 Appel à Google Gemini (vrai modèle d'image)
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateImage?key=${GEMINI_API_KEY}`,
       {
@@ -113,8 +113,8 @@ PHOTOGRAPHY REQUIREMENTS:
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
-        suggestion: "Vérifiez l’URL de l’image et reformulez le prompt avec plus de détails visuels.",
+        error: error instanceof Error ? error.message : String(error),
+        suggestion: "Vérifiez l'URL de l'image et reformulez le prompt avec plus de détails visuels.",
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

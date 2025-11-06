@@ -92,7 +92,7 @@ Product: ${productTitle || "product"}
     return new Response(
       JSON.stringify({
         success: false,
-        error: err.message,
+        error: err instanceof Error ? err.message : String(err),
         suggestion: "Try a higher-quality product photo or simpler background.",
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },

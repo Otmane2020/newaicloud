@@ -26,6 +26,14 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
 
+    // Download and convert reference image to base64
+    console.log("📥 Downloading reference image...");
+    const imgResponse = await fetch(imageUrl);
+    if (!imgResponse.ok) throw new Error(`Failed to fetch image (${imgResponse.status})`);
+    const imgBuffer = await imgResponse.arrayBuffer();
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+    console.log("✅ Image converted to base64");
+
     // ---------- Prompt centering rules ----------
     const centeringInstruction = `
 CRITICAL: Product must remain perfectly centered.
@@ -92,43 +100,55 @@ Product: ${productTitle || "product"}
 
     // ---------- Parallel generation ----------
     const results = await Promise.all(
-      variants.map(async (variant) => {
+      variants.map(async (variant, i) => {
         try {
+          console.log(`🧠 Generating variant ${i + 1}/4: ${variant.style}`);
+          
           const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateImage?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                contents: [
-                  {
-                    parts: [
-                      { text: variant.prompt },
-                      { inline_data: { mime_type: "image/png", data: "" } },
-                      { text: `Reference product photo: ${imageUrl}` },
-                    ],
-                  },
-                ],
-                generationConfig: { aspectRatio: "1:1" },
+                contents: [{
+                  parts: [
+                    { text: variant.prompt },
+                    { inline_data: { mime_type: "image/jpeg", data: base64Image } }
+                  ]
+                }],
+                generationConfig: {
+                  response_modalities: ["image"]
+                }
               }),
             },
           );
 
           if (!res.ok) {
-            console.error(`Gemini error ${variant.style}:`, res.status);
+            const errText = await res.text();
+            console.error(`❌ Gemini API error (${res.status}) for variant ${variant.style}:`, errText);
+            
+            if (res.status === 429) {
+              console.error(`⏳ Rate limit exceeded for ${variant.style}`);
+            } else if (res.status === 403) {
+              console.error(`🔑 Invalid API key for ${variant.style}`);
+            } else if (res.status === 400) {
+              console.error(`📝 Invalid request for ${variant.style}: ${errText}`);
+            }
             return null;
           }
 
           const data = await res.json();
-          const base64 =
-            data.generatedImages?.[0]?.bytesBase64 || data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+          const base64 = data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+          
           if (!base64) {
-            console.error(`No image for ${variant.style}`);
+            console.error(`⚠️ No image in response for variant ${variant.style}. Response structure:`, JSON.stringify(data, null, 2));
             return null;
           }
 
           const qualityScore = Math.floor(85 + Math.random() * 15);
 
+          console.log(`✅ Variant ${i + 1}/4 (${variant.style}) generated successfully`);
+          
           return {
             variantId: crypto.randomUUID(),
             imageBase64: base64,
@@ -138,16 +158,19 @@ Product: ${productTitle || "product"}
             qualityScore,
           } as BackgroundVariant;
         } catch (e) {
-          console.error(`Error ${variant.style}:`, e);
+          console.error(`💥 Error generating ${variant.style}:`, e);
           return null;
         }
       }),
     );
 
     const successful = results.filter((r) => r !== null);
-    if (successful.length === 0) throw new Error("Gemini failed to generate any variant");
-
-    console.log(`✅ Generated ${successful.length}/4 variants`);
+    
+    console.log(`🎉 Successfully generated ${successful.length}/4 variants`);
+    
+    if (successful.length < 2) {
+      throw new Error(`Only ${successful.length} variant(s) succeeded. At least 2 required.`);
+    }
 
     return new Response(
       JSON.stringify({
@@ -162,7 +185,7 @@ Product: ${productTitle || "product"}
     return new Response(
       JSON.stringify({
         success: false,
-        error: err.message || "Unknown error",
+        error: err instanceof Error ? err.message : String(err),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
     );
