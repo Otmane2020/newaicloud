@@ -48,18 +48,23 @@ export default function RegenerateLanding({ product, onGenerated }: RegenerateLa
         } else {
           toast.error(data.error);
         }
+        setLoading(false);
         return;
       }
 
-      setHtmlContent(data.html);
-      toast.success("Landing page générée avec succès !");
+      if (data.html && data.html.trim()) {
+        setHtmlContent(data.html);
+        toast.success("Landing page générée avec succès !");
+      } else {
+        toast.error("Aucun contenu généré. Veuillez réessayer.");
+      }
       
-      if (onGenerated) {
+      if (onGenerated && data.html) {
         onGenerated(data.html);
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Erreur lors de la génération de la landing page.");
+    } catch (error: any) {
+      console.error("Error generating landing:", error);
+      toast.error(error?.message || "Erreur lors de la génération de la landing page.");
     } finally {
       setLoading(false);
     }

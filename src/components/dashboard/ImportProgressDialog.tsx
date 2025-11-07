@@ -91,11 +91,11 @@ export function ImportProgressDialog({
   };
 
   // Calculate smooth overall progress (0-100%)
-  const overallProgress = phase === 'products' 
-    ? Math.min(progress.percentage * 0.5, 50) // Products: 0-50%
-    : phase === 'pages' 
-    ? 50 + Math.min((progress.percentage || 50) * 0.5, 50) // Pages: 50-100%
-    : 100; // Complete: 100%
+  const overallProgress = phase === 'complete' 
+    ? 100 // Complete: 100%
+    : phase === 'products' 
+    ? Math.min((progress.currentPage / Math.max(progress.totalPages, 1)) * 50, 50) // Products: 0-50%
+    : 50 + Math.min(((progress.currentPage || 0) / Math.max(progress.totalPages || 1, 1)) * 50, 50); // Pages: 50-100%
 
   // Animate progress bar
   useEffect(() => {
