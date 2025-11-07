@@ -557,29 +557,57 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
             <h3 className="text-lg font-semibold mb-4">Position moyenne et CTR</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip />
+                <defs>
+                  <linearGradient id="colorPosition" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorCTR" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis 
+                  dataKey="date" 
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis 
+                  yAxisId="left"
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis 
+                  yAxisId="right" 
+                  orientation="right"
+                  style={{ fontSize: '12px' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }}
+                />
                 <Legend />
                 <Line 
                   yAxisId="left" 
                   type="monotone" 
                   dataKey="position" 
                   stroke="hsl(var(--chart-3))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--chart-3))', r: 4 }}
-                  activeDot={{ r: 6 }}
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 6, strokeWidth: 2 }}
+                  name="Position"
                 />
                 <Line 
                   yAxisId="right" 
                   type="monotone" 
                   dataKey="ctr" 
                   stroke="hsl(var(--chart-4))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--chart-4))', r: 4 }}
-                  activeDot={{ r: 6 }}
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 6, strokeWidth: 2 }}
+                  name="CTR (%)"
                 />
               </LineChart>
             </ResponsiveContainer>

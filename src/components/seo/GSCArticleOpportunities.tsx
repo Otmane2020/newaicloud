@@ -20,6 +20,8 @@ import {
   RefreshCw,
   Plus,
   BarChart3,
+  Package,
+  FolderOpen,
 } from 'lucide-react';
 import {
   LineChart,
@@ -40,8 +42,9 @@ interface KeywordOpportunity {
   ctr: number;
   potential: 'high' | 'medium' | 'low';
   suggestedTopic: string;
-  relatedProducts?: string[];
-  relatedCollections?: string[];
+  relatedProducts: Array<{ id: string; title: string }>;
+  relatedCollections: Array<{ id: string; title: string }>;
+  sourceType: 'product' | 'collection' | 'query';
 }
 
 interface TrackedKeyword {
@@ -86,49 +89,171 @@ export function GSCArticleOpportunities({
   }, [selectedDomain]);
 
   useEffect(() => {
-    if (topQueries.length > 0) {
-      analyzeOpportunities();
-    }
+    analyzeOpportunities();
   }, [topQueries]);
 
-  const analyzeOpportunities = () => {
-    // Analyser les requêtes pour trouver des opportunités
-    const analyzed = topQueries
-      .filter(q => q.position > 10 && q.impressions > 100) // Requêtes avec du potentiel
-      .map(q => {
-        let potential: 'high' | 'medium' | 'low' = 'low';
-        
-        // Calcul du potentiel basé sur position et impressions
-        if (q.position <= 20 && q.impressions > 500) {
-          potential = 'high';
-        } else if (q.position <= 30 && q.impressions > 200) {
-          potential = 'medium';
+  const analyzeOpportunities = async () => {
+    try {
+      setAnalyzing(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Charger les produits et collections
+      const { data: products } = await (supabase as any)
+        .from('shopify_products')
+        .select('id, title, seo_title, seo_description, tags')
+        .eq('user_id', user.id)
+        .limit(100);
+
+      const { data: collections } = await (supabase as any)
+        .from('shopify_collections')
+        .select('id, title, seo_title, seo_description')
+        .eq('user_id', user.id)
+        .limit(50);
+
+      const productsList = products || [];
+      const collectionsList = collections || [];
+      const allOpportunities: KeywordOpportunity[] = [];
+
+      // 1. Opportunités basées sur les produits
+      for (const product of productsList) {
+        const tags = Array.isArray(product.tags) ? product.tags : [];
+        const keywords = [
+          product.title?.toLowerCase(),
+          ...tags.map((t: string) => t.toLowerCase()),
+          product.seo_title?.toLowerCase(),
+        ].filter(Boolean);
+
+        // Créer une opportunité pour chaque produit
+        const matchingQueries = topQueries.filter(q => 
+          keywords.some(k => k && q.query.toLowerCase().includes(k as string))
+        );
+
+        if (matchingQueries.length > 0 || productsList.length < 20) {
+          const avgPosition = matchingQueries.length > 0
+            ? matchingQueries.reduce((sum, q) => sum + q.position, 0) / matchingQueries.length
+            : 50;
+          
+          const avgImpressions = matchingQueries.length > 0
+            ? matchingQueries.reduce((sum, q) => sum + q.impressions, 0)
+            : 0;
+
+          allOpportunities.push({
+            query: product.title || '',
+            currentPosition: avgPosition,
+            impressions: avgImpressions,
+            clicks: matchingQueries.reduce((sum, q) => sum + q.clicks, 0),
+            ctr: matchingQueries.length > 0 
+              ? matchingQueries.reduce((sum, q) => sum + q.ctr, 0) / matchingQueries.length 
+              : 0,
+            potential: avgPosition < 30 && avgImpressions > 100 ? 'high' : avgImpressions > 50 ? 'medium' : 'low',
+            suggestedTopic: `Guide complet : ${product.title}`,
+            relatedProducts: [{ id: product.id, title: product.title || '' }],
+            relatedCollections: [],
+            sourceType: 'product',
+          });
         }
+      }
 
-        // Générer un sujet d'article suggéré
-        const suggestedTopic = generateArticleTopic(q.query);
+      // 2. Opportunités basées sur les collections
+      for (const collection of collectionsList) {
+        const keywords = [
+          collection.title?.toLowerCase(),
+          collection.seo_title?.toLowerCase(),
+        ].filter(Boolean);
 
-        return {
-          query: q.query,
-          currentPosition: q.position,
-          impressions: q.impressions,
-          clicks: q.clicks,
-          ctr: q.ctr,
-          potential,
-          suggestedTopic,
-        };
-      })
-      .sort((a, b) => {
-        // Trier par potentiel puis par impressions
-        const potentialOrder = { high: 3, medium: 2, low: 1 };
-        if (potentialOrder[a.potential] !== potentialOrder[b.potential]) {
-          return potentialOrder[b.potential] - potentialOrder[a.potential];
+        const matchingQueries = topQueries.filter(q => 
+          keywords.some(k => k && q.query.toLowerCase().includes(k as string))
+        );
+
+        if (matchingQueries.length > 0 || collectionsList.length < 10) {
+          const avgPosition = matchingQueries.length > 0
+            ? matchingQueries.reduce((sum, q) => sum + q.position, 0) / matchingQueries.length
+            : 50;
+          
+          const avgImpressions = matchingQueries.length > 0
+            ? matchingQueries.reduce((sum, q) => sum + q.impressions, 0)
+            : 0;
+
+          allOpportunities.push({
+            query: collection.title || '',
+            currentPosition: avgPosition,
+            impressions: avgImpressions,
+            clicks: matchingQueries.reduce((sum, q) => sum + q.clicks, 0),
+            ctr: matchingQueries.length > 0 
+              ? matchingQueries.reduce((sum, q) => sum + q.ctr, 0) / matchingQueries.length 
+              : 0,
+            potential: avgPosition < 30 && avgImpressions > 100 ? 'high' : avgImpressions > 50 ? 'medium' : 'low',
+            suggestedTopic: `Découvrez notre collection : ${collection.title}`,
+            relatedProducts: [],
+            relatedCollections: [{ id: collection.id, title: collection.title || '' }],
+            sourceType: 'collection',
+          });
         }
-        return b.impressions - a.impressions;
-      })
-      .slice(0, 10);
+      }
 
-    setOpportunities(analyzed);
+      // 3. Opportunités basées sur les requêtes GSC
+      const queryOpportunities = topQueries
+        .filter(q => q.position > 10 && q.impressions > 100)
+        .map(q => {
+          let potential: 'high' | 'medium' | 'low' = 'low';
+          
+          if (q.position <= 20 && q.impressions > 500) {
+            potential = 'high';
+          } else if (q.position <= 30 && q.impressions > 200) {
+            potential = 'medium';
+          }
+
+          // Trouver les produits/collections liés
+          const relatedProducts = productsList
+            .filter(p => {
+              const tags = Array.isArray(p.tags) ? p.tags : [];
+              return p.title?.toLowerCase().includes(q.query.toLowerCase()) ||
+                tags.some((t: string) => t.toLowerCase().includes(q.query.toLowerCase()));
+            })
+            .slice(0, 3)
+            .map(p => ({ id: p.id, title: p.title || '' }));
+
+          const relatedCollections = collectionsList
+            .filter(c => c.title?.toLowerCase().includes(q.query.toLowerCase()))
+            .slice(0, 2)
+            .map(c => ({ id: c.id, title: c.title || '' }));
+
+          return {
+            query: q.query,
+            currentPosition: q.position,
+            impressions: q.impressions,
+            clicks: q.clicks,
+            ctr: q.ctr,
+            potential,
+            suggestedTopic: generateArticleTopic(q.query),
+            relatedProducts,
+            relatedCollections,
+            sourceType: 'query' as const,
+          };
+        })
+        .slice(0, 10);
+
+      allOpportunities.push(...queryOpportunities);
+
+      // Trier par potentiel et impressions
+      const sorted = allOpportunities
+        .sort((a, b) => {
+          const potentialOrder = { high: 3, medium: 2, low: 1 };
+          if (potentialOrder[a.potential] !== potentialOrder[b.potential]) {
+            return potentialOrder[b.potential] - potentialOrder[a.potential];
+          }
+          return b.impressions - a.impressions;
+        })
+        .slice(0, 15);
+
+      setOpportunities(sorted);
+    } catch (error) {
+      console.error('Error analyzing opportunities:', error);
+      toast.error('Erreur lors de l\'analyse des opportunités');
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const generateArticleTopic = (query: string): string => {
@@ -277,7 +402,31 @@ export function GSCArticleOpportunities({
             <TableBody>
               {opportunities.map((opp, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">{opp.query}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{opp.query}</span>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {opp.sourceType === 'product' && (
+                          <Badge variant="outline" className="gap-1">
+                            <Package className="h-3 w-3" />
+                            Produit
+                          </Badge>
+                        )}
+                        {opp.sourceType === 'collection' && (
+                          <Badge variant="outline" className="gap-1">
+                            <FolderOpen className="h-3 w-3" />
+                            Collection
+                          </Badge>
+                        )}
+                        {opp.relatedProducts.length > 0 && (
+                          <span>{opp.relatedProducts.length} produit(s)</span>
+                        )}
+                        {opp.relatedCollections.length > 0 && (
+                          <span>{opp.relatedCollections.length} collection(s)</span>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
                   <TableCell className="max-w-xs truncate" title={opp.suggestedTopic}>
                     {opp.suggestedTopic}
                   </TableCell>
@@ -303,8 +452,9 @@ export function GSCArticleOpportunities({
                         variant="default"
                         size="sm"
                         onClick={() => {
-                          // Naviguer vers la création d'article avec le sujet pré-rempli
-                          window.location.href = `/blog/new?topic=${encodeURIComponent(opp.suggestedTopic)}&keyword=${encodeURIComponent(opp.query)}`;
+                          const productIds = opp.relatedProducts.map(p => p.id).join(',');
+                          const collectionIds = opp.relatedCollections.map(c => c.id).join(',');
+                          window.location.href = `/blog/new?topic=${encodeURIComponent(opp.suggestedTopic)}&keyword=${encodeURIComponent(opp.query)}&products=${productIds}&collections=${collectionIds}`;
                         }}
                         className="gap-2"
                       >
@@ -317,11 +467,28 @@ export function GSCArticleOpportunities({
               ))}
             </TableBody>
           </Table>
+        ) : analyzing ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-3">
+              <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Analyse de vos produits et collections...</p>
+            </div>
+          </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              Aucune opportunité détectée pour le moment
+          <div className="text-center py-12">
+            <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-lg font-medium mb-2">
+              Aucune opportunité détectée
             </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Nous n'avons pas trouvé de produits ou collections dans votre boutique.
+              <br />
+              Importez vos produits depuis Shopify pour générer des opportunités d'articles.
+            </p>
+            <Button onClick={analyzeOpportunities} variant="outline" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Réanalyser
+            </Button>
           </div>
         )}
       </Card>
