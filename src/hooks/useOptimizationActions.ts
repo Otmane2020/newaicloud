@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUsageLimits } from './useUsageLimits';
+import { useOptimizationNotifications } from './useOptimizationNotifications';
 
 export type OptimizationAction = 'products' | 'collections' | 'alt_texts' | 'articles' | 'pages';
 
@@ -22,6 +23,7 @@ export const useOptimizationActions = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [progress, setProgress] = useState<OptimizationProgress>({ current: 0, total: 0, action: null });
   const { limits, refresh: refreshLimits } = useUsageLimits();
+  const { sendOptimizationNotification } = useOptimizationNotifications();
 
   const optimizeProducts = async (productIds?: string[]): Promise<OptimizationResult> => {
     try {
@@ -80,6 +82,12 @@ export const useOptimizationActions = () => {
       }
 
       await refreshLimits();
+      
+      // Send notification for completed optimizations
+      if (processedCount > 0) {
+        await sendOptimizationNotification(processedCount);
+      }
+      
       return { success: true, action: 'products', processedCount };
     } catch (error) {
       console.error('Error optimizing products:', error);
@@ -143,6 +151,12 @@ export const useOptimizationActions = () => {
       }
 
       await refreshLimits();
+      
+      // Send notification for completed optimizations
+      if (processedCount > 0) {
+        await sendOptimizationNotification(processedCount);
+      }
+      
       return { success: true, action: 'collections', processedCount };
     } catch (error) {
       console.error('Error optimizing collections:', error);
@@ -196,6 +210,12 @@ export const useOptimizationActions = () => {
       if (generateError) throw generateError;
 
       await refreshLimits();
+      
+      // Send notification for completed optimizations
+      if (images.length > 0) {
+        await sendOptimizationNotification(images.length);
+      }
+      
       return { success: true, action: 'alt_texts', processedCount: images.length };
     } catch (error) {
       console.error('Error generating alt texts:', error);
@@ -258,6 +278,12 @@ export const useOptimizationActions = () => {
       }
 
       await refreshLimits();
+      
+      // Send notification for completed optimizations
+      if (processedCount > 0) {
+        await sendOptimizationNotification(processedCount);
+      }
+      
       return { success: true, action: 'articles', processedCount };
     } catch (error) {
       console.error('Error optimizing articles:', error);
@@ -321,6 +347,12 @@ export const useOptimizationActions = () => {
       }
 
       await refreshLimits();
+      
+      // Send notification for completed optimizations
+      if (processedCount > 0) {
+        await sendOptimizationNotification(processedCount);
+      }
+      
       return { success: true, action: 'pages', processedCount };
     } catch (error) {
       console.error('Error optimizing pages:', error);
