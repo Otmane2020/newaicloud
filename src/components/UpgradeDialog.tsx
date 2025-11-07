@@ -23,6 +23,8 @@ interface Plan {
   id: string;
   name: string;
   price_monthly: number;
+  stripe_price_id_monthly?: string;
+  stripe_price_id_yearly?: string;
   max_products: number;
   max_optimizations_monthly: number;
   max_articles_monthly: number;
@@ -69,7 +71,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
         // Charger tous les plans actifs triés par prix
         const { data: allPlans } = await supabase
           .from('subscription_plans')
-          .select('id, name, price_monthly, max_products, max_optimizations_monthly, max_articles_monthly, max_chat_responses_monthly, max_shopify_stores')
+          .select('id, name, price_monthly, stripe_price_id_monthly, stripe_price_id_yearly, max_products, max_optimizations_monthly, max_articles_monthly, max_chat_responses_monthly, max_shopify_stores')
           .eq('is_active', true)
           .order('price_monthly', { ascending: true });
 
