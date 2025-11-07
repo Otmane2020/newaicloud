@@ -3,6 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   LineChart,
   Line,
   AreaChart,
@@ -39,6 +47,22 @@ import { useState, useEffect } from 'react';
 
 interface SearchConsoleData {
   date: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface TopPage {
+  page: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface TopQuery {
+  query: string;
   clicks: number;
   impressions: number;
   ctr: number;
@@ -90,6 +114,8 @@ interface GoogleSearchConsoleInsightsProps {
 export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchConsoleInsightsProps) {
   const [dateRange, setDateRange] = useState<'7' | '30' | '90'>('30');
   const [data, setData] = useState<SearchConsoleData[]>([]);
+  const [topPages, setTopPages] = useState<TopPage[]>([]);
+  const [topQueries, setTopQueries] = useState<TopQuery[]>([]);
   const [loading, setLoading] = useState(false);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [syncConfig, setSyncConfig] = useState<any>(null);
@@ -175,6 +201,8 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
       }));
 
       setData(formattedData);
+      setTopPages(data.topPages || []);
+      setTopQueries(data.topQueries || []);
       toast.success('Données chargées avec succès');
     } catch (error: any) {
       console.error('Error loading Search Console data:', error);
@@ -563,6 +591,77 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
               </LineChart>
             </ResponsiveContainer>
           </Card>
+
+          {/* Top Pages and Queries Tables */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Top Pages */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Pages les plus performantes</h3>
+              {topPages.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Page</TableHead>
+                      <TableHead className="text-right">Clics</TableHead>
+                      <TableHead className="text-right">Impressions</TableHead>
+                      <TableHead className="text-right">CTR</TableHead>
+                      <TableHead className="text-right">Position</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {topPages.map((page, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium max-w-xs truncate" title={page.page}>
+                          {page.page.replace(/^https?:\/\//, '').replace(/^[^/]+/, '')}
+                        </TableCell>
+                        <TableCell className="text-right">{page.clicks}</TableCell>
+                        <TableCell className="text-right">{page.impressions}</TableCell>
+                        <TableCell className="text-right">{page.ctr.toFixed(1)}%</TableCell>
+                        <TableCell className="text-right">{page.position.toFixed(1)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Aucune donnée de pages disponible
+                </p>
+              )}
+            </Card>
+
+            {/* Top Queries */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Requêtes les plus performantes</h3>
+              {topQueries.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Requête</TableHead>
+                      <TableHead className="text-right">Clics</TableHead>
+                      <TableHead className="text-right">Impressions</TableHead>
+                      <TableHead className="text-right">CTR</TableHead>
+                      <TableHead className="text-right">Position</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {topQueries.map((query, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{query.query}</TableCell>
+                        <TableCell className="text-right">{query.clicks}</TableCell>
+                        <TableCell className="text-right">{query.impressions}</TableCell>
+                        <TableCell className="text-right">{query.ctr.toFixed(1)}%</TableCell>
+                        <TableCell className="text-right">{query.position.toFixed(1)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Aucune donnée de requêtes disponible
+                </p>
+              )}
+            </Card>
+          </div>
         </>
       )}
 

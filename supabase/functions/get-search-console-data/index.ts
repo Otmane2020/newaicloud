@@ -210,6 +210,66 @@ serve(async (req) => {
       position: row.position,
     }));
 
+    // Fetch top pages data
+    const pagesResponse = await fetch(
+      `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(matchedSiteUrl)}/searchAnalytics/query`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+          dimensions: ['page'],
+          rowLimit: 10,
+        }),
+      }
+    );
+
+    let topPages = [];
+    if (pagesResponse.ok) {
+      const pagesData = await pagesResponse.json();
+      topPages = (pagesData.rows || []).map((row: any) => ({
+        page: row.keys[0],
+        clicks: row.clicks,
+        impressions: row.impressions,
+        ctr: row.ctr * 100,
+        position: row.position,
+      }));
+    }
+
+    // Fetch top queries data
+    const queriesResponse = await fetch(
+      `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(matchedSiteUrl)}/searchAnalytics/query`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+          dimensions: ['query'],
+          rowLimit: 10,
+        }),
+      }
+    );
+
+    let topQueries = [];
+    if (queriesResponse.ok) {
+      const queriesData = await queriesResponse.json();
+      topQueries = (queriesData.rows || []).map((row: any) => ({
+        query: row.keys[0],
+        clicks: row.clicks,
+        impressions: row.impressions,
+        ctr: row.ctr * 100,
+        position: row.position,
+      }));
+    }
+
     // Cache the data in database (use cleaned domain)
     for (const dataPoint of processedData) {
       await supabaseClient
@@ -232,6 +292,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         data: processedData,
+        topPages,
+        topQueries,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
