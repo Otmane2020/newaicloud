@@ -177,7 +177,7 @@ serve(async (req) => {
     if (isTrialing) {
       // CRITICAL: Trial users get strict limits
       limits = {
-        max_optimizations: plan.trial_max_optimizations || 999999,
+        max_optimizations: 50, // FORCE 50 for trial
         max_articles: plan.trial_max_articles || 1,
         max_chat_responses: plan.trial_max_chat_responses || 50,
         max_shopify_requests: plan.trial_max_shopify_requests || 20,
@@ -185,7 +185,7 @@ serve(async (req) => {
         max_shopify_stores: 1,
         max_campaigns: 0,
       };
-      console.log(`[LIMITS] 🔴 TRIAL MODE - max_products forced to 10`);
+      console.log(`[LIMITS] 🔴 TRIAL MODE - max_optimizations: 50, max_products: 10`);
     } else {
       limits = {
         max_optimizations: plan.max_optimizations_monthly || 999999,
