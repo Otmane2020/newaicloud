@@ -72,6 +72,13 @@ Ta mission est de générer une landing page HTML complète pour un produit Shop
 `;
 
     console.log("[generate-landing-ai] 🧠 Sending prompt to Lovable Gateway...");
+    console.log("[generate-landing-ai] Request details:", { 
+      productTitle, 
+      style, 
+      layout, 
+      length,
+      hasImage: !!imageUrl 
+    });
 
     // 🧠 Call Lovable AI Gateway (Gemini or GPT-based)
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -91,7 +98,6 @@ Ta mission est de générer une landing page HTML complète pour un produit Shop
           { role: "user", content: prompt },
         ],
         max_tokens: 3000,
-        temperature: 0.8,
       }),
     });
 
@@ -117,11 +123,35 @@ Ta mission est de générer une landing page HTML complète pour un produit Shop
     const data = await response.json().catch(() => null);
     const html = data?.choices?.[0]?.message?.content?.trim() || "";
 
+    console.log("[generate-landing-ai] Response status:", response.status);
+    console.log("[generate-landing-ai] AI response parsed, HTML length:", html.length);
+
     if (!html) {
       console.warn("[generate-landing-ai] ⚠️ Empty HTML response from AI");
       return new Response(
         JSON.stringify({
           error: "Aucune réponse générée par l'IA. Essayez avec un prompt plus simple ou un style différent.",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Validation du HTML généré
+    if (html.includes('<html') || html.includes('<head') || html.includes('<body')) {
+      console.warn("[generate-landing-ai] ⚠️ HTML contains forbidden tags (html/head/body)");
+      return new Response(
+        JSON.stringify({
+          error: "Le HTML généré contient des balises interdites. Réessayez.",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (html.length < 500) {
+      console.warn("[generate-landing-ai] ⚠️ Generated HTML too short:", html.length);
+      return new Response(
+        JSON.stringify({
+          error: "Le contenu généré est trop court. Réessayez avec plus de détails.",
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );

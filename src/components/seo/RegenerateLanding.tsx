@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { Sparkles, Loader2, Eye, Monitor, Smartphone, Download, Send } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, Eye, Monitor, Smartphone, Download, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { LandingConfig } from "./LandingConfigDialog";
 
 interface RegenerateLandingProps {
   product: {
@@ -15,38 +15,65 @@ interface RegenerateLandingProps {
     description?: string;
     image_url?: string;
   };
+  config: LandingConfig;
+  autoGenerate?: boolean;
   onGenerated?: (html: string) => void;
+  onClose?: () => void;
 }
 
-export default function RegenerateLanding({ product, onGenerated }: RegenerateLandingProps) {
+export default function RegenerateLanding({ 
+  product, 
+  config,
+  autoGenerate = false,
+  onGenerated,
+  onClose 
+}: RegenerateLandingProps) {
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
-  const [styleChoice, setStyleChoice] = useState("moderne");
-  const [color, setColor] = useState("#f8f8f8");
-  const [layout, setLayout] = useState("2 colonnes");
-  const [length, setLength] = useState("moyenne (800 mots)");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (autoGenerate) {
+      handleGenerate();
+    }
+  }, [autoGenerate]);
 
   /** ----------------------------
-   * ✨ Generate Landing via AI
+   * ✨ Generate Landing via AI with Progress
    -----------------------------*/
   const handleGenerate = async () => {
     try {
       setLoading(true);
-      toast.info("Génération IA en cours...");
+      setError(null);
+      setProgress(0);
+      setProgressMessage("Préparation de la génération...");
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setProgress(15);
+      setProgressMessage("Analyse du produit et de l'image...");
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setProgress(30);
+      setProgressMessage("Appel à l'API Lovable AI...");
 
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
           productTitle: product.title,
           imageUrl: product.image_url,
           description: product.description,
-          style: styleChoice,
-          mainColor: color,
-          layout,
-          length,
+          style: config.style,
+          mainColor: config.colorScheme,
+          layout: config.layout,
+          length: config.contentLength,
         },
       });
+
+      setProgress(60);
+      setProgressMessage("Traitement de la réponse IA...");
 
       if (error) throw error;
       if (data?.error) {
@@ -55,20 +82,30 @@ export default function RegenerateLanding({ product, onGenerated }: RegenerateLa
           : data.error.includes("Payment required")
             ? "Crédits Lovable AI épuisés. Veuillez recharger votre compte."
             : data.error;
+        setError(message);
         toast.error(message);
         return;
       }
 
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setProgress(90);
+      setProgressMessage("Finalisation du rendu HTML...");
+
       if (data?.html?.trim()) {
         setHtmlContent(data.html);
+        setProgress(100);
+        setProgressMessage("✅ Landing page générée avec succès !");
         toast.success("Landing page générée avec succès !");
         onGenerated?.(data.html);
       } else {
-        toast.warning("Aucun contenu généré. Essayez avec un autre style ou layout.");
+        throw new Error("Aucun contenu généré. Essayez avec un autre style ou layout.");
       }
     } catch (err: any) {
       console.error("Error generating landing:", err);
-      toast.error(err?.message || "Erreur lors de la génération de la landing page.");
+      const errorMsg = err?.message || "Erreur lors de la génération de la landing page.";
+      setError(errorMsg);
+      toast.error(errorMsg);
+      setProgress(0);
     } finally {
       setLoading(false);
     }
@@ -130,100 +167,49 @@ export default function RegenerateLanding({ product, onGenerated }: RegenerateLa
    -----------------------------*/
   return (
     <div className="space-y-6">
-      {/* Config Panel */}
-      <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 rounded-2xl border border-primary/20 shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-md">
-            <Sparkles className="w-6 h-6 text-white" />
+      {/* Progress Section */}
+      {loading && (
+        <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 rounded-2xl border border-primary/20">
+          <div className="flex items-center gap-3 mb-4">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">Génération en cours...</h3>
+              <p className="text-sm text-muted-foreground">{progressMessage}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold">Génération IA de Landing Page</h2>
-            <p className="text-sm text-muted-foreground">
-              Choisissez le style, les couleurs et le format avant de générer
-            </p>
+          <Progress value={progress} showPercentage />
+        </div>
+      )}
+
+      {/* Error Section */}
+      {error && !loading && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-destructive">Erreur de génération</p>
+              <p className="text-sm text-destructive/90 mt-1">{error}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleGenerate}>
+              Réessayer
+            </Button>
           </div>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          {/* Style */}
-          <div className="space-y-1.5">
-            <Label>🎨 Style visuel</Label>
-            <Select value={styleChoice} onValueChange={setStyleChoice}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez un style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="moderne">Moderne</SelectItem>
-                <SelectItem value="minimaliste">Minimaliste</SelectItem>
-                <SelectItem value="scandinave">Scandinave</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
-                <SelectItem value="neutre">Neutre</SelectItem>
-                <SelectItem value="coloré">Coloré</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Color */}
-          <div className="space-y-1.5">
-            <Label>🎨 Couleur principale</Label>
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-full h-10 rounded-md border cursor-pointer"
-            />
-          </div>
-
-          {/* Layout */}
-          <div className="space-y-1.5">
-            <Label>🧱 Layout</Label>
-            <Select value={layout} onValueChange={setLayout}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choisissez un layout" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1 colonne">1 colonne (centré)</SelectItem>
-                <SelectItem value="2 colonnes">2 colonnes (image + texte)</SelectItem>
-                <SelectItem value="hero à gauche">Hero image à gauche</SelectItem>
-                <SelectItem value="hero à droite">Hero image à droite</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Length */}
-          <div className="space-y-1.5">
-            <Label>✏️ Longueur du contenu</Label>
-            <Select value={length} onValueChange={setLength}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez une longueur" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="courte (400 mots)">Courte (400 mots)</SelectItem>
-                <SelectItem value="moyenne (800 mots)">Moyenne (800 mots)</SelectItem>
-                <SelectItem value="longue (1500 mots)">Longue (1500 mots)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <Button onClick={handleGenerate} disabled={loading} size="lg" className="w-full font-semibold gap-3">
-          {loading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Génération en cours...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-5 h-5" />
-              Générer la Landing Page IA
-            </>
-          )}
-        </Button>
-      </div>
-
-      {/* Preview Section */}
-      {htmlContent ? (
+      {/* Success State */}
+      {htmlContent && !loading && (
         <div className="space-y-4">
+          <div className="bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <div>
+                <p className="font-semibold text-green-700">Landing page générée avec succès !</p>
+                <p className="text-sm text-muted-foreground">Utilisez les boutons ci-dessous pour prévisualiser, télécharger ou synchroniser.</p>
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Eye className="w-5 h-5 text-primary" />
@@ -270,12 +256,13 @@ export default function RegenerateLanding({ product, onGenerated }: RegenerateLa
             <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* Initial State */}
+      {!loading && !htmlContent && !error && (
         <div className="text-center py-10 text-muted-foreground border rounded-xl bg-muted/10">
-          <Sparkles className="w-6 h-6 mx-auto mb-2 text-primary/70" />
-          <p className="text-sm">
-            Configurez les options ci-dessus puis cliquez sur <strong>Générer</strong> pour créer votre landing page.
-          </p>
+          <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary/70 animate-pulse" />
+          <p className="text-sm">Initialisation de la génération...</p>
         </div>
       )}
     </div>

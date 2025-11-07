@@ -31,6 +31,7 @@ import RegenerateLanding from "@/components/seo/RegenerateLanding";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/OptimizationConfigDialog";
+import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -104,6 +105,8 @@ export default function ProductTitleDescription() {
   const [selectedLandingProduct, setSelectedLandingProduct] = useState<Product | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [optimizationConfig, setOptimizationConfig] = useState<OptimizationConfig | null>(null);
+  const [showLandingConfigDialog, setShowLandingConfigDialog] = useState(false);
+  const [landingConfig, setLandingConfig] = useState<LandingConfig | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -320,6 +323,12 @@ export default function ProductTitleDescription() {
   const handleConfigConfirm = (config: OptimizationConfig) => {
     setOptimizationConfig(config);
     setTimeout(() => handleOptimizeSelected(config), 100);
+  };
+
+  const handleLandingConfigConfirm = (config: LandingConfig) => {
+    setLandingConfig(config);
+    setShowLandingConfigDialog(false);
+    setTimeout(() => setShowLandingDialog(true), 100);
   };
 
   const handleWhiteBackground = async () => {
@@ -1061,7 +1070,7 @@ export default function ProductTitleDescription() {
                               size="icon"
                               onClick={() => {
                                 setSelectedLandingProduct(product);
-                                setShowLandingDialog(true);
+                                setShowLandingConfigDialog(true);
                               }}
                               className="hover:bg-primary/10"
                             >
@@ -1389,6 +1398,14 @@ export default function ProductTitleDescription() {
         syncLoading={syncingToShopify}
       />
 
+      {/* Landing Config Dialog */}
+      <LandingConfigDialog
+        open={showLandingConfigDialog}
+        onOpenChange={setShowLandingConfigDialog}
+        onConfirm={handleLandingConfigConfirm}
+        productTitle={selectedLandingProduct?.title}
+      />
+
       {/* Landing Page Generator Dialog */}
       <Dialog open={showLandingDialog} onOpenChange={setShowLandingDialog}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -1401,12 +1418,15 @@ export default function ProductTitleDescription() {
               Créez une landing page personnalisée et optimisée pour votre produit
             </DialogDescription>
           </DialogHeader>
-          {selectedLandingProduct && (
+          {selectedLandingProduct && landingConfig && (
             <RegenerateLanding 
-              product={selectedLandingProduct} 
+              product={selectedLandingProduct}
+              config={landingConfig}
+              autoGenerate={true}
               onGenerated={(html) => {
                 console.log('Generated HTML:', html.substring(0, 100));
               }}
+              onClose={() => setShowLandingDialog(false)}
             />
           )}
         </DialogContent>
