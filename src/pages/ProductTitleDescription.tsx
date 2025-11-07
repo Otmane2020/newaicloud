@@ -1156,9 +1156,15 @@ export default function ProductTitleDescription() {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
+                                // Vérifier les limites AVANT d'ouvrir le dialog
+                                if (!canDoAction('optimizations')) {
+                                  setShowUpgradeDialog(true);
+                                  return;
+                                }
                                 setSelectedLandingProduct(product);
                                 setShowLandingConfigDialog(true);
                               }}
+                              disabled={!canDoAction('optimizations')}
                               className="hover:bg-primary/10"
                             >
                               <FileText className="h-4 w-4 text-primary" />
