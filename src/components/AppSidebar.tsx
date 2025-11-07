@@ -304,31 +304,6 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
-                      
-                      {/* Nested Google Search Console submenu */}
-                      <Collapsible defaultOpen={isGoogleConsoleActive} className="group/gsc">
-                        <SidebarMenuSubItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuSubButton isActive={isGoogleConsoleActive}>
-                              <TrendingUp className="h-4 w-4" />
-                              <span>Console Google Search</span>
-                              <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/gsc:rotate-90" />
-                            </SidebarMenuSubButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="ml-4 border-l-2 border-border pl-2 space-y-1">
-                              {googleConsoleSubItems.map((gscItem) => (
-                                <SidebarMenuSubButton key={gscItem.title} asChild isActive={isActive(gscItem.url)} className="pl-2">
-                                  <NavLink to={gscItem.url}>
-                                    <gscItem.icon className="h-3 w-3" />
-                                    <span className="text-xs">{gscItem.title}</span>
-                                  </NavLink>
-                                </SidebarMenuSubButton>
-                              ))}
-                            </div>
-                          </CollapsibleContent>
-                        </SidebarMenuSubItem>
-                      </Collapsible>
 
                       {/* Nested Audit SEO submenu */}
                       <Collapsible defaultOpen={isAuditActive} className="group/audit">
@@ -354,6 +329,33 @@ export function AppSidebar() {
                           </CollapsibleContent>
                         </SidebarMenuSubItem>
                       </Collapsible>
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Google Search Console Menu with Submenu */}
+              <Collapsible defaultOpen={isGoogleConsoleActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isGoogleConsoleActive}>
+                      <TrendingUp className="h-4 w-4" />
+                      <span>Console Google Search</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {googleConsoleSubItems.map((gscItem) => (
+                        <SidebarMenuSubItem key={gscItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(gscItem.url)}>
+                            <NavLink to={gscItem.url}>
+                              <gscItem.icon className="h-4 w-4" />
+                              <span>{gscItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
