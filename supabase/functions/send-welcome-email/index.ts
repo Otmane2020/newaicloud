@@ -66,9 +66,10 @@ const handler = async (req: Request): Promise<Response> => {
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8fafc; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
+          .header { background: linear-gradient(135deg, hsl(221, 83%, 53%) 0%, hsl(217, 91%, 60%) 50%, hsl(199, 89%, 48%) 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
+          .logo { max-width: 120px; margin-bottom: 20px; }
           .content { background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-          .button { display: inline-block; padding: 14px 32px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; margin: 25px 0; font-weight: 600; font-size: 16px; }
+          .button { display: inline-block; padding: 14px 32px; background: hsl(217, 91%, 60%); color: white; text-decoration: none; border-radius: 8px; margin: 25px 0; font-weight: 600; font-size: 16px; }
           .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
           .greeting { color: #1e293b; font-size: 24px; margin-bottom: 20px; }
           .message { color: #475569; font-size: 16px; margin-bottom: 15px; }
@@ -77,6 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://affable-calm-newai.lovable.app/logo-email.png" alt="New AI Logo" class="logo" />
             <h1 style="margin: 0; font-size: 32px; font-weight: 700;">${t.title}</h1>
           </div>
           <div class="content">
@@ -89,8 +91,8 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="color: #475569; margin-top: 30px;">${t.signature}</p>
           </div>
           <div class="footer">
-            <p>New AI - Optimisez votre SEO Shopify • <a href="https://newai.sale" style="color: #667eea;">newai.sale</a></p>
-            <p style="font-size: 12px; margin-top: 10px;">Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.</p>
+            <p>New AI - Optimisez votre SEO Shopify • <a href="https://newai.sale" style="color: hsl(217, 91%, 60%);">newai.sale</a></p>
+            <p style="font-size: 12px; margin-top: 10px;">${language === 'fr' ? "Si vous n'avez pas créé de compte, vous pouvez ignorer cet email." : "If you didn't create an account, you can safely ignore this email."}</p>
           </div>
         </div>
       </body>

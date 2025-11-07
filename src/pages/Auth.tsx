@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import { loginSchema, signupSchema } from '@/lib/validationSchemas';
 import { useTranslation } from '@/lib/language';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -83,6 +84,11 @@ export default function Auth() {
     <div className="min-h-screen bg-gradient-subtle pt-24 pb-12">
       <div className="container mx-auto px-4 max-w-md">
         <Card className="p-8 shadow-elegant">
+          {/* Language Switcher */}
+          <div className="flex justify-end mb-4">
+            <LanguageSwitcher />
+          </div>
+          
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <div className="flex items-center gap-2">
