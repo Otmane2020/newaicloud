@@ -35,27 +35,27 @@ const handler = async (req: Request): Promise<Response> => {
 
     const translations = {
       fr: {
-        subject: "Bienvenue sur New AI ! 🚀",
-        title: "Bienvenue sur New AI !",
+        subject: "Bienvenue sur notre plateforme ! 🚀",
+        title: "Bienvenue !",
         greeting: "Bonjour",
-        thankYou: "Merci de vous être inscrit sur New AI, votre plateforme d'optimisation SEO pour Shopify !",
+        thankYou: "Merci de vous être inscrit sur notre plateforme d'optimisation SEO pour Shopify !",
         message:
           "Nous sommes ravis de vous compter parmi nous. Vous pouvez dès maintenant accéder à toutes nos fonctionnalités pour booster votre visibilité en ligne.",
         button: "Accéder à mon compte",
-        signature: "À très bientôt,<br>L'équipe New AI",
-        footer: "New AI - Optimisez votre SEO Shopify",
+        signature: "À très bientôt,<br>L'équipe",
+        footer: "Optimisez votre SEO Shopify",
         disclaimer: "Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.",
       },
       en: {
-        subject: "Welcome to New AI! 🚀",
-        title: "Welcome to New AI!",
+        subject: "Welcome to our platform! 🚀",
+        title: "Welcome!",
         greeting: "Hello",
-        thankYou: "Thank you for signing up to New AI, your SEO optimization platform for Shopify!",
+        thankYou: "Thank you for signing up to our SEO optimization platform for Shopify!",
         message:
           "We are delighted to have you with us. You can now access all our features to boost your online visibility.",
         button: "Access my account",
-        signature: "See you soon,<br>The New AI Team",
-        footer: "New AI - Optimize your Shopify SEO",
+        signature: "See you soon,<br>The Team",
+        footer: "Optimize your Shopify SEO",
         disclaimer: "If you didn't create an account, you can safely ignore this email.",
       },
     };
@@ -96,16 +96,16 @@ const handler = async (req: Request): Promise<Response> => {
           <div class="sender-info">
             <div class="sender-avatar">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
             <div class="sender-details">
-              <p class="sender-name">New AI</p>
+              <p class="sender-name">Équipe IA</p>
               <p class="sender-email">noreply@newai.sale</p>
             </div>
           </div>
 
-          <!-- Email Header with HTML Logo -->
+          <!-- Email Header with AI Logo -->
           <div class="header">
             <div class="logo-container">
               <div class="logo-icon">
@@ -113,7 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
-              <span class="logo-text">NewAI</span>
+              <span class="logo-text">IA</span>
             </div>
             <h1 style="margin: 0; font-size: 28px; font-weight: 700;">${t.title}</h1>
           </div>
@@ -140,7 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    
+
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY is not configured");
     }
@@ -149,11 +149,11 @@ const handler = async (req: Request): Promise<Response> => {
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "New AI <noreply@newai.sale>",
+        from: "Équipe IA <noreply@newai.sale>",
         to: [email],
         subject: t.subject,
         html: emailHtml,
