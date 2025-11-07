@@ -224,7 +224,7 @@ serve(async (req) => {
         canUseShopifySearch,
         canAddProducts,
         canAddShopifyStore,
-        canAddCampaign,
+        canUseCampaigns: canAddCampaign,
         limitReached: {
           optimizations: !canUseOptimizations,
           articles: !canUseArticles,

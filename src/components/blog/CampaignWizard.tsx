@@ -75,12 +75,12 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      // Vérifier les limites avant de créer la campagne
-      if (!canDoAction('articles')) {
+      // Vérifier les limites de campagnes avant de créer
+      if (!canDoAction('campaigns')) {
         toast.error('Limite de campagnes atteinte', {
           description: limits?.isTrialing 
-            ? 'Passez à un plan payant pour créer plus de campagnes.'
-            : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
+            ? 'Passez à un plan payant pour créer des campagnes.'
+            : 'Limite mensuelle atteinte.'
         });
         setShowUpgradeDialog(true);
         setLoading(false);

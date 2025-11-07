@@ -20,6 +20,7 @@ import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { useNavigate } from 'react-router-dom';
+import { UsageWidget } from '@/components/dashboard/UsageWidget';
 
 export default function Blog() {
   const { user } = useAuth();
@@ -189,13 +190,18 @@ export default function Blog() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-          {t.blog.title}
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
-          {t.blog.description}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+            {t.blog.title}
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
+            {t.blog.description}
+          </p>
+        </div>
+        <div className="w-full sm:w-80">
+          <UsageWidget />
+        </div>
       </div>
 
       {/* Trial Limit Banner for Articles */}
