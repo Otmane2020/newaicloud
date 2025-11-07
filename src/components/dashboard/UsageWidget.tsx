@@ -137,7 +137,7 @@ export function UsageWidget() {
                 <>⚠️ <strong>Limites mensuelles atteintes.</strong> Elles seront réinitialisées le mois prochain.</>
               )}
             </p>
-            {limits.isTrialing ? (
+            {(limits.isTrialing || !limits.planId) ? (
               <Button 
                 size="sm" 
                 onClick={() => navigate('/subscription')}

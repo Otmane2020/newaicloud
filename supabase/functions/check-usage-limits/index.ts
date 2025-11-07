@@ -70,10 +70,13 @@ serve(async (req) => {
     // Determine if user is in trial or paid subscription
     // A user is in trial if:
     // 1. subscription_status === 'trialing', OR
-    // 2. subscription_status === 'active' BUT trial_ends_at is in the future
+    // 2. subscription_status === 'cancelled' or 'inactive' (apply trial limits), OR
+    // 3. subscription_status === 'active' BUT trial_ends_at is in the future
     const now = new Date();
     const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
     const isTrialing = profile.subscription_status === 'trialing' || 
+                       profile.subscription_status === 'cancelled' ||
+                       profile.subscription_status === 'inactive' ||
                        (profile.subscription_status === 'active' && trialEndsAt && trialEndsAt > now);
     const isPaid = profile.subscription_status === 'active' && (!trialEndsAt || trialEndsAt <= now);
     
