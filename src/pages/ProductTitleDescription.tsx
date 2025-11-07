@@ -127,6 +127,16 @@ export default function ProductTitleDescription() {
     fetchProducts();
   }, []);
 
+  // Rafraîchir les limites au montage et toutes les 10 secondes
+  useEffect(() => {
+    refreshLimits();
+    const interval = setInterval(() => {
+      refreshLimits();
+    }, 10000); // 10 secondes
+
+    return () => clearInterval(interval);
+  }, [refreshLimits]);
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
