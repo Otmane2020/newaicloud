@@ -119,6 +119,8 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
       const cleanShopifyCode = shopifyCode.trim().replace(".myshopify.com", "");
       const storeUrl = `${cleanShopifyCode}.myshopify.com`;
 
+      console.log("[SHOPIFY-WIZARD] Validating credentials for:", storeUrl);
+
       // Validate credentials via backend
       const { data: validationResult, error: validationError } = await supabase.functions.invoke(
         "validate-shopify-credentials",
@@ -130,8 +132,21 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
         }
       );
 
-      if (validationError || !validationResult?.success) {
-        toast.error(t.wizards.shopify.invalidCredentials);
+      console.log("[SHOPIFY-WIZARD] Validation result:", { validationResult, validationError });
+
+      if (validationError) {
+        console.error("[SHOPIFY-WIZARD] Validation error:", validationError);
+        toast.error(t.wizards.shopify.invalidCredentials, {
+          description: validationError.message || "Erreur lors de la validation",
+        });
+        return;
+      }
+
+      if (!validationResult?.success) {
+        console.error("[SHOPIFY-WIZARD] Validation failed:", validationResult);
+        toast.error(t.wizards.shopify.invalidCredentials, {
+          description: validationResult?.error || "Les identifiants sont incorrects",
+        });
         return;
       }
 
