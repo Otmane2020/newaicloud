@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { currentTitle, imageUrl } = await req.json();
+    const { currentTitle, imageUrl, config } = await req.json();
 
     if (!currentTitle) {
       throw new Error("Le titre actuel est requis");
@@ -127,16 +127,55 @@ Sois concis et précis.`
     }
 
     // Génération contenu optimisé SEO avec HTML structuré
+    // Adapter le style et la structure selon la configuration
+    const styleDescriptions = {
+      modern: 'Design épuré et minimaliste avec lignes claires',
+      elegant: 'Style sophistiqué et raffiné avec touches luxueuses',
+      professional: 'Présentation sobre, directe et corporate',
+      creative: 'Design audacieux, original et artistique'
+    };
+
+    const layoutInstructions = {
+      compact: 'Structure concise avec sections courtes et impact visuel fort',
+      detailed: 'Sections riches et détaillées avec multiples sous-sections',
+      story: 'Narration engageante avec storytelling et émotion'
+    };
+
+    const colorSchemeStyles = {
+      vibrant: 'couleurs vives et éclatantes (primaires saturées)',
+      pastel: 'tons doux et pastels (couleurs désaturées apaisantes)',
+      monochrome: 'noir, blanc et nuances de gris (minimaliste)',
+      warm: 'tons chauds (oranges, rouges, jaunes)'
+    };
+
+    const contentLengthGuides = {
+      short: '~500 mots total, paragraphes 40-50 mots, 3 caractéristiques principales',
+      medium: '~1000 mots total, paragraphes 70-90 mots, 4-5 caractéristiques',
+      long: '~2000 mots total, paragraphes 100-120 mots, 6+ caractéristiques détaillées'
+    };
+
+    const selectedStyle = config?.style || 'modern';
+    const selectedLayout = config?.layout || 'detailed';
+    const selectedColorScheme = config?.colorScheme || 'vibrant';
+    const selectedContentLength = config?.contentLength || 'medium';
+
     const systemPrompt = `Tu es un expert SEO e-commerce et rédacteur web professionnel.
 
 🎯 MISSION: Créer du contenu HTML structuré, SEO-optimisé, et professionnel qui convertit.
+
+📐 CONFIGURATION DESIGN:
+- Style: ${styleDescriptions[selectedStyle as keyof typeof styleDescriptions]}
+- Layout: ${layoutInstructions[selectedLayout as keyof typeof layoutInstructions]}
+- Palette: ${colorSchemeStyles[selectedColorScheme as keyof typeof colorSchemeStyles]}
+- Longueur: ${contentLengthGuides[selectedContentLength as keyof typeof contentLengthGuides]}
 
 📋 RÈGLES STRICTES:
 - Titre SEO: 50-60 caractères avec mot-clé + bénéfice unique
 - Meta description: 150-160 caractères avec USP + appel à l'action
 - HTML: Structure sémantique H1>H2>H3>H4, responsive, moderne
 - Intégrer l'analyse vision IA de façon naturelle
-- Inclure dimensions si disponibles dans spécifications`;
+- Inclure dimensions si disponibles dans spécifications
+- Respecter strictement le style et la longueur demandés`;
 
     let userPrompt = `🛍️ PRODUIT: "${currentTitle}"`;
     

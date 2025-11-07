@@ -30,6 +30,7 @@ import { ProductTitleLandingDialog } from "@/components/seo/ProductTitleLandingD
 import RegenerateLanding from "@/components/seo/RegenerateLanding";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/OptimizationConfigDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -101,6 +102,8 @@ export default function ProductTitleDescription() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showLandingDialog, setShowLandingDialog] = useState(false);
   const [selectedLandingProduct, setSelectedLandingProduct] = useState<Product | null>(null);
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [optimizationConfig, setOptimizationConfig] = useState<OptimizationConfig | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -150,7 +153,7 @@ export default function ProductTitleDescription() {
     setSelectedProducts(newSelected);
   };
 
-  const handleOptimizeSelected = async () => {
+  const handleOptimizeSelected = async (config?: OptimizationConfig) => {
     if (selectedProducts.size === 0) {
       toast.error("Veuillez sélectionner au moins un produit à optimiser");
       return;
@@ -201,6 +204,7 @@ export default function ProductTitleDescription() {
           body: {
             currentTitle: product.title,
             imageUrl: product.image_url || null,
+            config: config || optimizationConfig,
           },
         });
 
@@ -310,7 +314,12 @@ export default function ProductTitleDescription() {
     }
 
     setSelectedProducts(new Set(filteredProducts.map((p) => p.id)));
-    setTimeout(() => handleOptimizeSelected(), 100);
+    setShowConfigDialog(true);
+  };
+
+  const handleConfigConfirm = (config: OptimizationConfig) => {
+    setOptimizationConfig(config);
+    setTimeout(() => handleOptimizeSelected(config), 100);
   };
 
   const handleWhiteBackground = async () => {
@@ -834,7 +843,7 @@ export default function ProductTitleDescription() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleOptimizeSelected}
+                onClick={() => handleOptimizeSelected()}
                 disabled={generating || selectedProducts.size === 0}
               >
                 <Wand2 className="h-4 w-4 mr-2" />
@@ -1402,6 +1411,13 @@ export default function ProductTitleDescription() {
           )}
         </DialogContent>
       </Dialog>
+
+      <OptimizationConfigDialog
+        open={showConfigDialog}
+        onOpenChange={setShowConfigDialog}
+        onConfirm={handleConfigConfirm}
+        productCount={filteredProducts.length}
+      />
 
       <UpgradeDialog
         open={showUpgradeDialog}
