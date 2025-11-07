@@ -71,23 +71,25 @@ const handler = async (req: Request): Promise<Response> => {
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8fafc; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .sender-info { display: flex; align-items: center; gap: 12px; padding: 20px; background: white; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-          .sender-avatar { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-          .sender-avatar svg { width: 28px; height: 28px; }
+          .sender-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+          .sender-avatar svg { width: 24px; height: 24px; }
           .sender-details { flex: 1; }
-          .sender-name { font-weight: 600; color: #1e293b; font-size: 16px; margin: 0; }
+          .sender-name { font-weight: 700; color: #1e293b; font-size: 16px; margin: 0; }
           .sender-email { color: #64748b; font-size: 14px; margin: 2px 0 0 0; }
-          .header { background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
-          .logo-container { display: inline-flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
-          .logo-icon { width: 56px; height: 56px; border-radius: 14px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); }
-          .logo-icon svg { width: 32px; height: 32px; }
-          .logo-text { font-size: 32px; font-weight: 700; color: white; letter-spacing: -0.5px; }
-          .content { background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-          .button { display: inline-block; padding: 14px 32px; background: #3B82F6; color: white; text-decoration: none; border-radius: 8px; margin: 25px 0; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-          .button:hover { background: #2563eb; }
-          .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
-          .footer a { color: #3B82F6; text-decoration: none; }
-          .greeting { color: #1e293b; font-size: 24px; margin-bottom: 20px; }
-          .message { color: #475569; font-size: 16px; margin-bottom: 15px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 50px 30px; text-align: center; border-radius: 16px 16px 0 0; position: relative; overflow: hidden; }
+          .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>'); opacity: 0.3; }
+          .logo-container { display: inline-flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 24px; position: relative; z-index: 1; }
+          .logo-icon { width: 64px; height: 64px; border-radius: 16px; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); position: relative; }
+          .logo-icon::before { content: ''; position: absolute; inset: 2px; border-radius: 14px; background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); }
+          .logo-icon svg { width: 36px; height: 36px; position: relative; z-index: 1; }
+          .logo-text { font-size: 36px; font-weight: 800; color: white; letter-spacing: -1px; text-shadow: 0 2px 20px rgba(0,0,0,0.2); position: relative; z-index: 1; }
+          .content { background: white; padding: 45px 35px; border-radius: 0 0 16px 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+          .button { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 10px; margin: 30px 0; font-weight: 700; font-size: 16px; box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); transition: transform 0.2s, box-shadow 0.2s; }
+          .button:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5); }
+          .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; padding: 25px 20px 20px; border-top: 2px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 16px 16px; }
+          .footer a { color: #667eea; text-decoration: none; font-weight: 600; }
+          .greeting { color: #1e293b; font-size: 28px; margin-bottom: 20px; font-weight: 700; }
+          .message { color: #475569; font-size: 16px; margin-bottom: 18px; line-height: 1.7; }
         </style>
       </head>
       <body>
@@ -95,12 +97,14 @@ const handler = async (req: Request): Promise<Response> => {
           <!-- Sender Profile -->
           <div class="sender-info">
             <div class="sender-avatar">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
+                <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
             <div class="sender-details">
-              <p class="sender-name">Équipe IA</p>
+              <p class="sender-name">Équipe New AI</p>
               <p class="sender-email">noreply@newai.sale</p>
             </div>
           </div>
@@ -110,12 +114,13 @@ const handler = async (req: Request): Promise<Response> => {
             <div class="logo-container">
               <div class="logo-icon">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3" fill="#667eea"/>
+                  <path d="M12 2L12 6M12 18L12 22M22 12L18 12M6 12L2 12M19.07 4.93L16.24 7.76M7.76 16.24L4.93 19.07M19.07 19.07L16.24 16.24M7.76 7.76L4.93 4.93" stroke="#667eea" stroke-width="2.5" stroke-linecap="round"/>
                 </svg>
               </div>
-              <span class="logo-text">IA</span>
+              <span class="logo-text">New AI</span>
             </div>
-            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">${t.title}</h1>
+            <h1 style="margin: 0; font-size: 32px; font-weight: 800; position: relative; z-index: 1;">${t.title}</h1>
           </div>
 
           <!-- Email Content -->
