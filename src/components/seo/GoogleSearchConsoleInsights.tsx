@@ -133,34 +133,8 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const daysBack = parseInt(dateRange);
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - daysBack);
-
-      // Try to load cached data first
-      const { data: cachedData, error } = await supabase
-        .from('google_search_console_data')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('domain', selectedDomain)
-        .gte('date', startDate.toISOString().split('T')[0])
-        .order('date', { ascending: true });
-
-      if (cachedData && cachedData.length > 0) {
-        const formattedData = cachedData.map(item => ({
-          date: new Date(item.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
-          clicks: item.clicks,
-          impressions: item.impressions,
-          ctr: parseFloat(item.ctr.toString()),
-          position: parseFloat(item.position.toString())
-        }));
-        setData(formattedData);
-        // Always load fresh data for tables to get topPages and topQueries
-        loadSearchConsoleData();
-      } else {
-        // If no cached data, fetch from API
-        loadSearchConsoleData();
-      }
+      // Always fetch from API to get both charts data and tables data
+      loadSearchConsoleData();
     } catch (error) {
       console.error('Error loading cached data:', error);
       loadSearchConsoleData();
