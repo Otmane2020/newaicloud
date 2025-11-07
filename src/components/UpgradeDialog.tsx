@@ -150,18 +150,10 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
         const selectedPlan = availablePlans.find(p => p.id === selectedPlanId);
         if (!selectedPlan) throw new Error('Plan not found');
 
-        const priceId = (selectedPlan as any).stripe_price_id_monthly || (selectedPlan as any).stripe_price_id_yearly;
-        
-        if (!priceId) {
-          toast.error('Configuration de plan incomplète. Contactez le support.');
-          setLoading(false);
-          return;
-        }
-
         const { data, error } = await supabase.functions.invoke('update-subscription', {
           body: {
-            new_price_id: priceId,
             new_plan_id: selectedPlanId,
+            billing_period: 'monthly',
           },
         });
 

@@ -57,10 +57,10 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: userData.user.id });
 
-    const { new_price_id, new_plan_id } = await req.json();
-    if (!new_price_id) throw new Error("new_price_id is required");
+    const { new_plan_id, billing_period } = await req.json();
+    if (!new_plan_id) throw new Error("new_plan_id is required");
 
-    logStep("Request body parsed", { new_price_id, new_plan_id });
+    logStep("Request body parsed", { new_plan_id, billing_period });
 
     // Get user profile
     const { data: profile, error: profileError } = await supabaseClient
@@ -160,6 +160,49 @@ serve(async (req) => {
       trialEnd: stripeSubscription.trial_end,
       periodStart: stripeSubscription.current_period_start,
       periodEnd: stripeSubscription.current_period_end
+    });
+
+    // Get current currency from subscription
+    const currentPrice = stripeSubscription.items.data[0]?.price;
+    const currentCurrency = currentPrice?.currency?.toUpperCase() || 'USD';
+    logStep("Current subscription currency detected", { currency: currentCurrency });
+
+    // Get the new plan details
+    const { data: newPlan, error: planError } = await supabaseClient
+      .from("subscription_plans")
+      .select("*")
+      .eq("id", new_plan_id)
+      .single();
+
+    if (planError || !newPlan) {
+      throw new Error("New plan not found");
+    }
+
+    // Determine billing period from current subscription if not provided
+    const actualBillingPeriod = billing_period || (
+      currentPrice?.recurring?.interval === 'year' ? 'yearly' : 'monthly'
+    );
+
+    // Select the appropriate price_id based on currency and billing period
+    let new_price_id;
+    if (actualBillingPeriod === 'yearly') {
+      new_price_id = currentCurrency === 'EUR' && newPlan.stripe_price_id_yearly_eur
+        ? newPlan.stripe_price_id_yearly_eur
+        : newPlan.stripe_price_id_yearly;
+    } else {
+      new_price_id = currentCurrency === 'EUR' && newPlan.stripe_price_id_monthly_eur
+        ? newPlan.stripe_price_id_monthly_eur
+        : (newPlan.stripe_price_id_monthly || newPlan.stripe_price_id);
+    }
+
+    if (!new_price_id) {
+      throw new Error(`No price ID found for plan ${newPlan.name} with currency ${currentCurrency} and billing ${actualBillingPeriod}`);
+    }
+
+    logStep("Selected price ID for upgrade", { 
+      priceId: new_price_id, 
+      currency: currentCurrency, 
+      billingPeriod: actualBillingPeriod 
     });
 
     // Calculate days into billing cycle

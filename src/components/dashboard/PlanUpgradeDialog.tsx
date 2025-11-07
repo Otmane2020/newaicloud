@@ -143,22 +143,12 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
 
     setLoading(true);
     try {
-      const priceId = billingPeriod === 'monthly' 
-        ? selectedPlan.stripe_price_id_monthly 
-        : selectedPlan.stripe_price_id_yearly;
-      
-      if (!priceId) {
-        toast.error('Configuration de plan incomplète. Veuillez contacter le support.');
-        setLoading(false);
-        return;
-      }
-
-      console.log('Calling update-subscription with:', { priceId, planId: selectedPlan.id });
+      console.log('Calling update-subscription with:', { planId: selectedPlan.id, billingPeriod });
       
       const { data, error } = await supabase.functions.invoke('update-subscription', {
         body: {
-          new_price_id: priceId,
           new_plan_id: selectedPlan.id,
+          billing_period: billingPeriod,
         },
       });
 
