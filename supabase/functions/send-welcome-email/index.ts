@@ -88,8 +88,21 @@ const handler = async (req: Request): Promise<Response> => {
           .header {
             text-align: center;
             padding: 56px 24px 48px;
-            background: linear-gradient(135deg, #3B82F6, #60A5FA);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            position: relative;
+            overflow: hidden;
+          }
+          .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.8) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.8) 0%, transparent 50%);
+            opacity: 0.5;
           }
           .brand-title {
             font-size: 34px;
@@ -123,7 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
             margin: 36px 0 20px;
           }
           .cta a {
-            background: linear-gradient(135deg, #3B82F6, #60A5FA);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-decoration: none;
             padding: 14px 34px;
@@ -131,6 +144,12 @@ const handler = async (req: Request): Promise<Response> => {
             font-weight: 600;
             font-size: 15px;
             display: inline-block;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+          }
+          .cta a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
           }
           .footer {
             text-align: center;
@@ -140,7 +159,7 @@ const handler = async (req: Request): Promise<Response> => {
             color: #7a869a;
           }
           .footer a {
-            color: #3B82F6;
+            color: #667eea;
             text-decoration: none;
           }
           @media (max-width: 480px) {
