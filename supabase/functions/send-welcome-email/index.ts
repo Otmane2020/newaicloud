@@ -112,13 +112,7 @@ const handler = async (req: Request): Promise<Response> => {
           <!-- Email Header with AI Logo -->
           <div class="header">
             <div class="logo-container">
-              <div class="logo-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="3" fill="#667eea"/>
-                  <path d="M12 2L12 6M12 18L12 22M22 12L18 12M6 12L2 12M19.07 4.93L16.24 7.76M7.76 16.24L4.93 19.07M19.07 19.07L16.24 16.24M7.76 7.76L4.93 4.93" stroke="#667eea" stroke-width="2.5" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <span class="logo-text">New AI</span>
+              <img src="https://newai.sale/logo-email.png" alt="New AI Logo" style="width: 120px; height: 120px; margin-bottom: 20px; position: relative; z-index: 1; border-radius: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);" />
             </div>
             <h1 style="margin: 0; font-size: 32px; font-weight: 800; position: relative; z-index: 1;">${t.title}</h1>
           </div>
