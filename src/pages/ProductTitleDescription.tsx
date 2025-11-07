@@ -1070,6 +1070,7 @@ export default function ProductTitleDescription() {
                               onClick={() => {
                                 // Vérifier les limites AVANT de sélectionner et optimiser
                                 if (!canDoAction('optimizations')) {
+                                  toast.error("Limite d'optimisations atteinte");
                                   setShowUpgradeDialog(true);
                                   return;
                                 }
@@ -1094,6 +1095,7 @@ export default function ProductTitleDescription() {
                               onClick={async () => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
+                                  toast.error("Limite d'optimisations atteinte");
                                   setShowUpgradeDialog(true);
                                   return;
                                 }
@@ -1123,6 +1125,7 @@ export default function ProductTitleDescription() {
                               onClick={async () => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
+                                  toast.error("Limite d'optimisations atteinte");
                                   setShowUpgradeDialog(true);
                                   return;
                                 }
@@ -1175,6 +1178,7 @@ export default function ProductTitleDescription() {
                               onClick={() => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
+                                  toast.error("Limite d'optimisations atteinte");
                                   setShowUpgradeDialog(true);
                                   return;
                                 }
