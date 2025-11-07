@@ -54,6 +54,7 @@ import PerformanceMonitor from "./pages/PerformanceMonitor";
 import Documentation from "./pages/Documentation";
 import NotificationSettings from "./pages/NotificationSettings";
 import Pricing from "./pages/Pricing";
+import UsageAudit from "./pages/UsageAudit";
 
 const queryClient = new QueryClient();
 
@@ -292,6 +293,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <PerformanceMonitor />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/usage-audit"
+              element={
+                <ProtectedLayout>
+                  <UsageAudit />
                 </ProtectedLayout>
               }
             />

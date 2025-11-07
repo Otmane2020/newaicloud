@@ -3388,6 +3388,48 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_tracking_history: {
+        Row: {
+          created_at: string
+          delta: number
+          field_name: string
+          id: string
+          metadata: Json | null
+          month: string
+          new_value: number
+          old_value: number
+          operation: string
+          seller_id: string
+          trigger_source: string | null
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          field_name: string
+          id?: string
+          metadata?: Json | null
+          month: string
+          new_value: number
+          old_value: number
+          operation: string
+          seller_id: string
+          trigger_source?: string | null
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          field_name?: string
+          id?: string
+          metadata?: Json | null
+          month?: string
+          new_value?: number
+          old_value?: number
+          operation?: string
+          seller_id?: string
+          trigger_source?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -3449,7 +3491,26 @@ export type Database = {
         Returns: Json
       }
       cleanup_old_vision_cache: { Args: never; Returns: undefined }
+      cleanup_orphaned_data: {
+        Args: never
+        Returns: {
+          cleanup_type: string
+          details: Json
+          items_cleaned: number
+        }[]
+      }
       cleanup_stuck_syncs: { Args: never; Returns: undefined }
+      detect_usage_anomalies: {
+        Args: { p_threshold?: number; p_user_id: string }
+        Returns: {
+          anomaly_type: string
+          current_value: number
+          description: string
+          expected_value: number
+          field_name: string
+          severity: string
+        }[]
+      }
       generate_referral_code: { Args: { user_id: string }; Returns: string }
       get_next_image_version: { Args: { p_image_id: string }; Returns: number }
       has_role: {
