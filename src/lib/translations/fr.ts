@@ -582,6 +582,9 @@ export const translations = {
       emailCampaigns: "Campagnes Email",
       comingSoon: "Bientôt disponible",
     },
+    seoChallenges: "Défis SEO du Jour",
+    noChallenges: "Aucun défi disponible",
+    noChallengesDesc: "De nouveaux défis arrivent bientôt !",
     cards: {
       aiOptimized: "Produits Optimisés IA",
       toOptimize: "À Optimiser",

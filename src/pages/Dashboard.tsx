@@ -12,6 +12,7 @@ import { MetricCard } from '@/components/dashboard/MetricCard';
 import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
 import { SmartBanner } from '@/components/dashboard/SmartBanner';
 import { QuotaAlerts } from '@/components/dashboard/QuotaAlerts';
+import { SeoChallenges } from '@/components/dashboard/SeoChallenges';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
 import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
 import { AIRecommendations } from '@/components/dashboard/AIRecommendations';
@@ -666,6 +667,9 @@ export default function Dashboard() {
 
         {/* Quota Alerts */}
         <QuotaAlerts />
+        
+        {/* SEO Challenges */}
+        <SeoChallenges />
       </div>
 
       {/* Advanced Analytics */}

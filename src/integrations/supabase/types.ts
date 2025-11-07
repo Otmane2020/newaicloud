@@ -2168,6 +2168,60 @@ export type Database = {
           },
         ]
       }
+      seo_challenges: {
+        Row: {
+          category: string
+          challenge_type: string
+          completed_at: string | null
+          created_at: string
+          current_value: number | null
+          description: string
+          difficulty: string
+          expires_at: string | null
+          id: string
+          reward_points: number | null
+          status: string
+          target_value: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          challenge_type: string
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number | null
+          description: string
+          difficulty?: string
+          expires_at?: string | null
+          id?: string
+          reward_points?: number | null
+          status?: string
+          target_value: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          challenge_type?: string
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number | null
+          description?: string
+          difficulty?: string
+          expires_at?: string | null
+          id?: string
+          reward_points?: number | null
+          status?: string
+          target_value?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       seo_notifications: {
         Row: {
           action_label: string | null
