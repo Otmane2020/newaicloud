@@ -106,19 +106,33 @@ serve(async (req) => {
         throw new Error("No active subscription found in Stripe. Please subscribe first.");
       }
       
-      // Use the Stripe subscription
-      const stripeSubId = stripeSubscriptions.data[0].id;
-      logStep("Found subscription in Stripe", { subscriptionId: stripeSubId });
+      const stripeSub = stripeSubscriptions.data[0];
       
-      // Sync it to our DB
+      // Validate period dates before syncing to DB
+      if (!stripeSub.current_period_start || !stripeSub.current_period_end) {
+        logStep("Subscription found but period dates not yet available", { 
+          subscriptionId: stripeSub.id,
+          status: stripeSub.status 
+        });
+        throw new Error("Subscription is still being set up. Please try again in a few moments.");
+      }
+      
+      const stripeSubId = stripeSub.id;
+      logStep("Found subscription in Stripe with valid periods", { 
+        subscriptionId: stripeSubId,
+        periodStart: stripeSub.current_period_start,
+        periodEnd: stripeSub.current_period_end
+      });
+      
+      // Sync it to our DB with validated data
       await supabaseClient
         .from("subscriptions")
         .upsert({
           seller_id: userData.user.id,
           stripe_subscription_id: stripeSubId,
-          status: stripeSubscriptions.data[0].status,
-          current_period_start: new Date(stripeSubscriptions.data[0].current_period_start * 1000).toISOString(),
-          current_period_end: new Date(stripeSubscriptions.data[0].current_period_end * 1000).toISOString(),
+          status: stripeSub.status,
+          current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
+          current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
         });
       
       subscriptionData = {
@@ -151,8 +165,9 @@ serve(async (req) => {
     const periodEnd = stripeSubscription.current_period_end;
     
     // Validate timestamps before using them
-    if (!periodStart || !periodEnd) {
-      throw new Error("Invalid subscription period dates");
+    if (!periodStart || !periodEnd || periodStart <= 0 || periodEnd <= 0) {
+      logStep("Invalid period dates detected", { periodStart, periodEnd });
+      throw new Error("Subscription period dates are invalid. This may indicate the subscription is still being set up. Please try again in a few moments.");
     }
     
     const daysIntoCycle = Math.floor((now - periodStart) / (24 * 60 * 60));
