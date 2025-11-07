@@ -1,10 +1,4 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -15,32 +9,49 @@ interface SimpleSyncProgressProps {
   currentType: string;
 }
 
-export function SimpleSyncProgress({
-  open,
-  currentType,
-}: SimpleSyncProgressProps) {
+export function SimpleSyncProgress({ open, currentType }: SimpleSyncProgressProps) {
   const { t, tf } = useTranslation();
   const [animatedProgress, setAnimatedProgress] = useState(0);
+  const [displayedPercentage, setDisplayedPercentage] = useState(0);
 
-  // Continuously animate progress bar with actual progress tracking
+  // Animer la barre de progression
   useEffect(() => {
     if (!open) {
       setAnimatedProgress(0);
+      setDisplayedPercentage(0);
       return;
     }
 
-    // Start at 10% and increment smoothly
     const interval = setInterval(() => {
-      setAnimatedProgress(prev => {
-        // Increment by 1-3% randomly for more natural feel
+      setAnimatedProgress((prev) => {
         const increment = Math.random() * 2 + 1;
-        const newValue = prev + increment;
-        // Cap at 95% to show it's still working
-        return Math.min(newValue, 95);
+        const newValue = Math.min(prev + increment, 95);
+        return newValue;
       });
     }, 200);
 
     return () => clearInterval(interval);
+  }, [open]);
+
+  // Animer le pourcentage défilant
+  useEffect(() => {
+    if (!open) return;
+
+    const targetPercentage = Math.round(animatedProgress);
+    if (displayedPercentage < targetPercentage) {
+      const timer = setTimeout(() => {
+        setDisplayedPercentage((prev) => Math.min(prev + 1, targetPercentage));
+      }, 30);
+      return () => clearTimeout(timer);
+    }
+  }, [animatedProgress, displayedPercentage, open]);
+
+  // Réinitialiser quand le dialogue s'ouvre
+  useEffect(() => {
+    if (open) {
+      setDisplayedPercentage(0);
+      setAnimatedProgress(0);
+    }
   }, [open]);
 
   const getTypeLabel = (type: string) => {
@@ -58,7 +69,7 @@ export function SimpleSyncProgress({
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm pr-6">
             <span className="block truncate">
-              {tf('integration.sync.progress.importing', { type: getTypeLabel(currentType) })}
+              {tf("integration.sync.progress.importing", { type: getTypeLabel(currentType) })}
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -67,19 +78,60 @@ export function SimpleSyncProgress({
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs sm:text-sm">
               <span className="text-muted-foreground">Progression</span>
-              <span className="font-bold text-primary tabular-nums">{Math.round(animatedProgress)}%</span>
+              <span className="font-bold text-primary tabular-nums transition-all duration-200">
+                {displayedPercentage}%
+              </span>
             </div>
-            <Progress 
-              value={animatedProgress} 
-              showPercentage={false}
-              className="h-3 sm:h-4" 
+
+            {/* Barre de progression avec dégradé bleu */}
+            <div className="relative">
+              <div className="h-3 sm:h-4 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25"
+                  style={{
+                    width: `${animatedProgress}%`,
+                    background: `linear-gradient(90deg, 
+                      #3b82f6 0%, 
+                      #2563eb 25%, 
+                      #1d4ed8 50%, 
+                      #4338ca 75%, 
+                      #3730a3 100%)`,
+                  }}
+                />
+
+                {/* Effet de brillance animé */}
+                <div
+                  className="absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"
+                  style={{
+                    transform: `translateX(${animatedProgress * 0.8}%)`,
+                    transition: "transform 0.3s ease-out",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Points de chargement animés */}
+          <div className="flex justify-center items-center gap-2 py-2">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 animate-bounce shadow-sm" />
+            <div
+              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 animate-bounce shadow-sm"
+              style={{ animationDelay: "0.15s" }}
+            />
+            <div
+              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 animate-bounce shadow-sm"
+              style={{ animationDelay: "0.3s" }}
             />
           </div>
-          
-          <div className="flex justify-center items-center gap-2 py-2">
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce" />
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.15s' }} />
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.3s' }} />
+
+          {/* Message d'encouragement dynamique */}
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground animate-pulse">
+              {displayedPercentage < 30 && "Préparation des données..."}
+              {displayedPercentage >= 30 && displayedPercentage < 60 && "Synchronisation en cours..."}
+              {displayedPercentage >= 60 && displayedPercentage < 85 && "Finalisation..."}
+              {displayedPercentage >= 85 && "Presque terminé !"}
+            </p>
           </div>
         </div>
       </DialogContent>
