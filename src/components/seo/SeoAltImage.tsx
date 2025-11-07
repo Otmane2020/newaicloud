@@ -1115,8 +1115,15 @@ export function SeoAltImage() {
                         <Button
                           size="sm"
                           variant="default"
-                          onClick={() => handleOptimizeImage(img.id, true)}
-                          disabled={generating || !canDoAction('optimizations')}
+                          onClick={() => {
+                            if (!canDoAction('optimizations')) {
+                              toast.error("Limite d'optimisations atteinte");
+                              setShowUpgradeDialog(true);
+                              return;
+                            }
+                            handleOptimizeImage(img.id, true);
+                          }}
+                          disabled={generating}
                           title="Optimiser avec Vision AI"
                           className="w-full bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                         >
@@ -1198,8 +1205,15 @@ export function SeoAltImage() {
                     <Button
                       size="sm"
                       variant="default"
-                      onClick={() => handleOptimizeImage(img.id, true)}
-                      disabled={generating || !canDoAction('optimizations')}
+                      onClick={() => {
+                        if (!canDoAction('optimizations')) {
+                          toast.error("Limite d'optimisations atteinte");
+                          setShowUpgradeDialog(true);
+                          return;
+                        }
+                        handleOptimizeImage(img.id, true);
+                      }}
+                      disabled={generating}
                       title="Optimiser avec Vision AI"
                       className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                     >

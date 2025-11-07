@@ -1126,12 +1126,19 @@ export function TagOptimization() {
                      <Tooltip>
                        <TooltipTrigger asChild>
                          <Button
-                           size="sm"
-                           variant="default"
-                           onClick={() => handleOptimizeProduct(product.id)}
-                           disabled={optimizing || !canDoAction('optimizations')}
-                           className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
-                         >
+                            size="sm"
+                            variant="default"
+                            onClick={() => {
+                              if (!canDoAction('optimizations')) {
+                                toast.error("Limite d'optimisations atteinte");
+                                setShowUpgradeDialog(true);
+                                return;
+                              }
+                              handleOptimizeProduct(product.id);
+                            }}
+                            disabled={optimizing}
+                            className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
+                          >
                            <Sparkles className="w-4 h-4" />
                          </Button>
                        </TooltipTrigger>

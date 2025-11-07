@@ -867,8 +867,15 @@ const handleOptimizeArticle = async (articleId: string) => {
                         <Button
                           size="sm"
                           variant="default"
-                          onClick={() => handleOptimizeArticle(article.id)}
-                          disabled={optimizing || !canDoAction('articles')}
+                          onClick={() => {
+                            if (!canDoAction('articles')) {
+                              toast.error("Limite d'articles atteinte");
+                              setShowUpgradeDialog(true);
+                              return;
+                            }
+                            handleOptimizeArticle(article.id);
+                          }}
+                          disabled={optimizing}
                           title="Optimize"
                           className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                         >

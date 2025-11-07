@@ -1269,6 +1269,7 @@ export function SeoOptimization() {
                                 toast.error("Limite atteinte", {
                                   description: `Vous avez atteint votre limite mensuelle de ${limits.limits.max_optimizations} optimisations.`,
                                 });
+                                setShowUpgradeDialog(true);
                                 return;
                               }
                               setGenerating(true);
@@ -1286,7 +1287,7 @@ export function SeoOptimization() {
                                 setGenerating(false);
                               }
                             }}
-                            disabled={generating || !canDoAction('optimizations')}
+                            disabled={generating}
                             title={t.seo.optimization.optimize}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >

@@ -1427,6 +1427,7 @@ export function CollectionOptimization() {
                                 toast.error("Limite atteinte", {
                                   description: `Vous avez atteint votre limite mensuelle de ${limits.limits.max_optimizations} optimisations.`,
                                 });
+                                setShowUpgradeDialog(true);
                                 return;
                               }
                               setOptimizing(true);
@@ -1449,7 +1450,7 @@ export function CollectionOptimization() {
                                 setOptimizing(false);
                               }
                             }}
-                            disabled={optimizing || !canDoAction('optimizations')}
+                            disabled={optimizing}
                             title="Optimize"
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >

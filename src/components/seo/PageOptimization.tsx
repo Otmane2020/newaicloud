@@ -954,11 +954,12 @@ export function PageOptimization() {
                                 toast.error("Limite atteinte", {
                                   description: `Vous avez atteint votre limite mensuelle de ${limits.limits.max_optimizations} optimisations.`,
                                 });
+                                setShowUpgradeDialog(true);
                                 return;
                               }
                               handleOptimizePage(page.id, page.optimized);
                             }}
-                            disabled={optimizing || !canDoAction('optimizations')}
+                            disabled={optimizing}
                             title={page.optimized ? "Re-optimize" : "Optimize"}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >
