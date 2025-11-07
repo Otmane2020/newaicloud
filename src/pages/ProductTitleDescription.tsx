@@ -148,7 +148,7 @@ export default function ProductTitleDescription() {
 
   const handleOptimizeSelected = async () => {
     if (selectedProducts.size === 0) {
-      toast.error("Aucun produit sélectionné");
+      toast.error("Veuillez sélectionner au moins un produit à optimiser");
       return;
     }
 

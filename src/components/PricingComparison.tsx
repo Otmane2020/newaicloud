@@ -33,7 +33,7 @@ const PricingComparison = () => {
       items: [
         { name: "AI articles per month", starter: "5", pro: "10 - 640", enterprise: "100 - 12,800" },
         { name: "AI chat per month", starter: "500", pro: "1,000 - 64,000", enterprise: "10,000 - 1,280,000" },
-        { name: "Editorial campaigns", starter: "2", pro: "5 - 320", enterprise: "50 - 6,400" },
+        { name: "Editorial campaigns", starter: "2", pro: "3 - 320", enterprise: "50 - 6,400" },
         { name: "AI Vision (images)", starter: true, pro: true, enterprise: true },
       ]
     },
