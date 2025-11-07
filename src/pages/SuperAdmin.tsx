@@ -10,8 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Users, CreditCard, TrendingUp } from 'lucide-react';
+import { Shield, Users, CreditCard, TrendingUp, Mail } from 'lucide-react';
+import { EmailInbox } from '@/components/admin/EmailInbox';
 
 interface UserProfile {
   id: string;
@@ -144,9 +146,11 @@ export default function SuperAdmin() {
 
   return (
     <div className="container mx-auto py-8 space-y-8">
-      <div className="flex items-center gap-3">
-        <Shield className="w-8 h-8 text-orange-600" />
-        <h1 className="text-3xl font-bold">Super Admin Panel</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Shield className="w-8 h-8 text-orange-600" />
+          <h1 className="text-3xl font-bold">Super Admin Panel</h1>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -192,75 +196,95 @@ export default function SuperAdmin() {
         </Card>
       </div>
 
-      {/* Users Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Gestion des Utilisateurs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-4">Email</th>
-                  <th className="text-left p-4">Nom</th>
-                  <th className="text-left p-4">Statut</th>
-                  <th className="text-left p-4">Plan</th>
-                  <th className="text-left p-4">Date création</th>
-                  <th className="text-left p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id} className="border-b hover:bg-muted/50">
-                    <td className="p-4">{user.email}</td>
-                    <td className="p-4">{user.full_name || '-'}</td>
-                    <td className="p-4">{getStatusBadge(user.subscription_status)}</td>
-                    <td className="p-4">
-                      <Select
-                        value={user.current_plan_id || ''}
-                        onValueChange={(value) => updateUserPlan(user.id, value)}
-                        disabled={updating}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Choisir un plan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {plans.map((plan) => (
-                            <SelectItem key={plan.id} value={plan.id}>
-                              {plan.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="p-4">
-                      {new Date(user.created_at).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="p-4">
-                      <Select
-                        value={user.subscription_status}
-                        onValueChange={(value) => updateSubscriptionStatus(user.id, value)}
-                        disabled={updating}
-                      >
-                        <SelectTrigger className="w-[150px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="trialing">Trialing</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="canceled">Canceled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Tabs principale */}
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="users">
+            <Users className="w-4 h-4 mr-2" />
+            Clients & Abonnements
+          </TabsTrigger>
+          <TabsTrigger value="emails">
+            <Mail className="w-4 h-4 mr-2" />
+            Messagerie
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-4">
+          {/* Users Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestion des Utilisateurs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-4">Email</th>
+                      <th className="text-left p-4">Nom</th>
+                      <th className="text-left p-4">Statut</th>
+                      <th className="text-left p-4">Plan</th>
+                      <th className="text-left p-4">Date création</th>
+                      <th className="text-left p-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id} className="border-b hover:bg-muted/50">
+                        <td className="p-4">{user.email}</td>
+                        <td className="p-4">{user.full_name || '-'}</td>
+                        <td className="p-4">{getStatusBadge(user.subscription_status)}</td>
+                        <td className="p-4">
+                          <Select
+                            value={user.current_plan_id || ''}
+                            onValueChange={(value) => updateUserPlan(user.id, value)}
+                            disabled={updating}
+                          >
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Choisir un plan" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {plans.map((plan) => (
+                                <SelectItem key={plan.id} value={plan.id}>
+                                  {plan.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-4">
+                          {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="p-4">
+                          <Select
+                            value={user.subscription_status}
+                            onValueChange={(value) => updateSubscriptionStatus(user.id, value)}
+                            disabled={updating}
+                          >
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="trialing">Trialing</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                              <SelectItem value="canceled">Canceled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="emails">
+          <EmailInbox />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

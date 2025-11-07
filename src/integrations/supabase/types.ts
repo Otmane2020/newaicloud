@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_emails: {
+        Row: {
+          body: string
+          created_at: string | null
+          direction: string | null
+          error_message: string | null
+          from_email: string
+          html_body: string | null
+          id: string
+          metadata: Json | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string | null
+          subject: string
+          to_email: string
+          updated_at: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          direction?: string | null
+          error_message?: string | null
+          from_email: string
+          html_body?: string | null
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject: string
+          to_email: string
+          updated_at?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          direction?: string | null
+          error_message?: string | null
+          from_email?: string
+          html_body?: string | null
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject?: string
+          to_email?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ads_campaign_collections: {
         Row: {
           campaign_id: string
