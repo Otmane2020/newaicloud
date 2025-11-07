@@ -17,9 +17,13 @@ import { CampaignCalendar } from '@/components/blog/CampaignCalendar';
 import { ArticleManagement } from '@/components/blog/ArticleManagement';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/language';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { TrialLimitBanner } from '@/components/TrialLimitBanner';
+import { useNavigate } from 'react-router-dom';
 
 export default function Blog() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
   const [activeSubtab, setActiveSubtab] = useState(searchParams.get('subtab') || 'articles');
@@ -31,6 +35,7 @@ export default function Blog() {
   const [categories, setCategories] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
+  const { limits } = useUsageLimits();
 
   useEffect(() => {
     const subtab = searchParams.get('subtab');
@@ -192,6 +197,16 @@ export default function Blog() {
           {t.blog.description}
         </p>
       </div>
+
+      {/* Trial Limit Banner for Articles */}
+      {activeSubtab === 'create-article' && limits?.limitReached.articles && (
+        <TrialLimitBanner
+          resourceType="articles"
+          usage={limits.usage.articles_count || 0}
+          limit={limits.limits.max_articles || 0}
+          onActivate={() => navigate('/subscription')}
+        />
+      )}
 
       {/* Dynamic Hero Banner based on active subtab */}
       {activeSubtab === 'articles' && (
