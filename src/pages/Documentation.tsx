@@ -700,7 +700,7 @@ const Documentation = () => {
                 <div>
                   <h3 className="text-2xl font-bold mb-2">Campagnes Publicitaires</h3>
                   <p className="text-muted-foreground">
-                    Créez des landing pages optimisées pour vos campagnes Google Ads et Facebook Ads.
+                    Créez des landing pages optimisées pour vos campagnes Publicité Google et Facebook Ads.
                   </p>
                 </div>
               </div>
@@ -784,7 +784,7 @@ const Documentation = () => {
                     </li>
                     <li className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold mt-0.5">4</div>
-                      <p className="text-sm">Utilisez l'URL dans vos campagnes Google Ads ou Facebook Ads</p>
+                      <p className="text-sm">Utilisez l'URL dans vos campagnes Publicité Google ou Facebook Ads</p>
                     </li>
                   </ul>
                 </div>

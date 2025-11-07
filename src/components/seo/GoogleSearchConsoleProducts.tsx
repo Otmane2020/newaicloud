@@ -18,7 +18,7 @@ export function GoogleSearchConsoleProducts({ selectedDomain }: GoogleSearchCons
           <div className="space-y-2">
             <h2 className="text-2xl font-bold">Analyse des Produits</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Analysez les performances de vos produits dans Google Search Console
+              Analysez les performances de vos produits dans la Console Google Search
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-3 mt-8 text-left">

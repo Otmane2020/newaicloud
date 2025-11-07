@@ -152,8 +152,8 @@ export function ProductTitleLandingDialog({
           </DialogTitle>
           <DialogDescription>
             {isGenerating 
-              ? "Génération des titres et descriptions optimisés en cours..." 
-              : `${products.length} produit(s) optimisé(s) - Vérifiez avant de synchroniser avec Shopify`}
+              ? "Génération du contenu SEO optimisé en cours..." 
+              : `${products.length} produit(s) optimisé(s) - Vérifiez le contenu avant synchronisation`}
           </DialogDescription>
         </DialogHeader>
 
@@ -163,9 +163,9 @@ export function ProductTitleLandingDialog({
               <Sparkles className="h-16 w-16 text-primary animate-pulse" />
             </div>
             <div className="space-y-2">
-              <p className="text-center font-medium">Optimisation en cours...</p>
+              <p className="text-center font-medium">Optimisation IA en cours...</p>
               <p className="text-center text-sm text-muted-foreground">
-                Génération de titres captivants et descriptions enrichies avec médias
+                Génération titre SEO + description HTML enrichie avec analyse vision IA
               </p>
               <div className="max-w-md mx-auto space-y-2">
                 <Progress value={progress} className="h-2" />
@@ -229,7 +229,7 @@ export function ProductTitleLandingDialog({
                 </TabsTrigger>
                 <TabsTrigger value="360">
                   <Eye className="h-4 w-4 mr-2" />
-                  Détails Contenu
+                  Contenu Détaillé
                 </TabsTrigger>
               </TabsList>
 
@@ -242,10 +242,10 @@ export function ProductTitleLandingDialog({
                       <div className="space-y-3">
                         <Eye className="h-12 w-12 text-muted-foreground mx-auto" />
                         <p className="text-muted-foreground font-medium">
-                          Aucun contenu à prévisualiser
+                          Aucun contenu généré
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Générez d'abord le contenu optimisé pour voir l'aperçu
+                          Sélectionnez des produits et cliquez sur "Optimiser" pour générer le contenu
                         </p>
                       </div>
                     </div>
@@ -262,10 +262,10 @@ export function ProductTitleLandingDialog({
                       <div className="space-y-3">
                         <Smartphone className="h-12 w-12 text-muted-foreground mx-auto" />
                         <p className="text-muted-foreground font-medium">
-                          Aucun contenu à prévisualiser
+                          Aucun contenu généré
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Générez d'abord le contenu optimisé pour voir l'aperçu mobile
+                          Générez le contenu optimisé pour voir l'aperçu mobile
                         </p>
                       </div>
                     </div>
@@ -277,7 +277,7 @@ export function ProductTitleLandingDialog({
                 {selectedProduct ? (
                   <div className="border rounded-lg p-6 bg-muted min-h-[400px] space-y-6">
                     <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Titre Optimisé</h3>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Titre SEO Optimisé</h3>
                       <p className="text-base font-medium">
                         {selectedProduct.seo_title || selectedProduct.title || 'Aucun titre'}
                       </p>
@@ -285,12 +285,12 @@ export function ProductTitleLandingDialog({
                         {(selectedProduct.seo_title || selectedProduct.title || '').length} caractères
                         {(selectedProduct.seo_title || selectedProduct.title || '').length >= 50 && 
                          (selectedProduct.seo_title || selectedProduct.title || '').length <= 60 && 
-                         ' ✓ Longueur idéale pour l\'engagement client'}
+                         ' ✓ Longueur idéale SEO (50-60 car)'}
                       </p>
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Description</h3>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Meta Description SEO</h3>
                       <p className="text-sm leading-relaxed">
                         {selectedProduct.seo_description || 'Aucune description'}
                       </p>
@@ -298,7 +298,7 @@ export function ProductTitleLandingDialog({
                         {(selectedProduct.seo_description || '').length} caractères
                         {(selectedProduct.seo_description || '').length >= 140 && 
                          (selectedProduct.seo_description || '').length <= 160 && 
-                         ' ✓ Description complète et engageante'}
+                         ' ✓ Longueur optimale SEO (140-160 car)'}
                       </p>
                     </div>
 
@@ -327,10 +327,10 @@ export function ProductTitleLandingDialog({
                     <div className="text-center space-y-3">
                       <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto" />
                       <p className="text-muted-foreground font-medium">
-                        Aucun produit sélectionné
+                        Aucun contenu disponible
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Générez d'abord le contenu optimisé
+                        Générez le contenu SEO pour voir les détails
                       </p>
                     </div>
                   </div>

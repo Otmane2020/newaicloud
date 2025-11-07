@@ -79,7 +79,7 @@ export default function GoogleAds() {
               <Megaphone className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold">Google Ads</h1>
+              <h1 className="text-3xl md:text-4xl font-bold">Publicité Google Ads</h1>
               <p className="text-muted-foreground">
                 Gérez vos campagnes publicitaires avec l'IA
               </p>

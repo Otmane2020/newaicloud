@@ -14,18 +14,21 @@ export default function MediaHistory() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Récupérer l'historique avec les produits associés
       const { data, error } = await supabase
         .from('product_image_history')
         .select(`
           *,
-          product_id,
-          shopify_products!inner(title),
-          product_images!inner(src)
+          shopify_products!product_image_history_product_id_fkey(title)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching media history:", error);
+        throw error;
+      }
+      
       return data;
     }
   });

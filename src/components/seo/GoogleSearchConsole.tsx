@@ -66,7 +66,7 @@ export function GoogleSearchConsole() {
     <div className="space-y-6">
       <Card className="p-6">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold">Google Search Console</h2>
+          <h2 className="text-2xl font-bold">Console Google Search</h2>
           <p className="text-muted-foreground">
             Connectez votre compte et analysez les performances de votre site
           </p>

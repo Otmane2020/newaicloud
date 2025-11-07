@@ -254,7 +254,7 @@ export function GoogleSearchConsoleIntegration({
             </div>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Connecter Google Search Console</h2>
+            <h2 className="text-2xl font-bold">Connecter Console Google Search</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
               Connectez votre compte Google pour importer les données Search Console
               et suivre l'évolution de votre trafic et l'impact de vos optimisations SEO.
@@ -401,7 +401,7 @@ export function GoogleSearchConsoleIntegration({
           <DialogHeader>
             <DialogTitle>Ajouter un domaine</DialogTitle>
             <DialogDescription>
-              Entrez le domaine que vous souhaitez connecter à Google Search Console
+              Entrez le domaine que vous souhaitez connecter à la Console Google Search
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -431,7 +431,7 @@ export function GoogleSearchConsoleIntegration({
       <Dialog open={showAvailableSitesDialog} onOpenChange={setShowAvailableSitesDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Sites disponibles dans Google Search Console</DialogTitle>
+            <DialogTitle>Sites disponibles dans la Console Google Search</DialogTitle>
             <DialogDescription>
               Voici les domaines auxquels votre compte Google a accès dans Search Console
             </DialogDescription>

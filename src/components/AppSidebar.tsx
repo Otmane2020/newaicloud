@@ -311,7 +311,7 @@ export function AppSidebar() {
                           <CollapsibleTrigger asChild>
                             <SidebarMenuSubButton isActive={isGoogleConsoleActive}>
                               <TrendingUp className="h-4 w-4" />
-                              <span>Google Search Console</span>
+                              <span>Console Google Search</span>
                               <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/gsc:rotate-90" />
                             </SidebarMenuSubButton>
                           </CollapsibleTrigger>
