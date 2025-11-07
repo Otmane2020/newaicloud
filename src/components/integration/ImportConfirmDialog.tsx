@@ -8,7 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Package, FileText, Newspaper } from "lucide-react";
+import { Package, FileText, Newspaper, FolderOpen, Image } from "lucide-react";
 
 interface ImportConfirmDialogProps {
   open: boolean;
@@ -64,6 +64,26 @@ export function ImportConfirmDialog({
                 <div>
                   <p className="font-medium text-sm text-foreground">Articles</p>
                   <p className="text-xs text-muted-foreground">Your blog articles</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <FolderOpen className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-foreground">Collections</p>
+                  <p className="text-xs text-muted-foreground">Your product collections</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Image className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-foreground">Images</p>
+                  <p className="text-xs text-muted-foreground">Product images & content</p>
                 </div>
               </div>
             </div>
