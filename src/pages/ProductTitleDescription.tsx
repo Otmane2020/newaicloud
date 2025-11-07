@@ -61,6 +61,13 @@ interface Product {
   shopify_id: number | null;
 }
 
+interface ProductImage {
+  id: string;
+  src: string;
+  alt_text: string | null;
+  position: number | null;
+}
+
 // Check if product has rich HTML description
 const hasRichHtmlDescription = (product: Product): boolean => {
   return !!(product.description && product.description.includes('<h1'));
@@ -107,6 +114,8 @@ export default function ProductTitleDescription() {
   const [optimizationConfig, setOptimizationConfig] = useState<OptimizationConfig | null>(null);
   const [showLandingConfigDialog, setShowLandingConfigDialog] = useState(false);
   const [landingConfig, setLandingConfig] = useState<LandingConfig | null>(null);
+  const [galleryImages, setGalleryImages] = useState<Map<string, ProductImage[]>>(new Map());
+  const [selectedGalleryImages, setSelectedGalleryImages] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     fetchProducts();
@@ -331,6 +340,24 @@ export default function ProductTitleDescription() {
     setTimeout(() => setShowLandingDialog(true), 100);
   };
 
+  const loadGalleryImages = async (productIds: string[]) => {
+    const imagesMap = new Map<string, ProductImage[]>();
+    
+    for (const productId of productIds) {
+      const { data, error } = await supabase
+        .from('product_images')
+        .select('id, src, alt_text, position')
+        .eq('product_id', productId)
+        .order('position', { ascending: true });
+      
+      if (!error && data) {
+        imagesMap.set(productId, data);
+      }
+    }
+    
+    setGalleryImages(imagesMap);
+  };
+
   const handleWhiteBackground = async () => {
     if (selectedProducts.size === 0) {
       toast.error("Veuillez sélectionner au moins un produit");
@@ -355,19 +382,24 @@ export default function ProductTitleDescription() {
     // Close config dialog and start generation
     setShowWhiteBgConfigDialog(false);
     setGeneratingWhiteBg(true);
-    const previews: PreviewImage[] = selectedProductsList.map((p) => ({
-      productId: p.id,
-      productTitle: p.title,
-      originalUrl: p.image_url!,
-      generatedUrl: null,
-      status: 'pending' as const,
-    }));
+    
+    const previews: PreviewImage[] = selectedProductsList.map((p) => {
+      const selectedImageUrl = selectedGalleryImages.get(p.id) || p.image_url!;
+      return {
+        productId: p.id,
+        productTitle: p.title,
+        originalUrl: selectedImageUrl,
+        generatedUrl: null,
+        status: 'pending' as const,
+      };
+    });
 
     setWhiteBgPreviews(previews);
     setShowWhiteBgDialog(true);
 
     for (let i = 0; i < selectedProductsList.length; i++) {
       const product = selectedProductsList[i];
+      const selectedImageUrl = selectedGalleryImages.get(product.id) || product.image_url!;
       
       setWhiteBgPreviews((prev) =>
         prev.map((p) =>
@@ -378,7 +410,7 @@ export default function ProductTitleDescription() {
       try {
         const { data, error } = await supabase.functions.invoke('generate-white-background', {
           body: { 
-            imageUrl: product.image_url,
+            imageUrl: selectedImageUrl,
             productTitle: product.title,
             imageType: selectedImageType
           }
@@ -410,7 +442,7 @@ export default function ProductTitleDescription() {
     }
 
     setGeneratingWhiteBg(false);
-    await refreshLimits(); // Rafraîchir les limites après génération
+    await refreshLimits();
   };
 
   const handleStartAiBackground = async (prompt: string) => {
@@ -432,19 +464,23 @@ export default function ProductTitleDescription() {
     setShowPromptDialog(false);
     setGeneratingAiBg(true);
     
-    const previews: PreviewImage[] = selectedProductsList.map((p) => ({
-      productId: p.id,
-      productTitle: p.title,
-      originalUrl: p.image_url!,
-      generatedUrl: null,
-      status: 'pending' as const,
-    }));
+    const previews: PreviewImage[] = selectedProductsList.map((p) => {
+      const selectedImageUrl = selectedGalleryImages.get(p.id) || p.image_url!;
+      return {
+        productId: p.id,
+        productTitle: p.title,
+        originalUrl: selectedImageUrl,
+        generatedUrl: null,
+        status: 'pending' as const,
+      };
+    });
 
     setAiBgPreviews(previews);
     setShowAiBgDialog(true);
 
     for (let i = 0; i < selectedProductsList.length; i++) {
       const product = selectedProductsList[i];
+      const selectedImageUrl = selectedGalleryImages.get(product.id) || product.image_url!;
       
       setAiBgPreviews((prev) =>
         prev.map((p) =>
@@ -455,7 +491,7 @@ export default function ProductTitleDescription() {
       try {
         const { data, error } = await supabase.functions.invoke('generate-image-background', {
           body: {
-            imageUrl: product.image_url,
+            imageUrl: selectedImageUrl,
             prompt: prompt,
             productTitle: product.title,
             imageType: selectedImageType
@@ -488,7 +524,7 @@ export default function ProductTitleDescription() {
     }
 
     setGeneratingAiBg(false);
-    await refreshLimits(); // Rafraîchir les limites après génération
+    await refreshLimits();
   };
 
   const handleApplyWhiteBackground = async (productIds: string[]) => {
@@ -862,7 +898,10 @@ export default function ProductTitleDescription() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowWhiteBgConfigDialog(true)}
+                onClick={async () => {
+                  await loadGalleryImages(Array.from(selectedProducts));
+                  setShowWhiteBgConfigDialog(true);
+                }}
                 disabled={generatingWhiteBg || selectedProducts.size === 0}
               >
                 {generatingWhiteBg ? (
@@ -876,7 +915,10 @@ export default function ProductTitleDescription() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => setShowPromptDialog(true)}
+                onClick={async () => {
+                  await loadGalleryImages(Array.from(selectedProducts));
+                  setShowPromptDialog(true);
+                }}
                 disabled={generatingAiBg || selectedProducts.size === 0}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
               >
@@ -999,8 +1041,9 @@ export default function ProductTitleDescription() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSelectedProducts(new Set([product.id]));
+                                await loadGalleryImages([product.id]);
                                 setShowWhiteBgConfigDialog(true);
                               }}
                               disabled={generatingWhiteBg}
@@ -1022,8 +1065,9 @@ export default function ProductTitleDescription() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSelectedProducts(new Set([product.id]));
+                                await loadGalleryImages([product.id]);
                                 setShowPromptDialog(true);
                               }}
                               disabled={generatingAiBg}
@@ -1135,17 +1179,93 @@ export default function ProductTitleDescription() {
       {/* Dialogs */}
       {/* White Background Configuration Dialog */}
       <Dialog open={showWhiteBgConfigDialog} onOpenChange={setShowWhiteBgConfigDialog}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Square className="h-5 w-5 text-primary" />
               Configuration Fond Blanc
             </DialogTitle>
             <DialogDescription>
-              Choisissez le type d'image pour la génération
+              Choisissez quelle photo de la galerie vous souhaitez retravailler
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-4">
+            {/* Gallery Image Selection */}
+            {Array.from(selectedProducts).length > 0 && (
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Sélection de la photo à retravailler</Label>
+                {Array.from(selectedProducts).map((productId) => {
+                  const product = products.find(p => p.id === productId);
+                  const images = galleryImages.get(productId) || [];
+                  const hasGallery = images.length > 0;
+                  
+                  if (!product) return null;
+                  
+                  return (
+                    <Card key={productId} className="p-4">
+                      <h4 className="font-semibold mb-3 text-sm">{product.title}</h4>
+                      <div className="grid grid-cols-4 gap-2">
+                        {/* Image principale */}
+                        <div
+                          className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                            (!selectedGalleryImages.get(productId) || selectedGalleryImages.get(productId) === product.image_url)
+                              ? 'border-primary ring-2 ring-primary'
+                              : 'border-muted hover:border-primary/50'
+                          }`}
+                          onClick={() => {
+                            const newMap = new Map(selectedGalleryImages);
+                            newMap.set(productId, product.image_url!);
+                            setSelectedGalleryImages(newMap);
+                          }}
+                        >
+                          <img
+                            src={product.image_url || ''}
+                            alt="Image principale"
+                            className="w-full h-24 object-cover rounded"
+                          />
+                          <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
+                            Principal
+                          </div>
+                        </div>
+                        
+                        {/* Images de galerie */}
+                        {images.map((img, idx) => (
+                          <div
+                            key={img.id}
+                            className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                              selectedGalleryImages.get(productId) === img.src
+                                ? 'border-primary ring-2 ring-primary'
+                                : 'border-muted hover:border-primary/50'
+                            }`}
+                            onClick={() => {
+                              const newMap = new Map(selectedGalleryImages);
+                              newMap.set(productId, img.src);
+                              setSelectedGalleryImages(newMap);
+                            }}
+                          >
+                            <img
+                              src={img.src}
+                              alt={img.alt_text || `Galerie ${idx + 1}`}
+                              className="w-full h-24 object-cover rounded"
+                            />
+                            <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-xs px-1.5 py-0.5 rounded">
+                              #{idx + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {!hasGallery && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Aucune image de galerie disponible
+                        </p>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+            
+            {/* Type d'image */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Type d'image (obligatoire) *</Label>
               <div className="grid grid-cols-2 gap-3">
@@ -1232,18 +1352,93 @@ export default function ProductTitleDescription() {
 
       {/* Prompt Configuration Dialog */}
       <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5 text-primary" />
               Configuration de l'arrière-plan IA
             </DialogTitle>
             <DialogDescription>
-              Choisissez le type d'image et le style d'arrière-plan
+              Choisissez quelle photo de la galerie vous souhaitez retravailler
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
+            {/* Gallery Image Selection */}
+            {Array.from(selectedProducts).length > 0 && (
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Sélection de la photo à retravailler</Label>
+                {Array.from(selectedProducts).map((productId) => {
+                  const product = products.find(p => p.id === productId);
+                  const images = galleryImages.get(productId) || [];
+                  const hasGallery = images.length > 0;
+                  
+                  if (!product) return null;
+                  
+                  return (
+                    <Card key={productId} className="p-4">
+                      <h4 className="font-semibold mb-3 text-sm">{product.title}</h4>
+                      <div className="grid grid-cols-4 gap-2">
+                        {/* Image principale */}
+                        <div
+                          className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                            (!selectedGalleryImages.get(productId) || selectedGalleryImages.get(productId) === product.image_url)
+                              ? 'border-primary ring-2 ring-primary'
+                              : 'border-muted hover:border-primary/50'
+                          }`}
+                          onClick={() => {
+                            const newMap = new Map(selectedGalleryImages);
+                            newMap.set(productId, product.image_url!);
+                            setSelectedGalleryImages(newMap);
+                          }}
+                        >
+                          <img
+                            src={product.image_url || ''}
+                            alt="Image principale"
+                            className="w-full h-24 object-cover rounded"
+                          />
+                          <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
+                            Principal
+                          </div>
+                        </div>
+                        
+                        {/* Images de galerie */}
+                        {images.map((img, idx) => (
+                          <div
+                            key={img.id}
+                            className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                              selectedGalleryImages.get(productId) === img.src
+                                ? 'border-primary ring-2 ring-primary'
+                                : 'border-muted hover:border-primary/50'
+                            }`}
+                            onClick={() => {
+                              const newMap = new Map(selectedGalleryImages);
+                              newMap.set(productId, img.src);
+                              setSelectedGalleryImages(newMap);
+                            }}
+                          >
+                            <img
+                              src={img.src}
+                              alt={img.alt_text || `Galerie ${idx + 1}`}
+                              className="w-full h-24 object-cover rounded"
+                            />
+                            <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-xs px-1.5 py-0.5 rounded">
+                              #{idx + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {!hasGallery && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Aucune image de galerie disponible
+                        </p>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Image Type Selection */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Type d'image (obligatoire) *</Label>
