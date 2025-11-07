@@ -30,12 +30,22 @@ interface PlanUpgradeDialogProps {
   onSuccess: () => void;
 }
 
+interface ProrationInfo {
+  willProrate: boolean;
+  prorationAmount: number;
+  daysIntoCycle: number;
+  daysRemaining: number;
+  renewalDate: string;
+}
+
 export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess }: PlanUpgradeDialogProps) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
+  const [prorationInfo, setProrationInfo] = useState<ProrationInfo | null>(null);
+  const [loadingProration, setLoadingProration] = useState(false);
   const { language } = useTranslation();
 
   useEffect(() => {
@@ -94,6 +104,40 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
 
   const priceChange = newPrice - currentPrice;
 
+  const loadProrationInfo = async (planId: string, period: 'monthly' | 'yearly') => {
+    if (!planId || planId === currentPlanId) {
+      setProrationInfo(null);
+      return;
+    }
+
+    setLoadingProration(true);
+    try {
+      const plan = plans.find(p => p.id === planId);
+      if (!plan) return;
+
+      const priceId = period === 'monthly' ? plan.stripe_price_id_monthly : plan.stripe_price_id_yearly;
+      
+      const { data, error } = await supabase.functions.invoke('calculate-proration', {
+        body: { new_price_id: priceId }
+      });
+
+      if (error) throw error;
+      
+      setProrationInfo(data);
+    } catch (error) {
+      console.error('Error calculating proration:', error);
+      setProrationInfo(null);
+    } finally {
+      setLoadingProration(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedPlanId && plans.length > 0) {
+      loadProrationInfo(selectedPlanId, billingPeriod);
+    }
+  }, [selectedPlanId, billingPeriod, plans]);
+
   const handleConfirm = async () => {
     if (!selectedPlan) return;
 
@@ -102,6 +146,12 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
       const priceId = billingPeriod === 'monthly' 
         ? selectedPlan.stripe_price_id_monthly 
         : selectedPlan.stripe_price_id_yearly;
+      
+      if (!priceId) {
+        toast.error('Configuration de plan incomplète. Veuillez contacter le support.');
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke('update-subscription', {
         body: {
@@ -114,14 +164,17 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
 
       // Show detailed success message based on upgrade timing
       const upgradeDetails = data?.upgrade_details;
-      if (upgradeDetails?.timing === 'mid_cycle') {
-        toast.success('Abonnement mis à jour ! Vos compteurs mensuels ont été réinitialisés.', {
-          duration: 5000,
-        });
+      if (upgradeDetails?.proration_applied) {
+        const amount = upgradeDetails.prorationAmount ? `$${upgradeDetails.prorationAmount.toFixed(2)}` : '';
+        toast.success(
+          `✅ Plan mis à niveau ! Prorata de ${amount} facturé. Vos compteurs ont été réinitialisés.`,
+          { duration: 6000 }
+        );
       } else {
-        toast.success('Abonnement mis à jour ! Nouveau cycle démarré.', {
-          duration: 5000,
-        });
+        toast.success(
+          '✅ Plan mis à niveau ! Nouveau cycle démarré sans prorata.',
+          { duration: 5000 }
+        );
       }
       
       onSuccess();
@@ -230,23 +283,45 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
 
           {/* Upgrade Information Banner */}
           {selectedPlan && !isSamePlan && (
-            <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <div className="text-xs bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                ℹ️ Informations importantes
+                ℹ️ Détails de la facturation
               </p>
-              {isUpgrade && (
-                <ul className="space-y-1 text-blue-800 dark:text-blue-200">
-                  <li>• Vous serez facturé au prorata pour le reste du cycle actuel</li>
-                  <li>• Vos compteurs mensuels seront réinitialisés immédiatement</li>
-                  <li>• Votre date de renouvellement reste inchangée</li>
-                </ul>
-              )}
-              {isDowngrade && (
-                <ul className="space-y-1 text-blue-800 dark:text-blue-200">
-                  <li>• Le changement sera effectif immédiatement</li>
-                  <li>• Vous serez crédité pour le reste du cycle</li>
-                  <li>• Vos compteurs mensuels seront ajustés</li>
-                </ul>
+              {loadingProration ? (
+                <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Calcul du prorata en cours...</span>
+                </div>
+              ) : prorationInfo ? (
+                prorationInfo.willProrate ? (
+                  <ul className="space-y-1 text-blue-800 dark:text-blue-200">
+                    <li>• Vous êtes au jour {prorationInfo.daysIntoCycle} de votre cycle</li>
+                    <li>• {prorationInfo.daysRemaining} jours restants jusqu'au renouvellement</li>
+                    <li>• Montant du prorata estimé : ${prorationInfo.prorationAmount.toFixed(2)}</li>
+                    <li>• Vos compteurs mensuels seront réinitialisés immédiatement</li>
+                  </ul>
+                ) : (
+                  <ul className="space-y-1 text-blue-800 dark:text-blue-200">
+                    <li>• Vous êtes au jour {prorationInfo.daysIntoCycle} de votre cycle</li>
+                    <li>• Pas de proration (début de cycle)</li>
+                    <li>• Vous paierez le prix complet du nouveau plan</li>
+                    <li>• Date de renouvellement : {new Date(prorationInfo.renewalDate).toLocaleDateString('fr-FR')}</li>
+                  </ul>
+                )
+              ) : (
+                isUpgrade ? (
+                  <ul className="space-y-1 text-blue-800 dark:text-blue-200">
+                    <li>• Vous serez facturé au prorata selon votre position dans le cycle</li>
+                    <li>• Vos compteurs mensuels seront réinitialisés si applicable</li>
+                    <li>• Votre date de renouvellement reste inchangée</li>
+                  </ul>
+                ) : (
+                  <ul className="space-y-1 text-blue-800 dark:text-blue-200">
+                    <li>• Le changement sera effectif immédiatement</li>
+                    <li>• Vous serez crédité pour le reste du cycle</li>
+                    <li>• Vos compteurs mensuels seront ajustés</li>
+                  </ul>
+                )
               )}
             </div>
           )}

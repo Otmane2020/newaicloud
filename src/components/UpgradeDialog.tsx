@@ -151,6 +151,12 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
         if (!selectedPlan) throw new Error('Plan not found');
 
         const priceId = (selectedPlan as any).stripe_price_id_monthly || (selectedPlan as any).stripe_price_id_yearly;
+        
+        if (!priceId) {
+          toast.error('Configuration de plan incomplète. Contactez le support.');
+          setLoading(false);
+          return;
+        }
 
         const { data, error } = await supabase.functions.invoke('update-subscription', {
           body: {
@@ -161,7 +167,12 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
 
         if (error) throw error;
 
-        toast.success('Plan upgraded with prorated billing!');
+        const upgradeDetails = data?.upgrade_details;
+        if (upgradeDetails?.proration_applied) {
+          toast.success(`✅ Plan upgraded! You were charged for ${upgradeDetails.days_into_cycle} days. Monthly counters have been reset.`, { duration: 6000 });
+        } else {
+          toast.success('✅ Plan upgraded! No proration applied (beginning of cycle).', { duration: 5000 });
+        }
         if (onUpgradeComplete) onUpgradeComplete();
         onOpenChange(false);
         return;

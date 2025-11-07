@@ -214,6 +214,23 @@ serve(async (req) => {
       logStep("Renewal upgrade - usage counters not reset (cycle just started)");
     }
 
+    // Calculate proration amount if applicable
+    let prorationAmount = 0;
+    if (isMidCycleUpgrade) {
+      try {
+        const invoices = await stripe.invoices.list({
+          customer: profile.stripe_customer_id,
+          limit: 1,
+        });
+        if (invoices.data[0]) {
+          prorationAmount = invoices.data[0].amount_due / 100; // Convert cents to dollars
+        }
+        logStep("Proration amount retrieved", { prorationAmount });
+      } catch (error) {
+        logStep("Warning: Could not retrieve proration amount", { error });
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -225,8 +242,11 @@ serve(async (req) => {
         upgrade_details: {
           timing: isMidCycleUpgrade ? 'mid_cycle' : 'renewal',
           proration_applied: isMidCycleUpgrade,
+          prorationAmount: prorationAmount,
           usage_reset: isMidCycleUpgrade,
           days_into_cycle: daysIntoCycle,
+          days_remaining: totalCycleDays - daysIntoCycle,
+          renewal_date: new Date(periodEnd * 1000).toISOString(),
         }
       }),
       {
