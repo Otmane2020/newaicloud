@@ -124,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p class="message">${t.thankYou}</p>
             <p class="message">${t.message}</p>
             <div style="text-align: center;">
-              <a href="https://affable-calm-newai.lovable.app/dashboard" class="button">${t.button}</a>
+              <a href="https://newai.sale/auth" class="button">${t.button}</a>
             </div>
             <p style="color: #475569; margin-top: 30px;">${t.signature}</p>
           </div>
