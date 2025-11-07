@@ -147,11 +147,29 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', user_id)
       .single();
 
-    const { data: settings } = await supabase
+    let { data: settings } = await supabase
       .from('notification_settings')
       .select('*')
       .eq('user_id', user_id)
       .single();
+
+    // Filet de sécurité : créer les paramètres s'ils n'existent pas
+    if (!settings) {
+      const { data: newSettings } = await supabase
+        .from('notification_settings')
+        .insert({
+          user_id,
+          email_enabled: true,
+          in_app_enabled: true,
+        })
+        .select()
+        .single();
+      
+      settings = newSettings || null;
+      if (newSettings) {
+        console.log('✅ Created missing notification_settings for user:', user_id);
+      }
+    }
 
     // Send email if needed
     if (shouldSendEmail && settings?.email_enabled && profile?.email) {
@@ -203,7 +221,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send browser notification if needed
-    if (shouldSendBrowser && settings?.browser_enabled) {
+    if (shouldSendBrowser && settings?.in_app_enabled) {
       // Browser notifications are handled client-side via realtime
       await supabase
         .from('app_notifications')
@@ -218,7 +236,7 @@ const handler = async (req: Request): Promise<Response> => {
         success: true, 
         notification_id: notification.id,
         sent_email: shouldSendEmail && settings?.email_enabled,
-        sent_browser: shouldSendBrowser && settings?.browser_enabled
+        sent_browser: shouldSendBrowser && settings?.in_app_enabled
       }),
       {
         status: 200,
