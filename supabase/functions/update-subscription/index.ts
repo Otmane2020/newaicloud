@@ -156,18 +156,38 @@ serve(async (req) => {
     const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionData.stripe_subscription_id);
     logStep("Current subscription retrieved", { 
       status: stripeSubscription.status,
-      itemsCount: stripeSubscription.items.data.length 
+      itemsCount: stripeSubscription.items.data.length,
+      trialEnd: stripeSubscription.trial_end,
+      periodStart: stripeSubscription.current_period_start,
+      periodEnd: stripeSubscription.current_period_end
     });
 
     // Calculate days into billing cycle
     const now = Math.floor(Date.now() / 1000); // Unix timestamp
-    const periodStart = stripeSubscription.current_period_start;
-    const periodEnd = stripeSubscription.current_period_end;
+    let periodStart = stripeSubscription.current_period_start;
+    let periodEnd = stripeSubscription.current_period_end;
     
-    // Validate timestamps before using them
+    // For trialing subscriptions, use trial dates if period dates are invalid
+    if (stripeSubscription.status === 'trialing' && stripeSubscription.trial_end) {
+      if (!periodStart || periodStart <= 0) {
+        periodStart = stripeSubscription.trial_start || Math.floor(Date.now() / 1000);
+        logStep("Using trial start as period start", { periodStart });
+      }
+      if (!periodEnd || periodEnd <= 0) {
+        periodEnd = stripeSubscription.trial_end;
+        logStep("Using trial end as period end", { periodEnd });
+      }
+    }
+    
+    // Final validation
     if (!periodStart || !periodEnd || periodStart <= 0 || periodEnd <= 0) {
-      logStep("Invalid period dates detected", { periodStart, periodEnd });
-      throw new Error("Subscription period dates are invalid. This may indicate the subscription is still being set up. Please try again in a few moments.");
+      logStep("Invalid period dates detected after trial check", { 
+        periodStart, 
+        periodEnd,
+        status: stripeSubscription.status,
+        trialEnd: stripeSubscription.trial_end 
+      });
+      throw new Error("Unable to determine subscription period dates. Please contact support.");
     }
     
     const daysIntoCycle = Math.floor((now - periodStart) / (24 * 60 * 60));

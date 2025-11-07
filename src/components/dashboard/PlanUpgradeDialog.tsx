@@ -153,6 +153,8 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
         return;
       }
 
+      console.log('Calling update-subscription with:', { priceId, planId: selectedPlan.id });
+      
       const { data, error } = await supabase.functions.invoke('update-subscription', {
         body: {
           new_price_id: priceId,
@@ -160,7 +162,12 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
         },
       });
 
-      if (error) throw error;
+      console.log('Update subscription response:', { data, error });
+
+      if (error) {
+        console.error('Update subscription error:', error);
+        throw error;
+      }
 
       // Show detailed success message based on upgrade timing
       const upgradeDetails = data?.upgrade_details;
@@ -181,7 +188,8 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error updating subscription:', error);
-      toast.error(error.message || 'Erreur lors de la mise à jour');
+      const errorMessage = error?.message || error?.error?.message || error?.toString() || 'Erreur lors de la mise à jour';
+      toast.error(errorMessage, { duration: 8000 });
     } finally {
       setLoading(false);
     }
