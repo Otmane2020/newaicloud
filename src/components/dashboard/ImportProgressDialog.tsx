@@ -175,13 +175,13 @@ export function ImportProgressDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] sm:max-h-[90vh] flex flex-col animate-scale-in">
-        <DialogHeader className="flex-shrink-0 pb-2 sm:pb-0">
-          <DialogTitle className="text-base sm:text-xl flex items-center gap-2 pr-6">
-            {phase !== 'complete' && <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-primary" />}
+      <DialogContent className="max-w-[98vw] sm:max-w-2xl max-h-[90vh] flex flex-col animate-scale-in p-3 sm:p-6">
+        <DialogHeader className="flex-shrink-0 pb-2 sm:pb-4">
+          <DialogTitle className="text-sm sm:text-xl flex items-center gap-1.5 sm:gap-2 pr-8">
+            {phase !== 'complete' && <Loader2 className="w-3.5 h-3.5 sm:w-5 sm:h-5 animate-spin text-primary" />}
             <span className="truncate">{getPhaseTitle()}</span>
           </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm truncate pr-6">
+          <DialogDescription className="text-[10px] sm:text-sm truncate pr-8">
             {getPhaseDescription()}
           </DialogDescription>
         </DialogHeader>
@@ -189,14 +189,14 @@ export function ImportProgressDialog({
         {!limitReached ? (
           <div className="space-y-3 sm:space-y-4 flex-1 min-h-0 flex flex-col">
             {/* Progress bar with animation */}
-            <div className="flex-shrink-0 space-y-2 animate-fade-in">
-              <div className="flex items-center justify-between text-xs sm:text-sm">
+            <div className="flex-shrink-0 space-y-1.5 sm:space-y-2 animate-fade-in">
+              <div className="flex items-center justify-between text-[10px] sm:text-sm">
                 <span className="text-muted-foreground font-medium">Overall Progress</span>
-                <span className="font-bold text-lg text-primary tabular-nums animate-pulse">
+                <span className="font-bold text-sm sm:text-lg text-primary tabular-nums animate-pulse">
                   {Math.round(displayedProgress)}%
                 </span>
               </div>
-              <div className="relative h-3 sm:h-4 w-full overflow-hidden rounded-full bg-secondary/50 shadow-inner">
+              <div className="relative h-2.5 sm:h-4 w-full overflow-hidden rounded-full bg-secondary/50 shadow-inner">
                 <div 
                   className="h-full transition-all duration-300 ease-out relative overflow-hidden"
                   style={{ 
@@ -216,69 +216,70 @@ export function ImportProgressDialog({
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
+              <div className="flex items-center justify-between text-[9px] sm:text-xs text-muted-foreground">
                 <span>Page {progress.currentPage} / {progress.totalPages}</span>
-                <span className="flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" />
-                  {progress.productsProcessed} products processed
+                <span className="flex items-center gap-0.5 sm:gap-1">
+                  <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  <span className="hidden xs:inline">{progress.productsProcessed} processed</span>
+                  <span className="xs:hidden">{progress.productsProcessed}</span>
                 </span>
               </div>
             </div>
             
             {/* Animated counters */}
-            <div className="flex-shrink-0 grid grid-cols-5 gap-1.5 sm:gap-4">
+            <div className="flex-shrink-0 grid grid-cols-5 gap-1 sm:gap-4">
               <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-2 sm:pt-4 pb-2 sm:pb-4 px-2 sm:px-6">
+                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
                   <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <Package className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-xl sm:text-3xl font-bold text-primary tabular-nums">
+                    <Package className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
+                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
                       {displayedProducts}
                     </span>
-                    <p className="text-[9px] sm:text-xs text-muted-foreground font-medium">Products</p>
+                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Products</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-2 sm:pt-4 pb-2 sm:pb-4 px-2 sm:px-6">
+                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
                   <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-xl sm:text-3xl font-bold text-primary tabular-nums">
+                    <FileText className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
+                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
                       {displayedPages}
                     </span>
-                    <p className="text-[9px] sm:text-xs text-muted-foreground font-medium">Pages</p>
+                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Pages</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-2 sm:pt-4 pb-2 sm:pb-4 px-2 sm:px-6">
+                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
                   <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <Newspaper className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-xl sm:text-3xl font-bold text-primary tabular-nums">
+                    <Newspaper className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
+                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
                       {displayedArticles}
                     </span>
-                    <p className="text-[9px] sm:text-xs text-muted-foreground font-medium">Articles</p>
+                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Articles</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-2 sm:pt-4 pb-2 sm:pb-4 px-2 sm:px-6">
+                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
                   <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <FolderOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-xl sm:text-3xl font-bold text-primary tabular-nums">
+                    <FolderOpen className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
+                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
                       {displayedCollections}
                     </span>
-                    <p className="text-[9px] sm:text-xs text-muted-foreground font-medium">Collections</p>
+                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Collections</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-2 sm:pt-4 pb-2 sm:pb-4 px-2 sm:px-6">
+                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
                   <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <Image className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-xl sm:text-3xl font-bold text-primary tabular-nums">
+                    <Image className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
+                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
                       {displayedImages}
                     </span>
-                    <p className="text-[9px] sm:text-xs text-muted-foreground font-medium">Images</p>
+                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Images</p>
                   </div>
                 </CardContent>
               </Card>
@@ -287,33 +288,33 @@ export function ImportProgressDialog({
             {/* List of imported items with animation */}
             {importedItems.length > 0 && (
               <div className="flex-1 min-h-0 animate-fade-in">
-                <h4 className="text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-500" />
+                <h4 className="text-[10px] sm:text-sm font-semibold mb-1.5 sm:mb-2 flex items-center gap-1.5 sm:gap-2">
+                  <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                   Imported Items ({importedItems.length})
                 </h4>
-                <ScrollArea className="h-[180px] sm:h-[300px] border rounded-lg shadow-inner bg-muted/5">
-                  <div className="p-1.5 sm:p-2 space-y-1.5 sm:space-y-2">
+                <ScrollArea className="h-[150px] sm:h-[300px] border rounded-lg shadow-inner bg-muted/5">
+                  <div className="p-1 sm:p-2 space-y-1 sm:space-y-2">
                     {importedItems.slice().reverse().map((item, index) => (
                       <div 
                         key={`${item.type}-${item.handle || index}`}
-                        className="flex items-center gap-1.5 sm:gap-3 p-1.5 sm:p-2 bg-background border rounded-lg hover:shadow-md transition-all duration-200 animate-fade-in"
+                        className="flex items-center gap-1 sm:gap-3 p-1 sm:p-2 bg-background border rounded-lg hover:shadow-md transition-all duration-200 animate-fade-in"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {item.type === 'product' && item.image && (
                           <img 
                             src={item.image} 
                             alt={item.title}
-                            className="w-7 h-7 sm:w-12 sm:h-12 rounded object-cover flex-shrink-0 ring-1 sm:ring-2 ring-primary/20" 
+                            className="w-6 h-6 sm:w-12 sm:h-12 rounded object-cover flex-shrink-0 ring-1 sm:ring-2 ring-primary/20" 
                           />
                         )}
                         {item.type === 'page' && (
-                          <div className="w-7 h-7 sm:w-12 sm:h-12 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 ring-1 sm:ring-2 ring-primary/20">
-                            <FileText className="w-3.5 h-3.5 sm:w-6 sm:h-6 text-primary" />
+                          <div className="w-6 h-6 sm:w-12 sm:h-12 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 ring-1 sm:ring-2 ring-primary/20">
+                            <FileText className="w-3 h-3 sm:w-6 sm:h-6 text-primary" />
                           </div>
                         )}
-                        <span className="text-[11px] sm:text-sm flex-1 truncate font-medium">{item.title}</span>
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                          <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-green-600 font-bold" />
+                        <span className="text-[10px] sm:text-sm flex-1 truncate font-medium">{item.title}</span>
+                        <div className="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-2 h-2 sm:w-3 sm:h-3 text-green-600 font-bold" />
                         </div>
                       </div>
                     ))}
@@ -324,25 +325,25 @@ export function ImportProgressDialog({
 
             {/* Improved loading animation */}
             {phase !== 'complete' && (
-              <div className="flex justify-center items-center gap-2 flex-shrink-0 py-2">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce shadow-lg" />
-                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce shadow-lg" style={{ animationDelay: '0.15s' }} />
-                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce shadow-lg" style={{ animationDelay: '0.3s' }} />
+              <div className="flex justify-center items-center gap-1.5 sm:gap-2 flex-shrink-0 py-1.5 sm:py-2">
+                <div className="w-1.5 h-1.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce shadow-lg" />
+                <div className="w-1.5 h-1.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce shadow-lg" style={{ animationDelay: '0.15s' }} />
+                <div className="w-1.5 h-1.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce shadow-lg" style={{ animationDelay: '0.3s' }} />
               </div>
             )}
 
             {/* Final success message */}
             {phase === 'complete' && (
-              <div className="flex-shrink-0 p-3 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800 rounded-lg animate-scale-in">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-500 flex items-center justify-center animate-bounce flex-shrink-0">
-                    <Check className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              <div className="flex-shrink-0 p-2 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800 rounded-lg animate-scale-in">
+                <div className="flex items-center gap-1.5 sm:gap-3">
+                  <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-green-500 flex items-center justify-center animate-bounce flex-shrink-0">
+                    <Check className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-semibold text-green-900 dark:text-green-100">
+                    <p className="text-[10px] sm:text-sm font-semibold text-green-900 dark:text-green-100">
                       Import completed successfully!
                     </p>
-                    <p className="text-[10px] sm:text-xs text-green-700 dark:text-green-300 truncate">
+                    <p className="text-[9px] sm:text-xs text-green-700 dark:text-green-300 truncate">
                       {displayedProducts} products, {displayedPages} pages, {displayedArticles} articles, {displayedCollections} collections, {displayedImages} images imported
                     </p>
                   </div>
@@ -351,77 +352,77 @@ export function ImportProgressDialog({
             )}
           </div>
         ) : (
-          <div className="space-y-4 sm:space-y-6 animate-scale-in">
+          <div className="space-y-3 sm:space-y-6 animate-scale-in">
             {/* Quota reached message with total products info */}
             <div className="text-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-orange-100 dark:bg-orange-900/20 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 sm:w-10 sm:h-10 text-orange-500" />
+              <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-full bg-orange-100 dark:bg-orange-900/20 mx-auto mb-2 sm:mb-4 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 sm:w-10 sm:h-10 text-orange-500" />
               </div>
-              <h3 className="text-lg sm:text-2xl font-bold mb-2">Quota Reached!</h3>
+              <h3 className="text-base sm:text-2xl font-bold mb-1.5 sm:mb-2">Quota Reached!</h3>
               
               {totalShopifyProducts > 0 ? (
                 <>
-                   <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg space-y-1.5">
-                     <p className="text-xs sm:text-sm font-semibold text-foreground leading-tight">
+                   <div className="mb-2 sm:mb-4 p-2 sm:p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg space-y-1">
+                     <p className="text-[10px] sm:text-sm font-semibold text-foreground leading-tight">
                        Your Shopify store has
                      </p>
-                     <p className="text-2xl sm:text-3xl text-orange-600 dark:text-orange-400 font-bold tabular-nums">
+                     <p className="text-xl sm:text-3xl text-orange-600 dark:text-orange-400 font-bold tabular-nums">
                        {totalShopifyProducts} products
                      </p>
-                     <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">
+                     <p className="text-[9px] sm:text-xs text-muted-foreground leading-tight">
                        But your plan only allows <span className="font-semibold text-foreground">{maxProducts}</span>
                      </p>
                    </div>
-                   <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 leading-tight">
+                   <p className="text-[9px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 leading-tight">
                      Only {productsImported} imported • {totalShopifyProducts - productsImported} remaining
                    </p>
                 </>
               ) : (
                 <>
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                  <p className="text-[10px] sm:text-sm text-muted-foreground mb-1.5 sm:mb-2">
                     You have reached the limit of {maxProducts} products in your plan.
                   </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
+                  <p className="text-[10px] sm:text-sm text-muted-foreground mb-3 sm:mb-6">
                     The first {productsImported} products have been imported successfully.
                   </p>
                 </>
               )}
             </div>
 
-            <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
-              <div className="text-2xl sm:text-3xl font-bold text-primary mb-2">
+            <div className="text-center p-2 sm:p-4 bg-muted rounded-lg">
+              <div className="text-xl sm:text-3xl font-bold text-primary mb-1 sm:mb-2">
                 {productsImported} / {totalShopifyProducts || maxProducts}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
+              <div className="text-[10px] sm:text-sm text-muted-foreground">
                 Products imported
               </div>
             </div>
 
             <Alert className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary">
-              <Package className="h-4 w-4" />
-              <AlertTitle className="text-sm sm:text-base font-bold">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
+              <AlertTitle className="text-xs sm:text-base font-bold">
                 Recommended: {recommendedPlan.name} Plan
               </AlertTitle>
               <AlertDescription>
-                <p className="mt-2 mb-3 text-xs sm:text-sm">
+                <p className="mt-1.5 sm:mt-2 mb-2 sm:mb-3 text-[10px] sm:text-sm">
                   To import all {totalShopifyProducts > 0 ? totalShopifyProducts : 'your'} products, upgrade to:
                 </p>
-                <div className="p-3 bg-background/50 rounded-lg border-2 border-primary/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-base">{recommendedPlan.name}</span>
-                    <Badge className="bg-primary/20 text-primary border-primary/30">
+                <div className="p-2 sm:p-3 bg-background/50 rounded-lg border-2 border-primary/30">
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                    <span className="font-bold text-sm sm:text-base">{recommendedPlan.name}</span>
+                    <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] sm:text-xs px-1.5 sm:px-2.5">
                       {typeof recommendedPlan.limit === 'number' 
-                        ? `${recommendedPlan.limit.toLocaleString()} products` 
+                        ? `${recommendedPlan.limit.toLocaleString()}` 
                         : recommendedPlan.limit}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[9px] sm:text-xs text-muted-foreground">
                     Perfect for your {totalShopifyProducts > 0 ? totalShopifyProducts.toLocaleString() : ''} products
                   </p>
                 </div>
-                <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t text-[9px] sm:text-xs text-muted-foreground">
                   <p>All plans include:</p>
-                  <ul className="mt-1 space-y-1">
+                  <ul className="mt-1 space-y-0.5 sm:space-y-1">
                     <li>✅ SEO optimization tools</li>
                     <li>✅ Automated product sync</li>
                     <li>✅ Priority support</li>
@@ -432,10 +433,10 @@ export function ImportProgressDialog({
 
             <Button 
               onClick={handleUpgrade}
-              className="w-full animate-pulse"
-              size="lg"
+              className="w-full animate-pulse text-xs sm:text-base"
+              size="sm"
             >
-              <CreditCard className="w-4 h-4 mr-2" />
+              <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
               Upgrade to {recommendedPlan.name} Plan
             </Button>
           </div>
