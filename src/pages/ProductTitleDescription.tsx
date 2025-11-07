@@ -1031,7 +1031,7 @@ export default function ProductTitleDescription() {
                               size="icon"
                               onClick={() => {
                                 setSelectedProducts(new Set([product.id]));
-                                handleOptimizeSelected();
+                                setTimeout(() => handleOptimizeSelected(), 0);
                               }}
                               disabled={generating}
                             >
