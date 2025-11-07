@@ -123,21 +123,23 @@ export function ProductTitleLandingDialog({
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   
-  // Animate progress from 0 to 100% when generating
+  // Smooth progress animation based on currentProcessing
   useEffect(() => {
-    if (isGenerating) {
-      setProgress(0);
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 95) return prev;
-          return prev + 1;
-        });
-      }, 150);
-      return () => clearInterval(interval);
-    } else {
-      setProgress(100);
+    if (!isGenerating || !currentProcessing) {
+      return;
     }
-  }, [isGenerating]);
+    
+    const targetProgress = (currentProcessing.index / currentProcessing.total) * 100;
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        const diff = targetProgress - prev;
+        if (Math.abs(diff) < 0.5) return targetProgress;
+        return prev + diff * 0.1; // Smooth easing
+      });
+    }, 50);
+    
+    return () => clearInterval(interval);
+  }, [isGenerating, currentProcessing]);
   
   const selectedProduct = products[selectedProductIndex];
   const qualityScore = selectedProduct?.seo_title && selectedProduct?.seo_description
@@ -164,55 +166,60 @@ export function ProductTitleLandingDialog({
         </DialogHeader>
 
         {isGenerating ? (
-          <div className="py-12 space-y-6">
+          <div className="py-6 space-y-4">
             <div className="flex items-center justify-center">
-              <Sparkles className="h-16 w-16 text-primary animate-pulse" />
-            </div>
-            <div className="space-y-4">
-              <p className="text-center font-medium text-lg">
-                {currentProcessing 
-                  ? `Produit ${currentProcessing.index}/${currentProcessing.total}` 
-                  : "Optimisation IA en cours..."}
-              </p>
-              {currentProcessing && (
-                <div className="text-center space-y-2">
-                  <p className="text-sm font-semibold text-primary">
-                    {currentProcessing.title.substring(0, 60)}...
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Analyse vision IA • Génération titre SEO • Description HTML enrichie
-                  </p>
-                </div>
-              )}
-              <div className="max-w-md mx-auto space-y-3">
-                <Progress 
-                  value={currentProcessing ? (currentProcessing.index / currentProcessing.total) * 100 : progress} 
-                  className="h-3" 
-                />
-                <p className="text-center text-sm font-medium text-muted-foreground">
-                  {currentProcessing 
-                    ? `${Math.round((currentProcessing.index / currentProcessing.total) * 100)}% terminé` 
-                    : `Progression ${progress}%`}
-                </p>
-                {currentProcessing && (
-                  <p className="text-center text-xs text-muted-foreground">
-                    {currentProcessing.total - currentProcessing.index} produit(s) restant(s)
-                  </p>
-                )}
+              <div className="relative">
+                <Sparkles className="h-12 w-12 text-primary animate-spin" style={{ animationDuration: '3s' }} />
+                <div className="absolute inset-0 h-12 w-12 bg-primary/20 rounded-full animate-ping" />
               </div>
-              {onCancel && (
-                <div className="flex justify-center pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={onCancel}
-                    className="gap-2"
-                  >
-                    <X className="h-4 w-4" />
-                    <span>Annuler la génération</span>
-                  </Button>
+            </div>
+            
+            {currentProcessing && (
+              <div className="text-center space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <p className="text-sm font-semibold text-primary truncate px-4">
+                  {currentProcessing.title.substring(0, 50)}...
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <span className="animate-pulse">●</span>
+                  <span>Analyse IA</span>
+                  <span className="animate-pulse delay-75">●</span>
+                  <span>Génération SEO</span>
+                  <span className="animate-pulse delay-150">●</span>
+                  <span>Création HTML</span>
                 </div>
+              </div>
+            )}
+            
+            <div className="max-w-md mx-auto space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">
+                  {currentProcessing ? `${currentProcessing.index}/${currentProcessing.total}` : "En cours..."}
+                </span>
+                <span className="font-semibold text-primary">
+                  {Math.round(progress)}%
+                </span>
+              </div>
+              <Progress value={progress} className="h-2" />
+              {currentProcessing && currentProcessing.total - currentProcessing.index > 0 && (
+                <p className="text-center text-xs text-muted-foreground">
+                  {currentProcessing.total - currentProcessing.index} restant(s)
+                </p>
               )}
             </div>
+            
+            {onCancel && (
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onCancel}
+                  className="gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                  Annuler
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
