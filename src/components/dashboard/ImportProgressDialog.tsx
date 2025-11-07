@@ -1,24 +1,28 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Package, FileText, CreditCard, AlertCircle, Check, TrendingUp, Newspaper, FolderOpen, Image } from "lucide-react";
+import {
+  Loader2,
+  Package,
+  FileText,
+  CreditCard,
+  AlertCircle,
+  Check,
+  TrendingUp,
+  Newspaper,
+  FolderOpen,
+  Image,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-type ImportPhase = 'products' | 'pages' | 'complete';
+type ImportPhase = "products" | "pages" | "complete";
 
 interface ImportedItem {
-  type: 'product' | 'page';
+  type: "product" | "page";
   title: string;
   image?: string;
   handle?: string;
@@ -63,380 +67,265 @@ export function ImportProgressDialog({
   onUpgrade,
 }: ImportProgressDialogProps) {
   const navigate = useNavigate();
-  
-  // Animated counters
-  const [displayedProducts, setDisplayedProducts] = useState(0);
-  const [displayedPages, setDisplayedPages] = useState(0);
-  const [displayedArticles, setDisplayedArticles] = useState(0);
-  const [displayedCollections, setDisplayedCollections] = useState(0);
-  const [displayedImages, setDisplayedImages] = useState(0);
-  const [displayedProgress, setDisplayedProgress] = useState(0);
 
-  // Calculate recommended plan based on total products
-  const getRecommendedPlan = () => {
-    if (totalShopifyProducts <= 100) return { name: 'Starter', limit: 100, planId: 'starter' };
-    if (totalShopifyProducts <= 1000) return { name: 'Pro', limit: 1000, planId: 'pro' };
-    return { name: 'Enterprise', limit: 'Unlimited', planId: 'enterprise' };
+  /** ----------------------------
+   * 🎯  Animated counters
+   -----------------------------*/
+  const [displayed, setDisplayed] = useState({
+    products: 0,
+    pages: 0,
+    articles: 0,
+    collections: 0,
+    images: 0,
+    progress: 0,
+  });
+
+  const animateCounter = (key: keyof typeof displayed, target: number, step = 1, delay = 25) => {
+    if (displayed[key] < target) {
+      const timer = setTimeout(() => {
+        setDisplayed((prev) => ({
+          ...prev,
+          [key]: Math.min(prev[key] + step, target),
+        }));
+      }, delay);
+      return () => clearTimeout(timer);
+    }
   };
 
-  const recommendedPlan = getRecommendedPlan();
+  useEffect(() => {
+    animateCounter("products", productsImported);
+  }, [productsImported]);
+
+  useEffect(() => {
+    animateCounter("pages", pagesImported);
+  }, [pagesImported]);
+
+  useEffect(() => {
+    animateCounter("articles", articlesImported);
+  }, [articlesImported]);
+
+  useEffect(() => {
+    animateCounter("collections", collectionsImported);
+  }, [collectionsImported]);
+
+  useEffect(() => {
+    animateCounter("images", imagesImported);
+  }, [imagesImported]);
+
+  /** ----------------------------
+   * 📈 Overall progress
+   -----------------------------*/
+  const overallProgress = useMemo(() => {
+    if (phase === "complete") return 100;
+    if (phase === "products") {
+      return Math.min((progress.currentPage / Math.max(progress.totalPages, 1)) * 50, 50);
+    }
+    return 50 + Math.min(((progress.currentPage || 0) / Math.max(progress.totalPages || 1, 1)) * 50, 50);
+  }, [phase, progress]);
+
+  // Smooth animated progress bar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (displayed.progress < overallProgress) {
+        setDisplayed((prev) => ({
+          ...prev,
+          progress: Math.min(prev.progress + 1, overallProgress),
+        }));
+      }
+    }, 12);
+    return () => clearTimeout(timer);
+  }, [displayed.progress, overallProgress]);
+
+  /** ----------------------------
+   * 💰 Plan Recommendation
+   -----------------------------*/
+  const recommendedPlan = useMemo(() => {
+    if (totalShopifyProducts <= 100) return { name: "Starter", limit: 100, planId: "starter" };
+    if (totalShopifyProducts <= 1000) return { name: "Pro", limit: 1000, planId: "pro" };
+    return { name: "Enterprise", limit: "Unlimited", planId: "enterprise" };
+  }, [totalShopifyProducts]);
 
   const handleUpgrade = () => {
-    if (onUpgrade) {
-      onUpgrade();
-    } else {
+    if (onUpgrade) onUpgrade();
+    else {
       navigate("/subscription");
       onOpenChange(false);
     }
   };
 
-  // Calculate smooth overall progress (0-100%)
-  const overallProgress = phase === 'complete' 
-    ? 100 // Complete: 100%
-    : phase === 'products' 
-    ? Math.min((progress.currentPage / Math.max(progress.totalPages, 1)) * 50, 50) // Products: 0-50%
-    : 50 + Math.min(((progress.currentPage || 0) / Math.max(progress.totalPages || 1, 1)) * 50, 50); // Pages: 50-100%
+  /** ----------------------------
+   * 🧠 Helper Texts
+   -----------------------------*/
+  const phaseTitle = limitReached
+    ? "⚠️ Quota Reached"
+    : phase === "products"
+      ? "📦 Importing Products..."
+      : phase === "pages"
+        ? "📄 Importing Pages..."
+        : "✅ Import Complete!";
 
-  // Animate progress bar
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (displayedProgress < overallProgress) {
-        setDisplayedProgress(prev => Math.min(prev + 1, overallProgress));
-      }
-    }, 15);
-    return () => clearTimeout(timer);
-  }, [displayedProgress, overallProgress]);
+  const phaseDescription = limitReached
+    ? "You have reached your plan limit"
+    : phase === "products"
+      ? `Page ${progress.currentPage} of ${progress.totalPages} • ${progress.productsProcessed} products processed`
+      : phase === "pages"
+        ? "Importing Shopify pages..."
+        : "All your products and pages have been successfully imported!";
 
-  // Animate product counter
-  useEffect(() => {
-    if (displayedProducts < productsImported) {
-      const timer = setTimeout(() => {
-        setDisplayedProducts(prev => Math.min(prev + 1, productsImported));
-      }, 30);
-      return () => clearTimeout(timer);
-    }
-  }, [displayedProducts, productsImported]);
-
-  // Animate pages counter
-  useEffect(() => {
-    if (displayedPages < pagesImported) {
-      const timer = setTimeout(() => {
-        setDisplayedPages(prev => Math.min(prev + 1, pagesImported));
-      }, 40);
-      return () => clearTimeout(timer);
-    }
-  }, [displayedPages, pagesImported]);
-
-  // Animate articles counter
-  useEffect(() => {
-    if (displayedArticles < articlesImported) {
-      const timer = setTimeout(() => {
-        setDisplayedArticles(prev => Math.min(prev + 1, articlesImported));
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [displayedArticles, articlesImported]);
-
-  // Animate collections counter
-  useEffect(() => {
-    if (displayedCollections < collectionsImported) {
-      const timer = setTimeout(() => {
-        setDisplayedCollections(prev => Math.min(prev + 1, collectionsImported));
-      }, 60);
-      return () => clearTimeout(timer);
-    }
-  }, [displayedCollections, collectionsImported]);
-
-  // Animate images counter
-  useEffect(() => {
-    if (displayedImages < imagesImported) {
-      const timer = setTimeout(() => {
-        setDisplayedImages(prev => Math.min(prev + 1, imagesImported));
-      }, 70);
-      return () => clearTimeout(timer);
-    }
-  }, [displayedImages, imagesImported]);
-
-  const getPhaseTitle = () => {
-    if (limitReached) return "⚠️ Quota Reached";
-    if (phase === 'products') return "📦 Importing Products...";
-    if (phase === 'pages') return "📄 Importing Pages...";
-    if (phase === 'complete') return "✅ Import Complete!";
-    return "Importing...";
-  };
-
-  const getPhaseDescription = () => {
-    if (limitReached) return "You have reached your plan limit";
-    if (phase === 'products') return `Page ${progress.currentPage} of ${progress.totalPages} • ${progress.productsProcessed} products processed`;
-    if (phase === 'pages') return "Importing Shopify pages...";
-    if (phase === 'complete') return "All your products and pages have been successfully imported!";
-    return "Import in progress...";
-  };
-
+  /** ----------------------------
+   * 🎨 Render
+   -----------------------------*/
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[98vw] sm:max-w-2xl max-h-[90vh] flex flex-col animate-scale-in p-3 sm:p-6">
-        <DialogHeader className="flex-shrink-0 pb-2 sm:pb-4">
-          <DialogTitle className="text-sm sm:text-xl flex items-center gap-1.5 sm:gap-2 pr-8">
-            {phase !== 'complete' && <Loader2 className="w-3.5 h-3.5 sm:w-5 sm:h-5 animate-spin text-primary" />}
-            <span className="truncate">{getPhaseTitle()}</span>
+      <DialogContent className="max-w-[96vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-4 sm:p-6 rounded-2xl border shadow-md">
+        {/* HEADER */}
+        <DialogHeader>
+          <DialogTitle className="text-lg sm:text-xl flex items-center gap-2">
+            {phase !== "complete" && <Loader2 className="w-5 h-5 animate-spin text-primary" />}
+            {phaseTitle}
           </DialogTitle>
-          <DialogDescription className="text-[10px] sm:text-sm truncate pr-8">
-            {getPhaseDescription()}
-          </DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm text-muted-foreground">{phaseDescription}</DialogDescription>
         </DialogHeader>
 
         {!limitReached ? (
-          <div className="space-y-3 sm:space-y-4 flex-1 min-h-0 flex flex-col">
-            {/* Progress bar with animation */}
-            <div className="flex-shrink-0 space-y-1.5 sm:space-y-2 animate-fade-in">
-              <div className="flex items-center justify-between text-[10px] sm:text-sm">
-                <span className="text-muted-foreground font-medium">Overall Progress</span>
-                <span className="font-bold text-sm sm:text-lg text-primary tabular-nums animate-pulse">
-                  {Math.round(displayedProgress)}%
-                </span>
+          <>
+            {/* PROGRESS BAR */}
+            <div className="mt-3 space-y-2">
+              <div className="flex justify-between text-xs sm:text-sm font-medium">
+                <span>Overall Progress</span>
+                <span className="text-primary font-semibold">{Math.round(displayed.progress)}%</span>
               </div>
-              <div className="relative h-2.5 sm:h-4 w-full overflow-hidden rounded-full bg-secondary/50 shadow-inner">
-                <div 
-                  className="h-full transition-all duration-300 ease-out relative overflow-hidden"
-                  style={{ 
-                    width: `${displayedProgress}%`,
-                    background: 'linear-gradient(90deg, #1e40af 0%, #3b82f6 30%, #60a5fa 50%, #93c5fd 70%, #dbeafe 100%)',
-                    backgroundSize: '200% 100%',
-                    animation: 'shimmer 3s infinite'
+              <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary/40 shadow-inner">
+                <div
+                  className="absolute left-0 top-0 h-full transition-all duration-300"
+                  style={{
+                    width: `${displayed.progress}%`,
+                    background: "linear-gradient(90deg,#1e40af 0%,#3b82f6 40%,#60a5fa 80%,#93c5fd 100%)",
                   }}
-                >
-                  <div 
-                    className="absolute inset-0"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
-                      backgroundSize: '200% 100%',
-                      animation: 'shimmer 2s infinite'
-                    }}
-                  />
-                </div>
+                />
               </div>
-              <div className="flex items-center justify-between text-[9px] sm:text-xs text-muted-foreground">
-                <span>Page {progress.currentPage} / {progress.totalPages}</span>
-                <span className="flex items-center gap-0.5 sm:gap-1">
-                  <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  <span className="hidden xs:inline">{progress.productsProcessed} processed</span>
-                  <span className="xs:hidden">{progress.productsProcessed}</span>
-                </span>
-              </div>
-            </div>
-            
-            {/* Animated counters */}
-            <div className="flex-shrink-0 grid grid-cols-5 gap-1 sm:gap-4">
-              <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <Package className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
-                      {displayedProducts}
-                    </span>
-                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Products</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <FileText className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
-                      {displayedPages}
-                    </span>
-                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Pages</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <Newspaper className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
-                      {displayedArticles}
-                    </span>
-                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Articles</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <FolderOpen className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
-                      {displayedCollections}
-                    </span>
-                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Collections</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-                <CardContent className="pt-1.5 sm:pt-4 pb-1.5 sm:pb-4 px-1 sm:px-6">
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <Image className="w-3 h-3 sm:w-5 sm:h-5 text-primary animate-pulse" />
-                    <span className="text-base sm:text-3xl font-bold text-primary tabular-nums">
-                      {displayedImages}
-                    </span>
-                    <p className="text-[8px] sm:text-xs text-muted-foreground font-medium leading-tight text-center">Images</p>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
-            {/* List of imported items with animation */}
+            {/* COUNTERS */}
+            <div className="grid grid-cols-5 gap-2 sm:gap-4 mt-4">
+              {[
+                { icon: Package, label: "Products", value: displayed.products },
+                { icon: FileText, label: "Pages", value: displayed.pages },
+                { icon: Newspaper, label: "Articles", value: displayed.articles },
+                {
+                  icon: FolderOpen,
+                  label: "Collections",
+                  value: displayed.collections,
+                },
+                { icon: Image, label: "Images", value: displayed.images },
+              ].map(({ icon: Icon, label, value }) => (
+                <Card key={label} className="border hover:border-primary/60 hover:shadow-md transition-all">
+                  <CardContent className="flex flex-col items-center p-2 sm:p-4">
+                    <Icon className="w-5 h-5 text-primary mb-1 animate-pulse" />
+                    <span className="text-lg sm:text-2xl font-bold text-primary">{value}</span>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{label}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* IMPORTED ITEMS LIST */}
             {importedItems.length > 0 && (
-              <div className="flex-1 min-h-0 animate-fade-in">
-                <h4 className="text-[10px] sm:text-sm font-semibold mb-1.5 sm:mb-2 flex items-center gap-1.5 sm:gap-2">
-                  <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+              <div className="mt-4">
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
+                  <Check className="w-4 h-4 text-green-500" />
                   Imported Items ({importedItems.length})
                 </h4>
-                <ScrollArea className="h-[150px] sm:h-[300px] border rounded-lg shadow-inner bg-muted/5">
-                  <div className="p-1 sm:p-2 space-y-1 sm:space-y-2">
-                    {importedItems.slice().reverse().map((item, index) => (
-                      <div 
-                        key={`${item.type}-${item.handle || index}`}
-                        className="flex items-center gap-1 sm:gap-3 p-1 sm:p-2 bg-background border rounded-lg hover:shadow-md transition-all duration-200 animate-fade-in"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
-                        {item.type === 'product' && item.image && (
-                          <img 
-                            src={item.image} 
-                            alt={item.title}
-                            className="w-6 h-6 sm:w-12 sm:h-12 rounded object-cover flex-shrink-0 ring-1 sm:ring-2 ring-primary/20" 
-                          />
-                        )}
-                        {item.type === 'page' && (
-                          <div className="w-6 h-6 sm:w-12 sm:h-12 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 ring-1 sm:ring-2 ring-primary/20">
-                            <FileText className="w-3 h-3 sm:w-6 sm:h-6 text-primary" />
-                          </div>
-                        )}
-                        <span className="text-[10px] sm:text-sm flex-1 truncate font-medium">{item.title}</span>
-                        <div className="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                          <Check className="w-2 h-2 sm:w-3 sm:h-3 text-green-600 font-bold" />
+                <ScrollArea className="h-[160px] sm:h-[280px] border rounded-lg bg-muted/5">
+                  <div className="p-2 space-y-1">
+                    {importedItems
+                      .slice()
+                      .reverse()
+                      .map((item, index) => (
+                        <div
+                          key={`${item.type}-${item.handle || index}`}
+                          className="flex items-center gap-2 p-2 bg-background border rounded-lg hover:shadow-sm transition-all duration-150"
+                          style={{ animationDelay: `${index * 40}ms` }}
+                        >
+                          {item.type === "product" && item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover ring-1 ring-primary/20"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+                              <FileText className="w-4 h-4 text-primary" />
+                            </div>
+                          )}
+                          <span className="text-xs sm:text-sm flex-1 truncate">{item.title}</span>
+                          <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </ScrollArea>
               </div>
             )}
 
-            {/* Improved loading animation */}
-            {phase !== 'complete' && (
-              <div className="flex justify-center items-center gap-1.5 sm:gap-2 flex-shrink-0 py-1.5 sm:py-2">
-                <div className="w-1.5 h-1.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce shadow-lg" />
-                <div className="w-1.5 h-1.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce shadow-lg" style={{ animationDelay: '0.15s' }} />
-                <div className="w-1.5 h-1.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce shadow-lg" style={{ animationDelay: '0.3s' }} />
-              </div>
-            )}
-
-            {/* Final success message */}
-            {phase === 'complete' && (
-              <div className="flex-shrink-0 p-2 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800 rounded-lg animate-scale-in">
-                <div className="flex items-center gap-1.5 sm:gap-3">
-                  <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-green-500 flex items-center justify-center animate-bounce flex-shrink-0">
-                    <Check className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] sm:text-sm font-semibold text-green-900 dark:text-green-100">
-                      Import completed successfully!
-                    </p>
-                    <p className="text-[9px] sm:text-xs text-green-700 dark:text-green-300 truncate">
-                      {displayedProducts} products, {displayedPages} pages, {displayedArticles} articles, {displayedCollections} collections, {displayedImages} images imported
-                    </p>
-                  </div>
+            {/* SUCCESS MESSAGE */}
+            {phase === "complete" && (
+              <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-3 animate-fade-in">
+                <div className="bg-green-500 w-8 h-8 rounded-full flex items-center justify-center">
+                  <Check className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-800">Import completed successfully!</p>
+                  <p className="text-xs text-green-700">
+                    {displayed.products} products, {displayed.pages} pages,
+                    {displayed.articles} articles, {displayed.collections} collections, {displayed.images} images
+                    imported
+                  </p>
                 </div>
               </div>
             )}
-          </div>
+          </>
         ) : (
-          <div className="space-y-3 sm:space-y-6 animate-scale-in">
-            {/* Quota reached message with total products info */}
-            <div className="text-center">
-              <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-full bg-orange-100 dark:bg-orange-900/20 mx-auto mb-2 sm:mb-4 flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 sm:w-10 sm:h-10 text-orange-500" />
-              </div>
-              <h3 className="text-base sm:text-2xl font-bold mb-1.5 sm:mb-2">Quota Reached!</h3>
-              
-              {totalShopifyProducts > 0 ? (
-                <>
-                   <div className="mb-2 sm:mb-4 p-2 sm:p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg space-y-1">
-                     <p className="text-[10px] sm:text-sm font-semibold text-foreground leading-tight">
-                       Your Shopify store has
-                     </p>
-                     <p className="text-xl sm:text-3xl text-orange-600 dark:text-orange-400 font-bold tabular-nums">
-                       {totalShopifyProducts} products
-                     </p>
-                     <p className="text-[9px] sm:text-xs text-muted-foreground leading-tight">
-                       But your plan only allows <span className="font-semibold text-foreground">{maxProducts}</span>
-                     </p>
-                   </div>
-                   <p className="text-[9px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 leading-tight">
-                     Only {productsImported} imported • {totalShopifyProducts - productsImported} remaining
-                   </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground mb-1.5 sm:mb-2">
-                    You have reached the limit of {maxProducts} products in your plan.
-                  </p>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground mb-3 sm:mb-6">
-                    The first {productsImported} products have been imported successfully.
-                  </p>
-                </>
-              )}
+          /** ----------------------------
+           * 🚫 LIMIT REACHED STATE
+           -----------------------------*/
+          <div className="space-y-4 mt-4 text-center animate-fade-in">
+            <div className="w-16 h-16 mx-auto bg-orange-100 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-orange-500" />
             </div>
 
-            <div className="text-center p-2 sm:p-4 bg-muted rounded-lg">
-              <div className="text-xl sm:text-3xl font-bold text-primary mb-1 sm:mb-2">
-                {productsImported} / {totalShopifyProducts || maxProducts}
-              </div>
-              <div className="text-[10px] sm:text-sm text-muted-foreground">
-                Products imported
-              </div>
-            </div>
+            <h3 className="text-xl font-bold">Quota Reached!</h3>
+            <p className="text-sm text-muted-foreground">You’ve reached your plan limit of {maxProducts} products.</p>
 
-            <Alert className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary">
-              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
-              <AlertTitle className="text-xs sm:text-base font-bold">
-                Recommended: {recommendedPlan.name} Plan
-              </AlertTitle>
-              <AlertDescription>
-                <p className="mt-1.5 sm:mt-2 mb-2 sm:mb-3 text-[10px] sm:text-sm">
-                  To import all {totalShopifyProducts > 0 ? totalShopifyProducts : 'your'} products, upgrade to:
+            {totalShopifyProducts > 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <p className="text-sm font-semibold text-orange-700">
+                  Your Shopify store has {totalShopifyProducts.toLocaleString()} products.
                 </p>
-                <div className="p-2 sm:p-3 bg-background/50 rounded-lg border-2 border-primary/30">
-                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                    <span className="font-bold text-sm sm:text-base">{recommendedPlan.name}</span>
-                    <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] sm:text-xs px-1.5 sm:px-2.5">
-                      {typeof recommendedPlan.limit === 'number' 
-                        ? `${recommendedPlan.limit.toLocaleString()}` 
-                        : recommendedPlan.limit}
-                    </Badge>
-                  </div>
-                  <p className="text-[9px] sm:text-xs text-muted-foreground">
-                    Perfect for your {totalShopifyProducts > 0 ? totalShopifyProducts.toLocaleString() : ''} products
-                  </p>
-                </div>
-                <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t text-[9px] sm:text-xs text-muted-foreground">
-                  <p>All plans include:</p>
-                  <ul className="mt-1 space-y-0.5 sm:space-y-1">
-                    <li>✅ SEO optimization tools</li>
-                    <li>✅ Automated product sync</li>
-                    <li>✅ Priority support</li>
-                  </ul>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Only {productsImported} imported • {totalShopifyProducts - productsImported} remaining
+                </p>
+              </div>
+            )}
+
+            <Alert className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/40 text-left">
+              <AlertTitle className="font-bold text-base">Recommended: {recommendedPlan.name} Plan</AlertTitle>
+              <AlertDescription className="text-sm">
+                Upgrade to import all products and unlock full automation.
               </AlertDescription>
+              <div className="mt-2 p-2 bg-background/50 rounded-lg border">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-sm">{recommendedPlan.name}</span>
+                  <Badge variant="outline" className="text-xs">
+                    {typeof recommendedPlan.limit === "number"
+                      ? `${recommendedPlan.limit.toLocaleString()}`
+                      : recommendedPlan.limit}
+                  </Badge>
+                </div>
+              </div>
             </Alert>
 
-            <Button 
-              onClick={handleUpgrade}
-              className="w-full animate-pulse text-xs sm:text-base"
-              size="sm"
-            >
-              <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+            <Button onClick={handleUpgrade} className="w-full text-sm sm:text-base">
+              <CreditCard className="w-4 h-4 mr-2" />
               Upgrade to {recommendedPlan.name} Plan
             </Button>
           </div>
