@@ -235,53 +235,106 @@ export function ProductTitleLandingDialog({
 
               <TabsContent value="desktop" className="space-y-4">
                 <div className="border rounded-lg p-6 bg-white min-h-[400px]">
-                  <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+                  {selectedProduct && htmlPreview ? (
+                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-center py-12">
+                      <div className="space-y-3">
+                        <Eye className="h-12 w-12 text-muted-foreground mx-auto" />
+                        <p className="text-muted-foreground font-medium">
+                          Aucun contenu à prévisualiser
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Générez d'abord le contenu optimisé pour voir l'aperçu
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
               <TabsContent value="mobile" className="space-y-4">
                 <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
-                  <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="360" className="space-y-4">
-                <div className="border rounded-lg p-6 bg-muted min-h-[400px] space-y-6">
-                  <div>
-                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Titre Optimisé</h3>
-                    <p className="text-base font-medium">{selectedProduct?.seo_title || selectedProduct?.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {(selectedProduct?.seo_title || selectedProduct?.title || '').length} caractères
-                      {(selectedProduct?.seo_title || selectedProduct?.title || '').length >= 50 && 
-                       (selectedProduct?.seo_title || selectedProduct?.title || '').length <= 60 && 
-                       ' ✓ Longueur idéale pour l\'engagement client'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-sm text-muted-foreground mb-2">Description</h3>
-                    <p className="text-sm leading-relaxed">{selectedProduct?.seo_description}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {(selectedProduct?.seo_description || '').length} caractères
-                      {(selectedProduct?.seo_description || '').length >= 140 && 
-                       (selectedProduct?.seo_description || '').length <= 160 && 
-                       ' ✓ Description complète et engageante'}
-                    </p>
-                  </div>
-
-                  {selectedProduct?.image_url && (
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Image produit</h3>
-                      <div className="w-32 h-32 rounded-lg overflow-hidden border">
-                        <img 
-                          src={selectedProduct.image_url} 
-                          alt={selectedProduct.title}
-                          className="w-full h-full object-cover"
-                        />
+                  {selectedProduct && htmlPreview ? (
+                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-center py-12">
+                      <div className="space-y-3">
+                        <Smartphone className="h-12 w-12 text-muted-foreground mx-auto" />
+                        <p className="text-muted-foreground font-medium">
+                          Aucun contenu à prévisualiser
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Générez d'abord le contenu optimisé pour voir l'aperçu mobile
+                        </p>
                       </div>
                     </div>
                   )}
                 </div>
+              </TabsContent>
+
+              <TabsContent value="360" className="space-y-4">
+                {selectedProduct ? (
+                  <div className="border rounded-lg p-6 bg-muted min-h-[400px] space-y-6">
+                    <div>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Titre Optimisé</h3>
+                      <p className="text-base font-medium">
+                        {selectedProduct.seo_title || selectedProduct.title || 'Aucun titre'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {(selectedProduct.seo_title || selectedProduct.title || '').length} caractères
+                        {(selectedProduct.seo_title || selectedProduct.title || '').length >= 50 && 
+                         (selectedProduct.seo_title || selectedProduct.title || '').length <= 60 && 
+                         ' ✓ Longueur idéale pour l\'engagement client'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Description</h3>
+                      <p className="text-sm leading-relaxed">
+                        {selectedProduct.seo_description || 'Aucune description'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {(selectedProduct.seo_description || '').length} caractères
+                        {(selectedProduct.seo_description || '').length >= 140 && 
+                         (selectedProduct.seo_description || '').length <= 160 && 
+                         ' ✓ Description complète et engageante'}
+                      </p>
+                    </div>
+
+                    {selectedProduct.image_url ? (
+                      <div>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-2">Image produit</h3>
+                        <div className="w-32 h-32 rounded-lg overflow-hidden border">
+                          <img 
+                            src={selectedProduct.image_url} 
+                            alt={selectedProduct.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-2">Image produit</h3>
+                        <div className="w-32 h-32 rounded-lg overflow-hidden border bg-muted-foreground/10 flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">Aucune image</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="border rounded-lg p-6 bg-muted min-h-[400px] flex items-center justify-center">
+                    <div className="text-center space-y-3">
+                      <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto" />
+                      <p className="text-muted-foreground font-medium">
+                        Aucun produit sélectionné
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Générez d'abord le contenu optimisé
+                      </p>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </div>
