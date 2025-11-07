@@ -49,10 +49,14 @@ serve(async (req) => {
           ? (plan?.trial_max_optimizations || 50)
           : (plan?.max_optimizations_monthly || 999999);
         
+        console.log(`[white-bg] 🔍 Usage check: ${currentUsage}/${maxOptimizations}`);
+        
         if (currentUsage >= maxOptimizations) {
+          console.error(`[white-bg] ❌ LIMIT REACHED: ${currentUsage}/${maxOptimizations}`);
           return new Response(
             JSON.stringify({ 
               error: 'LIMIT_REACHED',
+              message: 'Limite d\'optimisations atteinte',
               usage: currentUsage,
               limit: maxOptimizations
             }),
@@ -62,6 +66,15 @@ serve(async (req) => {
             }
           );
         }
+        
+        // ✅ Incrémenter IMMÉDIATEMENT (avant génération)
+        const WHITE_BG_COST = 5;
+        await supabaseAdmin.rpc("increment_usage", {
+          p_seller_id: user.id,
+          p_field: "optimizations_count",
+          p_increment: WHITE_BG_COST
+        });
+        console.log(`[white-bg] ✅ Usage incremented: +${WHITE_BG_COST} (now ${currentUsage + WHITE_BG_COST}/${maxOptimizations})`);
       }
     }
     
@@ -203,20 +216,7 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
     }
 
     console.log("🎨 White background generated successfully");
-
-    // Track usage: 1 white background generation = 5 optimizations
-    if (user) {
-      try {
-        await supabaseClient.rpc("increment_usage", {
-          p_seller_id: user.id,
-          p_field: "optimizations_count",
-          p_increment: 5
-        });
-        console.log("✅ Usage tracked: 5 optimizations");
-      } catch (trackError) {
-        console.error("⚠️ Failed to track usage:", trackError);
-      }
-    }
+    // Usage déjà tracké AVANT la génération (ligne 69-75)
 
     return new Response(
       JSON.stringify({

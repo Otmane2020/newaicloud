@@ -49,11 +49,15 @@ serve(async (req) => {
           ? (plan?.trial_max_optimizations || 50)
           : (plan?.max_optimizations_monthly || 999999);
         
+        console.log(`[ai-bg] 🔍 Usage check: ${currentUsage}/${maxOptimizations}`);
+        
         if (currentUsage >= maxOptimizations) {
+          console.error(`[ai-bg] ❌ LIMIT REACHED: ${currentUsage}/${maxOptimizations}`);
           return new Response(
             JSON.stringify({ 
               success: false,
-              error: 'LIMIT_REACHED: Limite d\'optimisations atteinte',
+              error: 'LIMIT_REACHED',
+              message: 'Limite d\'optimisations atteinte',
               usage: currentUsage,
               limit: maxOptimizations
             }),
@@ -63,6 +67,15 @@ serve(async (req) => {
             }
           );
         }
+        
+        // ✅ Incrémenter IMMÉDIATEMENT (avant génération)
+        const AI_BG_COST = 8;
+        await supabaseAdmin.rpc("increment_usage", {
+          p_seller_id: user.id,
+          p_field: "optimizations_count",
+          p_increment: AI_BG_COST
+        });
+        console.log(`[ai-bg] ✅ Usage incremented: +${AI_BG_COST} (now ${currentUsage + AI_BG_COST}/${maxOptimizations})`);
       }
     }
     
@@ -230,6 +243,7 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
     }
 
     console.log("🎨 AI background generated successfully");
+    // Usage déjà tracké AVANT la génération (ligne 69-75)
 
     // Decode the base64 image to resize it to exact format
     let finalImageUrl = generatedImageUrl;
@@ -257,20 +271,6 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
     } catch (resizeError) {
       console.error("⚠️ Could not resize image, using original:", resizeError);
       // Continue with original image
-    }
-
-    // Track usage: 1 AI background generation = 8 optimizations
-    if (user) {
-      try {
-        await supabaseClient.rpc("increment_usage", {
-          p_seller_id: user.id,
-          p_field: "optimizations_count",
-          p_increment: 8
-        });
-        console.log("✅ Usage tracked: 8 optimizations");
-      } catch (trackError) {
-        console.error("⚠️ Failed to track usage:", trackError);
-      }
     }
 
     return new Response(

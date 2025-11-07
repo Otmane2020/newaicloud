@@ -17,6 +17,80 @@ serve(async (req) => {
   }
 
   try {
+    // 🛡️ VÉRIFICATION DES LIMITES AVANT GÉNÉRATION
+    const authHeader = req.headers.get("Authorization");
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    
+    if (authHeader) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      
+      if (user) {
+        const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
+        
+        // Récupérer usage actuel
+        const { data: usage } = await supabaseAdmin
+          .from('usage_tracking')
+          .select('optimizations_count')
+          .eq('seller_id', user.id)
+          .eq('month', currentMonth)
+          .maybeSingle();
+        
+        // Récupérer profil et plan
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('subscription_status, current_plan_id')
+          .eq('id', user.id)
+          .single();
+        
+        const { data: plan } = await supabaseAdmin
+          .from('subscription_plans')
+          .select('max_optimizations_monthly, trial_max_optimizations')
+          .eq('id', profile?.current_plan_id || 'trial')
+          .single();
+        
+        const currentUsage = usage?.optimizations_count || 0;
+        const maxOptimizations = profile?.subscription_status === 'trialing' 
+          ? (plan?.trial_max_optimizations || 50)
+          : (plan?.max_optimizations_monthly || 999999);
+        
+        console.log(`[generate-landing-ai] 🔍 Usage check: ${currentUsage}/${maxOptimizations}`);
+        
+        // ❌ BLOQUER si limite atteinte
+        if (currentUsage >= maxOptimizations) {
+          console.error(`[generate-landing-ai] ❌ LIMIT REACHED: ${currentUsage}/${maxOptimizations}`);
+          return new Response(
+            JSON.stringify({ 
+              error: 'LIMIT_REACHED',
+              message: 'Limite d\'optimisations atteinte. Passez à un plan supérieur.',
+              usage: currentUsage,
+              limit: maxOptimizations
+            }),
+            { 
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" } 
+            }
+          );
+        }
+        
+        // ✅ Incrémenter IMMÉDIATEMENT (avant génération pour éviter les abus)
+        const LANDING_PAGE_COST = 3; // 1 landing page = 3 optimisations
+        
+        await supabaseAdmin.rpc("increment_usage", {
+          p_seller_id: user.id,
+          p_field: "optimizations_count",
+          p_increment: LANDING_PAGE_COST
+        });
+        
+        console.log(`[generate-landing-ai] ✅ Usage incremented: +${LANDING_PAGE_COST} (now ${currentUsage + LANDING_PAGE_COST}/${maxOptimizations})`);
+      }
+    }
+    
     const body = await req.json();
 
     const { productTitle, imageUrl, description, style, mainColor, layout, length } = body ?? {};
