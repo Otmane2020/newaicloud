@@ -316,23 +316,24 @@ export default function ShopifyConnectionsList() {
           .delete()
           .eq('store_id', storeToDelete);
         
-        // Update usage tracking - ALWAYS decrement shopify_stores_count
-        const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
-        const { data: usage } = await supabase
-          .from('usage_tracking')
-          .select('*')
-          .eq('seller_id', user.id)
-          .eq('month', currentMonth)
-          .maybeSingle();
-        
-        if (usage) {
-          await supabase
+        // Update products_count in usage tracking (shopify_stores_count is handled by trigger)
+        if (count && count > 0) {
+          const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
+          const { data: usage } = await supabase
             .from('usage_tracking')
-            .update({ 
-              products_count: Math.max(0, (usage.products_count || 0) - (count || 0)),
-              shopify_stores_count: Math.max(0, (usage.shopify_stores_count || 0) - 1)
-            })
-            .eq('id', usage.id);
+            .select('*')
+            .eq('seller_id', user.id)
+            .eq('month', currentMonth)
+            .maybeSingle();
+          
+          if (usage) {
+            await supabase
+              .from('usage_tracking')
+              .update({ 
+                products_count: Math.max(0, (usage.products_count || 0) - count)
+              })
+              .eq('id', usage.id);
+          }
         }
 
         // Refresh usage limits after deletion
