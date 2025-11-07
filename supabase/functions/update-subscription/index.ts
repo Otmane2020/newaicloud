@@ -339,40 +339,31 @@ serve(async (req) => {
       logStep("Renewal upgrade - usage counters not reset (cycle just started)");
     }
 
-    // Calculate detailed proration if applicable
+    // Calculate simple price difference for upgrade (Lovable-style logic)
     let prorationDetails: any = null;
     if (isMidCycleUpgrade) {
       try {
-        const daysRemaining = totalCycleDays - daysIntoCycle;
-        
         // Get old and new price amounts
         const oldPriceAmount = currentPrice?.unit_amount || 0; // in cents
         const newPriceObj = await stripe.prices.retrieve(new_price_id);
         const newPriceAmount = newPriceObj.unit_amount || 0; // in cents
         
-        // Calculate unused credit from old subscription (ce qui a déjà été payé)
-        const unusedCredit = Math.round((oldPriceAmount * daysRemaining) / totalCycleDays);
-        
-        // Calculate cost of new plan for remaining period
-        const newPlanCostProrated = Math.round((newPriceAmount * daysRemaining) / totalCycleDays);
-        
-        // Net amount to charge (cost of new - credit from old)
-        const netChargeAmount = newPlanCostProrated - unusedCredit;
+        // Simple logic: user pays the difference between plans
+        // If old plan = 49€ and new plan = 98€, user pays 49€
+        const priceDifference = newPriceAmount - oldPriceAmount;
         
         prorationDetails = {
-          old_plan_paid: oldPriceAmount / 100, // Convert to main currency unit
-          unused_credit: unusedCredit / 100,
-          new_plan_prorated: newPlanCostProrated / 100,
-          net_charge: netChargeAmount / 100,
+          old_plan_price: oldPriceAmount / 100,
+          new_plan_price: newPriceAmount / 100,
+          price_difference: priceDifference / 100,
           currency: newPriceObj.currency.toUpperCase(),
-          days_remaining: daysRemaining,
-          days_into_cycle: daysIntoCycle,
-          total_cycle_days: totalCycleDays
+          logic: "simple_difference",
+          explanation: `Vous payez la différence entre les plans (${newPriceAmount / 100}€ - ${oldPriceAmount / 100}€ = ${priceDifference / 100}€)`
         };
         
-        logStep("Detailed proration calculated", prorationDetails);
+        logStep("Simple price difference calculated", prorationDetails);
         
-        // Get actual invoice to confirm
+        // Get actual invoice to confirm what Stripe charged
         const invoices = await stripe.invoices.list({
           customer: profile.stripe_customer_id,
           limit: 1,
@@ -380,12 +371,12 @@ serve(async (req) => {
         if (invoices.data[0]) {
           prorationDetails.actual_invoice_amount = invoices.data[0].amount_due / 100;
           logStep("Invoice amount confirmed", { 
-            calculated: prorationDetails.net_charge,
+            expected: prorationDetails.price_difference,
             actual: prorationDetails.actual_invoice_amount 
           });
         }
       } catch (error) {
-        logStep("Warning: Could not calculate detailed proration", { error });
+        logStep("Warning: Could not calculate proration details", { error });
         prorationDetails = { error: "Could not calculate proration details" };
       }
     }
