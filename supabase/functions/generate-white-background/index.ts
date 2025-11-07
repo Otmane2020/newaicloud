@@ -12,16 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, prompt, productTitle, imageType = "secondary" } = await req.json();
+    const { imageUrl, productTitle, imageType = "secondary" } = await req.json();
 
-    if (!imageUrl || !prompt) {
+    if (!imageUrl) {
       return new Response(
-        JSON.stringify({ error: "imageUrl and prompt are required" }),
+        JSON.stringify({ error: "imageUrl is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("🎨 Generating AI background:", { prompt, imageType });
+    console.log("🎨 Generating white background:", { imageType, productTitle });
 
     // Initialize Supabase client for usage tracking
     const authHeader = req.headers.get("Authorization");
@@ -42,16 +42,15 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Create prompt based on image type
+    // Create prompt for white background removal
     const isMainImage = imageType === "primary";
     const photographyPrompt = `
 You are a professional e-commerce product photographer.
 
 PRODUCT: ${productTitle || "Product"}
-USER REQUEST: ${prompt}
 
 YOUR MISSION:
-Create a ${isMainImage ? "main product" : "lifestyle/ambiance"} photo with custom background.
+Remove the current background and replace it with a pure white background (#FFFFFF).
 
 REQUIREMENTS:
 ${isMainImage ? `
@@ -64,21 +63,20 @@ ${isMainImage ? `
    - Square format (1024x1024)
    
 2. BACKGROUND:
-   - Apply the requested style: "${prompt}"
-   - Background should complement but not distract from product
+   - Pure white background (#FFFFFF)
    - Professional lighting to highlight product
+   - Clean product cutout with smooth edges
+   - No shadows unless essential for depth
 ` : `
-1. AMBIANCE/LIFESTYLE IMAGE:
-   - Creative composition (centering not required)
+1. SECONDARY IMAGE:
    - Product can be positioned artistically
-   - Lifestyle/contextual setting
-   - More creative freedom with composition
+   - Creative composition (centering not required)
    - Square format (1024x1024)
    
 2. BACKGROUND:
-   - Apply the requested style: "${prompt}"
-   - Create atmospheric, lifestyle setting
-   - Background is part of the storytelling
+   - Pure white background (#FFFFFF)
+   - Clean product cutout
+   - Professional lighting
 `}
 
 3. TECHNICAL SPECS:
@@ -88,7 +86,7 @@ ${isMainImage ? `
    - No watermarks, text, or logos
    - Ready for e-commerce use
 
-RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} with custom background.
+RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "product photo"} on pure white background.
     `.trim();
 
     // Call Lovable AI
@@ -128,6 +126,17 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
         );
       }
       
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Payment required. Please add funds to your Lovable AI workspace.",
+            paymentRequired: true
+          }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       throw new Error(`Lovable AI error ${response.status}: ${errorText}`);
     }
 
@@ -141,17 +150,17 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
       throw new Error("No image generated - unexpected response format");
     }
 
-    console.log("🎨 AI background generated successfully");
+    console.log("🎨 White background generated successfully");
 
-    // Track usage: 1 AI background generation = 8 optimizations
+    // Track usage: 1 white background generation = 5 optimizations
     if (user) {
       try {
         await supabaseClient.rpc("increment_usage", {
           p_seller_id: user.id,
           p_field: "optimizations_count",
-          p_increment: 8
+          p_increment: 5
         });
-        console.log("✅ Usage tracked: 8 optimizations");
+        console.log("✅ Usage tracked: 5 optimizations");
       } catch (trackError) {
         console.error("⚠️ Failed to track usage:", trackError);
       }
@@ -162,9 +171,9 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
         success: true,
         imageUrl: generatedImageUrl,
         metadata: {
-          prompt,
           imageType,
           productTitle,
+          background: "white",
           model: "google/gemini-2.5-flash-image-preview",
           generatedAt: new Date().toISOString(),
         },
@@ -172,7 +181,7 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("💥 Error in generate-image-background:", error);
+    console.error("💥 Error in generate-white-background:", error);
     return new Response(
       JSON.stringify({
         success: false,

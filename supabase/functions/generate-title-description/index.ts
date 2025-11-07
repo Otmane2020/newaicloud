@@ -525,6 +525,18 @@ IMPORTANT:
             .eq('id', productId);
           
           console.log(`✅ Produit ${productId} optimisé avec succès (compteur: ${currentCount + 1})`);
+          
+          // Track usage: 1 title/description generation = 5 optimizations
+          try {
+            await supabaseClient.rpc("increment_usage", {
+              p_seller_id: user.id,
+              p_field: "optimizations_count",
+              p_increment: 5
+            });
+            console.log("✅ Usage tracked: 5 optimizations");
+          } catch (trackError) {
+            console.error("⚠️ Failed to track usage:", trackError);
+          }
         }
       }
     }
