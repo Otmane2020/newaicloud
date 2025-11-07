@@ -6,6 +6,7 @@ import { BillingPortal } from '@/components/dashboard/BillingPortal';
 import { ShopifyIntegrationTabs } from '@/components/integration/ShopifyIntegrationTabs';
 import { UsageLimits } from '@/components/dashboard/UsageLimits';
 import { SubscriptionPlans } from '@/components/dashboard/SubscriptionPlans';
+import { UsageWidget } from '@/components/dashboard/UsageWidget';
 
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -51,7 +52,7 @@ export default function Account() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['profile', 'integrations', 'subscription', 'billing'].includes(tab)) {
+    if (tab && ['profile', 'integrations', 'subscription', 'billing', 'usage'].includes(tab)) {
       // Valid tab from URL
     }
   }, [searchParams]);
@@ -70,11 +71,12 @@ export default function Account() {
 
       {/* Content */}
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })} className="mt-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile">{t.account.tabs.profile}</TabsTrigger>
           <TabsTrigger value="integrations">{t.account.tabs.integrations}</TabsTrigger>
           <TabsTrigger value="subscription">{t.account.tabs.subscription}</TabsTrigger>
           <TabsTrigger value="billing">{t.account.tabs.billing}</TabsTrigger>
+          <TabsTrigger value="usage">Limites</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
@@ -106,6 +108,12 @@ export default function Account() {
         <TabsContent value="billing" className="mt-6">
           <div className="bg-white rounded-lg border p-4 md:p-6">
             <BillingPortal />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="usage" className="mt-6">
+          <div className="max-w-2xl">
+            <UsageWidget />
           </div>
         </TabsContent>
       </Tabs>

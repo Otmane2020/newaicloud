@@ -20,7 +20,6 @@ import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { useNavigate } from 'react-router-dom';
-import { UsageWidget } from '@/components/dashboard/UsageWidget';
 
 export default function Blog() {
   const { user } = useAuth();
@@ -198,9 +197,6 @@ export default function Blog() {
           <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
             {t.blog.description}
           </p>
-        </div>
-        <div className="w-full sm:w-80">
-          <UsageWidget />
         </div>
       </div>
 
