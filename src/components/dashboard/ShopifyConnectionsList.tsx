@@ -190,6 +190,73 @@ export default function ShopifyConnectionsList() {
     }
   }, [connections]);
 
+  // Poll import_jobs table for real-time progress updates
+  useEffect(() => {
+    if (!importJobId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data: job, error } = await supabase
+          .from('import_jobs')
+          .select('*')
+          .eq('id', importJobId)
+          .single();
+
+        if (error) {
+          console.error('Error polling job:', error);
+          return;
+        }
+
+        if (job) {
+          // Update progress
+          const totalPages = job.total_pages || 1;
+          const currentPage = job.current_page || 0;
+          const productsProcessed = job.products_processed || 0;
+          const percentage = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
+
+          setImportProgress({
+            currentPage,
+            totalPages,
+            productsProcessed,
+            percentage
+          });
+
+          // Check if job is complete
+          if (job.status === 'completed' || job.status === 'failed' || job.status === 'quota_reached') {
+            clearInterval(pollInterval);
+            setImportingStoreId(null);
+            
+            if (job.status === 'completed') {
+              setImportPhase('complete');
+              setProductsImported(job.products_processed || 0);
+              toast.success('Import terminé !', {
+                description: `${job.products_processed} produits importés avec succès`
+              });
+            } else if (job.status === 'quota_reached') {
+              setLimitReached(true);
+              setProductsImported(job.products_processed || 0);
+              toast.warning('Quota atteint', {
+                description: 'Certains produits n\'ont pas été importés. Upgradez pour continuer.'
+              });
+            } else if (job.status === 'failed') {
+              toast.error('Erreur d\'import', {
+                description: job.error_message || 'Une erreur est survenue'
+              });
+              setShowProgressDialog(false);
+            }
+            
+            setImportJobId(null);
+            checkUsageLimits(); // Refresh usage limits
+          }
+        }
+      } catch (error) {
+        console.error('Error in polling:', error);
+      }
+    }, 1000); // Poll every second
+
+    return () => clearInterval(pollInterval);
+  }, [importJobId]);
+
   const checkUsageLimits = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('check-usage-limits');
