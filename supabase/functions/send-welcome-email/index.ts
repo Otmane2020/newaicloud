@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
@@ -34,19 +33,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending welcome email to:", email);
 
-    // Configuration SMTP O2Switch
-    const client = new SmtpClient();
-
-    await client.connectTLS({
-      hostname: Deno.env.get("SMTP_HOST") || "ssl0.ovh.net",
-      port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
-      username: Deno.env.get("SMTP_USER")!, // Votre email O2Switch complet
-      password: Deno.env.get("SMTP_PASSWORD")!, // Votre mot de passe O2Switch
-    });
-
     const translations = {
       fr: {
-        subject: "Bienvenue sur New AI !",
+        subject: "Bienvenue sur New AI ! 🚀",
         title: "Bienvenue sur New AI !",
         greeting: "Bonjour",
         thankYou: "Merci de vous être inscrit sur New AI, votre plateforme d'optimisation SEO pour Shopify !",
@@ -56,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
         signature: "À très bientôt,<br>L'équipe New AI",
       },
       en: {
-        subject: "Welcome to New AI!",
+        subject: "Welcome to New AI! 🚀",
         title: "Welcome to New AI!",
         greeting: "Hello",
         thankYou: "Thank you for signing up to New AI, your SEO optimization platform for Shopify!",
@@ -69,67 +58,90 @@ const handler = async (req: Request): Promise<Response> => {
 
     const t = translations[language];
 
-    // Utilisation directe de l'email SMTP comme expéditeur
-    const smtpUser = Deno.env.get("SMTP_USER")!;
-
-    await client.send({
-      from: `New AI <${smtpUser}>`, // Envoie directement depuis votre compte SMTP
-      to: email,
-      subject: t.subject,
-      content: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>${t.title}</h1>
-            </div>
-            <div class="content">
-              <h2>${t.greeting} ${fullName} 👋</h2>
-              <p>${t.thankYou}</p>
-              <p>${t.message}</p>
-              <div style="text-align: center;">
-                <a href="https://affable-calm-newai.lovable.app/dashboard" class="button">${t.button}</a>
-              </div>
-              <p>${t.signature}</p>
-            </div>
-            <div class="footer">
-              <p>New AI - Optimisez votre SEO Shopify</p>
-            </div>
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8fafc; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
+          .content { background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+          .button { display: inline-block; padding: 14px 32px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; margin: 25px 0; font-weight: 600; font-size: 16px; }
+          .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+          .greeting { color: #1e293b; font-size: 24px; margin-bottom: 20px; }
+          .message { color: #475569; font-size: 16px; margin-bottom: 15px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 32px; font-weight: 700;">${t.title}</h1>
           </div>
-        </body>
-        </html>
-      `,
-      html: true,
+          <div class="content">
+            <h2 class="greeting">${t.greeting} ${fullName} 👋</h2>
+            <p class="message">${t.thankYou}</p>
+            <p class="message">${t.message}</p>
+            <div style="text-align: center;">
+              <a href="https://affable-calm-newai.lovable.app/dashboard" class="button">${t.button}</a>
+            </div>
+            <p style="color: #475569; margin-top: 30px;">${t.signature}</p>
+          </div>
+          <div class="footer">
+            <p>New AI - Optimisez votre SEO Shopify • <a href="https://newai.sale" style="color: #667eea;">newai.sale</a></p>
+            <p style="font-size: 12px; margin-top: 10px;">Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Envoi avec Resend
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "New AI <onboarding@resend.dev>", // Vous pouvez vérifier votre domaine plus tard
+        to: email,
+        subject: t.subject,
+        html: emailHtml,
+        // Optional: Ajouter des tags pour le tracking
+        tags: [
+          {
+            name: "category",
+            value: "welcome_email",
+          },
+        ],
+      }),
     });
 
-    await client.close();
+    if (!resendResponse.ok) {
+      const errorData = await resendResponse.json();
+      console.error("Resend API error:", errorData);
+      throw new Error(`Resend error: ${resendResponse.status} - ${JSON.stringify(errorData)}`);
+    }
 
+    const result = await resendResponse.json();
+    console.log("Resend response:", result);
     console.log("Welcome email sent successfully to:", email);
 
-    return new Response(JSON.stringify({ success: true, message: "Email envoyé avec succès" }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Email envoyé avec succès",
+        id: result.id,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
   } catch (error: any) {
     console.error("Email sending failed:", error);
-    console.error("SMTP Config:", {
-      host: Deno.env.get("SMTP_HOST"),
-      port: Deno.env.get("SMTP_PORT"),
-      user: Deno.env.get("SMTP_USER")?.substring(0, 5) + "...",
-      hasPassword: !!Deno.env.get("SMTP_PASSWORD"),
-    });
 
     return new Response(
       JSON.stringify({
