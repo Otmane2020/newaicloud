@@ -131,17 +131,41 @@ export function SubscriptionPlans() {
       const isTrialing = profile?.subscription_status === 'trialing';
       const isCurrentPlan = profile?.current_plan_id === planId;
 
-      // If in trial and activating current plan, use direct payment
-      if (isTrialing && isCurrentPlan) {
-        const { data, error } = await supabase.functions.invoke('activate-full-plan');
+      // SECURITY FIX: For trial users, ALWAYS require payment through Stripe checkout
+      // regardless of whether they're activating current plan or upgrading
+      if (isTrialing) {
+        // For trial users, always create a checkout session with payment
+        const selectedPlan = plans.find(p => p.id === planId);
+        
+        const stripePriceId = billingPeriod === 'yearly' 
+          ? selectedPlan?.stripe_price_id_yearly 
+          : selectedPlan?.stripe_price_id_monthly;
+        
+        if (!stripePriceId || !stripePriceId.startsWith('price_')) {
+          toast({
+            title: t.errors.missingConfiguration,
+            description: tf('dashboard.plans.errors.missingConfig', { planName: selectedPlan?.name }),
+            variant: "destructive"
+          });
+          setCheckoutLoading(null);
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke('create-checkout', {
+          body: { 
+            plan_id: planId,
+            billing_period: billingPeriod,
+            currency: language === 'fr' ? 'EUR' : 'USD',
+            force_immediate_payment: true,
+            success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
+            cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
+          }
+        });
+
         if (error) throw error;
         
-        if (data?.success) {
-          toast({
-            title: t.account.subscription.activationSuccess,
-            description: t.toasts.subscriptionActivatedMessage,
-          });
-          setTimeout(() => window.location.reload(), 1500);
+        if (data?.url) {
+          window.open(data.url, '_blank');
         }
         return;
       }
