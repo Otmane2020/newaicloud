@@ -129,7 +129,7 @@ export function SubscriptionPlans() {
 
       const hasActiveSubscription = !!subscription?.stripe_subscription_id;
       // Always use create-checkout for all users (trial or paid)
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
         body: { 
           plan_id: planId,
           billing_period: billingPeriod,
@@ -137,10 +137,10 @@ export function SubscriptionPlans() {
         }
       });
 
-      if (error) throw error;
+      if (checkoutError) throw checkoutError;
       
-      if (data?.url) {
-        window.open(data.url, '_blank');
+      if (checkoutData?.url) {
+        window.open(checkoutData.url, '_blank');
       }
       return;
 
@@ -197,7 +197,7 @@ export function SubscriptionPlans() {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      const { data: checkoutData2, error: checkoutError2 } = await supabase.functions.invoke('create-checkout', {
         body: { 
           plan_id: planId,
           billing_period: billingPeriod,
@@ -207,10 +207,10 @@ export function SubscriptionPlans() {
         }
       });
 
-      if (error) throw error;
+      if (checkoutError2) throw checkoutError2;
       
-      if (data?.url) {
-        window.open(data.url, '_blank');
+      if (checkoutData2?.url) {
+        window.open(checkoutData2.url, '_blank');
       }
     } catch (error) {
       console.error('Error handling plan selection:', error);
