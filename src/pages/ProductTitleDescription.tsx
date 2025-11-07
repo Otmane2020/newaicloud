@@ -927,10 +927,15 @@ export default function ProductTitleDescription() {
                 variant="outline"
                 size="sm"
                 onClick={async () => {
+                  if (!canDoAction('optimizations')) {
+                    toast.error("Limite d'optimisations atteinte");
+                    setShowUpgradeDialog(true);
+                    return;
+                  }
                   await loadGalleryImages(Array.from(selectedProducts));
                   setShowWhiteBgConfigDialog(true);
                 }}
-                disabled={generatingWhiteBg || selectedProducts.size === 0}
+                disabled={generatingWhiteBg || selectedProducts.size === 0 || !canDoAction('optimizations')}
               >
                 {generatingWhiteBg ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -944,10 +949,15 @@ export default function ProductTitleDescription() {
                 variant="default"
                 size="sm"
                 onClick={async () => {
+                  if (!canDoAction('optimizations')) {
+                    toast.error("Limite d'optimisations atteinte");
+                    setShowUpgradeDialog(true);
+                    return;
+                  }
                   await loadGalleryImages(Array.from(selectedProducts));
                   setShowAiConfigDialog(true);
                 }}
-                disabled={generatingAiBg || selectedProducts.size === 0}
+                disabled={generatingAiBg || selectedProducts.size === 0 || !canDoAction('optimizations')}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
               >
                 {generatingAiBg ? (
