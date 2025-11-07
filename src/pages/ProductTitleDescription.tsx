@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 import {
   Sparkles,
   Wand2,
@@ -95,6 +96,7 @@ export default function ProductTitleDescription() {
   const [showWhiteBgConfigDialog, setShowWhiteBgConfigDialog] = useState(false);
   const [currentProcessing, setCurrentProcessing] = useState<{ index: number; total: number; title: string } | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -152,13 +154,7 @@ export default function ProductTitleDescription() {
 
     // Vérifier les limites d'utilisation
     if (!canDoAction('optimizations')) {
-      toast.error("Quota d'optimisations dépassé", {
-        description: `Vous avez utilisé ${limits?.usage.optimizations_count}/${limits?.limits.max_optimizations} optimisations ce mois-ci. Passez à un plan supérieur.`,
-        action: {
-          label: "Voir les plans",
-          onClick: () => window.open('/subscription', '_blank')
-        }
-      });
+      setShowUpgradeDialog(true);
       return;
     }
 
@@ -321,17 +317,11 @@ export default function ProductTitleDescription() {
 
     // Vérifier les limites d'utilisation
     if (!canDoAction('optimizations')) {
-      toast.error("Quota d'optimisations dépassé", {
-        description: `Vous avez utilisé ${limits?.usage.optimizations_count}/${limits?.limits.max_optimizations} optimisations ce mois-ci.`,
-        action: {
-          label: "Voir les plans",
-          onClick: () => window.open('/subscription', '_blank')
-        }
-      });
+      setShowUpgradeDialog(true);
       return;
     }
 
-    const selectedProductsList = products.filter((p) => 
+    const selectedProductsList = products.filter((p) =>
       selectedProducts.has(p.id) && p.image_url
     );
 
@@ -404,17 +394,11 @@ export default function ProductTitleDescription() {
   const handleStartAiBackground = async (prompt: string) => {
     // Vérifier les limites d'utilisation
     if (!canDoAction('optimizations')) {
-      toast.error("Quota d'optimisations dépassé", {
-        description: `Vous avez utilisé ${limits?.usage.optimizations_count}/${limits?.limits.max_optimizations} optimisations ce mois-ci.`,
-        action: {
-          label: "Voir les plans",
-          onClick: () => window.open('/subscription', '_blank')
-        }
-      });
+      setShowUpgradeDialog(true);
       return;
     }
 
-    const selectedProductsList = products.filter((p) => 
+    const selectedProductsList = products.filter((p) =>
       selectedProducts.has(p.id) && p.image_url
     );
 
@@ -1371,6 +1355,18 @@ export default function ProductTitleDescription() {
         onCancel={generating ? handleCancelGeneration : undefined}
         onSync={handleSyncToShopify}
         syncLoading={syncingToShopify}
+      />
+
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        limitType="optimizations"
+        usage={limits?.usage.optimizations_count}
+        limit={limits?.limits.max_optimizations}
+        onUpgradeComplete={() => {
+          refreshLimits();
+          setShowUpgradeDialog(false);
+        }}
       />
     </div>
   );
