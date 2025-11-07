@@ -208,6 +208,93 @@ export function HomePageSeoAudit() {
     }
   };
 
+  const handleGenerateSeoElement = async (elementType: 'title' | 'metaDescription' | 'h1') => {
+    if (!result) return;
+    
+    setGenerating(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Préparer le contexte de la page
+      const pageContext = {
+        url: result.analyzedUrl,
+        existingTitle: result.elements.title,
+        existingDescription: result.elements.metaDescription,
+        existingH1: result.elements.h1,
+        h2s: result.elements.h2s,
+        contentLength: result.elements.contentLength
+      };
+
+      let prompt = '';
+      
+      if (elementType === 'title') {
+        prompt = `Génère un titre SEO optimisé (max 60 caractères) pour une page d'accueil e-commerce. 
+        Contexte: URL=${pageContext.url}, H2s existants=${pageContext.h2s.join(', ')}. 
+        Le titre doit être accrocheur, contenir des mots-clés pertinents et inciter au clic. Réponds UNIQUEMENT avec le titre, sans guillemets ni explication.`;
+      } else if (elementType === 'metaDescription') {
+        prompt = `Génère une meta description SEO optimisée (max 160 caractères) pour une page d'accueil e-commerce. 
+        Contexte: URL=${pageContext.url}, Titre=${pageContext.existingTitle}, H2s=${pageContext.h2s.join(', ')}. 
+        La description doit être engageante, contenir des mots-clés et inciter à visiter le site. Réponds UNIQUEMENT avec la description, sans guillemets ni explication.`;
+      } else {
+        prompt = `Génère un H1 (titre principal) optimisé SEO (max 70 caractères) pour une page d'accueil e-commerce. 
+        Contexte: URL=${pageContext.url}, Titre=${pageContext.existingTitle}, H2s=${pageContext.h2s.join(', ')}. 
+        Le H1 doit être clair, descriptif et contenir le mot-clé principal. Réponds UNIQUEMENT avec le H1, sans guillemets ni explication.`;
+      }
+
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to generate content');
+
+      const data = await response.json();
+      const generatedText = data.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
+
+      // Afficher le résultat dans un toast avec possibilité de copier
+      const elementName = elementType === 'title' ? 'Titre SEO' : 
+                         elementType === 'metaDescription' ? 'Meta Description' : 'H1';
+      
+      sonnerToast.success(`${elementName} généré avec succès !`, {
+        description: generatedText.length > 100 ? generatedText.substring(0, 100) + '...' : generatedText,
+        duration: 10000,
+        action: {
+          label: 'Copier',
+          onClick: () => {
+            navigator.clipboard.writeText(generatedText);
+            sonnerToast.success('Copié dans le presse-papiers !');
+          }
+        }
+      });
+
+      // Si la meta/titre est vide, le remplir automatiquement
+      if (elementType === 'title' && !seoTitle) {
+        setSeoTitle(generatedText);
+      } else if (elementType === 'metaDescription' && !seoDescription) {
+        setSeoDescription(generatedText);
+      }
+
+    } catch (error: any) {
+      console.error('Error generating SEO element:', error);
+      sonnerToast.error('Erreur lors de la génération avec l\'IA');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const importCurrentSeo = async () => {
     if (!hasConnection) {
       sonnerToast.error(t.homepageAudit.toasts.connectShopify);
@@ -528,28 +615,28 @@ export function HomePageSeoAudit() {
                       <span>{t.homepageAudit.sections.structure}</span>
                       <span className="font-medium">{result.breakdown.structure}/30</span>
                     </div>
-                    <Progress value={(result.breakdown.structure / 30) * 100} className="h-2" />
+                    <Progress value={Math.round((result.breakdown.structure / 30) * 1000) / 10} className="h-2" showPercentage={false} />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>{t.homepageAudit.sections.content}</span>
                       <span className="font-medium">{result.breakdown.content}/30</span>
                     </div>
-                    <Progress value={(result.breakdown.content / 30) * 100} className="h-2" />
+                    <Progress value={Math.round((result.breakdown.content / 30) * 1000) / 10} className="h-2" showPercentage={false} />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>{t.homepageAudit.sections.technical}</span>
                       <span className="font-medium">{result.breakdown.technical}/25</span>
                     </div>
-                    <Progress value={(result.breakdown.technical / 25) * 100} className="h-2" />
+                    <Progress value={Math.round((result.breakdown.technical / 25) * 1000) / 10} className="h-2" showPercentage={false} />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>{t.homepageAudit.sections.bonus}</span>
                       <span className="font-medium">{result.breakdown.bonus}/15</span>
                     </div>
-                    <Progress value={(result.breakdown.bonus / 15) * 100} className="h-2" />
+                    <Progress value={Math.round((result.breakdown.bonus / 15) * 1000) / 10} className="h-2" showPercentage={false} />
                   </div>
                 </div>
               </div>
@@ -573,6 +660,18 @@ export function HomePageSeoAudit() {
                     <div className="text-sm text-muted-foreground">
                       {result.elements.title ? `"${result.elements.title}" (${result.elements.title.length} ${t.homepageAudit.elements.characters})` : t.homepageAudit.elements.missing}
                     </div>
+                    {!result.elements.title && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="mt-2 gap-2"
+                        onClick={() => handleGenerateSeoElement('title')}
+                        disabled={generating}
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Générer avec l'IA
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -583,6 +682,18 @@ export function HomePageSeoAudit() {
                     <div className="text-sm text-muted-foreground">
                       {result.elements.metaDescription ? `${result.elements.metaDescription.length} ${t.homepageAudit.elements.characters}` : t.homepageAudit.elements.missing}
                     </div>
+                    {!result.elements.metaDescription && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="mt-2 gap-2"
+                        onClick={() => handleGenerateSeoElement('metaDescription')}
+                        disabled={generating}
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Générer avec l'IA
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -593,6 +704,18 @@ export function HomePageSeoAudit() {
                     <div className="text-sm text-muted-foreground">
                       {result.elements.h1 ? `"${result.elements.h1}"` : t.homepageAudit.elements.missing}
                     </div>
+                    {!result.elements.h1 && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="mt-2 gap-2"
+                        onClick={() => handleGenerateSeoElement('h1')}
+                        disabled={generating}
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Générer avec l'IA
+                      </Button>
+                    )}
                   </div>
                 </div>
 
