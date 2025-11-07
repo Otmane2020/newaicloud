@@ -62,78 +62,136 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailHtml = `
       <!DOCTYPE html>
-      <html>
+      <html lang="${language}" style="margin:0;padding:0;">
       <head>
-        <meta charset="utf-8">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${t.title}</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8fafc; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .sender-info { display: flex; align-items: center; gap: 12px; padding: 20px; background: white; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-          .sender-avatar { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-          .sender-avatar svg { width: 28px; height: 28px; }
-          .sender-details { flex: 1; }
-          .sender-name { font-weight: 600; color: #1e293b; font-size: 16px; margin: 0; }
-          .sender-email { color: #64748b; font-size: 14px; margin: 2px 0 0 0; }
-          .header { background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
-          .logo-container { display: inline-flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
-          .logo-icon { width: 56px; height: 56px; border-radius: 14px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); }
-          .logo-icon svg { width: 32px; height: 32px; }
-          .logo-text { font-size: 32px; font-weight: 700; color: white; letter-spacing: -0.5px; }
-          .content { background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-          .button { display: inline-block; padding: 14px 32px; background: #3B82F6; color: white; text-decoration: none; border-radius: 8px; margin: 25px 0; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-          .button:hover { background: #2563eb; }
-          .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
-          .footer a { color: #3B82F6; text-decoration: none; }
-          .greeting { color: #1e293b; font-size: 24px; margin-bottom: 20px; }
-          .message { color: #475569; font-size: 16px; margin-bottom: 15px; }
-          .alert { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 12px 16px; margin: 20px 0; border-radius: 6px; }
-          .alert-text { color: #92400E; font-size: 14px; margin: 0; }
+          body {
+            margin: 0;
+            padding: 0;
+            background: #f7f9fc;
+            font-family: 'Inter', Arial, sans-serif;
+            color: #1a1a1a;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+          }
+          .header {
+            text-align: center;
+            padding: 56px 24px 48px;
+            background: linear-gradient(135deg, #3B82F6, #60A5FA);
+            color: white;
+          }
+          .brand-title {
+            font-size: 34px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.5px;
+            color: #fff;
+          }
+          .brand-subtitle {
+            margin-top: 6px;
+            font-size: 15px;
+            color: rgba(255,255,255,0.85);
+            letter-spacing: 0.5px;
+            font-weight: 500;
+          }
+          .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+          }
+          .content h2 {
+            font-size: 20px;
+            margin-top: 0;
+            color: #0d1117;
+          }
+          .content p {
+            margin-bottom: 18px;
+            color: #444;
+          }
+          .cta {
+            text-align: center;
+            margin: 36px 0 20px;
+          }
+          .cta a {
+            background: linear-gradient(135deg, #3B82F6, #60A5FA);
+            color: white;
+            text-decoration: none;
+            padding: 14px 34px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            display: inline-block;
+          }
+          .alert {
+            background: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 12px 16px;
+            margin: 20px 0;
+            border-radius: 6px;
+          }
+          .alert-text {
+            color: #92400E;
+            font-size: 14px;
+            margin: 0;
+          }
+          .footer {
+            text-align: center;
+            padding: 24px;
+            background: #f2f4f7;
+            font-size: 13px;
+            color: #7a869a;
+          }
+          .footer a {
+            color: #3B82F6;
+            text-decoration: none;
+          }
+          @media (max-width: 480px) {
+            .header, .content, .footer {
+              padding: 24px 18px;
+            }
+            .brand-title {
+              font-size: 28px;
+            }
+          }
         </style>
       </head>
       <body>
         <div class="container">
-          <div class="sender-info">
-            <div class="sender-avatar">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="sender-details">
-              <p class="sender-name">New AI</p>
-              <p class="sender-email">noreply@newai.sale</p>
-            </div>
-          </div>
-
           <div class="header">
-            <div class="logo-container">
-              <div class="logo-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-              <span class="logo-text">NewAI</span>
-            </div>
-            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">${t.title}</h1>
+            <h1 class="brand-title">NewAI</h1>
+            <p class="brand-subtitle">Smarter Way To Sale ✨</p>
           </div>
-
+          
           <div class="content">
-            <h2 class="greeting">${t.greeting} 👋</h2>
-            <p class="message">${t.message}</p>
+            <h2>${t.greeting} 👋</h2>
+            <p>${t.message}</p>
             
-            <div style="text-align: center;">
-              <a href="${resetLink}" class="button">${t.button}</a>
+            <div class="cta">
+              <a href="${resetLink}" target="_blank">🔑 ${t.button}</a>
             </div>
-
+            
             <div class="alert">
               <p class="alert-text">⏰ ${t.expiryNote}</p>
             </div>
-
-            <p style="color: #64748b; font-size: 14px; margin-top: 20px;">${t.noRequest}</p>
-            <p style="color: #475569; margin-top: 30px;">${t.signature}</p>
+            
+            <p style="color:#7a869a;font-size:13px;margin-top:20px;">${t.noRequest}</p>
+            
+            <p style="text-align:center;color:#7a869a;font-size:13px;margin-top:28px;">
+              ${t.signature}
+            </p>
           </div>
-
+          
           <div class="footer">
-            <p>${t.footer} • <a href="https://newai.sale">newai.sale</a></p>
+            © 2025 NewAI. Tous droits réservés.<br>
+            <a href="mailto:support@newai.sale">support@newai.sale</a>
           </div>
         </div>
       </body>
