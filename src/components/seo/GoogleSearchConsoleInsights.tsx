@@ -166,7 +166,15 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
       if (data?.error) throw new Error(data.error);
       if (!data?.data) throw new Error('Aucune donnée reçue');
 
-      setData(data.data);
+      const formattedData = data.data.map((item: SearchConsoleData) => ({
+        date: new Date(item.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
+        clicks: item.clicks,
+        impressions: item.impressions,
+        ctr: parseFloat(item.ctr.toString()),
+        position: parseFloat(item.position.toString())
+      }));
+
+      setData(formattedData);
       toast.success('Données chargées avec succès');
     } catch (error: any) {
       console.error('Error loading Search Console data:', error);
