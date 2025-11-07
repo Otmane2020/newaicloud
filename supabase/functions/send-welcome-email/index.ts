@@ -1,13 +1,10 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const welcomeEmailSchema = z.object({
   email: z.string().email().max(255),
@@ -100,33 +97,44 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Envoi avec Resend
-    const { data, error: resendError } = await resend.emails.send({
-      from: "New AI <onboarding@resend.dev>",
-      to: [email],
-      subject: t.subject,
-      html: emailHtml,
-      tags: [
-        {
-          name: "category",
-          value: "welcome_email",
-        },
-      ],
-    });
-
-    if (resendError) {
-      console.error("Resend API error:", resendError);
-      throw new Error(`Resend error: ${JSON.stringify(resendError)}`);
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    
+    if (!RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not configured");
     }
 
-    console.log("Resend response:", data);
+    // Envoi avec Resend API
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "New AI <onboarding@resend.dev>",
+        to: [email],
+        subject: t.subject,
+        html: emailHtml,
+      }),
+    });
+
+    const responseText = await resendResponse.text();
+    console.log("Resend API response status:", resendResponse.status);
+    console.log("Resend API response:", responseText);
+
+    if (!resendResponse.ok) {
+      console.error("Resend API error:", responseText);
+      throw new Error(`Resend API error: ${resendResponse.status} - ${responseText}`);
+    }
+
+    const result = JSON.parse(responseText);
     console.log("Welcome email sent successfully to:", email);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "Email envoyé avec succès",
-        id: data?.id,
+        id: result.id,
       }),
       {
         status: 200,
@@ -138,8 +146,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({
-        error: "Échec de l'envoi de l'email",
-        details: error.message || "Erreur inconnue",
+        error: "Failed to send email",
+        details: error.message || "Unknown error",
       }),
       {
         status: 500,
