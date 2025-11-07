@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Loader2, Eye, Monitor, Smartphone } from "lucide-react";
+import { Sparkles, Loader2, Eye, Monitor, Smartphone, Download, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ interface RegenerateLandingProps {
 
 export default function RegenerateLanding({ product, onGenerated }: RegenerateLandingProps) {
   const [loading, setLoading] = useState(false);
+  const [syncingToShopify, setSyncingToShopify] = useState(false);
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [styleChoice, setStyleChoice] = useState("moderne");
   const [color, setColor] = useState("#f8f8f8");
@@ -67,6 +68,64 @@ export default function RegenerateLanding({ product, onGenerated }: RegenerateLa
       toast.error(error?.message || "Erreur lors de la génération de la landing page.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadHTML = () => {
+    if (!htmlContent) {
+      toast.error("Aucun contenu à télécharger");
+      return;
+    }
+
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${product.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_landing.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("HTML téléchargé avec succès !");
+  };
+
+  const handleSyncToShopify = async () => {
+    if (!htmlContent) {
+      toast.error("Aucun contenu à synchroniser");
+      return;
+    }
+
+    try {
+      setSyncingToShopify(true);
+      toast.info("Synchronisation vers Shopify en cours...");
+
+      const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
+        body: {
+          productId: product.id,
+          productTitle: product.title,
+          productHandle: product.handle,
+          htmlContent: htmlContent,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      toast.success("Landing page synchronisée vers Shopify avec succès !");
+      if (data.pageUrl) {
+        toast.info(`Page disponible sur : ${data.pageUrl}`, {
+          duration: 10000,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error syncing to Shopify:", error);
+      toast.error(error?.message || "Erreur lors de la synchronisation vers Shopify");
+    } finally {
+      setSyncingToShopify(false);
     }
   };
 
@@ -175,23 +234,52 @@ export default function RegenerateLanding({ product, onGenerated }: RegenerateLa
 
       {htmlContent && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Eye className="w-5 h-5" />
               Aperçu de la Landing Page
             </h3>
-            <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as any)}>
-              <TabsList>
-                <TabsTrigger value="desktop">
-                  <Monitor className="h-4 w-4 mr-2" />
-                  Desktop
-                </TabsTrigger>
-                <TabsTrigger value="mobile">
-                  <Smartphone className="h-4 w-4 mr-2" />
-                  Mobile
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as any)} className="flex-shrink-0">
+                <TabsList>
+                  <TabsTrigger value="desktop">
+                    <Monitor className="h-4 w-4 mr-2" />
+                    Desktop
+                  </TabsTrigger>
+                  <TabsTrigger value="mobile">
+                    <Smartphone className="h-4 w-4 mr-2" />
+                    Mobile
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <Button
+                onClick={handleDownloadHTML}
+                variant="outline"
+                className="gap-2"
+                size="sm"
+              >
+                <Download className="w-4 h-4" />
+                Télécharger HTML
+              </Button>
+              <Button
+                onClick={handleSyncToShopify}
+                disabled={syncingToShopify}
+                className="gap-2"
+                size="sm"
+              >
+                {syncingToShopify ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Synchronisation...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Sync vers Shopify
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {previewMode === 'desktop' ? (

@@ -66,6 +66,9 @@ verify_jwt = true
 [functions.sync-seo-to-shopify]
 verify_jwt = true
 
+[functions.sync-landing-to-shopify]
+verify_jwt = true
+
 [functions.generate-alt-texts]
 verify_jwt = true
 
