@@ -117,6 +117,7 @@ export default function ProductTitleDescription() {
   const [galleryImages, setGalleryImages] = useState<Map<string, ProductImage[]>>(new Map());
   const [selectedGalleryImages, setSelectedGalleryImages] = useState<Map<string, string>>(new Map());
   const [selectedImageFormat, setSelectedImageFormat] = useState<string>('square');
+  const [selectedSimilarity, setSelectedSimilarity] = useState<string>('medium');
 
   useEffect(() => {
     fetchProducts();
@@ -448,7 +449,7 @@ export default function ProductTitleDescription() {
     await refreshLimits();
   };
 
-  const handleStartAiBackground = async (prompt: string) => {
+  const handleStartAiBackground = async (prompt: string, format: string, similarity: string) => {
     // Vérifier les limites d'utilisation
     if (!canDoAction('optimizations')) {
       setShowUpgradeDialog(true);
@@ -498,7 +499,8 @@ export default function ProductTitleDescription() {
             prompt: prompt,
             productTitle: product.title,
             imageType: selectedImageType,
-            format: selectedImageFormat
+            format: format,
+            similarity: similarity
           }
         });
 
@@ -555,9 +557,8 @@ export default function ProductTitleDescription() {
     }
   };
 
-  const handleApplyAiBackground = async (productIds: string[], format: string, similarity?: string) => {
+  const handleApplyAiBackground = async (productIds: string[]) => {
     const toastId = toast.loading("Application des images...");
-    console.log('Applying AI background with format:', format, 'similarity:', similarity);
 
     try {
       for (const productId of productIds) {
@@ -1559,6 +1560,39 @@ export default function ProductTitleDescription() {
               </div>
             </div>
 
+            {/* Format and Similarity Selection */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="image-format">Format d'image</Label>
+                <Select value={selectedImageFormat} onValueChange={setSelectedImageFormat}>
+                  <SelectTrigger id="image-format">
+                    <SelectValue placeholder="Sélectionner un format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="square">Carré (1:1)</SelectItem>
+                    <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+                    <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="similarity">Ressemblance à l'original</Label>
+                <Select value={selectedSimilarity} onValueChange={setSelectedSimilarity}>
+                  <SelectTrigger id="similarity">
+                    <SelectValue placeholder="Niveau de ressemblance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="very-close">🎯 Très proche (90%)</SelectItem>
+                    <SelectItem value="close">✓ Proche (70%)</SelectItem>
+                    <SelectItem value="medium">⚖️ Équilibré (50%)</SelectItem>
+                    <SelectItem value="creative">🎨 Créatif (30%)</SelectItem>
+                    <SelectItem value="very-creative">✨ Très créatif (10%)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             {/* Style Selection */}
             <div className="space-y-2">
               <Label htmlFor="preset-select">Style prédéfini</Label>
@@ -1622,7 +1656,7 @@ export default function ProductTitleDescription() {
                   toast.error("Veuillez saisir ou sélectionner un prompt");
                   return;
                 }
-                handleStartAiBackground(customPrompt);
+                handleStartAiBackground(customPrompt, selectedImageFormat, selectedSimilarity);
               }}
               className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
             >
