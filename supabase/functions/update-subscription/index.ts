@@ -102,6 +102,12 @@ serve(async (req) => {
     const now = Math.floor(Date.now() / 1000); // Unix timestamp
     const periodStart = stripeSubscription.current_period_start;
     const periodEnd = stripeSubscription.current_period_end;
+    
+    // Validate timestamps before using them
+    if (!periodStart || !periodEnd) {
+      throw new Error("Invalid subscription period dates");
+    }
+    
     const daysIntoCycle = Math.floor((now - periodStart) / (24 * 60 * 60));
     const totalCycleDays = Math.floor((periodEnd - periodStart) / (24 * 60 * 60));
 
