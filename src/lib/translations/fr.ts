@@ -3038,7 +3038,8 @@ export const translations = {
         optimizations: "Optimisations SEO",
         articles: "Articles IA",
         chat: "Réponses Chat",
-        shopifySearch: "Recherches Shopify"
+        shopifySearch: "Recherches Shopify",
+        campaigns: "Campagnes IA"
       },
       usageMessage: "Vous avez utilisé {{usage}} sur {{limit}} {{type}}",
       activatePlan: "Activer le plan",
@@ -3084,7 +3085,8 @@ export const translations = {
         chat: "réponses chat",
         searches: "recherches Shopify",
         products: "produits",
-        stores: "boutiques"
+        stores: "boutiques",
+        campaigns: "campagnes"
       }
     }
   },

@@ -12,7 +12,7 @@ import { getCurrencySymbol } from '@/lib/formatUtils';
 interface UpgradeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  limitType: 'optimizations' | 'articles' | 'chat' | 'shopifySearch';
+  limitType: 'optimizations' | 'articles' | 'chat' | 'shopifySearch' | 'campaigns';
   usage?: number;
   limit?: number;
   currentPlan?: string;

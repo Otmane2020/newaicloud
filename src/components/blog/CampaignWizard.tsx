@@ -401,9 +401,9 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
     <UpgradeDialog
       open={showUpgradeDialog}
       onOpenChange={setShowUpgradeDialog}
-      limitType="articles"
-      usage={limits?.usage.articles_count}
-      limit={limits?.limits.max_articles}
+      limitType="campaigns"
+      usage={limits?.usage.campaigns_count}
+      limit={limits?.limits.max_campaigns}
     />
     </>
   );
