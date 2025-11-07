@@ -89,17 +89,17 @@ Deno.serve(async (req: Request) => {
         throw new Error("Store connection not found");
       }
 
-      // Check if sync was done less than 1 hour ago (unless force is true)
+      // Check if sync was done less than 5 minutes ago (unless force is true)
       if (!force && product.last_seo_sync_at) {
         const lastSync = new Date(product.last_seo_sync_at);
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
         
-        if (lastSync > oneHourAgo) {
-          console.log(`Product ${productId} was synced less than 1 hour ago, skipping`);
+        if (lastSync > fiveMinutesAgo) {
+          console.log(`Product ${productId} was synced less than 5 minutes ago, skipping`);
           return new Response(
             JSON.stringify({
               success: false,
-              message: "Cette synchronisation a déjà été effectuée il y a moins d'une heure. Veuillez attendre avant de synchroniser à nouveau.",
+              message: "Cette synchronisation a déjà été effectuée il y a moins de 5 minutes. Veuillez patienter quelques instants.",
               error: "SYNC_TOO_RECENT"
             }),
             {
