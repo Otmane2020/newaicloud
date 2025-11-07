@@ -15,6 +15,7 @@ import { SuperAdminLayout } from "./components/SuperAdminLayout";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import SuperAdmin from "./pages/SuperAdmin";
+import AdminSuperLogin from "./pages/AdminSuperLogin";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -346,6 +347,7 @@ const App = () => (
               }
             />
             <Route path="/landing/:campaignId" element={<LandingPage />} />
+            <Route path="/adminsuper" element={<AdminSuperLogin />} />
             <Route
               path="/admin"
               element={
