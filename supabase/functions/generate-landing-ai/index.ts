@@ -1,63 +1,79 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+// ✅ CORS Headers — sécurisé et compatible front
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** ----------------------------------------------------------------
+ * 🧠 Function: Generate landing page HTML via Lovable AI Gateway
+ * ----------------------------------------------------------------*/
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  // ✅ Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { 
-      productTitle, 
-      imageUrl, 
-      description, 
-      style, 
-      mainColor, 
-      layout, 
-      length 
-    } = await req.json();
+    const body = await req.json();
+
+    const { productTitle, imageUrl, description, style, mainColor, layout, length } = body ?? {};
+
+    if (!productTitle) {
+      return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      throw new Error("Missing LOVABLE_API_KEY in environment variables");
     }
 
-    const prompt = `Tu es un designer et copywriter expert en e-commerce.
+    // 🧩 Dynamic tone based on length
+    const tone =
+      length === "courte (400 mots)"
+        ? "concis"
+        : length === "moyenne (800 mots)"
+          ? "équilibré"
+          : "détaillé et approfondi";
 
-Ta mission est de générer une landing page complète pour un produit Shopify à partir des données suivantes :
+    // 🪄 Main AI prompt
+    const prompt = `
+Tu es un designer et copywriter expert en e-commerce.
+
+Ta mission est de générer une landing page HTML complète pour un produit Shopify à partir des données suivantes :
 
 - Titre du produit : ${productTitle}
 - Image du produit : ${imageUrl || "aucune"}
 - Description existante : ${description || "aucune"}
-- Style souhaité : ${style}
+- Style visuel : ${style}
 - Couleur principale : ${mainColor}
 - Layout souhaité : ${layout}
-- Longueur de texte : ${length}
+- Longueur du texte : ${length}
 
-Ta sortie doit être un HTML clair, responsive et SEO-friendly :
-- Inclure sections : titre accrocheur, sous-titre engageant, image principale, 3-5 avantages clés avec icônes, caractéristiques techniques, CTA clair et répété.
-- Design neutre et élégant, compatible avec la couleur principale fournie.
-- Utilisable sur fond blanc ou gris clair.
-- Utilise Tailwind CSS pour le style (classes uniquement).
-- Responsive mobile-first avec gap-4, padding-6, rounded-xl, shadow-lg pour un rendu moderne.
-- Sections bien espacées avec titres en font-bold text-2xl ou text-3xl.
-- Retourne UNIQUEMENT le HTML (sans balise <html>, <head> ni <body>), prêt à être injecté dans React.
+⚙️ Contraintes :
+- Sortie : HTML clair, responsive et SEO-friendly.
+- Inclure les sections : 
+  1️⃣ Hero section (titre H1, sous-titre, image)
+  2️⃣ Avantages (3-5 cartes avec icônes)
+  3️⃣ Caractéristiques techniques
+  4️⃣ CTA final
+  5️⃣ Garanties / Livraison
+- Design ${style}, ton ${tone}.
+- Compatible Tailwind CSS uniquement (aucun <style> inline).
+- Responsive mobile-first, avec gap-4, p-6, rounded-xl, shadow-lg.
+- Titres: font-bold text-2xl ou text-3xl.
+- Pas de balises <html>, <head> ou <body>.
+- Retourne UNIQUEMENT le contenu HTML prêt à injecter dans React.
+`;
 
-Structure recommandée :
-1. Hero section avec titre H1 + sous-titre + image
-2. Section avantages avec 3-5 cartes (icônes + texte)
-3. Section caractéristiques détaillées
-4. Section CTA final avec bouton prominent
-5. Section garanties/livraison
+    console.log("[generate-landing-ai] 🧠 Sending prompt to Lovable Gateway...");
 
-Utilise un ton ${style}, ${length === 'courte (400 mots)' ? 'concis' : length === 'moyenne (800 mots)' ? 'équilibré' : 'détaillé et approfondi'}.`;
-
-    console.log('[generate-landing-ai] Calling Lovable AI Gateway...');
-
+    // 🧠 Call Lovable AI Gateway (Gemini or GPT-based)
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -67,52 +83,66 @@ Utilise un ton ${style}, ${length === 'courte (400 mots)' ? 'concis' : length ==
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { 
-            role: "system", 
-            content: "Tu es un expert UX/UI designer et copywriter spécialisé en e-commerce. Tu génères des landing pages HTML modernes, responsive et optimisées pour la conversion." 
+          {
+            role: "system",
+            content:
+              "Tu es un expert UX/UI designer et copywriter e-commerce. Génère des landing pages Tailwind modernes et efficaces pour Shopify.",
           },
-          { role: "user", content: prompt }
+          { role: "user", content: prompt },
         ],
+        max_tokens: 3000,
+        temperature: 0.8,
       }),
     });
 
+    // 🧱 Handle API errors
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limits exceeded, please try again later." }), 
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }), 
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error('[generate-landing-ai] AI Gateway error:', response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      const errText = await response.text();
+      console.error("[generate-landing-ai] ❌ API error:", response.status, errText);
+
+      const messages: Record<number, string> = {
+        429: "Rate limits exceeded. Please try again later.",
+        402: "Payment required. Please add funds to your Lovable AI workspace.",
+      };
+
+      const errorMessage = messages[response.status] || `Lovable API error: ${response.status}`;
+
+      return new Response(JSON.stringify({ error: errorMessage }), {
+        status: response.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const data = await response.json();
-    const html = data.choices?.[0]?.message?.content || "";
+    // ✅ Parse AI response safely
+    const data = await response.json().catch(() => null);
+    const html = data?.choices?.[0]?.message?.content?.trim() || "";
 
-    console.log('[generate-landing-ai] Generated HTML length:', html.length);
+    if (!html) {
+      console.warn("[generate-landing-ai] ⚠️ Empty HTML response from AI");
+      return new Response(
+        JSON.stringify({
+          error: "Aucune réponse générée par l'IA. Essayez avec un prompt plus simple ou un style différent.",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
+    console.log("[generate-landing-ai] ✅ Generated HTML length:", html.length, "chars");
+
+    // ✅ Success
+    return new Response(JSON.stringify({ html }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("[generate-landing-ai] 💥 Error:", err);
     return new Response(
-      JSON.stringify({ html }), 
-      { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    );
-  } catch (error) {
-    console.error('[generate-landing-ai] Error:', error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), 
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
+      JSON.stringify({
+        error: err instanceof Error ? err.message : "Unexpected error",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
