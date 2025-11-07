@@ -97,6 +97,23 @@ serve(async (req) => {
     if (!accountsResponse.ok) {
       const errorText = await accountsResponse.text();
       console.error('Google API error:', errorText);
+      
+      // Check if it's the API not enabled error
+      if (accountsResponse.status === 403 && errorText.includes('Content API for Shopping has not been used')) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'API_NOT_ENABLED',
+            message: 'The Content API for Shopping needs to be enabled in your Google Cloud project. Please visit the Google Cloud Console to enable it.',
+            activationUrl: 'https://console.developers.google.com/apis/api/shoppingcontent.googleapis.com/overview?project=741227309573'
+          }),
+          { 
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" } 
+          }
+        );
+      }
+      
       throw new Error(`Failed to fetch merchant accounts: ${accountsResponse.status}`);
     }
 

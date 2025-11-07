@@ -105,6 +105,28 @@ export function GoogleMerchantIntegration() {
         return;
       }
 
+      // Handle API not enabled error
+      if (!data?.success && data?.error === 'API_NOT_ENABLED') {
+        toast.error(
+          <div className="space-y-2">
+            <p className="font-semibold">Content API for Shopping not enabled</p>
+            <p className="text-sm">{data.message}</p>
+            {data.activationUrl && (
+              <a 
+                href={data.activationUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm underline hover:no-underline inline-flex items-center gap-1"
+              >
+                Enable API in Google Cloud Console →
+              </a>
+            )}
+          </div>,
+          { duration: 10000 }
+        );
+        return;
+      }
+
       if (!data?.success) {
         console.error('API returned error:', data?.error);
         toast.error(data?.error || t.googleMerchant.integration.errors.loadAccounts);
