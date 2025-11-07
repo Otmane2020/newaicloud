@@ -20,12 +20,14 @@ import {
   Eye,
   RefreshCw,
   Square,
+  FileText,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
 import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
 import { ProductTitleLandingDialog } from "@/components/seo/ProductTitleLandingDialog";
+import RegenerateLanding from "@/components/seo/RegenerateLanding";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
@@ -97,6 +99,8 @@ export default function ProductTitleDescription() {
   const [currentProcessing, setCurrentProcessing] = useState<{ index: number; total: number; title: string } | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showLandingDialog, setShowLandingDialog] = useState(false);
+  const [selectedLandingProduct, setSelectedLandingProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -1040,6 +1044,25 @@ export default function ProductTitleDescription() {
                             <p>Visualiser</p>
                           </TooltipContent>
                         </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedLandingProduct(product);
+                                setShowLandingDialog(true);
+                              }}
+                              className="hover:bg-primary/10"
+                            >
+                              <FileText className="h-4 w-4 text-primary" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Générer Landing Page IA</p>
+                          </TooltipContent>
+                        </Tooltip>
                         
                         {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
                           <Tooltip>
@@ -1356,6 +1379,29 @@ export default function ProductTitleDescription() {
         onSync={handleSyncToShopify}
         syncLoading={syncingToShopify}
       />
+
+      {/* Landing Page Generator Dialog */}
+      <Dialog open={showLandingDialog} onOpenChange={setShowLandingDialog}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-primary" />
+              Générateur de Landing Page IA
+            </DialogTitle>
+            <DialogDescription>
+              Créez une landing page personnalisée et optimisée pour votre produit
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLandingProduct && (
+            <RegenerateLanding 
+              product={selectedLandingProduct} 
+              onGenerated={(html) => {
+                console.log('Generated HTML:', html.substring(0, 100));
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <UpgradeDialog
         open={showUpgradeDialog}

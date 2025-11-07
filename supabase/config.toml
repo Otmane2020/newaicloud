@@ -183,6 +183,9 @@ verify_jwt = true
 [functions.generate-image-background]
 verify_jwt = true
 
+[functions.generate-landing-ai]
+verify_jwt = true
+
 [functions.google-merchant-oauth-token]
 verify_jwt = false
 
