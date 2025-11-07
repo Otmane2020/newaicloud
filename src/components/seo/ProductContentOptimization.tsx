@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { PlanUpgradeDialog } from '@/components/dashboard/PlanUpgradeDialog';
 import {
   Dialog,
   DialogContent,
@@ -47,8 +49,10 @@ export const ProductContentOptimization = () => {
   const [syncProgress, setSyncProgress] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState<'ecommerce' | 'luxury' | 'technical'>('ecommerce');
   const [qualityScore, setQualityScore] = useState<number | null>(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const queryClient = useQueryClient();
 
+  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { generateProductDescription } = useImageOptimization();
 
   // Calculate quality score based on HTML content
@@ -81,6 +85,23 @@ export const ProductContentOptimization = () => {
     score += Math.min(15, imgCount * 5);
     
     return Math.min(100, score);
+  };
+
+  // Check limits before generation
+  const handleGenerateClick = (productId: string) => {
+    // ✅ Vérifier les limites AVANT de générer
+    if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
+      if (limits?.isTrialing) {
+        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+      } else if (limits?.isPaid) {
+        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+      }
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
+    // Si OK, lancer la génération
+    generateMutation.mutate(productId);
   };
 
   // Load products
@@ -163,20 +184,33 @@ export const ProductContentOptimization = () => {
       setQualityScore(score);
       
       queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
+      
+      // ✅ NOUVEAU: Rafraîchir les limites
+      refreshLimits();
     },
     onError: (error: any) => {
       console.error('Error generating description:', error);
       setIsGenerating(false);
       setShowPreview(false);
       
-      // Better error handling for 402
-      if (error?.message?.includes('402') || error?.message?.includes('credits')) {
-        toast.error('Crédits IA épuisés', {
-          description: 'Veuillez ajouter des crédits à votre workspace Lovable.'
-        });
-      } else {
-        toast.error('Erreur lors de la génération');
+      const errorMessage = error?.message || '';
+      
+      // Gérer les erreurs de limites
+      if (errorMessage.includes('LIMIT_REACHED') || errorMessage.includes('429')) {
+        toast.error('Limite d\'optimisations atteinte');
+        setShowUpgradeDialog(true);
+        refreshLimits();
+        return;
       }
+      
+      if (errorMessage.includes('402') || errorMessage.includes('credits')) {
+        toast.error('Crédits IA épuisés', {
+          description: 'Contactez le support pour plus d\'informations.'
+        });
+        return;
+      }
+      
+      toast.error('Erreur lors de la génération');
     }
   });
 
@@ -347,7 +381,7 @@ export const ProductContentOptimization = () => {
 
                 <Button
                   className="w-full"
-                  onClick={() => generateMutation.mutate(product.id)}
+                  onClick={() => handleGenerateClick(product.id)}
                   disabled={generateMutation.isPending}
                 >
                   {generateMutation.isPending ? (
@@ -575,6 +609,18 @@ export const ProductContentOptimization = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Plan Upgrade Dialog */}
+      <PlanUpgradeDialog 
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        currentPlanId={limits?.currentPlanId || 'trial'}
+        onSuccess={() => {
+          setShowUpgradeDialog(false);
+          refreshLimits();
+          toast.success('Plan mis à jour avec succès !');
+        }}
+      />
     </div>
   );
 };
