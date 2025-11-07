@@ -128,47 +128,21 @@ export function SubscriptionPlans() {
         .single();
 
       const hasActiveSubscription = !!subscription?.stripe_subscription_id;
-      const isTrialing = profile?.subscription_status === 'trialing';
-      const isCurrentPlan = profile?.current_plan_id === planId;
-
-      // SECURITY FIX: For trial users, ALWAYS require payment through Stripe checkout
-      // regardless of whether they're activating current plan or upgrading
-      if (isTrialing) {
-        // For trial users, always create a checkout session with payment
-        const selectedPlan = plans.find(p => p.id === planId);
-        
-        const stripePriceId = billingPeriod === 'yearly' 
-          ? selectedPlan?.stripe_price_id_yearly 
-          : selectedPlan?.stripe_price_id_monthly;
-        
-        if (!stripePriceId || !stripePriceId.startsWith('price_')) {
-          toast({
-            title: t.errors.missingConfiguration,
-            description: tf('dashboard.plans.errors.missingConfig', { planName: selectedPlan?.name }),
-            variant: "destructive"
-          });
-          setCheckoutLoading(null);
-          return;
+      // Always use create-checkout for all users (trial or paid)
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { 
+          plan_id: planId,
+          billing_period: billingPeriod,
+          currency: language === 'fr' ? 'EUR' : 'USD'
         }
+      });
 
-        const { data, error } = await supabase.functions.invoke('create-checkout', {
-          body: { 
-            plan_id: planId,
-            billing_period: billingPeriod,
-            currency: language === 'fr' ? 'EUR' : 'USD',
-            force_immediate_payment: true,
-            success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
-            cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
-          }
-        });
-
-        if (error) throw error;
-        
-        if (data?.url) {
-          window.open(data.url, '_blank');
-        }
-        return;
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.open(data.url, '_blank');
       }
+      return;
 
       // If user has active subscription, use update-subscription for proration
       if (hasActiveSubscription) {
