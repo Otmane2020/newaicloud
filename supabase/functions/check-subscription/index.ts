@@ -37,8 +37,30 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     logStep('Authenticating user with token');
     
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    // Retry logic to handle race condition during signup
+    let userData: any = null;
+    let userError: any = null;
+    let retries = 3;
+    
+    while (retries > 0) {
+      const result = await supabaseClient.auth.getUser(token);
+      userData = result.data;
+      userError = result.error;
+      
+      if (!userError) break;
+      
+      // If user doesn't exist yet (race condition during signup), retry
+      if (userError.message.includes('User from sub claim in JWT does not exist')) {
+        logStep('User not yet available, retrying...', { retriesLeft: retries - 1 });
+        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+        retries--;
+      } else {
+        break;
+      }
+    }
+    
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    if (!userData) throw new Error('Failed to retrieve user data');
     const user = userData.user;
     if (!user?.email) throw new Error('User not authenticated or email not available');
     logStep('User authenticated', { userId: user.id, email: user.email });
