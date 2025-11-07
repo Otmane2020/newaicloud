@@ -215,8 +215,10 @@ export default function ProductTitleDescription() {
         const invokePromise = supabase.functions.invoke("generate-title-description", {
           body: {
             currentTitle: product.title,
-            imageUrl: product.image_url || null,
+            imageUrl: (config || optimizationConfig)?.selectedImageUrl || product.image_url || null,
             config: config || optimizationConfig,
+            customDescription: (config || optimizationConfig)?.customDescription || '',
+            vendor: '',
           },
         });
 
@@ -1632,6 +1634,16 @@ export default function ProductTitleDescription() {
         onOpenChange={setShowConfigDialog}
         onConfirm={handleConfigConfirm}
         productCount={filteredProducts.length}
+        productImages={
+          filteredProducts[0]?.id 
+            ? (galleryImages.get(filteredProducts[0].id) || []).map(img => ({
+                id: img.id,
+                image_url: img.src,
+                alt_text: img.alt_text || undefined
+              }))
+            : []
+        }
+        mainImageUrl={filteredProducts[0]?.image_url}
       />
 
       <UpgradeDialog

@@ -12,10 +12,37 @@ serve(async (req) => {
   }
 
   try {
-    const { currentTitle, imageUrl, config } = await req.json();
+    const { currentTitle, imageUrl, config, customDescription, vendor } = await req.json();
 
     if (!currentTitle) {
       throw new Error("Le titre actuel est requis");
+    }
+
+    // Extraire vendor automatiquement du titre si non fourni
+    let extractedVendor = vendor || '';
+    if (!extractedVendor) {
+      const vendorMatch = currentTitle.match(/\b[A-Z][A-Z]+\b/);
+      if (vendorMatch) {
+        extractedVendor = vendorMatch[0];
+        console.log("✅ Vendor extrait:", extractedVendor);
+      }
+    }
+
+    // Extraire dimensions du titre (formats: 120x80, 120x80x75, 120 x 80 cm, etc.)
+    let extractedDimensions = '';
+    const dimensionPatterns = [
+      /(\d+)\s*[xX×]\s*(\d+)\s*[xX×]\s*(\d+)\s*(cm|mm|m)?/i,
+      /(\d+)\s*[xX×]\s*(\d+)\s*(cm|mm|m)?/i,
+      /(\d+)\s*(cm|mm|m)\s*[xX×]\s*(\d+)\s*(cm|mm|m)?/i
+    ];
+    
+    for (const pattern of dimensionPatterns) {
+      const match = currentTitle.match(pattern);
+      if (match) {
+        extractedDimensions = match[0];
+        console.log("📏 Dimensions extraites du titre:", extractedDimensions);
+        break;
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -169,22 +196,47 @@ Sois concis et précis.`
 - Palette: ${colorSchemeStyles[selectedColorScheme as keyof typeof colorSchemeStyles]}
 - Longueur: ${contentLengthGuides[selectedContentLength as keyof typeof contentLengthGuides]}
 
-📋 RÈGLES STRICTES:
+🔴 RÈGLES CRITIQUES (PRIORITÉ ABSOLUE):
+1. CONSERVER INTÉGRALEMENT tous les éléments clés du titre original:
+   - Marque/Vendor (si présent)
+   - Modèle/Référence
+   - Dimensions (si présentes)
+   - Caractéristiques principales
+   
+2. INTÉGRER NATURELLEMENT les résultats Vision AI dans la description
+
+3. UTILISER les dimensions extraites du titre dans les spécifications
+
+4. AJOUTER les informations personnalisées fournies par l'utilisateur
+
+5. NE PAS inventer ou modifier les données factuelles (dimensions, marque, modèle)
+
+📋 RÈGLES SEO:
 - Titre SEO: 50-60 caractères avec mot-clé + bénéfice unique
 - Meta description: 150-160 caractères avec USP + appel à l'action
 - HTML: Structure sémantique H1>H2>H3>H4, responsive, moderne
-- Intégrer l'analyse vision IA de façon naturelle
-- Inclure dimensions si disponibles dans spécifications
 - Respecter strictement le style et la longueur demandés`;
 
     let userPrompt = `🛍️ PRODUIT: "${currentTitle}"`;
     
-    if (visionAnalysis) {
-      userPrompt += `\n\n🔍 ANALYSE VISION IA:\n${visionAnalysis}`;
+    if (extractedVendor) {
+      userPrompt += `\n\n🏷️ VENDOR/MARQUE: ${extractedVendor} (À CONSERVER dans le titre et description)`;
     }
     
-    if (productDimensions) {
-      userPrompt += `\n\n📏 DIMENSIONS: ${productDimensions}`;
+    if (extractedDimensions) {
+      userPrompt += `\n\n📏 DIMENSIONS (du titre): ${extractedDimensions} (UTILISER ces dimensions exactes dans les specs)`;
+    }
+    
+    if (visionAnalysis) {
+      userPrompt += `\n\n🔍 ANALYSE VISION IA (INTÉGRER naturellement):\n${visionAnalysis}`;
+    }
+    
+    if (productDimensions && productDimensions !== extractedDimensions) {
+      userPrompt += `\n\n📏 DIMENSIONS (vision AI): ${productDimensions}`;
+    }
+
+    if (customDescription) {
+      userPrompt += `\n\n✍️ INFORMATIONS UTILISATEUR (PRIORITÉ - INCLURE obligatoirement):\n${customDescription}`;
     }
 
     if (imageUrl) {
@@ -194,19 +246,24 @@ Sois concis et précis.`
     userPrompt += `\n\n✨ À GÉNÉRER:
 
 1️⃣ TITRE SEO (50-60 caractères):
-   Format: [Produit] [Qualité/Matériau] - [Bénéfice Principal]
-   Exemple: "Canapé Cuir Italien - Confort Premium Garanti"
+   ${extractedVendor ? `IMPÉRATIF: Inclure "${extractedVendor}"` : ''}
+   ${extractedDimensions ? `IMPÉRATIF: Inclure "${extractedDimensions}"` : ''}
+   Format: [Vendor] [Produit] ${extractedDimensions ? '[Dimensions]' : ''} - [Bénéfice]
+   Exemple: "IKEA Bureau 120x80cm - Design Scandinave Premium"
 
 2️⃣ META DESCRIPTION (150-160 car):
+   INCLURE: Vendor, dimensions (si disponibles), bénéfices Vision AI, infos utilisateur
    Structure: [Accroche] + [2-3 bénéfices clés] + [CTA] + [Réassurance]
-   Exemple: "Découvrez notre canapé en cuir véritable. Design moderne, garantie 10 ans. Livraison offerte ✓"
+   Exemple: "Bureau IKEA 120x80cm en bois massif. Design épuré, rangement intégré. Livraison 48h ✓"
 
 3️⃣ HTML BODY STRUCTURÉ:
+   PRIORITÉS ABSOLUES:
+   - Conserver TOUTES les infos factuelles (vendor, dimensions, modèle)
+   - Intégrer les informations utilisateur de façon visible
+   - Utiliser les résultats Vision AI pour enrichir (ne pas inventer)
    - Structure H1 > H2 > H3 > H4 claire
    - Sections: Intro, Caractéristiques, Détails, Spécifications, CTA
-   - Intégration naturelle analyse vision + dimensions
-   - Design moderne et responsive
-   - Call-to-actions visibles`;
+   - Design moderne et responsive`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
