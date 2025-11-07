@@ -100,10 +100,9 @@ export function useTrialLimits() {
 
         setTrialStatus(newStatus);
 
-        // Afficher le dialog si limite atteinte ou essai expiré
-        if (limitReached || trialExpired) {
-          setShowUpgradeDialog(true);
-        }
+        // NE PLUS afficher automatiquement le popup
+        // Les composants individuels géreront l'affichage au moment de l'action
+        // Le popup s'affichera uniquement quand l'utilisateur essaie d'utiliser une fonctionnalité à 0
       } catch (error) {
         console.error('Erreur lors de la vérification des limites:', error);
       }
