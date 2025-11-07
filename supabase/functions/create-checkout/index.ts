@@ -63,22 +63,65 @@ serve(async (req) => {
 
     console.log('✅ User authenticated:', user.id);
 
-    // Get plan details
-    const { data: plan, error: planError } = await supabase
+    // Get user's product count to determine appropriate plan
+    const { data: usage } = await supabase
+      .from('usage_tracking')
+      .select('products_count')
+      .eq('seller_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const productCount = usage?.products_count || 0;
+    console.log('📊 User product count:', productCount);
+
+    // Get all active plans to determine appropriate plan based on product count
+    const { data: allPlans } = await supabase
       .from('subscription_plans')
       .select('*')
-      .eq('id', plan_id)
-      .single();
+      .eq('is_active', true)
+      .order('price_monthly', { ascending: true });
 
-    if (planError || !plan) {
-      console.error('❌ Plan not found:', planError);
+    if (!allPlans || allPlans.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'No active plans available' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Find appropriate plan based on product count
+    let plan = allPlans.find(p => p.id === plan_id);
+    
+    if (!plan) {
+      console.error('❌ Requested plan not found:', plan_id);
       return new Response(
         JSON.stringify({ error: 'Plan not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('📋 Plan found:', plan.name);
+    // Check if user's product count exceeds the selected plan's limit
+    // If so, automatically upgrade to the next available plan that can accommodate
+    if (productCount > plan.max_products && plan.max_products !== -1) {
+      console.log(`⚠️ Product count (${productCount}) exceeds plan limit (${plan.max_products})`);
+      
+      // Find the smallest plan that can accommodate the product count
+      const appropriatePlan = allPlans.find(p => 
+        p.max_products === -1 || p.max_products >= productCount
+      );
+
+      if (appropriatePlan && appropriatePlan.id !== plan.id) {
+        console.log(`🔄 Auto-upgrading from ${plan.name} to ${appropriatePlan.name} based on product count`);
+        plan = appropriatePlan;
+      } else if (!appropriatePlan) {
+        // If no plan can accommodate, suggest the highest tier
+        const highestPlan = allPlans[allPlans.length - 1];
+        console.log(`⚠️ No plan can accommodate ${productCount} products, suggesting highest tier: ${highestPlan.name}`);
+        plan = highestPlan;
+      }
+    }
+
+    console.log('📋 Final selected plan:', plan.name);
 
     // Get Stripe Price ID based on currency preference
     // Default to EUR if currency not specified
