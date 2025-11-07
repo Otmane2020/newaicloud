@@ -10,10 +10,10 @@ interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPr
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   ProgressProps
->(({ className, value, showPercentage = true, ...props }, ref) => (
-  <div className="w-full space-y-2">
+>(({ className, value, showPercentage = false, ...props }, ref) => (
+  <div className="w-full">
     {showPercentage && (
-      <div className="flex justify-between items-center text-sm">
+      <div className="flex justify-between items-center text-sm mb-2">
         <span className="text-muted-foreground">Progression</span>
         <span className="font-semibold text-primary">{value || 0}%</span>
       </div>
