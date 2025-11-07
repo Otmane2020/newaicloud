@@ -62,36 +62,46 @@ serve(async (req) => {
 
     logStep("Request body parsed", { new_price_id, new_plan_id });
 
-    // Get user profile with current subscription
+    // Get user profile
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
-      .select("stripe_subscription_id, stripe_customer_id, current_plan_id")
+      .select("stripe_customer_id, current_plan_id")
       .eq("id", userData.user.id)
       .single();
 
     if (profileError) throw profileError;
-    if (!profile.stripe_subscription_id) {
+
+    // Get active subscription
+    const { data: subscription, error: subscriptionError } = await supabaseClient
+      .from("subscriptions")
+      .select("stripe_subscription_id, status")
+      .eq("seller_id", userData.user.id)
+      .in("status", ["active", "trialing"])
+      .single();
+
+    if (subscriptionError) throw subscriptionError;
+    if (!subscription?.stripe_subscription_id) {
       throw new Error("No active subscription found");
     }
 
-    logStep("Profile loaded", { 
-      subscriptionId: profile.stripe_subscription_id,
+    logStep("Profile and subscription loaded", { 
+      subscriptionId: subscription.stripe_subscription_id,
       customerId: profile.stripe_customer_id 
     });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Get current subscription
-    const subscription = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
+    // Get current subscription from Stripe
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id);
     logStep("Current subscription retrieved", { 
-      status: subscription.status,
-      itemsCount: subscription.items.data.length 
+      status: stripeSubscription.status,
+      itemsCount: stripeSubscription.items.data.length 
     });
 
     // Calculate days into billing cycle
     const now = Math.floor(Date.now() / 1000); // Unix timestamp
-    const periodStart = subscription.current_period_start;
-    const periodEnd = subscription.current_period_end;
+    const periodStart = stripeSubscription.current_period_start;
+    const periodEnd = stripeSubscription.current_period_end;
     const daysIntoCycle = Math.floor((now - periodStart) / (24 * 60 * 60));
     const totalCycleDays = Math.floor((periodEnd - periodStart) / (24 * 60 * 60));
 
@@ -109,7 +119,7 @@ serve(async (req) => {
     });
 
     // Get the subscription item to update
-    const subscriptionItemId = subscription.items.data[0]?.id;
+    const subscriptionItemId = stripeSubscription.items.data[0]?.id;
     if (!subscriptionItemId) throw new Error("No subscription item found");
 
     // Update subscription with appropriate proration behavior
@@ -126,7 +136,7 @@ serve(async (req) => {
     };
 
     const updatedSubscription = await stripe.subscriptions.update(
-      profile.stripe_subscription_id,
+      subscription.stripe_subscription_id,
       updateParams
     );
 
