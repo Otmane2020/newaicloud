@@ -202,8 +202,8 @@ serve(async (req) => {
     console.log(`[LIMITS] Applied limits:`, limits);
 
     // Check if limits are reached
-    // For trial users, optimizations are unlimited but checked per-product in each edge function
-    const canUseOptimizations = isTrialing ? true : currentUsage.optimizations_count < limits.max_optimizations;
+    // CRITICAL FIX: Trial users MUST respect the 50 optimization limit
+    const canUseOptimizations = currentUsage.optimizations_count < limits.max_optimizations;
     const canUseArticles = currentUsage.articles_count < limits.max_articles;
     const canUseChat = currentUsage.chat_responses_count < limits.max_chat_responses;
     const canUseShopifySearch = currentUsage.shopify_requests_count < limits.max_shopify_requests;
