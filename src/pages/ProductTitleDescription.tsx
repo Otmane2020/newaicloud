@@ -148,12 +148,11 @@ export default function ProductTitleDescription() {
 
     setGenerating(true);
     setIsOptimizing(true);
+    setOptimizedProducts([]); // Reset optimized products
     setShowLandingPreviewDialog(true);
     const toastId = toast.loading(`Optimisation de ${selectedProducts.size} produit(s)...`);
 
     try {
-      const optimizedList: Product[] = [];
-      
       for (const productId of selectedProducts) {
         const product = products.find((p) => p.id === productId);
         if (!product) continue;
@@ -203,7 +202,8 @@ export default function ProductTitleDescription() {
           .single();
 
         if (updatedProduct) {
-          optimizedList.push(updatedProduct);
+          // Update optimizedProducts progressively
+          setOptimizedProducts((prev) => [...prev, updatedProduct]);
           setProducts((prev) =>
             prev.map((p) =>
               p.id === productId
@@ -215,7 +215,6 @@ export default function ProductTitleDescription() {
       }
 
       toast.success("Optimisation terminée", { id: toastId });
-      setOptimizedProducts(optimizedList);
       setSelectedProducts(new Set());
     } catch (error: any) {
       console.error("Error optimizing:", error);
