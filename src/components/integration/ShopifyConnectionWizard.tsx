@@ -119,21 +119,23 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
       const cleanShopifyCode = shopifyCode.trim().replace(".myshopify.com", "");
       const storeUrl = `${cleanShopifyCode}.myshopify.com`;
 
-      // Validate credentials and fetch shop info
-      const shopInfoResponse = await fetch(`https://${storeUrl}/admin/api/2025-10/shop.json`, {
-        headers: {
-          "X-Shopify-Access-Token": apiSecret.trim(),
-          "Content-Type": "application/json",
-        },
-      });
+      // Validate credentials via backend
+      const { data: validationResult, error: validationError } = await supabase.functions.invoke(
+        "validate-shopify-credentials",
+        {
+          body: {
+            storeUrl,
+            accessToken: apiSecret.trim(),
+          },
+        }
+      );
 
-      if (!shopInfoResponse.ok) {
+      if (validationError || !validationResult?.success) {
         toast.error(t.wizards.shopify.invalidCredentials);
         return;
       }
 
-      const shopInfo = await shopInfoResponse.json();
-      const publicDomain = shopInfo.shop?.domain || null;
+      const publicDomain = validationResult.shop?.domain || null;
 
       // Check if store already exists
       const { data: existing } = await supabase
