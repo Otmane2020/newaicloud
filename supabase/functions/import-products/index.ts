@@ -277,7 +277,13 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    const maxProducts = limitsData?.limits?.max_products || 50;
+    // CRITICAL: Respect the actual limit from the plan (10 for trial, 100 for paid)
+    const maxProducts = limitsData?.limits?.max_products || 10;
+    const isTrialing = limitsData?.isTrialing || false;
+    
+    console.log(`📊 User plan info:`);
+    console.log(`   - Plan type: ${isTrialing ? 'TRIAL' : 'PAID'}`);
+    console.log(`   - Max products allowed: ${maxProducts}`);
     
     // Count actual products from database for accuracy
     const { count: actualProductCount } = await supabaseServiceClient
