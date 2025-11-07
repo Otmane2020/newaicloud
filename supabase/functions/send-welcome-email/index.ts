@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
@@ -125,10 +125,22 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error: any) {
-    // Sanitized error logging - don't expose SMTP details
-    console.error('Email sending failed');
+    // Log detailed error for debugging
+    console.error('Email sending failed:', error.message || error);
+    console.error('SMTP config check:', {
+      hasHost: !!Deno.env.get('SMTP_HOST'),
+      hasPort: !!Deno.env.get('SMTP_PORT'),
+      hasUser: !!Deno.env.get('SMTP_USER'),
+      hasPassword: !!Deno.env.get('SMTP_PASSWORD'),
+      hasFromName: !!Deno.env.get('FROM_NAME'),
+      hasFromEmail: !!Deno.env.get('FROM_EMAIL'),
+    });
+    
     return new Response(
-      JSON.stringify({ error: 'Failed to send email' }),
+      JSON.stringify({ 
+        error: 'Failed to send email',
+        details: error.message || 'Unknown error'
+      }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
