@@ -6,9 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const resetPasswordSchema = z.object({
+const upgradeLimitSchema = z.object({
   email: z.string().email().max(255),
-  resetLink: z.string().url(),
+  fullName: z.string().trim().min(1).max(100),
+  currentPlan: z.string(),
+  usageCount: z.number(),
+  limitCount: z.number(),
   language: z.enum(["fr", "en"]).optional(),
 });
 
@@ -20,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const requestBody = await req.json();
 
-    const validation = resetPasswordSchema.safeParse(requestBody);
+    const validation = upgradeLimitSchema.safeParse(requestBody);
     if (!validation.success) {
       console.error("Invalid input:", validation.error.errors);
       return new Response(JSON.stringify({ error: "Invalid input data" }), {
@@ -29,30 +32,38 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { email, resetLink, language = "fr" } = validation.data;
+    const { email, fullName, currentPlan, usageCount, limitCount, language = "fr" } = validation.data;
 
-    console.log("Sending password reset email to:", email);
+    console.log("Sending upgrade limit email to:", email);
 
     const translations = {
       fr: {
-        subject: "Réinitialisation de votre mot de passe New AI",
-        title: "Réinitialisation du mot de passe",
+        subject: "Limite d'optimisations atteinte - Passez à un plan supérieur ! 🚀",
+        title: "Limite atteinte",
         greeting: "Bonjour",
-        message: "Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.",
-        button: "Réinitialiser mon mot de passe",
-        expiryNote: "Ce lien expire dans 1 heure.",
-        noRequest: "Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.",
+        message: `Vous avez utilisé <strong>${usageCount}/${limitCount}</strong> optimisations de votre plan <strong>${currentPlan}</strong>.`,
+        upgrade: "Pour continuer à optimiser votre boutique Shopify sans limite, passez à un plan supérieur et débloquez plus de fonctionnalités !",
+        benefits: "Avantages du plan supérieur :",
+        benefit1: "✓ Plus d'optimisations mensuelles",
+        benefit2: "✓ Génération d'articles illimitée",
+        benefit3: "✓ Support prioritaire",
+        benefit4: "✓ Fonctionnalités avancées",
+        button: "Voir les plans",
         signature: "À très bientôt,<br>L'équipe New AI",
         footer: "New AI - Optimisez votre SEO Shopify",
       },
       en: {
-        subject: "Reset your New AI password",
-        title: "Password Reset",
+        subject: "Optimization limit reached - Upgrade now! 🚀",
+        title: "Limit Reached",
         greeting: "Hello",
-        message: "You requested a password reset. Click the button below to create a new password.",
-        button: "Reset my password",
-        expiryNote: "This link expires in 1 hour.",
-        noRequest: "If you didn't request this reset, you can safely ignore this email.",
+        message: `You have used <strong>${usageCount}/${limitCount}</strong> optimizations from your <strong>${currentPlan}</strong> plan.`,
+        upgrade: "To continue optimizing your Shopify store without limits, upgrade to a higher plan and unlock more features!",
+        benefits: "Higher plan benefits:",
+        benefit1: "✓ More monthly optimizations",
+        benefit2: "✓ Unlimited article generation",
+        benefit3: "✓ Priority support",
+        benefit4: "✓ Advanced features",
+        button: "View plans",
         signature: "See you soon,<br>The New AI Team",
         footer: "New AI - Optimize your Shopify SEO",
       },
@@ -74,20 +85,23 @@ const handler = async (req: Request): Promise<Response> => {
           .sender-details { flex: 1; }
           .sender-name { font-weight: 600; color: #1e293b; font-size: 16px; margin: 0; }
           .sender-email { color: #64748b; font-size: 14px; margin: 2px 0 0 0; }
-          .header { background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
+          .header { background: linear-gradient(135deg, #F59E0B 0%, #EF4444 50%, #DC2626 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
           .logo-container { display: inline-flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
           .logo-icon { width: 56px; height: 56px; border-radius: 14px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); }
           .logo-icon svg { width: 32px; height: 32px; }
           .logo-text { font-size: 32px; font-weight: 700; color: white; letter-spacing: -0.5px; }
           .content { background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-          .button { display: inline-block; padding: 14px 32px; background: #3B82F6; color: white; text-decoration: none; border-radius: 8px; margin: 25px 0; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-          .button:hover { background: #2563eb; }
+          .button { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); color: white; text-decoration: none; border-radius: 8px; margin: 25px 0; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+          .button:hover { background: linear-gradient(135deg, #D97706 0%, #DC2626 100%); }
           .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
           .footer a { color: #3B82F6; text-decoration: none; }
           .greeting { color: #1e293b; font-size: 24px; margin-bottom: 20px; }
           .message { color: #475569; font-size: 16px; margin-bottom: 15px; }
-          .alert { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 12px 16px; margin: 20px 0; border-radius: 6px; }
-          .alert-text { color: #92400E; font-size: 14px; margin: 0; }
+          .benefits-box { background: #F0F9FF; border-left: 4px solid #3B82F6; padding: 20px; margin: 20px 0; border-radius: 6px; }
+          .benefits-title { color: #1e40af; font-weight: 600; margin-bottom: 12px; font-size: 16px; }
+          .benefit { color: #1e40af; margin: 8px 0; font-size: 15px; }
+          .usage-bar { background: #E5E7EB; border-radius: 8px; height: 12px; margin: 20px 0; overflow: hidden; }
+          .usage-fill { background: linear-gradient(90deg, #EF4444 0%, #F59E0B 100%); height: 100%; width: ${(usageCount / limitCount) * 100}%; }
         </style>
       </head>
       <body>
@@ -108,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
             <div class="logo-container">
               <div class="logo-icon">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
               <span class="logo-text">NewAI</span>
@@ -117,18 +131,27 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
 
           <div class="content">
-            <h2 class="greeting">${t.greeting} 👋</h2>
+            <h2 class="greeting">${t.greeting} ${fullName} 👋</h2>
             <p class="message">${t.message}</p>
             
+            <div class="usage-bar">
+              <div class="usage-fill"></div>
+            </div>
+
+            <p class="message">${t.upgrade}</p>
+
+            <div class="benefits-box">
+              <div class="benefits-title">${t.benefits}</div>
+              <div class="benefit">${t.benefit1}</div>
+              <div class="benefit">${t.benefit2}</div>
+              <div class="benefit">${t.benefit3}</div>
+              <div class="benefit">${t.benefit4}</div>
+            </div>
+
             <div style="text-align: center;">
-              <a href="${resetLink}" class="button">${t.button}</a>
+              <a href="https://newai.sale/pricing" class="button">${t.button}</a>
             </div>
 
-            <div class="alert">
-              <p class="alert-text">⏰ ${t.expiryNote}</p>
-            </div>
-
-            <p style="color: #64748b; font-size: 14px; margin-top: 20px;">${t.noRequest}</p>
             <p style="color: #475569; margin-top: 30px;">${t.signature}</p>
           </div>
 
@@ -170,7 +193,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const result = JSON.parse(responseText);
-    console.log("Reset password email sent successfully to:", email);
+    console.log("Upgrade limit email sent successfully to:", email);
 
     return new Response(
       JSON.stringify({
