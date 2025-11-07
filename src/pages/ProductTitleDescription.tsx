@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
 import {
   Sparkles,
   Wand2,
@@ -71,6 +72,7 @@ interface PreviewImage {
 
 export default function ProductTitleDescription() {
   const { t } = useTranslation();
+  const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   // Removed local background removal hook - using edge function instead
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -145,6 +147,18 @@ export default function ProductTitleDescription() {
   const handleOptimizeSelected = async () => {
     if (selectedProducts.size === 0) {
       toast.error("Aucun produit sélectionné");
+      return;
+    }
+
+    // Vérifier les limites d'utilisation
+    if (!canDoAction('optimizations')) {
+      toast.error("Quota d'optimisations dépassé", {
+        description: `Vous avez utilisé ${limits?.usage.optimizations_count}/${limits?.limits.max_optimizations} optimisations ce mois-ci. Passez à un plan supérieur.`,
+        action: {
+          label: "Voir les plans",
+          onClick: () => window.open('/subscription', '_blank')
+        }
+      });
       return;
     }
 
@@ -237,6 +251,7 @@ export default function ProductTitleDescription() {
 
       toast.success(`${optimizedProducts.length}/${productArray.length} produit(s) optimisé(s)`, { id: toastId });
       setSelectedProducts(new Set());
+      await refreshLimits(); // Rafraîchir les limites après optimisation
     } catch (error: any) {
       console.error("Error optimizing:", error);
       
@@ -301,6 +316,18 @@ export default function ProductTitleDescription() {
   const handleWhiteBackground = async () => {
     if (selectedProducts.size === 0) {
       toast.error("Veuillez sélectionner au moins un produit");
+      return;
+    }
+
+    // Vérifier les limites d'utilisation
+    if (!canDoAction('optimizations')) {
+      toast.error("Quota d'optimisations dépassé", {
+        description: `Vous avez utilisé ${limits?.usage.optimizations_count}/${limits?.limits.max_optimizations} optimisations ce mois-ci.`,
+        action: {
+          label: "Voir les plans",
+          onClick: () => window.open('/subscription', '_blank')
+        }
+      });
       return;
     }
 
@@ -371,9 +398,22 @@ export default function ProductTitleDescription() {
     }
 
     setGeneratingWhiteBg(false);
+    await refreshLimits(); // Rafraîchir les limites après génération
   };
 
   const handleStartAiBackground = async (prompt: string) => {
+    // Vérifier les limites d'utilisation
+    if (!canDoAction('optimizations')) {
+      toast.error("Quota d'optimisations dépassé", {
+        description: `Vous avez utilisé ${limits?.usage.optimizations_count}/${limits?.limits.max_optimizations} optimisations ce mois-ci.`,
+        action: {
+          label: "Voir les plans",
+          onClick: () => window.open('/subscription', '_blank')
+        }
+      });
+      return;
+    }
+
     const selectedProductsList = products.filter((p) => 
       selectedProducts.has(p.id) && p.image_url
     );
@@ -442,6 +482,7 @@ export default function ProductTitleDescription() {
     }
 
     setGeneratingAiBg(false);
+    await refreshLimits(); // Rafraîchir les limites après génération
   };
 
   const handleApplyWhiteBackground = async (productIds: string[]) => {
