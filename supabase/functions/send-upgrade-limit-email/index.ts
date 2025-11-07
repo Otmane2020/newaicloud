@@ -73,92 +73,52 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailHtml = `
       <!DOCTYPE html>
-      <html>
+      <html lang="${language}">
       <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8fafc; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .sender-info { display: flex; align-items: center; gap: 12px; padding: 20px; background: white; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-          .sender-avatar { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-          .sender-avatar svg { width: 28px; height: 28px; }
-          .sender-details { flex: 1; }
-          .sender-name { font-weight: 600; color: #1e293b; font-size: 16px; margin: 0; }
-          .sender-email { color: #64748b; font-size: 14px; margin: 2px 0 0 0; }
-          .header { background: linear-gradient(135deg, #F59E0B 0%, #EF4444 50%, #DC2626 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
-          .logo-container { display: inline-flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
-          .logo-icon { width: 56px; height: 56px; border-radius: 14px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); }
-          .logo-icon svg { width: 32px; height: 32px; }
-          .logo-text { font-size: 32px; font-weight: 700; color: white; letter-spacing: -0.5px; }
-          .content { background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-          .button { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); color: white; text-decoration: none; border-radius: 8px; margin: 25px 0; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
-          .button:hover { background: linear-gradient(135deg, #D97706 0%, #DC2626 100%); }
-          .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
-          .footer a { color: #3B82F6; text-decoration: none; }
-          .greeting { color: #1e293b; font-size: 24px; margin-bottom: 20px; }
-          .message { color: #475569; font-size: 16px; margin-bottom: 15px; }
-          .benefits-box { background: #F0F9FF; border-left: 4px solid #3B82F6; padding: 20px; margin: 20px 0; border-radius: 6px; }
-          .benefits-title { color: #1e40af; font-weight: 600; margin-bottom: 12px; font-size: 16px; }
-          .benefit { color: #1e40af; margin: 8px 0; font-size: 15px; }
-          .usage-bar { background: #E5E7EB; border-radius: 8px; height: 12px; margin: 20px 0; overflow: hidden; }
-          .usage-fill { background: linear-gradient(90deg, #EF4444 0%, #F59E0B 100%); height: 100%; width: ${(usageCount / limitCount) * 100}%; }
-        </style>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${t.title}</title>
       </head>
-      <body>
-        <div class="container">
-          <div class="sender-info">
-            <div class="sender-avatar">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="sender-details">
-              <p class="sender-name">New AI</p>
-              <p class="sender-email">noreply@newai.sale</p>
-            </div>
-          </div>
-
-          <div class="header">
-            <div class="logo-container">
-              <div class="logo-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-              <span class="logo-text">NewAI</span>
-            </div>
-            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">${t.title}</h1>
-          </div>
-
-          <div class="content">
-            <h2 class="greeting">${t.greeting} ${fullName} 👋</h2>
-            <p class="message">${t.message}</p>
-            
-            <div class="usage-bar">
-              <div class="usage-fill"></div>
-            </div>
-
-            <p class="message">${t.upgrade}</p>
-
-            <div class="benefits-box">
-              <div class="benefits-title">${t.benefits}</div>
-              <div class="benefit">${t.benefit1}</div>
-              <div class="benefit">${t.benefit2}</div>
-              <div class="benefit">${t.benefit3}</div>
-              <div class="benefit">${t.benefit4}</div>
-            </div>
-
-            <div style="text-align: center;">
-              <a href="https://newai.sale/pricing" class="button">${t.button}</a>
-            </div>
-
-            <p style="color: #475569; margin-top: 30px;">${t.signature}</p>
-          </div>
-
-          <div class="footer">
-            <p>${t.footer} • <a href="https://newai.sale">newai.sale</a></p>
-          </div>
-        </div>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                <tr>
+                  <td style="background: linear-gradient(135deg, #F59E0B 0%, #EF4444 50%, #DC2626 100%); padding: 40px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 32px;">${t.title}</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="color: #333333; margin-top: 0;">${t.greeting} ${fullName} 👋</h2>
+                    <p style="color: #666666; line-height: 1.6; margin: 20px 0;">${t.message}</p>
+                    <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 16px; margin: 20px 0; border-radius: 6px;">
+                      <p style="color: #92400E; font-size: 14px; margin: 0;"><strong>${usageCount} / ${limitCount}</strong> optimisations utilisées</p>
+                    </div>
+                    <p style="color: #666666; line-height: 1.6; margin: 20px 0;">${t.upgrade}</p>
+                    <div style="background-color: #F0F9FF; border-left: 4px solid #3B82F6; padding: 16px; margin: 20px 0; border-radius: 6px;">
+                      <p style="color: #1e40af; font-weight: 600; margin: 0 0 10px 0;">${t.benefits}</p>
+                      <p style="color: #1e40af; margin: 5px 0;">${t.benefit1}</p>
+                      <p style="color: #1e40af; margin: 5px 0;">${t.benefit2}</p>
+                      <p style="color: #1e40af; margin: 5px 0;">${t.benefit3}</p>
+                      <p style="color: #1e40af; margin: 5px 0;">${t.benefit4}</p>
+                    </div>
+                    <div style="text-align: center; margin: 30px 0;">
+                      <a href="https://app.newai.sale/subscription" style="display: inline-block; background: linear-gradient(135deg, #F59E0B, #EF4444); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: bold;">${t.button}</a>
+                    </div>
+                    <p style="color: #666666; margin-top: 30px;">${t.signature}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: #f8f8f8; padding: 20px; text-align: center; font-size: 12px; color: #999999;">
+                    <p style="margin: 0;">${t.footer}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       </body>
       </html>
     `;

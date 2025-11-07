@@ -62,143 +62,46 @@ serve(async (req) => {
     const t = translations[language];
 
     const emailHtml = `
-    <!DOCTYPE html>
-    <html>
+      <!DOCTYPE html>
+      <html lang="${language}">
       <head>
-        <meta charset="utf-8">
-        <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            background-color: #f8fafc;
-          }
-          .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-          }
-          .sender-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 20px;
-            background: white;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-          }
-          .sender-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-          }
-          .sender-avatar svg {
-            width: 24px;
-            height: 24px;
-          }
-          .sender-details { flex: 1; }
-          .sender-name { font-weight: 700; color: #1e293b; font-size: 16px; margin: 0; }
-          .sender-email { color: #64748b; font-size: 14px; margin: 2px 0 0 0; }
-
-          .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 50px 30px;
-            text-align: center;
-            border-radius: 16px 16px 0 0;
-            position: relative;
-            overflow: hidden;
-          }
-          .logo-container {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 24px;
-            position: relative;
-            z-index: 1;
-          }
-          .content {
-            background: white;
-            padding: 45px 35px;
-            border-radius: 0 0 16px 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-          }
-          .button {
-            display: inline-block;
-            padding: 16px 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 10px;
-            margin: 30px 0;
-            font-weight: 700;
-            font-size: 16px;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-            transition: transform 0.2s, box-shadow 0.2s;
-          }
-          .footer {
-            text-align: center;
-            margin-top: 30px;
-            color: #64748b;
-            font-size: 14px;
-            padding: 25px 20px 20px;
-            border-top: 2px solid #e2e8f0;
-            background: #f8fafc;
-          }
-          .greeting { color: #1e293b; font-size: 28px; margin-bottom: 20px; font-weight: 700; }
-          .message { color: #475569; font-size: 16px; margin-bottom: 18px; line-height: 1.7; }
-        </style>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${t.title}</title>
       </head>
-      <body>
-        <div class="container">
-          <div class="sender-info">
-            <div class="sender-avatar">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
-                <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="sender-details">
-              <p class="sender-name">Équipe New AI</p>
-              <p class="sender-email">noreply@newai.sale</p>
-            </div>
-          </div>
-
-          <div class="header">
-            <div class="logo-container">
-              <img src="https://newai.sale/logo-email.png" alt="New AI Logo"
-                   style="width: 120px; height: 120px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);" />
-            </div>
-            <h1 style="margin: 0; font-size: 32px; font-weight: 800;">${t.title}</h1>
-          </div>
-
-          <div class="content">
-            <h2 class="greeting">${t.greeting} ${fullName} 👋</h2>
-            <p class="message">${t.thankYou}</p>
-            <p class="message">${t.message}</p>
-            <div style="text-align:center;">
-              <a href="https://newai.sale/auth" class="button">${t.button}</a>
-            </div>
-            <p style="color: #475569; margin-top: 30px;">${t.signature}</p>
-          </div>
-
-          <div class="footer">
-            <p>${t.footer} • <a href="https://newai.sale">newai.sale</a></p>
-            <p style="font-size: 12px; margin-top: 10px; color: #94a3b8;">${t.disclaimer}</p>
-          </div>
-        </div>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                <tr>
+                  <td style="background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); padding: 40px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 32px;">${t.title}</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="color: #333333; margin-top: 0;">${t.greeting} ${fullName} 👋</h2>
+                    <p style="color: #666666; line-height: 1.6; margin: 20px 0;">${t.thankYou}</p>
+                    <p style="color: #666666; line-height: 1.6; margin: 20px 0;">${t.message}</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                      <a href="https://app.newai.sale/auth" style="display: inline-block; background: linear-gradient(135deg, #4776E6, #3B82F6); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: bold;">${t.button}</a>
+                    </div>
+                    <p style="color: #666666; margin-top: 30px;">${t.signature}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: #f8f8f8; padding: 20px; text-align: center; font-size: 12px; color: #999999;">
+                    <p style="margin: 0;">${t.footer}</p>
+                    <p style="margin: 10px 0 0 0;">${t.disclaimer}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       </body>
-    </html>
+      </html>
     `;
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
