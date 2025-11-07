@@ -463,7 +463,8 @@ Deno.serve(async (req: Request) => {
     const { data: existingProducts } = await supabaseServiceClient
       .from('shopify_products')
       .select('shopify_id, optimization_count, title, description, seo_title, seo_description')
-      .in('shopify_id', existingProductIds);
+      .in('shopify_id', existingProductIds)
+      .eq('seller_id', user.id);
     
     const existingMap = new Map(existingProducts?.map(p => [p.shopify_id, p]) || []);
     
@@ -516,15 +517,15 @@ Deno.serve(async (req: Request) => {
         currency: shopCurrency,
         raw_data: product,
         shop_name: cleanShopName,
-        // Preserve optimization count if product already exists
-        ...(existing ? { optimization_count: existing.optimization_count } : { optimization_count: 0 })
+        // Preserve optimization count only in smart mode for already optimized products
+        ...(existing && syncMode === 'smart' ? { optimization_count: existing.optimization_count } : { optimization_count: 0 })
       };
     });
 
     const { data: upsertedProducts, error: insertError } = await supabaseServiceClient
       .from("shopify_products")
       .upsert(productsToInsert, {
-        onConflict: "shopify_id",
+        onConflict: "shopify_id,seller_id",
         ignoreDuplicates: false,
       })
       .select();
