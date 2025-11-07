@@ -14,7 +14,7 @@ const PricingComparison = () => {
     {
       category: "Products",
       items: [
-        { name: "Maximum products", starter: "1,000", pro: "5,000 - 320,000", enterprise: "100,000 - 12,800,000" },
+        { name: "Maximum products", starter: "100", pro: "1,000 - 100,000", enterprise: "100,000 - 12,800,000" },
         { name: "Shopify Import", starter: true, pro: true, enterprise: true },
         { name: "Multi-store management", starter: "1", pro: "2 - 128", enterprise: "10 - 1,280" },
       ]
@@ -22,7 +22,7 @@ const PricingComparison = () => {
     {
       category: "SEO Optimizations",
       items: [
-        { name: "Monthly optimizations", starter: "250", pro: "500 - 32,000", enterprise: "5,000 - 640,000" },
+        { name: "Monthly optimizations", starter: "100", pro: "500 - 50,000", enterprise: "5,000 - 200,000" },
         { name: "Automatic optimization", starter: true, pro: true, enterprise: true },
         { name: "Sync to Shopify", starter: true, pro: true, enterprise: true },
         { name: "SEO quality analysis", starter: true, pro: true, enterprise: true },
@@ -31,9 +31,9 @@ const PricingComparison = () => {
     {
       category: "AI",
       items: [
-        { name: "AI articles per month", starter: "5", pro: "10 - 640", enterprise: "100 - 12,800" },
-        { name: "AI chat per month", starter: "500", pro: "1,000 - 64,000", enterprise: "10,000 - 1,280,000" },
-        { name: "Editorial campaigns", starter: "2", pro: "3 - 320", enterprise: "50 - 6,400" },
+        { name: "AI articles per month", starter: "1", pro: "5 - 640", enterprise: "100 - 12,800" },
+        { name: "AI chat per month", starter: "50", pro: "500 - 64,000", enterprise: "10,000 - 1,280,000" },
+        { name: "Editorial campaigns", starter: "0", pro: "3 - 320", enterprise: "50 - 6,400" },
         { name: "AI Vision (images)", starter: true, pro: true, enterprise: true },
       ]
     },
