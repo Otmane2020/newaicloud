@@ -55,6 +55,7 @@ import Documentation from "./pages/Documentation";
 import NotificationSettings from "./pages/NotificationSettings";
 import Pricing from "./pages/Pricing";
 import UsageAudit from "./pages/UsageAudit";
+import TestEmail from "./pages/TestEmail";
 
 const queryClient = new QueryClient();
 
@@ -301,6 +302,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <UsageAudit />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/testemail"
+              element={
+                <ProtectedLayout>
+                  <TestEmail />
                 </ProtectedLayout>
               }
             />
