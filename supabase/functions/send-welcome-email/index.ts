@@ -19,8 +19,8 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const requestBody = await req.json();
-
     const validation = welcomeEmailSchema.safeParse(requestBody);
+
     if (!validation.success) {
       console.error("Invalid input:", validation.error.errors);
       return new Response(JSON.stringify({ error: "Invalid input data" }), {
@@ -35,122 +35,166 @@ const handler = async (req: Request): Promise<Response> => {
 
     const translations = {
       fr: {
-        subject: "Bienvenue sur notre plateforme ! 🚀",
-        title: "Bienvenue !",
+        subject: "Bienvenue sur NewAI 🚀",
+        title: "Bienvenue à bord !",
         greeting: "Bonjour",
-        thankYou: "Merci de vous être inscrit sur notre plateforme d'optimisation SEO pour Shopify !",
+        thankYou: "Merci d’avoir rejoint NewAI, votre assistant intelligent pour optimiser votre boutique Shopify.",
         message:
-          "Nous sommes ravis de vous compter parmi nous. Vous pouvez dès maintenant accéder à toutes nos fonctionnalités pour booster votre visibilité en ligne.",
+          "Découvrez nos outils d’IA pour améliorer vos fiches produits, booster votre SEO et propulser vos ventes.",
         button: "Accéder à mon compte",
-        signature: "À très bientôt,<br>L'équipe",
-        footer: "Optimisez votre SEO Shopify",
+        signature: "À très bientôt,<br><b>L’équipe NewAI</b>",
+        footer: "© 2025 NewAI — Optimisez votre SEO Shopify",
         disclaimer: "Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.",
       },
       en: {
-        subject: "Welcome to our platform! 🚀",
-        title: "Welcome!",
+        subject: "Welcome to NewAI 🚀",
+        title: "Welcome aboard!",
         greeting: "Hello",
-        thankYou: "Thank you for signing up to our SEO optimization platform for Shopify!",
-        message:
-          "We are delighted to have you with us. You can now access all our features to boost your online visibility.",
+        thankYou: "Thank you for joining NewAI — your smart assistant for optimizing your Shopify store.",
+        message: "Start exploring our AI-powered tools to enhance your product pages, boost SEO, and grow your sales.",
         button: "Access my account",
-        signature: "See you soon,<br>The Team",
-        footer: "Optimize your Shopify SEO",
-        disclaimer: "If you didn't create an account, you can safely ignore this email.",
+        signature: "See you soon,<br><b>The NewAI Team</b>",
+        footer: "© 2025 NewAI — Optimize your Shopify SEO",
+        disclaimer: "If you didn’t create an account, you can safely ignore this email.",
       },
     };
 
     const t = translations[language];
 
     const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8fafc; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .sender-info { display: flex; align-items: center; gap: 12px; padding: 20px; background: white; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-          .sender-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-          .sender-avatar svg { width: 24px; height: 24px; }
-          .sender-details { flex: 1; }
-          .sender-name { font-weight: 700; color: #1e293b; font-size: 16px; margin: 0; }
-          .sender-email { color: #64748b; font-size: 14px; margin: 2px 0 0 0; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 50px 30px; text-align: center; border-radius: 16px 16px 0 0; position: relative; overflow: hidden; }
-          .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>'); opacity: 0.3; }
-          .logo-container { display: inline-flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 24px; position: relative; z-index: 1; }
-          .logo-icon { width: 64px; height: 64px; border-radius: 16px; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); position: relative; }
-          .logo-icon::before { content: ''; position: absolute; inset: 2px; border-radius: 14px; background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); }
-          .logo-icon svg { width: 36px; height: 36px; position: relative; z-index: 1; }
-          .logo-text { font-size: 36px; font-weight: 800; color: white; letter-spacing: -1px; text-shadow: 0 2px 20px rgba(0,0,0,0.2); position: relative; z-index: 1; }
-          .content { background: white; padding: 45px 35px; border-radius: 0 0 16px 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-          .button { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 10px; margin: 30px 0; font-weight: 700; font-size: 16px; box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); transition: transform 0.2s, box-shadow 0.2s; }
-          .button:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5); }
-          .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; padding: 25px 20px 20px; border-top: 2px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 16px 16px; }
-          .footer a { color: #667eea; text-decoration: none; font-weight: 600; }
-          .greeting { color: #1e293b; font-size: 28px; margin-bottom: 20px; font-weight: 700; }
-          .message { color: #475569; font-size: 16px; margin-bottom: 18px; line-height: 1.7; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <!-- Sender Profile -->
-          <div class="sender-info">
-            <div class="sender-avatar">
-               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
-                <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="sender-details">
-              <p class="sender-name">Équipe New AI</p>
-              <p class="sender-email">noreply@newai.sale</p>
-            </div>
+    <!DOCTYPE html>
+    <html lang="${language}">
+    <head>
+      <meta charset="utf-8" />
+      <style>
+        body {
+          font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background-color: #f6f8fb;
+          color: #1e293b;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 640px;
+          margin: 0 auto;
+          background-color: #ffffff;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+        }
+        .header {
+          background: linear-gradient(135deg, #0f172a 0%, #1e40af 40%, #06b6d4 100%);
+          color: white;
+          text-align: center;
+          padding: 60px 30px 45px;
+          position: relative;
+        }
+        .logo {
+          font-size: 40px;
+          font-weight: 800;
+          letter-spacing: -1px;
+          margin: 0;
+          background: linear-gradient(90deg, #60a5fa, #38bdf8);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .title {
+          font-size: 28px;
+          font-weight: 700;
+          margin: 18px 0 8px;
+          color: #f8fafc;
+        }
+        .subtitle {
+          font-size: 15px;
+          color: #cbd5e1;
+          margin: 0;
+        }
+        .content {
+          padding: 40px 40px 30px;
+          text-align: left;
+        }
+        .greeting {
+          font-size: 22px;
+          font-weight: 600;
+          margin-bottom: 16px;
+        }
+        .message {
+          font-size: 16px;
+          color: #334155;
+          line-height: 1.7;
+          margin-bottom: 20px;
+        }
+        .button {
+          display: inline-block;
+          background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+          color: white;
+          font-weight: 700;
+          font-size: 16px;
+          text-decoration: none;
+          padding: 14px 36px;
+          border-radius: 10px;
+          box-shadow: 0 6px 16px rgba(37,99,235,0.4);
+          transition: all 0.2s ease;
+          margin: 25px 0 30px;
+        }
+        .button:hover {
+          box-shadow: 0 10px 24px rgba(37,99,235,0.5);
+          transform: translateY(-2px);
+        }
+        .signature {
+          margin-top: 30px;
+          color: #475569;
+          font-size: 15px;
+        }
+        .divider {
+          height: 1px;
+          background: #e2e8f0;
+          margin: 40px 0 20px;
+        }
+        .footer {
+          text-align: center;
+          font-size: 13px;
+          color: #94a3b8;
+          padding: 20px 20px 30px;
+        }
+        .footer a {
+          color: #2563eb;
+          text-decoration: none;
+          font-weight: 600;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 class="logo">NewAI</h1>
+          <h2 class="title">${t.title}</h2>
+          <p class="subtitle">${t.footer}</p>
+        </div>
+        <div class="content">
+          <p class="greeting">${t.greeting} ${fullName} 👋</p>
+          <p class="message">${t.thankYou}</p>
+          <p class="message">${t.message}</p>
+          <div style="text-align:center;">
+            <a href="https://app.newai.sale/auth?mode=login" class="button">${t.button}</a>
           </div>
-
-          <!-- Email Header with AI Logo -->
-          <div class="header">
-            <div class="logo-container">
-              <div class="logo-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="3" fill="#667eea"/>
-                  <path d="M12 2L12 6M12 18L12 22M22 12L18 12M6 12L2 12M19.07 4.93L16.24 7.76M7.76 16.24L4.93 19.07M19.07 19.07L16.24 16.24M7.76 7.76L4.93 4.93" stroke="#667eea" stroke-width="2.5" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <span class="logo-text">New AI</span>
-            </div>
-            <h1 style="margin: 0; font-size: 32px; font-weight: 800; position: relative; z-index: 1;">${t.title}</h1>
-          </div>
-
-          <!-- Email Content -->
-          <div class="content">
-            <h2 class="greeting">${t.greeting} ${fullName} 👋</h2>
-            <p class="message">${t.thankYou}</p>
-            <p class="message">${t.message}</p>
-            <div style="text-align: center;">
-              <a href="https://app.newai.sale/auth?mode=login" class="button">${t.button}</a>
-            </div>
-            <p style="color: #475569; margin-top: 30px;">${t.signature}</p>
-          </div>
-
-          <!-- Footer -->
+          <p class="signature">${t.signature}</p>
+          <div class="divider"></div>
           <div class="footer">
             <p>${t.footer} • <a href="https://newai.sale">newai.sale</a></p>
-            <p style="font-size: 12px; margin-top: 10px; color: #94a3b8;">${t.disclaimer}</p>
+            <p style="font-size:12px;margin-top:10px;color:#94a3b8;">${t.disclaimer}</p>
           </div>
         </div>
-      </body>
-      </html>
+      </div>
+    </body>
+    </html>
     `;
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
-    // Envoi avec Resend API
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -158,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Équipe IA <noreply@newai.sale>",
+        from: "NewAI <noreply@newai.sale>",
         to: [email],
         subject: t.subject,
         html: emailHtml,
@@ -166,16 +210,13 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const responseText = await resendResponse.text();
-    console.log("Resend API response status:", resendResponse.status);
-    console.log("Resend API response:", responseText);
+    console.log("Resend API response:", resendResponse.status, responseText);
 
     if (!resendResponse.ok) {
-      console.error("Resend API error:", responseText);
-      throw new Error(`Resend API error: ${resendResponse.status} - ${responseText}`);
+      throw new Error(`Resend API error: ${responseText}`);
     }
 
     const result = JSON.parse(responseText);
-    console.log("Welcome email sent successfully to:", email);
 
     return new Response(
       JSON.stringify({
@@ -190,11 +231,10 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("Email sending failed:", error);
-
     return new Response(
       JSON.stringify({
         error: "Failed to send email",
-        details: error.message || "Unknown error",
+        details: error.message,
       }),
       {
         status: 500,
