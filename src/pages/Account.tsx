@@ -112,8 +112,16 @@ export default function Account() {
         </TabsContent>
 
         <TabsContent value="usage" className="mt-6">
-          <div className="max-w-2xl">
-            <UsageWidget />
+          <div className="flex flex-col items-center">
+            <div className="w-full max-w-2xl space-y-6">
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold">Limites d'utilisation</h2>
+                <p className="text-muted-foreground">
+                  Suivez votre consommation mensuelle et les limites de votre plan
+                </p>
+              </div>
+              <UsageWidget />
+            </div>
           </div>
         </TabsContent>
       </Tabs>
