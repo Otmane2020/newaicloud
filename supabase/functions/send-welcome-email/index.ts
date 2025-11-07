@@ -180,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    
+
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY is not configured");
     }
@@ -189,7 +189,7 @@ const handler = async (req: Request): Promise<Response> => {
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
