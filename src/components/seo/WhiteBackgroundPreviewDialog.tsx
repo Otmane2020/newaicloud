@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, X, RefreshCw } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PreviewImage {
   productId: string;
@@ -25,7 +27,7 @@ interface WhiteBackgroundPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   previews: PreviewImage[];
-  onApply: (productIds: string[]) => Promise<void>;
+  onApply: (productIds: string[], format: string) => Promise<void>;
   onRegenerate: (productId: string) => Promise<void>;
 }
 
@@ -38,6 +40,7 @@ export function WhiteBackgroundPreviewDialog({
 }: WhiteBackgroundPreviewDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState(false);
+  const [format, setFormat] = useState<string>('square');
 
   const successfulPreviews = previews.filter(p => p.status === 'success');
   const isGenerating = previews.some(p => p.status === 'generating');
@@ -73,7 +76,7 @@ export function WhiteBackgroundPreviewDialog({
     
     setApplying(true);
     try {
-      await onApply(Array.from(selectedIds));
+      await onApply(Array.from(selectedIds), format);
       onOpenChange(false);
     } finally {
       setApplying(false);
@@ -91,6 +94,21 @@ export function WhiteBackgroundPreviewDialog({
               : "Comparez les images originales avec les versions générées par l'IA. Sélectionnez celles que vous souhaitez appliquer."}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Format Selector */}
+        <div className="space-y-2 px-6 pb-4 border-b">
+          <Label htmlFor="white-bg-format">Format d'image</Label>
+          <Select value={format} onValueChange={setFormat}>
+            <SelectTrigger id="white-bg-format">
+              <SelectValue placeholder="Sélectionner un format" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="square">Carré (1:1)</SelectItem>
+              <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+              <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <ScrollArea className="h-[60vh] pr-4">
           <div className="space-y-6">

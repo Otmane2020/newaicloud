@@ -529,8 +529,9 @@ export default function ProductTitleDescription() {
     await refreshLimits();
   };
 
-  const handleApplyWhiteBackground = async (productIds: string[]) => {
+  const handleApplyWhiteBackground = async (productIds: string[], format: string) => {
     const toastId = toast.loading("Application des images...");
+    console.log('Applying white background with format:', format);
 
     try {
       for (const productId of productIds) {
@@ -552,8 +553,9 @@ export default function ProductTitleDescription() {
     }
   };
 
-  const handleApplyAiBackground = async (productIds: string[]) => {
+  const handleApplyAiBackground = async (productIds: string[], format: string) => {
     const toastId = toast.loading("Application des images...");
+    console.log('Applying AI background with format:', format);
 
     try {
       for (const productId of productIds) {

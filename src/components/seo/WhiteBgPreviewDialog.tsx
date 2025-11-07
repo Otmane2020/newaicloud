@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PreviewImage {
   productId: string;
@@ -17,7 +19,7 @@ interface WhiteBgPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   previews: PreviewImage[];
-  onApply: (selectedIds: string[]) => void;
+  onApply: (selectedIds: string[], format: string) => void;
   onRegenerate: (productId: string) => void;
 }
 
@@ -29,6 +31,7 @@ export function WhiteBgPreviewDialog({
   onRegenerate,
 }: WhiteBgPreviewDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [format, setFormat] = useState<string>('square');
 
   useEffect(() => {
     // Auto-select all successful generations
@@ -63,7 +66,7 @@ export function WhiteBgPreviewDialog({
   };
 
   const handleApply = () => {
-    onApply(Array.from(selectedIds));
+    onApply(Array.from(selectedIds), format);
   };
 
   const successCount = previews.filter(p => p.status === 'success').length;
@@ -81,6 +84,21 @@ export function WhiteBgPreviewDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Format Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="format">Format d'image</Label>
+            <Select value={format} onValueChange={setFormat}>
+              <SelectTrigger id="format">
+                <SelectValue placeholder="Sélectionner un format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="square">Carré (1:1)</SelectItem>
+                <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+                <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Stats */}
           <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
             <div className="flex gap-4 text-sm">

@@ -344,8 +344,9 @@ export function GoogleShopping() {
     setProcessingImages(false);
   };
 
-  const handleApplyPreviews = async (productIds: string[]) => {
+  const handleApplyPreviews = async (productIds: string[], format: string) => {
     const toastId = toast.loading('Application des images...');
+    console.log('Applying previews with format:', format);
     let successCount = 0;
     let errorCount = 0;
 

@@ -707,7 +707,8 @@ export function SmartPricingAI() {
     }
   };
 
-  const handleApplyWhiteBackground = async (selectedPreviews: string[]) => {
+  const handleApplyWhiteBackground = async (selectedPreviews: string[], format: string) => {
+    console.log('Applying white background with format:', format);
     const successfulPreviews = whiteBgPreviews.filter(
       p => selectedPreviews.includes(p.productId) && p.status === 'success' && p.generatedUrl
     );

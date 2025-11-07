@@ -34,7 +34,7 @@ interface BackgroundDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   previews: PreviewImage[];
-  onApply: (productIds: string[]) => Promise<void>;
+  onApply: (productIds: string[], format: string) => Promise<void>;
   onRegenerate: (productId: string, customPrompt?: string) => Promise<void>;
   customPrompt?: string;
   onCustomPromptChange?: (prompt: string) => void;
@@ -80,6 +80,7 @@ export function BackgroundDialog({
   const [applying, setApplying] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(customPrompt);
   const [selectedPreset, setSelectedPreset] = useState<string>('');
+  const [format, setFormat] = useState<string>('square');
 
   const successfulPreviews = previews.filter(p => p.status === 'success');
   const isGenerating = previews.some(p => p.status === 'generating');
@@ -133,7 +134,7 @@ export function BackgroundDialog({
     
     setApplying(true);
     try {
-      await onApply(Array.from(selectedIds));
+      await onApply(Array.from(selectedIds), format);
       onOpenChange(false);
     } finally {
       setApplying(false);
@@ -153,8 +154,22 @@ export function BackgroundDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Prompt Section */}
+        {/* Format and Prompt Section */}
         <div className="space-y-3 border-b pb-4">
+          <div className="space-y-2">
+            <Label htmlFor="bg-format">Format d'image</Label>
+            <Select value={format} onValueChange={setFormat}>
+              <SelectTrigger id="bg-format">
+                <SelectValue placeholder="Sélectionner un format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="square">Carré (1:1)</SelectItem>
+                <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+                <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="space-y-2">
             <Label>Prompt personnalisé</Label>
             <div className="flex gap-2">
