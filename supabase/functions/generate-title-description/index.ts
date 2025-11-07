@@ -28,12 +28,12 @@ serve(async (req) => {
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     let visionAnalysis = "";
+    let productDimensions = "";
     
-    // Si une URL d'image est fournie, vérifier le cache puis analyser avec Lovable AI Vision
+    // Analyse vision IA complète avec extraction des dimensions
     if (imageUrl) {
-      console.log("Checking cache for image:", imageUrl);
+      console.log("🔍 Analyse vision IA du produit:", imageUrl);
       
-      // Vérifier si l'analyse existe déjà en cache
       const { data: cachedAnalysis } = await supabaseClient
         .from('vision_ai_cache')
         .select('analysis_result')
@@ -41,10 +41,15 @@ serve(async (req) => {
         .single();
       
       if (cachedAnalysis) {
-        console.log("✅ Cache hit - Using cached vision analysis");
+        console.log("✅ Cache - Analyse vision récupérée");
         visionAnalysis = cachedAnalysis.analysis_result;
+        // Extraire dimensions si présentes dans le cache
+        const dimMatch = visionAnalysis.match(/dimensions?[:\s]+([0-9]+\s*x\s*[0-9]+\s*x?\s*[0-9]*[^\n]*)/i);
+        if (dimMatch) {
+          productDimensions = dimMatch[1];
+        }
       } else {
-        console.log("❌ Cache miss - Analyzing image with Lovable AI Vision");
+        console.log("🤖 Analyse vision IA en cours...");
         
         try {
           const visionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -61,7 +66,14 @@ serve(async (req) => {
                   content: [
                     {
                       type: "text",
-                      text: "Analyse ce produit et décris ses couleurs, matériaux, style et design en 2-3 phrases concises."
+                      text: `Analyse détaillée de ce produit. Fournis:
+
+1. COULEURS et MATÉRIAUX (2 phrases)
+2. STYLE et DESIGN (2 phrases)
+3. DIMENSIONS VISIBLES (si détectable: longueur x largeur x hauteur en cm ou mm, sinon indique "dimensions non visibles")
+4. CARACTÉRISTIQUES VISUELLES uniques (3-4 points courts)
+
+Format: Texte structuré clair et concis.`
                     },
                     {
                       type: "image_url",
@@ -70,26 +82,33 @@ serve(async (req) => {
                   ]
                 }
               ],
-              max_tokens: 200
+              max_tokens: 400
             }),
           });
 
           if (!visionResponse.ok) {
             const errorText = await visionResponse.text();
-            console.error("Lovable AI Vision error:", visionResponse.status, errorText);
+            console.error("❌ Erreur Lovable AI Vision:", visionResponse.status, errorText);
             
             if (visionResponse.status === 429) {
-              throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
+              throw new Error("RATE_LIMIT: Trop de requêtes IA. Réessayez dans 1 minute.");
             }
             if (visionResponse.status === 402) {
-              throw new Error("CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés.");
+              throw new Error("CREDITS_DEPLETED: Crédits Lovable AI épuisés. Ajoutez des crédits.");
             }
           } else {
             const visionData = await visionResponse.json();
             visionAnalysis = visionData.choices?.[0]?.message?.content || "";
-            console.log("Vision analysis completed:", visionAnalysis);
+            console.log("✅ Analyse vision complétée:", visionAnalysis.substring(0, 100) + "...");
             
-            // Sauvegarder dans le cache pour utilisation future
+            // Extraire dimensions de l'analyse
+            const dimMatch = visionAnalysis.match(/dimensions?[:\s]+([0-9]+\s*x\s*[0-9]+\s*x?\s*[0-9]*[^\n]*)/i);
+            if (dimMatch) {
+              productDimensions = dimMatch[1];
+              console.log("📏 Dimensions extraites:", productDimensions);
+            }
+            
+            // Cache l'analyse
             if (visionAnalysis) {
               await supabaseClient
                 .from('vision_ai_cache')
@@ -99,52 +118,57 @@ serve(async (req) => {
                 }, { 
                   onConflict: 'image_url' 
                 });
-              console.log("✅ Vision analysis cached");
+              console.log("💾 Analyse cachée");
             }
           }
         } catch (visionError) {
-          console.error("Error during vision analysis:", visionError);
+          console.error("❌ Erreur analyse vision:", visionError);
         }
       }
     }
 
-    // Générer le contenu avec Lovable AI et tool calling pour forcer JSON structuré
-    const systemPrompt = `Tu es un expert SEO e-commerce et UX designer spécialisé dans la conversion. 
-Ton objectif : créer du contenu optimisé SEO qui convertit avec un HTML moderne et professionnel.
+    // Génération contenu optimisé SEO avec HTML structuré
+    const systemPrompt = `Tu es un expert SEO e-commerce et rédacteur web professionnel.
 
-🎯 RÈGLES SEO STRICTES:
-- Titre: 50-60 caractères max avec mot-clé principal + bénéfice
-- Meta: 150-160 caractères avec USP + CTA
-- HTML: Structure sémantique, responsive, accessible`;
+🎯 MISSION: Créer du contenu HTML structuré, SEO-optimisé, et professionnel qui convertit.
 
-    let userPrompt = `Produit à optimiser: "${currentTitle}"`;
+📋 RÈGLES STRICTES:
+- Titre SEO: 50-60 caractères avec mot-clé + bénéfice unique
+- Meta description: 150-160 caractères avec USP + appel à l'action
+- HTML: Structure sémantique H1>H2>H3>H4, responsive, moderne
+- Intégrer l'analyse vision IA de façon naturelle
+- Inclure dimensions si disponibles dans spécifications`;
+
+    let userPrompt = `🛍️ PRODUIT: "${currentTitle}"`;
     
     if (visionAnalysis) {
-      userPrompt += `\n\n📸 Analyse visuelle:\n${visionAnalysis}`;
+      userPrompt += `\n\n🔍 ANALYSE VISION IA:\n${visionAnalysis}`;
+    }
+    
+    if (productDimensions) {
+      userPrompt += `\n\n📏 DIMENSIONS: ${productDimensions}`;
     }
 
     if (imageUrl) {
-      userPrompt += `\n\n🖼️ Image: ${imageUrl}`;
+      userPrompt += `\n\n🖼️ IMAGE PRODUIT: ${imageUrl}`;
     }
 
-    userPrompt += `\n\n✨ GÉNÉRER:
+    userPrompt += `\n\n✨ À GÉNÉRER:
 
-1️⃣ TITRE SEO OPTIMISÉ (50-60 car):
-   Format: [Produit] + [Caractéristique unique] + [Bénéfice]
-   Exemples:
-   - "T-shirt" → "T-shirt Premium Coton Bio - Confort Maximum"
-   - "Lampe" → "Lampe LED Design - Économie Énergie 80%"
-   
+1️⃣ TITRE SEO (50-60 caractères):
+   Format: [Produit] [Qualité/Matériau] - [Bénéfice Principal]
+   Exemple: "Canapé Cuir Italien - Confort Premium Garanti"
+
 2️⃣ META DESCRIPTION (150-160 car):
-   Structure: [Bénéfice] + [Caractéristiques clés] + [CTA] + [Réassurance]
-   Exemple: "Découvrez notre produit X en matériau Y. Livraison 48h offerte ✓"
+   Structure: [Accroche] + [2-3 bénéfices clés] + [CTA] + [Réassurance]
+   Exemple: "Découvrez notre canapé en cuir véritable. Design moderne, garantie 10 ans. Livraison offerte ✓"
 
-3️⃣ HTML BODY (landing page professionnelle):
-   - Design moderne responsive
-   - Sections bien structurées
-   - Intégration image produit
-   - Call-to-actions clairs
-   - Informations pratiques`;
+3️⃣ HTML BODY STRUCTURÉ:
+   - Structure H1 > H2 > H3 > H4 claire
+   - Sections: Intro, Caractéristiques, Détails, Spécifications, CTA
+   - Intégration naturelle analyse vision + dimensions
+   - Design moderne et responsive
+   - Call-to-actions visibles`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -162,150 +186,217 @@ Ton objectif : créer du contenu optimisé SEO qui convertit avec un HTML modern
           {
             type: "function",
             function: {
-              name: "generate_product_content",
-              description: "Génère titre, meta description et description HTML enrichie pour e-commerce",
+              name: "generate_seo_product_content",
+              description: "Génère titre SEO, meta description et HTML structuré pour produit e-commerce",
               parameters: {
                 type: "object",
                 properties: {
-                  title: {
+                  seo_title: {
                     type: "string",
-                    description: "Titre SEO optimisé 50-60 caractères"
+                    description: "Titre SEO optimisé 50-60 caractères avec mot-clé et bénéfice"
                   },
-                  description: {
+                  meta_description: {
                     type: "string",
-                    description: "Meta description SEO 150-160 caractères"
+                    description: "Meta description 150-160 caractères avec USP et CTA"
                   },
-                  html_description: {
+                  html_body: {
                     type: "string",
-                    description: `HTML landing page moderne et responsive (structure complète):
+                    description: `HTML complet structuré avec H1>H2>H3>H4. Exemple de structure:
 
-<div style="max-width: 1200px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; line-height: 1.6;">
+<div style="max-width: 1200px; margin: 0 auto; font-family: system-ui, -apple-system, sans-serif; color: #1a202c; line-height: 1.7;">
   
-  <!-- Hero Section -->
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 3rem; color: white; margin-bottom: 3rem; text-align: center;">
-    <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.2;">[Titre Produit Optimisé]</h1>
-    <p style="font-size: 1.25rem; opacity: 0.95; max-width: 600px; margin: 0 auto;">[Phrase d'accroche bénéfices]</p>
-  </div>
+  <!-- SECTION HERO avec H1 -->
+  <section style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 4rem 2rem; color: white; text-align: center; margin-bottom: 4rem; box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);">
+    <h1 style="font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; margin: 0 0 1.5rem 0; line-height: 1.1; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">[TITRE PRODUIT OPTIMISÉ SEO]</h1>
+    <p style="font-size: clamp(1.1rem, 2.5vw, 1.5rem); opacity: 0.95; max-width: 700px; margin: 0 auto; font-weight: 300;">[Phrase d'accroche unique avec bénéfice principal]</p>
+  </section>
 
-  ${imageUrl ? `<!-- Image Produit -->
-  <div style="text-align: center; margin: 3rem 0;">
-    <img src="${imageUrl}" alt="[Description SEO]" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);"/>
-  </div>` : ''}
+  ${imageUrl ? `<!-- IMAGE PRODUIT -->
+  <section style="text-align: center; margin: 4rem 0;">
+    <img src="${imageUrl}" alt="[Description SEO détaillée]" style="max-width: 100%; height: auto; border-radius: 16px; box-shadow: 0 25px 80px rgba(0,0,0,0.15); transition: transform 0.3s;"/>
+  </section>` : ''}
 
-  <!-- Introduction -->
-  <div style="background: #f8f9fa; border-radius: 12px; padding: 2rem; margin-bottom: 3rem;">
-    <p style="font-size: 1.15rem; margin: 0;">[Paragraphe intro 3-4 phrases sur bénéfices principaux]</p>
-  </div>
+  <!-- INTRODUCTION avec H2 -->
+  <section style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; padding: 3rem; margin-bottom: 4rem; border-left: 6px solid #667eea;">
+    <h2 style="font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; margin: 0 0 1.5rem 0; color: #2d3748;">Pourquoi choisir ce produit ?</h2>
+    <p style="font-size: 1.2rem; margin: 0; color: #4a5568;">[Paragraphe introduction 4-5 phrases expliquant les bénéfices uniques et pourquoi ce produit se démarque]</p>
+  </section>
 
-  <!-- Caractéristiques Clés -->
-  <h2 style="font-size: 2rem; font-weight: 700; margin: 3rem 0 1.5rem; color: #2d3748;">✨ Caractéristiques principales</h2>
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
-    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
-      <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">[Caractéristique 1]</h3>
-      <p style="color: #718096; margin: 0;">[Détail]</p>
+  <!-- CARACTÉRISTIQUES PRINCIPALES avec H2 et H3 -->
+  <section style="margin-bottom: 4rem;">
+    <h2 style="font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; margin: 0 0 2rem 0; color: #2d3748; text-align: center;">✨ Caractéristiques principales</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
+      
+      <article style="background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 2rem; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">🎯</div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0; color: #2d3748; text-align: center;">[Caractéristique 1]</h3>
+        <p style="color: #718096; margin: 0; text-align: center; font-size: 0.95rem;">[Description bénéfice détaillé 2-3 phrases]</p>
+      </article>
+
+      <article style="background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 2rem; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">⚡</div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0; color: #2d3748; text-align: center;">[Caractéristique 2]</h3>
+        <p style="color: #718096; margin: 0; text-align: center; font-size: 0.95rem;">[Description bénéfice détaillé 2-3 phrases]</p>
+      </article>
+
+      <article style="background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 2rem; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">💎</div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0; color: #2d3748; text-align: center;">[Caractéristique 3]</h3>
+        <p style="color: #718096; margin: 0; text-align: center; font-size: 0.95rem;">[Description bénéfice détaillé 2-3 phrases]</p>
+      </article>
+
     </div>
-    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-      <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚡</div>
-      <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">[Caractéristique 2]</h3>
-      <p style="color: #718096; margin: 0;">[Détail]</p>
-    </div>
-    <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-      <div style="font-size: 2rem; margin-bottom: 0.5rem;">💎</div>
-      <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">[Caractéristique 3]</h3>
-      <p style="color: #718096; margin: 0;">[Détail]</p>
-    </div>
-  </div>
+  </section>
 
-  <!-- Description Détaillée -->
-  <h2 style="font-size: 2rem; font-weight: 700; margin: 3rem 0 1.5rem; color: #2d3748;">📋 Description complète</h2>
-  <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <p style="margin-bottom: 1.5rem;">[Paragraphe détaillé sur le produit, ses usages, ses matériaux - 150 mots]</p>
-    ${visionAnalysis ? `<div style="background: #edf2f7; border-left: 4px solid #667eea; padding: 1.5rem; margin: 1.5rem 0;">
-      <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">🔍 Analyse visuelle</h3>
-      <p style="margin: 0;">[Intégrer l'analyse vision ici]</p>
-    </div>` : ''}
-  </div>
-
-  <!-- Spécifications -->
-  <h2 style="font-size: 2rem; font-weight: 700; margin: 3rem 0 1.5rem; color: #2d3748;">🔧 Spécifications techniques</h2>
-  <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <tr style="background: #f7fafc;">
-      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Matériau</td>
-      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0;">[Valeur]</td>
-    </tr>
-    <tr>
-      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Dimensions</td>
-      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0;">[Valeur]</td>
-    </tr>
-    <tr style="background: #f7fafc;">
-      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Poids</td>
-      <td style="padding: 1rem; border-bottom: 1px solid #e2e8f0;">[Valeur]</td>
-    </tr>
-    <tr>
-      <td style="padding: 1rem; font-weight: 600;">Garantie</td>
-      <td style="padding: 1rem;">[Valeur]</td>
-    </tr>
-  </table>
-
-  <!-- CTA Final -->
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 3rem; margin-top: 3rem; text-align: center; color: white;">
-    <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">Prêt à passer commande ?</h2>
-    <p style="font-size: 1.15rem; margin-bottom: 2rem; opacity: 0.95;">[Message de réassurance: livraison, garantie, etc.]</p>
-    <div style="display: inline-block; background: white; color: #667eea; padding: 1rem 2.5rem; border-radius: 8px; font-weight: 700; font-size: 1.1rem;">
-      Commander maintenant →
+  ${visionAnalysis ? `<!-- ANALYSE VISION IA avec H2 -->
+  <section style="background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%); border-radius: 16px; padding: 3rem; margin-bottom: 4rem; border-left: 6px solid #667eea;">
+    <h2 style="font-size: clamp(1.5rem, 3.5vw, 2rem); font-weight: 800; margin: 0 0 1.5rem 0; color: #2d3748; display: flex; align-items: center; gap: 0.75rem;">
+      <span style="font-size: 2rem;">🔍</span> Analyse visuelle détaillée
+    </h2>
+    <div style="color: #4a5568; font-size: 1.05rem; line-height: 1.8;">
+      <p style="margin: 0;">${visionAnalysis.replace(/\n/g, '</p><p style="margin: 1rem 0 0 0;">')}</p>
     </div>
-  </div>
+  </section>` : ''}
+
+  <!-- DESCRIPTION COMPLÈTE avec H2 et H3 -->
+  <section style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 4rem;">
+    <h2 style="font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; margin: 0 0 2rem 0; color: #2d3748;">📋 Description complète</h2>
+    
+    <div style="color: #4a5568; font-size: 1.05rem; line-height: 1.9; margin-bottom: 2rem;">
+      <p style="margin: 0 0 1.5rem 0;">[Paragraphe 1: Introduction produit et contexte d'utilisation - 80 mots]</p>
+      <p style="margin: 0 0 1.5rem 0;">[Paragraphe 2: Matériaux, fabrication, qualité - 80 mots]</p>
+      <p style="margin: 0;">[Paragraphe 3: Avantages et usages recommandés - 80 mots]</p>
+    </div>
+
+    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2.5rem 0 1.5rem 0; color: #2d3748;">🎨 Points forts du design</h3>
+    <ul style="color: #4a5568; font-size: 1.05rem; line-height: 1.9; padding-left: 1.5rem; margin: 0;">
+      <li style="margin-bottom: 0.75rem;"><strong>[Point fort 1]</strong> - [Explication courte]</li>
+      <li style="margin-bottom: 0.75rem;"><strong>[Point fort 2]</strong> - [Explication courte]</li>
+      <li style="margin-bottom: 0.75rem;"><strong>[Point fort 3]</strong> - [Explication courte]</li>
+      <li style="margin-bottom: 0;"><strong>[Point fort 4]</strong> - [Explication courte]</li>
+    </ul>
+  </section>
+
+  <!-- SPÉCIFICATIONS TECHNIQUES avec H2 et H3 -->
+  <section style="margin-bottom: 4rem;">
+    <h2 style="font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; margin: 0 0 2rem 0; color: #2d3748; text-align: center;">🔧 Spécifications techniques</h2>
+    
+    <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.08);">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <th style="padding: 1.25rem; text-align: left; font-weight: 700; font-size: 1.1rem;">Caractéristique</th>
+            <th style="padding: 1.25rem; text-align: left; font-weight: 700; font-size: 1.1rem;">Détails</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${productDimensions ? `<tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 1.25rem; font-weight: 600; color: #2d3748;">📏 Dimensions</td>
+            <td style="padding: 1.25rem; color: #4a5568;">${productDimensions}</td>
+          </tr>` : `<tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 1.25rem; font-weight: 600; color: #2d3748;">📏 Dimensions</td>
+            <td style="padding: 1.25rem; color: #4a5568;">[Indiquer dimensions estimées]</td>
+          </tr>`}
+          <tr style="background: #f8f9fa; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 1.25rem; font-weight: 600; color: #2d3748;">🎨 Matériau principal</td>
+            <td style="padding: 1.25rem; color: #4a5568;">[Matériau basé sur analyse vision]</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 1.25rem; font-weight: 600; color: #2d3748;">⚖️ Poids</td>
+            <td style="padding: 1.25rem; color: #4a5568;">[Poids estimé ou spécifique]</td>
+          </tr>
+          <tr style="background: #f8f9fa; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 1.25rem; font-weight: 600; color: #2d3748;">🎨 Couleurs disponibles</td>
+            <td style="padding: 1.25rem; color: #4a5568;">[Couleurs basées sur analyse]</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 1.25rem; font-weight: 600; color: #2d3748;">✅ Garantie</td>
+            <td style="padding: 1.25rem; color: #4a5568;">[Période garantie]</td>
+          </tr>
+          <tr style="background: #f8f9fa;">
+            <td style="padding: 1.25rem; font-weight: 600; color: #2d3748;">🏭 Origine</td>
+            <td style="padding: 1.25rem; color: #4a5568;">[Pays ou région]</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 3rem 0 1.5rem 0; color: #2d3748;">📦 Contenu du colis</h3>
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 2rem; border-left: 4px solid #667eea;">
+      <ul style="color: #4a5568; font-size: 1.05rem; line-height: 1.9; padding-left: 1.5rem; margin: 0;">
+        <li style="margin-bottom: 0.75rem;">1x [Produit principal]</li>
+        <li style="margin-bottom: 0.75rem;">[Accessoire 1 si applicable]</li>
+        <li style="margin-bottom: 0.75rem;">[Accessoire 2 si applicable]</li>
+        <li style="margin-bottom: 0;">Notice d'utilisation et certificat de garantie</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CTA FINAL avec H2 -->
+  <section style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 4rem 2rem; text-align: center; color: white; box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);">
+    <h2 style="font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 900; margin: 0 0 1.5rem 0; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">🎁 Prêt à commander ?</h2>
+    <p style="font-size: clamp(1rem, 2vw, 1.25rem); margin: 0 0 2.5rem 0; opacity: 0.95; max-width: 600px; margin-left: auto; margin-right: auto; font-weight: 300;">
+      ✓ Livraison rapide et sécurisée<br/>
+      ✓ Garantie satisfaction<br/>
+      ✓ Service client réactif
+    </p>
+    <div style="display: inline-flex; align-items: center; gap: 1rem; background: white; color: #667eea; padding: 1.25rem 3rem; border-radius: 12px; font-weight: 800; font-size: 1.2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s;">
+      <span>Commander maintenant</span>
+      <span style="font-size: 1.5rem;">→</span>
+    </div>
+  </section>
 
 </div>
 
-IMPORTANT: Remplace TOUS les placeholders [...] avec du contenu réel et pertinent`
+IMPORTANT: 
+- Remplace TOUS les [...] par du contenu réel et pertinent
+- Utilise l'analyse vision pour remplir couleurs, matériaux, style
+- Intègre dimensions si disponibles
+- Adapte le contenu au produit spécifique
+- Garde structure H1>H2>H3>H4 stricte`
                   }
                 },
-                required: ["title", "description", "html_description"],
+                required: ["seo_title", "meta_description", "html_body"],
                 additionalProperties: false
               }
             }
           }
         ],
-        tool_choice: { type: "function", function: { name: "generate_product_content" } }
+        tool_choice: { type: "function", function: { name: "generate_seo_product_content" } }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Lovable AI error:", response.status, errorText);
+      console.error("❌ Erreur Lovable AI:", response.status, errorText);
       
       if (response.status === 429) {
-        throw new Error("RATE_LIMIT: Trop de requêtes. Veuillez réessayer dans quelques instants.");
+        throw new Error("RATE_LIMIT: Trop de requêtes. Patientez 1 minute.");
       }
       if (response.status === 402) {
-        throw new Error("CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés.");
+        throw new Error("CREDITS_DEPLETED: Crédits épuisés. Ajoutez des crédits.");
       }
       
-      throw new Error(`Erreur Lovable AI: ${response.status}`);
+      throw new Error(`Erreur IA: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("AI response:", JSON.stringify(data, null, 2));
+    console.log("✅ Réponse IA reçue");
     
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall || !toolCall.function?.arguments) {
-      throw new Error("Aucun contenu généré par l'IA");
+      throw new Error("Aucun contenu généré");
     }
 
     const result = JSON.parse(toolCall.function.arguments);
 
-    // Update database with new SEO data
-
-    // Get auth header to find product
+    // Mise à jour BDD
     const authHeader = req.headers.get('Authorization');
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
       const { data: { user } } = await supabaseClient.auth.getUser(token);
       
       if (user) {
-        // Find product by title and update
         const { data: products } = await supabaseClient
           .from('shopify_products')
           .select('id')
@@ -316,37 +407,37 @@ IMPORTANT: Remplace TOUS les placeholders [...] avec du contenu réel et pertine
         if (products && products.length > 0) {
           const productId = products[0].id;
           
-          // Update product with optimized SEO title and rich HTML body
           await supabaseClient
             .from('shopify_products')
             .update({
-              title: result.title, // Update main title with SEO-optimized version
-              seo_title: result.title,
-              seo_description: result.description,
-              description: result.html_description || result.description, // Rich HTML for Body field
+              title: result.seo_title,
+              seo_title: result.seo_title,
+              seo_description: result.meta_description,
+              description: result.html_body,
               optimization_count: supabaseClient.rpc('increment', { x: 1 }),
               last_optimization_at: new Date().toISOString()
             })
             .eq('id', productId);
           
-          console.log(`✅ Product ${productId} updated with SEO title and rich HTML body`);
+          console.log(`✅ Produit ${productId} optimisé avec succès`);
         }
       }
     }
 
     return new Response(
       JSON.stringify({
-        title: result.title || "",
-        description: result.description || "",
-        html_description: result.html_description || "",
-        hasVisionAnalysis: !!visionAnalysis
+        title: result.seo_title || "",
+        description: result.meta_description || "",
+        html_description: result.html_body || "",
+        hasVisionAnalysis: !!visionAnalysis,
+        extractedDimensions: productDimensions || null
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error("Error in generate-title-description:", error);
-    const errorMessage = error instanceof Error ? error.message : "Une erreur inconnue s'est produite";
+    console.error("❌ Erreur generate-title-description:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {
