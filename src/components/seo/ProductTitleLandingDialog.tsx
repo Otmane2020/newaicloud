@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Monitor, Smartphone, Eye, CheckCircle2, Sparkles } from "lucide-react";
+import { Loader2, Monitor, Smartphone, Eye, CheckCircle2, Sparkles, X } from "lucide-react";
 import { responsiveDialogClasses, responsivePadding } from "@/lib/dialogUtils";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -21,6 +21,8 @@ interface ProductTitleLandingDialogProps {
   onOpenChange: (open: boolean) => void;
   products: Product[];
   isGenerating: boolean;
+  currentProcessing?: { index: number; total: number; title: string } | null;
+  onCancel?: () => void;
   onSync: () => void;
   syncLoading?: boolean;
 }
@@ -112,6 +114,8 @@ export function ProductTitleLandingDialog({
   onOpenChange,
   products,
   isGenerating,
+  currentProcessing,
+  onCancel,
   onSync,
   syncLoading = false
 }: ProductTitleLandingDialogProps) {
@@ -152,7 +156,9 @@ export function ProductTitleLandingDialog({
           </DialogTitle>
           <DialogDescription>
             {isGenerating 
-              ? "Génération du contenu SEO optimisé en cours..." 
+              ? (currentProcessing 
+                  ? `Génération ${currentProcessing.index}/${currentProcessing.total}: ${currentProcessing.title.substring(0, 50)}...`
+                  : "Génération du contenu SEO optimisé en cours...") 
               : `${products.length} produit(s) optimisé(s) - Vérifiez le contenu avant synchronisation`}
           </DialogDescription>
         </DialogHeader>
@@ -162,17 +168,50 @@ export function ProductTitleLandingDialog({
             <div className="flex items-center justify-center">
               <Sparkles className="h-16 w-16 text-primary animate-pulse" />
             </div>
-            <div className="space-y-2">
-              <p className="text-center font-medium">Optimisation IA en cours...</p>
-              <p className="text-center text-sm text-muted-foreground">
-                Génération titre SEO + description HTML enrichie avec analyse vision IA
+            <div className="space-y-4">
+              <p className="text-center font-medium text-lg">
+                {currentProcessing 
+                  ? `Produit ${currentProcessing.index}/${currentProcessing.total}` 
+                  : "Optimisation IA en cours..."}
               </p>
-              <div className="max-w-md mx-auto space-y-2">
-                <Progress value={progress} className="h-2" />
-                <p className="text-center text-xs text-muted-foreground">
-                  Progression {progress}%
+              {currentProcessing && (
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-semibold text-primary">
+                    {currentProcessing.title.substring(0, 60)}...
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Analyse vision IA • Génération titre SEO • Description HTML enrichie
+                  </p>
+                </div>
+              )}
+              <div className="max-w-md mx-auto space-y-3">
+                <Progress 
+                  value={currentProcessing ? (currentProcessing.index / currentProcessing.total) * 100 : progress} 
+                  className="h-3" 
+                />
+                <p className="text-center text-sm font-medium text-muted-foreground">
+                  {currentProcessing 
+                    ? `${Math.round((currentProcessing.index / currentProcessing.total) * 100)}% terminé` 
+                    : `Progression ${progress}%`}
                 </p>
+                {currentProcessing && (
+                  <p className="text-center text-xs text-muted-foreground">
+                    {currentProcessing.total - currentProcessing.index} produit(s) restant(s)
+                  </p>
+                )}
               </div>
+              {onCancel && (
+                <div className="flex justify-center pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={onCancel}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    <span>Annuler la génération</span>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         ) : (

@@ -59,21 +59,20 @@ serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
+              model: "google/gemini-2.5-flash-lite",
               messages: [
                 {
                   role: "user",
                   content: [
                     {
                       type: "text",
-                      text: `Analyse détaillée de ce produit. Fournis:
+                      text: `Analyse ce produit en 4 points:
+1. Couleurs + matériaux (1 phrase)
+2. Style + design (1 phrase)
+3. Dimensions visibles (format: LxlxH en cm, sinon "dimensions non visibles")
+4. 3 caractéristiques uniques
 
-1. COULEURS et MATÉRIAUX (2 phrases)
-2. STYLE et DESIGN (2 phrases)
-3. DIMENSIONS VISIBLES (si détectable: longueur x largeur x hauteur en cm ou mm, sinon indique "dimensions non visibles")
-4. CARACTÉRISTIQUES VISUELLES uniques (3-4 points courts)
-
-Format: Texte structuré clair et concis.`
+Sois concis et précis.`
                     },
                     {
                       type: "image_url",
@@ -82,7 +81,7 @@ Format: Texte structuré clair et concis.`
                   ]
                 }
               ],
-              max_tokens: 400
+              max_tokens: 250
             }),
           });
 
@@ -407,6 +406,16 @@ IMPORTANT:
         if (products && products.length > 0) {
           const productId = products[0].id;
           
+          // Récupérer le compteur actuel
+          const { data: currentProduct } = await supabaseClient
+            .from('shopify_products')
+            .select('optimization_count')
+            .eq('id', productId)
+            .single();
+          
+          const currentCount = currentProduct?.optimization_count || 0;
+          
+          // Mettre à jour avec le nouveau compteur
           await supabaseClient
             .from('shopify_products')
             .update({
@@ -414,12 +423,12 @@ IMPORTANT:
               seo_title: result.seo_title,
               seo_description: result.meta_description,
               description: result.html_body,
-              optimization_count: supabaseClient.rpc('increment', { x: 1 }),
+              optimization_count: currentCount + 1,
               last_optimization_at: new Date().toISOString()
             })
             .eq('id', productId);
           
-          console.log(`✅ Produit ${productId} optimisé avec succès`);
+          console.log(`✅ Produit ${productId} optimisé avec succès (compteur: ${currentCount + 1})`);
         }
       }
     }

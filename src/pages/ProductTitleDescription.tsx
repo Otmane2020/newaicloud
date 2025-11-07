@@ -91,6 +91,8 @@ export default function ProductTitleDescription() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedImageType, setSelectedImageType] = useState<"primary" | "secondary">("primary");
   const [showWhiteBgConfigDialog, setShowWhiteBgConfigDialog] = useState(false);
+  const [currentProcessing, setCurrentProcessing] = useState<{ index: number; total: number; title: string } | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -146,20 +148,39 @@ export default function ProductTitleDescription() {
       return;
     }
 
+    const controller = new AbortController();
+    setAbortController(controller);
     setGenerating(true);
     setIsOptimizing(true);
-    setOptimizedProducts([]); // Reset optimized products
+    setOptimizedProducts([]);
     setShowLandingPreviewDialog(true);
-    const toastId = toast.loading(`Optimisation de ${selectedProducts.size} produit(s)...`);
+    
+    const productArray = Array.from(selectedProducts);
+    const toastId = toast.loading(`Génération 0/${productArray.length} produit(s)...`);
 
     try {
-      for (const productId of selectedProducts) {
+      for (let i = 0; i < productArray.length; i++) {
+        // Vérifier si annulation demandée
+        if (controller.signal.aborted) {
+          throw new Error('CANCELLED: Génération annulée par l\'utilisateur');
+        }
+
+        const productId = productArray[i];
         const product = products.find((p) => p.id === productId);
         if (!product) continue;
 
-        // Add timeout to edge function call (60 seconds)
+        // Mettre à jour l'indicateur de progression
+        setCurrentProcessing({
+          index: i + 1,
+          total: productArray.length,
+          title: product.title
+        });
+        
+        toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}...`, { id: toastId });
+
+        // Timeout réduit à 45 secondes
         const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: { message: 'TIMEOUT' } }), 60000)
+          setTimeout(() => resolve({ data: null, error: { message: 'TIMEOUT' } }), 45000)
         );
 
         const invokePromise = supabase.functions.invoke("generate-title-description", {
@@ -214,42 +235,56 @@ export default function ProductTitleDescription() {
         }
       }
 
-      toast.success("Optimisation terminée", { id: toastId });
+      toast.success(`${optimizedProducts.length}/${productArray.length} produit(s) optimisé(s)`, { id: toastId });
       setSelectedProducts(new Set());
     } catch (error: any) {
       console.error("Error optimizing:", error);
       
       const errorMessage = error?.message || String(error);
       
-      if (errorMessage.includes('CREDITS_DEPLETED')) {
+      if (errorMessage.includes('CANCELLED')) {
+        toast.info("Génération annulée", {
+          id: toastId,
+          description: `${optimizedProducts.length} produit(s) ont été optimisé(s) avant l'annulation.`
+        });
+      } else if (errorMessage.includes('CREDITS_DEPLETED')) {
         toast.error("Crédits IA épuisés", {
           id: toastId,
-          description: "Ajoutez des crédits dans Settings → Workspace → Usage pour continuer à utiliser l'IA."
+          description: "Ajoutez des crédits dans Settings → Workspace → Usage."
         });
       } else if (errorMessage.includes('RATE_LIMIT')) {
         toast.error("Trop de requêtes", {
           id: toastId,
-          description: "Veuillez patienter quelques instants avant de réessayer."
+          description: "Patientez quelques instants avant de réessayer."
         });
       } else if (errorMessage.includes('TIMEOUT')) {
-        toast.error("Timeout - Génération trop longue", {
+        toast.error("Génération trop longue (>45s)", {
           id: toastId,
-          description: "L'IA prend trop de temps à générer. Réessayez avec un produit plus simple."
+          description: "Le contenu est peut-être trop complexe. Réessayez."
         });
       } else if (errorMessage.includes('NETWORK')) {
         toast.error("Erreur réseau", {
           id: toastId,
-          description: "Impossible de se connecter au serveur. Vérifiez votre connexion internet."
+          description: "Vérifiez votre connexion internet."
         });
       } else {
         toast.error("Erreur lors de l'optimisation", { 
           id: toastId,
-          description: errorMessage || "Une erreur inconnue s'est produite"
+          description: errorMessage || "Erreur inconnue"
         });
       }
     } finally {
       setGenerating(false);
       setIsOptimizing(false);
+      setCurrentProcessing(null);
+      setAbortController(null);
+    }
+  };
+  
+  const handleCancelGeneration = () => {
+    if (abortController) {
+      abortController.abort();
+      toast.info("Annulation en cours...");
     }
   };
 
@@ -1291,6 +1326,8 @@ export default function ProductTitleDescription() {
         onOpenChange={setShowLandingPreviewDialog}
         products={optimizedProducts}
         isGenerating={isOptimizing}
+        currentProcessing={currentProcessing}
+        onCancel={generating ? handleCancelGeneration : undefined}
         onSync={handleSyncToShopify}
         syncLoading={syncingToShopify}
       />
