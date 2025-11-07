@@ -506,6 +506,60 @@ export default function Blog() {
               </Button>
             </div>
           </Card>
+
+          {/* Quick View des Articles créés */}
+          {articles.length > 0 && (
+            <Card className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Articles récents</h3>
+                <Badge variant="secondary">{articles.length} article{articles.length > 1 ? 's' : ''}</Badge>
+              </div>
+              <div className="space-y-3">
+                {articles.slice(0, 5).map((article) => (
+                  <div 
+                    key={article.id} 
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSearchParams({ subtab: 'articles' });
+                      setActiveSubtab('articles');
+                    }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm truncate">{article.title}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          {article.category || 'Sans catégorie'}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(article.created_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      {article.published_at && (
+                        <Badge variant="default" className="text-xs">
+                          Publié
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {articles.length > 5 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full mt-3"
+                  onClick={() => {
+                    setSearchParams({ subtab: 'articles' });
+                    setActiveSubtab('articles');
+                  }}
+                >
+                  Voir tous les articles ({articles.length})
+                </Button>
+              )}
+            </Card>
+          )}
         </div>
       )}
 
