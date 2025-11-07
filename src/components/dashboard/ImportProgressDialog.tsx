@@ -361,24 +361,20 @@ export function ImportProgressDialog({
               
               {totalShopifyProducts > 0 ? (
                 <>
-                  <div className="mb-4 p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg">
-                    <p className="text-sm sm:text-base font-semibold text-foreground mb-2">
-                      Your Shopify store has{" "}
-                      <span className="text-xl sm:text-2xl text-orange-600 dark:text-orange-400 font-bold">
-                        {totalShopifyProducts} products
-                      </span>
-                    </p>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      But your current plan only allows{" "}
-                      <span className="font-semibold text-foreground">{maxProducts} products</span>
-                    </p>
-                  </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-2">
-                    Only the first {productsImported} products have been imported.
-                  </p>
-                  <p className="text-xs sm:text-sm font-medium text-orange-600 dark:text-orange-400">
-                    {totalShopifyProducts - productsImported} products remaining to import
-                  </p>
+                   <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg space-y-1.5">
+                     <p className="text-xs sm:text-sm font-semibold text-foreground leading-tight">
+                       Your Shopify store has
+                     </p>
+                     <p className="text-2xl sm:text-3xl text-orange-600 dark:text-orange-400 font-bold tabular-nums">
+                       {totalShopifyProducts} products
+                     </p>
+                     <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">
+                       But your plan only allows <span className="font-semibold text-foreground">{maxProducts}</span>
+                     </p>
+                   </div>
+                   <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 leading-tight">
+                     Only {productsImported} imported • {totalShopifyProducts - productsImported} remaining
+                   </p>
                 </>
               ) : (
                 <>

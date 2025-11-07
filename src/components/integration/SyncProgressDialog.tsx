@@ -22,20 +22,23 @@ export function SimpleSyncProgress({
   const { t, tf } = useTranslation();
   const [animatedProgress, setAnimatedProgress] = useState(0);
 
-  // Continuously animate progress bar
+  // Continuously animate progress bar with actual progress tracking
   useEffect(() => {
     if (!open) {
       setAnimatedProgress(0);
       return;
     }
 
+    // Start at 10% and increment smoothly
     const interval = setInterval(() => {
       setAnimatedProgress(prev => {
-        // Loop between 10% and 90%
-        if (prev >= 90) return 10;
-        return prev + 2;
+        // Increment by 1-3% randomly for more natural feel
+        const increment = Math.random() * 2 + 1;
+        const newValue = prev + increment;
+        // Cap at 95% to show it's still working
+        return Math.min(newValue, 95);
       });
-    }, 100);
+    }, 200);
 
     return () => clearInterval(interval);
   }, [open]);
@@ -47,27 +50,36 @@ export function SimpleSyncProgress({
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-md [&>button]:hidden">
+      <DialogContent className="max-w-[95vw] sm:max-w-md [&>button]:hidden">
         <DialogHeader>
-          <DialogTitle className="text-xl flex items-center gap-2">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            {t.integration.sync.progress.title}
+          <DialogTitle className="text-base sm:text-xl flex items-center gap-2 pr-6">
+            <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-primary flex-shrink-0" />
+            <span className="truncate">{t.integration.sync.progress.title}</span>
           </DialogTitle>
-          <DialogDescription className="text-sm">
-            {tf('integration.sync.progress.importing', { type: getTypeLabel(currentType) })}
+          <DialogDescription className="text-xs sm:text-sm pr-6">
+            <span className="block truncate">
+              {tf('integration.sync.progress.importing', { type: getTypeLabel(currentType) })}
+            </span>
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <Progress 
-            value={animatedProgress} 
-            className="h-4 transition-all duration-100 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:via-primary/90 [&>div]:to-primary/80 [&>div]:animate-pulse" 
-          />
+        <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="text-muted-foreground">Progression</span>
+              <span className="font-bold text-primary tabular-nums">{Math.round(animatedProgress)}%</span>
+            </div>
+            <Progress 
+              value={animatedProgress} 
+              showPercentage={false}
+              className="h-3 sm:h-4" 
+            />
+          </div>
           
           <div className="flex justify-center items-center gap-2 py-2">
-            <div className="w-3 h-3 rounded-full bg-primary animate-bounce" />
-            <div className="w-3 h-3 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.15s' }} />
-            <div className="w-3 h-3 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.3s' }} />
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce" />
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.15s' }} />
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.3s' }} />
           </div>
         </div>
       </DialogContent>

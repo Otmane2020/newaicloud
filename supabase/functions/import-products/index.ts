@@ -270,20 +270,28 @@ Deno.serve(async (req: Request) => {
         .eq('id', storeId);
     }
 
-    const { data: limitsData } = await supabaseServiceClient.functions.invoke(
+    const { data: limitsData, error: limitsError } = await supabaseServiceClient.functions.invoke(
       'check-usage-limits',
       {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
 
+    if (limitsError) {
+      console.error('❌ Error fetching limits:', limitsError);
+      throw new Error('Failed to fetch usage limits');
+    }
+
+    console.log('📊 Raw limitsData:', JSON.stringify(limitsData, null, 2));
+
     // CRITICAL: Respect the actual limit from the plan (10 for trial, 100 for paid)
     const maxProducts = limitsData?.limits?.max_products || 10;
     const isTrialing = limitsData?.isTrialing || false;
     
     console.log(`📊 User plan info:`);
-    console.log(`   - Plan type: ${isTrialing ? 'TRIAL' : 'PAID'}`);
-    console.log(`   - Max products allowed: ${maxProducts}`);
+    console.log(`   - Plan type: ${isTrialing ? '🔴 TRIAL' : '🟢 PAID'}`);
+    console.log(`   - Max products from limits: ${maxProducts}`);
+    console.log(`   - Full limits object:`, limitsData?.limits);
     
     // Count actual products from database for accuracy
     const { count: actualProductCount } = await supabaseServiceClient

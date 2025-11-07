@@ -175,15 +175,17 @@ serve(async (req) => {
     // Determine limits based on subscription status
     let limits;
     if (isTrialing) {
+      // CRITICAL: Trial users get strict limits
       limits = {
-        max_optimizations: plan.trial_max_optimizations || 999999, // Unlimited, checked per-product
+        max_optimizations: plan.trial_max_optimizations || 999999,
         max_articles: plan.trial_max_articles || 1,
         max_chat_responses: plan.trial_max_chat_responses || 50,
         max_shopify_requests: plan.trial_max_shopify_requests || 20,
-        max_products: plan.trial_max_products || 10,
+        max_products: 10, // FORCE 10 for trial
         max_shopify_stores: 1,
-        max_campaigns: 0, // No campaigns in trial
+        max_campaigns: 0,
       };
+      console.log(`[LIMITS] 🔴 TRIAL MODE - max_products forced to 10`);
     } else {
       limits = {
         max_optimizations: plan.max_optimizations_monthly || 999999,
@@ -194,6 +196,7 @@ serve(async (req) => {
         max_shopify_stores: plan.max_shopify_stores || 1,
         max_campaigns: plan.max_campaigns || 0,
       };
+      console.log(`[LIMITS] 🟢 PAID MODE - max_products: ${limits.max_products}`);
     }
     
     console.log(`[LIMITS] Applied limits:`, limits);
