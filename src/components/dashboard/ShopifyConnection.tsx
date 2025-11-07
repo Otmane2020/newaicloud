@@ -706,6 +706,7 @@ export function ShopifyConnection() {
         productsImported={productsImported}
         pagesImported={pagesImported}
         articlesImported={0}
+        collectionsImported={0}
         importedItems={importedItems}
         limitReached={limitReached}
         maxProducts={limits?.limits?.max_products || 50}

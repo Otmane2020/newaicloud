@@ -1223,6 +1223,7 @@ export default function ShopifyConnectionsList() {
         productsImported={productsImported}
         pagesImported={pagesImported}
         articlesImported={articlesImported}
+        collectionsImported={0}
         importedItems={importedItems}
         limitReached={limitReached}
         maxProducts={maxProducts}

@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Package, FileText, CreditCard, AlertCircle, Check, TrendingUp, Newspaper } from "lucide-react";
+import { Loader2, Package, FileText, CreditCard, AlertCircle, Check, TrendingUp, Newspaper, FolderOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -37,6 +37,7 @@ interface ImportProgressDialogProps {
   productsImported: number;
   pagesImported: number;
   articlesImported: number;
+  collectionsImported: number;
   importedItems: ImportedItem[];
   limitReached: boolean;
   maxProducts: number;
@@ -52,6 +53,7 @@ export function ImportProgressDialog({
   productsImported,
   pagesImported,
   articlesImported,
+  collectionsImported,
   importedItems,
   limitReached,
   maxProducts,
@@ -64,6 +66,7 @@ export function ImportProgressDialog({
   const [displayedProducts, setDisplayedProducts] = useState(0);
   const [displayedPages, setDisplayedPages] = useState(0);
   const [displayedArticles, setDisplayedArticles] = useState(0);
+  const [displayedCollections, setDisplayedCollections] = useState(0);
   const [displayedProgress, setDisplayedProgress] = useState(0);
 
   // Calculate recommended plan based on total products
@@ -131,6 +134,16 @@ export function ImportProgressDialog({
     }
   }, [displayedArticles, articlesImported]);
 
+  // Animate collections counter
+  useEffect(() => {
+    if (displayedCollections < collectionsImported) {
+      const timer = setTimeout(() => {
+        setDisplayedCollections(prev => Math.min(prev + 1, collectionsImported));
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [displayedCollections, collectionsImported]);
+
   const getPhaseTitle = () => {
     if (limitReached) return "⚠️ Quota Reached";
     if (phase === 'products') return "📦 Importing Products...";
@@ -184,7 +197,7 @@ export function ImportProgressDialog({
             </div>
             
             {/* Animated counters */}
-            <div className="flex-shrink-0 grid grid-cols-3 gap-1.5 sm:gap-4">
+            <div className="flex-shrink-0 grid grid-cols-4 gap-1.5 sm:gap-4">
               <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
                 <CardContent className="pt-2 sm:pt-4 pb-2 sm:pb-4 px-2 sm:px-6">
                   <div className="flex flex-col items-center gap-0.5 sm:gap-1">
@@ -215,6 +228,17 @@ export function ImportProgressDialog({
                       {displayedArticles}
                     </span>
                     <p className="text-[9px] sm:text-xs text-muted-foreground font-medium">Articles</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border hover:border-primary/50 transition-all duration-300 hover:shadow-md">
+                <CardContent className="pt-2 sm:pt-4 pb-2 sm:pb-4 px-2 sm:px-6">
+                  <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+                    <FolderOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse" />
+                    <span className="text-xl sm:text-3xl font-bold text-primary tabular-nums">
+                      {displayedCollections}
+                    </span>
+                    <p className="text-[9px] sm:text-xs text-muted-foreground font-medium">Collections</p>
                   </div>
                 </CardContent>
               </Card>
@@ -279,7 +303,7 @@ export function ImportProgressDialog({
                       Import completed successfully!
                     </p>
                     <p className="text-[10px] sm:text-xs text-green-700 dark:text-green-300 truncate">
-                      {displayedProducts} products, {displayedPages} pages and {displayedArticles} articles imported
+                      {displayedProducts} products, {displayedPages} pages, {displayedArticles} articles, {displayedCollections} collections imported
                     </p>
                   </div>
                 </div>
