@@ -34,27 +34,27 @@ serve(async (req) => {
 
     const translations = {
       fr: {
-        subject: "Bienvenue sur notre plateforme ! 🚀",
-        title: "Bienvenue !",
+        subject: "Bienvenue sur New AI ! 🚀",
+        title: "Bienvenue sur New AI !",
         greeting: "Bonjour",
-        thankYou: "Merci de vous être inscrit sur notre plateforme d'optimisation SEO pour Shopify !",
+        thankYou: "Merci de vous être inscrit sur New AI, votre plateforme d'optimisation SEO pour Shopify !",
         message:
           "Nous sommes ravis de vous compter parmi nous. Vous pouvez dès maintenant accéder à toutes nos fonctionnalités pour booster votre visibilité en ligne.",
         button: "Accéder à mon compte",
-        signature: "À très bientôt,<br>L'équipe",
-        footer: "Optimisez votre SEO Shopify",
+        signature: "À très bientôt,<br>L'équipe New AI",
+        footer: "New AI - Optimisez votre SEO Shopify",
         disclaimer: "Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.",
       },
       en: {
-        subject: "Welcome to our platform! 🚀",
-        title: "Welcome!",
+        subject: "Welcome to New AI! 🚀",
+        title: "Welcome to New AI!",
         greeting: "Hello",
-        thankYou: "Thank you for signing up to our SEO optimization platform for Shopify!",
+        thankYou: "Thank you for signing up to New AI, your SEO optimization platform for Shopify!",
         message:
           "We are delighted to have you with us. You can now access all our features to boost your online visibility.",
         button: "Access my account",
-        signature: "See you soon,<br>The Team",
-        footer: "Optimize your Shopify SEO",
+        signature: "See you soon,<br>The New AI Team",
+        footer: "New AI - Optimize your Shopify SEO",
         disclaimer: "If you didn't create an account, you can safely ignore this email.",
       },
     };
@@ -63,43 +63,116 @@ serve(async (req) => {
 
     const emailHtml = `
       <!DOCTYPE html>
-      <html lang="${language}">
+      <html lang="${language}" style="margin:0;padding:0;">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${t.title}</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            background: #f7f9fc;
+            font-family: 'Inter', Arial, sans-serif;
+            color: #1a1a1a;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+          }
+          .header {
+            text-align: center;
+            padding: 56px 24px 48px;
+            background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%);
+            color: white;
+          }
+          .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+          }
+          .brand-title {
+            font-size: 34px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.5px;
+            color: #fff;
+          }
+          .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+          }
+          .content h2 {
+            font-size: 24px;
+            margin-top: 0;
+            color: #0d1117;
+          }
+          .content p {
+            margin-bottom: 18px;
+            color: #444;
+            font-size: 15px;
+          }
+          .cta {
+            text-align: center;
+            margin: 36px 0 20px;
+          }
+          .cta a {
+            background: linear-gradient(135deg, #3B82F6, #60A5FA);
+            color: white;
+            text-decoration: none;
+            padding: 14px 34px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            display: inline-block;
+          }
+          .footer {
+            text-align: center;
+            padding: 24px;
+            background: #f2f4f7;
+            font-size: 13px;
+            color: #7a869a;
+          }
+          @media (max-width: 480px) {
+            .header, .content, .footer {
+              padding: 24px 18px;
+            }
+            .brand-title {
+              font-size: 28px;
+            }
+          }
+        </style>
       </head>
-      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
-          <tr>
-            <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
-                <tr>
-                  <td style="background: linear-gradient(135deg, #4776E6 0%, #3B82F6 50%, #0EA5E9 100%); padding: 40px; text-align: center;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 32px;">${t.title}</h1>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 40px 30px;">
-                    <h2 style="color: #333333; margin-top: 0;">${t.greeting} ${fullName} 👋</h2>
-                    <p style="color: #666666; line-height: 1.6; margin: 20px 0;">${t.thankYou}</p>
-                    <p style="color: #666666; line-height: 1.6; margin: 20px 0;">${t.message}</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                      <a href="https://app.newai.sale/auth" style="display: inline-block; background: linear-gradient(135deg, #4776E6, #3B82F6); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: bold;">${t.button}</a>
-                    </div>
-                    <p style="color: #666666; margin-top: 30px;">${t.signature}</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="background-color: #f8f8f8; padding: 20px; text-align: center; font-size: 12px; color: #999999;">
-                    <p style="margin: 0;">${t.footer}</p>
-                    <p style="margin: 10px 0 0 0;">${t.disclaimer}</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
+      <body>
+        <div class="container">
+          <div class="header">
+            <img src="https://app.newai.sale/logo-email.png" alt="New AI Logo" class="logo" />
+            <h1 class="brand-title">${t.title}</h1>
+          </div>
+
+          <div class="content">
+            <h2>${t.greeting} ${fullName} 👋</h2>
+            <p>${t.thankYou}</p>
+            <p>${t.message}</p>
+            
+            <div class="cta">
+              <a href="https://app.newai.sale/auth" target="_blank">${t.button}</a>
+            </div>
+
+            <p style="text-align:center;color:#7a869a;font-size:13px;margin-top:28px;">
+              ${t.signature}
+            </p>
+          </div>
+
+          <div class="footer">
+            ${t.footer} • <a href="https://newai.sale" style="color:#3B82F6;text-decoration:none;">newai.sale</a>
+            <p style="margin: 10px 0 0 0; font-size: 12px;">${t.disclaimer}</p>
+          </div>
+        </div>
       </body>
       </html>
     `;
