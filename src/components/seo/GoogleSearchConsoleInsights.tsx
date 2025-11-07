@@ -155,6 +155,8 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
           position: parseFloat(item.position.toString())
         }));
         setData(formattedData);
+        // Always load fresh data for tables to get topPages and topQueries
+        loadSearchConsoleData();
       } else {
         // If no cached data, fetch from API
         loadSearchConsoleData();
