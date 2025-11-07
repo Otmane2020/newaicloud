@@ -339,20 +339,54 @@ serve(async (req) => {
       logStep("Renewal upgrade - usage counters not reset (cycle just started)");
     }
 
-    // Calculate proration amount if applicable
-    let prorationAmount = 0;
+    // Calculate detailed proration if applicable
+    let prorationDetails: any = null;
     if (isMidCycleUpgrade) {
       try {
+        const daysRemaining = totalCycleDays - daysIntoCycle;
+        
+        // Get old and new price amounts
+        const oldPriceAmount = currentPrice?.unit_amount || 0; // in cents
+        const newPriceObj = await stripe.prices.retrieve(new_price_id);
+        const newPriceAmount = newPriceObj.unit_amount || 0; // in cents
+        
+        // Calculate unused credit from old subscription (ce qui a déjà été payé)
+        const unusedCredit = Math.round((oldPriceAmount * daysRemaining) / totalCycleDays);
+        
+        // Calculate cost of new plan for remaining period
+        const newPlanCostProrated = Math.round((newPriceAmount * daysRemaining) / totalCycleDays);
+        
+        // Net amount to charge (cost of new - credit from old)
+        const netChargeAmount = newPlanCostProrated - unusedCredit;
+        
+        prorationDetails = {
+          old_plan_paid: oldPriceAmount / 100, // Convert to main currency unit
+          unused_credit: unusedCredit / 100,
+          new_plan_prorated: newPlanCostProrated / 100,
+          net_charge: netChargeAmount / 100,
+          currency: newPriceObj.currency.toUpperCase(),
+          days_remaining: daysRemaining,
+          days_into_cycle: daysIntoCycle,
+          total_cycle_days: totalCycleDays
+        };
+        
+        logStep("Detailed proration calculated", prorationDetails);
+        
+        // Get actual invoice to confirm
         const invoices = await stripe.invoices.list({
           customer: profile.stripe_customer_id,
           limit: 1,
         });
         if (invoices.data[0]) {
-          prorationAmount = invoices.data[0].amount_due / 100; // Convert cents to dollars
+          prorationDetails.actual_invoice_amount = invoices.data[0].amount_due / 100;
+          logStep("Invoice amount confirmed", { 
+            calculated: prorationDetails.net_charge,
+            actual: prorationDetails.actual_invoice_amount 
+          });
         }
-        logStep("Proration amount retrieved", { prorationAmount });
       } catch (error) {
-        logStep("Warning: Could not retrieve proration amount", { error });
+        logStep("Warning: Could not calculate detailed proration", { error });
+        prorationDetails = { error: "Could not calculate proration details" };
       }
     }
 
@@ -367,7 +401,7 @@ serve(async (req) => {
         upgrade_details: {
           timing: isMidCycleUpgrade ? 'mid_cycle' : 'renewal',
           proration_applied: isMidCycleUpgrade,
-          prorationAmount: prorationAmount,
+          proration: prorationDetails,
           usage_reset: isMidCycleUpgrade,
           days_into_cycle: daysIntoCycle,
           days_remaining: totalCycleDays - daysIntoCycle,
