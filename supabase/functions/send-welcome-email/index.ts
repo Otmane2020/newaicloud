@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
@@ -13,12 +13,6 @@ const welcomeEmailSchema = z.object({
   language: z.enum(["fr", "en"]).optional(),
 });
 
-interface WelcomeEmailRequest {
-  email: string;
-  fullName: string;
-  language?: "fr" | "en";
-}
-
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -27,7 +21,6 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const requestBody = await req.json();
 
-    // Validate input
     const validation = welcomeEmailSchema.safeParse(requestBody);
     if (!validation.success) {
       console.error("Invalid input:", validation.error.errors);
@@ -41,17 +34,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending welcome email to:", email);
 
-    // Configuration SMTP corrigée pour O2Switch
-    const client = new SMTPClient({
-      connection: {
-        hostname: Deno.env.get("SMTP_HOST") || "ssl0.ovh.net",
-        port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
-        tls: false, // STARTTLS au lieu de TLS direct
-        auth: {
-          username: Deno.env.get("SMTP_USER")!,
-          password: Deno.env.get("SMTP_PASSWORD")!,
-        },
-      },
+    // Configuration SMTP O2Switch
+    const client = new SmtpClient();
+
+    await client.connectTLS({
+      hostname: Deno.env.get("SMTP_HOST") || "ssl0.ovh.net",
+      port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
+      username: Deno.env.get("SMTP_USER")!, // Votre email O2Switch complet
+      password: Deno.env.get("SMTP_PASSWORD")!, // Votre mot de passe O2Switch
     });
 
     const translations = {
@@ -79,20 +69,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     const t = translations[language];
 
+    // Utilisation directe de l'email SMTP comme expéditeur
+    const smtpUser = Deno.env.get("SMTP_USER")!;
+
     await client.send({
-      from: `New AI <${Deno.env.get("FROM_EMAIL")}>`,
+      from: `New AI <${smtpUser}>`, // Envoie directement depuis votre compte SMTP
       to: email,
       subject: t.subject,
-      html: `
+      content: `
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="utf-8">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
             .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
             .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
           </style>
         </head>
         <body>
@@ -101,16 +96,22 @@ const handler = async (req: Request): Promise<Response> => {
               <h1>${t.title}</h1>
             </div>
             <div class="content">
-              <h2>${t.greeting} ${fullName || (language === "fr" ? "cher utilisateur" : "dear user")} 👋</h2>
+              <h2>${t.greeting} ${fullName} 👋</h2>
               <p>${t.thankYou}</p>
               <p>${t.message}</p>
-              <a href="${Deno.env.get("SUPABASE_URL")?.replace("https://nekqqlhrjgmyudmmewas.supabase.co", "https://affable-calm-newai.lovable.app")}/dashboard" class="button">${t.button}</a>
+              <div style="text-align: center;">
+                <a href="https://affable-calm-newai.lovable.app/dashboard" class="button">${t.button}</a>
+              </div>
               <p>${t.signature}</p>
+            </div>
+            <div class="footer">
+              <p>New AI - Optimisez votre SEO Shopify</p>
             </div>
           </div>
         </body>
         </html>
       `,
+      html: true,
     });
 
     await client.close();
@@ -122,24 +123,18 @@ const handler = async (req: Request): Promise<Response> => {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    // Log detailed error for debugging
-    console.error("Email sending failed:", error.message || error);
-    console.error("SMTP config check:", {
-      hasHost: !!Deno.env.get("SMTP_HOST"),
-      hasPort: !!Deno.env.get("SMTP_PORT"),
-      hasUser: !!Deno.env.get("SMTP_USER"),
+    console.error("Email sending failed:", error);
+    console.error("SMTP Config:", {
+      host: Deno.env.get("SMTP_HOST"),
+      port: Deno.env.get("SMTP_PORT"),
+      user: Deno.env.get("SMTP_USER")?.substring(0, 5) + "...",
       hasPassword: !!Deno.env.get("SMTP_PASSWORD"),
-      hasFromName: !!Deno.env.get("FROM_NAME"),
-      hasFromEmail: !!Deno.env.get("FROM_EMAIL"),
-      smtpHost: Deno.env.get("SMTP_HOST"),
-      smtpPort: Deno.env.get("SMTP_PORT"),
-      smtpUser: Deno.env.get("SMTP_USER")?.substring(0, 3) + "...", // Masqué pour sécurité
     });
 
     return new Response(
       JSON.stringify({
-        error: "Failed to send email",
-        details: error.message || "Unknown error",
+        error: "Échec de l'envoi de l'email",
+        details: error.message || "Erreur inconnue",
       }),
       {
         status: 500,
