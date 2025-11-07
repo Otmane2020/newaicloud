@@ -12,6 +12,60 @@ serve(async (req) => {
   }
 
   try {
+    // VÉRIFIER LES LIMITES AVANT DE GÉNÉRER
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      
+      if (user) {
+        const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
+        const { data: usage } = await supabaseAdmin
+          .from('usage_tracking')
+          .select('optimizations_count')
+          .eq('seller_id', user.id)
+          .eq('month', currentMonth)
+          .maybeSingle();
+        
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('subscription_status, current_plan_id')
+          .eq('id', user.id)
+          .single();
+        
+        const { data: plan } = await supabaseAdmin
+          .from('subscription_plans')
+          .select('max_optimizations_monthly, trial_max_optimizations')
+          .eq('id', profile?.current_plan_id || 'trial')
+          .single();
+        
+        const currentUsage = usage?.optimizations_count || 0;
+        const maxOptimizations = profile?.subscription_status === 'trialing' 
+          ? (plan?.trial_max_optimizations || 50)
+          : (plan?.max_optimizations_monthly || 999999);
+        
+        if (currentUsage >= maxOptimizations) {
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              error: 'LIMIT_REACHED: Limite d\'optimisations atteinte',
+              usage: currentUsage,
+              limit: maxOptimizations
+            }),
+            { 
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" } 
+            }
+          );
+        }
+      }
+    }
+    
     const { imageUrl, prompt, productTitle, imageType = "secondary", format = "square", similarity = "medium" } = await req.json();
 
     if (!imageUrl || !prompt) {
@@ -23,8 +77,7 @@ serve(async (req) => {
 
     console.log("🎨 Generating AI background:", { prompt, imageType, format, similarity });
 
-    // Initialize Supabase client for usage tracking
-    const authHeader = req.headers.get("Authorization");
+    // Initialize Supabase client for usage tracking (reuse authHeader from above)
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",

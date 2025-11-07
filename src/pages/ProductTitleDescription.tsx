@@ -232,6 +232,10 @@ export default function ProductTitleDescription() {
           // Check for specific error types
           const errorMessage = error.message || String(error);
           
+          if (errorMessage.includes('LIMIT_REACHED') || errorMessage.includes('Limite d\'optimisations atteinte')) {
+            throw new Error('LIMIT_REACHED: Limite d\'optimisations atteinte. Veuillez passer à un plan supérieur.');
+          }
+          
           if (errorMessage.includes('CREDITS_DEPLETED') || errorMessage.includes('402')) {
             throw new Error('CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés. Veuillez ajouter des crédits dans Settings → Workspace → Usage.');
           }
@@ -284,6 +288,12 @@ export default function ProductTitleDescription() {
           id: toastId,
           description: `${optimizedProducts.length} produit(s) ont été optimisé(s) avant l'annulation.`
         });
+      } else if (errorMessage.includes('LIMIT_REACHED')) {
+        toast.error("Limite atteinte", {
+          id: toastId,
+          description: "Vous avez atteint votre limite d'optimisations. Passez à un plan supérieur."
+        });
+        setShowUpgradeDialog(true);
       } else if (errorMessage.includes('CREDITS_DEPLETED')) {
         toast.error("Crédits IA épuisés", {
           id: toastId,
@@ -1032,10 +1042,15 @@ export default function ProductTitleDescription() {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
+                                // Vérifier les limites AVANT de sélectionner et optimiser
+                                if (!canDoAction('optimizations')) {
+                                  setShowUpgradeDialog(true);
+                                  return;
+                                }
                                 setSelectedProducts(new Set([product.id]));
                                 setTimeout(() => handleOptimizeSelected(), 0);
                               }}
-                              disabled={generating}
+                              disabled={generating || !canDoAction('optimizations')}
                             >
                               <Sparkles className="h-4 w-4" />
                             </Button>
@@ -1051,11 +1066,16 @@ export default function ProductTitleDescription() {
                               variant="ghost"
                               size="icon"
                               onClick={async () => {
+                                // Vérifier les limites AVANT d'ouvrir le dialog
+                                if (!canDoAction('optimizations')) {
+                                  setShowUpgradeDialog(true);
+                                  return;
+                                }
                                 setSelectedProducts(new Set([product.id]));
                                 await loadGalleryImages([product.id]);
                                 setShowWhiteBgConfigDialog(true);
                               }}
-                              disabled={generatingWhiteBg}
+                              disabled={generatingWhiteBg || !canDoAction('optimizations')}
                             >
                               {generatingWhiteBg && selectedProducts.has(product.id) ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1075,11 +1095,16 @@ export default function ProductTitleDescription() {
                               variant="ghost"
                               size="icon"
                               onClick={async () => {
+                                // Vérifier les limites AVANT d'ouvrir le dialog
+                                if (!canDoAction('optimizations')) {
+                                  setShowUpgradeDialog(true);
+                                  return;
+                                }
                                 setSelectedProducts(new Set([product.id]));
                                 await loadGalleryImages([product.id]);
                                 setShowAiConfigDialog(true);
                               }}
-                              disabled={generatingAiBg}
+                              disabled={generatingAiBg || !canDoAction('optimizations')}
                               className="hover:bg-purple-50 dark:hover:bg-purple-950"
                             >
                               {generatingAiBg && selectedProducts.has(product.id) ? (

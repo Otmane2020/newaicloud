@@ -492,6 +492,50 @@ IMPORTANT:
       const { data: { user } } = await supabaseClient.auth.getUser(token);
       
       if (user) {
+        // VÉRIFIER LES LIMITES AVANT D'OPTIMISER
+        const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
+        const { data: usage } = await supabaseClient
+          .from('usage_tracking')
+          .select('optimizations_count')
+          .eq('seller_id', user.id)
+          .eq('month', currentMonth)
+          .maybeSingle();
+        
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('subscription_status, current_plan_id')
+          .eq('id', user.id)
+          .single();
+        
+        const { data: plan } = await supabaseClient
+          .from('subscription_plans')
+          .select('max_optimizations_monthly, trial_max_optimizations')
+          .eq('id', profile?.current_plan_id || 'trial')
+          .single();
+        
+        const currentUsage = usage?.optimizations_count || 0;
+        const maxOptimizations = profile?.subscription_status === 'trialing' 
+          ? (plan?.trial_max_optimizations || 50)
+          : (plan?.max_optimizations_monthly || 999999);
+        
+        // Bloquer si limite atteinte
+        if (currentUsage >= maxOptimizations) {
+          console.error(`❌ Limite atteinte: ${currentUsage}/${maxOptimizations} optimisations utilisées`);
+          return new Response(
+            JSON.stringify({ 
+              error: 'LIMIT_REACHED: Limite d\'optimisations atteinte. Veuillez passer à un plan supérieur.',
+              usage: currentUsage,
+              limit: maxOptimizations
+            }),
+            { 
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" } 
+            }
+          );
+        }
+        
+        console.log(`✅ Limite OK: ${currentUsage}/${maxOptimizations} optimisations`);
+        
         const { data: products } = await supabaseClient
           .from('shopify_products')
           .select('id')
