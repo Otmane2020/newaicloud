@@ -116,6 +116,7 @@ export default function ProductTitleDescription() {
   const [landingConfig, setLandingConfig] = useState<LandingConfig | null>(null);
   const [galleryImages, setGalleryImages] = useState<Map<string, ProductImage[]>>(new Map());
   const [selectedGalleryImages, setSelectedGalleryImages] = useState<Map<string, string>>(new Map());
+  const [selectedImageFormat, setSelectedImageFormat] = useState<string>('square');
 
   useEffect(() => {
     fetchProducts();
@@ -1368,6 +1369,22 @@ export default function ProductTitleDescription() {
           </DialogHeader>
 
           <div className="space-y-6 py-4">
+            {/* Format Selection */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Format de l'image générée</Label>
+              <Select value={selectedImageFormat} onValueChange={setSelectedImageFormat}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="original">Format d'origine</SelectItem>
+                  <SelectItem value="square">Carré (1:1)</SelectItem>
+                  <SelectItem value="portrait">Portrait (3:4)</SelectItem>
+                  <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Gallery Image Selection */}
             {Array.from(selectedProducts).length > 0 && (
               <div className="space-y-3">
@@ -1382,7 +1399,7 @@ export default function ProductTitleDescription() {
                   return (
                     <Card key={productId} className="p-4">
                       <h4 className="font-semibold mb-3 text-sm">{product.title}</h4>
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-3 gap-3">
                         {/* Image principale */}
                         <div
                           className={`relative cursor-pointer rounded-lg border-2 transition-all ${
@@ -1396,13 +1413,36 @@ export default function ProductTitleDescription() {
                             setSelectedGalleryImages(newMap);
                           }}
                         >
-                          <img
-                            src={product.image_url || ''}
-                            alt="Image principale"
-                            className="w-full h-24 object-cover rounded"
-                          />
+                          <div className="aspect-square bg-muted rounded overflow-hidden">
+                            <img
+                              src={product.image_url || ''}
+                              alt="Image principale"
+                              className="w-full h-full object-contain"
+                              onLoad={(e) => {
+                                const img = e.target as HTMLImageElement;
+                                const dimensions = `${img.naturalWidth}×${img.naturalHeight}px`;
+                                img.setAttribute('data-dimensions', dimensions);
+                              }}
+                            />
+                          </div>
                           <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
                             Principal
+                          </div>
+                          <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                            {product.image_url && (
+                              <img
+                                src={product.image_url}
+                                alt=""
+                                className="hidden"
+                                onLoad={(e) => {
+                                  const img = e.target as HTMLImageElement;
+                                  const badge = e.currentTarget.parentElement;
+                                  if (badge) {
+                                    badge.textContent = `${img.naturalWidth}×${img.naturalHeight}`;
+                                  }
+                                }}
+                              />
+                            )}
                           </div>
                         </div>
                         
@@ -1421,13 +1461,29 @@ export default function ProductTitleDescription() {
                               setSelectedGalleryImages(newMap);
                             }}
                           >
-                            <img
-                              src={img.src}
-                              alt={img.alt_text || `Galerie ${idx + 1}`}
-                              className="w-full h-24 object-cover rounded"
-                            />
+                            <div className="aspect-square bg-muted rounded overflow-hidden">
+                              <img
+                                src={img.src}
+                                alt={img.alt_text || `Galerie ${idx + 1}`}
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
                             <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-xs px-1.5 py-0.5 rounded">
                               #{idx + 1}
+                            </div>
+                            <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                              <img
+                                src={img.src}
+                                alt=""
+                                className="hidden"
+                                onLoad={(e) => {
+                                  const imgEl = e.target as HTMLImageElement;
+                                  const badge = e.currentTarget.parentElement;
+                                  if (badge) {
+                                    badge.textContent = `${imgEl.naturalWidth}×${imgEl.naturalHeight}`;
+                                  }
+                                }}
+                              />
                             </div>
                           </div>
                         ))}
