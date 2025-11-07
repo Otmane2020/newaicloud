@@ -68,11 +68,16 @@ serve(async (req) => {
     if (profileError) throw profileError;
 
     // Determine if user is in trial or paid subscription
-    // Only consider subscription_status, ignore trial_ends_at if status is active
-    const isTrialing = profile.subscription_status === 'trialing';
-    const isPaid = profile.subscription_status === 'active';
+    // A user is in trial if:
+    // 1. subscription_status === 'trialing', OR
+    // 2. subscription_status === 'active' BUT trial_ends_at is in the future
+    const now = new Date();
+    const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+    const isTrialing = profile.subscription_status === 'trialing' || 
+                       (profile.subscription_status === 'active' && trialEndsAt && trialEndsAt > now);
+    const isPaid = profile.subscription_status === 'active' && (!trialEndsAt || trialEndsAt <= now);
     
-    console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, trialEndsAt: ${profile.trial_ends_at}`);
+    console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, trialEndsAt: ${profile.trial_ends_at}, now: ${now.toISOString()}`);
     
     // Get plan limits
     let plan;
