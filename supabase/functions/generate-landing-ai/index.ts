@@ -80,89 +80,161 @@ Ta mission est de générer une landing page HTML complète pour un produit Shop
       hasImage: !!imageUrl 
     });
 
-    // 🧠 Call Lovable AI Gateway (Gemini or GPT-based)
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Tu es un expert UX/UI designer et copywriter e-commerce. Génère des landing pages Tailwind modernes et efficaces pour Shopify.",
+    // 🔄 Retry logic for temporary failures
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 2000; // 2 seconds
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[generate-landing-ai] Attempt ${attempt}/${MAX_RETRIES}`);
+
+        // 🧠 Call Lovable AI Gateway (Gemini or GPT-based)
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
           },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 3000,
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "Tu es un expert UX/UI designer et copywriter e-commerce. Génère des landing pages Tailwind modernes et efficaces pour Shopify.",
+              },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 3000,
+          }),
+        });
+
+        // 🧱 Handle API errors - retry on 503/502/504
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`[generate-landing-ai] ❌ API error (attempt ${attempt}):`, response.status, errText);
+
+          // Permanent errors - don't retry
+          if (response.status === 429) {
+            return new Response(JSON.stringify({ 
+              error: "Rate limits exceeded. Please try again later." 
+            }), {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          if (response.status === 402) {
+            return new Response(JSON.stringify({ 
+              error: "Payment required. Please add funds to your Lovable AI workspace." 
+            }), {
+              status: 402,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          // Temporary errors (503, 502, 504) - retry
+          if ([502, 503, 504].includes(response.status) && attempt < MAX_RETRIES) {
+            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms...`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue; // Try again
+          }
+
+          // Other errors or last attempt
+          const errorMessage = `Lovable AI API error: ${response.status}`;
+          return new Response(JSON.stringify({ error: errorMessage }), {
+            status: response.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // ✅ Success - parse response and exit retry loop
+        const data = await response.json().catch(() => null);
+        const html = data?.choices?.[0]?.message?.content?.trim() || "";
+
+        console.log("[generate-landing-ai] Response status:", response.status);
+        console.log("[generate-landing-ai] AI response parsed, HTML length:", html.length);
+
+        if (!html) {
+          console.warn("[generate-landing-ai] ⚠️ Empty HTML response from AI");
+          
+          // If we have retries left, try again
+          if (attempt < MAX_RETRIES) {
+            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to empty response...`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue;
+          }
+
+          return new Response(
+            JSON.stringify({
+              error: "Aucune réponse générée par l'IA. Essayez avec un prompt plus simple ou un style différent.",
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        // Validation du HTML généré
+        if (html.includes('<html') || html.includes('<head') || html.includes('<body')) {
+          console.warn("[generate-landing-ai] ⚠️ HTML contains forbidden tags (html/head/body)");
+          return new Response(
+            JSON.stringify({
+              error: "Le HTML généré contient des balises interdites. Réessayez.",
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        if (html.length < 500) {
+          console.warn("[generate-landing-ai] ⚠️ Generated HTML too short:", html.length);
+          
+          // If we have retries left, try again
+          if (attempt < MAX_RETRIES) {
+            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to short content...`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue;
+          }
+
+          return new Response(
+            JSON.stringify({
+              error: "Le contenu généré est trop court. Réessayez avec plus de détails.",
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        console.log("[generate-landing-ai] ✅ Generated HTML length:", html.length, "chars");
+
+        // ✅ Success
+        return new Response(JSON.stringify({ html }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+
+      } catch (networkError) {
+        lastError = networkError instanceof Error ? networkError : new Error(String(networkError));
+        console.error(`[generate-landing-ai] 💥 Network error (attempt ${attempt}):`, lastError);
+        
+        // Retry on network errors if we have attempts left
+        if (attempt < MAX_RETRIES) {
+          console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to network error...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+          continue;
+        }
+      }
+    }
+
+    // If we get here, all retries failed
+    console.error("[generate-landing-ai] ❌ All retry attempts failed");
+    return new Response(
+      JSON.stringify({
+        error: lastError?.message || "Service temporairement indisponible. Veuillez réessayer dans quelques instants.",
       }),
-    });
-
-    // 🧱 Handle API errors
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("[generate-landing-ai] ❌ API error:", response.status, errText);
-
-      const messages: Record<number, string> = {
-        429: "Rate limits exceeded. Please try again later.",
-        402: "Payment required. Please add funds to your Lovable AI workspace.",
-      };
-
-      const errorMessage = messages[response.status] || `Lovable API error: ${response.status}`;
-
-      return new Response(JSON.stringify({ error: errorMessage }), {
-        status: response.status,
+      {
+        status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+      },
+    );
 
-    // ✅ Parse AI response safely
-    const data = await response.json().catch(() => null);
-    const html = data?.choices?.[0]?.message?.content?.trim() || "";
-
-    console.log("[generate-landing-ai] Response status:", response.status);
-    console.log("[generate-landing-ai] AI response parsed, HTML length:", html.length);
-
-    if (!html) {
-      console.warn("[generate-landing-ai] ⚠️ Empty HTML response from AI");
-      return new Response(
-        JSON.stringify({
-          error: "Aucune réponse générée par l'IA. Essayez avec un prompt plus simple ou un style différent.",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Validation du HTML généré
-    if (html.includes('<html') || html.includes('<head') || html.includes('<body')) {
-      console.warn("[generate-landing-ai] ⚠️ HTML contains forbidden tags (html/head/body)");
-      return new Response(
-        JSON.stringify({
-          error: "Le HTML généré contient des balises interdites. Réessayez.",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    if (html.length < 500) {
-      console.warn("[generate-landing-ai] ⚠️ Generated HTML too short:", html.length);
-      return new Response(
-        JSON.stringify({
-          error: "Le contenu généré est trop court. Réessayez avec plus de détails.",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    console.log("[generate-landing-ai] ✅ Generated HTML length:", html.length, "chars");
-
-    // ✅ Success
-    return new Response(JSON.stringify({ html }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (err) {
     console.error("[generate-landing-ai] 💥 Error:", err);
     return new Response(
