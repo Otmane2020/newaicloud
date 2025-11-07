@@ -52,6 +52,7 @@ interface Variant {
 interface FeedSettings {
   user_id: string;
   store_name: string;
+  feed_domain?: string;
   default_currency?: string;
   default_condition?: string;
   default_brand?: string;
@@ -148,7 +149,7 @@ async function getStoreDomain(sellerId: string, feedSettings?: FeedSettings): Pr
 
     if (!connection) {
       console.warn(`No active Shopify connection found for seller ${sellerId}`);
-      return null;
+      return feedSettings?.feed_domain || null;
     }
 
     console.log('🛍️ Shopify connection data:', {
@@ -172,12 +173,12 @@ async function getStoreDomain(sellerId: string, feedSettings?: FeedSettings): Pr
         return cleanDomain;
       }
       
-      return null;
+      return feedSettings?.feed_domain || null;
     }
 
   } catch (error) {
     console.error('❌ Error getting store domain:', error);
-    return null;
+    return feedSettings?.feed_domain || null;
   }
 }
 

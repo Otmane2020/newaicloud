@@ -1308,6 +1308,7 @@ export type Database = {
           default_condition: string | null
           default_currency: string | null
           excluded_collections: string[] | null
+          feed_domain: string | null
           filter_mode: string | null
           generate_gtin_enabled: boolean | null
           gtin_country_code: string | null
@@ -1328,6 +1329,7 @@ export type Database = {
           default_condition?: string | null
           default_currency?: string | null
           excluded_collections?: string[] | null
+          feed_domain?: string | null
           filter_mode?: string | null
           generate_gtin_enabled?: boolean | null
           gtin_country_code?: string | null
@@ -1348,6 +1350,7 @@ export type Database = {
           default_condition?: string | null
           default_currency?: string | null
           excluded_collections?: string[] | null
+          feed_domain?: string | null
           filter_mode?: string | null
           generate_gtin_enabled?: boolean | null
           gtin_country_code?: string | null
