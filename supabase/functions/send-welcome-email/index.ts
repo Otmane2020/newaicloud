@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const welcomeEmailSchema = z.object({
   email: z.string().email().max(255),
@@ -98,42 +101,32 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     // Envoi avec Resend
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "New AI <onboarding@resend.dev>", // Vous pouvez vérifier votre domaine plus tard
-        to: email,
-        subject: t.subject,
-        html: emailHtml,
-        // Optional: Ajouter des tags pour le tracking
-        tags: [
-          {
-            name: "category",
-            value: "welcome_email",
-          },
-        ],
-      }),
+    const { data, error: resendError } = await resend.emails.send({
+      from: "New AI <onboarding@resend.dev>",
+      to: [email],
+      subject: t.subject,
+      html: emailHtml,
+      tags: [
+        {
+          name: "category",
+          value: "welcome_email",
+        },
+      ],
     });
 
-    if (!resendResponse.ok) {
-      const errorData = await resendResponse.json();
-      console.error("Resend API error:", errorData);
-      throw new Error(`Resend error: ${resendResponse.status} - ${JSON.stringify(errorData)}`);
+    if (resendError) {
+      console.error("Resend API error:", resendError);
+      throw new Error(`Resend error: ${JSON.stringify(resendError)}`);
     }
 
-    const result = await resendResponse.json();
-    console.log("Resend response:", result);
+    console.log("Resend response:", data);
     console.log("Welcome email sent successfully to:", email);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "Email envoyé avec succès",
-        id: result.id,
+        id: data?.id,
       }),
       {
         status: 200,
