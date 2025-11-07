@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, prompt, productTitle, imageType = "secondary" } = await req.json();
+    const { imageUrl, prompt, productTitle, imageType = "secondary", format = "square", similarity = "medium" } = await req.json();
 
     if (!imageUrl || !prompt) {
       return new Response(
@@ -21,7 +21,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("🎨 Generating AI background:", { prompt, imageType });
+    console.log("🎨 Generating AI background:", { prompt, imageType, format, similarity });
 
     // Initialize Supabase client for usage tracking
     const authHeader = req.headers.get("Authorization");
@@ -42,6 +42,25 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
+    // Calculate aspect ratio based on format
+    let aspectRatio = "1024x1024"; // square
+    if (format === "portrait") {
+      aspectRatio = "768x1024"; // 3:4
+    } else if (format === "landscape") {
+      aspectRatio = "1024x768"; // 4:3
+    }
+
+    // Calculate similarity strength
+    const similarityMap: Record<string, { strength: string; description: string }> = {
+      "very-close": { strength: "very high", description: "staying extremely faithful to the original composition and product appearance (90% similarity)" },
+      "close": { strength: "high", description: "maintaining strong resemblance to the original (70% similarity)" },
+      "medium": { strength: "moderate", description: "balancing original features with creative freedom (50% similarity)" },
+      "creative": { strength: "low", description: "allowing significant creative interpretation (30% similarity)" },
+      "very-creative": { strength: "minimal", description: "maximizing creative freedom while keeping product recognizable (10% similarity)" }
+    };
+
+    const similarityInfo = similarityMap[similarity] || similarityMap["medium"];
+
     // Create prompt based on image type
     const isMainImage = imageType === "primary";
     const photographyPrompt = `
@@ -49,6 +68,8 @@ You are a professional e-commerce product photographer.
 
 PRODUCT: ${productTitle || "Product"}
 USER REQUEST: ${prompt}
+OUTPUT FORMAT: ${aspectRatio} (${format})
+SIMILARITY TO ORIGINAL: ${similarityInfo.strength} - ${similarityInfo.description}
 
 YOUR MISSION:
 Create a ${isMainImage ? "main product" : "lifestyle/ambiance"} photo with custom background.
@@ -61,7 +82,8 @@ ${isMainImage ? `
    - Product should face the camera directly
    - All product details must be clearly visible
    - Clean, professional look suitable for e-commerce
-   - Square format (1024x1024)
+   - Output dimensions: ${aspectRatio}
+   - Similarity level: ${similarityInfo.description}
    
 2. BACKGROUND:
    - Apply the requested style: "${prompt}"
@@ -73,7 +95,8 @@ ${isMainImage ? `
    - Product can be positioned artistically
    - Lifestyle/contextual setting
    - More creative freedom with composition
-   - Square format (1024x1024)
+   - Output dimensions: ${aspectRatio}
+   - Similarity level: ${similarityInfo.description}
    
 2. BACKGROUND:
    - Apply the requested style: "${prompt}"
@@ -82,13 +105,13 @@ ${isMainImage ? `
 `}
 
 3. TECHNICAL SPECS:
-   - High resolution (1024×1024)
+   - High resolution (${aspectRatio})
    - Professional color grading
    - Balanced exposure and contrast
    - No watermarks, text, or logos
    - Ready for e-commerce use
 
-RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} with custom background.
+RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} with custom background at ${aspectRatio} resolution.
     `.trim();
 
     // Call Lovable AI

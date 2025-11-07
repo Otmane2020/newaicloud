@@ -85,10 +85,10 @@ export function WhiteBackgroundPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh]">
+      <DialogContent className="max-w-6xl max-h-[90vh] w-[95vw] sm:w-full">
         <DialogHeader>
-          <DialogTitle>Prévisualisation des images avec fond blanc IA</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-base sm:text-lg">Prévisualisation des images avec fond blanc IA</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             {isSingleImage 
               ? "Comparez l'image originale avec la version générée par l'IA."
               : "Comparez les images originales avec les versions générées par l'IA. Sélectionnez celles que vous souhaitez appliquer."}
@@ -96,10 +96,10 @@ export function WhiteBackgroundPreviewDialog({
         </DialogHeader>
 
         {/* Format Selector */}
-        <div className="space-y-2 px-6 pb-4 border-b">
-          <Label htmlFor="white-bg-format">Format d'image</Label>
+        <div className="space-y-2 px-3 sm:px-6 pb-4 border-b">
+          <Label htmlFor="white-bg-format" className="text-xs sm:text-sm">Format d'image</Label>
           <Select value={format} onValueChange={setFormat}>
-            <SelectTrigger id="white-bg-format">
+            <SelectTrigger id="white-bg-format" className="text-xs sm:text-sm">
               <SelectValue placeholder="Sélectionner un format" />
             </SelectTrigger>
             <SelectContent>
@@ -110,41 +110,42 @@ export function WhiteBackgroundPreviewDialog({
           </Select>
         </div>
 
-        <ScrollArea className="h-[60vh] pr-4">
-          <div className="space-y-6">
+        <ScrollArea className="h-[40vh] sm:h-[60vh] pr-2 sm:pr-4">
+          <div className="space-y-4 sm:space-y-6">
             {previews.map((preview) => (
               <div
                 key={preview.productId}
-                className="border rounded-lg p-4 space-y-3"
+                className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                     {!isSingleImage && (
                       <input
                         type="checkbox"
                         checked={selectedIds.has(preview.productId)}
                         onChange={() => handleToggleSelect(preview.productId)}
                         disabled={preview.status !== 'success'}
-                        className="w-4 h-4"
+                        className="w-4 h-4 flex-shrink-0"
                       />
                     )}
-                    <div>
-                      <h4 className="font-medium">{preview.productTitle}</h4>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-medium text-sm sm:text-base truncate">{preview.productTitle}</h4>
                       {preview.status === 'generating' && (
-                        <Badge variant="outline" className="gap-1">
+                        <Badge variant="outline" className="gap-1 text-xs">
                           <Loader2 className="w-3 h-3 animate-spin" />
-                          Génération en cours...
+                          <span className="hidden sm:inline">Génération en cours...</span>
+                          <span className="sm:hidden">En cours...</span>
                         </Badge>
                       )}
                       {preview.status === 'success' && (
-                        <Badge variant="outline" className="gap-1 bg-green-50 text-green-700">
+                        <Badge variant="outline" className="gap-1 bg-green-50 text-green-700 text-xs">
                           <Check className="w-3 h-3" />
                           Généré
                         </Badge>
                       )}
                       {preview.status === 'error' && (
-                        <Badge variant="outline" className="gap-1 bg-red-50 text-red-700">
+                        <Badge variant="outline" className="gap-1 bg-red-50 text-red-700 text-xs">
                           <X className="w-3 h-3" />
                           Erreur
                         </Badge>
@@ -157,19 +158,20 @@ export function WhiteBackgroundPreviewDialog({
                       size="sm"
                       variant="outline"
                       onClick={() => onRegenerate(preview.productId)}
-                      className="gap-2"
+                      className="gap-2 text-xs"
                     >
                       <RefreshCw className="w-3 h-3" />
-                      Régénérer
+                      <span className="hidden sm:inline">Régénérer</span>
+                      <span className="sm:hidden">Régén.</span>
                     </Button>
                   )}
                 </div>
 
                 {/* Images Comparison */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Original */}
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Image originale</p>
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Image originale</p>
                     <div className="aspect-square bg-muted rounded-lg overflow-hidden border">
                       <img
                         src={preview.originalUrl}
@@ -181,13 +183,13 @@ export function WhiteBackgroundPreviewDialog({
 
                   {/* Generated */}
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                       Fond blanc IA
                     </p>
                     <div className="aspect-square bg-white rounded-lg overflow-hidden border">
                       {preview.status === 'generating' && (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                          <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-muted-foreground" />
                         </div>
                       )}
                       {preview.status === 'success' && preview.generatedUrl && (
@@ -198,10 +200,10 @@ export function WhiteBackgroundPreviewDialog({
                         />
                       )}
                       {preview.status === 'error' && (
-                        <div className="w-full h-full flex items-center justify-center text-center p-4">
+                        <div className="w-full h-full flex items-center justify-center text-center p-2 sm:p-4">
                           <div>
-                            <X className="w-8 h-8 text-red-500 mx-auto mb-2" />
-                            <p className="text-sm text-muted-foreground">{preview.error}</p>
+                            <X className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 mx-auto mb-2" />
+                            <p className="text-xs sm:text-sm text-muted-foreground">{preview.error}</p>
                           </div>
                         </div>
                       )}
@@ -213,44 +215,48 @@ export function WhiteBackgroundPreviewDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="flex items-center justify-between">
+        <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           {!isSingleImage && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               {successfulPreviews.length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSelectAll}
                   disabled={isGenerating}
+                  className="text-xs sm:text-sm w-full sm:w-auto"
                 >
                   {selectedIds.size === successfulPreviews.length
                     ? 'Tout désélectionner'
                     : 'Tout sélectionner'}
                 </Button>
               )}
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {selectedIds.size} sélectionné(s) sur {successfulPreviews.length}
               </span>
             </div>
           )}
-          {isSingleImage && <div />}
+          {isSingleImage && <div className="hidden sm:block" />}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={applying || isGenerating}
+              className="flex-1 sm:flex-none text-xs sm:text-sm"
             >
               Annuler
             </Button>
             <Button
               onClick={handleApply}
               disabled={applying || selectedIds.size === 0 || isGenerating}
+              className="flex-1 sm:flex-none text-xs sm:text-sm"
             >
               {applying ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Application...
+                  <span className="hidden sm:inline">Application...</span>
+                  <span className="sm:hidden">...</span>
                 </>
               ) : (
                 `Appliquer ${selectedIds.size > 0 ? `(${selectedIds.size})` : ''}`

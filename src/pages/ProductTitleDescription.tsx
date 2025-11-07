@@ -497,7 +497,8 @@ export default function ProductTitleDescription() {
             imageUrl: selectedImageUrl,
             prompt: prompt,
             productTitle: product.title,
-            imageType: selectedImageType
+            imageType: selectedImageType,
+            format: selectedImageFormat
           }
         });
 
@@ -554,9 +555,9 @@ export default function ProductTitleDescription() {
     }
   };
 
-  const handleApplyAiBackground = async (productIds: string[], format: string) => {
+  const handleApplyAiBackground = async (productIds: string[], format: string, similarity?: string) => {
     const toastId = toast.loading("Application des images...");
-    console.log('Applying AI background with format:', format);
+    console.log('Applying AI background with format:', format, 'similarity:', similarity);
 
     try {
       for (const productId of productIds) {
