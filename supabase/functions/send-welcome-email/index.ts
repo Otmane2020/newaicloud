@@ -43,6 +43,8 @@ const handler = async (req: Request): Promise<Response> => {
           "Nous sommes ravis de vous compter parmi nous. Vous pouvez dès maintenant accéder à toutes nos fonctionnalités pour booster votre visibilité en ligne.",
         button: "Accéder à mon compte",
         signature: "À très bientôt,<br>L'équipe New AI",
+        footer: "New AI - Optimisez votre SEO Shopify",
+        disclaimer: "Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.",
       },
       en: {
         subject: "Welcome to New AI! 🚀",
@@ -53,6 +55,8 @@ const handler = async (req: Request): Promise<Response> => {
           "We are delighted to have you with us. You can now access all our features to boost your online visibility.",
         button: "Access my account",
         signature: "See you soon,<br>The New AI Team",
+        footer: "New AI - Optimize your Shopify SEO",
+        disclaimer: "If you didn't create an account, you can safely ignore this email.",
       },
     };
 
@@ -91,8 +95,8 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="color: #475569; margin-top: 30px;">${t.signature}</p>
           </div>
           <div class="footer">
-            <p>New AI - Optimisez votre SEO Shopify • <a href="https://newai.sale" style="color: hsl(217, 91%, 60%);">newai.sale</a></p>
-            <p style="font-size: 12px; margin-top: 10px;">${language === 'fr' ? "Si vous n'avez pas créé de compte, vous pouvez ignorer cet email." : "If you didn't create an account, you can safely ignore this email."}</p>
+            <p>${t.footer} • <a href="https://newai.sale" style="color: hsl(217, 91%, 60%);">newai.sale</a></p>
+            <p style="font-size: 12px; margin-top: 10px;">${t.disclaimer}</p>
           </div>
         </div>
       </body>

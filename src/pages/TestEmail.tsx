@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, CheckCircle2, XCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -11,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 const TestEmail = () => {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
+  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const { toast } = useToast();
@@ -25,7 +27,7 @@ const TestEmail = () => {
         body: {
           email,
           fullName,
-          language: 'fr'
+          language,
         }
       });
 
@@ -64,10 +66,10 @@ const TestEmail = () => {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Test Email SMTP
+            Test Email Resend
           </h1>
           <p className="text-muted-foreground">
-            Testez la configuration SMTP avec O2Switch
+            Testez l'envoi d'emails avec Resend API
           </p>
         </div>
 
@@ -78,7 +80,7 @@ const TestEmail = () => {
               Envoyer un email de test
             </CardTitle>
             <CardDescription>
-              Configuration actuelle : ohio.o2switch.net:465 (support@newai.sale)
+              Configuration actuelle : Resend API (noreply@newai.sale)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -107,6 +109,19 @@ const TestEmail = () => {
                   required
                   disabled={loading}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="language">Langue / Language</Label>
+                <Select value={language} onValueChange={(value: 'fr' | 'en') => setLanguage(value)} disabled={loading}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                    <SelectItem value="en">🇬🇧 English</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button 
@@ -160,11 +175,11 @@ const TestEmail = () => {
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
-              <span>L'adresse support@newai.sale doit être configurée sur O2Switch</span>
+              <span>Le domaine newai.sale doit être vérifié sur Resend</span>
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
-              <span>Le mot de passe SMTP doit être correct dans les secrets</span>
+              <span>La clé API Resend doit être configurée dans les secrets</span>
             </div>
           </CardContent>
         </Card>
