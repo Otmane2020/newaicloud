@@ -253,7 +253,7 @@ serve(async (req) => {
     const subscriptionItemId = stripeSubscription.items.data[0]?.id;
     if (!subscriptionItemId) throw new Error("No subscription item found");
 
-    // Update subscription with appropriate proration behavior
+    // Update subscription WITHOUT automatic proration
     const updateParams: any = {
       items: [
         {
@@ -261,8 +261,7 @@ serve(async (req) => {
           price: new_price_id,
         },
       ],
-      proration_behavior: isMidCycleUpgrade ? 'always_invoice' : 'none',
-      // CRITICAL: Always preserve billing cycle anchor to avoid changing renewal date
+      proration_behavior: 'none', // Disable Stripe's automatic proration
       billing_cycle_anchor: 'unchanged',
     };
 
@@ -274,9 +273,44 @@ serve(async (req) => {
     logStep("Subscription updated in Stripe", {
       subscriptionId: updatedSubscription.id,
       status: updatedSubscription.status,
-      prorationBehavior: updateParams.proration_behavior,
-      periodPreserved: isRenewalUpgrade
+      prorationBehavior: 'none',
+      periodPreserved: true
     });
+
+    // For mid-cycle upgrades, create a custom invoice for the price difference
+    if (isMidCycleUpgrade) {
+      try {
+        const oldPriceAmount = currentPrice?.unit_amount || 0;
+        const newPriceObj = await stripe.prices.retrieve(new_price_id);
+        const newPriceAmount = newPriceObj.unit_amount || 0;
+        const priceDifference = newPriceAmount - oldPriceAmount;
+
+        if (priceDifference > 0) {
+          // Create an invoice item for the price difference
+          await stripe.invoiceItems.create({
+            customer: profile.stripe_customer_id,
+            amount: priceDifference,
+            currency: newPriceObj.currency,
+            description: `Upgrade difference: ${oldPriceAmount / 100}${newPriceObj.currency.toUpperCase()} → ${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()}`,
+          });
+
+          // Create and finalize the invoice
+          const invoice = await stripe.invoices.create({
+            customer: profile.stripe_customer_id,
+            auto_advance: true, // Auto-finalize and attempt payment
+          });
+
+          await stripe.invoices.finalizeInvoice(invoice.id);
+
+          logStep("Custom invoice created for upgrade difference", {
+            priceDifference: priceDifference / 100,
+            invoiceId: invoice.id
+          });
+        }
+      } catch (error) {
+        logStep("Warning: Failed to create custom invoice", { error });
+      }
+    }
 
     // Update profile with new plan
     if (new_plan_id) {
@@ -349,35 +383,21 @@ serve(async (req) => {
         const newPriceAmount = newPriceObj.unit_amount || 0; // in cents
         
         // Simple logic: user pays the difference between plans
-        // If old plan = 49€ and new plan = 98€, user pays 49€
         const priceDifference = newPriceAmount - oldPriceAmount;
         
         prorationDetails = {
           old_plan_price: oldPriceAmount / 100,
           new_plan_price: newPriceAmount / 100,
-          price_difference: priceDifference / 100,
+          upgrade_cost: priceDifference / 100,
           currency: newPriceObj.currency.toUpperCase(),
           logic: "simple_difference",
-          explanation: `Vous payez la différence entre les plans (${newPriceAmount / 100}€ - ${oldPriceAmount / 100}€ = ${priceDifference / 100}€)`
+          explanation: `Vous payez uniquement la différence: ${newPriceAmount / 100} - ${oldPriceAmount / 100} = ${priceDifference / 100}${newPriceObj.currency.toUpperCase()}`
         };
         
         logStep("Simple price difference calculated", prorationDetails);
-        
-        // Get actual invoice to confirm what Stripe charged
-        const invoices = await stripe.invoices.list({
-          customer: profile.stripe_customer_id,
-          limit: 1,
-        });
-        if (invoices.data[0]) {
-          prorationDetails.actual_invoice_amount = invoices.data[0].amount_due / 100;
-          logStep("Invoice amount confirmed", { 
-            expected: prorationDetails.price_difference,
-            actual: prorationDetails.actual_invoice_amount 
-          });
-        }
       } catch (error) {
-        logStep("Warning: Could not calculate proration details", { error });
-        prorationDetails = { error: "Could not calculate proration details" };
+        logStep("Warning: Could not calculate price difference", { error });
+        prorationDetails = { error: "Could not calculate price difference" };
       }
     }
 
