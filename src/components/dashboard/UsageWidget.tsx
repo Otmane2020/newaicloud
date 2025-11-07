@@ -15,12 +15,12 @@ export function UsageWidget() {
   if (loading || !limits) return null;
 
   const formatLimit = (limit: number) => {
-    if (limit === -1 || limit >= 999999) return '∞';
+    if (limit === -1) return '∞';
     return limit.toString();
   };
 
   const calculatePercentage = (current: number, max: number) => {
-    if (max === -1 || max >= 999999) return 0;
+    if (max === -1) return 0;
     return Math.round((current / max) * 100);
   };
 
@@ -84,8 +84,8 @@ export function UsageWidget() {
           {usageItems.map((item) => {
             const percentage = calculatePercentage(item.current, item.max);
             const isNearLimit = percentage >= 80 && percentage < 100;
-            const isAtLimit = percentage >= 100;
-            const isUnlimited = item.max === -1 || item.max >= 999999;
+            const isAtLimit = percentage >= 100 || item.blocked;
+            const isUnlimited = item.max === -1;
             
             return (
               <div key={item.label} className="space-y-1.5">
