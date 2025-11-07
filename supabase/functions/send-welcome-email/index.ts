@@ -166,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p>${t.message}</p>
             
             <div class="cta">
-              <a href="https://app.newai.sale" target="_blank">🚀 ${t.button}</a>
+              <a href="https://app.newai.sale/auth" target="_blank">🚀 ${t.button}</a>
             </div>
             
             <p style="text-align:center;color:#7a869a;font-size:13px;margin-top:28px;">
