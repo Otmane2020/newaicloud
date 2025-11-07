@@ -33,6 +33,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/OptimizationConfigDialog";
 import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { AiBackgroundConfigDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundConfigDialog";
+import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
@@ -110,6 +111,7 @@ export default function ProductTitleDescription() {
   const [currentProcessing, setCurrentProcessing] = useState<{ index: number; total: number; title: string } | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showOptimizationConfirm, setShowOptimizationConfirm] = useState(false);
   const [showLandingDialog, setShowLandingDialog] = useState(false);
   const [selectedLandingProduct, setSelectedLandingProduct] = useState<Product | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
@@ -907,8 +909,15 @@ export default function ProductTitleDescription() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleOptimizeSelected()}
-                disabled={generating || selectedProducts.size === 0}
+                onClick={() => {
+                  if (!canDoAction('optimizations')) {
+                    toast.error("Limite d'optimisations atteinte");
+                    setShowUpgradeDialog(true);
+                    return;
+                  }
+                  setShowOptimizationConfirm(true);
+                }}
+                disabled={generating || selectedProducts.size === 0 || !canDoAction('optimizations')}
               >
                 <Wand2 className="h-4 w-4 mr-2" />
                 Optimiser ({selectedProducts.size})
@@ -1470,6 +1479,16 @@ export default function ProductTitleDescription() {
             : []
         }
         mainImageUrl={filteredProducts[0]?.image_url}
+      />
+
+      <OptimizationConfirmDialog
+        open={showOptimizationConfirm}
+        onOpenChange={setShowOptimizationConfirm}
+        onConfirm={() => handleOptimizeSelected()}
+        selectedCount={selectedProducts.size}
+        currentUsage={limits?.usage.optimizations_count || 0}
+        maxOptimizations={limits?.limits.max_optimizations || 50}
+        isTrialing={limits?.isTrialing || false}
       />
 
       <UpgradeDialog
