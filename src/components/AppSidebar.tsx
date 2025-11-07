@@ -154,6 +154,7 @@ export function AppSidebar() {
     { title: t.account.submenu.profile, url: "/account?tab=profile", icon: User, key: "profile" },
     { title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" },
     { title: t.account.submenu.subscription, url: "/account?tab=subscription", icon: CreditCard, key: "subscription" },
+    { title: "Limites d'utilisation", url: "/account?tab=usage", icon: BarChart3, key: "usage" },
     { title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" },
   ];
 
