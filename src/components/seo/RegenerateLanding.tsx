@@ -58,7 +58,7 @@ export default function RegenerateLanding({
 
       await new Promise(resolve => setTimeout(resolve, 300));
       setProgress(30);
-      setProgressMessage("Appel à l'API Lovable AI...");
+      setProgressMessage("Génération du contenu IA...");
 
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
@@ -80,8 +80,10 @@ export default function RegenerateLanding({
         const message = data.error.includes("Rate limits")
           ? "Limite de requêtes atteinte. Veuillez réessayer plus tard."
           : data.error.includes("Payment required")
-            ? "Crédits Lovable AI épuisés. Veuillez recharger votre compte."
-            : data.error;
+            ? "Crédits IA épuisés. Contactez le support pour plus d'informations."
+            : data.error.includes("LIMIT_REACHED")
+              ? "Limite d'optimisations atteinte. Passez à un plan supérieur."
+              : data.error;
         setError(message);
         toast.error(message);
         return;

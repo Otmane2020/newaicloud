@@ -239,7 +239,7 @@ export default function ProductTitleDescription() {
           }
           
           if (errorMessage.includes('CREDITS_DEPLETED') || errorMessage.includes('402')) {
-            throw new Error('CREDITS_DEPLETED: Les crédits Lovable AI sont épuisés. Veuillez ajouter des crédits dans Settings → Workspace → Usage.');
+            throw new Error('CREDITS_DEPLETED: Les crédits IA sont épuisés. Contactez le support pour plus d\'informations.');
           }
           
           if (errorMessage.includes('RATE_LIMIT') || errorMessage.includes('429')) {

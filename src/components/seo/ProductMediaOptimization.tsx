@@ -29,6 +29,8 @@ import { useImageOptimization } from '@/hooks/useImageOptimization';
 import { ImageHistoryPanel } from './ImageHistoryPanel';
 import { BackgroundVariantSelector } from './BackgroundVariantSelector';
 import { SingleImagePreviewDialog } from './SingleImagePreviewDialog';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { PlanUpgradeDialog } from '@/components/dashboard/PlanUpgradeDialog';
 
 interface ProductImage {
   id: string;
@@ -51,6 +53,9 @@ export const ProductMediaOptimization = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [backgroundVariants, setBackgroundVariants] = useState<any[]>([]);
   const [showVariantsSelector, setShowVariantsSelector] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+
+  const { limits, loading: limitsLoading } = useUsageLimits();
 
   const {
     isOptimizing,
@@ -108,6 +113,13 @@ export const ProductMediaOptimization = () => {
   });
 
   const handleGenerateWhiteBackground = async (image: ProductImage) => {
+    // ✅ Vérifier les limites AVANT de générer
+    if (!limits?.canUseOptimizations) {
+      setShowUpgradeDialog(true);
+      toast.error('Limite d\'optimisations atteinte. Passez à un plan supérieur.');
+      return;
+    }
+
     const product = products?.find(p => p.id === image.product_id);
     if (!product) return;
 
@@ -125,7 +137,14 @@ export const ProductMediaOptimization = () => {
       }
     } catch (error) {
       console.error('Error generating white background:', error);
-      toast.error('Erreur lors de la génération du fond blanc');
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('LIMIT_REACHED') || errorMessage.includes('429')) {
+        setShowUpgradeDialog(true);
+        toast.error('Limite d\'optimisations atteinte');
+      } else {
+        toast.error('Erreur lors de la génération du fond blanc');
+      }
     }
   };
 
@@ -156,6 +175,13 @@ export const ProductMediaOptimization = () => {
   };
 
   const handleGenerateAIBackgrounds = async (image: ProductImage) => {
+    // ✅ Vérifier les limites AVANT de générer
+    if (!limits?.canUseOptimizations) {
+      setShowUpgradeDialog(true);
+      toast.error('Limite d\'optimisations atteinte. Passez à un plan supérieur.');
+      return;
+    }
+
     const product = products?.find(p => p.id === image.product_id);
     if (!product) return;
 
@@ -173,6 +199,14 @@ export const ProductMediaOptimization = () => {
       }
     } catch (error) {
       console.error('Error generating AI backgrounds:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('LIMIT_REACHED') || errorMessage.includes('429')) {
+        setShowUpgradeDialog(true);
+        toast.error('Limite d\'optimisations atteinte');
+      } else {
+        toast.error('Erreur lors de la génération des arrière-plans IA');
+      }
     }
   };
 
@@ -496,6 +530,17 @@ export const ProductMediaOptimization = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Plan Upgrade Dialog */}
+      <PlanUpgradeDialog 
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        currentPlanId={limits?.currentPlanId || 'trial'}
+        onSuccess={() => {
+          setShowUpgradeDialog(false);
+          toast.success('Plan mis à jour avec succès !');
+        }}
+      />
     </div>
   );
 };
