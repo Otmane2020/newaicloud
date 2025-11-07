@@ -1073,6 +1073,80 @@ export type Database = {
         }
         Relationships: []
       }
+      gsc_keyword_history: {
+        Row: {
+          clicks: number
+          created_at: string
+          ctr: number
+          date: string
+          id: string
+          impressions: number
+          position: number
+          tracking_id: string
+        }
+        Insert: {
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          date: string
+          id?: string
+          impressions?: number
+          position: number
+          tracking_id: string
+        }
+        Update: {
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          date?: string
+          id?: string
+          impressions?: number
+          position?: number
+          tracking_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gsc_keyword_history_tracking_id_fkey"
+            columns: ["tracking_id"]
+            isOneToOne: false
+            referencedRelation: "gsc_keyword_tracking"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gsc_keyword_tracking: {
+        Row: {
+          created_at: string
+          current_position: number
+          domain: string
+          id: string
+          initial_position: number
+          keyword: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_position: number
+          domain: string
+          id?: string
+          initial_position: number
+          keyword: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_position?: number
+          domain?: string
+          id?: string
+          initial_position?: number
+          keyword?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       gsc_sync_config: {
         Row: {
           alert_thresholds: Json | null

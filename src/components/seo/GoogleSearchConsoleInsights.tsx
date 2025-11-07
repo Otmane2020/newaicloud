@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
+import { GSCArticleOpportunities } from './GSCArticleOpportunities';
 
 interface SearchConsoleData {
   date: string;
@@ -562,8 +563,24 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip />
                 <Legend />
-                <Line yAxisId="left" type="monotone" dataKey="position" stroke="hsl(var(--chart-3))" />
-                <Line yAxisId="right" type="monotone" dataKey="ctr" stroke="hsl(var(--chart-4))" />
+                <Line 
+                  yAxisId="left" 
+                  type="monotone" 
+                  dataKey="position" 
+                  stroke="hsl(var(--chart-3))" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(var(--chart-3))', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line 
+                  yAxisId="right" 
+                  type="monotone" 
+                  dataKey="ctr" 
+                  stroke="hsl(var(--chart-4))" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(var(--chart-4))', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </Card>
@@ -659,6 +676,14 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
             </Button>
           </div>
         </Card>
+      )}
+
+      {/* Article Opportunities */}
+      {!loading && topQueries.length > 0 && (
+        <GSCArticleOpportunities 
+          selectedDomain={selectedDomain} 
+          topQueries={topQueries}
+        />
       )}
     </div>
   );
