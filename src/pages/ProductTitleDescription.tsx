@@ -761,7 +761,7 @@ export default function ProductTitleDescription() {
                   }
                   handleOptimizeAll();
                 }}
-                disabled={generating || filteredProducts.length === 0 || !canDoAction('optimizations')}
+                disabled={generating || filteredProducts.length === 0}
                 size="lg"
                 className="gap-2"
               >
@@ -934,7 +934,7 @@ export default function ProductTitleDescription() {
                   }
                   setShowOptimizationConfirm(true);
                 }}
-                disabled={generating || selectedProducts.size === 0 || !canDoAction('optimizations')}
+                disabled={generating || selectedProducts.size === 0}
               >
                 <Wand2 className="h-4 w-4 mr-2" />
                 Optimiser ({selectedProducts.size})
@@ -952,7 +952,7 @@ export default function ProductTitleDescription() {
                   await loadGalleryImages(Array.from(selectedProducts));
                   setShowWhiteBgConfigDialog(true);
                 }}
-                disabled={generatingWhiteBg || selectedProducts.size === 0 || !canDoAction('optimizations')}
+                disabled={generatingWhiteBg || selectedProducts.size === 0}
               >
                 {generatingWhiteBg ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -974,7 +974,7 @@ export default function ProductTitleDescription() {
                   await loadGalleryImages(Array.from(selectedProducts));
                   setShowAiConfigDialog(true);
                 }}
-                disabled={generatingAiBg || selectedProducts.size === 0 || !canDoAction('optimizations')}
+                disabled={generatingAiBg || selectedProducts.size === 0}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
               >
                 {generatingAiBg ? (
@@ -1087,7 +1087,7 @@ export default function ProductTitleDescription() {
                                 setSelectedProducts(new Set([product.id]));
                                 setTimeout(() => handleOptimizeSelected(), 0);
                               }}
-                              disabled={generating || !canDoAction('optimizations')}
+                              disabled={generating}
                             >
                               <Sparkles className="h-4 w-4" />
                             </Button>
@@ -1113,7 +1113,7 @@ export default function ProductTitleDescription() {
                                 await loadGalleryImages([product.id]);
                                 setShowWhiteBgConfigDialog(true);
                               }}
-                              disabled={generatingWhiteBg || !canDoAction('optimizations')}
+                              disabled={generatingWhiteBg}
                             >
                               {generatingWhiteBg && selectedProducts.has(product.id) ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1143,7 +1143,7 @@ export default function ProductTitleDescription() {
                                 await loadGalleryImages([product.id]);
                                 setShowAiConfigDialog(true);
                               }}
-                              disabled={generatingAiBg || !canDoAction('optimizations')}
+                              disabled={generatingAiBg}
                               className="hover:bg-purple-50 dark:hover:bg-purple-950"
                             >
                               {generatingAiBg && selectedProducts.has(product.id) ? (
@@ -1195,7 +1195,6 @@ export default function ProductTitleDescription() {
                                 setSelectedLandingProduct(product);
                                 setShowLandingConfigDialog(true);
                               }}
-                              disabled={!canDoAction('optimizations')}
                               className="hover:bg-primary/10"
                             >
                               <FileText className="h-4 w-4 text-primary" />
