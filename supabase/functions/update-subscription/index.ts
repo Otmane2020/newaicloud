@@ -72,27 +72,74 @@ serve(async (req) => {
     if (profileError) throw profileError;
 
     // Get active subscription
-    const { data: subscription, error: subscriptionError } = await supabaseClient
+    let subscriptionData: { stripe_subscription_id: string; status: string } | null = null;
+    
+    const { data: subscriptionFromDB, error: subscriptionError } = await supabaseClient
       .from("subscriptions")
       .select("stripe_subscription_id, status")
       .eq("seller_id", userData.user.id)
       .in("status", ["active", "trialing"])
-      .single();
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (subscriptionError) throw subscriptionError;
-    if (!subscription?.stripe_subscription_id) {
-      throw new Error("No active subscription found");
+    
+    if (subscriptionFromDB?.stripe_subscription_id) {
+      subscriptionData = subscriptionFromDB;
+    } else {
+      // If no subscription in DB but user has active status, check Stripe directly
+      if (!profile.stripe_customer_id) {
+        throw new Error("No Stripe customer found. Please subscribe first.");
+      }
+      
+      logStep("No subscription in DB, checking Stripe directly");
+      const stripeTemp = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+      
+      const stripeSubscriptions = await stripeTemp.subscriptions.list({
+        customer: profile.stripe_customer_id,
+        status: 'all',
+        limit: 1,
+      });
+      
+      if (stripeSubscriptions.data.length === 0 || !['active', 'trialing'].includes(stripeSubscriptions.data[0].status)) {
+        throw new Error("No active subscription found in Stripe. Please subscribe first.");
+      }
+      
+      // Use the Stripe subscription
+      const stripeSubId = stripeSubscriptions.data[0].id;
+      logStep("Found subscription in Stripe", { subscriptionId: stripeSubId });
+      
+      // Sync it to our DB
+      await supabaseClient
+        .from("subscriptions")
+        .upsert({
+          seller_id: userData.user.id,
+          stripe_subscription_id: stripeSubId,
+          status: stripeSubscriptions.data[0].status,
+          current_period_start: new Date(stripeSubscriptions.data[0].current_period_start * 1000).toISOString(),
+          current_period_end: new Date(stripeSubscriptions.data[0].current_period_end * 1000).toISOString(),
+        });
+      
+      subscriptionData = {
+        stripe_subscription_id: stripeSubId,
+        status: stripeSubscriptions.data[0].status
+      };
+    }
+    
+    if (!subscriptionData) {
+      throw new Error("Could not find valid subscription");
     }
 
     logStep("Profile and subscription loaded", { 
-      subscriptionId: subscription.stripe_subscription_id,
+      subscriptionId: subscriptionData.stripe_subscription_id,
       customerId: profile.stripe_customer_id 
     });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Get current subscription from Stripe
-    const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id);
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionData.stripe_subscription_id);
     logStep("Current subscription retrieved", { 
       status: stripeSubscription.status,
       itemsCount: stripeSubscription.items.data.length 
@@ -142,7 +189,7 @@ serve(async (req) => {
     };
 
     const updatedSubscription = await stripe.subscriptions.update(
-      subscription.stripe_subscription_id,
+      subscriptionData.stripe_subscription_id,
       updateParams
     );
 
