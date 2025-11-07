@@ -1192,6 +1192,13 @@ export default function ProductTitleDescription() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={async () => {
+                                  // Vérifier les limites AVANT de synchroniser
+                                  if (!canDoAction('optimizations')) {
+                                    toast.error("Limite d'optimisations atteinte");
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  
                                   const toastId = toast.loading("Synchronisation...");
                                   try {
                                     const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
@@ -1205,11 +1212,13 @@ export default function ProductTitleDescription() {
                                     
                                     if (error) throw error;
                                     toast.success("Synchronisé avec Shopify", { id: toastId });
+                                    await refreshLimits();
                                   } catch (error) {
                                     console.error("Sync error:", error);
                                     toast.error("Erreur lors de la synchronisation", { id: toastId });
                                   }
                                 }}
+                                disabled={!canDoAction('optimizations')}
                               >
                                 <RefreshCw className="h-4 w-4" />
                               </Button>
