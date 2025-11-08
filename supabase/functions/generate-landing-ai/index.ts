@@ -79,7 +79,7 @@ serve(async (req) => {
         }
         
         // ✅ Incrémenter IMMÉDIATEMENT (avant génération pour éviter les abus)
-        const LANDING_PAGE_COST = 3; // 1 landing page = 3 optimisations
+        const LANDING_PAGE_COST = 5; // 1 landing page = 5 optimisations (valeur augmentée car contenu riche + Vision AI + design personnalisé)
         
         await supabaseAdmin.rpc("increment_usage", {
           p_seller_id: user.id,
