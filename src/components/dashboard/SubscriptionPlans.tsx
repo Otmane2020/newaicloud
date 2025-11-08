@@ -19,8 +19,16 @@ interface Plan {
   description: string;
   price_monthly: number;
   price_yearly: number;
+  price_monthly_eur?: number;
+  price_yearly_eur?: number;
+  price_monthly_usd?: number;
+  price_yearly_usd?: number;
   stripe_price_id_monthly: string | null;
   stripe_price_id_yearly: string | null;
+  stripe_price_id_monthly_eur?: string | null;
+  stripe_price_id_yearly_eur?: string | null;
+  stripe_price_id_monthly_usd?: string | null;
+  stripe_price_id_yearly_usd?: string | null;
   max_products: number;
   max_optimizations_monthly: number;
   max_articles_monthly: number;
