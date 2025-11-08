@@ -1653,6 +1653,66 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_change_history: {
+        Row: {
+          change_type: string
+          changed_at: string | null
+          created_at: string | null
+          from_plan: string
+          id: string
+          proration_amount: number | null
+          stripe_subscription_id: string | null
+          to_plan: string
+          user_id: string
+        }
+        Insert: {
+          change_type: string
+          changed_at?: string | null
+          created_at?: string | null
+          from_plan: string
+          id?: string
+          proration_amount?: number | null
+          stripe_subscription_id?: string | null
+          to_plan: string
+          user_id: string
+        }
+        Update: {
+          change_type?: string
+          changed_at?: string | null
+          created_at?: string | null
+          from_plan?: string
+          id?: string
+          proration_amount?: number | null
+          stripe_subscription_id?: string | null
+          to_plan?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      plan_transitions: {
+        Row: {
+          allows_proration: boolean | null
+          from_plan: string
+          max_changes_per_month: number | null
+          requires_payment: boolean | null
+          to_plan: string
+        }
+        Insert: {
+          allows_proration?: boolean | null
+          from_plan: string
+          max_changes_per_month?: number | null
+          requires_payment?: boolean | null
+          to_plan: string
+        }
+        Update: {
+          allows_proration?: boolean | null
+          from_plan?: string
+          max_changes_per_month?: number | null
+          requires_payment?: boolean | null
+          to_plan?: string
+        }
+        Relationships: []
+      }
       product_image_history: {
         Row: {
           ai_model: string | null
@@ -1951,6 +2011,7 @@ export type Database = {
           created_at: string
           credits: number | null
           current_plan_id: string | null
+          device_fingerprint: string | null
           email: string
           full_name: string | null
           google_ads_customer_id: string | null
@@ -1970,6 +2031,7 @@ export type Database = {
           id: string
           onboarding_completed: boolean | null
           preferred_language: string | null
+          signup_ip: unknown
           stripe_customer_id: string | null
           subscription_status: string | null
           trial_ends_at: string | null
@@ -1980,6 +2042,7 @@ export type Database = {
           created_at?: string
           credits?: number | null
           current_plan_id?: string | null
+          device_fingerprint?: string | null
           email: string
           full_name?: string | null
           google_ads_customer_id?: string | null
@@ -1999,6 +2062,7 @@ export type Database = {
           id: string
           onboarding_completed?: boolean | null
           preferred_language?: string | null
+          signup_ip?: unknown
           stripe_customer_id?: string | null
           subscription_status?: string | null
           trial_ends_at?: string | null
@@ -2009,6 +2073,7 @@ export type Database = {
           created_at?: string
           credits?: number | null
           current_plan_id?: string | null
+          device_fingerprint?: string | null
           email?: string
           full_name?: string | null
           google_ads_customer_id?: string | null
@@ -2028,6 +2093,7 @@ export type Database = {
           id?: string
           onboarding_completed?: boolean | null
           preferred_language?: string | null
+          signup_ip?: unknown
           stripe_customer_id?: string | null
           subscription_status?: string | null
           trial_ends_at?: string | null
@@ -3451,6 +3517,42 @@ export type Database = {
         }
         Relationships: []
       }
+      trial_history: {
+        Row: {
+          converted_to_paid: boolean | null
+          created_at: string | null
+          device_fingerprint: string | null
+          email: string
+          id: string
+          signup_ip: unknown
+          trial_ended_at: string | null
+          trial_started_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          converted_to_paid?: boolean | null
+          created_at?: string | null
+          device_fingerprint?: string | null
+          email: string
+          id?: string
+          signup_ip?: unknown
+          trial_ended_at?: string | null
+          trial_started_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          converted_to_paid?: boolean | null
+          created_at?: string | null
+          device_fingerprint?: string | null
+          email?: string
+          id?: string
+          signup_ip?: unknown
+          trial_ended_at?: string | null
+          trial_started_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       usage_tracking: {
         Row: {
           articles_count: number | null
@@ -3637,6 +3739,10 @@ export type Database = {
           p_resource_type: string
           p_user_id: string
         }
+        Returns: Json
+      }
+      check_trial_abuse: {
+        Args: { p_email: string; p_ip: unknown }
         Returns: Json
       }
       cleanup_old_vision_cache: { Args: never; Returns: undefined }

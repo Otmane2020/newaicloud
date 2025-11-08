@@ -171,41 +171,59 @@ serve(async (req) => {
       }))
     });
     
-    // Accept more subscription statuses: active, trialing, past_due, unpaid
-    const validStatuses = ['active', 'trialing', 'past_due', 'unpaid'];
+    // SECURITY: Accepter UNIQUEMENT 'active' et 'trialing' comme statuts valides
+    // past_due et unpaid ne sont PAS des abonnements valides
+    const validStatuses = ['active', 'trialing'];
     const activeSubscription = subscriptions.data.find(
       (sub: Stripe.Subscription) => validStatuses.includes(sub.status)
     );
     
-    // CRITICAL VALIDATION: Paid plans cannot be in trialing status
+    // CRITICAL CHECK: Pour les trials, vérifier que la date de fin n'est pas dépassée
     if (activeSubscription && activeSubscription.status === 'trialing') {
-      const priceId = activeSubscription.items.data[0].price.id;
-      logStep('Checking if trialing subscription is on a paid plan', { priceId });
+      const trialEnd = activeSubscription.trial_end;
+      if (trialEnd && trialEnd * 1000 < Date.now()) {
+        logStep('Trial expired but status not updated', { trialEnd: new Date(trialEnd * 1000) });
+        
+        // Mettre à jour le profil
+        await supabaseClient
+          .from('profiles')
+          .update({ 
+            subscription_status: 'inactive',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+        
+        return new Response(JSON.stringify({ 
+          subscribed: false,
+          error: 'trial_expired',
+          message: 'Your trial has expired. Please upgrade to continue.'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
       
-      // Check if this price_id belongs to a non-trial plan
-      const { data: plan } = await supabaseClient
+      // Vérifier si c'est un plan payant en trial (faille de sécurité)
+      const priceId = activeSubscription.items.data[0]?.price.id;
+      const { data: planData } = await supabaseClient
         .from('subscription_plans')
         .select('id, name')
         .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
+        .neq('id', 'trial')
         .single();
       
-      if (plan && plan.id !== 'trial') {
-        logStep('INVALID STATE DETECTED: Paid plan in trialing status', { 
-          plan_id: plan.id,
-          plan_name: plan.name,
-          subscription_id: activeSubscription.id,
-          price_id: priceId
+      if (planData) {
+        logStep('❌ SECURITY ALERT: Paid plan in trialing status', { 
+          planId: planData.id, 
+          subscriptionId: activeSubscription.id
         });
         
         return new Response(JSON.stringify({ 
           subscribed: false,
-          error: 'invalid_trial_state',
-          message: 'Your subscription is in an invalid state. Please complete payment.',
-          details: {
-            plan_id: plan.id,
-            plan_name: plan.name,
-            subscription_id: activeSubscription.id
-          }
+          invalidTrialState: true,
+          planId: planData.id,
+          message: 'Payment validation required.',
+          action: 'fix_subscription'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,

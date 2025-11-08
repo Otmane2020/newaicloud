@@ -306,7 +306,8 @@ serve(async (req) => {
 
     const origin = req.headers.get('origin') || 'http://localhost:8080';
     
-    // Configuration de base de la session
+    // SECURITY: Configuration de base avec carte OBLIGATOIRE
+    // Même pour les trials, Stripe capture les infos de carte sans charger
     const sessionConfig: any = {
       payment_method_types: ['card'],
       mode: 'subscription',
@@ -326,7 +327,9 @@ serve(async (req) => {
       success_url: success_url || `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancel_url || `${origin}/onboarding?checkout=cancelled&plan_id=${plan_id}`,
       allow_promotion_codes: true,
-      billing_address_collection: 'required'
+      billing_address_collection: 'required',
+      // CRITICAL: Toujours collecter le moyen de paiement
+      payment_method_collection: 'always'
     };
 
     // Les prix annuels dans la base de données sont déjà réduits de 20%

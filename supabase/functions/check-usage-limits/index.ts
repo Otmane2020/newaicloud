@@ -244,8 +244,55 @@ serve(async (req) => {
     
     console.log(`[LIMITS] Can use - optimizations: ${canUseOptimizations}, articles: ${canUseArticles}, chat: ${canUseChat}`);
 
-    // Only force payment if ALL primary features are blocked (not just one)
-    const shouldForcePayment = isTrialing && (!canUseOptimizations && !canUseArticles && !canUseChat);
+    // SECURITY: Déterminer si le paiement est obligatoire (trial expiré)
+    let shouldForcePayment = false;
+    let forcePaymentReason = '';
+    
+    if (isTrialing && profile?.trial_ends_at) {
+      const trialEnd = new Date(profile.trial_ends_at);
+      const now = new Date();
+      if (trialEnd < now) {
+        shouldForcePayment = true;
+        forcePaymentReason = 'trial_expired';
+        // Bloquer TOUTES les actions après expiration du trial
+        const canUseOptimizations = false;
+        const canUseArticles = false;
+        const canUseChat = false;
+        const canUseShopifySearch = false;
+        const canAddProducts = false;
+        const canAddShopifyStore = false;
+        const canAddCampaign = false;
+        
+        return new Response(
+          JSON.stringify({
+            canUseOptimizations: false,
+            canUseArticles: false,
+            canUseChat: false,
+            canUseShopifySearch: false,
+            canAddProducts: false,
+            canAddShopifyStore: false,
+            canUseCampaigns: false,
+            limitReached: {
+              optimizations: true,
+              articles: true,
+              chat: true,
+              shopifySearch: true,
+              products: true,
+              shopifyStores: true,
+              campaigns: true,
+            },
+            usage: currentUsage,
+            limits,
+            isTrialing,
+            isPaid: false,
+            planId: profile.current_plan_id,
+            shouldForcePayment: true,
+            forcePaymentReason: 'trial_expired',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     return new Response(
       JSON.stringify({
@@ -271,6 +318,7 @@ serve(async (req) => {
         isPaid,
         planId: profile.current_plan_id,
         shouldForcePayment,
+        forcePaymentReason,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

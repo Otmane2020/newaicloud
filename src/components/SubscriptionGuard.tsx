@@ -224,9 +224,13 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Check subscription status
+  // SECURITY: Vérifier strictement l'abonnement
+  // Pour 'trialing', vérifier que la date de fin n'est pas dépassée
   const hasValidSubscription = profile?.subscription_status && 
-    ['active', 'trialing'].includes(profile.subscription_status);
+    (profile.subscription_status === 'active' || 
+     (profile.subscription_status === 'trialing' && 
+      profile.trial_ends_at && 
+      new Date(profile.trial_ends_at) > new Date()));
 
   if (!hasValidSubscription && !hasActiveStripeSubscription) {
     console.log('⚠️ [SubscriptionGuard] No valid subscription, redirecting to onboarding:', {
