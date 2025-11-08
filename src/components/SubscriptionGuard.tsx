@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 
 interface Profile {
   subscription_status: string | null;
@@ -15,6 +19,8 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasActiveStripeSubscription, setHasActiveStripeSubscription] = useState(false);
+  const [invalidTrialState, setInvalidTrialState] = useState(false);
+  const [fixingSubscription, setFixingSubscription] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -55,6 +61,14 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         console.error('❌ Error checking Stripe subscription:', stripeError);
       } else {
         console.log('✅ Stripe subscription data:', stripeData);
+        
+        // Check for invalid trial state on paid plan
+        if (stripeData?.error === 'invalid_trial_state') {
+          console.error('⚠️ INVALID TRIAL STATE DETECTED:', stripeData);
+          setInvalidTrialState(true);
+          setLoading(false);
+          return;
+        }
         
         // If user has active subscription in Stripe, bypass the redirect
         if (stripeData?.subscribed) {
@@ -145,10 +159,61 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleFixSubscription = async () => {
+    setFixingSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fix-invalid-trial-subscriptions');
+      
+      if (error) throw error;
+      
+      if (data?.checkout_url) {
+        toast.success('Redirecting to payment...');
+        window.location.href = data.checkout_url;
+      } else {
+        toast.error('Unable to fix subscription. Please contact support.');
+      }
+    } catch (error) {
+      console.error('Error fixing subscription:', error);
+      toast.error('Failed to fix subscription. Please contact support.');
+    } finally {
+      setFixingSubscription(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show alert if invalid trial state detected
+  if (invalidTrialState) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <Alert variant="destructive" className="max-w-2xl">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle className="text-xl font-bold mb-2">
+            Action Requise : Validation de Paiement
+          </AlertTitle>
+          <AlertDescription className="space-y-4">
+            <p className="text-base">
+              Votre abonnement est dans un état invalide. Vous avez un plan payant mais le paiement n'a pas été effectué.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Cliquez sur le bouton ci-dessous pour compléter le paiement et activer votre abonnement.
+            </p>
+            <Button 
+              onClick={handleFixSubscription} 
+              disabled={fixingSubscription}
+              size="lg"
+              className="w-full"
+            >
+              {fixingSubscription ? 'Traitement en cours...' : 'Valider Mon Paiement'}
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

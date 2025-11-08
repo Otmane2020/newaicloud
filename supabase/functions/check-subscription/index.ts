@@ -130,6 +130,42 @@ serve(async (req) => {
       (sub: Stripe.Subscription) => validStatuses.includes(sub.status)
     );
     
+    // CRITICAL VALIDATION: Paid plans cannot be in trialing status
+    if (activeSubscription && activeSubscription.status === 'trialing') {
+      const priceId = activeSubscription.items.data[0].price.id;
+      logStep('Checking if trialing subscription is on a paid plan', { priceId });
+      
+      // Check if this price_id belongs to a non-trial plan
+      const { data: plan } = await supabaseClient
+        .from('subscription_plans')
+        .select('id, name')
+        .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
+        .single();
+      
+      if (plan && plan.id !== 'trial') {
+        logStep('INVALID STATE DETECTED: Paid plan in trialing status', { 
+          plan_id: plan.id,
+          plan_name: plan.name,
+          subscription_id: activeSubscription.id,
+          price_id: priceId
+        });
+        
+        return new Response(JSON.stringify({ 
+          subscribed: false,
+          error: 'invalid_trial_state',
+          message: 'Your subscription is in an invalid state. Please complete payment.',
+          details: {
+            plan_id: plan.id,
+            plan_name: plan.name,
+            subscription_id: activeSubscription.id
+          }
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+    }
+    
     const hasActiveSub = !!activeSubscription;
     let planId = null;
     let subscriptionEnd = null;
