@@ -203,32 +203,12 @@ serve(async (req) => {
         });
       }
       
-      // Vérifier si c'est un plan payant en trial (faille de sécurité)
-      const priceId = activeSubscription.items.data[0]?.price.id;
-      const { data: planData } = await supabaseClient
-        .from('subscription_plans')
-        .select('id, name')
-        .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
-        .neq('id', 'trial')
-        .single();
-      
-      if (planData) {
-        logStep('❌ SECURITY ALERT: Paid plan in trialing status', { 
-          planId: planData.id, 
-          subscriptionId: activeSubscription.id
-        });
-        
-        return new Response(JSON.stringify({ 
-          subscribed: false,
-          invalidTrialState: true,
-          planId: planData.id,
-          message: 'Payment validation required.',
-          action: 'fix_subscription'
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        });
-      }
+      // ✅ Accept trialing status for paid plans when there's a valid Stripe subscription
+      // The SubscriptionGuard handles the case of trialing without stripe_customer_id
+      logStep('Trialing subscription found with valid Stripe customer', { 
+        subscriptionId: activeSubscription.id,
+        status: activeSubscription.status
+      });
     }
     
     const hasActiveSub = !!activeSubscription;
