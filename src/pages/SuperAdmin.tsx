@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3, Store } from 'lucide-react';
 import { EmailInbox } from '@/components/admin/EmailInbox';
 import { UserActivityHistory } from '@/components/admin/UserActivityHistory';
+import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
 
 interface UserProfile {
   id: string;
@@ -189,6 +190,92 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
     }
   };
 
+  const forceUpgrade = async (userId: string, currentPlanId: string) => {
+    setUpdating(true);
+    try {
+      // Find next higher plan
+      const currentPlanIndex = plans.findIndex(p => p.id === currentPlanId);
+      if (currentPlanIndex === -1 || currentPlanIndex === plans.length - 1) {
+        toast({
+          title: 'Info',
+          description: 'L\'utilisateur est déjà au plan le plus élevé',
+          variant: 'default'
+        });
+        setUpdating(false);
+        return;
+      }
+
+      const nextPlan = plans[currentPlanIndex + 1];
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          current_plan_id: nextPlan.id,
+          subscription_status: 'active'
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Upgrade forcé',
+        description: `Plan changé vers ${nextPlan.name}`,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error forcing upgrade:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de forcer l\'upgrade',
+        variant: 'destructive'
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const forceDowngrade = async (userId: string, currentPlanId: string) => {
+    setUpdating(true);
+    try {
+      // Find next lower plan
+      const currentPlanIndex = plans.findIndex(p => p.id === currentPlanId);
+      if (currentPlanIndex === -1 || currentPlanIndex === 0) {
+        toast({
+          title: 'Info',
+          description: 'L\'utilisateur est déjà au plan le plus bas',
+          variant: 'default'
+        });
+        setUpdating(false);
+        return;
+      }
+
+      const previousPlan = plans[currentPlanIndex - 1];
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          current_plan_id: previousPlan.id,
+          subscription_status: 'active'
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Downgrade forcé',
+        description: `Plan changé vers ${previousPlan.name}`,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error forcing downgrade:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de forcer le downgrade',
+        variant: 'destructive'
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       active: "default",
@@ -340,7 +427,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
           <CardHeader>
             <CardTitle>Gestion des Utilisateurs</CardTitle>
             <CardDescription>
-              Liste complète des utilisateurs avec contrôle des abonnements
+              Liste complète des utilisateurs avec contrôle des abonnements et actions forcées
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -354,6 +441,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                     <th className="text-left p-4">Plan</th>
                     <th className="text-left p-4">Date création</th>
                     <th className="text-left p-4">Actions</th>
+                    <th className="text-left p-4">Force Upgrade/Downgrade</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -400,6 +488,28 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                           </SelectContent>
                         </Select>
                       </td>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => forceUpgrade(user.id, user.current_plan_id)}
+                            disabled={updating}
+                          >
+                            ⬆️ Upgrade
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            onClick={() => forceDowngrade(user.id, user.current_plan_id)}
+                            disabled={updating}
+                          >
+                            ⬇️ Downgrade
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -417,7 +527,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       )}
 
       {activeTab === 'analytics' && (
-        <UserActivityHistory />
+        <AdvancedAnalytics />
       )}
     </div>
   );

@@ -43,11 +43,6 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
       id: "users"
     },
     {
-      icon: Mail,
-      label: "Messages",
-      id: "emails"
-    },
-    {
       icon: BarChart3,
       label: "Analytics",
       id: "analytics"

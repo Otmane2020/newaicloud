@@ -20,6 +20,7 @@ export type Database = {
           created_at: string | null
           direction: string | null
           error_message: string | null
+          folder: string | null
           from_email: string
           html_body: string | null
           id: string
@@ -37,6 +38,7 @@ export type Database = {
           created_at?: string | null
           direction?: string | null
           error_message?: string | null
+          folder?: string | null
           from_email: string
           html_body?: string | null
           id?: string
@@ -54,6 +56,7 @@ export type Database = {
           created_at?: string | null
           direction?: string | null
           error_message?: string | null
+          folder?: string | null
           from_email?: string
           html_body?: string | null
           id?: string
