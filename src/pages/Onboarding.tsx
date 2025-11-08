@@ -523,7 +523,7 @@ export default function Onboarding() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Store className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_shopify_stores || 1)} {language === 'fr' ? 'boutiques connectées' : 'connected stores'}</span>
+                    <span className="text-sm">{formatLimit(starterPlan.max_shopify_stores || 1)} {language === 'fr' ? 'Boutique connectée' : 'Connected store'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
@@ -669,7 +669,7 @@ export default function Onboarding() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Store className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_shopify_stores || 1)} {language === 'fr' ? 'boutiques connectées' : 'connected stores'}</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_shopify_stores || 1)} {language === 'fr' ? 'Boutique connectée' : 'Connected store'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
@@ -803,7 +803,7 @@ export default function Onboarding() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Store className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_shopify_stores || 1)} {language === 'fr' ? 'boutiques connectées' : 'connected stores'}</span>
+                    <span className="text-sm">{formatLimit(selectedPlan.max_shopify_stores || 1)} {language === 'fr' ? 'Boutique connectée' : 'Connected store'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
