@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, Clock, Activity, User } from "lucide-react";
+import { Calendar, Clock, Activity, User, Store } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -16,7 +16,15 @@ interface UserActivity {
   metadata: any;
   created_at: string;
   date: string;
+  store_id: string | null;
   user_email?: string;
+  store_name?: string;
+}
+
+interface ShopifyStore {
+  id: string;
+  store_name: string | null;
+  store_label: string | null;
 }
 
 interface ActivityStats {
@@ -41,12 +49,15 @@ export function UserActivityHistory() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string>("all");
   const [selectedPage, setSelectedPage] = useState<string>("all");
+  const [selectedStore, setSelectedStore] = useState<string>("all");
   const [users, setUsers] = useState<Array<{ id: string; email: string }>>([]);
+  const [stores, setStores] = useState<ShopifyStore[]>([]);
 
   useEffect(() => {
     loadUsers();
+    loadStores();
     loadActivities();
-  }, [selectedUser, selectedPage]);
+  }, [selectedUser, selectedPage, selectedStore]);
 
   const loadUsers = async () => {
     try {
@@ -59,6 +70,21 @@ export function UserActivityHistory() {
       setUsers(data || []);
     } catch (error) {
       console.error('Error loading users:', error);
+    }
+  };
+
+  const loadStores = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('shopify_connections')
+        .select('id, store_name, store_label')
+        .eq('is_active', true)
+        .order('store_name');
+
+      if (error) throw error;
+      setStores(data || []);
+    } catch (error) {
+      console.error('Error loading stores:', error);
     }
   };
 
@@ -78,25 +104,37 @@ export function UserActivityHistory() {
         query = query.eq('page', selectedPage);
       }
 
+      if (selectedStore !== 'all') {
+        query = query.eq('store_id', selectedStore);
+      }
+
       const { data, error } = await query;
 
       if (error) throw error;
 
-      // Get user emails
+      // Get user emails and store names
       const userIds = [...new Set(data?.map(a => a.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .in('id', userIds);
+      const storeIds = [...new Set(data?.map(a => a.store_id).filter(Boolean) || [])];
+      
+      const { data: profiles } = await supabase.from('profiles').select('id, email').in('id', userIds);
+      
+      let storesData: any[] = [];
+      if (storeIds.length > 0) {
+        const { data } = await supabase.from('shopify_connections').select('id, store_name, store_label').in('id', storeIds);
+        storesData = data || [];
+      }
 
       const emailMap = new Map(profiles?.map(p => [p.id, p.email]) || []);
-      const activitiesWithEmails = data?.map(a => ({
+      const storeMap = new Map(storesData?.map(s => [s.id, s.store_label || s.store_name]) || []);
+      
+      const activitiesWithDetails = data?.map(a => ({
         ...a,
-        user_email: emailMap.get(a.user_id)
+        user_email: emailMap.get(a.user_id),
+        store_name: a.store_id ? (storeMap.get(a.store_id) || undefined) : undefined
       })) || [];
 
-      setActivities(activitiesWithEmails);
-      calculateStats(activitiesWithEmails);
+      setActivities(activitiesWithDetails);
+      calculateStats(activitiesWithDetails);
     } catch (error) {
       console.error('Error loading activities:', error);
     } finally {
@@ -204,8 +242,8 @@ export function UserActivityHistory() {
           <CardDescription>Suivi détaillé des actions des utilisateurs</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
+          <div className="flex gap-4 flex-wrap">
+            <div className="flex-1 min-w-[180px]">
               <label className="text-sm font-medium mb-2 block">Utilisateur</label>
               <Select value={selectedUser} onValueChange={setSelectedUser}>
                 <SelectTrigger>
@@ -222,7 +260,32 @@ export function UserActivityHistory() {
               </Select>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 min-w-[180px]">
+              <label className="text-sm font-medium mb-2 block">Boutique</label>
+              <Select value={selectedStore} onValueChange={setSelectedStore}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <div className="flex items-center gap-2">
+                      <Store className="w-4 h-4" />
+                      Toutes les boutiques
+                    </div>
+                  </SelectItem>
+                  {stores.map(store => (
+                    <SelectItem key={store.id} value={store.id}>
+                      <div className="flex items-center gap-2">
+                        <Store className="w-4 h-4" />
+                        {store.store_label || store.store_name || 'Sans nom'}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex-1 min-w-[180px]">
               <label className="text-sm font-medium mb-2 block">Page</label>
               <Select value={selectedPage} onValueChange={setSelectedPage}>
                 <SelectTrigger>
@@ -252,8 +315,14 @@ export function UserActivityHistory() {
                       </Badge>
                       <span className="text-sm font-medium truncate">{activity.page}</span>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {activity.user_email} • {format(new Date(activity.created_at), 'PPp', { locale: fr })}
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div>{activity.user_email} • {format(new Date(activity.created_at), 'PPp', { locale: fr })}</div>
+                      {activity.store_name && (
+                        <div className="flex items-center gap-1 text-xs">
+                          <Store className="w-3 h-3" />
+                          {activity.store_name}
+                        </div>
+                      )}
                     </div>
                     {activity.metadata && Object.keys(activity.metadata).length > 0 && (
                       <div className="text-xs text-muted-foreground mt-1">

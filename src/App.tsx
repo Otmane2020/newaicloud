@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { StoreProvider } from "./contexts/StoreContext";
 import { AIAssistant } from "@/components/AIAssistant";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
@@ -71,9 +72,10 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
-          <AppQuotaMonitor />
-          <div className="overflow-x-hidden max-w-full">
-            <Routes>
+          <StoreProvider>
+            <AppQuotaMonitor />
+            <div className="overflow-x-hidden max-w-full">
+              <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/blog-newai" element={<BlogNewAI />} />
             <Route path="/blog-newai/:slug" element={<BlogNewAI />} />
@@ -380,7 +382,8 @@ const App = () => (
           <Sonner />
           <AIAssistant />
           <NotificationPermissionPrompt />
-          </div>
+            </div>
+          </StoreProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

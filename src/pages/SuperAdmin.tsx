@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3 } from 'lucide-react';
+import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3, Store } from 'lucide-react';
 import { EmailInbox } from '@/components/admin/EmailInbox';
 import { UserActivityHistory } from '@/components/admin/UserActivityHistory';
 
@@ -37,6 +37,13 @@ interface EmailStats {
   unread: number;
 }
 
+interface ShopifyStore {
+  id: string;
+  store_name: string | null;
+  store_label: string | null;
+  user_id: string;
+}
+
 interface SuperAdminProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -45,6 +52,7 @@ interface SuperAdminProps {
 export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [stores, setStores] = useState<ShopifyStore[]>([]);
   const [emailStats, setEmailStats] = useState<EmailStats>({ total: 0, received: 0, sent: 0, unread: 0 });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -81,16 +89,19 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
   const loadData = async () => {
     try {
-      const [usersResult, plansResult] = await Promise.all([
+      const [usersResult, plansResult, storesResult] = await Promise.all([
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-        supabase.from('subscription_plans').select('id, name').eq('is_active', true)
+        supabase.from('subscription_plans').select('id, name').eq('is_active', true),
+        supabase.from('shopify_connections').select('id, store_name, store_label, user_id').eq('is_active', true)
       ]);
 
       if (usersResult.error) throw usersResult.error;
       if (plansResult.error) throw plansResult.error;
+      if (storesResult.error) throw storesResult.error;
 
       setUsers(usersResult.data || []);
       setPlans(plansResult.data || []);
+      setStores(storesResult.data || []);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -200,7 +211,9 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
     total: users.length,
     active: users.filter(u => u.subscription_status === 'active').length,
     trialing: users.filter(u => u.subscription_status === 'trialing').length,
-    inactive: users.filter(u => u.subscription_status === 'inactive').length
+    inactive: users.filter(u => u.subscription_status === 'inactive').length,
+    totalStores: stores.length,
+    storesPerUser: stores.length > 0 ? (stores.length / users.length).toFixed(1) : '0'
   };
 
   return (
@@ -266,6 +279,19 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                 <div className="text-3xl font-bold text-orange-500">{emailStats.unread}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {emailStats.received} messages reçus
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-purple-500">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Boutiques</CardTitle>
+                <Store className="w-5 h-5 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-purple-500">{stats.totalStores}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.storesPerUser} boutiques/utilisateur
                 </p>
               </CardContent>
             </Card>

@@ -10,6 +10,7 @@ interface TrackActivityRequest {
   user_id: string;
   action_type: string;
   page: string;
+  store_id?: string | null;
   metadata?: Record<string, any>;
 }
 
@@ -30,7 +31,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    const { user_id, action_type, page, metadata }: TrackActivityRequest = await req.json();
+    const { user_id, action_type, page, store_id, metadata }: TrackActivityRequest = await req.json();
 
     // Validate input
     if (!user_id || !action_type || !page) {
@@ -50,6 +51,7 @@ const handler = async (req: Request): Promise<Response> => {
         user_id,
         action_type,
         page,
+        store_id: store_id || null,
         metadata: metadata || {},
         date: new Date().toISOString().split('T')[0]
       });

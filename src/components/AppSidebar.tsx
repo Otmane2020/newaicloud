@@ -62,6 +62,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "@/lib/language";
+import { StoreSelector } from "@/components/StoreSelector";
 
 // Removed - now defined with seoSubItems
 
@@ -227,7 +228,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
       {/* Logo Header */}
-      <div className="border-b p-3 sm:p-4">
+      <div className="border-b p-3 sm:p-4 space-y-3">
         <NavLink to="/dashboard" className="flex items-center gap-2 group transition-transform hover:scale-105">
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
@@ -238,6 +239,7 @@ export function AppSidebar() {
             </span>
           )}
         </NavLink>
+        {state === "expanded" && <StoreSelector />}
       </div>
 
       <SidebarContent>

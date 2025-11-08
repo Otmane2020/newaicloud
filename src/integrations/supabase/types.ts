@@ -3492,6 +3492,7 @@ export type Database = {
           id: string
           metadata: Json | null
           page: string
+          store_id: string | null
           user_id: string
         }
         Insert: {
@@ -3501,6 +3502,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           page: string
+          store_id?: string | null
           user_id: string
         }
         Update: {
@@ -3510,9 +3512,18 @@ export type Database = {
           id?: string
           metadata?: Json | null
           page?: string
+          store_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
