@@ -24,6 +24,26 @@ export function ShopifyConnectPrompt() {
       if (!user || hasChecked) return;
 
       try {
+        // Check if user has already seen the welcome prompt (localStorage)
+        const hasSeenWelcome = localStorage.getItem(`welcome_seen_${user.id}`);
+        if (hasSeenWelcome) {
+          setHasChecked(true);
+          return;
+        }
+
+        // Check user's profile and plan
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('current_plan_id, subscription_status')
+          .eq('id', user.id)
+          .single();
+
+        // Only show for starter plan users (not trial users)
+        if (profile?.current_plan_id !== 'starter' || profile?.subscription_status === 'trialing') {
+          setHasChecked(true);
+          return;
+        }
+
         const { data: stores } = await supabase
           .from('shopify_connections')
           .select('id')
@@ -32,6 +52,8 @@ export function ShopifyConnectPrompt() {
 
         if (!stores || stores.length === 0) {
           setOpen(true);
+          // Mark as seen in localStorage
+          localStorage.setItem(`welcome_seen_${user.id}`, 'true');
         }
         
         setHasChecked(true);
@@ -56,23 +78,23 @@ export function ShopifyConnectPrompt() {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-3xl border-0 p-0 overflow-hidden bg-gradient-to-br from-primary via-accent to-secondary">
+        <DialogContent className="sm:max-w-3xl border-0 p-0 overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
           <div className="relative p-12">
             {/* Animated background pattern */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)] animate-pulse"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.08),transparent_50%)] animate-pulse"></div>
             
             <div className="relative space-y-8">
               {/* Header with icon */}
               <div className="text-center space-y-4">
-                <div className="mx-auto w-24 h-24 rounded-full bg-white shadow-2xl flex items-center justify-center animate-scale-in">
-                  <Sparkles className="w-12 h-12 text-primary animate-pulse" />
+                <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 shadow-2xl flex items-center justify-center animate-scale-in">
+                  <Sparkles className="w-12 h-12 text-white animate-pulse" />
                 </div>
                 
                 <div className="space-y-2">
-                  <DialogTitle className="text-5xl font-bold text-white drop-shadow-lg animate-fade-in">
+                  <DialogTitle className="text-5xl font-bold text-gray-800 drop-shadow-sm animate-fade-in">
                     Welcome to NewAI App
                   </DialogTitle>
-                  <DialogDescription className="text-xl text-white font-medium drop-shadow-md">
+                  <DialogDescription className="text-xl text-gray-600 font-medium">
                     Transform Your E-commerce with AI-Powered Optimization
                   </DialogDescription>
                 </div>
@@ -80,31 +102,31 @@ export function ShopifyConnectPrompt() {
 
               {/* Features grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
-                  <Zap className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <p className="text-sm font-bold text-foreground text-center">Landing Page Optimization</p>
+                <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-all hover:scale-105 border border-blue-100">
+                  <Zap className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-gray-700 text-center">Landing Page Optimization</p>
                 </div>
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
-                  <ImagePlus className="w-8 h-8 text-accent mx-auto mb-3" />
-                  <p className="text-sm font-bold text-foreground text-center">AI Background Generation</p>
+                <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-all hover:scale-105 border border-indigo-100">
+                  <ImagePlus className="w-8 h-8 text-indigo-600 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-gray-700 text-center">AI Background Generation</p>
                 </div>
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
-                  <TrendingUp className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <p className="text-sm font-bold text-foreground text-center">Advanced SEO Tools</p>
+                <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-all hover:scale-105 border border-purple-100">
+                  <TrendingUp className="w-8 h-8 text-purple-600 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-gray-700 text-center">Advanced SEO Tools</p>
                 </div>
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
-                  <FileText className="w-8 h-8 text-accent mx-auto mb-3" />
-                  <p className="text-sm font-bold text-foreground text-center">Automated Blogging</p>
+                <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-all hover:scale-105 border border-blue-100">
+                  <FileText className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-gray-700 text-center">Automated Blogging</p>
                 </div>
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
-                  <ShoppingCart className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <p className="text-sm font-bold text-foreground text-center">Google Shopping Feed</p>
+                <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-all hover:scale-105 border border-indigo-100">
+                  <ShoppingCart className="w-8 h-8 text-indigo-600 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-gray-700 text-center">Google Shopping Feed</p>
                 </div>
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
-                  <BarChart3 className="w-8 h-8 text-accent mx-auto mb-3" />
-                  <p className="text-sm font-bold text-foreground text-center">
+                <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-all hover:scale-105 border border-purple-100">
+                  <BarChart3 className="w-8 h-8 text-purple-600 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-gray-700 text-center">
                     <span className="block">Increase Traffic</span>
-                    <Badge className="mt-1 bg-success text-success-foreground">+70%</Badge>
+                    <Badge className="mt-1 bg-green-100 text-green-700 border-green-200">+70%</Badge>
                   </p>
                 </div>
               </div>
@@ -113,7 +135,7 @@ export function ShopifyConnectPrompt() {
               <div className="space-y-3 pt-4">
                 <Button 
                   onClick={handleBegin} 
-                  className="w-full h-16 text-xl font-bold bg-white text-primary hover:bg-white/90 shadow-2xl hover:shadow-3xl transition-all hover:scale-105"
+                  className="w-full h-16 text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all hover:scale-105"
                   size="lg"
                 >
                   <Sparkles className="w-6 h-6 mr-3" />
@@ -123,7 +145,7 @@ export function ShopifyConnectPrompt() {
                 <Button 
                   onClick={handleSkip} 
                   variant="ghost" 
-                  className="w-full text-white hover:text-white hover:bg-white/10"
+                  className="w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100"
                 >
                   I'll connect my store later
                 </Button>
