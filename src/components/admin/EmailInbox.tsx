@@ -134,6 +134,28 @@ export function EmailInbox() {
     }
   };
 
+  const getUnreadCount = (folder: string) => {
+    return emails.filter(e => {
+      const inFolder = e.folder === folder || (!e.folder && 
+        (folder === 'inbox' ? e.direction === 'incoming' : e.direction === 'outgoing'));
+      return inFolder && !e.is_read;
+    }).length;
+  };
+
+  const markAsRead = async (emailId: string) => {
+    try {
+      await supabase
+        .from('admin_emails')
+        .update({ is_read: true })
+        .eq('id', emailId);
+      
+      loadEmails();
+      loadEmailStats();
+    } catch (error) {
+      console.error('Error marking email as read:', error);
+    }
+  };
+
   const loadTemplates = async () => {
     try {
       const { data, error } = await supabase
@@ -405,6 +427,11 @@ export function EmailInbox() {
               {activeFolder === 'drafts' && 'Brouillons'}
               {activeFolder === 'trash' && 'Corbeille'}
               {activeFolder === 'spam' && 'Spam'}
+              {getUnreadCount(activeFolder) > 0 && (
+                <Badge variant="default" className="ml-2">
+                  {getUnreadCount(activeFolder)} non lu{getUnreadCount(activeFolder) > 1 ? 's' : ''}
+                </Badge>
+              )}
             </h2>
             <div className="flex gap-2">
               <Button
@@ -508,25 +535,44 @@ export function EmailInbox() {
                 filteredEmails.map((email) => (
                   <div
                     key={email.id}
-                    className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => setSelectedEmail(email)}
+                    className={`p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${
+                      !email.is_read ? 'bg-primary/5 border-primary/20' : 'bg-background'
+                    }`}
+                    onClick={() => {
+                      setSelectedEmail(email);
+                      if (!email.is_read) {
+                        markAsRead(email.id);
+                      }
+                    }}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <p className="font-semibold">
-                          {activeFolder === 'sent' ? `À: ${email.to_email}` : `De: ${email.from_email}`}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{email.subject}</p>
+                      <div className="flex-1 flex items-start gap-2">
+                        {!email.is_read && (
+                          <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                        )}
+                        <div className="flex-1">
+                          <p className={!email.is_read ? "font-bold" : "font-semibold"}>
+                            {activeFolder === 'sent' ? `À: ${email.to_email}` : `De: ${email.from_email}`}
+                          </p>
+                          <p className={`text-sm ${!email.is_read ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                            {email.subject}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         {getStatusBadge(email.status)}
+                        {!email.is_read && (
+                          <Badge variant="default" className="text-xs">
+                            Nouveau
+                          </Badge>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           {format(new Date(email.created_at), 'dd MMM HH:mm', { locale: fr })}
                         </p>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {email.body}
+                    <p className={`text-sm line-clamp-2 ${!email.is_read ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                      {email.body || email.html_body?.replace(/<[^>]+>/g, '').substring(0, 100) || 'Aucun aperçu disponible'}
                     </p>
                     {email.error_message && (
                       <p className="text-xs text-red-600 mt-2">
@@ -596,11 +642,11 @@ export function EmailInbox() {
                   <div className="border-t pt-4">
                     <div className="bg-muted/30 rounded-lg p-4">
                       {selectedEmail.html_body ? (
-                        <div dangerouslySetInnerHTML={{ __html: selectedEmail.html_body }} />
+                        <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: selectedEmail.html_body }} />
                       ) : selectedEmail.body ? (
                         <p className="whitespace-pre-wrap text-sm">{selectedEmail.body}</p>
                       ) : (
-                        <p className="text-muted-foreground text-sm italic">Email sans contenu</p>
+                        <p className="text-muted-foreground text-sm italic">Email sans contenu texte disponible</p>
                       )}
                     </div>
                   </div>

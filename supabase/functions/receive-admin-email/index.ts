@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
         from_email: from,
         to_email: to,
         subject: subject || 'Sans objet',
-        body: cleanBody || 'Email reçu sans contenu texte',
+        body: cleanBody || '',
         html_body: html || null,
         direction: 'incoming',
         status: 'received',
