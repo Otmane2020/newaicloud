@@ -234,3 +234,6 @@ verify_jwt = true
 [functions.setup-subscription-plans]
 verify_jwt = false
 
+[functions.generate-vendor-name]
+verify_jwt = false
+

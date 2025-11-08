@@ -93,7 +93,7 @@ serve(async (req) => {
     
     const body = await req.json();
 
-    const { productTitle, imageUrl, description, style, mainColor, layout, length } = body ?? {};
+    const { productTitle, imageUrl, description, vendor, style, mainColor, layout, length } = body ?? {};
 
     if (!productTitle) {
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
@@ -122,6 +122,7 @@ Tu es un designer et copywriter expert en e-commerce.
 Ta mission est de générer une landing page HTML complète pour un produit Shopify à partir des données suivantes :
 
 - Titre du produit : ${productTitle}
+${vendor ? `- Marque/Vendor : ${vendor}` : ""}
 - Image du produit : ${imageUrl || "aucune"}
 - Description existante : ${description || "aucune"}
 - Style visuel : ${style}
@@ -131,13 +132,15 @@ Ta mission est de générer une landing page HTML complète pour un produit Shop
 
 ⚙️ Contraintes :
 - Sortie : HTML clair, responsive et SEO-friendly.
+${vendor ? `- **IMPORTANT : Intégrer la marque "${vendor}" naturellement dans le contenu** (hero section, description produit, etc.)` : ""}
 - Inclure les sections : 
-  1️⃣ Hero section (titre H1, sous-titre, image)
+  1️⃣ Hero section (titre H1, sous-titre${vendor ? `, mention de la marque "${vendor}"` : ""}, image)
   2️⃣ Avantages (3-5 cartes avec icônes)
   3️⃣ Caractéristiques techniques
   4️⃣ CTA final
   5️⃣ Garanties / Livraison
 - Design ${style}, ton ${tone}.
+${vendor ? `- Créer un sentiment premium autour de la marque "${vendor}"` : ""}
 - Compatible Tailwind CSS uniquement (aucun <style> inline).
 - Responsive mobile-first, avec gap-4, p-6, rounded-xl, shadow-lg.
 - Titres: font-bold text-2xl ou text-3xl.

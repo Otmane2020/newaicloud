@@ -23,6 +23,7 @@ export interface LandingConfig {
   layout: string;
   colorScheme: string;
   contentLength: string;
+  vendorSource: 'shopify' | 'extract' | 'generate';
 }
 
 interface LandingConfigDialogProps {
@@ -43,7 +44,19 @@ export function LandingConfigDialog({
     layout: "2 colonnes",
     colorScheme: "#f8f8f8",
     contentLength: "moyenne (800 mots)",
+    vendorSource: 'shopify',
   });
+
+  // Fonction utilitaire pour extraire vendor du titre
+  const extractVendorFromTitle = (title: string): string => {
+    const words = title.split(' ');
+    const capitalizedWord = words.find(word => 
+      word.length > 2 && 
+      word[0] === word[0].toUpperCase() && 
+      word.slice(1) === word.slice(1).toLowerCase()
+    );
+    return capitalizedWord || "Non détecté";
+  };
 
   const handleConfirm = () => {
     onConfirm(config);
@@ -136,6 +149,104 @@ export function LandingConfigDialog({
                 <SelectItem value="longue (1500 mots)">Longue (1500 mots)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Section Vendor/Marque */}
+          <div className="space-y-3 pb-2 border-t pt-4">
+            <Label className="text-base font-semibold">🏷️ Gestion de la marque (Vendor)</Label>
+            <p className="text-xs text-muted-foreground">
+              Choisissez comment définir la marque du produit pour la landing page
+            </p>
+            
+            <div className="grid gap-2">
+              {/* Option 1 : Shopify */}
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, vendorSource: 'shopify' })}
+                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  config.vendorSource === 'shopify'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    config.vendorSource === 'shopify' ? 'border-primary' : 'border-border'
+                  }`}>
+                    {config.vendorSource === 'shopify' && (
+                      <div className="w-3 h-3 rounded-full bg-primary" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold">Importer de Shopify</p>
+                    <p className="text-xs text-muted-foreground">
+                      Utiliser le vendor déjà configuré dans Shopify
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 2 : Extraire */}
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, vendorSource: 'extract' })}
+                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  config.vendorSource === 'extract'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    config.vendorSource === 'extract' ? 'border-primary' : 'border-border'
+                  }`}>
+                    {config.vendorSource === 'extract' && (
+                      <div className="w-3 h-3 rounded-full bg-primary" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold">Extraire du titre</p>
+                    <p className="text-xs text-muted-foreground">
+                      Détecter automatiquement la marque depuis le titre du produit
+                    </p>
+                    {productTitle && (
+                      <p className="text-xs text-primary mt-1 font-mono">
+                        Ex: "{productTitle}" → {extractVendorFromTitle(productTitle)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 3 : Générer avec IA */}
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, vendorSource: 'generate' })}
+                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  config.vendorSource === 'generate'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    config.vendorSource === 'generate' ? 'border-primary' : 'border-border'
+                  }`}>
+                    {config.vendorSource === 'generate' && (
+                      <div className="w-3 h-3 rounded-full bg-primary" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold flex items-center gap-2">
+                      Générer avec l'IA <Sparkles className="w-3 h-3" />
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Créer un nom de marque pertinent basé sur le produit
+                    </p>
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
 

@@ -43,6 +43,70 @@ export default function RegenerateLanding({
   }, [autoGenerate]);
 
   /** ----------------------------
+   * 🏷️ Resolve Vendor based on config
+   -----------------------------*/
+  const resolveVendor = async (): Promise<string> => {
+    switch (config.vendorSource) {
+      case 'shopify':
+        // Option 1 : Importer de Shopify
+        console.log('[Vendor] Importing from Shopify...');
+        const { data: productData } = await supabase
+          .from('shopify_products')
+          .select('vendor')
+          .eq('id', product.id)
+          .single();
+        
+        return productData?.vendor || 'Marque inconnue';
+
+      case 'extract':
+        // Option 2 : Extraire du titre
+        console.log('[Vendor] Extracting from title...');
+        const words = product.title.split(' ');
+        
+        // Chercher le premier mot capitalisé (ex: "Table basse Alia" → "Alia")
+        const capitalizedWord = words.find(word => 
+          word.length > 2 && 
+          word[0] === word[0].toUpperCase() && 
+          word.slice(1) === word.slice(1).toLowerCase()
+        );
+        
+        if (capitalizedWord) {
+          console.log(`[Vendor] Extracted: "${capitalizedWord}"`);
+          return capitalizedWord;
+        }
+        
+        // Fallback : premier mot de plus de 3 lettres
+        const fallback = words.find(w => w.length > 3) || 'Marque';
+        console.log(`[Vendor] Fallback: "${fallback}"`);
+        return fallback;
+
+      case 'generate':
+        // Option 3 : Générer avec l'IA
+        console.log('[Vendor] Generating with AI...');
+        try {
+          const { data: aiData } = await supabase.functions.invoke('generate-vendor-name', {
+            body: {
+              productTitle: product.title,
+              productDescription: product.description,
+            }
+          });
+          
+          if (aiData?.vendor) {
+            console.log(`[Vendor] Generated: "${aiData.vendor}"`);
+            return aiData.vendor;
+          }
+        } catch (err) {
+          console.error('[Vendor] AI generation failed:', err);
+        }
+        
+        return 'Marque générée';
+
+      default:
+        return 'Marque inconnue';
+    }
+  };
+
+  /** ----------------------------
    * ✨ Generate Landing via AI with Progress
    -----------------------------*/
   const handleGenerate = async () => {
@@ -53,7 +117,14 @@ export default function RegenerateLanding({
       setProgressMessage("Préparation de la génération...");
 
       await new Promise(resolve => setTimeout(resolve, 300));
-      setProgress(15);
+      setProgress(10);
+      
+      // ✅ ÉTAPE 1 : Résoudre le vendor selon l'option choisie
+      setProgressMessage("Résolution de la marque/vendor...");
+      const resolvedVendor = await resolveVendor();
+      console.log('[Landing] Resolved vendor:', resolvedVendor);
+
+      setProgress(20);
       setProgressMessage("Analyse du produit et de l'image...");
 
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -65,6 +136,7 @@ export default function RegenerateLanding({
           productTitle: product.title,
           imageUrl: product.image_url,
           description: product.description,
+          vendor: resolvedVendor,
           style: config.style,
           mainColor: config.colorScheme,
           layout: config.layout,
