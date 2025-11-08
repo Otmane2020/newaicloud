@@ -78,6 +78,27 @@ serve(async (req) => {
     return new Response(JSON.stringify({ received: true }), { status: 200 });
   } catch (error) {
     console.error('💥 Webhook error:', error);
+    
+    // Log detailed error for debugging
+    const errorDetails = {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    };
+    console.error('📋 Error details:', JSON.stringify(errorDetails, null, 2));
+    
+    // Send notification to admins about webhook failure
+    try {
+      await supabase.functions.invoke('send-admin-email', {
+        body: {
+          subject: '🚨 Stripe Webhook Failed',
+          body: `Webhook processing failed:\n\n${JSON.stringify(errorDetails, null, 2)}`,
+        }
+      });
+    } catch (notifyError) {
+      console.error('Failed to send admin notification:', notifyError);
+    }
+    
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500 }

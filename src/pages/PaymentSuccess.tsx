@@ -4,12 +4,42 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function PaymentSuccess() {
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const handleManualSync = async () => {
+    if (!user?.id) return;
+    
+    setSyncing(true);
+    try {
+      console.log('🔄 Manually syncing subscription with Stripe...');
+      
+      const { data, error } = await supabase.functions.invoke('fix-subscription-sync');
+      
+      if (error) throw error;
+      
+      console.log('✅ Sync result:', data);
+      
+      if (data.success) {
+        toast.success(data.message || 'Synchronisation réussie !');
+        // Wait a bit then redirect
+        setTimeout(() => navigate('/dashboard'), 1500);
+      } else {
+        toast.error(data.message || 'Échec de la synchronisation');
+      }
+    } catch (err) {
+      console.error('❌ Sync error:', err);
+      toast.error('Erreur lors de la synchronisation');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     if (!user?.id) {
@@ -95,21 +125,42 @@ export default function PaymentSuccess() {
         )}
         
         {error && (
-          <div className="text-center">
+          <div className="text-center space-y-4">
             <div className="text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold mb-4">
-              Activation en cours
+            <h2 className="text-2xl font-bold">
+              Problème de synchronisation
             </h2>
-            <p className="text-muted-foreground mb-6">
-              Votre paiement a été accepté mais l'activation prend plus de temps que prévu.
-              Vous pouvez accéder à votre tableau de bord, votre abonnement sera activé dans quelques instants.
+            <p className="text-muted-foreground">
+              Votre paiement a été accepté sur Stripe mais la synchronisation avec votre compte prend plus de temps que prévu.
             </p>
-            <Button 
-              onClick={() => navigate('/dashboard')}
-              className="w-full"
-            >
-              Aller au tableau de bord
-            </Button>
+            <div className="space-y-3 pt-4">
+              <Button 
+                onClick={handleManualSync}
+                disabled={syncing}
+                className="w-full"
+                size="lg"
+              >
+                {syncing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Synchronisation en cours...
+                  </>
+                ) : (
+                  '🔄 Synchroniser avec Stripe'
+                )}
+              </Button>
+              <Button 
+                onClick={() => navigate('/dashboard')}
+                variant="outline"
+                className="w-full"
+                disabled={syncing}
+              >
+                Aller au tableau de bord
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground pt-4">
+              Si le problème persiste, contactez le support avec votre email : {user?.email}
+            </p>
           </div>
         )}
       </div>
