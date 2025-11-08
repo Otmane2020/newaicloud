@@ -228,17 +228,19 @@ export function SubscriptionPlans() {
   const isCurrentPlan = (planId: string) => currentPlanId === planId;
 
   const getPrice = (plan: Plan) => {
-    const price = getPriceByLanguage(plan, language, billingPeriod);
+    let price = getPriceByLanguage(plan, language, billingPeriod);
+    // Pour l'annuel, afficher le prix mensuel équivalent
+    if (billingPeriod === 'yearly') {
+      price = price / 12;
+    }
     // Format: keep decimals for prices under 10, remove for whole numbers
     if (price < 10) return formatPrice(price, language, true).replace(/[€$]/, '');
     return formatPrice(price, language, false).replace(/[€$]/, '');
   };
 
   const getSavings = (plan: Plan) => {
-    const monthlyCost = plan.price_monthly * 12;
-    const yearlyCost = plan.price_yearly;
-    const savings = ((monthlyCost - yearlyCost) / monthlyCost * 100).toFixed(0);
-    return savings;
+    // Remise fixe de 20% sur l'annuel
+    return "20";
   };
   
   const getPlanLevel = (planId: string) => {
@@ -386,7 +388,10 @@ export function SubscriptionPlans() {
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   {proPlans.map((plan) => {
-                    const price = getPriceByLanguage(plan, language, billingPeriod);
+                    let price = getPriceByLanguage(plan, language, billingPeriod);
+                    if (billingPeriod === 'yearly') {
+                      price = price / 12;
+                    }
                     return (
                       <SelectItem
                         key={plan.id}
@@ -473,7 +478,10 @@ export function SubscriptionPlans() {
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   {enterprisePlans.map((plan) => {
-                    const price = getPriceByLanguage(plan, language, billingPeriod);
+                    let price = getPriceByLanguage(plan, language, billingPeriod);
+                    if (billingPeriod === 'yearly') {
+                      price = price / 12;
+                    }
                     return (
                       <SelectItem 
                         key={plan.id} 
