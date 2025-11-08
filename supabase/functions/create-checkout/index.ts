@@ -364,7 +364,6 @@ serve(async (req) => {
       // Trial actif + abonnement annuel = conserver les jours restants
       console.log(`⏰ Active trial with yearly plan - preserve ${trialDaysRemaining} days`);
       sessionConfig.subscription_data = {
-        trial_period_days: trialDaysRemaining,
         trial_end: Math.floor(new Date(profile.trial_ends_at).getTime() / 1000),
         metadata: {
           user_id: user.id,
