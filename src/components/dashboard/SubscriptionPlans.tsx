@@ -39,6 +39,7 @@ export function SubscriptionPlans() {
   const { limits } = useUsageLimits();
   const { t, tf, language } = useTranslation();
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  const [currentBillingPeriod, setCurrentBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
@@ -87,14 +88,22 @@ export function SubscriptionPlans() {
         if (enterprisePlans.length > 0) setSelectedEnterprisePlan(enterprisePlans[0].id);
       }
       
-      // Load current plan
+      // Load current plan and billing period
       const { data: profile } = await supabase
         .from('profiles')
         .select('current_plan_id')
         .eq('id', user.id)
         .single();
       
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('billing_period')
+        .eq('seller_id', user.id)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle();
+      
       setCurrentPlanId(profile?.current_plan_id || null);
+      setCurrentBillingPeriod((subscription?.billing_period as 'monthly' | 'yearly') || 'monthly');
       setLoading(false);
     };
 
@@ -216,7 +225,9 @@ export function SubscriptionPlans() {
     }
   };
 
-  const isCurrentPlan = (planId: string) => currentPlanId === planId;
+  const isCurrentPlan = (planId: string) => {
+    return currentPlanId === planId && currentBillingPeriod === billingPeriod;
+  };
 
   const getPrice = (plan: Plan) => {
     let price = getPriceByLanguage(plan, language, billingPeriod);
