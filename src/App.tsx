@@ -361,7 +361,7 @@ const App = () => (
               path="/superadmin"
               element={
                 <SuperAdminLayout>
-                  <SuperAdmin />
+                  {({ activeTab, setActiveTab }) => <SuperAdmin activeTab={activeTab} setActiveTab={setActiveTab} />}
                 </SuperAdminLayout>
               }
             />
@@ -369,7 +369,7 @@ const App = () => (
               path="/setup-plans"
               element={
                 <SuperAdminLayout>
-                  <SetupPlans />
+                  {({ activeTab, setActiveTab }) => <SetupPlans />}
                 </SuperAdminLayout>
               }
             />

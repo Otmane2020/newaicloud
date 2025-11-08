@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { PublicHeader } from "@/components/PublicHeader";
 import PricingComparison from "@/components/PricingComparison";
 import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
+import { ContactForm } from "@/components/ContactForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/language";
@@ -374,6 +375,11 @@ const Index = () => {
           <PricingComparison />
         </div>
 
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="container mx-auto px-4 py-24">
+        <ContactForm />
       </section>
 
       {/* Referral Section - Before Footer */}

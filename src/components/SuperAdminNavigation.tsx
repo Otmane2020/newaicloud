@@ -1,11 +1,15 @@
-import { Shield, Users, Mail, Settings, LogOut, BarChart3 } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Shield, Users, Mail, LogOut, BarChart3, Home } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-export function SuperAdminNavigation() {
-  const location = useLocation();
+interface SuperAdminNavigationProps {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+}
+
+export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavigationProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -29,27 +33,23 @@ export function SuperAdminNavigation() {
 
   const navItems = [
     {
-      icon: Shield,
+      icon: Home,
       label: "Dashboard",
-      path: "/superadmin",
       id: "dashboard"
     },
     {
       icon: Users,
       label: "Utilisateurs",
-      path: "/superadmin",
       id: "users"
     },
     {
       icon: Mail,
       label: "Messages",
-      path: "/superadmin",
-      id: "messages"
+      id: "emails"
     },
     {
       icon: BarChart3,
       label: "Analytics",
-      path: "/superadmin",
       id: "analytics"
     },
   ];
@@ -70,21 +70,21 @@ export function SuperAdminNavigation() {
           <ul className="space-y-2 px-2">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+              const isActive = activeTab === item.id;
 
               return (
                 <li key={item.id}>
-                  <Link
-                    to={item.path}
+                  <button
+                    onClick={() => onTabChange(item.id)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
+                      "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 w-full",
                       "hover:bg-accent hover:text-accent-foreground",
                       isActive && "bg-accent text-accent-foreground font-medium"
                     )}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     <span className="hidden md:block">{item.label}</span>
-                  </Link>
+                  </button>
                 </li>
               );
             })}

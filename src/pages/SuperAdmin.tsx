@@ -10,9 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity } from 'lucide-react';
+import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3 } from 'lucide-react';
 import { EmailInbox } from '@/components/admin/EmailInbox';
 
 interface UserProfile {
@@ -37,7 +36,12 @@ interface EmailStats {
   unread: number;
 }
 
-export default function SuperAdmin() {
+interface SuperAdminProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+}
+
+export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [emailStats, setEmailStats] = useState<EmailStats>({ total: 0, received: 0, sent: 0, unread: 0 });
@@ -199,214 +203,203 @@ export default function SuperAdmin() {
   };
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="flex items-center gap-3">
-        <Shield className="w-10 h-10 text-orange-600" />
-        <div>
-          <h1 className="text-3xl font-bold">Tableau de Bord Admin</h1>
-          <p className="text-muted-foreground">Gestion centralisée de la plateforme</p>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Utilisateurs</CardTitle>
-            <Users className="w-5 h-5 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">Comptes créés</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow border-green-200 dark:border-green-900">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Actifs</CardTitle>
-            <TrendingUp className="w-5 h-5 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{stats.active}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% du total
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow border-blue-200 dark:border-blue-900">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Essai Gratuit</CardTitle>
-            <Clock className="w-5 h-5 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{stats.trialing}</div>
-            <p className="text-xs text-muted-foreground mt-1">En période d'essai</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow relative overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Messages</CardTitle>
-            <div className="relative">
-              <Mail className="w-5 h-5 text-orange-600" />
-              {hasNewEmail && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-              )}
+    <div className="space-y-8">
+      {activeTab === 'dashboard' && (
+        <>
+          <div className="flex items-center gap-3">
+            <Shield className="w-10 h-10 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">Tableau de Bord Admin</h1>
+              <p className="text-muted-foreground">Gestion centralisée de la plateforme</p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{emailStats.received}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {emailStats.unread > 0 && `${emailStats.unread} non lus`}
-            </p>
-          </CardContent>
-          {hasNewEmail && (
-            <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500" />
-          )}
-        </Card>
-      </div>
+          </div>
 
-      {/* Email Activity Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-primary">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total Utilisateurs</CardTitle>
+                <Users className="w-5 h-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground mt-1">Comptes créés</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-success">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Actifs</CardTitle>
+                <TrendingUp className="w-5 h-5 text-success" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-success">{stats.active}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% du total
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Essai Gratuit</CardTitle>
+                <Clock className="w-5 h-5 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-500">{stats.trialing}</div>
+                <p className="text-xs text-muted-foreground mt-1">En période d'essai</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-orange-500 relative overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Messages</CardTitle>
+                <div className="relative">
+                  <Mail className="w-5 h-5 text-orange-500" />
+                  {hasNewEmail && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-orange-500">{emailStats.unread}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {emailStats.received} messages reçus
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-105" onClick={() => setActiveTab('users')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  Gestion Utilisateurs
+                </CardTitle>
+                <CardDescription>Gérer les comptes et abonnements</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-105" onClick={() => setActiveTab('emails')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-orange-500" />
+                  Messagerie
+                  {hasNewEmail && (
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse ml-1" />
+                  )}
+                </CardTitle>
+                <CardDescription>Consulter et répondre aux emails</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-105" onClick={() => setActiveTab('analytics')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-success" />
+                  Analytics
+                </CardTitle>
+                <CardDescription>Statistiques et rapports détaillés</CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'users' && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Emails Reçus</CardTitle>
-            <Inbox className="w-4 h-4 text-muted-foreground" />
+          <CardHeader>
+            <CardTitle>Gestion des Utilisateurs</CardTitle>
+            <CardDescription>
+              Liste complète des utilisateurs avec contrôle des abonnements
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{emailStats.received}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Emails Envoyés</CardTitle>
-            <Mail className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{emailStats.sent}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Activité Récente</CardTitle>
-            <Activity className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{emailStats.total}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs principale */}
-      <Tabs 
-        defaultValue="users" 
-        className="w-full"
-        onValueChange={(value) => {
-          if (value === 'emails') {
-            setHasNewEmail(false);
-          }
-        }}
-      >
-        <TabsList className="grid w-full grid-cols-2 h-12">
-          <TabsTrigger value="users" className="gap-2">
-            <Users className="w-4 h-4" />
-            <span>Clients & Abonnements</span>
-            <Badge variant="secondary" className="ml-2">{users.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="emails" className="gap-2 relative">
-            <Mail className="w-4 h-4" />
-            <span>Messagerie</span>
-            {emailStats.received > 0 && (
-              <Badge variant="secondary" className="ml-2">{emailStats.received}</Badge>
-            )}
-            {hasNewEmail && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            )}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="users" className="space-y-4">
-          {/* Users Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Gestion des Utilisateurs</CardTitle>
-              <CardDescription>
-                Liste complète des utilisateurs avec contrôle des abonnements
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-4">Email</th>
-                      <th className="text-left p-4">Nom</th>
-                      <th className="text-left p-4">Statut</th>
-                      <th className="text-left p-4">Plan</th>
-                      <th className="text-left p-4">Date création</th>
-                      <th className="text-left p-4">Actions</th>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-4">Email</th>
+                    <th className="text-left p-4">Nom</th>
+                    <th className="text-left p-4">Statut</th>
+                    <th className="text-left p-4">Plan</th>
+                    <th className="text-left p-4">Date création</th>
+                    <th className="text-left p-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id} className="border-b hover:bg-muted/50">
+                      <td className="p-4">{user.email}</td>
+                      <td className="p-4">{user.full_name || '-'}</td>
+                      <td className="p-4">{getStatusBadge(user.subscription_status)}</td>
+                      <td className="p-4">
+                        <Select
+                          value={user.current_plan_id || ''}
+                          onValueChange={(value) => updateUserPlan(user.id, value)}
+                          disabled={updating}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Choisir un plan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {plans.map((plan) => (
+                              <SelectItem key={plan.id} value={plan.id}>
+                                {plan.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="p-4">
+                        {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="p-4">
+                        <Select
+                          value={user.subscription_status}
+                          onValueChange={(value) => updateSubscriptionStatus(user.id, value)}
+                          disabled={updating}
+                        >
+                          <SelectTrigger className="w-[150px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="trialing">Trialing</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="canceled">Canceled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} className="border-b hover:bg-muted/50">
-                        <td className="p-4">{user.email}</td>
-                        <td className="p-4">{user.full_name || '-'}</td>
-                        <td className="p-4">{getStatusBadge(user.subscription_status)}</td>
-                        <td className="p-4">
-                          <Select
-                            value={user.current_plan_id || ''}
-                            onValueChange={(value) => updateUserPlan(user.id, value)}
-                            disabled={updating}
-                          >
-                            <SelectTrigger className="w-[180px]">
-                              <SelectValue placeholder="Choisir un plan" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {plans.map((plan) => (
-                                <SelectItem key={plan.id} value={plan.id}>
-                                  {plan.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="p-4">
-                          {new Date(user.created_at).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="p-4">
-                          <Select
-                            value={user.subscription_status}
-                            onValueChange={(value) => updateSubscriptionStatus(user.id, value)}
-                            disabled={updating}
-                          >
-                            <SelectTrigger className="w-[150px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="trialing">Trialing</SelectItem>
-                              <SelectItem value="inactive">Inactive</SelectItem>
-                              <SelectItem value="canceled">Canceled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        <TabsContent value="emails">
+      {activeTab === 'emails' && (
+        <>
+          {hasNewEmail && setHasNewEmail(false)}
           <EmailInbox />
-        </TabsContent>
-      </Tabs>
+        </>
+      )}
+
+      {activeTab === 'analytics' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Analytics</CardTitle>
+            <CardDescription>Statistiques détaillées (à venir)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">Cette section sera bientôt disponible.</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

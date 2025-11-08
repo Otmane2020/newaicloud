@@ -4,10 +4,15 @@ import { SuperAdminNavigation } from "@/components/SuperAdminNavigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+interface SuperAdminLayoutProps {
+  children: (props: { activeTab: string; setActiveTab: (tab: string) => void }) => React.ReactNode;
+}
+
+export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
   const { user, loading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   useEffect(() => {
     const checkAdminRole = async () => {
@@ -61,9 +66,9 @@ export function SuperAdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <SuperAdminNavigation />
+      <SuperAdminNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="flex-1 ml-16 md:ml-64 transition-all duration-300 p-8">
-        {children}
+        {children({ activeTab, setActiveTab })}
       </main>
     </div>
   );
