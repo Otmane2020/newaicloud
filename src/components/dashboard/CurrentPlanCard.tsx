@@ -47,7 +47,7 @@ export function CurrentPlanCard() {
         .from('subscriptions')
         .select('billing_period, current_period_end')
         .eq('seller_id', user?.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'trialing'])
         .maybeSingle();
 
       const { data: plansData } = await supabase
@@ -65,20 +65,22 @@ export function CurrentPlanCard() {
             name: isTrialing ? `${plan.name} (Trial)` : plan.name
           });
           
-          // Set billing period
+          // Set billing period from subscription data or default to monthly
           const period = subscriptionData?.billing_period;
           setBillingPeriod((period === 'yearly' || period === 'monthly') ? period : 'monthly');
           
-          // Si en trial, utiliser trial_ends_at, sinon utiliser subscription data
-          if (isTrialing) {
+          // Always try to get fresh data from Stripe via check-subscription
+          // This ensures subscription_end is always up to date
+          const { data: stripeData } = await supabase.functions.invoke('check-subscription');
+          
+          if (stripeData?.subscription_end) {
+            setSubscriptionEnd(stripeData.subscription_end);
+          } else if (isTrialing && profileData.trial_ends_at) {
+            // Fallback to trial_ends_at if in trial
             setSubscriptionEnd(profileData.trial_ends_at);
           } else if (subscriptionData?.current_period_end) {
+            // Fallback to local subscription data
             setSubscriptionEnd(subscriptionData.current_period_end);
-          } else {
-            const { data: subData } = await supabase.functions.invoke('check-subscription');
-            if (subData?.subscription_end) {
-              setSubscriptionEnd(subData.subscription_end);
-            }
           }
         }
       }
