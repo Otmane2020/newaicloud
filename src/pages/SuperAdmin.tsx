@@ -75,6 +75,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
   const [updating, setUpdating] = useState(false);
   const [hasNewEmail, setHasNewEmail] = useState(false);
   const [billingFilter, setBillingFilter] = useState<'all' | 'monthly' | 'yearly'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'trialing' | 'inactive' | 'canceled'>('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -447,9 +448,21 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                 </CardDescription>
               </div>
               <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="active">Actif</SelectItem>
+                    <SelectItem value="trialing">Essai</SelectItem>
+                    <SelectItem value="inactive">Inactif</SelectItem>
+                    <SelectItem value="canceled">Annulé</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={billingFilter} onValueChange={(value: any) => setBillingFilter(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filtrer par facturation" />
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Facturation" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous</SelectItem>
@@ -464,7 +477,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                   size="sm"
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Rafraîchir Stripe
+                  Rafraîchir
                 </Button>
               </div>
             </div>
@@ -487,6 +500,12 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                 <tbody>
                   {users
                     .filter(user => {
+                      // Filtre par statut
+                      if (statusFilter !== 'all' && user.subscription_status !== statusFilter) {
+                        return false;
+                      }
+                      
+                      // Filtre par facturation
                       if (billingFilter === 'all') return true;
                       if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return false;
                       const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
@@ -495,6 +514,8 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                     })
                     .map((user) => {
                       const activeSub = user.stripeSubscriptions?.find(s => s.status === 'active' || s.status === 'trialing');
+                      const planDetails = plans.find(p => p.id === user.current_plan_id);
+                      
                       return (
                         <tr key={user.id} className="border-b hover:bg-muted/50">
                           <td className="p-4">{user.email}</td>
@@ -522,14 +543,19 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                             {user.hasStripeData ? (
                               activeSub ? (
                                 <div className="space-y-1">
-                                  <Badge variant={activeSub.status === 'active' ? 'default' : 'secondary'}>
-                                    {activeSub.status}
-                                  </Badge>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant={activeSub.status === 'active' ? 'default' : 'secondary'}>
+                                      {activeSub.status}
+                                    </Badge>
+                                    <span className="text-sm font-semibold">
+                                      {Math.round(activeSub.amount / 100)} {activeSub.currency.toUpperCase()}
+                                    </span>
+                                  </div>
                                   <p className="text-xs text-muted-foreground">
-                                    {(activeSub.amount / 100).toFixed(2)} {activeSub.currency.toUpperCase()}/{activeSub.interval === 'month' ? 'mois' : 'an'}
+                                    Facturation {activeSub.interval === 'month' ? 'mensuelle' : 'annuelle'}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    Expire: {new Date(activeSub.currentPeriodEnd * 1000).toLocaleDateString('fr-FR')}
+                                    Expire le {new Date(activeSub.currentPeriodEnd * 1000).toLocaleDateString('fr-FR')}
                                   </p>
                                 </div>
                               ) : (
