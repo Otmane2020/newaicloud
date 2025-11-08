@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useTranslation } from "@/lib/language";
 import { getCurrencySymbol, getPriceByLanguage, formatPrice, getPriceIdByLanguage } from "@/lib/formatUtils";
+import { PlanChangeConfirmDialog } from "./PlanChangeConfirmDialog";
 
 interface Plan {
   id: string;
@@ -46,6 +47,14 @@ export function SubscriptionPlans() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedProPlan, setSelectedProPlan] = useState<string>('');
   const [selectedEnterprisePlan, setSelectedEnterprisePlan] = useState<string>('');
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingPlanChange, setPendingPlanChange] = useState<{
+    planId: string;
+    planName: string;
+    priceId: string;
+    prorationAmount: number;
+    hasActiveSubscription: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -121,27 +130,62 @@ export function SubscriptionPlans() {
 
     setCheckoutLoading(planId);
     try {
-      // Always use force-payment for all plan changes
-      const { data, error } = await supabase.functions.invoke('force-payment', {
-        body: {
-          plan_id: planId,
-          billing_period: billingPeriod
-        }
-      });
-      
-      if (error) throw error;
-      
-      // If URL returned, redirect to Stripe checkout (new subscription)
-      if (data?.url) {
-        window.location.href = data.url;
-      } 
-      // If success without URL, subscription was updated directly
-      else if (data?.success) {
-        toast({
-          title: t.account.subscription.activationSuccess,
-          description: data.message || 'Your plan has been updated!',
+      // Get the selected plan details
+      const selectedPlan = plans.find(p => p.id === planId);
+      if (!selectedPlan) throw new Error("Plan not found");
+
+      // Check if user has an active subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('stripe_subscription_id, status')
+        .eq('seller_id', user.id)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle();
+
+      const hasActiveSubscription = !!subscription?.stripe_subscription_id;
+
+      // If user has active subscription, calculate proration
+      if (hasActiveSubscription) {
+        // Get the stripe price ID for the new plan
+        const newPriceId = billingPeriod === 'monthly' 
+          ? selectedPlan.stripe_price_id_monthly 
+          : selectedPlan.stripe_price_id_yearly;
+
+        if (!newPriceId) throw new Error("Price ID not found for selected plan");
+
+        // Calculate proration
+        const { data: prorationData, error: prorationError } = await supabase.functions.invoke(
+          'calculate-proration',
+          {
+            body: { new_price_id: newPriceId }
+          }
+        );
+
+        if (prorationError) throw prorationError;
+
+        // Show confirmation dialog with proration amount
+        setPendingPlanChange({
+          planId,
+          planName: selectedPlan.name,
+          priceId: newPriceId,
+          prorationAmount: prorationData.prorationAmount || 0,
+          hasActiveSubscription: true
         });
-        setTimeout(() => window.location.reload(), 1500);
+        setConfirmDialogOpen(true);
+      } else {
+        // No active subscription, redirect directly to Stripe checkout
+        const { data, error } = await supabase.functions.invoke('force-payment', {
+          body: {
+            plan_id: planId,
+            billing_period: billingPeriod
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data?.url) {
+          window.location.href = data.url;
+        }
       }
     } catch (error: any) {
       console.error('Error handling plan selection:', error);
@@ -150,8 +194,43 @@ export function SubscriptionPlans() {
         description: error.message,
         variant: "destructive",
       });
-    } finally {
       setCheckoutLoading(null);
+    }
+  };
+
+  const handleConfirmPlanChange = async () => {
+    if (!pendingPlanChange) return;
+
+    try {
+      if (pendingPlanChange.hasActiveSubscription) {
+        // Update existing subscription
+        const { data, error } = await supabase.functions.invoke('update-subscription', {
+          body: {
+            new_plan_id: pendingPlanChange.planId,
+            billing_period: billingPeriod
+          }
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: t.account.subscription.activationSuccess,
+          description: 'Votre plan a été mis à jour avec succès!',
+        });
+        
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch (error: any) {
+      console.error('Error confirming plan change:', error);
+      toast({
+        title: t.errors.error,
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setConfirmDialogOpen(false);
+      setCheckoutLoading(null);
+      setPendingPlanChange(null);
     }
   };
 
@@ -477,6 +556,23 @@ export function SubscriptionPlans() {
         )}
       </div>
 
+      <PlanChangeConfirmDialog
+        open={confirmDialogOpen}
+        onOpenChange={(open) => {
+          setConfirmDialogOpen(open);
+          if (!open) {
+            setCheckoutLoading(null);
+            setPendingPlanChange(null);
+          }
+        }}
+        currentPlanName={plans.find(p => p.id === currentPlanId)?.name || ''}
+        newPlanName={pendingPlanChange?.planName || ''}
+        prorationAmount={pendingPlanChange?.prorationAmount || 0}
+        currency="eur"
+        isLoading={!!checkoutLoading}
+        onConfirm={handleConfirmPlanChange}
+        isUpgrade={getPlanLevel(pendingPlanChange?.planId || '') > getPlanLevel(currentPlanId || '')}
+      />
     </div>
   );
 }
