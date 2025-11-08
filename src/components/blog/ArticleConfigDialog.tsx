@@ -38,66 +38,36 @@ export function ArticleConfigDialog({ config, onConfigChange }: ArticleConfigDia
   const [customColor, setCustomColor] = useState('#000000');
 
   const colorPalettes = [
-    { name: 'Moderne', primary: '#000000', secondary: '#6B7280' },
-    { name: 'Bleu Pro', primary: '#1E40AF', secondary: '#3B82F6' },
-    { name: 'Terreux', primary: '#92400E', secondary: '#B45309' },
-    { name: 'Luxe Or', primary: '#000000', secondary: '#D97706' },
-    { name: 'Vert Frais', primary: '#065F46', secondary: '#10B981' },
-    { name: 'Vibrant', primary: '#DC2626', secondary: '#EF4444' },
+    { key: 'moderne', primary: '#000000', secondary: '#6B7280' },
+    { key: 'bleuPro', primary: '#1E40AF', secondary: '#3B82F6' },
+    { key: 'terreux', primary: '#92400E', secondary: '#B45309' },
+    { key: 'luxeOr', primary: '#000000', secondary: '#D97706' },
+    { key: 'vertFrais', primary: '#065F46', secondary: '#10B981' },
+    { key: 'vibrant', primary: '#DC2626', secondary: '#EF4444' },
   ];
 
   const visualStyles = [
-    { 
-      id: 'magazine' as const, 
-      label: 'Magazine', 
-      description: 'Typographie large, images immersives, grille multi-colonnes',
-      icon: Star 
-    },
-    { 
-      id: 'moderne' as const, 
-      label: 'Moderne', 
-      description: 'Gradients subtils, ombres douces, palette sobre',
-      icon: Sparkles 
-    },
-    { 
-      id: 'minimaliste' as const, 
-      label: 'Minimaliste', 
-      description: 'Espace blanc, typographie épurée, sans décoration',
-      icon: Layout 
-    },
-    { 
-      id: 'editorial' as const, 
-      label: 'Éditorial', 
-      description: 'Style journal premium, typographie serif, citations',
-      icon: Type 
-    },
-    { 
-      id: 'premium' as const, 
-      label: 'Premium', 
-      description: 'Or/noir, typographie élégante, détails raffinés',
-      icon: Star 
-    },
-    { 
-      id: 'coloré' as const, 
-      label: 'Coloré', 
-      description: 'Palette vibrante, dégradés audacieux, énergique',
-      icon: Palette 
-    },
+    { id: 'magazine' as const, icon: Star },
+    { id: 'moderne' as const, icon: Sparkles },
+    { id: 'minimaliste' as const, icon: Layout },
+    { id: 'editorial' as const, icon: Type },
+    { id: 'premium' as const, icon: Star },
+    { id: 'coloré' as const, icon: Palette },
   ];
 
   const layouts = [
-    { id: '1-colonne' as const, label: '1 Colonne', description: 'Centré, mobile-first' },
-    { id: '2-colonnes' as const, label: '2 Colonnes', description: 'Sidebar + contenu' },
-    { id: 'hero' as const, label: 'Hero', description: 'Image plein écran + contenu' },
-    { id: 'full-width' as const, label: 'Pleine largeur', description: 'Sections alternées' },
+    { id: 'oneColumn' as const, value: '1-colonne' as const },
+    { id: 'twoColumns' as const, value: '2-colonnes' as const },
+    { id: 'hero' as const, value: 'hero' as const },
+    { id: 'fullWidth' as const, value: 'full-width' as const },
   ];
 
   const handleStyleChange = (style: ArticleConfig['style']) => {
     onConfigChange({ ...config, style });
   };
 
-  const handleLayoutChange = (layout: ArticleConfig['layout']) => {
-    onConfigChange({ ...config, layout });
+  const handleLayoutChange = (layoutValue: ArticleConfig['layout']) => {
+    onConfigChange({ ...config, layout: layoutValue });
   };
 
   const handleColorChange = (colorScheme: string) => {
@@ -144,8 +114,8 @@ export function ArticleConfigDialog({ config, onConfigChange }: ArticleConfigDia
                 <div className="flex items-start gap-3">
                   <Icon className="h-5 w-5 text-primary mt-1" />
                   <div>
-                    <p className="font-semibold mb-1">{style.label}</p>
-                    <p className="text-sm text-muted-foreground">{style.description}</p>
+                    <p className="font-semibold mb-1">{t.wizards.blog.design.visualStyle[style.id]}</p>
+                    <p className="text-sm text-muted-foreground">{t.wizards.blog.design.visualStyle.descriptions[style.id]}</p>
                   </div>
                 </div>
               </button>
@@ -164,15 +134,15 @@ export function ArticleConfigDialog({ config, onConfigChange }: ArticleConfigDia
           {layouts.map((layout) => (
             <button
               key={layout.id}
-              onClick={() => handleLayoutChange(layout.id)}
+              onClick={() => handleLayoutChange(layout.value)}
               className={`p-4 border-2 rounded-lg text-center transition-all ${
                 config.layout === layout.id
                   ? 'border-primary bg-primary/5'
                   : 'border-border hover:border-primary'
               }`}
             >
-              <p className="font-medium mb-1">{layout.label}</p>
-              <p className="text-xs text-muted-foreground">{layout.description}</p>
+                  <p className="font-medium mb-1">{t.wizards.blog.design.layout[layout.id]}</p>
+                  <p className="text-xs text-muted-foreground">{t.wizards.blog.design.layout.descriptions[layout.id]}</p>
             </button>
           ))}
         </div>
@@ -187,7 +157,7 @@ export function ArticleConfigDialog({ config, onConfigChange }: ArticleConfigDia
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
           {colorPalettes.map((palette) => (
             <button
-              key={palette.name}
+              key={palette.key}
               onClick={() => handleColorChange(palette.primary)}
               className={`p-3 border-2 rounded-lg text-center transition-all ${
                 config.colorScheme === palette.primary
@@ -205,7 +175,7 @@ export function ArticleConfigDialog({ config, onConfigChange }: ArticleConfigDia
                   style={{ backgroundColor: palette.secondary }}
                 />
               </div>
-              <p className="text-xs font-medium">{palette.name}</p>
+              <p className="text-xs font-medium">{t.wizards.blog.design.colorPalette.palettes[palette.key as keyof typeof t.wizards.blog.design.colorPalette.palettes]}</p>
             </button>
           ))}
         </div>
