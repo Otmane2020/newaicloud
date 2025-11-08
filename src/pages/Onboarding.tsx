@@ -18,7 +18,8 @@ import {
   MessageSquare,
   Shield,
   Star,
-  LogOut
+  LogOut,
+  Loader2
 } from 'lucide-react';
 import {
   Select,
@@ -222,6 +223,32 @@ export default function Onboarding() {
       toast.error(t.onboarding.errors.paymentError);
     } finally {
       setCheckingSubscription(false);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    if (!user) {
+      toast.error(t.onboarding.errors.mustBeConnected);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('🎯 Starting free trial...');
+      
+      const { data, error } = await supabase.functions.invoke('start-free-trial');
+      
+      if (error) throw error;
+
+      toast.success("Essai gratuit activé ! Votre période d'essai de 14 jours a commencé.");
+      
+      // Redirect to dashboard
+      setTimeout(() => navigate('/dashboard'), 1500);
+    } catch (error) {
+      console.error('💥 Error starting trial:', error);
+      toast.error(error instanceof Error ? error.message : "Erreur lors de l'activation de l'essai");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -524,16 +551,16 @@ export default function Onboarding() {
 
                 <Button
                   size="lg"
-                  onClick={() => handleSelectPlan(starterPlan.id)}
+                  onClick={handleStartTrial}
                   disabled={loading}
                   className="w-full"
                 >
                   {loading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   ) : (
                     <>
                       <Shield className="w-5 h-5 mr-2" />
-                      {starterPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}
+                      Essai Gratuit
                     </>
                   )}
                 </Button>
