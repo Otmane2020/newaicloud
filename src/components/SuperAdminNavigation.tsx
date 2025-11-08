@@ -32,26 +32,25 @@ export function SuperAdminNavigation() {
       icon: Shield,
       label: "Dashboard",
       path: "/superadmin",
+      id: "dashboard"
     },
     {
       icon: Users,
       label: "Utilisateurs",
       path: "/superadmin",
+      id: "users"
     },
     {
       icon: Mail,
       label: "Messages",
       path: "/superadmin",
-    },
-    {
-      icon: Settings,
-      label: "Plans Stripe",
-      path: "/setup-plans",
+      id: "messages"
     },
     {
       icon: BarChart3,
       label: "Analytics",
       path: "/superadmin",
+      id: "analytics"
     },
   ];
 
@@ -74,7 +73,7 @@ export function SuperAdminNavigation() {
               const isActive = location.pathname === item.path;
 
               return (
-                <li key={item.path}>
+                <li key={item.id}>
                   <Link
                     to={item.path}
                     className={cn(

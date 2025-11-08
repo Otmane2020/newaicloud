@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Send, Inbox, Archive, RefreshCw, Plus } from 'lucide-react';
+import { Mail, Send, Inbox, Archive, RefreshCw, Plus, TestTube } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -26,10 +26,19 @@ interface AdminEmail {
   sent_at: string | null;
   created_at: string;
   error_message: string | null;
+  is_read: boolean;
+}
+
+interface EmailStats {
+  total: number;
+  received: number;
+  sent: number;
+  unread: number;
 }
 
 export function EmailInbox() {
   const [emails, setEmails] = useState<AdminEmail[]>([]);
+  const [emailStats, setEmailStats] = useState<EmailStats>({ total: 0, received: 0, sent: 0, unread: 0 });
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<AdminEmail | null>(null);
@@ -43,6 +52,7 @@ export function EmailInbox() {
 
   useEffect(() => {
     loadEmails();
+    loadEmailStats();
     
     // Setup realtime subscription
     const channel = supabase
@@ -53,6 +63,7 @@ export function EmailInbox() {
         table: 'admin_emails'
       }, () => {
         loadEmails();
+        loadEmailStats();
       })
       .subscribe();
 
@@ -79,6 +90,27 @@ export function EmailInbox() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEmailStats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_emails')
+        .select('direction, status, is_read');
+
+      if (error) throw error;
+
+      const stats = {
+        total: data?.length || 0,
+        received: data?.filter(e => e.direction === 'incoming').length || 0,
+        sent: data?.filter(e => e.direction === 'outgoing').length || 0,
+        unread: data?.filter(e => e.direction === 'incoming' && e.is_read === false).length || 0,
+      };
+
+      setEmailStats(stats);
+    } catch (error) {
+      console.error('Error loading email stats:', error);
     }
   };
 
@@ -116,6 +148,7 @@ export function EmailInbox() {
       setBody('');
       setComposeOpen(false);
       loadEmails();
+      loadEmailStats();
     } catch (error: any) {
       console.error('Error sending email:', error);
       toast({
@@ -125,6 +158,40 @@ export function EmailInbox() {
       });
     } finally {
       setSending(false);
+    }
+  };
+
+  const simulateIncomingEmail = async () => {
+    try {
+      const { error } = await supabase
+        .from('admin_emails')
+        .insert({
+          from_email: 'client@example.com',
+          to_email: 'support@newai.sale',
+          subject: 'Demande de support - Test',
+          body: 'Bonjour, j\'ai besoin d\'aide avec mon compte. Ceci est un email de test.',
+          html_body: '<p>Bonjour,</p><p>J\'ai besoin d\'aide avec mon compte. Ceci est un email de test.</p>',
+          direction: 'incoming',
+          status: 'received',
+          is_read: false
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Email de test reçu',
+        description: 'Un email de test a été ajouté à votre boîte de réception'
+      });
+
+      loadEmails();
+      loadEmailStats();
+    } catch (error: any) {
+      console.error('Error simulating email:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de simuler l\'email',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -160,7 +227,19 @@ export function EmailInbox() {
           <Button
             variant="outline"
             size="sm"
-            onClick={loadEmails}
+            onClick={simulateIncomingEmail}
+            className="gap-2"
+          >
+            <TestTube className="w-4 h-4" />
+            Email Test
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              loadEmails();
+              loadEmailStats();
+            }}
             disabled={loading}
           >
             <RefreshCw className="w-4 h-4 mr-2" />
