@@ -33,6 +33,26 @@ const handler = async (req: Request): Promise<Response> => {
     const emailContent = emailData.data || emailData;
     const { from, to, subject, text, html } = emailContent;
 
+    // Extract clean body text - prioritize text version, clean HTML as fallback
+    let cleanBody = '';
+    if (text) {
+      cleanBody = text;
+    } else if (html) {
+      // Strip HTML tags for plain text version
+      cleanBody = html
+        .replace(/<style[^>]*>.*?<\/style>/gi, '') // Remove style tags
+        .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
+        .replace(/<[^>]+>/g, '') // Remove all HTML tags
+        .replace(/&nbsp;/g, ' ') // Replace nbsp
+        .replace(/&amp;/g, '&') // Replace amp
+        .replace(/&lt;/g, '<') // Replace lt
+        .replace(/&gt;/g, '>') // Replace gt
+        .replace(/&quot;/g, '"') // Replace quot
+        .replace(/&#39;/g, "'") // Replace apos
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+    }
+
     console.log("📨 Traitement email:");
     console.log("  - De:", from);
     console.log("  - À:", to);
@@ -50,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
         from_email: from,
         to_email: to,
         subject: subject || 'Sans objet',
-        body: text || html || '',
+        body: cleanBody || 'Email reçu sans contenu texte',
         html_body: html || null,
         direction: 'incoming',
         status: 'received',

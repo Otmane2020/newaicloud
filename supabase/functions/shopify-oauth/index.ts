@@ -49,8 +49,13 @@ serve(async (req) => {
         .single();
 
       if (stateError || !oauthState) {
+        console.error('[SHOPIFY-OAUTH] State validation failed:', {
+          stateError,
+          hasOauthState: !!oauthState,
+          state
+        });
         const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
-        return Response.redirect(`${appUrl}/integration?error=invalid_state`);
+        return Response.redirect(`${appUrl}/integration?error=invalid_state&details=${encodeURIComponent(stateError?.message || 'State not found')}`);
       }
 
       // Vérifier l'expiration
@@ -83,8 +88,14 @@ serve(async (req) => {
       });
 
       if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        console.error('[SHOPIFY-OAUTH] Token exchange failed:', {
+          status: tokenResponse.status,
+          statusText: tokenResponse.statusText,
+          error: errorText
+        });
         const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
-        return Response.redirect(`${appUrl}/integration?error=auth_failed`);
+        return Response.redirect(`${appUrl}/integration?error=auth_failed&details=${encodeURIComponent(errorText)}`);
       }
 
       const tokenData = await tokenResponse.json();
@@ -282,13 +293,44 @@ serve(async (req) => {
     // Nettoyer le nom de la boutique
     const cleanShopName = shopName.replace(".myshopify.com", "");
 
-    // Construire l'URL OAuth
-    const scopes = "write_checkout_branding_settings,write_checkouts,read_files,write_files,write_inventory,read_inventory,write_inventory_shipments,read_inventory_shipments,write_inventory_shipments_received_items,read_inventory_shipments_received_items,write_inventory_transfers,read_inventory_transfers,read_online_store_pages,write_online_store_pages,read_product_feeds,write_product_feeds,read_product_listings,write_product_listings,read_products,write_products,read_shipping,write_shipping,unauthenticated_read_product_pickup_locations,unauthenticated_read_product_inventory,unauthenticated_read_product_listings,unauthenticated_read_product_tags,read_orders,read_content,write_content";
+    // Construire l'URL OAuth avec scopes correctement formatés
+    const scopes = [
+      "write_checkout_branding_settings",
+      "write_checkouts",
+      "read_files",
+      "write_files",
+      "write_inventory",
+      "read_inventory",
+      "write_inventory_shipments",
+      "read_inventory_shipments",
+      "write_inventory_shipments_received_items",
+      "read_inventory_shipments_received_items",
+      "write_inventory_transfers",
+      "read_inventory_transfers",
+      "read_online_store_pages",
+      "write_online_store_pages",
+      "read_product_feeds",
+      "write_product_feeds",
+      "read_product_listings",
+      "write_product_listings",
+      "read_products",
+      "write_products",
+      "read_shipping",
+      "write_shipping",
+      "unauthenticated_read_product_pickup_locations",
+      "unauthenticated_read_product_inventory",
+      "unauthenticated_read_product_listings",
+      "unauthenticated_read_product_tags",
+      "read_orders",
+      "read_content",
+      "write_content"
+    ];
+    
     const redirectUri = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-oauth`;
 
     const authUrl = `https://${cleanShopName}.myshopify.com/admin/oauth/authorize?` +
       `client_id=${apiKey}&` +
-      `scope=${scopes}&` +
+      `scope=${encodeURIComponent(scopes.join(','))}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `state=${stateToken}`;
 
