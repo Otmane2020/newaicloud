@@ -63,14 +63,33 @@ export function SubscriptionPlans() {
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
-        .order('price_monthly', { ascending: true });
+        .order('display_order', { ascending: true });
       
       if (plansData) {
-        setPlans(plansData);
+        // Filter only plans with valid Stripe price IDs
+        const validPlans = plansData.filter(plan => {
+          const monthlyId = plan.stripe_price_id_monthly || '';
+          const yearlyId = plan.stripe_price_id_yearly || '';
+          
+          // Check if at least one price ID is valid (real Stripe IDs are longer than 15 chars)
+          const hasValidMonthly = monthlyId.startsWith('price_') && monthlyId.length > 15;
+          const hasValidYearly = yearlyId.startsWith('price_') && yearlyId.length > 15;
+          
+          return hasValidMonthly || hasValidYearly;
+        });
+        
+        setPlans(validPlans);
         
         // Set default selections
-        const proPlans = plansData.filter(p => p.id.startsWith('pro-'));
-        const enterprisePlans = plansData.filter(p => p.id.startsWith('enterprise-'));
+        const proPlans = validPlans.filter(p => 
+          p.id === 'professional' || 
+          p.id === 'pro' || 
+          p.id.startsWith('pro-')
+        );
+        const enterprisePlans = validPlans.filter(p => 
+          p.id === 'enterprise' || 
+          p.id.startsWith('enterprise-')
+        );
         
         if (proPlans.length > 0) setSelectedProPlan(proPlans[0].id);
         if (enterprisePlans.length > 0) setSelectedEnterprisePlan(enterprisePlans[0].id);
@@ -108,28 +127,32 @@ export function SubscriptionPlans() {
         .single();
 
       const hasActiveSubscription = !!subscription?.stripe_subscription_id;
-      // Always use create-checkout for all users (trial or paid)
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          plan_id: planId,
-          billing_period: billingPeriod,
-          currency: language === 'fr' ? 'EUR' : 'USD'
-        }
-      });
+      const isTrialing = profile?.subscription_status === 'trialing';
+      const isCurrentPlan = profile?.current_plan_id === planId;
 
-      if (checkoutError) throw checkoutError;
-      
-      if (checkoutData?.url) {
-        window.open(checkoutData.url, '_blank');
+      // If in trial and activating current plan, use direct payment
+      if (isTrialing && isCurrentPlan) {
+        const { data, error } = await supabase.functions.invoke('activate-full-plan');
+        if (error) throw error;
+        
+        if (data?.success) {
+          toast({
+            title: t.account.subscription.activationSuccess,
+            description: t.toasts.subscriptionActivatedMessage,
+          });
+          setTimeout(() => window.location.reload(), 1500);
+        }
+        return;
       }
-      return;
 
       // If user has active subscription, use update-subscription for proration
       if (hasActiveSubscription) {
         const selectedPlan = plans.find(p => p.id === planId);
         if (!selectedPlan) throw new Error('Plan not found');
 
-        const stripePriceId = getPriceIdByLanguage(selectedPlan, language, billingPeriod);
+        const stripePriceId = billingPeriod === 'yearly' 
+          ? selectedPlan.stripe_price_id_yearly 
+          : selectedPlan.stripe_price_id_monthly;
 
         if (!stripePriceId || !stripePriceId.startsWith('price_')) {
           toast({
@@ -161,7 +184,9 @@ export function SubscriptionPlans() {
       // Otherwise, create new checkout session
       const selectedPlan = plans.find(p => p.id === planId);
       
-      const stripePriceId = getPriceIdByLanguage(selectedPlan, language, billingPeriod);
+      const stripePriceId = billingPeriod === 'yearly' 
+        ? selectedPlan?.stripe_price_id_yearly 
+        : selectedPlan?.stripe_price_id_monthly;
       
       if (!stripePriceId || !stripePriceId.startsWith('price_')) {
         toast({
@@ -173,7 +198,7 @@ export function SubscriptionPlans() {
         return;
       }
 
-      const { data: checkoutData2, error: checkoutError2 } = await supabase.functions.invoke('create-checkout', {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
           plan_id: planId,
           billing_period: billingPeriod,
@@ -183,10 +208,10 @@ export function SubscriptionPlans() {
         }
       });
 
-      if (checkoutError2) throw checkoutError2;
+      if (error) throw error;
       
-      if (checkoutData2?.url) {
-        window.open(checkoutData2.url, '_blank');
+      if (data?.url) {
+        window.open(data.url, '_blank');
       }
     } catch (error) {
       console.error('Error handling plan selection:', error);
@@ -204,13 +229,9 @@ export function SubscriptionPlans() {
 
   const getPrice = (plan: Plan) => {
     const price = getPriceByLanguage(plan, language, billingPeriod);
-    const displayPrice = billingPeriod === 'yearly' ? price / 12 : price;
-    return formatPrice(displayPrice, language).replace(/[€$]/, '');
-  };
-
-  const getYearlyTotal = (plan: Plan) => {
-    const price = getPriceByLanguage(plan, language, billingPeriod);
-    return formatPrice(price, language, false, true);
+    // Format: keep decimals for prices under 10, remove for whole numbers
+    if (price < 10) return formatPrice(price, language, true).replace(/[€$]/, '');
+    return formatPrice(price, language, false).replace(/[€$]/, '');
   };
 
   const getSavings = (plan: Plan) => {
@@ -264,6 +285,9 @@ export function SubscriptionPlans() {
               <TabsTrigger value="monthly">{t.dashboard.plans.monthly}</TabsTrigger>
               <TabsTrigger value="yearly">
                 {t.dashboard.plans.yearly}
+                <Badge variant="secondary" className="ml-2 bg-success/20 text-success">
+                  {tf('dashboard.plans.save', { percent: '20' })}
+                </Badge>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -294,11 +318,6 @@ export function SubscriptionPlans() {
                   <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(starterPlan)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
-                {billingPeriod === 'yearly' && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {getYearlyTotal(starterPlan)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
-                  </p>
-                )}
               </div>
 
               <div className="space-y-3 pt-6 border-t">
@@ -363,14 +382,13 @@ export function SubscriptionPlans() {
                 <SelectTrigger className="w-full bg-card border-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
+                <SelectContent>
                   {proPlans.map((plan) => (
                     <SelectItem
                       key={plan.id}
                       value={plan.id}
-                      className="bg-popover hover:bg-accent"
                     >
-                      {plan.max_products} produits • {plan.max_articles_monthly} articles/mois • {plan.max_campaigns} campagnes • {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language).replace(/[€$]/, '')}{getCurrencySymbol(language)}/mois
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, billingPeriod), language)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -382,11 +400,6 @@ export function SubscriptionPlans() {
                   <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(selectedPro)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
-                {billingPeriod === 'yearly' && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {getYearlyTotal(selectedPro)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
-                  </p>
-                )}
               </div>
 
               <div className="space-y-3 pt-6 border-t">
@@ -451,14 +464,13 @@ export function SubscriptionPlans() {
                 <SelectTrigger className="w-full bg-card border-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
+                <SelectContent>
                   {enterprisePlans.map((plan) => (
                     <SelectItem 
                       key={plan.id} 
                       value={plan.id}
-                      className="bg-popover hover:bg-accent"
                     >
-                      {plan.max_products.toLocaleString()} produits • {plan.max_articles_monthly} articles/mois • {plan.max_campaigns} campagnes • {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language).replace(/[€$]/, '')}{getCurrencySymbol(language)}/mois
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, billingPeriod), language)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -468,13 +480,8 @@ export function SubscriptionPlans() {
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(selectedEnterprise)}</span>
-                  <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
+                  <span className="text-muted-foreground">/mois</span>
                 </div>
-                {billingPeriod === 'yearly' && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {getYearlyTotal(selectedEnterprise)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
-                  </p>
-                )}
               </div>
 
               <div className="space-y-3 pt-6 border-t">
