@@ -58,39 +58,11 @@ export function SubscriptionPlans() {
         .order('price_monthly', { ascending: true });
       
       if (plansData) {
-        // Filter only plans with valid Stripe price IDs
-        // Valid Stripe price IDs start with "price_" followed by random alphanumeric characters
-        // Exclude placeholder IDs like "price_pro_98_monthly" 
-        const validPlans = plansData.filter(plan => {
-          const monthlyId = plan.stripe_price_id_monthly || '';
-          const yearlyId = plan.stripe_price_id_yearly || '';
-          
-          // Check if at least one price ID is valid (doesn't contain keywords like "monthly", "yearly", "pro", "enterprise")
-          const hasValidMonthly = monthlyId.startsWith('price_') && 
-            !monthlyId.includes('monthly') && 
-            !monthlyId.includes('pro_') && 
-            !monthlyId.includes('enterprise_');
-          
-          const hasValidYearly = yearlyId.startsWith('price_') && 
-            !yearlyId.includes('yearly') && 
-            !yearlyId.includes('pro_') && 
-            !yearlyId.includes('enterprise_');
-          
-          return hasValidMonthly || hasValidYearly;
-        });
-        
-        setPlans(validPlans);
+        setPlans(plansData);
         
         // Set default selections
-        const proPlans = validPlans.filter(p => 
-          p.id === 'professional' || 
-          p.id === 'pro' || 
-          p.id.startsWith('pro-')
-        );
-        const enterprisePlans = validPlans.filter(p => 
-          p.id === 'enterprise' || 
-          p.id.startsWith('enterprise-')
-        );
+        const proPlans = plansData.filter(p => p.id.startsWith('pro-'));
+        const enterprisePlans = plansData.filter(p => p.id.startsWith('enterprise-'));
         
         if (proPlans.length > 0) setSelectedProPlan(proPlans[0].id);
         if (enterprisePlans.length > 0) setSelectedEnterprisePlan(enterprisePlans[0].id);
@@ -261,14 +233,11 @@ export function SubscriptionPlans() {
   // Group plans by category
   const starterPlan = plans.find(p => p.id === 'starter');
   const proPlans = plans.filter(p => 
-    p.id === 'professional' || 
-    p.id === 'pro' || 
     p.id.startsWith('pro-')
-  );
+  ).sort((a, b) => a.display_order - b.display_order);
   const enterprisePlans = plans.filter(p => 
-    p.id === 'enterprise' || 
     p.id.startsWith('enterprise-')
-  );
+  ).sort((a, b) => a.display_order - b.display_order);
   
   const selectedPro = proPlans.find(p => p.id === selectedProPlan);
   const selectedEnterprise = enterprisePlans.find(p => p.id === selectedEnterprisePlan);
