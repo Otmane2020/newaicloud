@@ -154,7 +154,7 @@ serve(async (req) => {
 
     // Get current subscription from Stripe
     const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionData.stripe_subscription_id);
-    logStep("Current subscription retrieved", { 
+    logStep("Current subscription retrieved from Stripe", { 
       status: stripeSubscription.status,
       itemsCount: stripeSubscription.items.data.length,
       trialEnd: stripeSubscription.trial_end,
@@ -162,16 +162,32 @@ serve(async (req) => {
       periodEnd: stripeSubscription.current_period_end
     });
 
-    // Validate that subscription has period dates
-    if (!stripeSubscription.current_period_start || !stripeSubscription.current_period_end) {
-      // For trialing subscriptions without period dates, this is expected
-      if (stripeSubscription.status === 'trialing' && stripeSubscription.trial_end) {
-        logStep("Trialing subscription without period dates - will use trial dates");
+    // If Stripe doesn't have period dates yet, try to get them from our DB (webhook may have synced them)
+    let periodStart = stripeSubscription.current_period_start;
+    let periodEnd = stripeSubscription.current_period_end;
+
+    if (!periodStart || !periodEnd) {
+      logStep("Period dates missing from Stripe, checking DB");
+      
+      const { data: dbSubscription } = await supabaseClient
+        .from("subscriptions")
+        .select("current_period_start, current_period_end")
+        .eq("stripe_subscription_id", subscriptionData.stripe_subscription_id)
+        .single();
+
+      if (dbSubscription?.current_period_start && dbSubscription?.current_period_end) {
+        periodStart = Math.floor(new Date(dbSubscription.current_period_start).getTime() / 1000);
+        periodEnd = Math.floor(new Date(dbSubscription.current_period_end).getTime() / 1000);
+        logStep("Using period dates from DB", { periodStart, periodEnd });
+      } else if (stripeSubscription.status === 'trialing' && stripeSubscription.trial_end) {
+        // Use trial dates as fallback
+        periodStart = stripeSubscription.trial_start || Math.floor(Date.now() / 1000);
+        periodEnd = stripeSubscription.trial_end;
+        logStep("Using trial dates as fallback", { periodStart, periodEnd });
       } else {
-        logStep("Subscription missing period dates", { 
+        logStep("No valid period dates found anywhere", { 
           status: stripeSubscription.status,
-          hasPeriodStart: !!stripeSubscription.current_period_start,
-          hasPeriodEnd: !!stripeSubscription.current_period_end
+          hasDbDates: !!dbSubscription
         });
         throw new Error("Votre abonnement est en cours de configuration. Veuillez réessayer dans quelques instants.");
       }
@@ -222,30 +238,17 @@ serve(async (req) => {
 
     // Calculate days into billing cycle
     const now = Math.floor(Date.now() / 1000); // Unix timestamp
-    let periodStart = stripeSubscription.current_period_start;
-    let periodEnd = stripeSubscription.current_period_end;
     
-    // For trialing subscriptions, use trial dates if period dates are invalid
-    if (stripeSubscription.status === 'trialing' && stripeSubscription.trial_end) {
-      if (!periodStart || periodStart <= 0) {
-        periodStart = stripeSubscription.trial_start || Math.floor(Date.now() / 1000);
-        logStep("Using trial start as period start", { periodStart });
-      }
-      if (!periodEnd || periodEnd <= 0) {
-        periodEnd = stripeSubscription.trial_end;
-        logStep("Using trial end as period end", { periodEnd });
-      }
-    }
-    
+    // periodStart and periodEnd are now already set from above (either from Stripe or DB)
     // Final validation
     if (!periodStart || !periodEnd || periodStart <= 0 || periodEnd <= 0) {
-      logStep("Invalid period dates detected after trial check", { 
+      logStep("Invalid period dates after all attempts", { 
         periodStart, 
         periodEnd,
         status: stripeSubscription.status,
         trialEnd: stripeSubscription.trial_end 
       });
-      throw new Error("Unable to determine subscription period dates. Please contact support.");
+      throw new Error("Impossible de déterminer les dates de votre abonnement. Veuillez contacter le support.");
     }
     
     const daysIntoCycle = Math.floor((now - periodStart) / (24 * 60 * 60));
