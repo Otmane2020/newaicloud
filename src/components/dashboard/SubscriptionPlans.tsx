@@ -224,11 +224,8 @@ export function SubscriptionPlans() {
 
   const getPrice = (plan: Plan) => {
     const price = getPriceByLanguage(plan, language, billingPeriod);
-    // For yearly billing, show monthly equivalent
     const displayPrice = billingPeriod === 'yearly' ? price / 12 : price;
-    // Format: keep 9.99 as is, but remove decimals for whole numbers like 49.00 -> 49
-    if (displayPrice === 9.99) return formatPrice(displayPrice, language, true).replace(/[€$]/, '');
-    return formatPrice(displayPrice, language, false).replace(/[€$]/, '');
+    return formatPrice(displayPrice, language).replace(/[€$]/, '');
   };
 
   const getYearlyTotal = (plan: Plan) => {
@@ -398,7 +395,7 @@ export function SubscriptionPlans() {
                       key={plan.id}
                       value={plan.id}
                     >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language)}/mois
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language).replace(/[€$]/, '')}{getCurrencySymbol(language)}/mois
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -492,7 +489,7 @@ export function SubscriptionPlans() {
                       key={plan.id} 
                       value={plan.id}
                     >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language)}/mois
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language).replace(/[€$]/, '')}{getCurrencySymbol(language)}/mois
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
 import { AIAssistant } from "@/components/AIAssistant";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
+import { ShopifyConnectPrompt } from "@/components/ShopifyConnectPrompt";
 import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
@@ -382,6 +383,7 @@ const App = () => (
           <Sonner />
           <AIAssistant />
           <NotificationPermissionPrompt />
+          <ShopifyConnectPrompt />
             </div>
           </StoreProvider>
         </AuthProvider>

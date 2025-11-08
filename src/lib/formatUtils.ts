@@ -73,20 +73,32 @@ export const getPriceByLanguage = (
 
 /**
  * Format a price with the appropriate currency symbol
+ * Smart formatting: shows decimals only when needed (9,99 or 7,99), otherwise shows whole numbers (9 or 49)
  * @param amount - The price amount
  * @param language - The language code ('fr' or 'en')
- * @param includeDecimals - Whether to include decimal places (default: true)
+ * @param forceDecimals - Force showing decimals even for whole numbers (default: false)
  * @returns Formatted price string
  */
 export const formatPrice = (
   amount: number, 
   language: 'fr' | 'en',
-  includeDecimals: boolean = true
+  forceDecimals: boolean = false
 ): string => {
   const symbol = getCurrencySymbol(language);
-  const formattedAmount = includeDecimals 
-    ? (language === 'fr' ? amount.toFixed(2).replace('.', ',') : amount.toFixed(2))
-    : Math.round(amount).toString();
+  
+  // Check if the number has meaningful decimals
+  const hasDecimals = amount % 1 !== 0;
+  
+  let formattedAmount: string;
+  if (forceDecimals || hasDecimals) {
+    // Show decimals
+    formattedAmount = language === 'fr' 
+      ? amount.toFixed(2).replace('.', ',')
+      : amount.toFixed(2);
+  } else {
+    // Show whole number without decimals
+    formattedAmount = Math.round(amount).toString();
+  }
   
   return language === 'fr' 
     ? `${formattedAmount} ${symbol}`
