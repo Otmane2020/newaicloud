@@ -84,8 +84,8 @@ serve(async (req) => {
     
     // Get plan limits
     let plan;
-    if (isPaid && profile.current_plan_id) {
-      // User has paid plan - fetch it
+    if (!isTrialing && profile.current_plan_id) {
+      // User is NOT in trial and has paid plan - fetch it
       const { data: paidPlan, error: planError } = await supabaseClient
         .from('subscription_plans')
         .select('*')

@@ -115,37 +115,129 @@ serve(async (req) => {
           ? "équilibré"
           : "détaillé et approfondi";
 
-    // 🪄 Main AI prompt
+    // 🔍 VISION AI ANALYSIS
+    let visualAnalysis = "";
+    
+    if (imageUrl && authHeader) {
+      console.log("[generate-landing-ai] 🔍 Analyzing image with Vision AI...");
+      
+      try {
+        const visionResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-image-with-vision`, {
+          method: "POST",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            imageUrl,
+            productContext: `${productTitle}${vendor ? ` by ${vendor}` : ""}`,
+          }),
+        });
+
+        if (visionResponse.ok) {
+          const visionData = await visionResponse.json();
+          if (visionData?.attributes) {
+            visualAnalysis = `
+ANALYSE VISUELLE DU PRODUIT (Vision AI) :
+- Couleur dominante: ${visionData.attributes.dominantColor || "non détectée"}
+- Style visuel: ${visionData.attributes.visualStyle || "non détecté"}
+- Matériaux visibles: ${visionData.attributes.materials?.join(", ") || "non détectés"}
+- Ambiance: ${visionData.attributes.mood || "non détectée"}
+- Qualité perçue: ${visionData.attributes.quality || "non détectée"}
+            `;
+            console.log("[generate-landing-ai] ✅ Vision analysis:", visionData.attributes);
+          }
+        } else {
+          console.warn("[generate-landing-ai] ⚠️ Vision AI call failed, continuing without visual analysis");
+        }
+      } catch (visionError) {
+        console.warn("[generate-landing-ai] ⚠️ Vision AI error, continuing without visual analysis:", visionError);
+      }
+    }
+
+    // 🎨 STYLE GUIDES
+    const styleGuides: Record<string, string> = {
+      'moderne': 'Gradients subtils, ombres douces, coins arrondis (rounded-2xl), espacements généreux, typographie sans-serif (font-sans), palette noir/blanc avec accents de couleur vive',
+      'minimaliste': 'Beaucoup d\'espace blanc, typographie épurée, pas de décorations superflues, 1-2 couleurs max, lignes fines (border), sans ombres ou ombres ultra-légères (shadow-sm)',
+      'scandinave': 'Tons naturels (beige, blanc cassé, gris clair), bois et textures organiques suggérées, simplicité fonctionnelle, typographie claire, ambiance chaleureuse et accueillante',
+      'premium': 'Or/noir/blanc, typographie serif (font-serif) pour titres, ombres prononcées (shadow-2xl), gradients métalliques, espacements larges, détails raffinés',
+      'neutre': 'Gris/blanc/noir uniquement, pas de couleurs vives, design sobre, typographie classique, structure équilibrée',
+      'coloré': 'Palette vibrante multi-couleurs, dégradés audacieux, énergie visuelle, contrastes forts, design dynamique'
+    };
+
+    const currentStyleGuide = styleGuides[style] || styleGuides['moderne'];
+
+    // 🪄 ENHANCED AI PROMPT
     const prompt = `
-Tu es un designer et copywriter expert en e-commerce.
+Tu es un designer UX/UI expert et copywriter e-commerce spécialisé dans les landing pages à forte conversion.
 
-Ta mission est de générer une landing page HTML complète pour un produit Shopify à partir des données suivantes :
+📦 PRODUIT À METTRE EN VALEUR :
+- Titre : ${productTitle}
+${vendor ? `- Marque : ${vendor}` : ""}
+${imageUrl ? `- Image produit : ${imageUrl}` : ""}
+${description ? `- Description : ${description}` : ""}
 
-- Titre du produit : ${productTitle}
-${vendor ? `- Marque/Vendor : ${vendor}` : ""}
-- Image du produit : ${imageUrl || "aucune"}
-- Description existante : ${description || "aucune"}
+${visualAnalysis ? `${visualAnalysis}` : ""}
+
+🎨 DESIGN & STYLE :
 - Style visuel : ${style}
-- Couleur principale : ${mainColor}
-- Layout souhaité : ${layout}
-- Longueur du texte : ${length}
+  → Guide : ${currentStyleGuide}
+- Couleur principale (HEX) : ${mainColor}
+  → **CRITIQUE** : Applique cette couleur aux boutons CTA, liens, bordures d'accent, titres importants
+  → Utilise Tailwind avec style="color: ${mainColor}" ou style="background-color: ${mainColor}" ou style="border-color: ${mainColor}"
+- Layout : ${layout}
+- Longueur : ${length} (ton ${tone})
 
-⚙️ Contraintes :
-- Sortie : HTML clair, responsive et SEO-friendly.
-${vendor ? `- **IMPORTANT : Intégrer la marque "${vendor}" naturellement dans le contenu** (hero section, description produit, etc.)` : ""}
-- Inclure les sections : 
-  1️⃣ Hero section (titre H1, sous-titre${vendor ? `, mention de la marque "${vendor}"` : ""}, image)
-  2️⃣ Avantages (3-5 cartes avec icônes)
-  3️⃣ Caractéristiques techniques
-  4️⃣ CTA final
-  5️⃣ Garanties / Livraison
-- Design ${style}, ton ${tone}.
-${vendor ? `- Créer un sentiment premium autour de la marque "${vendor}"` : ""}
-- Compatible Tailwind CSS uniquement (aucun <style> inline).
-- Responsive mobile-first, avec gap-4, p-6, rounded-xl, shadow-lg.
-- Titres: font-bold text-2xl ou text-3xl.
-- Pas de balises <html>, <head> ou <body>.
-- Retourne UNIQUEMENT le contenu HTML prêt à injecter dans React.
+🧱 STRUCTURE OBLIGATOIRE :
+1. HERO SECTION
+   - Titre H1 avec la couleur principale (style="color: ${mainColor}")
+   - Sous-titre accrocheur${vendor ? ` mentionnant "${vendor}"` : ""}
+   - Image produit (si disponible) avec rounded-2xl et shadow-xl
+   - CTA principal avec background de la couleur principale (style="background-color: ${mainColor}")
+
+2. AVANTAGES (3-5 cartes)
+   - Icônes SVG ou émojis
+   - Titres courts et percutants
+   - Descriptions de 20-30 mots
+
+3. CARACTÉRISTIQUES TECHNIQUES
+   - Liste structurée avec badges/pills
+   - Informations concrètes${visualAnalysis ? " (utilise les insights Vision AI)" : ""}
+
+4. CTA FINAL
+   - Bouton principal avec couleur principale
+   - Message d'urgence/garantie
+
+5. GARANTIES / LIVRAISON
+   - 3-4 éléments rassurants (livraison, retour, garantie, support)
+
+📱 RESPONSIVE MOBILE-FIRST :
+- Structure : <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+- Hero : <div class="flex flex-col lg:flex-row gap-8">
+- Grid avantages : <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+- Texte : text-base sm:text-lg lg:text-xl
+- Titres : text-2xl sm:text-3xl lg:text-4xl
+- Padding : p-4 sm:p-6 lg:p-8
+- Gap : gap-4 sm:gap-6 lg:gap-8
+
+🛠️ CONTRAINTES TECHNIQUES :
+✅ Tailwind CSS uniquement (CDN déjà chargé)
+✅ Classes responsive : sm:, md:, lg:, xl:
+✅ Couleur principale via style="color: ${mainColor}" ou style="background-color: ${mainColor}"
+✅ Pas de <html>, <head>, <body>
+✅ Pas de <style> inline (sauf pour appliquer mainColor)
+✅ HTML prêt à injecter dans React dangerouslySetInnerHTML
+❌ Pas de JavaScript
+❌ Pas de balises <script>
+❌ NE PAS UTILISER de marqueurs markdown comme \`\`\`html ou \`\`\`
+
+💡 COPYWRITING :
+- Ton ${tone}, ${vendor ? `mettant en valeur la marque "${vendor}"` : "naturel et convaincant"}
+- Bénéfices avant caractéristiques
+- Preuve sociale (si pertinent)
+- Appels à l'action clairs et directs
+
+🎯 RETOURNE UNIQUEMENT LE HTML (sans balises markdown, sans explications, sans balises <html>/<head>/<body>)
 `;
 
     console.log("[generate-landing-ai] 🧠 Sending prompt to Lovable Gateway...");
@@ -228,7 +320,18 @@ ${vendor ? `- Créer un sentiment premium autour de la marque "${vendor}"` : ""}
 
         // ✅ Success - parse response and exit retry loop
         const data = await response.json().catch(() => null);
-        const html = data?.choices?.[0]?.message?.content?.trim() || "";
+        let html = data?.choices?.[0]?.message?.content?.trim() || "";
+
+        // 🧹 CLEAN HTML - Remove markdown code blocks
+        if (html) {
+          html = html
+            .replace(/^```html\s*/i, '')  // Remove ```html at start
+            .replace(/^```\s*/m, '')       // Remove ``` at start
+            .replace(/\s*```$/m, '')       // Remove ``` at end
+            .trim();
+          
+          console.log("[generate-landing-ai] 🧹 HTML cleaned, final length:", html.length);
+        }
 
         console.log("[generate-landing-ai] Response status:", response.status);
         console.log("[generate-landing-ai] AI response parsed, HTML length:", html.length);
