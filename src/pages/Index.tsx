@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/language";
 import { getCurrencySymbol } from "@/lib/formatUtils";
 import { useEffect, useState } from "react";
+import { AIAssistant } from "@/components/AIAssistant";
 import { 
   Zap, 
   ShoppingBag, 
@@ -406,6 +407,9 @@ const Index = () => {
         </div>
       </section>
       <Footer />
+      
+      {/* AI Assistant - Floating button */}
+      <AIAssistant />
     </div>
   );
 };

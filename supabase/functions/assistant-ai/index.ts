@@ -20,16 +20,16 @@ serve(async (req) => {
       );
     }
 
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) {
-      console.error("GOOGLE_GEMINI_API_KEY is not configured");
+    const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
+    if (!DEEPSEEK_API_KEY) {
+      console.error("DEEPSEEK_API_KEY is not configured");
       return new Response(
         JSON.stringify({ error: "AI service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Calling Google Gemini with", messages.length, "messages, language:", language);
+    console.log("Calling DeepSeek with", messages.length, "messages, language:", language);
 
     // System prompt based on language
     const systemPrompt = language === 'fr' 
@@ -60,32 +60,24 @@ Main features of NewAI.sale:
 
 Be helpful and professional. If you don't know the answer, say so honestly.`;
 
-    // Convert messages to Gemini format
-    const geminiContents = [];
-    
-    // Add system prompt as first user message
-    geminiContents.push({
-      role: "user",
-      parts: [{ text: systemPrompt }]
-    });
-    
-    // Add conversation history
-    for (const msg of messages) {
-      geminiContents.push({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.content }]
-      });
-    }
+    // Build messages array for DeepSeek
+    const deepseekMessages = [
+      { role: "system", content: systemPrompt },
+      ...messages
+    ];
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:streamGenerateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      "https://api.deepseek.com/v1/chat/completions",
       {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contents: geminiContents,
+          model: "deepseek-chat",
+          messages: deepseekMessages,
+          stream: true,
         }),
       }
     );
@@ -98,7 +90,7 @@ Be helpful and professional. If you don't know the answer, say so honestly.`;
         );
       }
       const errorText = await response.text();
-      console.error("Google Gemini error:", response.status, errorText);
+      console.error("DeepSeek error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "Erreur du service IA" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

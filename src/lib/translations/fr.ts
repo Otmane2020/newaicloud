@@ -628,11 +628,11 @@ export const translations = {
   },
 
   aiAssistant: {
-    title: "AI Assistant",
-    subtitle: "Online and ready to help",
-    welcome: "Hello! I'm your AI assistant. How can I help you today?",
-    placeholder: "Type your message...",
-    error: "Sorry, I encountered an error. Please try again."
+    title: "Assistant IA",
+    subtitle: "En ligne et prêt à vous aider",
+    welcome: "Bonjour ! Je suis votre assistant IA. Comment puis-je vous aider aujourd'hui ?",
+    placeholder: "Tapez votre message...",
+    error: "Désolé, j'ai rencontré une erreur. Veuillez réessayer."
   },
   currency: {
     usd: "USD",
