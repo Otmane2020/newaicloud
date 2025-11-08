@@ -231,3 +231,6 @@ verify_jwt = false
 [functions.list-merchant-accounts]
 verify_jwt = true
 
+[functions.setup-subscription-plans]
+verify_jwt = false
+
