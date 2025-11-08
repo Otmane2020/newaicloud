@@ -19,7 +19,8 @@ import {
   Shield,
   Star,
   LogOut,
-  Loader2
+  Loader2,
+  Store
 } from 'lucide-react';
 import {
   Select,
@@ -42,6 +43,7 @@ interface Plan {
   max_articles_monthly: number;
   max_campaigns: number;
   max_chat_responses_monthly: number;
+  max_shopify_stores: number;
   features: Record<string, any>;
   trial_days: number;
   popular: boolean;
@@ -366,6 +368,7 @@ export default function Onboarding() {
 
   const formatLimit = (value: number) => {
     if (value === -1) return t.onboarding.planFeatures.unlimited;
+    if (value >= 100000) return t.onboarding.planFeatures.unlimited;
     if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
     return value.toString();
   };
@@ -519,6 +522,10 @@ export default function Onboarding() {
                     <span className="text-sm">{formatLimit(starterPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Store className="w-4 h-4 text-primary" />
+                    <span className="text-sm">{formatLimit(starterPlan.max_shopify_stores || 1)} {language === 'fr' ? 'boutiques connectées' : 'connected stores'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
                     <span className="text-sm">{formatLimit(starterPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
@@ -661,6 +668,10 @@ export default function Onboarding() {
                     <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Store className="w-4 h-4 text-primary" />
+                    <span className="text-sm">{formatLimit(selectedPlan.max_shopify_stores || 1)} {language === 'fr' ? 'boutiques connectées' : 'connected stores'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
@@ -789,6 +800,10 @@ export default function Onboarding() {
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary" />
                     <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Store className="w-4 h-4 text-primary" />
+                    <span className="text-sm">{formatLimit(selectedPlan.max_shopify_stores || 1)} {language === 'fr' ? 'boutiques connectées' : 'connected stores'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
