@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const translations = {
       fr: {
-        subject: "Bienvenue sur NewAI 🚀",
+        subject: "Bienvenue sur NewAI - Votre compte est prêt",
         title: "Bienvenue à bord !",
         greeting: "Bonjour",
         thankYou: "Merci d’avoir rejoint NewAI, votre assistant intelligent pour optimiser votre boutique Shopify.",
@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
         disclaimer: "Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.",
       },
       en: {
-        subject: "Welcome to NewAI 🚀",
+        subject: "Welcome to NewAI - Your account is ready",
         title: "Welcome aboard!",
         greeting: "Hello",
         thankYou: "Thank you for joining NewAI — your smart assistant for optimizing your Shopify store.",
@@ -60,6 +60,28 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     const t = translations[language];
+
+    // Plain text version for better deliverability
+    const emailText = `
+${t.title}
+
+${t.greeting} ${fullName},
+
+${t.thankYou}
+
+${t.message}
+
+${t.button}: https://app.newai.sale/auth?mode=login
+
+${t.signature.replace(/<br>/g, '\n').replace(/<\/?b>/g, '')}
+
+---
+${t.footer}
+
+${t.disclaimer}
+
+Pour vous désinscrire: https://app.newai.sale/unsubscribe
+    `.trim();
 
     const emailHtml = `
     <!DOCTYPE html>
@@ -203,9 +225,17 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "NewAI <noreply@newai.sale>",
+        reply_to: "contact@newai.sale",
         to: [email],
         subject: t.subject,
         html: emailHtml,
+        text: emailText,
+        headers: {
+          "List-Unsubscribe": "<https://app.newai.sale/unsubscribe>",
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          "X-Mailer": "NewAI v1.0",
+          "X-Priority": "3",
+        },
       }),
     });
 
