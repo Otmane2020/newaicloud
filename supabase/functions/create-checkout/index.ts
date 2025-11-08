@@ -314,7 +314,7 @@ serve(async (req) => {
         plan_name: plan.name,
         upgraded_from_trial: hasActiveTrial ? 'true' : 'false'
       },
-      success_url: success_url || `${origin}/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: success_url || `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancel_url || `${origin}/onboarding?checkout=cancelled&plan_id=${plan_id}`,
       allow_promotion_codes: true,
       billing_address_collection: 'required'

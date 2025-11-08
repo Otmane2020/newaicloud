@@ -60,6 +60,7 @@ import Pricing from "./pages/Pricing";
 import UsageAudit from "./pages/UsageAudit";
 import TestEmail from "./pages/TestEmail";
 import SetupPlans from "./pages/SetupPlans";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +87,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route
               path="/onboarding"
               element={

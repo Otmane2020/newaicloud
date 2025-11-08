@@ -28,7 +28,11 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-      console.log('🔍 Loading profile for user:', user.id);
+      console.log('🔍 [SubscriptionGuard] Checking subscription for user:', {
+        userId: user.id,
+        email: user.email,
+        timestamp: new Date().toISOString()
+      });
 
       // Check if user is admin first
       const { data: adminCheck } = await supabase.rpc('has_role', {
@@ -125,10 +129,12 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      console.log('✅ Profile loaded:', {
+      console.log('✅ [SubscriptionGuard] Profile loaded:', {
+        userId: user.id,
         status: data.subscription_status,
         plan: data.current_plan_id,
-        trialEnds: data.trial_ends_at
+        trialEnds: data.trial_ends_at,
+        timestamp: new Date().toISOString()
       });
 
       setProfile(data);
@@ -158,11 +164,20 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     ['active', 'trialing'].includes(profile.subscription_status);
 
   if (!hasValidSubscription && !hasActiveStripeSubscription) {
-    console.log('⚠️ No valid subscription, redirecting to onboarding. Status:', profile?.subscription_status);
+    console.log('⚠️ [SubscriptionGuard] No valid subscription, redirecting to onboarding:', {
+      userId: user?.id,
+      status: profile?.subscription_status,
+      hasStripeSubscription: hasActiveStripeSubscription,
+      timestamp: new Date().toISOString()
+    });
     return <Navigate to="/onboarding" replace />;
   }
 
-  console.log('✅ Valid subscription found, allowing access');
+  console.log('✅ [SubscriptionGuard] Valid subscription found, allowing access:', {
+    userId: user?.id,
+    status: profile?.subscription_status,
+    timestamp: new Date().toISOString()
+  });
 
   return <>{children}</>;
 }
