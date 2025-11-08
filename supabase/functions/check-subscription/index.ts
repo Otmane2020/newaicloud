@@ -43,9 +43,21 @@ serve(async (req) => {
     let retries = 3;
     
     while (retries > 0) {
-      const result = await supabaseClient.auth.getUser(token);
-      userData = result.data;
-      userError = result.error;
+      try {
+        const result = await supabaseClient.auth.getUser(token);
+        userData = result.data;
+        userError = result.error;
+      } catch (authException: any) {
+        // Handle cases where getUser throws instead of returning error
+        logStep('Auth exception caught', { message: authException.message });
+        return new Response(JSON.stringify({ 
+          error: 'invalid_session',
+          message: 'Session expired or invalid. Please log in again.' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        });
+      }
       
       if (!userError) break;
       
