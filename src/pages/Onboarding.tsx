@@ -228,31 +228,8 @@ export default function Onboarding() {
     }
   };
 
-  const handleStartTrial = async () => {
-    if (!user) {
-      toast.error(t.onboarding.errors.mustBeConnected);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      console.log('🎯 Starting free trial...');
-      
-      const { data, error } = await supabase.functions.invoke('start-free-trial');
-      
-      if (error) throw error;
-
-      toast.success("Essai gratuit activé ! Votre période d'essai de 14 jours a commencé.");
-      
-      // Redirect to dashboard
-      setTimeout(() => navigate('/dashboard'), 1500);
-    } catch (error) {
-      console.error('💥 Error starting trial:', error);
-      toast.error(error instanceof Error ? error.message : "Erreur lors de l'activation de l'essai");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // REMOVED: handleStartTrial - Now using Stripe Checkout for ALL plans including Starter trial
+  // This ensures mandatory credit card collection and proper trial activation via Stripe webhook
 
   const handleSelectPlan = async (planId: string) => {
     if (!user) {
@@ -569,7 +546,7 @@ export default function Onboarding() {
 
                 <Button
                   size="lg"
-                  onClick={handleStartTrial}
+                  onClick={() => handleSelectPlan(starterPlan.id)}
                   disabled={loading}
                   className="w-full"
                 >
@@ -578,7 +555,7 @@ export default function Onboarding() {
                   ) : (
                     <>
                       <Shield className="w-5 h-5 mr-2" />
-                      Essai Gratuit
+                      {language === 'fr' ? 'Essai Gratuit 14 jours' : '14-Day Free Trial'}
                     </>
                   )}
                 </Button>
