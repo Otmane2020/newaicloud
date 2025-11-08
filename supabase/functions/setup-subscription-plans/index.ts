@@ -406,7 +406,7 @@ serve(async (req) => {
           popular: plan.popular || false,
           best_value: plan.best_value || false,
           is_active: true,
-          trial_days: plan.id === "trial" ? 7 : 14,
+          trial_days: plan.id === "trial" ? 7 : (plan.id === "starter" ? 14 : 0),
           ...priceIds,
         });
 
