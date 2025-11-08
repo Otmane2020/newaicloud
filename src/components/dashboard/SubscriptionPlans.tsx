@@ -256,9 +256,6 @@ export function SubscriptionPlans() {
               <TabsTrigger value="monthly">{t.dashboard.plans.monthly}</TabsTrigger>
               <TabsTrigger value="yearly">
                 {t.dashboard.plans.yearly}
-                <Badge variant="secondary" className="ml-2 bg-success/20 text-success">
-                  {tf('dashboard.plans.save', { percent: '20' })}
-                </Badge>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -378,16 +375,9 @@ export function SubscriptionPlans() {
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
                 {billingPeriod === 'yearly' && (
-                  <>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {getYearlyTotal(selectedPro)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
-                        {t.dashboard.plans.save} {getSavings(selectedPro)}%
-                      </Badge>
-                    </div>
-                  </>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {getYearlyTotal(selectedPro)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                  </p>
                 )}
               </div>
 
@@ -473,16 +463,9 @@ export function SubscriptionPlans() {
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
                 {billingPeriod === 'yearly' && (
-                  <>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {getYearlyTotal(selectedEnterprise)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
-                        {t.dashboard.plans.save} {getSavings(selectedEnterprise)}%
-                      </Badge>
-                    </div>
-                  </>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {getYearlyTotal(selectedEnterprise)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                  </p>
                 )}
               </div>
 
