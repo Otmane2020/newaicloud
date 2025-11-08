@@ -26,7 +26,7 @@ export function ShopifyConnectPrompt() {
       if (!user || hasChecked) return;
 
       // Only show on dashboard, not on checkout or other pages
-      const excludedPaths = ['/checkout', '/payment', '/success', '/subscription'];
+      const excludedPaths = ['/checkout', '/payment', '/success', '/subscription', '/onboarding'];
       const isExcludedPath = excludedPaths.some(path => location.pathname.includes(path));
       
       if (location.pathname !== '/dashboard' || isExcludedPath) {
@@ -42,7 +42,21 @@ export function ShopifyConnectPrompt() {
           return;
         }
 
-        // Simple logic: if no store connected, show popup
+        // CRITICAL: Check if user has completed Stripe checkout (has active subscription)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', user.id)
+          .single();
+
+        // Only show if user has completed checkout (active or trialing)
+        if (!profile || !['active', 'trialing'].includes(profile.subscription_status)) {
+          console.log('⏳ User has not completed Stripe checkout yet, skipping popup');
+          setHasChecked(true);
+          return;
+        }
+
+        // Check if store is connected
         const { data: stores } = await supabase
           .from('shopify_connections')
           .select('id')
@@ -50,7 +64,7 @@ export function ShopifyConnectPrompt() {
           .eq('is_active', true);
 
         if (!stores || stores.length === 0) {
-          console.log('✅ No Shopify store found, showing welcome popup');
+          console.log('✅ Checkout completed + No store connected, showing welcome popup');
           setOpen(true);
           // Mark as seen in localStorage
           localStorage.setItem(`welcome_seen_${user.id}`, 'true');
