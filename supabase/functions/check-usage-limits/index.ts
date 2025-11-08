@@ -105,20 +105,23 @@ serve(async (req) => {
         plan = paidPlan;
       }
     } else {
-      // User is in trial or no subscription - use any plan for trial limits
-      const { data: anyPlan, error: planError } = await supabaseClient
+      // User is in trial - use trial plan limits
+      const { data: trialPlan, error: planError } = await supabaseClient
         .from('subscription_plans')
         .select('*')
-        .limit(1)
+        .eq('id', 'trial')
         .single();
       
-      if (planError) throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
-      plan = anyPlan;
+      if (planError) {
+        console.error('[LIMITS] Error fetching trial plan:', planError);
+        throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
+      }
+      plan = trialPlan;
     }
     
     if (!plan) throw new Error(TRANSLATIONS[lang].noPlanConfiguration);
     
-    console.log(`[LIMITS] Using plan: ${plan.id}`);
+    console.log(`[LIMITS] Using plan: ${plan.id} - isTrialing: ${isTrialing}, isPaid: ${isPaid}`);
 
     // Get current month usage
     const currentMonth = new Date();
@@ -203,34 +206,18 @@ serve(async (req) => {
       console.log(`[LIMITS] ✅ Products count is consistent: ${realProductCount}`);
     }
 
-    // Determine limits based on subscription status
-    let limits;
-    if (isTrialing) {
-      // CRITICAL: Trial users get strict limits
-      limits = {
-        max_optimizations: 50, // FORCE 50 for trial
-        max_articles: plan.trial_max_articles || 1,
-        max_chat_responses: plan.trial_max_chat_responses || 50,
-        max_shopify_requests: plan.trial_max_shopify_requests || 20,
-        max_products: 10, // FORCE 10 for trial
-        max_shopify_stores: 1,
-        max_campaigns: 0,
-      };
-      console.log(`[LIMITS] 🔴 TRIAL MODE - max_optimizations: 50, max_products: 10`);
-    } else {
-      limits = {
-        max_optimizations: plan.max_optimizations_monthly || 999999,
-        max_articles: plan.max_articles_monthly || 5,
-        max_chat_responses: plan.max_chat_responses_monthly || 200,
-        max_shopify_requests: plan.max_shopify_requests_monthly || 100,
-        max_products: plan.max_products || 100,
-        max_shopify_stores: plan.max_shopify_stores || 1,
-        max_campaigns: plan.max_campaigns || 0,
-      };
-      console.log(`[LIMITS] 🟢 PAID MODE - max_products: ${limits.max_products}`);
-    }
+    // Use plan limits directly (trial plan limits for trialing, paid plan limits for paid)
+    const limits = {
+      max_optimizations: plan.max_optimizations_monthly || 0,
+      max_articles: plan.max_articles_monthly || 0,
+      max_chat_responses: plan.max_chat_responses_monthly || 0,
+      max_shopify_requests: plan.max_shopify_requests_monthly || 0,
+      max_products: plan.max_products || 0,
+      max_shopify_stores: plan.max_shopify_stores || 1,
+      max_campaigns: plan.max_campaigns || 0,
+    };
     
-    console.log(`[LIMITS] Applied limits:`, limits);
+    console.log(`[LIMITS] ${isTrialing ? '🔴 TRIAL MODE' : '🟢 PAID MODE'} - Applied limits:`, limits);
 
     // Check if limits are reached
     // CRITICAL FIX: Trial users MUST respect the 50 optimization limit
