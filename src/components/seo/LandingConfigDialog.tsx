@@ -304,7 +304,7 @@ export function LandingConfigDialog({
       word[0] === word[0].toUpperCase() && 
       word.slice(1) === word.slice(1).toLowerCase()
     );
-    return capitalizedWord || "Non détecté";
+    return capitalizedWord || t.landingConfig.vendor.extractExample.replace('Ex:', '').trim() || "Brand";
   };
 
   const handleConfirm = () => {
@@ -321,9 +321,9 @@ export function LandingConfigDialog({
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <DialogTitle className="text-xl">Configuration de la Landing Page</DialogTitle>
+              <DialogTitle className="text-xl">{t.landingConfig.title}</DialogTitle>
               <DialogDescription className="text-sm mt-1">
-                {productTitle ? `Pour : ${productTitle.substring(0, 50)}...` : "Choisissez le style et le format"}
+                {productTitle ? `${t.landingConfig.forProduct} : ${productTitle.substring(0, 50)}...` : t.landingConfig.description}
               </DialogDescription>
             </div>
           </div>
@@ -332,7 +332,7 @@ export function LandingConfigDialog({
         <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto px-1">
           {/* Style visuel */}
           <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🎨 Style visuel</Label>
+            <Label className="text-base font-semibold">🎨 {t.landingConfig.visualStyle.title}</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {VISUAL_STYLES.map((style, index) => (
                 <button
@@ -360,7 +360,7 @@ export function LandingConfigDialog({
 
           {/* Layout */}
           <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🧱 Layout de la page</Label>
+            <Label className="text-base font-semibold">🧱 {t.landingConfig.layout.title}</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {LAYOUT_PREVIEWS.map((layout, index) => (
                 <Card
@@ -394,7 +394,7 @@ export function LandingConfigDialog({
 
           {/* Palette de couleurs */}
           <div className="space-y-3 animate-fade-in">
-            <Label className="text-base font-semibold">🎨 Palette de couleurs</Label>
+            <Label className="text-base font-semibold">🎨 {t.landingConfig.colorPalette.title}</Label>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {COLOR_PALETTES.map((palette, index) => (
@@ -449,7 +449,7 @@ export function LandingConfigDialog({
                 }}
               />
               <Label htmlFor="custom-color" className="cursor-pointer flex-1">
-                Utiliser une couleur personnalisée
+                {t.landingConfig.colorPalette.useCustom}
               </Label>
             </div>
             
@@ -462,7 +462,7 @@ export function LandingConfigDialog({
                   className="w-full h-12 rounded-md border cursor-pointer transition-transform duration-200 hover:scale-105"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Couleur sélectionnée : {config.colorScheme}
+                  {t.landingConfig.colorPalette.selected} : {config.colorScheme}
                 </p>
               </div>
             )}
@@ -470,27 +470,27 @@ export function LandingConfigDialog({
 
           {/* Longueur du contenu */}
           <div className="space-y-2">
-            <Label htmlFor="length">✏️ Longueur du contenu</Label>
+            <Label htmlFor="length">✏️ {t.landingConfig.contentLength.title}</Label>
             <Select
               value={config.contentLength}
               onValueChange={(value) => setConfig({ ...config, contentLength: value })}
             >
               <SelectTrigger id="length">
-                <SelectValue placeholder="Sélectionnez une longueur" />
+                <SelectValue placeholder={t.landingConfig.contentLength.title} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="courte (400 mots)">Courte (400 mots)</SelectItem>
-                <SelectItem value="moyenne (800 mots)">Moyenne (800 mots)</SelectItem>
-                <SelectItem value="longue (1500 mots)">Longue (1500 mots)</SelectItem>
+                <SelectItem value="courte (400 mots)">{t.landingConfig.contentLength.short}</SelectItem>
+                <SelectItem value="moyenne (800 mots)">{t.landingConfig.contentLength.medium}</SelectItem>
+                <SelectItem value="longue (1500 mots)">{t.landingConfig.contentLength.long}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Section Vendor/Marque */}
           <div className="space-y-3 pb-2 border-t pt-4">
-            <Label className="text-base font-semibold">🏷️ Gestion de la marque (Vendor)</Label>
+            <Label className="text-base font-semibold">🏷️ {t.landingConfig.vendor.title}</Label>
             <p className="text-xs text-muted-foreground">
-              Choisissez comment définir la marque du produit pour la landing page
+              {t.landingConfig.vendor.description}
             </p>
             
             <div className="grid gap-2">
@@ -513,9 +513,9 @@ export function LandingConfigDialog({
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold">Importer de Shopify</p>
+                    <p className="font-semibold">{t.landingConfig.vendor.importShopify}</p>
                     <p className="text-xs text-muted-foreground">
-                      Utiliser le vendor déjà configuré dans Shopify
+                      {t.landingConfig.vendor.importShopifyDesc}
                     </p>
                   </div>
                 </div>
@@ -540,13 +540,13 @@ export function LandingConfigDialog({
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold">Extraire du titre</p>
+                    <p className="font-semibold">{t.landingConfig.vendor.extractTitle}</p>
                     <p className="text-xs text-muted-foreground">
-                      Détecter automatiquement la marque depuis le titre du produit
+                      {t.landingConfig.vendor.extractTitleDesc}
                     </p>
                     {productTitle && (
                       <p className="text-xs text-primary mt-1 font-mono">
-                        Ex: "{productTitle}" → {extractVendorFromTitle(productTitle)}
+                        {t.landingConfig.vendor.extractExample} "{productTitle}" → {extractVendorFromTitle(productTitle)}
                       </p>
                     )}
                   </div>
@@ -573,10 +573,10 @@ export function LandingConfigDialog({
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold flex items-center gap-2">
-                      Générer avec l'IA <Sparkles className="w-3 h-3" />
+                      {t.landingConfig.vendor.generateAI} <Sparkles className="w-3 h-3" />
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Créer un nom de marque pertinent basé sur le produit
+                      {t.landingConfig.vendor.generateAIDesc}
                     </p>
                   </div>
                 </div>
@@ -586,30 +586,30 @@ export function LandingConfigDialog({
 
           {/* Champ de saisie libre pour highlights personnalisés */}
           <div className="space-y-3 pb-2 border-t pt-4 animate-fade-in">
-            <Label className="text-base font-semibold">✨ Points forts personnalisés</Label>
+            <Label className="text-base font-semibold">✨ {t.landingConfig.customHighlights.title}</Label>
             <p className="text-xs text-muted-foreground">
-              Ajoutez des informations spécifiques à mettre en avant (ex: Fabrication européenne, Garantie 10 ans, Livraison express...)
+              {t.landingConfig.customHighlights.description}
             </p>
             <textarea
               value={config.customHighlights || ''}
               onChange={(e) => setConfig({ ...config, customHighlights: e.target.value })}
-              placeholder="Exemple: Fabrication artisanale française&#10;Garantie satisfait ou remboursé 30 jours&#10;Matériaux éco-responsables certifiés"
+              placeholder={t.landingConfig.customHighlights.placeholder}
               className="w-full min-h-[100px] p-3 border rounded-lg text-sm resize-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-muted/30"
               rows={4}
             />
             <p className="text-xs text-muted-foreground italic">
-              💡 Astuce : Un point fort par ligne pour une meilleure mise en forme
+              {t.landingConfig.customHighlights.tip}
             </p>
           </div>
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-            Annuler
+            {t.landingConfig.buttons.cancel}
           </Button>
           <Button onClick={handleConfirm} className="gap-2 w-full sm:w-auto">
             <Sparkles className="w-4 h-4" />
-            Générer
+            {t.landingConfig.buttons.generate}
           </Button>
         </DialogFooter>
       </DialogContent>

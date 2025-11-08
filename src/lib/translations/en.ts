@@ -68,9 +68,17 @@ export const translations = {
       long: "Long (1500 words)"
     },
     
+    customHighlights: {
+      title: "Custom highlights",
+      description: "Add specific information to highlight (max 500 characters)",
+      placeholder: "Example: French artisanal craftsmanship\n30-day money-back guarantee\nCertified eco-friendly materials",
+      tip: "💡 One highlight per line - Max 5 lines recommended"
+    },
+    
     buttons: {
       cancel: "Cancel",
       confirm: "Confirm",
+      generate: "Generate",
       resetPreferences: "Reset preferences"
     }
   },
@@ -3015,6 +3023,7 @@ export const translations = {
     featured: "Featured",
     recommended: "Recommended",
     popular: "Popular",
+    optimizedByAI: "AI-Optimized",
     limited: "Limited",
     exclusive: "Exclusive",
     beta: "Beta",
@@ -3865,6 +3874,7 @@ export const translations = {
   pricing: {
     title: "Smart Pricing AI",
     description: "AI-powered pricing optimization",
+    detailedComparison: "Detailed comparison",
     stats: {
       avgMargin: "Average Margin",
       totalProducts: "Total Products",

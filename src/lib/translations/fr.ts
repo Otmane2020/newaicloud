@@ -68,9 +68,17 @@ export const translations = {
       long: "Longue (1500 mots)"
     },
     
+    customHighlights: {
+      title: "Points forts personnalisés",
+      description: "Ajoutez des informations spécifiques à mettre en avant (max 500 caractères)",
+      placeholder: "Exemple: Fabrication artisanale française\nGarantie satisfait ou remboursé 30 jours\nMatériaux éco-responsables certifiés",
+      tip: "💡 Un point fort par ligne - Max 5 lignes recommandé"
+    },
+    
     buttons: {
       cancel: "Annuler",
       confirm: "Confirmer",
+      generate: "Générer",
       resetPreferences: "Réinitialiser les préférences"
     }
   },
@@ -3107,6 +3115,7 @@ export const translations = {
     featured: "À la Une",
     recommended: "Recommandé",
     popular: "Populaire",
+    optimizedByAI: "Optimisé par IA",
     limited: "Limité",
     exclusive: "Exclusif",
     beta: "Beta",
@@ -3867,6 +3876,7 @@ export const translations = {
   pricing: {
     title: "Smart Pricing AI",
     description: "Optimisation des prix par IA",
+    detailedComparison: "Comparaison détaillée",
     stats: {
       avgMargin: "Marge Moyenne",
       totalProducts: "Produits Totaux",
