@@ -19,18 +19,19 @@ export const isUnlimited = (limit: number | null | undefined): boolean => {
 };
 
 /**
- * Get currency symbol based on language
+ * Get currency symbol
+ * All prices are in EUR now
  * @param language - The language code ('fr' or 'en')
- * @returns Currency symbol ('€' for French, '$' for English)
+ * @returns Currency symbol (always '€')
  */
 export const getCurrencySymbol = (language: 'fr' | 'en'): string => {
-  return language === 'fr' ? '€' : '$';
-};
+  return '€';
+}
 
 /**
- * Get the appropriate Stripe price ID based on language and billing period
+ * Get the appropriate Stripe price ID based on billing period
+ * All prices are in EUR
  * @param plan - The subscription plan object
- * @param language - The language code ('fr' or 'en')
  * @param billingPeriod - The billing period ('monthly' or 'yearly')
  * @returns The appropriate Stripe price ID
  */
@@ -39,36 +40,27 @@ export const getPriceIdByLanguage = (
   language: 'fr' | 'en',
   billingPeriod: 'monthly' | 'yearly'
 ): string => {
-  if (language === 'fr') {
-    return billingPeriod === 'monthly' 
-      ? (plan.stripe_price_id_monthly_eur || plan.stripe_price_id_monthly)
-      : (plan.stripe_price_id_yearly_eur || plan.stripe_price_id_yearly);
-  }
   return billingPeriod === 'monthly' 
-    ? plan.stripe_price_id_monthly 
+    ? plan.stripe_price_id_monthly
     : plan.stripe_price_id_yearly;
 };
 
 /**
- * Get the appropriate price amount based on language and billing period
+ * Get the appropriate price amount based on billing period
+ * All prices are in EUR
  * @param plan - The subscription plan object
  * @param language - The language code ('fr' or 'en')
  * @param billingPeriod - The billing period ('monthly' or 'yearly')
- * @returns The price amount
+ * @returns The price amount in EUR
  */
 export const getPriceByLanguage = (
   plan: any,
   language: 'fr' | 'en',
   billingPeriod: 'monthly' | 'yearly'
 ): number => {
-  if (language === 'fr') {
-    return billingPeriod === 'monthly' 
-      ? (plan.price_monthly_eur || plan.price_monthly)
-      : (plan.price_yearly_eur || plan.price_yearly);
-  }
   return billingPeriod === 'monthly' 
-    ? plan.price_monthly 
-    : plan.price_yearly;
+    ? plan.price_monthly_eur
+    : plan.price_yearly_eur;
 };
 
 /**

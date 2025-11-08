@@ -202,7 +202,6 @@ export function SubscriptionPlans() {
         body: { 
           plan_id: planId,
           billing_period: billingPeriod,
-          currency: language === 'fr' ? 'EUR' : 'USD',
           success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
           cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
         }
