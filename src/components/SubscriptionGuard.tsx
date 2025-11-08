@@ -97,7 +97,8 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
           setProfile({
             subscription_status: 'active',
             current_plan_id: null,
-            trial_ends_at: null
+            trial_ends_at: null,
+            stripe_customer_id: null
           });
           setLoading(false);
           return;
@@ -135,7 +136,8 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
             setProfile({
               subscription_status: 'inactive',
               current_plan_id: null,
-              trial_ends_at: null
+              trial_ends_at: null,
+              stripe_customer_id: null
             });
           }
         }
