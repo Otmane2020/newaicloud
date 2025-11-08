@@ -634,6 +634,11 @@ export const translations = {
     placeholder: "Tapez votre message...",
     error: "Désolé, j'ai rencontré une erreur. Veuillez réessayer."
   },
+  notFound: {
+    title: "Page non trouvée",
+    description: "La page que vous recherchez n'existe pas ou a été déplacée.",
+    backHome: "Retour à l'accueil"
+  },
   currency: {
     usd: "USD",
     eur: "EUR",
