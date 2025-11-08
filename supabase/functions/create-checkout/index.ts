@@ -331,12 +331,10 @@ serve(async (req) => {
       billing_address_collection: 'required'
     };
 
-    // Appliquer automatiquement la réduction de 20% sur les abonnements annuels
+    // Les prix annuels dans la base de données sont déjà réduits de 20%
+    // Pas besoin d'appliquer un coupon supplémentaire
     if (billing_period === 'yearly') {
-      console.log('🎁 Applying 20% discount for yearly subscription');
-      sessionConfig.discounts = [{
-        coupon: 'JDpahgKV' // Coupon 20% de réduction annuelle
-      }];
+      console.log('💰 Using pre-discounted yearly price (20% discount already applied in price)');
     }
 
     // Déterminer la configuration du trial
