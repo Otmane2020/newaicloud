@@ -641,12 +641,15 @@ export function EmailInbox() {
 
                   <div className="border-t pt-4">
                     <div className="bg-muted/30 rounded-lg p-4">
-                      {selectedEmail.html_body ? (
+                      {selectedEmail.html_body && selectedEmail.html_body.trim() ? (
                         <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: selectedEmail.html_body }} />
-                      ) : selectedEmail.body ? (
+                      ) : selectedEmail.body && selectedEmail.body.trim() ? (
                         <p className="whitespace-pre-wrap text-sm">{selectedEmail.body}</p>
                       ) : (
-                        <p className="text-muted-foreground text-sm italic">Email sans contenu texte disponible</p>
+                        <div className="text-center py-8">
+                          <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-2 opacity-50" />
+                          <p className="text-muted-foreground text-sm">Email reçu sans contenu texte</p>
+                        </div>
                       )}
                     </div>
                   </div>

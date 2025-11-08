@@ -18,6 +18,18 @@ import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
 import { EmailTemplates } from '@/components/admin/EmailTemplates';
 import { EmailStatsDashboard } from '@/components/admin/EmailStatsDashboard';
 
+interface StripeSubscription {
+  id: string;
+  status: string;
+  currentPeriodEnd: number;
+  planId: string;
+  productId: string;
+  amount: number;
+  currency: string;
+  interval: string;
+  cancelAtPeriodEnd: boolean;
+}
+
 interface UserProfile {
   id: string;
   email: string;
@@ -26,6 +38,8 @@ interface UserProfile {
   current_plan_id: string;
   trial_ends_at: string | null;
   created_at: string;
+  stripeSubscriptions?: StripeSubscription[];
+  hasStripeData?: boolean;
 }
 
 interface SubscriptionPlan {
@@ -60,6 +74,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [hasNewEmail, setHasNewEmail] = useState(false);
+  const [billingFilter, setBillingFilter] = useState<'all' | 'monthly' | 'yearly'>('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -102,7 +117,24 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       if (plansResult.error) throw plansResult.error;
       if (storesResult.error) throw storesResult.error;
 
-      setUsers(usersResult.data || []);
+      // Récupérer les données Stripe
+      const { data: stripeData, error: stripeError } = await supabase.functions.invoke('admin-get-user-subscriptions');
+      
+      if (stripeError) {
+        console.error('Error loading Stripe data:', stripeError);
+      }
+
+      // Merger les données
+      const usersWithStripe = (usersResult.data || []).map(user => {
+        const stripeUser = stripeData?.users?.find((u: any) => u.userId === user.id);
+        return {
+          ...user,
+          stripeSubscriptions: stripeUser?.subscriptions || [],
+          hasStripeData: stripeUser?.hasStripeData || false
+        };
+      });
+
+      setUsers(usersWithStripe);
       setPlans(plansResult.data || []);
       setStores(storesResult.data || []);
     } catch (error) {
@@ -382,10 +414,24 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       {activeTab === 'users' && (
         <Card>
           <CardHeader>
-            <CardTitle>Gestion des Utilisateurs</CardTitle>
-            <CardDescription>
-              Liste complète des utilisateurs avec contrôle des abonnements et actions forcées
-            </CardDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle>Gestion des Utilisateurs</CardTitle>
+                <CardDescription>
+                  Liste complète des utilisateurs avec contrôle des abonnements et actions forcées
+                </CardDescription>
+              </div>
+              <Select value={billingFilter} onValueChange={(value: any) => setBillingFilter(value)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrer par facturation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="monthly">Mensuel</SelectItem>
+                  <SelectItem value="yearly">Annuel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -396,79 +442,112 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                     <th className="text-left p-4">Nom</th>
                     <th className="text-left p-4">Statut</th>
                     <th className="text-left p-4">Plan</th>
+                    <th className="text-left p-4">Stripe Info</th>
                     <th className="text-left p-4">Date création</th>
                     <th className="text-left p-4">Actions</th>
                     <th className="text-left p-4">Changer Plan (Stripe)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-muted/50">
-                      <td className="p-4">{user.email}</td>
-                      <td className="p-4">{user.full_name || '-'}</td>
-                      <td className="p-4">{getStatusBadge(user.subscription_status)}</td>
-                      <td className="p-4">
-                        <Select
-                          value={user.current_plan_id || ''}
-                          onValueChange={(value) => updateUserPlan(user.id, value)}
-                          disabled={updating}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Choisir un plan" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {plans.map((plan) => (
-                              <SelectItem key={plan.id} value={plan.id}>
-                                {plan.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="p-4">
-                        {new Date(user.created_at).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td className="p-4">
-                        <Select
-                          value={user.subscription_status}
-                          onValueChange={(value) => updateSubscriptionStatus(user.id, value)}
-                          disabled={updating}
-                        >
-                          <SelectTrigger className="w-[150px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="trialing">Trialing</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                            <SelectItem value="canceled">Canceled</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="p-4">
-                        <Select
-                          value={user.current_plan_id || ''}
-                          onValueChange={(value) => forceChangePlan(user.id, value)}
-                          disabled={updating}
-                        >
-                          <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder="Changer vers..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {plans.map((plan) => (
-                              <SelectItem 
-                                key={plan.id} 
-                                value={plan.id}
-                                disabled={plan.id === user.current_plan_id}
-                              >
-                                {plan.name} {plan.id === user.current_plan_id ? '(actuel)' : ''}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                    </tr>
-                  ))}
+                  {users
+                    .filter(user => {
+                      if (billingFilter === 'all') return true;
+                      if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return billingFilter === 'all';
+                      const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
+                      if (!activeSub) return billingFilter === 'all';
+                      return billingFilter === 'monthly' ? activeSub.interval === 'month' : activeSub.interval === 'year';
+                    })
+                    .map((user) => {
+                      const activeSub = user.stripeSubscriptions?.find(s => s.status === 'active' || s.status === 'trialing');
+                      return (
+                        <tr key={user.id} className="border-b hover:bg-muted/50">
+                          <td className="p-4">{user.email}</td>
+                          <td className="p-4">{user.full_name || '-'}</td>
+                          <td className="p-4">{getStatusBadge(user.subscription_status)}</td>
+                          <td className="p-4">
+                            <Select
+                              value={user.current_plan_id || ''}
+                              onValueChange={(value) => updateUserPlan(user.id, value)}
+                              disabled={updating}
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Choisir un plan" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {plans.map((plan) => (
+                                  <SelectItem key={plan.id} value={plan.id}>
+                                    {plan.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-4">
+                            {user.hasStripeData ? (
+                              activeSub ? (
+                                <div className="space-y-1">
+                                  <Badge variant={activeSub.status === 'active' ? 'default' : 'secondary'}>
+                                    {activeSub.status}
+                                  </Badge>
+                                  <p className="text-xs text-muted-foreground">
+                                    {(activeSub.amount / 100).toFixed(2)} {activeSub.currency.toUpperCase()}/{activeSub.interval === 'month' ? 'mois' : 'an'}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Expire: {new Date(activeSub.currentPeriodEnd * 1000).toLocaleDateString('fr-FR')}
+                                  </p>
+                                </div>
+                              ) : (
+                                <Badge variant="outline">Aucun abonnement actif</Badge>
+                              )
+                            ) : (
+                              <Badge variant="outline">Pas de données Stripe</Badge>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="p-4">
+                            <Select
+                              value={user.subscription_status}
+                              onValueChange={(value) => updateSubscriptionStatus(user.id, value)}
+                              disabled={updating}
+                            >
+                              <SelectTrigger className="w-[150px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="trialing">Trialing</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
+                                <SelectItem value="canceled">Canceled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-4">
+                            <Select
+                              value={user.current_plan_id || ''}
+                              onValueChange={(value) => forceChangePlan(user.id, value)}
+                              disabled={updating}
+                            >
+                              <SelectTrigger className="w-[200px]">
+                                <SelectValue placeholder="Changer vers..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {plans.map((plan) => (
+                                  <SelectItem 
+                                    key={plan.id} 
+                                    value={plan.id}
+                                    disabled={plan.id === user.current_plan_id}
+                                  >
+                                    {plan.name} {plan.id === user.current_plan_id ? '(actuel)' : ''}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
