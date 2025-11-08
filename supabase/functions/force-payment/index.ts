@@ -85,6 +85,18 @@ serve(async (req) => {
     
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+      
+      // Cancel any existing active subscriptions before creating new one
+      const existingSubscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'active',
+        limit: 100,
+      });
+      
+      for (const subscription of existingSubscriptions.data) {
+        console.log('🗑️ Canceling existing subscription:', subscription.id);
+        await stripe.subscriptions.cancel(subscription.id);
+      }
     }
 
     // Create immediate payment checkout session (NO TRIAL)
@@ -98,6 +110,7 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
+      allow_promotion_codes: true,
       subscription_data: {
         metadata: {
           user_id: user.id,
@@ -106,8 +119,8 @@ serve(async (req) => {
         }
         // NO trial_period_days = immediate payment
       },
-      success_url: `${req.headers.get("origin")}/dashboard?payment=success`,
-      cancel_url: `${req.headers.get("origin")}/dashboard`,
+      success_url: `${req.headers.get("origin")}/account?tab=subscription&payment=success`,
+      cancel_url: `${req.headers.get("origin")}/account?tab=subscription`,
     });
 
     console.log('✅ Checkout session created:', session.id);

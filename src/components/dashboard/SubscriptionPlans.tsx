@@ -111,115 +111,35 @@ export function SubscriptionPlans() {
   }, [user?.id]);
 
   const handleSelectPlan = async (planId: string) => {
+    if (!user) {
+      toast({
+        title: t.errors.required,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setCheckoutLoading(planId);
     try {
-      // Check if user has active subscription
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('stripe_subscription_id, status')
-        .eq('seller_id', user?.id)
-        .in('status', ['active', 'trialing'])
-        .maybeSingle();
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_status, current_plan_id')
-        .eq('id', user?.id)
-        .single();
-
-      const hasActiveSubscription = !!subscription?.stripe_subscription_id;
-      const isTrialing = profile?.subscription_status === 'trialing';
-      const isCurrentPlan = profile?.current_plan_id === planId;
-
-      // If in trial and activating current plan, redirect to Stripe payment
-      if (isTrialing && isCurrentPlan) {
-        const { data, error } = await supabase.functions.invoke('force-payment', {
-          body: {
-            plan_id: planId,
-            billing_period: billingPeriod
-          }
-        });
-        if (error) throw error;
-        
-        if (data?.url) {
-          window.location.href = data.url;
-        }
-        return;
-      }
-
-      // If user has active subscription, use update-subscription for proration
-      if (hasActiveSubscription) {
-        const selectedPlan = plans.find(p => p.id === planId);
-        if (!selectedPlan) throw new Error('Plan not found');
-
-        const stripePriceId = billingPeriod === 'yearly' 
-          ? selectedPlan.stripe_price_id_yearly 
-          : selectedPlan.stripe_price_id_monthly;
-
-        if (!stripePriceId || !stripePriceId.startsWith('price_')) {
-          toast({
-            title: t.errors.missingConfiguration,
-            description: tf('dashboard.plans.errors.missingConfig', { planName: selectedPlan?.name }),
-            variant: "destructive"
-          });
-          setCheckoutLoading(null);
-          return;
-        }
-
-        const { data, error } = await supabase.functions.invoke('update-subscription', {
-          body: { 
-            new_price_id: stripePriceId,
-            new_plan_id: planId,
-          }
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: t.account.subscription.activationSuccess,
-          description: 'Your plan has been upgraded with prorated billing!',
-        });
-        setTimeout(() => window.location.reload(), 1500);
-        return;
-      }
-
-      // Otherwise, create new checkout session
-      const selectedPlan = plans.find(p => p.id === planId);
-      
-      const stripePriceId = billingPeriod === 'yearly' 
-        ? selectedPlan?.stripe_price_id_yearly 
-        : selectedPlan?.stripe_price_id_monthly;
-      
-      if (!stripePriceId || !stripePriceId.startsWith('price_')) {
-        toast({
-          title: t.errors.missingConfiguration,
-          description: tf('dashboard.plans.errors.missingConfig', { planName: selectedPlan?.name }),
-          variant: "destructive"
-        });
-        setCheckoutLoading(null);
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
+      // Always redirect to Stripe via force-payment
+      const { data, error } = await supabase.functions.invoke('force-payment', {
+        body: {
           plan_id: planId,
-          billing_period: billingPeriod,
-          success_url: `${window.location.origin}/account?tab=subscription&checkout=success`,
-          cancel_url: `${window.location.origin}/account?tab=subscription&checkout=cancelled`
+          billing_period: billingPeriod
         }
       });
-
+      
       if (error) throw error;
       
       if (data?.url) {
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error handling plan selection:', error);
       toast({
         title: t.errors.error,
-        description: t.dashboard.plans.errors.genericError,
-        variant: "destructive"
+        description: error.message,
+        variant: "destructive",
       });
     } finally {
       setCheckoutLoading(null);
