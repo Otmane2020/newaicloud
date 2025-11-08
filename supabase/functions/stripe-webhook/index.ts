@@ -120,8 +120,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       // Déterminer le statut (trialing pendant l'essai, active après)
       const status = subscriptionDetails.status;
       
-      // Si l'utilisateur upgrade depuis un trial actif, ne pas écraser trial_ends_at
+      // Si l'utilisateur upgrade depuis un trial actif, ANNULER le trial car il a payé immédiatement
       const upgradedFromTrial = metadata?.upgraded_from_trial === 'true';
+      const forcedPayment = metadata?.forced_payment === 'true';
       
       // Récupérer le profile existant pour vérifier le trial_ends_at
       const { data: existingProfile } = await supabase
@@ -130,25 +131,37 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         .eq('id', userId)
         .single();
       
-      const trialEnd = upgradedFromTrial && existingProfile?.trial_ends_at
-        ? existingProfile.trial_ends_at // Conserver la date existante
+      // CRITICAL FIX: Si upgrade depuis trial OU paiement forcé, annuler le trial
+      const trialEnd = upgradedFromTrial || forcedPayment
+        ? null // ✅ Annuler le trial pour les upgrades et paiements forcés
         : (subscriptionDetails.trial_end 
             ? new Date(subscriptionDetails.trial_end * 1000).toISOString()
             : null);
 
       console.log('📋 Subscription status:', status);
-      console.log('⏰ Trial end:', trialEnd);
+      console.log('⏰ Trial calculation:', {
+        upgradedFromTrial,
+        forcedPayment,
+        subscriptionTrialEnd: subscriptionDetails.trial_end,
+        finalTrialEnd: trialEnd,
+        reason: upgradedFromTrial ? 'Upgrade from trial - canceled' : forcedPayment ? 'Forced payment - no trial' : 'Normal trial'
+      });
       console.log('🔄 Upgraded from trial:', upgradedFromTrial);
       console.log('📦 Plan ID:', metadata?.plan_id);
 
-      console.log('💾 Updating profile...');
+      console.log('💾 Updating profile with:', {
+        subscription_status: status === 'trialing' && upgradedFromTrial ? 'active' : status,
+        trial_ends_at: trialEnd,
+        reason: trialEnd === null ? 'Trial canceled due to upgrade/payment' : 'Trial maintained'
+      });
+      
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           stripe_customer_id: typeof customer === 'string' ? customer : null,
-          subscription_status: status,
+          subscription_status: status === 'trialing' && upgradedFromTrial ? 'active' : status,
           current_plan_id: metadata?.plan_id,
-          trial_ends_at: trialEnd,
+          trial_ends_at: trialEnd, // Sera null pour les upgrades
           onboarding_completed: true,
           updated_at: new Date().toISOString()
         })

@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Send, Plus, TestTube, Reply, Trash2, Archive, FileText } from 'lucide-react';
+import { Mail, Send, Plus, TestTube, Reply, Trash2, Archive, FileText, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { EmailSidebar } from './EmailSidebar';
@@ -40,6 +40,11 @@ interface AdminEmail {
   error_message: string | null;
   is_read: boolean;
   folder: string;
+  metadata?: {
+    content_available?: boolean;
+    content_source?: string;
+    warning?: string;
+  };
 }
 
 interface EmailStats {
@@ -623,6 +628,23 @@ export function EmailInbox() {
                       {getStatusBadge(selectedEmail.status)}
                     </div>
                   </div>
+                  
+                  {/* Warning banner for missing email content */}
+                  {selectedEmail.metadata?.content_available === false && (
+                    <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <h4 className="font-semibold text-yellow-900 dark:text-yellow-100">Contenu email non disponible</h4>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                            Resend ne fournit pas le contenu des emails entrants via l'API. 
+                            Pour afficher le contenu complet, configurez l'inbound parsing 
+                            ou utilisez un service tiers comme Mailgun.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="flex gap-2">
                     {selectedEmail.direction === 'incoming' && (

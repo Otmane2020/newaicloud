@@ -57,11 +57,17 @@ const handler = async (req: Request): Promise<Response> => {
     // Si on n'a toujours pas de contenu, vérifier si le contenu est dans d'autres champs
     if (!emailText && !emailHtml) {
       console.log("⚠️ ATTENTION: Aucun contenu texte/HTML trouvé dans le webhook!");
-      console.log("Cela peut indiquer un problème de configuration Resend.");
-      console.log("Vérifiez que:");
-      console.log("1. Le domaine est configuré avec les MX records");
-      console.log("2. L'inbound routing est activé");
-      console.log("3. Le webhook est configuré pour envoyer le contenu complet");
+      console.log("📋 Configuration Resend requise:");
+      console.log("   1. Inbound Routing doit être activé");
+      console.log("   2. Le webhook doit être configuré pour 'email.received'");
+      console.log("   3. Resend ne stocke PAS le contenu des emails entrants via l'API");
+      console.log("");
+      console.log("💡 SOLUTION RECOMMANDÉE:");
+      console.log("   - Utiliser Resend Inbound Parsing (si disponible)");
+      console.log("   - OU utiliser un service comme Mailgun Inbound Routes");
+      console.log("   - OU intégrer Gmail API pour lire les emails");
+      console.log("");
+      console.log("⚠️ Pour l'instant, l'email sera enregistré SANS contenu");
       
       // Essayer de récupérer via l'API si on a un email_id (pour les emails sortants uniquement)
       if (email_id) {
@@ -89,6 +95,11 @@ const handler = async (req: Request): Promise<Response> => {
         } catch (error) {
           console.error('❌ Erreur lors de la récupération du contenu:', error);
         }
+      }
+      
+      // Si toujours pas de contenu, utiliser le subject comme contenu temporaire
+      if (!emailText && !emailHtml) {
+        emailText = `Email reçu - Contenu non disponible.\nSujet: ${subject}\n\nPour voir le contenu complet, veuillez configurer l'inbound parsing.`;
       }
     }
 
@@ -119,7 +130,7 @@ const handler = async (req: Request): Promise<Response> => {
         from_email: from,
         to_email: Array.isArray(to) ? to[0] : to,
         subject: subject || 'Sans objet',
-        body: cleanBody || '',
+        body: cleanBody || emailText || 'Contenu non disponible',
         html_body: emailHtml || null,
         direction: 'incoming',
         status: 'received',
@@ -128,6 +139,9 @@ const handler = async (req: Request): Promise<Response> => {
         metadata: {
           webhook_received_at: new Date().toISOString(),
           email_id: email_id,
+          content_available: !!(emailText || emailHtml),
+          content_source: emailText || emailHtml ? 'webhook_or_api' : 'none',
+          warning: emailText || emailHtml ? null : 'Content not available from Resend. Configure inbound parsing.',
           raw_data: emailData
         }
       })
