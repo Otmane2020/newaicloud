@@ -594,11 +594,15 @@ export function EmailInbox() {
                   </div>
 
                   <div className="border-t pt-4">
-                    {selectedEmail.html_body ? (
-                      <div dangerouslySetInnerHTML={{ __html: selectedEmail.html_body }} />
-                    ) : (
-                      <p className="whitespace-pre-wrap">{selectedEmail.body}</p>
-                    )}
+                    <div className="bg-muted/30 rounded-lg p-4">
+                      {selectedEmail.html_body ? (
+                        <div dangerouslySetInnerHTML={{ __html: selectedEmail.html_body }} />
+                      ) : selectedEmail.body ? (
+                        <p className="whitespace-pre-wrap text-sm">{selectedEmail.body}</p>
+                      ) : (
+                        <p className="text-muted-foreground text-sm italic">Email sans contenu</p>
+                      )}
+                    </div>
                   </div>
                   {selectedEmail.error_message && (
                     <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
