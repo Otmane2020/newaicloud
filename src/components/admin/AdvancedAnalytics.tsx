@@ -28,6 +28,9 @@ interface UserDetail {
   stores_count: number;
   optimizations_count: number;
   articles_count: number;
+  max_products: number;
+  max_optimizations_monthly: number;
+  max_articles_monthly: number;
 }
 
 export function AdvancedAnalytics() {
@@ -45,7 +48,7 @@ export function AdvancedAnalytics() {
     try {
       setLoading(true);
 
-      // Load plan-based analytics
+      // Load plan-based analytics with plan limits
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
@@ -58,6 +61,14 @@ export function AdvancedAnalytics() {
         `);
 
       if (profilesError) throw profilesError;
+
+      // Load all subscription plans with their limits
+      const { data: allPlans, error: plansError } = await supabase
+        .from('subscription_plans')
+        .select('id, name, max_products, max_optimizations_monthly, max_articles_monthly')
+        .eq('is_active', true);
+
+      if (plansError) throw plansError;
 
       // Load usage data
       const { data: usage, error: usageError } = await supabase
@@ -124,6 +135,7 @@ export function AdvancedAnalytics() {
       const enrichedUsers: UserDetail[] = filteredProfiles.map(profile => {
         const userUsage = usage?.find(u => u.seller_id === profile.id);
         const userStores = stores?.filter(s => s.user_id === profile.id).length || 0;
+        const userPlan = allPlans?.find(p => p.id === profile.current_plan_id);
 
         return {
           id: profile.id,
@@ -136,6 +148,9 @@ export function AdvancedAnalytics() {
           stores_count: userStores,
           optimizations_count: userUsage?.optimizations_count || 0,
           articles_count: userUsage?.articles_count || 0,
+          max_products: userPlan?.max_products || 0,
+          max_optimizations_monthly: userPlan?.max_optimizations_monthly || 0,
+          max_articles_monthly: userPlan?.max_articles_monthly || 0,
         };
       });
 
@@ -257,9 +272,9 @@ export function AdvancedAnalytics() {
                   <th className="text-left p-3">Statut</th>
                   <th className="text-left p-3">Plan</th>
                   <th className="text-right p-3">Boutiques</th>
-                  <th className="text-right p-3">Produits</th>
-                  <th className="text-right p-3">Optimisations</th>
-                  <th className="text-right p-3">Articles</th>
+                  <th className="text-right p-3">Produits (Quota)</th>
+                  <th className="text-right p-3">Optimisations (Quota)</th>
+                  <th className="text-right p-3">Articles (Quota)</th>
                 </tr>
               </thead>
               <tbody>
@@ -273,13 +288,28 @@ export function AdvancedAnalytics() {
                       <Badge variant="outline">{user.stores_count}</Badge>
                     </td>
                     <td className="p-3 text-right">
-                      <Badge variant="outline">{user.products_count}</Badge>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge variant="outline">{user.products_count} / {user.max_products}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {user.max_products > 0 ? Math.round((user.products_count / user.max_products) * 100) : 0}%
+                        </span>
+                      </div>
                     </td>
                     <td className="p-3 text-right">
-                      <Badge variant="secondary">{user.optimizations_count}</Badge>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge variant="secondary">{user.optimizations_count} / {user.max_optimizations_monthly}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {user.max_optimizations_monthly > 0 ? Math.round((user.optimizations_count / user.max_optimizations_monthly) * 100) : 0}%
+                        </span>
+                      </div>
                     </td>
                     <td className="p-3 text-right">
-                      <Badge variant="secondary">{user.articles_count}</Badge>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge variant="secondary">{user.articles_count} / {user.max_articles_monthly}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {user.max_articles_monthly > 0 ? Math.round((user.articles_count / user.max_articles_monthly) * 100) : 0}%
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 ))}

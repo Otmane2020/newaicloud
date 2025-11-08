@@ -190,26 +190,24 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
     }
   };
 
-  const forceUpgrade = async (userId: string, currentPlanId: string) => {
+  const forceChangePlan = async (userId: string, targetPlanId: string) => {
     setUpdating(true);
     try {
-      // Find next higher plan
-      const currentPlanIndex = plans.findIndex(p => p.id === currentPlanId);
-      if (currentPlanIndex === -1 || currentPlanIndex === plans.length - 1) {
+      const targetPlan = plans.find(p => p.id === targetPlanId);
+      if (!targetPlan) {
         toast({
-          title: 'Info',
-          description: 'L\'utilisateur est déjà au plan le plus élevé',
-          variant: 'default'
+          title: 'Erreur',
+          description: 'Plan introuvable',
+          variant: 'destructive'
         });
         setUpdating(false);
         return;
       }
 
-      const nextPlan = plans[currentPlanIndex + 1];
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          current_plan_id: nextPlan.id,
+          current_plan_id: targetPlan.id,
           subscription_status: 'active'
         })
         .eq('id', userId);
@@ -217,58 +215,15 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       if (error) throw error;
 
       toast({
-        title: 'Upgrade forcé',
-        description: `Plan changé vers ${nextPlan.name}`,
+        title: 'Changement de plan réussi',
+        description: `Plan changé vers ${targetPlan.name}`,
       });
       loadData();
     } catch (error) {
-      console.error('Error forcing upgrade:', error);
+      console.error('Error changing plan:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de forcer l\'upgrade',
-        variant: 'destructive'
-      });
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const forceDowngrade = async (userId: string, currentPlanId: string) => {
-    setUpdating(true);
-    try {
-      // Find next lower plan
-      const currentPlanIndex = plans.findIndex(p => p.id === currentPlanId);
-      if (currentPlanIndex === -1 || currentPlanIndex === 0) {
-        toast({
-          title: 'Info',
-          description: 'L\'utilisateur est déjà au plan le plus bas',
-          variant: 'default'
-        });
-        setUpdating(false);
-        return;
-      }
-
-      const previousPlan = plans[currentPlanIndex - 1];
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          current_plan_id: previousPlan.id,
-          subscription_status: 'active'
-        })
-        .eq('id', userId);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Downgrade forcé',
-        description: `Plan changé vers ${previousPlan.name}`,
-      });
-      loadData();
-    } catch (error) {
-      console.error('Error forcing downgrade:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de forcer le downgrade',
+        description: 'Impossible de changer le plan',
         variant: 'destructive'
       });
     } finally {
@@ -441,7 +396,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                     <th className="text-left p-4">Plan</th>
                     <th className="text-left p-4">Date création</th>
                     <th className="text-left p-4">Actions</th>
-                    <th className="text-left p-4">Force Upgrade/Downgrade</th>
+                    <th className="text-left p-4">Changer Plan (Stripe)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -489,26 +444,26 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                         </Select>
                       </td>
                       <td className="p-4">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                            onClick={() => forceUpgrade(user.id, user.current_plan_id)}
-                            disabled={updating}
-                          >
-                            ⬆️ Upgrade
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                            onClick={() => forceDowngrade(user.id, user.current_plan_id)}
-                            disabled={updating}
-                          >
-                            ⬇️ Downgrade
-                          </Button>
-                        </div>
+                        <Select
+                          value={user.current_plan_id || ''}
+                          onValueChange={(value) => forceChangePlan(user.id, value)}
+                          disabled={updating}
+                        >
+                          <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Changer vers..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {plans.map((plan) => (
+                              <SelectItem 
+                                key={plan.id} 
+                                value={plan.id}
+                                disabled={plan.id === user.current_plan_id}
+                              >
+                                {plan.name} {plan.id === user.current_plan_id ? '(actuel)' : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </td>
                     </tr>
                   ))}
