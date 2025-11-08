@@ -230,7 +230,7 @@ export function SubscriptionPlans() {
 
   const getYearlyTotal = (plan: Plan) => {
     const price = getPriceByLanguage(plan, language, billingPeriod);
-    return formatPrice(price, language);
+    return formatPrice(price, language, false, true);
   };
 
   const getSavings = (plan: Plan) => {

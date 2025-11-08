@@ -77,14 +77,24 @@ export const getPriceByLanguage = (
  * @param amount - The price amount
  * @param language - The language code ('fr' or 'en')
  * @param forceDecimals - Force showing decimals even for whole numbers (default: false)
+ * @param isYearlyTotal - If true, round to avoid decimals in yearly totals (default: false)
  * @returns Formatted price string
  */
 export const formatPrice = (
   amount: number, 
   language: 'fr' | 'en',
-  forceDecimals: boolean = false
+  forceDecimals: boolean = false,
+  isYearlyTotal: boolean = false
 ): string => {
   const symbol = getCurrencySymbol(language);
+  
+  // For yearly totals, always round to avoid decimals
+  if (isYearlyTotal) {
+    const roundedAmount = Math.round(amount);
+    return language === 'fr' 
+      ? `${roundedAmount} ${symbol}`
+      : `${symbol}${roundedAmount}`;
+  }
   
   // Check if the number has meaningful decimals
   const hasDecimals = amount % 1 !== 0;
