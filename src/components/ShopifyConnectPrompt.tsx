@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Zap, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ShopifyConnectionWizard } from './integration/ShopifyConnectionWizard';
@@ -55,34 +55,54 @@ export function ShopifyConnectPrompt() {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg border-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-          <DialogHeader className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
-              <Sparkles className="w-8 h-8 text-primary-foreground" />
+        <DialogContent className="sm:max-w-2xl border-0 p-0 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-primary via-primary/80 to-secondary p-12 text-center">
+            <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-5"></div>
+            
+            <div className="relative space-y-6">
+              <div className="mx-auto w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-2xl border border-white/20">
+                <Sparkles className="w-10 h-10 text-white animate-pulse" />
+              </div>
+              
+              <div className="space-y-3">
+                <DialogTitle className="text-4xl font-bold text-white">
+                  Welcome to NewAI APP
+                </DialogTitle>
+                <DialogDescription className="text-xl text-white/90 max-w-lg mx-auto">
+                  Let's start optimizing your store and boost your sales with powerful AI-driven SEO tools
+                </DialogDescription>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto pt-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <Zap className="w-6 h-6 text-white mx-auto mb-2" />
+                  <p className="text-xs text-white/90 font-medium">AI Powered</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <TrendingUp className="w-6 h-6 text-white mx-auto mb-2" />
+                  <p className="text-xs text-white/90 font-medium">Boost Sales</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <Sparkles className="w-6 h-6 text-white mx-auto mb-2" />
+                  <p className="text-xs text-white/90 font-medium">SEO Magic</p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Welcome to Wope SEO! 🎉
-              </DialogTitle>
-              <DialogDescription className="text-base">
-                Let's start optimizing your store and boost your sales with powerful SEO tools
-              </DialogDescription>
-            </div>
-          </DialogHeader>
-          
-          <div className="space-y-3 pt-6">
+          </div>
+
+          <div className="p-8 space-y-4 bg-background">
             <Button 
               onClick={handleBegin} 
-              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all"
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-xl hover:shadow-2xl transition-all"
               size="lg"
             >
-              Begin Your Journey
+              Start Your Journey
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button 
               onClick={handleSkip} 
               variant="ghost" 
-              className="w-full"
+              className="w-full text-muted-foreground hover:text-foreground"
             >
               I'll do this later
             </Button>
