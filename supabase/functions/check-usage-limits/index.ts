@@ -124,23 +124,51 @@ serve(async (req) => {
     const currentMonth = new Date();
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
+    const monthKey = currentMonth.toISOString().split('T')[0];
 
     const { data: usage, error: usageError } = await supabaseClient
       .from('usage_tracking')
       .select('*')
       .eq('seller_id', user.id)
-      .gte('month', currentMonth.toISOString().split('T')[0])
-      .single();
+      .eq('month', monthKey)
+      .maybeSingle();
 
-    const currentUsage = usage || {
-      optimizations_count: 0,
-      articles_count: 0,
-      chat_responses_count: 0,
-      shopify_requests_count: 0,
-      products_count: 0,
-      shopify_stores_count: 0,
-      campaigns_count: 0,
-    };
+    // Si pas d'entrée pour ce mois, en créer une
+    let currentUsage = usage;
+    if (!currentUsage) {
+      console.log('[LIMITS] Creating usage_tracking entry for current month');
+      const { data: newUsage, error: createError } = await supabaseClient
+        .from('usage_tracking')
+        .insert({
+          seller_id: user.id,
+          month: monthKey,
+          optimizations_count: 0,
+          articles_count: 0,
+          chat_responses_count: 0,
+          shopify_requests_count: 0,
+          products_count: 0,
+          shopify_stores_count: 0,
+          campaigns_count: 0,
+        })
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('[LIMITS] Error creating usage_tracking:', createError);
+        // Fallback to default values if creation fails
+        currentUsage = {
+          optimizations_count: 0,
+          articles_count: 0,
+          chat_responses_count: 0,
+          shopify_requests_count: 0,
+          products_count: 0,
+          shopify_stores_count: 0,
+          campaigns_count: 0,
+        };
+      } else {
+        currentUsage = newUsage;
+      }
+    }
     
     console.log(`[LIMITS] Current usage from tracking:`, currentUsage);
 
@@ -163,7 +191,7 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('seller_id', user.id)
-        .eq('month', currentMonth.toISOString().split('T')[0]);
+        .eq('month', monthKey);
       
       if (updateError) {
         console.error('[LIMITS] Error updating products_count:', updateError);
