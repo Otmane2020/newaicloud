@@ -144,12 +144,26 @@ export function EmailInbox() {
 
   const markAsRead = async (emailId: string) => {
     try {
-      await supabase
+      const { error } = await supabase
         .from('admin_emails')
-        .update({ is_read: true })
+        .update({ 
+          is_read: true,
+          status: 'read'
+        })
         .eq('id', emailId);
+
+      if (error) {
+        console.error('Error marking email as read:', error);
+        return;
+      }
+
+      // Mettre à jour localement immédiatement
+      setEmails(prev => prev.map(email => 
+        email.id === emailId 
+          ? { ...email, is_read: true, status: 'read' } 
+          : email
+      ));
       
-      loadEmails();
       loadEmailStats();
     } catch (error) {
       console.error('Error marking email as read:', error);

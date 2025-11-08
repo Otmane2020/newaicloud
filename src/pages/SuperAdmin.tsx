@@ -107,6 +107,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
   const loadData = async () => {
     try {
+      setLoading(true);
       const [usersResult, plansResult, storesResult] = await Promise.all([
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('subscription_plans').select('id, name').eq('is_active', true),
@@ -118,31 +119,49 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       if (storesResult.error) throw storesResult.error;
 
       // Récupérer les données Stripe
-      const { data: stripeData, error: stripeError } = await supabase.functions.invoke('admin-get-user-subscriptions');
-      
-      if (stripeError) {
-        console.error('Error loading Stripe data:', stripeError);
-      }
+      try {
+        const { data: stripeData, error: stripeError } = await supabase.functions.invoke('admin-get-user-subscriptions');
+        
+        if (stripeError) {
+          console.error('Error loading Stripe data:', stripeError);
+          throw stripeError;
+        }
 
-      // Merger les données
-      const usersWithStripe = (usersResult.data || []).map(user => {
-        const stripeUser = stripeData?.users?.find((u: any) => u.userId === user.id);
-        return {
+        // Merger les données
+        const usersWithStripe = (usersResult.data || []).map(user => {
+          const stripeUser = stripeData?.users?.find((u: any) => u.email === user.email);
+          return {
+            ...user,
+            stripeSubscriptions: stripeUser?.subscriptions || [],
+            hasStripeData: stripeUser?.hasStripeData || false,
+            customerId: stripeUser?.customerId
+          };
+        });
+
+        setUsers(usersWithStripe);
+      } catch (stripeError) {
+        console.error('Stripe data unavailable:', stripeError);
+        // Fallback sans données Stripe
+        setUsers((usersResult.data || []).map(user => ({
           ...user,
-          stripeSubscriptions: stripeUser?.subscriptions || [],
-          hasStripeData: stripeUser?.hasStripeData || false
-        };
-      });
-
-      setUsers(usersWithStripe);
+          stripeSubscriptions: [],
+          hasStripeData: false
+        })));
+        toast({
+          title: "Erreur Stripe",
+          description: "Impossible de charger les données Stripe",
+          variant: "destructive"
+        });
+      }
+      
       setPlans(plansResult.data || []);
       setStores(storesResult.data || []);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les données',
-        variant: 'destructive'
+        title: "Erreur",
+        description: "Erreur lors du chargement des données",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -452,9 +471,9 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                   {users
                     .filter(user => {
                       if (billingFilter === 'all') return true;
-                      if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return billingFilter === 'all';
+                      if (!user.stripeSubscriptions || user.stripeSubscriptions.length === 0) return false;
                       const activeSub = user.stripeSubscriptions.find(s => s.status === 'active' || s.status === 'trialing');
-                      if (!activeSub) return billingFilter === 'all';
+                      if (!activeSub) return false;
                       return billingFilter === 'monthly' ? activeSub.interval === 'month' : activeSub.interval === 'year';
                     })
                     .map((user) => {
