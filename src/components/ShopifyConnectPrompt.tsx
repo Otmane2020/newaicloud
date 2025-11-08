@@ -26,7 +26,10 @@ export function ShopifyConnectPrompt() {
       if (!user || hasChecked) return;
 
       // Only show on dashboard, not on checkout or other pages
-      if (location.pathname !== '/dashboard') {
+      const excludedPaths = ['/checkout', '/payment', '/success', '/subscription'];
+      const isExcludedPath = excludedPaths.some(path => location.pathname.includes(path));
+      
+      if (location.pathname !== '/dashboard' || isExcludedPath) {
         setHasChecked(true);
         return;
       }

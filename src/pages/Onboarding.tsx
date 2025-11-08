@@ -368,9 +368,21 @@ export default function Onboarding() {
 
   const formatLimit = (value: number) => {
     if (value === -1) return t.onboarding.planFeatures.unlimited;
+    if (value === 999999 || value === 9999999) return t.onboarding.planFeatures.unlimited;
     if (value >= 100000) return t.onboarding.planFeatures.unlimited;
     if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
     return value.toString();
+  };
+
+  const formatStoreLimit = (value: number) => {
+    const formattedValue = formatLimit(value);
+    const isUnlimited = formattedValue === t.onboarding.planFeatures.unlimited;
+    const isPlural = value > 1 || isUnlimited;
+    
+    if (language === 'fr') {
+      return `${formattedValue} ${isPlural ? 'Boutiques connectées' : 'Boutique connectée'}`;
+    }
+    return `${formattedValue} ${isPlural ? 'Connected stores' : 'Connected store'}`;
   };
 
   const getPrice = (plan: Plan) => {
@@ -523,7 +535,7 @@ export default function Onboarding() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Store className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_shopify_stores || 1)} {language === 'fr' ? 'Boutique connectée' : 'Connected store'}</span>
+                    <span className="text-sm">{formatStoreLimit(starterPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
@@ -669,7 +681,7 @@ export default function Onboarding() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Store className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_shopify_stores || 1)} {language === 'fr' ? 'Boutique connectée' : 'Connected store'}</span>
+                    <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
@@ -803,7 +815,7 @@ export default function Onboarding() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Store className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_shopify_stores || 1)} {language === 'fr' ? 'Boutique connectée' : 'Connected store'}</span>
+                    <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
