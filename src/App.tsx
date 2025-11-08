@@ -57,6 +57,7 @@ import NotificationSettings from "./pages/NotificationSettings";
 import Pricing from "./pages/Pricing";
 import UsageAudit from "./pages/UsageAudit";
 import TestEmail from "./pages/TestEmail";
+import SetupPlans from "./pages/SetupPlans";
 
 const queryClient = new QueryClient();
 
@@ -361,6 +362,14 @@ const App = () => (
               element={
                 <SuperAdminLayout>
                   <SuperAdmin />
+                </SuperAdminLayout>
+              }
+            />
+            <Route
+              path="/setup-plans"
+              element={
+                <SuperAdminLayout>
+                  <SetupPlans />
                 </SuperAdminLayout>
               }
             />
