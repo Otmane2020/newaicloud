@@ -131,17 +131,18 @@ export function SubscriptionPlans() {
       const isTrialing = profile?.subscription_status === 'trialing';
       const isCurrentPlan = profile?.current_plan_id === planId;
 
-      // If in trial and activating current plan, use direct payment
+      // If in trial and activating current plan, redirect to Stripe payment
       if (isTrialing && isCurrentPlan) {
-        const { data, error } = await supabase.functions.invoke('activate-full-plan');
+        const { data, error } = await supabase.functions.invoke('force-payment', {
+          body: {
+            plan_id: planId,
+            billing_period: billingPeriod
+          }
+        });
         if (error) throw error;
         
-        if (data?.success) {
-          toast({
-            title: t.account.subscription.activationSuccess,
-            description: t.toasts.subscriptionActivatedMessage,
-          });
-          setTimeout(() => window.location.reload(), 1500);
+        if (data?.url) {
+          window.location.href = data.url;
         }
         return;
       }
