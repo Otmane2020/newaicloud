@@ -369,7 +369,6 @@ export default function Onboarding() {
   const formatLimit = (value: number) => {
     if (value === -1) return t.onboarding.planFeatures.unlimited;
     if (value === 999999 || value === 9999999) return t.onboarding.planFeatures.unlimited;
-    if (value >= 100000) return t.onboarding.planFeatures.unlimited;
     if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
     return value.toString();
   };

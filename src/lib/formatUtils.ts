@@ -6,6 +6,7 @@
 export const formatLimit = (limit: number | null | undefined): string => {
   if (limit === null || limit === undefined) return '∞';
   if (limit === 999999 || limit === 9999999) return '∞';
+  if (limit >= 1000) return `${(limit / 1000).toFixed(0)}K`;
   return limit.toLocaleString('fr-FR');
 };
 
