@@ -503,19 +503,19 @@ export function SubscriptionPlans() {
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedEnterprise.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations/mois</span>
+                  <span>{selectedEnterprise.max_optimizations_monthly.toLocaleString('fr-FR')}+ optimisations/mois</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedEnterprise.max_articles_monthly} articles/mois</span>
+                  <span>{selectedEnterprise.max_articles_monthly}+ articles/mois</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedEnterprise.max_campaigns} campagnes</span>
+                  <span>{selectedEnterprise.max_campaigns}+ campagnes</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedEnterprise.max_chat_responses_monthly.toLocaleString('fr-FR')} réponses chat/mois</span>
+                  <span>{selectedEnterprise.max_chat_responses_monthly.toLocaleString('fr-FR')}+ réponses chat/mois</span>
                 </div>
               </div>
             </div>
