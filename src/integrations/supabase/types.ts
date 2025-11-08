@@ -3780,6 +3780,15 @@ export type Database = {
         Returns: undefined
       }
       make_user_admin: { Args: { user_email: string }; Returns: Json }
+      recalculate_shopify_stores_count: {
+        Args: { p_user_id?: string }
+        Returns: {
+          fixed: boolean
+          new_count: number
+          old_count: number
+          user_id: string
+        }[]
+      }
       reset_monthly_usage_counters: { Args: never; Returns: undefined }
     }
     Enums: {
