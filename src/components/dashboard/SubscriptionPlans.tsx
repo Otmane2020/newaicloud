@@ -17,18 +17,10 @@ interface Plan {
   id: string;
   name: string;
   description: string;
-  price_monthly: number;
-  price_yearly: number;
-  price_monthly_eur?: number;
-  price_yearly_eur?: number;
-  price_monthly_usd?: number;
-  price_yearly_usd?: number;
+  price_monthly_eur: number;
+  price_yearly_eur: number;
   stripe_price_id_monthly: string | null;
   stripe_price_id_yearly: string | null;
-  stripe_price_id_monthly_eur?: string | null;
-  stripe_price_id_yearly_eur?: string | null;
-  stripe_price_id_monthly_usd?: string | null;
-  stripe_price_id_yearly_usd?: string | null;
   max_products: number;
   max_optimizations_monthly: number;
   max_articles_monthly: number;
@@ -232,9 +224,10 @@ export function SubscriptionPlans() {
     if (billingPeriod === 'yearly') {
       price = price / 12;
     }
-    // Format: keep decimals for prices under 10, remove for whole numbers
-    if (price < 10) return formatPrice(price, language, true).replace(/[€$]/, '');
-    return formatPrice(price, language, false).replace(/[€$]/, '');
+    
+    // Format avec 2 décimales pour être cohérent avec Stripe
+    const formattedPrice = price.toFixed(2).replace('.', ',');
+    return formattedPrice;
   };
 
   const getSavings = (plan: Plan) => {
@@ -316,7 +309,7 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(starterPlan)}</span>
+                  <span className="text-5xl font-bold">€{getPrice(starterPlan)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
               </div>
@@ -382,7 +375,7 @@ export function SubscriptionPlans() {
               <Select value={selectedProPlan} onValueChange={setSelectedProPlan}>
                 <SelectTrigger className="w-full bg-card border-2">
                   <SelectValue>
-                    {getCurrencySymbol(language)}{getPrice(selectedPro)} - {selectedPro?.max_optimizations_monthly.toLocaleString()} optimisations
+                    €{getPrice(selectedPro)} - {selectedPro?.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
@@ -391,12 +384,13 @@ export function SubscriptionPlans() {
                     if (billingPeriod === 'yearly') {
                       price = price / 12;
                     }
+                    const formattedPrice = price.toFixed(2).replace('.', ',');
                     return (
                       <SelectItem
                         key={plan.id}
                         value={plan.id}
                       >
-                        {getCurrencySymbol(language)}{price < 10 ? formatPrice(price, language, true).replace(/[€$]/, '') : formatPrice(price, language, false).replace(/[€$]/, '')}/mois - {plan.max_optimizations_monthly.toLocaleString()} optimisations
+                        €{formattedPrice}/mois - {plan.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations
                       </SelectItem>
                     );
                   })}
@@ -406,7 +400,7 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(selectedPro)}</span>
+                  <span className="text-5xl font-bold">€{getPrice(selectedPro)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
               </div>
@@ -414,11 +408,11 @@ export function SubscriptionPlans() {
               <div className="space-y-3 pt-6 border-t">
                 <div className="flex items-start gap-2 text-sm">
                   <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_products.toLocaleString()} {t.dashboard.plans.features.products}</span>
+                  <span>{selectedPro.max_products.toLocaleString('fr-FR')} {t.dashboard.plans.features.products}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_optimizations_monthly.toLocaleString()} {t.dashboard.plans.features.optimizations}</span>
+                  <span>{selectedPro.max_optimizations_monthly.toLocaleString('fr-FR')} {t.dashboard.plans.features.optimizations}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -430,7 +424,7 @@ export function SubscriptionPlans() {
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedPro.max_chat_responses_monthly.toLocaleString()} {t.dashboard.plans.features.chatResponses}</span>
+                  <span>{selectedPro.max_chat_responses_monthly.toLocaleString('fr-FR')} {t.dashboard.plans.features.chatResponses}</span>
                 </div>
               </div>
             </div>
@@ -472,7 +466,7 @@ export function SubscriptionPlans() {
               <Select value={selectedEnterprisePlan} onValueChange={setSelectedEnterprisePlan}>
                 <SelectTrigger className="w-full bg-card border-2">
                   <SelectValue>
-                    {getCurrencySymbol(language)}{getPrice(selectedEnterprise)} - {selectedEnterprise?.max_optimizations_monthly.toLocaleString()} optimisations
+                    €{getPrice(selectedEnterprise)} - {selectedEnterprise?.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
@@ -481,12 +475,13 @@ export function SubscriptionPlans() {
                     if (billingPeriod === 'yearly') {
                       price = price / 12;
                     }
+                    const formattedPrice = price.toFixed(2).replace('.', ',');
                     return (
-                      <SelectItem 
-                        key={plan.id} 
+                      <SelectItem
+                        key={plan.id}
                         value={plan.id}
                       >
-                        {getCurrencySymbol(language)}{price < 10 ? formatPrice(price, language, true).replace(/[€$]/, '') : formatPrice(price, language, false).replace(/[€$]/, '')}/mois - {plan.max_optimizations_monthly.toLocaleString()} optimisations
+                        €{formattedPrice}/mois - {plan.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations
                       </SelectItem>
                     );
                   })}
@@ -496,7 +491,7 @@ export function SubscriptionPlans() {
               
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(selectedEnterprise)}</span>
+                  <span className="text-5xl font-bold">€{getPrice(selectedEnterprise)}</span>
                   <span className="text-muted-foreground">/mois</span>
                 </div>
               </div>
@@ -508,7 +503,7 @@ export function SubscriptionPlans() {
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedEnterprise.max_optimizations_monthly.toLocaleString()} optimisations/mois</span>
+                  <span>{selectedEnterprise.max_optimizations_monthly.toLocaleString('fr-FR')} optimisations/mois</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -520,7 +515,7 @@ export function SubscriptionPlans() {
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span>{selectedEnterprise.max_chat_responses_monthly.toLocaleString()} réponses chat/mois</span>
+                  <span>{selectedEnterprise.max_chat_responses_monthly.toLocaleString('fr-FR')} réponses chat/mois</span>
                 </div>
               </div>
             </div>
