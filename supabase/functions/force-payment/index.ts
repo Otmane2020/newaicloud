@@ -85,51 +85,11 @@ serve(async (req) => {
     
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-      
-      // Check for existing active subscriptions
-      const existingSubscriptions = await stripe.subscriptions.list({
-        customer: customerId,
-        status: 'active',
-        limit: 1,
-      });
-      
-      // If customer has an active subscription, update it instead of creating new checkout
-      if (existingSubscriptions.data.length > 0) {
-        const existingSubscription = existingSubscriptions.data[0];
-        console.log('🔄 Updating existing subscription:', existingSubscription.id);
-        
-        // Update the subscription with new price
-        const updatedSubscription = await stripe.subscriptions.update(
-          existingSubscription.id,
-          {
-            items: [{
-              id: existingSubscription.items.data[0].id,
-              price: stripePriceId,
-            }],
-            proration_behavior: 'create_prorations',
-            metadata: {
-              user_id: user.id,
-              plan_id: planId,
-              forced_payment: 'true'
-            }
-          }
-        );
-        
-        console.log('✅ Subscription updated:', updatedSubscription.id);
-        
-        // Return success without checkout URL (subscription updated directly)
-        return new Response(JSON.stringify({ 
-          success: true,
-          subscription_id: updatedSubscription.id,
-          message: 'Subscription updated successfully'
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
-      }
+      console.log('✅ Found existing customer:', customerId);
     }
 
-    // No existing subscription, create new checkout session
+    // Always create a new checkout session for plan changes
+    // This allows users to review the change and confirm payment in Stripe
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
