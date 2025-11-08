@@ -40,7 +40,7 @@ serve(async (req) => {
       );
     }
 
-    const { plan_id, billing_period, success_url, cancel_url, force_immediate_payment, currency } = validation.data;
+    const { plan_id, billing_period, success_url, cancel_url, force_immediate_payment } = validation.data;
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -80,7 +80,7 @@ serve(async (req) => {
       .from('subscription_plans')
       .select('*')
       .eq('is_active', true)
-      .order('price_monthly', { ascending: true });
+      .order('price_monthly_eur', { ascending: true });
 
     if (!allPlans || allPlans.length === 0) {
       return new Response(
@@ -123,28 +123,23 @@ serve(async (req) => {
 
     console.log('📋 Final selected plan:', plan.name);
 
-    // Get Stripe Price ID based on currency preference
-    // Default to EUR if currency not specified
-    const useEur = currency === 'EUR' || currency === 'eur';
+    // Get Stripe Price ID based on billing period
+    // All prices are in EUR
     let stripePriceId;
-    
+
     if (billing_period === 'yearly') {
-      stripePriceId = useEur && plan.stripe_price_id_yearly_eur 
-        ? plan.stripe_price_id_yearly_eur 
-        : plan.stripe_price_id_yearly;
+      stripePriceId = plan.stripe_price_id_yearly;
     } else {
-      stripePriceId = useEur && plan.stripe_price_id_monthly_eur
-        ? plan.stripe_price_id_monthly_eur
-        : (plan.stripe_price_id_monthly || plan.stripe_price_id);
+      stripePriceId = plan.stripe_price_id_monthly;
     }
-    
-    console.log(`💰 Currency: ${useEur ? 'EUR' : 'USD'}, Price ID: ${stripePriceId}`);
+
+    console.log(`💰 Selected price ID: ${stripePriceId} (${billing_period})`);
 
     if (!stripePriceId || !stripePriceId.startsWith('price_')) {
       console.error(`❌ Invalid Stripe Price ID: ${stripePriceId}`);
       return new Response(
         JSON.stringify({ 
-          error: `Configuration incomplète: Le forfait "${plan.name}" n'a pas de tarif Stripe configuré.` 
+          error: `Configuration incomplète: Le forfait "${plan.name}" n'a pas de tarif Stripe configuré pour la période ${billing_period}.` 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -172,12 +167,6 @@ serve(async (req) => {
 
     let customerId = profile?.stripe_customer_id;
 
-    // Récupérer les détails du prix pour vérifier la devise
-    const priceDetails = await stripe.prices.retrieve(stripePriceId);
-    const targetCurrency = priceDetails.currency; // 'eur' pour vos plans
-    
-    console.log(`🎯 Target currency for new checkout: ${targetCurrency}`);
-
     // Si customer existe, vérifier les conflits de devise
     if (customerId) {
       console.log('🔍 Checking existing customer for currency conflicts...');
@@ -195,8 +184,8 @@ serve(async (req) => {
         // Vérifier les abonnements
         for (const sub of subscriptions.data) {
           const subPrice = sub.items.data[0]?.price;
-          if (subPrice && subPrice.currency !== targetCurrency) {
-            console.log(`⚠️ Currency conflict found in subscription ${sub.id}: ${subPrice.currency} vs ${targetCurrency}`);
+          if (subPrice && subPrice.currency !== 'eur') {
+            console.log(`⚠️ Currency conflict found in subscription ${sub.id}: ${subPrice.currency} vs eur`);
             hasCurrencyConflict = true;
             break;
           }
@@ -205,8 +194,8 @@ serve(async (req) => {
         // Vérifier les invoice items
         if (!hasCurrencyConflict) {
           for (const item of invoiceItems.data) {
-            if (item.currency !== targetCurrency) {
-              console.log(`⚠️ Currency conflict found in invoice item ${item.id}: ${item.currency} vs ${targetCurrency}`);
+            if (item.currency !== 'eur') {
+              console.log(`⚠️ Currency conflict found in invoice item ${item.id}: ${item.currency} vs eur`);
               hasCurrencyConflict = true;
               break;
             }
