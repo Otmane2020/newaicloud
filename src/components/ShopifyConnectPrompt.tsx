@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -18,10 +19,17 @@ export function ShopifyConnectPrompt() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
   const { user } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     const checkShopifyConnection = async () => {
       if (!user || hasChecked) return;
+
+      // Only show on dashboard, not on checkout or other pages
+      if (location.pathname !== '/dashboard') {
+        setHasChecked(true);
+        return;
+      }
 
       try {
         // Check if user has already seen the welcome prompt (localStorage)
@@ -55,7 +63,7 @@ export function ShopifyConnectPrompt() {
     };
 
     checkShopifyConnection();
-  }, [user, hasChecked]);
+  }, [user, hasChecked, location.pathname]);
 
   const handleBegin = () => {
     setOpen(false);
