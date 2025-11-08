@@ -142,8 +142,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
         .eq('id', user.id)
         .single();
 
-      const isInTrial = profile?.subscription_status === 'trialing' || 
-                        (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
+      const isInTrial = profile?.subscription_status === 'trialing' || (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
 
       console.log('🔍 Trial check:', { 
         subscription_status: profile?.subscription_status, 
