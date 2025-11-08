@@ -389,13 +389,14 @@ export function SubscriptionPlans() {
                 <SelectTrigger className="w-full bg-card border-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
                   {proPlans.map((plan) => (
                     <SelectItem
                       key={plan.id}
                       value={plan.id}
+                      className="bg-popover hover:bg-accent"
                     >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language).replace(/[€$]/, '')}{getCurrencySymbol(language)}/mois
+                      {plan.max_products} produits • {plan.max_articles_monthly} articles/mois • {plan.max_campaigns} campagnes • {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language).replace(/[€$]/, '')}{getCurrencySymbol(language)}/mois
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -483,13 +484,14 @@ export function SubscriptionPlans() {
                 <SelectTrigger className="w-full bg-card border-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
                   {enterprisePlans.map((plan) => (
                     <SelectItem 
                       key={plan.id} 
                       value={plan.id}
+                      className="bg-popover hover:bg-accent"
                     >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language).replace(/[€$]/, '')}{getCurrencySymbol(language)}/mois
+                      {plan.max_products.toLocaleString()} produits • {plan.max_articles_monthly} articles/mois • {plan.max_campaigns} campagnes • {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language).replace(/[€$]/, '')}{getCurrencySymbol(language)}/mois
                     </SelectItem>
                   ))}
                 </SelectContent>
