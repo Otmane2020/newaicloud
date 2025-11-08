@@ -93,7 +93,7 @@ serve(async (req) => {
     
     const body = await req.json();
 
-    const { productTitle, imageUrl, description, vendor, style, mainColor, layout, length } = body ?? {};
+    const { productTitle, imageUrl, description, vendor, style, mainColor, layout, length, customHighlights } = body ?? {};
 
     if (!productTitle) {
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
@@ -176,6 +176,7 @@ Tu es un designer UX/UI expert et copywriter e-commerce spécialisé dans les la
 ${vendor ? `- Marque : ${vendor}` : ""}
 ${imageUrl ? `- Image produit : ${imageUrl}` : ""}
 ${description ? `- Description : ${description}` : ""}
+${customHighlights ? `\n🌟 POINTS FORTS À METTRE EN AVANT (PRIORITAIRE) :\n${customHighlights.split('\n').map((h: string) => `- ${h.trim()}`).filter((h: string) => h.length > 2).join('\n')}` : ""}
 
 ${visualAnalysis ? `${visualAnalysis}` : ""}
 

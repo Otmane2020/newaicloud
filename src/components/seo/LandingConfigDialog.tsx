@@ -27,6 +27,7 @@ export interface LandingConfig {
   colorScheme: string;
   contentLength: string;
   vendorSource: 'shopify' | 'extract' | 'generate';
+  customHighlights?: string; // Texte libre pour highlights personnalisés
 }
 
 interface LandingConfigDialogProps {
@@ -156,6 +157,7 @@ export function LandingConfigDialog({
     colorScheme: "#000000",
     contentLength: "moyenne (800 mots)",
     vendorSource: 'shopify',
+    customHighlights: '',
   });
   
   const [selectedPalette, setSelectedPalette] = useState<string | null>('modern');
@@ -312,7 +314,7 @@ export function LandingConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[90vw] md:max-w-[700px] lg:max-w-[800px] max-h-[90vh]">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
@@ -327,11 +329,11 @@ export function LandingConfigDialog({
           </div>
         </DialogHeader>
 
-        <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto px-1">
           {/* Style visuel */}
           <div className="space-y-3 animate-fade-in">
             <Label className="text-base font-semibold">🎨 Style visuel</Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {VISUAL_STYLES.map((style, index) => (
                 <button
                   key={style.id}
@@ -359,7 +361,7 @@ export function LandingConfigDialog({
           {/* Layout */}
           <div className="space-y-3 animate-fade-in">
             <Label className="text-base font-semibold">🧱 Layout de la page</Label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {LAYOUT_PREVIEWS.map((layout, index) => (
                 <Card
                   key={layout.id}
@@ -394,7 +396,7 @@ export function LandingConfigDialog({
           <div className="space-y-3 animate-fade-in">
             <Label className="text-base font-semibold">🎨 Palette de couleurs</Label>
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {COLOR_PALETTES.map((palette, index) => (
                 <Card 
                   key={palette.id}
@@ -581,13 +583,31 @@ export function LandingConfigDialog({
               </button>
             </div>
           </div>
+
+          {/* Champ de saisie libre pour highlights personnalisés */}
+          <div className="space-y-3 pb-2 border-t pt-4 animate-fade-in">
+            <Label className="text-base font-semibold">✨ Points forts personnalisés</Label>
+            <p className="text-xs text-muted-foreground">
+              Ajoutez des informations spécifiques à mettre en avant (ex: Fabrication européenne, Garantie 10 ans, Livraison express...)
+            </p>
+            <textarea
+              value={config.customHighlights || ''}
+              onChange={(e) => setConfig({ ...config, customHighlights: e.target.value })}
+              placeholder="Exemple: Fabrication artisanale française&#10;Garantie satisfait ou remboursé 30 jours&#10;Matériaux éco-responsables certifiés"
+              className="w-full min-h-[100px] p-3 border rounded-lg text-sm resize-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-muted/30"
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground italic">
+              💡 Astuce : Un point fort par ligne pour une meilleure mise en forme
+            </p>
+          </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Annuler
           </Button>
-          <Button onClick={handleConfirm} className="gap-2">
+          <Button onClick={handleConfirm} className="gap-2 w-full sm:w-auto">
             <Sparkles className="w-4 h-4" />
             Générer
           </Button>
