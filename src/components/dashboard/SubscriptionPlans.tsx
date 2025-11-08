@@ -380,17 +380,22 @@ export function SubscriptionPlans() {
               {proPlans.length > 1 && (
               <Select value={selectedProPlan} onValueChange={setSelectedProPlan}>
                 <SelectTrigger className="w-full bg-card border-2">
-                  <SelectValue />
+                  <SelectValue>
+                    {getCurrencySymbol(language)}{getPrice(selectedPro)} - {selectedPro?.max_optimizations_monthly.toLocaleString()} optimisations
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  {proPlans.map((plan) => (
-                    <SelectItem
-                      key={plan.id}
-                      value={plan.id}
-                    >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, billingPeriod), language)}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-[300px]">
+                  {proPlans.map((plan) => {
+                    const price = getPriceByLanguage(plan, language, billingPeriod);
+                    return (
+                      <SelectItem
+                        key={plan.id}
+                        value={plan.id}
+                      >
+                        {getCurrencySymbol(language)}{price < 10 ? formatPrice(price, language, true).replace(/[€$]/, '') : formatPrice(price, language, false).replace(/[€$]/, '')}/mois - {plan.max_optimizations_monthly.toLocaleString()} optimisations
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               )}
@@ -462,17 +467,22 @@ export function SubscriptionPlans() {
               {enterprisePlans.length > 1 && (
               <Select value={selectedEnterprisePlan} onValueChange={setSelectedEnterprisePlan}>
                 <SelectTrigger className="w-full bg-card border-2">
-                  <SelectValue />
+                  <SelectValue>
+                    {getCurrencySymbol(language)}{getPrice(selectedEnterprise)} - {selectedEnterprise?.max_optimizations_monthly.toLocaleString()} optimisations
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  {enterprisePlans.map((plan) => (
-                    <SelectItem 
-                      key={plan.id} 
-                      value={plan.id}
-                    >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, billingPeriod), language)}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-[300px]">
+                  {enterprisePlans.map((plan) => {
+                    const price = getPriceByLanguage(plan, language, billingPeriod);
+                    return (
+                      <SelectItem 
+                        key={plan.id} 
+                        value={plan.id}
+                      >
+                        {getCurrencySymbol(language)}{price < 10 ? formatPrice(price, language, true).replace(/[€$]/, '') : formatPrice(price, language, false).replace(/[€$]/, '')}/mois - {plan.max_optimizations_monthly.toLocaleString()} optimisations
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               )}
