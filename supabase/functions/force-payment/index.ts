@@ -86,20 +86,50 @@ serve(async (req) => {
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       
-      // Cancel any existing active subscriptions before creating new one
+      // Check for existing active subscriptions
       const existingSubscriptions = await stripe.subscriptions.list({
         customer: customerId,
         status: 'active',
-        limit: 100,
+        limit: 1,
       });
       
-      for (const subscription of existingSubscriptions.data) {
-        console.log('🗑️ Canceling existing subscription:', subscription.id);
-        await stripe.subscriptions.cancel(subscription.id);
+      // If customer has an active subscription, update it instead of creating new checkout
+      if (existingSubscriptions.data.length > 0) {
+        const existingSubscription = existingSubscriptions.data[0];
+        console.log('🔄 Updating existing subscription:', existingSubscription.id);
+        
+        // Update the subscription with new price
+        const updatedSubscription = await stripe.subscriptions.update(
+          existingSubscription.id,
+          {
+            items: [{
+              id: existingSubscription.items.data[0].id,
+              price: stripePriceId,
+            }],
+            proration_behavior: 'create_prorations',
+            metadata: {
+              user_id: user.id,
+              plan_id: planId,
+              forced_payment: 'true'
+            }
+          }
+        );
+        
+        console.log('✅ Subscription updated:', updatedSubscription.id);
+        
+        // Return success without checkout URL (subscription updated directly)
+        return new Response(JSON.stringify({ 
+          success: true,
+          subscription_id: updatedSubscription.id,
+          message: 'Subscription updated successfully'
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
       }
     }
 
-    // Create immediate payment checkout session (NO TRIAL)
+    // No existing subscription, create new checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,

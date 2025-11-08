@@ -121,7 +121,7 @@ export function SubscriptionPlans() {
 
     setCheckoutLoading(planId);
     try {
-      // Always redirect to Stripe via force-payment
+      // Always use force-payment for all plan changes
       const { data, error } = await supabase.functions.invoke('force-payment', {
         body: {
           plan_id: planId,
@@ -131,8 +131,17 @@ export function SubscriptionPlans() {
       
       if (error) throw error;
       
+      // If URL returned, redirect to Stripe checkout (new subscription)
       if (data?.url) {
         window.location.href = data.url;
+      } 
+      // If success without URL, subscription was updated directly
+      else if (data?.success) {
+        toast({
+          title: t.account.subscription.activationSuccess,
+          description: data.message || 'Your plan has been updated!',
+        });
+        setTimeout(() => window.location.reload(), 1500);
       }
     } catch (error: any) {
       console.error('Error handling plan selection:', error);
