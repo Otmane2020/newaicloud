@@ -360,11 +360,10 @@ serve(async (req) => {
         }
         // trial_period_days omis = paiement immédiat
       };
-    } else if (hasActiveTrial && billing_period === 'yearly' && trialDaysRemaining > 0) {
-      // Trial actif + abonnement annuel = conserver les jours restants
-      console.log(`⏰ Active trial with yearly plan - preserve ${trialDaysRemaining} days`);
+    } else if (hasActiveTrial && billing_period === 'yearly') {
+      // Trial actif + abonnement annuel = paiement immédiat (simplifié)
+      console.log('💳 Active trial with yearly plan - immediate payment');
       sessionConfig.subscription_data = {
-        trial_end: Math.floor(new Date(profile.trial_ends_at).getTime() / 1000),
         metadata: {
           user_id: user.id,
           plan_id: plan_id,
@@ -372,6 +371,7 @@ serve(async (req) => {
           upgraded_from_trial: 'true',
           forced_payment: 'false'
         }
+        // Pas de trial_period_days ni trial_end = paiement immédiat
       };
     } else {
       // Nouveau user sans trial actif = appliquer le trial du plan
