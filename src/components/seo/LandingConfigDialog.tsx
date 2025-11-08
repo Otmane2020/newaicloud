@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -140,6 +140,8 @@ const COLOR_PALETTES = [
   }
 ];
 
+const STORAGE_KEY = 'landing-config-preferences';
+
 export function LandingConfigDialog({
   open,
   onOpenChange,
@@ -156,6 +158,34 @@ export function LandingConfigDialog({
   
   const [selectedPalette, setSelectedPalette] = useState<string | null>('modern');
   const [useCustomColor, setUseCustomColor] = useState(false);
+
+  // Load saved preferences from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setConfig(parsed.config);
+        setSelectedPalette(parsed.selectedPalette);
+        setUseCustomColor(parsed.useCustomColor);
+      }
+    } catch (error) {
+      console.error('Failed to load saved preferences:', error);
+    }
+  }, []);
+
+  // Save preferences to localStorage whenever config changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        config,
+        selectedPalette,
+        useCustomColor
+      }));
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+    }
+  }, [config, selectedPalette, useCustomColor]);
 
   // Fonction utilitaire pour extraire vendor du titre
   const extractVendorFromTitle = (title: string): string => {
@@ -192,26 +222,27 @@ export function LandingConfigDialog({
 
         <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto">
           {/* Style visuel */}
-          <div className="space-y-3">
+          <div className="space-y-3 animate-fade-in">
             <Label className="text-base font-semibold">🎨 Style visuel</Label>
             <div className="grid grid-cols-3 gap-2">
-              {VISUAL_STYLES.map((style) => (
+              {VISUAL_STYLES.map((style, index) => (
                 <button
                   key={style.id}
                   type="button"
                   onClick={() => setConfig({ ...config, style: style.id })}
-                  className={`p-3 rounded-lg border-2 transition-all ${
+                  className={`p-3 rounded-lg border-2 transition-all duration-300 hover:scale-105 ${
                     config.style === style.id
-                      ? 'border-primary bg-primary/10'
+                      ? 'border-primary bg-primary/10 scale-105'
                       : 'border-border hover:border-primary/50'
                   }`}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className={`text-3xl mb-1 bg-gradient-to-br ${style.color} bg-clip-text text-transparent`}>
+                  <div className={`text-3xl mb-1 bg-gradient-to-br ${style.color} bg-clip-text text-transparent transition-transform duration-300`}>
                     {style.icon}
                   </div>
                   <p className="text-xs font-semibold">{style.name}</p>
                   {config.style === style.id && (
-                    <Check className="w-3 h-3 text-primary mx-auto mt-1" />
+                    <Check className="w-3 h-3 text-primary mx-auto mt-1 animate-scale-in" />
                   )}
                 </button>
               ))}
@@ -219,20 +250,21 @@ export function LandingConfigDialog({
           </div>
 
           {/* Layout */}
-          <div className="space-y-3">
+          <div className="space-y-3 animate-fade-in">
             <Label className="text-base font-semibold">🧱 Layout de la page</Label>
             <div className="grid grid-cols-2 gap-3">
-              {LAYOUT_PREVIEWS.map((layout) => (
+              {LAYOUT_PREVIEWS.map((layout, index) => (
                 <Card
                   key={layout.id}
-                  className={`cursor-pointer p-4 transition-all ${
+                  className={`cursor-pointer p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${
                     config.layout === layout.id
-                      ? 'ring-2 ring-primary bg-primary/5'
-                      : 'hover:shadow-md hover:border-primary/50'
+                      ? 'ring-2 ring-primary bg-primary/5 scale-[1.02]'
+                      : 'hover:border-primary/50'
                   }`}
+                  style={{ animationDelay: `${index * 75}ms` }}
                   onClick={() => setConfig({ ...config, layout: layout.id })}
                 >
-                  <div className="mb-3 flex items-center justify-center h-10">
+                  <div className="mb-3 flex items-center justify-center h-10 transition-transform duration-300">
                     {layout.icon}
                   </div>
                   <h4 className="font-semibold text-sm text-center mb-1">
@@ -243,7 +275,7 @@ export function LandingConfigDialog({
                   </p>
                   {config.layout === layout.id && (
                     <div className="flex justify-center mt-2">
-                      <Check className="w-4 h-4 text-primary" />
+                      <Check className="w-4 h-4 text-primary animate-scale-in" />
                     </div>
                   )}
                 </Card>
@@ -252,18 +284,19 @@ export function LandingConfigDialog({
           </div>
 
           {/* Palette de couleurs */}
-          <div className="space-y-3">
+          <div className="space-y-3 animate-fade-in">
             <Label className="text-base font-semibold">🎨 Palette de couleurs</Label>
             
             <div className="grid grid-cols-2 gap-3">
-              {COLOR_PALETTES.map((palette) => (
+              {COLOR_PALETTES.map((palette, index) => (
                 <Card 
                   key={palette.id}
-                  className={`cursor-pointer transition-all ${
+                  className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
                     selectedPalette === palette.id 
-                      ? 'ring-2 ring-primary shadow-lg' 
+                      ? 'ring-2 ring-primary shadow-lg scale-[1.02]' 
                       : 'hover:shadow-md hover:border-primary/50'
                   }`}
+                  style={{ animationDelay: `${index * 60}ms` }}
                   onClick={() => {
                     setSelectedPalette(palette.id);
                     setUseCustomColor(false);
@@ -273,7 +306,7 @@ export function LandingConfigDialog({
                   <div className="p-3">
                     <div className="flex items-center gap-2 mb-2">
                       {selectedPalette === palette.id && (
-                        <Check className="w-4 h-4 text-primary" />
+                        <Check className="w-4 h-4 text-primary animate-scale-in" />
                       )}
                       <span className="font-semibold text-sm">{palette.name}</span>
                     </div>
@@ -282,7 +315,7 @@ export function LandingConfigDialog({
                       {palette.colors.map((color, i) => (
                         <div
                           key={i}
-                          className="flex-1 h-8 rounded-md border shadow-sm"
+                          className="flex-1 h-8 rounded-md border shadow-sm transition-transform duration-200 hover:scale-110"
                           style={{ backgroundColor: color }}
                           title={color}
                         />
@@ -312,12 +345,12 @@ export function LandingConfigDialog({
             </div>
             
             {useCustomColor && (
-              <div className="mt-2">
+              <div className="mt-2 animate-slide-in-right">
                 <input
                   type="color"
                   value={config.colorScheme}
                   onChange={(e) => setConfig({ ...config, colorScheme: e.target.value })}
-                  className="w-full h-12 rounded-md border cursor-pointer"
+                  className="w-full h-12 rounded-md border cursor-pointer transition-transform duration-200 hover:scale-105"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Couleur sélectionnée : {config.colorScheme}
