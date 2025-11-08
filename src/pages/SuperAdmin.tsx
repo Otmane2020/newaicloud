@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3, Store } from 'lucide-react';
+import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3, Store, RefreshCw } from 'lucide-react';
 import { EmailInbox } from '@/components/admin/EmailInbox';
 import { UserActivityHistory } from '@/components/admin/UserActivityHistory';
 import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
@@ -126,6 +126,12 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
           console.error('Error loading Stripe data:', stripeError);
           throw stripeError;
         }
+
+        console.log('✅ Stripe data loaded successfully:', {
+          totalUsers: stripeData?.users?.length || 0,
+          usersWithSubscriptions: stripeData?.users?.filter((u: any) => u.subscriptions?.length > 0).length || 0,
+          sampleUser: stripeData?.users?.[0]
+        });
 
         // Merger les données
         const usersWithStripe = (usersResult.data || []).map(user => {
@@ -440,16 +446,27 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                   Liste complète des utilisateurs avec contrôle des abonnements et actions forcées
                 </CardDescription>
               </div>
-              <Select value={billingFilter} onValueChange={(value: any) => setBillingFilter(value)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filtrer par facturation" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
-                  <SelectItem value="monthly">Mensuel</SelectItem>
-                  <SelectItem value="yearly">Annuel</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={billingFilter} onValueChange={(value: any) => setBillingFilter(value)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrer par facturation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous</SelectItem>
+                    <SelectItem value="monthly">Mensuel</SelectItem>
+                    <SelectItem value="yearly">Annuel</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={loadData}
+                  disabled={loading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Rafraîchir Stripe
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
