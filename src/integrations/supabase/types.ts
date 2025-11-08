@@ -3575,6 +3575,7 @@ export type Database = {
         Args: { p_field: string; p_increment?: number; p_seller_id: string }
         Returns: undefined
       }
+      make_user_admin: { Args: { user_email: string }; Returns: Json }
       reset_monthly_usage_counters: { Args: never; Returns: undefined }
     }
     Enums: {

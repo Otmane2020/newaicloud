@@ -331,6 +331,14 @@ serve(async (req) => {
       billing_address_collection: 'required'
     };
 
+    // Appliquer automatiquement la réduction de 20% sur les abonnements annuels
+    if (billing_period === 'yearly') {
+      console.log('🎁 Applying 20% discount for yearly subscription');
+      sessionConfig.discounts = [{
+        coupon: 'JDpahgKV' // Coupon 20% de réduction annuelle
+      }];
+    }
+
     // Déterminer la configuration du trial
     // IMPORTANT: Stripe n'accepte PAS trial_period_days: 0
     // Pour un paiement immédiat, on doit OMETTRE trial_period_days complètement
