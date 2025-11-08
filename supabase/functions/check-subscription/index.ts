@@ -59,10 +59,45 @@ serve(async (req) => {
       }
     }
     
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    if (!userData) throw new Error('Failed to retrieve user data');
+    // Handle authentication errors with proper status codes
+    if (userError) {
+      const errorMsg = userError.message.toLowerCase();
+      if (errorMsg.includes('session') || errorMsg.includes('jwt') || errorMsg.includes('auth') || errorMsg.includes('token')) {
+        logStep('Invalid or expired token detected');
+        return new Response(JSON.stringify({ 
+          error: 'invalid_session',
+          message: 'Session expired or invalid. Please log in again.' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        });
+      }
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
+    
+    if (!userData) {
+      logStep('No user data returned');
+      return new Response(JSON.stringify({ 
+        error: 'invalid_session',
+        message: 'Unable to retrieve user data. Please log in again.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+    
     const user = userData.user;
-    if (!user?.email) throw new Error('User not authenticated or email not available');
+    if (!user?.email) {
+      logStep('User missing email');
+      return new Response(JSON.stringify({ 
+        error: 'invalid_user',
+        message: 'User not authenticated or email not available.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+    
     logStep('User authenticated', { userId: user.id, email: user.email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
