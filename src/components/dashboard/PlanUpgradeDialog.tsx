@@ -187,7 +187,9 @@ export function PlanUpgradeDialog({ open, onOpenChange, currentPlanId, onSuccess
 
   const isUpgrade = priceChange > 0;
   const isDowngrade = priceChange < 0;
-  const isSamePlan = (selectedPlanId === currentPlanId) && (selectedPlan !== null);
+  // Consider it the same plan only if both plan ID and price are identical
+  // This allows changing billing period (monthly <-> yearly) even for the same plan
+  const isSamePlan = (selectedPlanId === currentPlanId) && (priceChange === 0) && (selectedPlan !== null);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
