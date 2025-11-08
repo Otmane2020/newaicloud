@@ -8,6 +8,7 @@ import { Plus, Megaphone, ExternalLink, Eye, Trash2, Copy } from 'lucide-react';
 import { AdsCampaignWizard } from './AdsCampaignWizard';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useTranslation } from '@/lib/language';
 
 interface Campaign {
   id: string;
@@ -24,6 +25,7 @@ interface Campaign {
 }
 
 export function AdsCampaign() {
+  const { t, language } = useTranslation();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
@@ -40,7 +42,7 @@ export function AdsCampaign() {
       setCampaigns((data || []) as Campaign[]);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
-      toast.error('Erreur lors du chargement des campagnes');
+      toast.error(t.adsCampaign.toasts.campaignError);
     } finally {
       setLoading(false);
     }
@@ -58,11 +60,11 @@ export function AdsCampaign() {
         .eq('id', id);
 
       if (error) throw error;
-      toast.success('Campagne supprimée');
+      toast.success(t.adsCampaign.toasts.deleted);
       fetchCampaigns();
     } catch (error) {
       console.error('Error deleting campaign:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error(t.adsCampaign.toasts.deleteError);
     }
   };
 
@@ -84,19 +86,19 @@ export function AdsCampaign() {
         });
 
       if (error) throw error;
-      toast.success('Campagne dupliquée');
+      toast.success(t.adsCampaign.toasts.duplicated);
       fetchCampaigns();
     } catch (error) {
       console.error('Error duplicating campaign:', error);
-      toast.error('Erreur lors de la duplication');
+      toast.error(t.adsCampaign.toasts.duplicateError);
     }
   };
 
   const getCampaignTypeLabel = (type: string) => {
     switch (type) {
-      case 'product': return 'Produit';
-      case 'collection': return 'Collection';
-      case 'store': return 'Boutique';
+      case 'product': return t.adsCampaign.types.product;
+      case 'collection': return t.adsCampaign.types.collection;
+      case 'store': return t.adsCampaign.types.store;
       default: return type;
     }
   };
@@ -104,11 +106,11 @@ export function AdsCampaign() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-500">Actif</Badge>;
+        return <Badge className="bg-green-500">{t.adsCampaign.status.active}</Badge>;
       case 'paused':
-        return <Badge variant="secondary">En pause</Badge>;
+        return <Badge variant="secondary">{t.adsCampaign.status.paused}</Badge>;
       default:
-        return <Badge variant="outline">Brouillon</Badge>;
+        return <Badge variant="outline">{t.adsCampaign.status.draft}</Badge>;
     }
   };
 
@@ -129,10 +131,10 @@ export function AdsCampaign() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Megaphone className="w-6 h-6 text-orange-600" />
-                <CardTitle className="text-2xl">Campagnes Publicitaires</CardTitle>
+                <CardTitle className="text-2xl">{t.adsCampaign.title}</CardTitle>
               </div>
               <CardDescription className="text-base">
-                Créez des landing pages attractives pour vos campagnes publicitaires
+                {t.adsCampaign.description}
               </CardDescription>
             </div>
             <Button
@@ -141,7 +143,7 @@ export function AdsCampaign() {
               className="gap-2"
             >
               <Plus className="w-5 h-5" />
-              Nouvelle Campagne
+              {t.adsCampaign.buttons.new}
             </Button>
           </div>
         </CardHeader>
@@ -152,13 +154,13 @@ export function AdsCampaign() {
         <Card>
           <CardContent className="py-12 text-center">
             <Megaphone className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Aucune campagne</h3>
+            <h3 className="text-lg font-semibold mb-2">{t.adsCampaign.empty.title}</h3>
             <p className="text-muted-foreground mb-6">
-              Commencez par créer votre première landing page publicitaire
+              {t.adsCampaign.empty.description}
             </p>
             <Button onClick={() => setShowWizard(true)} className="gap-2">
               <Plus className="w-4 h-4" />
-              Créer ma première campagne
+              {t.adsCampaign.empty.cta}
             </Button>
           </CardContent>
         </Card>
@@ -179,24 +181,24 @@ export function AdsCampaign() {
                   </div>
                 </div>
                 <CardDescription className="text-sm">
-                  Créé le {format(new Date(campaign.created_at), 'dd MMM yyyy', { locale: fr })}
+                  {t.adsCampaign.details.createdOn} {format(new Date(campaign.created_at), 'dd MMM yyyy', { locale: language === 'fr' ? fr : undefined })}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Produits:</span>
+                    <span className="text-muted-foreground">{t.adsCampaign.details.products}</span>
                     <span className="ml-1 font-semibold">{campaign.products_count || 0}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Collections:</span>
+                    <span className="text-muted-foreground">{t.adsCampaign.details.collections}</span>
                     <span className="ml-1 font-semibold">{campaign.collections_count || 0}</span>
                   </div>
                 </div>
 
                 {campaign.cta_text && (
                   <div className="text-sm">
-                    <span className="text-muted-foreground">CTA:</span>
+                    <span className="text-muted-foreground">{t.adsCampaign.details.cta}</span>
                     <p className="font-medium mt-1">"{campaign.cta_text}"</p>
                   </div>
                 )}
@@ -209,14 +211,14 @@ export function AdsCampaign() {
                     onClick={() => window.open(`/landing/${campaign.id}`, '_blank')}
                   >
                     <Eye className="w-4 h-4" />
-                    Voir
+                    {t.adsCampaign.buttons.view}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => {
                       navigator.clipboard.writeText(`${window.location.origin}/landing/${campaign.id}`);
-                      toast.success('Lien copié');
+                      toast.success(t.adsCampaign.toasts.linkCopied);
                     }}
                   >
                     <Copy className="w-4 h-4" />

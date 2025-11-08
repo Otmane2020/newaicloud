@@ -104,6 +104,7 @@ export const translations = {
     
     preview: {
       title: "Aperçu de la Landing Page",
+      description: "Utilisez les boutons ci-dessous pour prévisualiser, télécharger ou synchroniser.",
       desktop: "Desktop",
       mobile: "Mobile",
       download: "Télécharger",

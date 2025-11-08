@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { LandingConfig } from "./LandingConfigDialog";
+import { useTranslation } from "@/lib/language";
 
 interface RegenerateLandingProps {
   product: {
@@ -28,6 +29,7 @@ export default function RegenerateLanding({
   onGenerated,
   onClose 
 }: RegenerateLandingProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
@@ -114,22 +116,22 @@ export default function RegenerateLanding({
       setLoading(true);
       setError(null);
       setProgress(0);
-      setProgressMessage("Préparation de la génération...");
+      setProgressMessage(t.landingGeneration.preparing);
 
       await new Promise(resolve => setTimeout(resolve, 300));
       setProgress(10);
       
       // ✅ ÉTAPE 1 : Résoudre le vendor selon l'option choisie
-      setProgressMessage("Résolution de la marque/vendor...");
+      setProgressMessage(t.landingGeneration.resolving);
       const resolvedVendor = await resolveVendor();
       console.log('[Landing] Resolved vendor:', resolvedVendor);
 
       setProgress(20);
-      setProgressMessage("Analyse du produit et de l'image...");
+      setProgressMessage(t.landingGeneration.analyzing);
 
       await new Promise(resolve => setTimeout(resolve, 300));
       setProgress(30);
-      setProgressMessage("Génération du contenu IA...");
+      setProgressMessage(t.landingGeneration.generating);
 
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
@@ -145,16 +147,16 @@ export default function RegenerateLanding({
       });
 
       setProgress(60);
-      setProgressMessage("Traitement de la réponse IA...");
+      setProgressMessage(t.landingGeneration.processing);
 
       if (error) throw error;
       if (data?.error) {
         const message = data.error.includes("Rate limits")
-          ? "Limite de requêtes atteinte. Veuillez réessayer plus tard."
+          ? t.landingGeneration.errors.rateLimit
           : data.error.includes("Payment required")
-            ? "Crédits IA épuisés. Contactez le support pour plus d'informations."
+            ? t.landingGeneration.errors.paymentRequired
             : data.error.includes("LIMIT_REACHED")
-              ? "Limite d'optimisations atteinte. Passez à un plan supérieur."
+              ? t.landingGeneration.errors.limitReached
               : data.error;
         setError(message);
         toast.error(message);
@@ -163,20 +165,20 @@ export default function RegenerateLanding({
 
       await new Promise(resolve => setTimeout(resolve, 500));
       setProgress(90);
-      setProgressMessage("Finalisation du rendu HTML...");
+      setProgressMessage(t.landingGeneration.finalizing);
 
       if (data?.html?.trim()) {
         setHtmlContent(data.html);
         setProgress(100);
-        setProgressMessage("✅ Landing page générée avec succès !");
-        toast.success("Landing page générée avec succès !");
+        setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
+        toast.success(t.landingGeneration.success.generated);
         onGenerated?.(data.html);
       } else {
-        throw new Error("Aucun contenu généré. Essayez avec un autre style ou layout.");
+        throw new Error(t.landingGeneration.errors.noGenerated);
       }
     } catch (err: any) {
       console.error("Error generating landing:", err);
-      const errorMsg = err?.message || "Erreur lors de la génération de la landing page.";
+      const errorMsg = err?.message || t.landingGeneration.errors.generation;
       setError(errorMsg);
       toast.error(errorMsg);
       setProgress(0);
@@ -189,7 +191,7 @@ export default function RegenerateLanding({
    * 💾 Download HTML
    -----------------------------*/
   const handleDownloadHTML = () => {
-    if (!htmlContent) return toast.error("Aucun contenu à télécharger");
+    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContent);
 
     const blob = new Blob([htmlContent], { type: "text/html" });
     const url = URL.createObjectURL(blob);
@@ -201,18 +203,18 @@ export default function RegenerateLanding({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast.success("HTML téléchargé avec succès !");
+    toast.success(t.landingGeneration.preview.downloaded);
   };
 
   /** ----------------------------
    * 🔄 Sync to Shopify
    -----------------------------*/
   const handleSyncToShopify = async () => {
-    if (!htmlContent) return toast.error("Aucun contenu à synchroniser");
+    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContentSync);
 
     try {
       setSyncing(true);
-      toast.info("Synchronisation vers Shopify en cours...");
+      toast.info(t.landingGeneration.preview.syncInProgress);
 
       const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
         body: {
@@ -226,11 +228,11 @@ export default function RegenerateLanding({
       if (error) throw error;
       if (data?.error) return toast.error(data.error);
 
-      toast.success("Landing page synchronisée avec succès !");
-      if (data?.pageUrl) toast.info(`Page disponible sur : ${data.pageUrl}`, { duration: 10000 });
+      toast.success(t.landingGeneration.success.synced);
+      if (data?.pageUrl) toast.info(`${t.landingGeneration.success.available} ${data.pageUrl}`, { duration: 10000 });
     } catch (err: any) {
       console.error("Error syncing to Shopify:", err);
-      toast.error(err?.message || "Erreur lors de la synchronisation vers Shopify");
+      toast.error(err?.message || t.landingGeneration.errors.sync);
     } finally {
       setSyncing(false);
     }
@@ -247,7 +249,7 @@ export default function RegenerateLanding({
           <div className="flex items-center gap-3 mb-4">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
             <div className="flex-1">
-              <h3 className="font-semibold text-lg">Génération en cours...</h3>
+              <h3 className="font-semibold text-lg">{t.landingGeneration.generating}...</h3>
               <p className="text-sm text-muted-foreground">{progressMessage}</p>
             </div>
           </div>
@@ -261,11 +263,11 @@ export default function RegenerateLanding({
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
             <div className="flex-1">
-              <p className="font-semibold text-destructive">Erreur de génération</p>
+              <p className="font-semibold text-destructive">{t.landingGeneration.errors.generation}</p>
               <p className="text-sm text-destructive/90 mt-1">{error}</p>
             </div>
             <Button variant="outline" size="sm" onClick={handleGenerate}>
-              Réessayer
+              {t.landingConfig.buttons.confirm}
             </Button>
           </div>
         </div>
@@ -278,8 +280,8 @@ export default function RegenerateLanding({
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-green-600" />
               <div>
-                <p className="font-semibold text-green-700">Landing page générée avec succès !</p>
-                <p className="text-sm text-muted-foreground">Utilisez les boutons ci-dessous pour prévisualiser, télécharger ou synchroniser.</p>
+                <p className="font-semibold text-green-700">{t.landingGeneration.success.generated}</p>
+                <p className="text-sm text-muted-foreground">{t.landingGeneration.preview.description}</p>
               </div>
             </div>
           </div>
@@ -287,35 +289,35 @@ export default function RegenerateLanding({
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Eye className="w-5 h-5 text-primary" />
-              Aperçu de la Landing Page
+              {t.landingGeneration.preview.title}
             </h3>
             <div className="flex flex-wrap gap-2">
               <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as "desktop" | "mobile")}>
                 <TabsList>
                   <TabsTrigger value="desktop">
-                    <Monitor className="h-4 w-4 mr-1" /> Desktop
+                    <Monitor className="h-4 w-4 mr-1" /> {t.landingGeneration.preview.desktop}
                   </TabsTrigger>
                   <TabsTrigger value="mobile">
-                    <Smartphone className="h-4 w-4 mr-1" /> Mobile
+                    <Smartphone className="h-4 w-4 mr-1" /> {t.landingGeneration.preview.mobile}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
 
               <Button onClick={handleDownloadHTML} variant="outline" size="sm" className="gap-2">
                 <Download className="w-4 h-4" />
-                Télécharger
+                {t.landingGeneration.preview.download}
               </Button>
 
               <Button onClick={handleSyncToShopify} disabled={syncing} size="sm" className="gap-2">
                 {syncing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Synchronisation...
+                    {t.landingGeneration.preview.synchronizing}
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    Sync Shopify
+                    {t.landingGeneration.preview.syncShopify}
                   </>
                 )}
               </Button>
@@ -336,7 +338,7 @@ export default function RegenerateLanding({
       {!loading && !htmlContent && !error && (
         <div className="text-center py-10 text-muted-foreground border rounded-xl bg-muted/10">
           <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary/70 animate-pulse" />
-          <p className="text-sm">Initialisation de la génération...</p>
+          <p className="text-sm">{t.landingGeneration.initializing}</p>
         </div>
       )}
     </div>
