@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,10 +9,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Send, Plus, TestTube, Reply, Trash2, Archive } from 'lucide-react';
+import { Mail, Send, Plus, TestTube, Reply, Trash2, Archive, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { EmailSidebar } from './EmailSidebar';
+import { Dialog as TemplateDialog, DialogContent as TemplateDialogContent, DialogHeader as TemplateDialogHeader, DialogTitle as TemplateDialogTitle } from '@/components/ui/dialog';
+
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  html_body: string | null;
+  category: string;
+  variables: any;
+  usage_count: number;
+}
 
 interface AdminEmail {
   id: string;
@@ -46,6 +58,8 @@ export function EmailInbox() {
   const [sending, setSending] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<AdminEmail | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -57,6 +71,7 @@ export function EmailInbox() {
   useEffect(() => {
     loadEmails();
     loadEmailStats();
+    loadTemplates();
     
     // Setup realtime subscription
     const channel = supabase
@@ -116,6 +131,93 @@ export function EmailInbox() {
       setEmailStats(stats);
     } catch (error) {
       console.error('Error loading email stats:', error);
+    }
+  };
+
+  const loadTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('category');
+
+      if (error) throw error;
+      setTemplates(data?.map(t => ({
+        ...t,
+        variables: Array.isArray(t.variables) ? t.variables : []
+      })) || []);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    }
+  };
+
+  const applyTemplate = async (template: EmailTemplate) => {
+    try {
+      // Get user data from the recipient email if available
+      let userData: any = {};
+      
+      if (to) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email, full_name, current_plan_id')
+          .eq('email', to)
+          .single();
+
+        if (profile) {
+          const { data: plan } = await supabase
+            .from('subscription_plans')
+            .select('name')
+            .eq('id', profile.current_plan_id)
+            .single();
+
+          userData = {
+            nom: profile.full_name || profile.email.split('@')[0],
+            email: profile.email,
+            plan: plan?.name || 'Trial',
+            subject: subject || ''
+          };
+        }
+      }
+
+      // Default values if no user data
+      const defaultData = {
+        nom: to ? to.split('@')[0] : '',
+        email: to || '',
+        plan: 'Trial',
+        subject: subject || ''
+      };
+
+      const data = { ...defaultData, ...userData };
+
+      // Replace variables in subject and body
+      let newSubject = template.subject;
+      let newBody = template.html_body || template.body;
+
+      const variablesArray = Array.isArray(template.variables) ? template.variables : [];
+      variablesArray.forEach((variable: string) => {
+        const regex = new RegExp(`{{${variable}}}`, 'g');
+        const value = data[variable as keyof typeof data] || '';
+        newSubject = newSubject.replace(regex, value);
+        newBody = newBody.replace(regex, value);
+      });
+
+      setSubject(newSubject);
+      setBody(newBody);
+      setTemplatesOpen(false);
+
+      // Increment usage count
+      await supabase
+        .from('email_templates')
+        .update({ usage_count: template.usage_count + 1 })
+        .eq('id', template.id);
+
+      toast({
+        title: 'Template appliqué',
+        description: `Template "${template.name}" appliqué avec succès`
+      });
+    } catch (error) {
+      console.error('Error applying template:', error);
     }
   };
 
@@ -328,6 +430,21 @@ export function EmailInbox() {
                     </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
+                    <div className="flex justify-between items-center pb-2 border-b">
+                      <p className="text-sm text-muted-foreground">
+                        Utilisez un template pour gagner du temps
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTemplatesOpen(true)}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Choisir un template
+                      </Button>
+                    </div>
+
                     <div>
                       <Label htmlFor="to">À</Label>
                       <Input
@@ -494,6 +611,40 @@ export function EmailInbox() {
               </DialogContent>
             </Dialog>
           )}
+
+          {/* Template Selection Dialog */}
+          <TemplateDialog open={templatesOpen} onOpenChange={setTemplatesOpen}>
+            <TemplateDialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <TemplateDialogHeader>
+                <TemplateDialogTitle>Choisir un Template</TemplateDialogTitle>
+              </TemplateDialogHeader>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {templates.map((template) => (
+                  <Card key={template.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => applyTemplate(template)}>
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold">{template.name}</h3>
+                          <p className="text-sm text-muted-foreground">{template.subject}</p>
+                        </div>
+                        <Badge>{template.category}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm line-clamp-3">{template.body}</p>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {(Array.isArray(template.variables) ? template.variables : []).map((variable: string) => (
+                          <Badge key={variable} variant="outline" className="text-xs">
+                            {`{{${variable}}}`}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TemplateDialogContent>
+          </TemplateDialog>
         </CardContent>
       </Card>
     </div>

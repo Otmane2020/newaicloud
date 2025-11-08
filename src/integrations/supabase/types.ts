@@ -26,6 +26,9 @@ export type Database = {
           id: string
           is_read: boolean | null
           metadata: Json | null
+          opened_at: string | null
+          replied_at: string | null
+          response_time_seconds: number | null
           sent_at: string | null
           sent_by: string | null
           status: string | null
@@ -44,6 +47,9 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           metadata?: Json | null
+          opened_at?: string | null
+          replied_at?: string | null
+          response_time_seconds?: number | null
           sent_at?: string | null
           sent_by?: string | null
           status?: string | null
@@ -62,6 +68,9 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           metadata?: Json | null
+          opened_at?: string | null
+          replied_at?: string | null
+          response_time_seconds?: number | null
           sent_at?: string | null
           sent_by?: string | null
           status?: string | null
@@ -934,6 +943,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_templates: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          html_body: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          subject: string
+          updated_at: string
+          usage_count: number | null
+          variables: Json | null
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string
+          html_body?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          subject: string
+          updated_at?: string
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          html_body?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          subject?: string
+          updated_at?: string
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Relationships: []
       }
       google_merchant_feeds: {
         Row: {

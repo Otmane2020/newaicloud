@@ -15,6 +15,8 @@ import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3, Sto
 import { EmailInbox } from '@/components/admin/EmailInbox';
 import { UserActivityHistory } from '@/components/admin/UserActivityHistory';
 import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
+import { EmailTemplates } from '@/components/admin/EmailTemplates';
+import { EmailStatsDashboard } from '@/components/admin/EmailStatsDashboard';
 
 interface UserProfile {
   id: string;
@@ -479,6 +481,14 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
           {hasNewEmail && setHasNewEmail(false)}
           <EmailInbox />
         </>
+      )}
+
+      {activeTab === 'templates' && (
+        <EmailTemplates />
+      )}
+
+      {activeTab === 'email-stats' && (
+        <EmailStatsDashboard />
       )}
 
       {activeTab === 'analytics' && (
