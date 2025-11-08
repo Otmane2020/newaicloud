@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Users, CreditCard, TrendingUp, Mail } from 'lucide-react';
+import { Shield, Users, CreditCard, TrendingUp, Mail, Settings } from 'lucide-react';
 import { EmailInbox } from '@/components/admin/EmailInbox';
+import { useNavigate } from 'react-router-dom';
 
 interface UserProfile {
   id: string;
@@ -36,6 +37,7 @@ export default function SuperAdmin() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadData();
@@ -151,6 +153,14 @@ export default function SuperAdmin() {
           <Shield className="w-8 h-8 text-orange-600" />
           <h1 className="text-3xl font-bold">Super Admin Panel</h1>
         </div>
+        <Button 
+          onClick={() => navigate('/setup-plans')}
+          variant="outline"
+          className="gap-2"
+        >
+          <Settings className="w-4 h-4" />
+          Configurer les Plans Stripe
+        </Button>
       </div>
 
       {/* Stats Cards */}
