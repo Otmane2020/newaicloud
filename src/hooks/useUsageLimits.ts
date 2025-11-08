@@ -52,7 +52,16 @@ export const useUsageLimits = () => {
   const checkLimits = async () => {
     try {
       setLoading(true);
-      const { data: user } = await supabase.auth.getUser();
+      
+      // Vérifier que l'utilisateur est authentifié
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.log('[useUsageLimits] User not authenticated, skipping limits check');
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('check-usage-limits');
       
       if (error) throw error;
@@ -61,7 +70,7 @@ export const useUsageLimits = () => {
       const { data: profileData } = await supabase
         .from('profiles')
         .select('current_plan_id, subscription_status, trial_ends_at')
-        .eq('id', user.user?.id)
+        .eq('id', user.id)
         .single();
       
       // Le compte réel est maintenant géré par check-usage-limits
