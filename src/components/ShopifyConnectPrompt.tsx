@@ -7,7 +7,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ArrowRight, Zap, TrendingUp } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, ArrowRight, Zap, TrendingUp, ImagePlus, FileText, ShoppingCart, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ShopifyConnectionWizard } from './integration/ShopifyConnectionWizard';
@@ -55,57 +56,79 @@ export function ShopifyConnectPrompt() {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-2xl border-0 p-0 overflow-hidden">
-          <div className="relative bg-gradient-to-br from-primary via-primary/80 to-secondary p-12 text-center">
-            <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-5"></div>
+        <DialogContent className="sm:max-w-3xl border-0 p-0 overflow-hidden bg-gradient-to-br from-primary via-accent to-secondary">
+          <div className="relative p-12">
+            {/* Animated background pattern */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)] animate-pulse"></div>
             
-            <div className="relative space-y-6">
-              <div className="mx-auto w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-2xl border border-white/20">
-                <Sparkles className="w-10 h-10 text-white animate-pulse" />
-              </div>
-              
-              <div className="space-y-3">
-                <DialogTitle className="text-4xl font-bold text-white">
-                  Welcome to NewAI APP
-                </DialogTitle>
-                <DialogDescription className="text-xl text-white/90 max-w-lg mx-auto">
-                  Let's start optimizing your store and boost your sales with powerful AI-driven SEO tools
-                </DialogDescription>
+            <div className="relative space-y-8">
+              {/* Header with icon */}
+              <div className="text-center space-y-4">
+                <div className="mx-auto w-24 h-24 rounded-full bg-white shadow-2xl flex items-center justify-center animate-scale-in">
+                  <Sparkles className="w-12 h-12 text-primary animate-pulse" />
+                </div>
+                
+                <div className="space-y-2">
+                  <DialogTitle className="text-5xl font-bold text-white drop-shadow-lg animate-fade-in">
+                    Welcome to NewAI App
+                  </DialogTitle>
+                  <DialogDescription className="text-xl text-white font-medium drop-shadow-md">
+                    Transform Your E-commerce with AI-Powered Optimization
+                  </DialogDescription>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto pt-4">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                  <Zap className="w-6 h-6 text-white mx-auto mb-2" />
-                  <p className="text-xs text-white/90 font-medium">AI Powered</p>
+              {/* Features grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
+                  <Zap className="w-8 h-8 text-primary mx-auto mb-3" />
+                  <p className="text-sm font-bold text-foreground text-center">Landing Page Optimization</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                  <TrendingUp className="w-6 h-6 text-white mx-auto mb-2" />
-                  <p className="text-xs text-white/90 font-medium">Boost Sales</p>
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
+                  <ImagePlus className="w-8 h-8 text-accent mx-auto mb-3" />
+                  <p className="text-sm font-bold text-foreground text-center">AI Background Generation</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                  <Sparkles className="w-6 h-6 text-white mx-auto mb-2" />
-                  <p className="text-xs text-white/90 font-medium">SEO Magic</p>
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
+                  <TrendingUp className="w-8 h-8 text-primary mx-auto mb-3" />
+                  <p className="text-sm font-bold text-foreground text-center">Advanced SEO Tools</p>
                 </div>
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
+                  <FileText className="w-8 h-8 text-accent mx-auto mb-3" />
+                  <p className="text-sm font-bold text-foreground text-center">Automated Blogging</p>
+                </div>
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
+                  <ShoppingCart className="w-8 h-8 text-primary mx-auto mb-3" />
+                  <p className="text-sm font-bold text-foreground text-center">Google Shopping Feed</p>
+                </div>
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-white">
+                  <BarChart3 className="w-8 h-8 text-accent mx-auto mb-3" />
+                  <p className="text-sm font-bold text-foreground text-center">
+                    <span className="block">Increase Traffic</span>
+                    <Badge className="mt-1 bg-success text-success-foreground">+70%</Badge>
+                  </p>
+                </div>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="space-y-3 pt-4">
+                <Button 
+                  onClick={handleBegin} 
+                  className="w-full h-16 text-xl font-bold bg-white text-primary hover:bg-white/90 shadow-2xl hover:shadow-3xl transition-all hover:scale-105"
+                  size="lg"
+                >
+                  <Sparkles className="w-6 h-6 mr-3" />
+                  Start Optimizing Now
+                  <ArrowRight className="w-6 h-6 ml-3" />
+                </Button>
+                <Button 
+                  onClick={handleSkip} 
+                  variant="ghost" 
+                  className="w-full text-white hover:text-white hover:bg-white/10"
+                >
+                  I'll connect my store later
+                </Button>
               </div>
             </div>
-          </div>
-
-          <div className="p-8 space-y-4 bg-background">
-            <Button 
-              onClick={handleBegin} 
-              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-xl hover:shadow-2xl transition-all"
-              size="lg"
-            >
-              Start Your Journey
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button 
-              onClick={handleSkip} 
-              variant="ghost" 
-              className="w-full text-muted-foreground hover:text-foreground"
-            >
-              I'll do this later
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
