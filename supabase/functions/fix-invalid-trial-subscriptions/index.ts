@@ -87,6 +87,8 @@ serve(async (req) => {
         .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
         .single();
       
+      // Any plan that's not 'trial' shouldn't be in trialing status
+      // This includes starter, pro, business, etc.
       if (plan && plan.id !== 'trial') {
         logStep('INVALID STATE: Paid plan in trial mode, fixing...', { 
           plan_id: plan.id,
