@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useTranslation } from "@/lib/language";
-import { getCurrencySymbol, getPriceByLanguage, formatPrice } from "@/lib/formatUtils";
+import { getCurrencySymbol, getPriceByLanguage, formatPrice, getPriceIdByLanguage } from "@/lib/formatUtils";
 
 interface Plan {
   id: string;
@@ -149,9 +149,7 @@ export function SubscriptionPlans() {
         const selectedPlan = plans.find(p => p.id === planId);
         if (!selectedPlan) throw new Error('Plan not found');
 
-        const stripePriceId = billingPeriod === 'yearly' 
-          ? selectedPlan.stripe_price_id_yearly 
-          : selectedPlan.stripe_price_id_monthly;
+        const stripePriceId = getPriceIdByLanguage(selectedPlan, language, billingPeriod);
 
         if (!stripePriceId || !stripePriceId.startsWith('price_')) {
           toast({
@@ -183,9 +181,7 @@ export function SubscriptionPlans() {
       // Otherwise, create new checkout session
       const selectedPlan = plans.find(p => p.id === planId);
       
-      const stripePriceId = billingPeriod === 'yearly' 
-        ? selectedPlan?.stripe_price_id_yearly 
-        : selectedPlan?.stripe_price_id_monthly;
+      const stripePriceId = getPriceIdByLanguage(selectedPlan, language, billingPeriod);
       
       if (!stripePriceId || !stripePriceId.startsWith('price_')) {
         toast({
@@ -228,9 +224,16 @@ export function SubscriptionPlans() {
 
   const getPrice = (plan: Plan) => {
     const price = getPriceByLanguage(plan, language, billingPeriod);
+    // For yearly billing, show monthly equivalent
+    const displayPrice = billingPeriod === 'yearly' ? price / 12 : price;
     // Format: keep 9.99 as is, but remove decimals for whole numbers like 49.00 -> 49
-    if (price === 9.99) return formatPrice(price, language, true).replace(/[€$]/, '');
-    return formatPrice(price, language, false).replace(/[€$]/, '');
+    if (displayPrice === 9.99) return formatPrice(displayPrice, language, true).replace(/[€$]/, '');
+    return formatPrice(displayPrice, language, false).replace(/[€$]/, '');
+  };
+
+  const getYearlyTotal = (plan: Plan) => {
+    const price = getPriceByLanguage(plan, language, billingPeriod);
+    return formatPrice(price, language);
   };
 
   const getSavings = (plan: Plan) => {
@@ -320,6 +323,11 @@ export function SubscriptionPlans() {
                   <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(starterPlan)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
+                {billingPeriod === 'yearly' && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {getYearlyTotal(starterPlan)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-3 pt-6 border-t">
@@ -390,7 +398,7 @@ export function SubscriptionPlans() {
                       key={plan.id}
                       value={plan.id}
                     >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, billingPeriod), language)}
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language)}/mois
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -402,6 +410,18 @@ export function SubscriptionPlans() {
                   <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(selectedPro)}</span>
                   <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
+                {billingPeriod === 'yearly' && (
+                  <>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {getYearlyTotal(selectedPro)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
+                        {t.dashboard.plans.save} {getSavings(selectedPro)}%
+                      </Badge>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="space-y-3 pt-6 border-t">
@@ -472,7 +492,7 @@ export function SubscriptionPlans() {
                       key={plan.id} 
                       value={plan.id}
                     >
-                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(getPriceByLanguage(plan, language, billingPeriod), language)}
+                      {plan.max_optimizations_monthly.toLocaleString()} optimisations - {formatPrice(billingPeriod === 'yearly' ? getPriceByLanguage(plan, language, billingPeriod) / 12 : getPriceByLanguage(plan, language, billingPeriod), language)}/mois
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -482,8 +502,20 @@ export function SubscriptionPlans() {
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">{getCurrencySymbol(language)}{getPrice(selectedEnterprise)}</span>
-                  <span className="text-muted-foreground">/mois</span>
+                  <span className="text-muted-foreground">{t.dashboard.plans.perMonth}</span>
                 </div>
+                {billingPeriod === 'yearly' && (
+                  <>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {getYearlyTotal(selectedEnterprise)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="secondary" className="text-xs bg-success/10 text-success border-success/20">
+                        {t.dashboard.plans.save} {getSavings(selectedEnterprise)}%
+                      </Badge>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="space-y-3 pt-6 border-t">
