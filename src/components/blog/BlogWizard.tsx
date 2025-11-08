@@ -29,8 +29,10 @@ import {
   X,
   Check,
   ChevronsUpDown,
-  Layers
+  Layers,
+  Palette
 } from 'lucide-react';
+import { ArticleConfigDialog, ArticleConfig } from './ArticleConfigDialog';
 
 interface WizardStep {
   id: number;
@@ -39,12 +41,7 @@ interface WizardStep {
   description: string;
 }
 
-const steps: WizardStep[] = [
-  { id: 1, title: 'Topic', icon: FileText, description: 'Choose topic' },
-  { id: 2, title: 'Products', icon: Package, description: 'Select products' },
-  { id: 3, title: 'Keywords', icon: Tag, description: 'Add keywords' },
-  { id: 4, title: 'Generate', icon: Sparkles, description: 'Create article' },
-];
+// Steps will be defined with translations inside the component
 
 interface BlogWizardProps {
   onClose: () => void;
@@ -97,15 +94,28 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   });
   const [collectionSearchOpen, setCollectionSearchOpen] = useState(false);
 
+  // Article configuration for visual design
+  const [articleConfig, setArticleConfig] = useState<ArticleConfig>({
+    style: 'magazine',
+    layout: '1-colonne',
+    colorScheme: '#000000',
+    contentLength: '2000',
+    includeTOC: true,
+    productDisplay: 'grid',
+    typography: 'sans-serif',
+    imageIntensity: 'medium',
+  });
+
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
-  // Steps with translations
+  // Steps with translations - Added Design step
   const steps: WizardStep[] = [
     { id: 1, title: t.wizards.blog.steps.topic, icon: FileText, description: t.wizards.blog.descriptions.topic },
     { id: 2, title: t.wizards.blog.steps.products, icon: Package, description: t.wizards.blog.descriptions.products },
     { id: 3, title: t.wizards.blog.steps.keywords, icon: Tag, description: t.wizards.blog.descriptions.keywords },
-    { id: 4, title: t.wizards.blog.steps.generate, icon: Sparkles, description: t.wizards.blog.descriptions.generate },
+    { id: 4, title: t.wizards.blog.steps.design, icon: Palette, description: t.wizards.blog.descriptions.design },
+    { id: 5, title: t.wizards.blog.steps.generate, icon: Sparkles, description: t.wizards.blog.descriptions.generate },
   ];
 
   useEffect(() => {
@@ -246,6 +256,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           productIds: selectedProducts.map(p => p.id),
           articleLength: formData.articleLength,
           language: formData.language,
+          articleConfig, // 🆕 Pass article configuration
         }
       });
 
@@ -654,6 +665,15 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             )}
 
             {currentStep === 4 && (
+              <div className="space-y-6">
+                <ArticleConfigDialog
+                  config={articleConfig}
+                  onConfigChange={setArticleConfig}
+                />
+              </div>
+            )}
+
+            {currentStep === 5 && (
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                   <h3 className="font-semibold mb-4">{t.common.summary}</h3>
