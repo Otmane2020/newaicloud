@@ -16,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Sparkles, Check } from "lucide-react";
 
 export interface LandingConfig {
   style: string;
@@ -33,6 +35,111 @@ interface LandingConfigDialogProps {
   productTitle?: string;
 }
 
+// Predefined visual styles
+const VISUAL_STYLES = [
+  { id: 'moderne', name: 'Moderne', icon: '✨', color: 'from-blue-500 to-purple-500' },
+  { id: 'minimaliste', name: 'Minimaliste', icon: '⚪', color: 'from-gray-400 to-gray-600' },
+  { id: 'scandinave', name: 'Scandinave', icon: '🌲', color: 'from-green-400 to-blue-400' },
+  { id: 'premium', name: 'Premium', icon: '👑', color: 'from-yellow-500 to-orange-500' },
+  { id: 'neutre', name: 'Neutre', icon: '⬜', color: 'from-gray-300 to-gray-400' },
+  { id: 'coloré', name: 'Coloré', icon: '🎨', color: 'from-pink-500 to-red-500' }
+];
+
+// Layout previews
+const LAYOUT_PREVIEWS = [
+  {
+    id: '1 colonne',
+    name: '1 Colonne',
+    icon: (
+      <div className="flex flex-col gap-1 w-full">
+        <div className="h-2 bg-primary/20 rounded w-full" />
+        <div className="h-2 bg-primary/20 rounded w-3/4 mx-auto" />
+        <div className="h-2 bg-primary/20 rounded w-full" />
+      </div>
+    ),
+    description: 'Centré, idéal mobile'
+  },
+  {
+    id: '2 colonnes',
+    name: '2 Colonnes',
+    icon: (
+      <div className="flex gap-1 w-full">
+        <div className="flex-1 h-8 bg-primary/20 rounded" />
+        <div className="flex-1 h-8 bg-primary/30 rounded" />
+      </div>
+    ),
+    description: 'Image + Texte'
+  },
+  {
+    id: 'hero à gauche',
+    name: 'Hero Gauche',
+    icon: (
+      <div className="flex gap-1 w-full">
+        <div className="w-2/5 h-8 bg-primary/30 rounded" />
+        <div className="flex-1 flex flex-col gap-0.5">
+          <div className="h-2 bg-primary/20 rounded" />
+          <div className="h-2 bg-primary/20 rounded w-3/4" />
+        </div>
+      </div>
+    ),
+    description: 'Image dominante à gauche'
+  },
+  {
+    id: 'hero à droite',
+    name: 'Hero Droite',
+    icon: (
+      <div className="flex gap-1 w-full">
+        <div className="flex-1 flex flex-col gap-0.5">
+          <div className="h-2 bg-primary/20 rounded" />
+          <div className="h-2 bg-primary/20 rounded w-3/4" />
+        </div>
+        <div className="w-2/5 h-8 bg-primary/30 rounded" />
+      </div>
+    ),
+    description: 'Image dominante à droite'
+  }
+];
+
+// Color palettes
+const COLOR_PALETTES = [
+  {
+    id: 'modern',
+    name: 'Moderne',
+    colors: ['#000000', '#333333', '#666666', '#999999', '#CCCCCC'],
+    description: 'Noir élégant et nuances de gris'
+  },
+  {
+    id: 'blue',
+    name: 'Professionnel Bleu',
+    colors: ['#003366', '#0066CC', '#3399FF', '#66B3FF', '#99CCFF'],
+    description: 'Bleu marine à bleu clair'
+  },
+  {
+    id: 'earth',
+    name: 'Terreux',
+    colors: ['#5D4037', '#795548', '#A1887F', '#D7CCC8', '#EFEBE9'],
+    description: 'Tons marron et beige naturels'
+  },
+  {
+    id: 'luxury',
+    name: 'Luxe Or',
+    colors: ['#1A1A1A', '#4A4A4A', '#B8860B', '#DAA520', '#FFD700'],
+    description: 'Noir avec accents dorés'
+  },
+  {
+    id: 'fresh',
+    name: 'Frais Vert',
+    colors: ['#1B5E20', '#388E3C', '#66BB6A', '#81C784', '#A5D6A7'],
+    description: 'Vert forêt à vert pastel'
+  },
+  {
+    id: 'vibrant',
+    name: 'Vibrant',
+    colors: ['#B71C1C', '#D32F2F', '#F44336', '#EF5350', '#E57373'],
+    description: 'Rouge intense et énergique'
+  }
+];
+
 export function LandingConfigDialog({
   open,
   onOpenChange,
@@ -42,10 +149,13 @@ export function LandingConfigDialog({
   const [config, setConfig] = useState<LandingConfig>({
     style: "moderne",
     layout: "2 colonnes",
-    colorScheme: "#f8f8f8",
+    colorScheme: "#000000",
     contentLength: "moyenne (800 mots)",
     vendorSource: 'shopify',
   });
+  
+  const [selectedPalette, setSelectedPalette] = useState<string | null>('modern');
+  const [useCustomColor, setUseCustomColor] = useState(false);
 
   // Fonction utilitaire pour extraire vendor du titre
   const extractVendorFromTitle = (title: string): string => {
@@ -80,57 +190,140 @@ export function LandingConfigDialog({
           </div>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto">
           {/* Style visuel */}
-          <div className="space-y-2">
-            <Label htmlFor="style">🎨 Style visuel</Label>
-            <Select
-              value={config.style}
-              onValueChange={(value) => setConfig({ ...config, style: value })}
-            >
-              <SelectTrigger id="style">
-                <SelectValue placeholder="Sélectionnez un style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="moderne">Moderne</SelectItem>
-                <SelectItem value="minimaliste">Minimaliste</SelectItem>
-                <SelectItem value="scandinave">Scandinave</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
-                <SelectItem value="neutre">Neutre</SelectItem>
-                <SelectItem value="coloré">Coloré</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">🎨 Style visuel</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {VISUAL_STYLES.map((style) => (
+                <button
+                  key={style.id}
+                  type="button"
+                  onClick={() => setConfig({ ...config, style: style.id })}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    config.style === style.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <div className={`text-3xl mb-1 bg-gradient-to-br ${style.color} bg-clip-text text-transparent`}>
+                    {style.icon}
+                  </div>
+                  <p className="text-xs font-semibold">{style.name}</p>
+                  {config.style === style.id && (
+                    <Check className="w-3 h-3 text-primary mx-auto mt-1" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Layout */}
-          <div className="space-y-2">
-            <Label htmlFor="layout">🧱 Layout</Label>
-            <Select
-              value={config.layout}
-              onValueChange={(value) => setConfig({ ...config, layout: value })}
-            >
-              <SelectTrigger id="layout">
-                <SelectValue placeholder="Choisissez un layout" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1 colonne">1 colonne (centré)</SelectItem>
-                <SelectItem value="2 colonnes">2 colonnes (image + texte)</SelectItem>
-                <SelectItem value="hero à gauche">Hero image à gauche</SelectItem>
-                <SelectItem value="hero à droite">Hero image à droite</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">🧱 Layout de la page</Label>
+            <div className="grid grid-cols-2 gap-3">
+              {LAYOUT_PREVIEWS.map((layout) => (
+                <Card
+                  key={layout.id}
+                  className={`cursor-pointer p-4 transition-all ${
+                    config.layout === layout.id
+                      ? 'ring-2 ring-primary bg-primary/5'
+                      : 'hover:shadow-md hover:border-primary/50'
+                  }`}
+                  onClick={() => setConfig({ ...config, layout: layout.id })}
+                >
+                  <div className="mb-3 flex items-center justify-center h-10">
+                    {layout.icon}
+                  </div>
+                  <h4 className="font-semibold text-sm text-center mb-1">
+                    {layout.name}
+                  </h4>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {layout.description}
+                  </p>
+                  {config.layout === layout.id && (
+                    <div className="flex justify-center mt-2">
+                      <Check className="w-4 h-4 text-primary" />
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
           </div>
 
-          {/* Couleur principale */}
-          <div className="space-y-2">
-            <Label htmlFor="color">🎨 Couleur principale</Label>
-            <input
-              id="color"
-              type="color"
-              value={config.colorScheme}
-              onChange={(e) => setConfig({ ...config, colorScheme: e.target.value })}
-              className="w-full h-10 rounded-md border cursor-pointer"
-            />
+          {/* Palette de couleurs */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">🎨 Palette de couleurs</Label>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {COLOR_PALETTES.map((palette) => (
+                <Card 
+                  key={palette.id}
+                  className={`cursor-pointer transition-all ${
+                    selectedPalette === palette.id 
+                      ? 'ring-2 ring-primary shadow-lg' 
+                      : 'hover:shadow-md hover:border-primary/50'
+                  }`}
+                  onClick={() => {
+                    setSelectedPalette(palette.id);
+                    setUseCustomColor(false);
+                    setConfig({ ...config, colorScheme: palette.colors[0] });
+                  }}
+                >
+                  <div className="p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      {selectedPalette === palette.id && (
+                        <Check className="w-4 h-4 text-primary" />
+                      )}
+                      <span className="font-semibold text-sm">{palette.name}</span>
+                    </div>
+                    
+                    <div className="flex gap-1 mb-2">
+                      {palette.colors.map((color, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 h-8 rounded-md border shadow-sm"
+                          style={{ backgroundColor: color }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                    
+                    <p className="text-xs text-muted-foreground">
+                      {palette.description}
+                    </p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-2 mt-3 p-3 border rounded-lg">
+              <Checkbox 
+                id="custom-color"
+                checked={useCustomColor}
+                onCheckedChange={(checked) => {
+                  setUseCustomColor(!!checked);
+                  if (checked) setSelectedPalette(null);
+                }}
+              />
+              <Label htmlFor="custom-color" className="cursor-pointer flex-1">
+                Utiliser une couleur personnalisée
+              </Label>
+            </div>
+            
+            {useCustomColor && (
+              <div className="mt-2">
+                <input
+                  type="color"
+                  value={config.colorScheme}
+                  onChange={(e) => setConfig({ ...config, colorScheme: e.target.value })}
+                  className="w-full h-12 rounded-md border cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Couleur sélectionnée : {config.colorScheme}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Longueur du contenu */}
