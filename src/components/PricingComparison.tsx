@@ -16,7 +16,7 @@ const PricingComparison = () => {
       items: [
         { name: "Maximum products", starter: "100", pro: "1,000 - 50,000", enterprise: "Illimité" },
         { name: "Shopify Import", starter: true, pro: true, enterprise: true },
-        { name: "Multi-store management", starter: "1", pro: "1 - 4", enterprise: "5 - 25" },
+        { name: "Multi-store management", starter: "1", pro: "1 - 100", enterprise: "5 - 500" },
       ]
     },
     {
@@ -31,9 +31,9 @@ const PricingComparison = () => {
     {
       category: "AI",
       items: [
-        { name: "AI articles per month", starter: "10", pro: "10 - 70", enterprise: "100 - 1,000" },
+        { name: "AI articles per month", starter: "10", pro: "10 - 1,000", enterprise: "100 - 10,000" },
         { name: "AI chat per month", starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
-        { name: "Editorial campaigns", starter: "0", pro: "3 - 10", enterprise: "10 - 50" },
+        { name: "Editorial campaigns", starter: "0", pro: "3 - 300", enterprise: "10 - 1,000" },
         { name: "AI Vision (images)", starter: true, pro: true, enterprise: true },
       ]
     },
