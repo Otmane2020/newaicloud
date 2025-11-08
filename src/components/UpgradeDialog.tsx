@@ -135,18 +135,86 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Check if user has existing subscription
+      // CRITICAL: Check if user is in trial FIRST
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status, trial_ends_at')
+        .eq('id', user.id)
+        .single();
+
+      const isInTrial = profile?.subscription_status === 'trialing' || 
+                        (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
+
+      console.log('🔍 Trial check:', { 
+        subscription_status: profile?.subscription_status, 
+        trial_ends_at: profile?.trial_ends_at,
+        isInTrial 
+      });
+
+      // If user is in trial, FORCE checkout with immediate payment
+      if (isInTrial) {
+        console.log('⚠️ User is in trial - forcing checkout with immediate payment');
+        
+        const { data, error } = await supabase.functions.invoke('create-checkout', {
+          body: {
+            plan_id: selectedPlanId,
+            billing_period: 'monthly',
+            force_immediate_payment: true
+          },
+        });
+
+        if (error) throw error;
+
+        if (data?.url) {
+          // Setup realtime listener for subscription updates
+          if (onUpgradeComplete) {
+            const channel = supabase
+              .channel(`subscription-updates-${user.id}`)
+              .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'profiles',
+                filter: `id=eq.${user.id}`
+              }, (payload) => {
+                if (payload.new.subscription_status === 'active') {
+                  toast.success('Plan upgraded successfully!');
+                  onUpgradeComplete();
+                  channel.unsubscribe();
+                }
+              })
+              .subscribe();
+            
+            setSubscriptionChannel(channel);
+            
+            // Auto cleanup after 5 minutes
+            setTimeout(() => {
+              channel.unsubscribe();
+              setSubscriptionChannel(null);
+            }, 5 * 60 * 1000);
+          }
+          
+          window.open(data.url, '_blank');
+          onOpenChange(false);
+        } else {
+          throw new Error('No checkout URL returned');
+        }
+        return;
+      }
+
+      // Check if user has PAID active subscription (not trialing)
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('stripe_subscription_id, status')
         .eq('seller_id', user.id)
-        .in('status', ['active', 'trialing'])
+        .eq('status', 'active') // Only 'active', NOT 'trialing'
         .single();
 
-      const hasActiveSubscription = !!subscription?.stripe_subscription_id;
+      const hasActivePaidSubscription = !!subscription?.stripe_subscription_id;
 
-      // If user has active subscription, use update-subscription for proration
-      if (hasActiveSubscription) {
+      // Only use update-subscription for genuine PAID subscriptions
+      if (hasActivePaidSubscription && !isInTrial) {
+        console.log('✅ User has paid subscription - using update-subscription for proration');
+        
         const selectedPlan = availablePlans.find(p => p.id === selectedPlanId);
         if (!selectedPlan) throw new Error('Plan not found');
 

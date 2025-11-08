@@ -284,13 +284,22 @@ serve(async (req) => {
     
     // Annuler tous les abonnements actifs, trialing, past_due ou unpaid
     const cancelableStatuses = ['active', 'trialing', 'past_due', 'unpaid'];
+    let canceledTrialSub = false;
     for (const sub of existingSubscriptions.data) {
       if (cancelableStatuses.includes(sub.status)) {
         console.log(`🗑️ Cancelling existing subscription: ${sub.id} (status: ${sub.status})`);
+        if (sub.status === 'trialing') {
+          canceledTrialSub = true;
+          console.log('⚠️ TRIAL SUBSCRIPTION CANCELLED - User upgrading from trial to paid');
+        }
         await stripe.subscriptions.cancel(sub.id, {
           prorate: true,
         });
       }
+    }
+    
+    if (force_immediate_payment && canceledTrialSub) {
+      console.log('✅ Trial cancelled and immediate payment will be required');
     }
     
     console.log('🎫 Creating Stripe checkout session...');
@@ -330,15 +339,16 @@ serve(async (req) => {
     // IMPORTANT: Stripe n'accepte PAS trial_period_days: 0
     // Pour un paiement immédiat, on doit OMETTRE trial_period_days complètement
     if (force_immediate_payment) {
-      // Paiement forcé immédiat (limite atteinte) - PAS de trial
-      console.log('💳 Force immediate payment - no trial');
+      // Paiement forcé immédiat (limite atteinte OU upgrade depuis trial) - PAS de trial
+      console.log('💳 Force immediate payment - no trial period (PAYMENT REQUIRED NOW)');
       sessionConfig.subscription_data = {
         metadata: {
           user_id: user.id,
           plan_id: plan_id,
           billing_period: billing_period,
           upgraded_from_trial: hasActiveTrial ? 'true' : 'false',
-          forced_payment: 'true'
+          forced_payment: 'true',
+          trial_cancelled: canceledTrialSub ? 'true' : 'false'
         }
         // trial_period_days omis = paiement immédiat
       };
