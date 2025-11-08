@@ -41,7 +41,8 @@ const handler = async (req: Request): Promise<Response> => {
         html_body: html || null,
         direction: 'incoming',
         status: 'received',
-        is_read: false
+        is_read: false,
+        folder: 'inbox'
       })
       .select()
       .single();

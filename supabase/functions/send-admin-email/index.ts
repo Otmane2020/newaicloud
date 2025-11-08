@@ -82,6 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
         html_body: htmlBody || body,
         status: 'pending',
         direction: 'outgoing',
+        folder: 'sent',
         sent_by: user.id,
       })
       .select()
