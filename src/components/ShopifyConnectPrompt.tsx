@@ -38,8 +38,9 @@ export function ShopifyConnectPrompt() {
           .eq('id', user.id)
           .single();
 
-        // Only show for starter plan users (not trial users)
-        if (profile?.current_plan_id !== 'starter' || profile?.subscription_status === 'trialing') {
+        // Don't show for trial users (let them explore first)
+        // Show for all paid plans (active, past_due) but not trialing
+        if (profile?.subscription_status === 'trialing' || !profile?.subscription_status || profile?.subscription_status === 'inactive') {
           setHasChecked(true);
           return;
         }
