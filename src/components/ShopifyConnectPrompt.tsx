@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -8,26 +7,20 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Store, X } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { ShopifyConnectionWizard } from './integration/ShopifyConnectionWizard';
 
 export function ShopifyConnectPrompt() {
   const [open, setOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const checkShopifyConnection = async () => {
       if (!user || hasChecked) return;
-
-      // Vérifier si on a déjà montré ce popup
-      const hasSeenPrompt = localStorage.getItem('hasSeenShopifyPrompt');
-      if (hasSeenPrompt) {
-        setHasChecked(true);
-        return;
-      }
 
       try {
         const { data: stores } = await supabase
@@ -38,7 +31,6 @@ export function ShopifyConnectPrompt() {
 
         if (!stores || stores.length === 0) {
           setOpen(true);
-          localStorage.setItem('hasSeenShopifyPrompt', 'true');
         }
         
         setHasChecked(true);
@@ -51,9 +43,9 @@ export function ShopifyConnectPrompt() {
     checkShopifyConnection();
   }, [user, hasChecked]);
 
-  const handleConnect = () => {
+  const handleBegin = () => {
     setOpen(false);
-    navigate('/account?tab=integrations');
+    setWizardOpen(true);
   };
 
   const handleSkip = () => {
@@ -61,42 +53,47 @@ export function ShopifyConnectPrompt() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Store className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <DialogTitle>Connecter votre boutique Shopify</DialogTitle>
-              </div>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-lg border-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+          <DialogHeader className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+              <Sparkles className="w-8 h-8 text-primary-foreground" />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleSkip}
+            <div className="space-y-2">
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Welcome to Wope SEO! 🎉
+              </DialogTitle>
+              <DialogDescription className="text-base">
+                Let's start optimizing your store and boost your sales with powerful SEO tools
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-3 pt-6">
+            <Button 
+              onClick={handleBegin} 
+              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all"
+              size="lg"
             >
-              <X className="h-4 w-4" />
+              Begin Your Journey
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+            <Button 
+              onClick={handleSkip} 
+              variant="ghost" 
+              className="w-full"
+            >
+              I'll do this later
             </Button>
           </div>
-          <DialogDescription className="pt-4">
-            Pour profiter pleinement de Wope SEO, connectez votre boutique Shopify et commencez à optimiser vos produits.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-3 pt-4">
-          <Button onClick={handleConnect} className="w-full" size="lg">
-            <Store className="w-4 h-4 mr-2" />
-            Connecter ma boutique
-          </Button>
-          <Button onClick={handleSkip} variant="ghost" className="w-full">
-            Plus tard
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <ShopifyConnectionWizard 
+        open={wizardOpen} 
+        onOpenChange={setWizardOpen}
+      />
+    </>
   );
 }
