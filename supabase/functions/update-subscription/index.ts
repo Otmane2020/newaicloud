@@ -162,6 +162,21 @@ serve(async (req) => {
       periodEnd: stripeSubscription.current_period_end
     });
 
+    // Validate that subscription has period dates
+    if (!stripeSubscription.current_period_start || !stripeSubscription.current_period_end) {
+      // For trialing subscriptions without period dates, this is expected
+      if (stripeSubscription.status === 'trialing' && stripeSubscription.trial_end) {
+        logStep("Trialing subscription without period dates - will use trial dates");
+      } else {
+        logStep("Subscription missing period dates", { 
+          status: stripeSubscription.status,
+          hasPeriodStart: !!stripeSubscription.current_period_start,
+          hasPeriodEnd: !!stripeSubscription.current_period_end
+        });
+        throw new Error("Votre abonnement est en cours de configuration. Veuillez réessayer dans quelques instants.");
+      }
+    }
+
     // Get current currency from subscription
     const currentPrice = stripeSubscription.items.data[0]?.price;
     const currentCurrency = currentPrice?.currency?.toUpperCase() || 'USD';
