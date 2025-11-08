@@ -11,6 +11,7 @@ interface Profile {
   subscription_status: string | null;
   current_plan_id: string | null;
   trial_ends_at: string | null;
+  stripe_customer_id: string | null;
 }
 
 export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
@@ -106,7 +107,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       // Load the profile from database
       const { data, error } = await supabase
         .from('profiles')
-        .select('subscription_status, current_plan_id, trial_ends_at')
+        .select('subscription_status, current_plan_id, trial_ends_at, stripe_customer_id')
         .eq('id', user.id)
         .single();
 
@@ -224,9 +225,38 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // SECURITY: Vérifier strictement l'abonnement
-  // Pour 'trialing', vérifier que la date de fin n'est pas dépassée
+  // SECURITY: Vérifier strictement l'abonnement avec stripe_customer_id OBLIGATOIRE
+  // CRITICAL: Ne JAMAIS accepter 'trialing' sans stripe_customer_id
+  if (profile?.subscription_status === 'trialing' && !profile.stripe_customer_id) {
+    console.error('🚨 SECURITY ALERT: Trial without Stripe customer ID detected!', {
+      userId: user?.id,
+      email: user?.email,
+      status: profile.subscription_status,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Reset le profil à 'inactive' pour forcer le passage par Stripe
+    supabase
+      .from('profiles')
+      .update({ 
+        subscription_status: 'inactive',
+        trial_ends_at: null 
+      })
+      .eq('id', user.id)
+      .then(({ error }) => {
+        if (error) {
+          console.error('❌ Error resetting invalid trial:', error);
+        } else {
+          console.log('✅ Invalid trial reset to inactive');
+        }
+      });
+    
+    // Rediriger immédiatement vers onboarding
+    return <Navigate to="/onboarding" replace />;
+  }
+  
   const hasValidSubscription = profile?.subscription_status && 
+    profile.stripe_customer_id && // ✅ NOUVEAU: Vérifier stripe_customer_id OBLIGATOIRE
     (profile.subscription_status === 'active' || 
      (profile.subscription_status === 'trialing' && 
       profile.trial_ends_at && 
