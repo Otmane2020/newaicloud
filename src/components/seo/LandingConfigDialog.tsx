@@ -19,6 +19,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Check } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 export interface LandingConfig {
   style: string;
@@ -148,6 +149,7 @@ export function LandingConfigDialog({
   onConfirm,
   productTitle,
 }: LandingConfigDialogProps) {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<LandingConfig>({
     style: "moderne",
     layout: "2 colonnes",
@@ -158,6 +160,111 @@ export function LandingConfigDialog({
   
   const [selectedPalette, setSelectedPalette] = useState<string | null>('modern');
   const [useCustomColor, setUseCustomColor] = useState(false);
+
+  // Predefined visual styles
+  const VISUAL_STYLES = [
+    { id: 'moderne', name: t.landingConfig.visualStyle.modern, icon: '✨', color: 'from-blue-500 to-purple-500' },
+    { id: 'minimaliste', name: t.landingConfig.visualStyle.minimalist, icon: '⚪', color: 'from-gray-400 to-gray-600' },
+    { id: 'scandinave', name: t.landingConfig.visualStyle.scandinavian, icon: '🌲', color: 'from-green-400 to-blue-400' },
+    { id: 'premium', name: t.landingConfig.visualStyle.premium, icon: '👑', color: 'from-yellow-500 to-orange-500' },
+    { id: 'neutre', name: t.landingConfig.visualStyle.neutral, icon: '⬜', color: 'from-gray-300 to-gray-400' },
+    { id: 'coloré', name: t.landingConfig.visualStyle.colorful, icon: '🎨', color: 'from-pink-500 to-red-500' }
+  ];
+
+  // Layout previews
+  const LAYOUT_PREVIEWS = [
+    {
+      id: '1 colonne',
+      name: t.landingConfig.layout.oneColumn,
+      icon: (
+        <div className="flex flex-col gap-1 w-full">
+          <div className="h-2 bg-primary/20 rounded w-full" />
+          <div className="h-2 bg-primary/20 rounded w-3/4 mx-auto" />
+          <div className="h-2 bg-primary/20 rounded w-full" />
+        </div>
+      ),
+      description: t.landingConfig.layout.desc.oneColumn
+    },
+    {
+      id: '2 colonnes',
+      name: t.landingConfig.layout.twoColumns,
+      icon: (
+        <div className="flex gap-1 w-full">
+          <div className="flex-1 h-8 bg-primary/20 rounded" />
+          <div className="flex-1 h-8 bg-primary/30 rounded" />
+        </div>
+      ),
+      description: t.landingConfig.layout.desc.twoColumns
+    },
+    {
+      id: 'hero à gauche',
+      name: t.landingConfig.layout.heroLeft,
+      icon: (
+        <div className="flex gap-1 w-full">
+          <div className="w-2/5 h-8 bg-primary/30 rounded" />
+          <div className="flex-1 flex flex-col gap-0.5">
+            <div className="h-2 bg-primary/20 rounded" />
+            <div className="h-2 bg-primary/20 rounded w-3/4" />
+          </div>
+        </div>
+      ),
+      description: t.landingConfig.layout.desc.heroLeft
+    },
+    {
+      id: 'hero à droite',
+      name: t.landingConfig.layout.heroRight,
+      icon: (
+        <div className="flex gap-1 w-full">
+          <div className="flex-1 flex flex-col gap-0.5">
+            <div className="h-2 bg-primary/20 rounded" />
+            <div className="h-2 bg-primary/20 rounded w-3/4" />
+          </div>
+          <div className="w-2/5 h-8 bg-primary/30 rounded" />
+        </div>
+      ),
+      description: t.landingConfig.layout.desc.heroRight
+    }
+  ];
+
+  // Color palettes
+  const COLOR_PALETTES = [
+    {
+      id: 'modern',
+      name: t.landingConfig.colorPalette.modern,
+      colors: ['#000000', '#333333', '#666666', '#999999', '#CCCCCC'],
+      description: t.landingConfig.colorPalette.descriptions.modern
+    },
+    {
+      id: 'blue',
+      name: t.landingConfig.colorPalette.professionalBlue,
+      colors: ['#003366', '#0066CC', '#3399FF', '#66B3FF', '#99CCFF'],
+      description: t.landingConfig.colorPalette.descriptions.professionalBlue
+    },
+    {
+      id: 'earth',
+      name: t.landingConfig.colorPalette.earth,
+      colors: ['#5D4037', '#795548', '#A1887F', '#D7CCC8', '#EFEBE9'],
+      description: t.landingConfig.colorPalette.descriptions.earth
+    },
+    {
+      id: 'luxury',
+      name: t.landingConfig.colorPalette.luxuryGold,
+      colors: ['#1A1A1A', '#4A4A4A', '#B8860B', '#DAA520', '#FFD700'],
+      description: t.landingConfig.colorPalette.descriptions.luxuryGold
+    },
+    {
+      id: 'fresh',
+      name: t.landingConfig.colorPalette.freshGreen,
+      colors: ['#1B5E20', '#388E3C', '#66BB6A', '#81C784', '#A5D6A7'],
+      description: t.landingConfig.colorPalette.descriptions.freshGreen
+    },
+    {
+      id: 'vibrant',
+      name: t.landingConfig.colorPalette.vibrant,
+      colors: ['#B71C1C', '#D32F2F', '#F44336', '#EF5350', '#E57373'],
+      description: t.landingConfig.colorPalette.descriptions.vibrant
+    }
+  ];
 
   // Load saved preferences from localStorage on mount
   useEffect(() => {

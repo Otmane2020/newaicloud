@@ -1,4 +1,623 @@
 export const translations = {
+  // ============= Landing Page Configuration =============
+  landingConfig: {
+    title: "Landing Page Configuration",
+    description: "Choose style and format",
+    forProduct: "For",
+    
+    visualStyle: {
+      title: "Visual style",
+      modern: "Modern",
+      minimalist: "Minimalist",
+      scandinavian: "Scandinavian",
+      premium: "Premium",
+      neutral: "Neutral",
+      colorful: "Colorful"
+    },
+    
+    layout: {
+      title: "Page layout",
+      oneColumn: "1 Column",
+      twoColumns: "2 Columns",
+      heroLeft: "Hero Left",
+      heroRight: "Hero Right",
+      desc: {
+        oneColumn: "Centered, mobile ideal",
+        twoColumns: "Image + Text",
+        heroLeft: "Dominant image on left",
+        heroRight: "Dominant image on right"
+      }
+    },
+    
+    colorPalette: {
+      title: "Color palette",
+      modern: "Modern",
+      professionalBlue: "Professional Blue",
+      earth: "Earthy",
+      luxuryGold: "Luxury Gold",
+      freshGreen: "Fresh Green",
+      vibrant: "Vibrant",
+      descriptions: {
+        modern: "Elegant black and shades of gray",
+        professionalBlue: "Navy blue to light blue",
+        earth: "Natural brown and beige tones",
+        luxuryGold: "Black with gold accents",
+        freshGreen: "Forest green to pastel green",
+        vibrant: "Intense and energetic red"
+      },
+      useCustom: "Use custom color",
+      selected: "Selected color"
+    },
+    
+    vendor: {
+      title: "Brand management (Vendor)",
+      description: "Choose how to define the product brand for the landing page",
+      importShopify: "Import from Shopify",
+      importShopifyDesc: "Use brand configured in Shopify",
+      extractTitle: "Extract from title",
+      extractTitleDesc: "Automatically detect from product title",
+      generateAI: "Generate with AI",
+      generateAIDesc: "Create an optimized brand name with AI",
+      extractExample: "Ex:"
+    },
+    
+    contentLength: {
+      title: "Content length",
+      short: "Short (400 words)",
+      medium: "Medium (800 words)",
+      long: "Long (1500 words)"
+    },
+    
+    buttons: {
+      cancel: "Cancel",
+      confirm: "Confirm",
+      resetPreferences: "Reset preferences"
+    }
+  },
+  
+  landingGeneration: {
+    preparing: "Preparing generation...",
+    resolving: "Resolving brand/vendor...",
+    analyzing: "Analyzing product and image...",
+    generating: "Generating AI content...",
+    processing: "Processing AI response...",
+    finalizing: "Finalizing HTML render...",
+    syncing: "Syncing with Shopify...",
+    initializing: "Initializing generation...",
+    
+    success: {
+      generated: "Landing page generated successfully!",
+      synced: "Landing page synced to Shopify",
+      available: "Page available at:"
+    },
+    
+    errors: {
+      noContent: "No content to download",
+      noContentSync: "No content to sync",
+      generation: "Error during landing page generation.",
+      sync: "Error syncing to Shopify",
+      rateLimit: "Rate limit reached. Please try again later.",
+      paymentRequired: "AI credits exhausted. Contact support for more information.",
+      limitReached: "Optimization limit reached. Upgrade to a higher plan.",
+      noGenerated: "No content generated. Try with another style or layout."
+    },
+    
+    preview: {
+      title: "Landing Page Preview",
+      desktop: "Desktop",
+      mobile: "Mobile",
+      download: "Download",
+      syncShopify: "Sync Shopify",
+      synchronizing: "Synchronizing...",
+      downloaded: "HTML downloaded successfully!",
+      syncInProgress: "Syncing to Shopify..."
+    }
+  },
+
+  // ============= Product Media Optimization =============
+  mediaOptimization: {
+    title: "Product image optimization",
+    description: "Optimize your product images with AI. All versions are saved in history and can be restored.",
+    
+    stats: {
+      totalImages: "Total images",
+      products: "Products",
+      savedVersions: "Saved versions",
+      hdResolution: "HD Resolution"
+    },
+    
+    tabs: {
+      whiteBg: "White Background",
+      aiBg: "AI Background",
+      history: "History"
+    },
+    
+    whiteBg: {
+      title: "White Background HD Generation",
+      description: "Generate professional product photos on pure white background in 2000x2000px resolution. Perfect for Google Shopping and marketplaces.",
+      generate: "Generate",
+      generating: "Generating..."
+    },
+    
+    aiBg: {
+      title: "AI Background Generation",
+      description: "Generate 4 creative background variants for your products. AI automatically centers the product.",
+      promptLabel: "Custom prompt (optional)",
+      promptPlaceholder: "Ex: Luxurious, modern lifestyle, warm atmosphere...",
+      variants: "4 Variants"
+    },
+    
+    history: {
+      selectImage: "Select an image",
+      selectImageDesc: "Click on an image in the \"White Background\" or \"AI Background\" tabs to see its optimization history."
+    },
+    
+    preview: {
+      title: "White Background HD - Resolution 2000x2000px",
+      description: "Compare the original image with the generated white background",
+      original: "Original",
+      optimized: "Optimized",
+      downloadHD: "Download HD (2000px)",
+      apply: "Apply",
+      cancel: "Cancel",
+      downloadStarted: "HD download started (2000x2000px)"
+    },
+    
+    errors: {
+      limitReached: "Optimization limit reached. Upgrade to a higher plan.",
+      generation: "Error generating white background",
+      aiGeneration: "Error generating AI backgrounds"
+    }
+  },
+
+  // ============= Product Content Optimization =============
+  contentOptimization: {
+    title: "Premium Product Content Generation",
+    description: "Generate professional HTML descriptions with structured titles (H1, H2, H3), automatic product photo integration and mobile-optimized layout for search engines.",
+    infoAlert: "Create rich HTML descriptions with structured titles (H1, H2, H3), integrated media and professional layout to attract your customers and improve your natural referencing.",
+    
+    templates: {
+      label: "Description style",
+      ecommerce: "E-commerce",
+      luxury: "Luxury",
+      technical: "Technical",
+      descriptions: {
+        ecommerce: "Direct and persuasive style with focus on customer benefits",
+        luxury: "Sophisticated and elegant tone with refined narration",
+        technical: "Precise and professional language with detailed specifications"
+      }
+    },
+    
+    badges: {
+      existingDesc: "Existing description",
+      noDesc: "No description",
+      photos: "photo",
+      photosPlural: "photos",
+      noImage: "No image"
+    },
+    
+    buttons: {
+      generate: "Generate Premium Content",
+      generating: "Generating..."
+    },
+    
+    preview: {
+      title: "Premium Content Preview",
+      generating: "Generating with Vision AI analysis...",
+      description: "Structured HTML description with H1, H2, H3 titles and media - Mobile-friendly",
+      optimizing: "Optimizing...",
+      analyzingDesc: "Analyzing images and creating professional presentation",
+      desktop: "Desktop",
+      mobile: "Mobile",
+      view360: "360° View",
+      apply: "Apply",
+      cancel: "Cancel"
+    },
+    
+    qualityScore: {
+      label: "Quality score",
+      excellent: "Excellent quality - Complete structure and rich optimized content",
+      good: "Good quality - Some improvements possible",
+      medium: "Average quality - Add more content and structure"
+    },
+    
+    sync: {
+      title: "Shopify Sync",
+      description: "Automatic application and sync to Shopify...",
+      complete: "Shopify sync complete",
+      error: "Sync error"
+    },
+    
+    empty: {
+      title: "No products",
+      description: "Import products from Shopify to get started"
+    },
+    
+    errors: {
+      generation: "Generation error",
+      application: "Application error",
+      limitReached: "Optimization limit reached",
+      limitTrialing: "Current plan limit reached. Upgrade to a paid plan to continue.",
+      limitPaid: "Monthly optimization limit reached. Upgrade to a higher plan.",
+      creditsExhausted: "AI credits exhausted",
+      creditsExhaustedDesc: "Contact support for more information."
+    }
+  },
+
+  // ============= Page Optimization =============
+  pageOptimization: {
+    filters: {
+      status: {
+        all: "All",
+        optimized: "Optimized",
+        notOptimized: "Not optimized"
+      },
+      sync: {
+        all: "All",
+        synced: "Synced",
+        notSynced: "Not synced"
+      },
+      quality: {
+        all: "All scores",
+        excellent: "Excellent",
+        good: "Good",
+        medium: "Medium",
+        poor: "Poor"
+      }
+    },
+    
+    stats: {
+      totalPages: "Total pages",
+      optimized: "Optimized",
+      notOptimized: "Not optimized",
+      globalScore: "Global SEO Score"
+    },
+    
+    buttons: {
+      import: "Import pages",
+      importing: "Importing...",
+      optimizeSelected: "Optimize selection",
+      optimizeAll: "Optimize all",
+      syncAll: "Sync all",
+      syncSelected: "Sync selection",
+      selectAll: "Select all",
+      viewFilters: "Filters"
+    },
+    
+    table: {
+      page: "Page",
+      status: "Status",
+      syncStatus: "Sync",
+      seoScore: "SEO Score",
+      actions: "Actions",
+      optimized: "Optimized",
+      notOptimized: "Not optimized",
+      synced: "Synced",
+      notSynced: "Not synced",
+      never: "Never",
+      optimize: "Optimize",
+      reoptimize: "Re-optimize",
+      syncAction: "Sync"
+    },
+    
+    toasts: {
+      userNotConnected: "User not connected",
+      errorLoading: "Error loading pages",
+      importing: "Importing pages from",
+      importError: "Error",
+      permissionWarning: "Permission required",
+      importSuccess: "pages imported",
+      importTotal: "pages imported in total!",
+      pageOptimized: "Page optimized!",
+      pagesOptimized: "Page(s) optimized",
+      allOptimized: "All pages optimized!",
+      alreadyOptimized: "All pages are already optimized",
+      pageSynced: "Page synced!",
+      pagesSynced: "page(s) synced!",
+      noAiPages: "No AI-optimized pages to sync",
+      onlyAiPages: "Only AI-optimized pages can be synced",
+      limitReached: "Optimization limit reached. Upgrade to a higher plan.",
+      limitTrialing: "Current plan limit reached. Upgrade to a paid plan to continue.",
+      limitPaid: "Monthly optimization limit reached. Upgrade to a higher plan."
+    },
+    
+    empty: {
+      title: "No pages",
+      description: "Import your Shopify pages to get started"
+    }
+  },
+
+  // ============= Ads Campaign =============
+  adsCampaign: {
+    title: "Ad Campaigns",
+    description: "Create attractive landing pages for your advertising campaigns",
+    
+    buttons: {
+      new: "New Campaign",
+      view: "View",
+      copy: "Copy link",
+      duplicate: "Duplicate",
+      delete: "Delete"
+    },
+    
+    types: {
+      product: "Product",
+      collection: "Collection",
+      store: "Store"
+    },
+    
+    status: {
+      active: "Active",
+      paused: "Paused",
+      draft: "Draft"
+    },
+    
+    details: {
+      createdOn: "Created on",
+      products: "Products:",
+      collections: "Collections:",
+      cta: "CTA:"
+    },
+    
+    toasts: {
+      deleted: "Campaign deleted",
+      deleteError: "Deletion error",
+      duplicated: "Campaign duplicated",
+      duplicateError: "Duplication error",
+      linkCopied: "Link copied",
+      campaignError: "Error loading campaigns"
+    },
+    
+    empty: {
+      title: "No campaigns",
+      description: "Start by creating your first advertising landing page",
+      cta: "Create my first campaign"
+    }
+  },
+
+  // ============= Ads Campaign Wizard =============
+  adsCampaignWizard: {
+    steps: {
+      campaignType: "Campaign type",
+      selectContent: "Content selection",
+      messaging: "Message and CTA",
+      design: "Design style",
+      highlights: "Highlights",
+      review: "Review"
+    },
+    
+    step1: {
+      nameLabel: "Campaign name *",
+      namePlaceholder: "Ex: Element Collection Gallery",
+      typeLabel: "Campaign type *",
+      product: {
+        title: "Product",
+        description: "Artistic gallery to showcase your products"
+      },
+      collection: {
+        title: "Collection",
+        description: "Immersive experience for a complete collection"
+      },
+      store: {
+        title: "Store",
+        description: "Artistic presentation of your store universe"
+      }
+    },
+    
+    step2: {
+      storeSummary: {
+        title: "Your store summary",
+        description: "AI will analyze your products and create a store summary",
+        generate: "Generate summary with AI",
+        generating: "Generating summary...",
+        edit: "Edit summary",
+        placeholder: "Your store summary...",
+        error: "No Shopify store connected",
+        success: "Summary generated successfully"
+      },
+      collections: {
+        title: "Select collections",
+        loading: "Loading...",
+        empty: "No collections available",
+        selected: "selected"
+      },
+      products: {
+        title: "Select products",
+        forCollections: "Products from selected collections",
+        allProducts: "All your products",
+        loading: "Loading...",
+        empty: "No products available",
+        selected: "selected"
+      }
+    },
+    
+    step3: {
+      headline: {
+        label: "Main title *",
+        placeholder: "Ex: Discover our new collection"
+      },
+      subheadline: {
+        label: "Subtitle",
+        placeholder: "Ex: Exceptional products to enhance your interior"
+      },
+      cta: {
+        label: "CTA button text *",
+        placeholder: "Ex: View collection"
+      }
+    },
+    
+    step4: {
+      title: "Choose your landing page style",
+      description: "This style will influence the overall design and atmosphere",
+      artistic: {
+        title: "Artistic",
+        description: "Creative design with animations and visual effects"
+      },
+      minimal: {
+        title: "Minimalist",
+        description: "Clean and elegant design, focus on product"
+      },
+      bold: {
+        title: "Bold",
+        description: "Impactful design with strong typography"
+      }
+    },
+    
+    step5: {
+      title: "Highlights (optional)",
+      description: "Add up to 3 selling points",
+      placeholder: "Ex: Free shipping",
+      add: "Add",
+      remove: "Remove"
+    },
+    
+    buttons: {
+      back: "Back",
+      next: "Next",
+      create: "Create campaign",
+      creating: "Creating..."
+    },
+    
+    errors: {
+      selectType: "Please select a campaign type",
+      enterName: "Please name your campaign",
+      selectCollection: "Please select at least one collection",
+      selectProduct: "Please select at least one product",
+      fillRequired: "Please fill all required fields",
+      mustBeConnected: "You must be logged in",
+      creationError: "Error creating campaign"
+    },
+    
+    toasts: {
+      creating: "Creating your artistic landing page...",
+      shopifyCreating: "Creating Shopify page...",
+      shopifyCreated: "Shopify page created successfully!",
+      shopifyError: "Landing page created, but error creating Shopify page",
+      success: "Campaign created successfully!",
+      landingGenerated: "Artistic landing page generated",
+      viewAction: "View",
+      shopifyAction: "View on Shopify"
+    }
+  },
+
+  // ============= AI Background Config =============
+  aiBackgroundConfig: {
+    title: "AI Background Configuration",
+    description: "Customize generation settings for",
+    products: "product(s)",
+    
+    parameters: {
+      title: "Generation parameters",
+      format: {
+        label: "Image format",
+        square: "Square (1:1)",
+        portrait: "Portrait (3:4)",
+        landscape: "Landscape (4:3)"
+      },
+      imageType: {
+        label: "Image type",
+        primary: {
+          title: "Primary Image",
+          description: "Product centered and clearly visible"
+        },
+        secondary: {
+          title: "Secondary Image",
+          description: "Lifestyle atmosphere photo"
+        }
+      },
+      similarity: {
+        label: "Similarity to original",
+        veryClose: "🎯 Very close (90%)",
+        close: "✓ Close (70%)",
+        medium: "⚖️ Balanced (50%)",
+        creative: "🎨 Creative (30%)",
+        veryCreative: "✨ Very creative (10%)"
+      }
+    },
+    
+    imageSelection: {
+      title: "Select photo to rework",
+      main: "Main",
+      gallery: "#"
+    },
+    
+    presets: {
+      label: "Preset style",
+      placeholder: "Choose a style...",
+      studio: "🎬 Professional studio",
+      luxuryNature: "🌿 Luxurious nature",
+      minimal: "⚪ Modern minimalist",
+      lifestyle: "🏠 Warm lifestyle",
+      urban: "🏙️ Contemporary urban",
+      elegant: "✨ Classic elegance"
+    },
+    
+    customPrompt: {
+      label: "Or create your own prompt (in English)",
+      placeholder: "Ex: Place this product on a wooden table with natural sunlight...",
+      tip: "💡 Tip: Describe the desired environment, lighting and atmosphere"
+    },
+    
+    buttons: {
+      cancel: "Cancel",
+      generate: "Generate backgrounds"
+    }
+  },
+
+  // ============= Optimization Config Dialog =============
+  optimizationConfig: {
+    title: "Optimization Configuration",
+    description: "Customize the style and structure of HTML content for",
+    products: "product(s)",
+    
+    imageSelection: {
+      label: "Photo to analyze",
+      main: "Main",
+      gallery: "Gallery"
+    },
+    
+    customDescription: {
+      label: "Additional information (optional)",
+      placeholder: "Ex: Premium material, made in France, 5-year warranty, includes accessories...",
+      hint: "These details will be integrated into the generated description"
+    },
+    
+    style: {
+      label: "Description style",
+      modern: "Modern - Clean and minimalist design",
+      elegant: "Elegant - Sophisticated and refined",
+      professional: "Professional - Sober and direct",
+      creative: "Creative - Bold and original"
+    },
+    
+    layout: {
+      label: "Content structure",
+      compact: "Compact - Concise presentation",
+      detailed: "Detailed - Rich sections",
+      story: "Story - Engaging narration"
+    },
+    
+    colorScheme: {
+      label: "Color palette",
+      vibrant: "Vibrant - Bright colors",
+      pastel: "Pastel - Soft tones",
+      monochrome: "Monochrome - Black & white",
+      warm: "Warm - Warm tones"
+    },
+    
+    contentLength: {
+      label: "Content length",
+      short: "Short - Essential (~500 words)",
+      medium: "Medium - Balanced (~1000 words)",
+      long: "Long - Detailed (~2000 words)"
+    },
+    
+    buttons: {
+      cancel: "Cancel",
+      launch: "Launch optimization"
+    }
+  },
+
   aiAssistant: {
     title: "AI Assistant",
     subtitle: "Online and ready to help",
