@@ -31,20 +31,7 @@ export function ShopifyConnectPrompt() {
           return;
         }
 
-        // Check user's profile and plan
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('current_plan_id, subscription_status')
-          .eq('id', user.id)
-          .single();
-
-        // Don't show for trial users (let them explore first)
-        // Show for all paid plans (active, past_due) but not trialing
-        if (profile?.subscription_status === 'trialing' || !profile?.subscription_status || profile?.subscription_status === 'inactive') {
-          setHasChecked(true);
-          return;
-        }
-
+        // Simple logic: if no store connected, show popup
         const { data: stores } = await supabase
           .from('shopify_connections')
           .select('id')
@@ -52,14 +39,17 @@ export function ShopifyConnectPrompt() {
           .eq('is_active', true);
 
         if (!stores || stores.length === 0) {
+          console.log('✅ No Shopify store found, showing welcome popup');
           setOpen(true);
           // Mark as seen in localStorage
           localStorage.setItem(`welcome_seen_${user.id}`, 'true');
+        } else {
+          console.log('ℹ️ Shopify store already connected, skipping popup');
         }
         
         setHasChecked(true);
       } catch (error) {
-        console.error('Error checking Shopify connection:', error);
+        console.error('❌ Error checking Shopify connection:', error);
         setHasChecked(true);
       }
     };
