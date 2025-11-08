@@ -13,6 +13,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3 } from 'lucide-react';
 import { EmailInbox } from '@/components/admin/EmailInbox';
+import { UserActivityHistory } from '@/components/admin/UserActivityHistory';
 
 interface UserProfile {
   id: string;
@@ -390,15 +391,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       )}
 
       {activeTab === 'analytics' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Analytics</CardTitle>
-            <CardDescription>Statistiques détaillées (à venir)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Cette section sera bientôt disponible.</p>
-          </CardContent>
-        </Card>
+        <UserActivityHistory />
       )}
     </div>
   );
