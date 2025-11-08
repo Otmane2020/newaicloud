@@ -94,14 +94,13 @@ export function CurrentPlanCard() {
   const handleUpgradeToFullPlan = async () => {
     setUpgradeLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('activate-full-plan');
+      const { data, error } = await supabase.functions.invoke('force-payment');
       if (error) throw error;
-      if (data?.success) {
-        toast.success(t.account.subscription.activationSuccess);
-        setTimeout(() => window.location.reload(), 1500);
+      if (data?.url) {
+        window.location.href = data.url;
       }
     } catch (error) {
-      console.error('Error activating plan:', error);
+      console.error('Error creating checkout:', error);
       toast.error(t.account.subscription.activationError);
     } finally {
       setUpgradeLoading(false);
