@@ -295,46 +295,86 @@ serve(async (req) => {
       periodPreserved: true
     });
 
-    // For mid-cycle upgrades, create a custom invoice for the prorated price difference
-    if (isMidCycleUpgrade) {
-      try {
-        const oldPriceAmount = currentPrice?.unit_amount || 0;
-        const newPriceObj = await stripe.prices.retrieve(new_price_id);
-        const newPriceAmount = newPriceObj.unit_amount || 0;
-        const priceDifference = newPriceAmount - oldPriceAmount;
+    // Force immediate payment for any upgrade (trial→paid, paid→paid)
+    try {
+      const oldPriceAmount = currentPrice?.unit_amount || 0;
+      const newPriceObj = await stripe.prices.retrieve(new_price_id);
+      const newPriceAmount = newPriceObj.unit_amount || 0;
+      const priceDifference = newPriceAmount - oldPriceAmount;
 
-        if (priceDifference > 0) {
-          // Calculate prorated amount based on remaining days in cycle
+      if (priceDifference > 0) {
+        let chargeAmount: number;
+        let description: string;
+
+        if (isMidCycleUpgrade) {
+          // Mid-cycle: charge prorated difference
           const daysRemaining = totalCycleDays - daysIntoCycle;
-          const proratedAmount = Math.round((priceDifference * daysRemaining) / totalCycleDays);
-
-          // Create an invoice item for the prorated amount
-          await stripe.invoiceItems.create({
-            customer: profile.stripe_customer_id,
-            amount: proratedAmount,
-            currency: newPriceObj.currency,
-            description: `Prorata upgrade: ${daysRemaining}j restants sur ${totalCycleDays}j (${oldPriceAmount / 100} → ${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()})`,
-          });
-
-          // Create and finalize the invoice
-          const invoice = await stripe.invoices.create({
-            customer: profile.stripe_customer_id,
-            auto_advance: true, // Auto-finalize and attempt payment
-          });
-
-          await stripe.invoices.finalizeInvoice(invoice.id);
-
-          logStep("Custom invoice created for prorated upgrade", {
-            priceDifference: priceDifference / 100,
-            proratedAmount: proratedAmount / 100,
-            daysRemaining,
-            totalCycleDays,
-            invoiceId: invoice.id
-          });
+          chargeAmount = Math.round((priceDifference * daysRemaining) / totalCycleDays);
+          description = `Upgrade proraté: ${daysRemaining}j/${totalCycleDays}j (${oldPriceAmount / 100}→${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()})`;
+        } else {
+          // Renewal period or trial ending: charge full difference
+          chargeAmount = priceDifference;
+          description = `Upgrade vers ${newPlan.name} - Paiement immédiat (${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()})`;
         }
-      } catch (error) {
-        logStep("Warning: Failed to create custom invoice", { error });
+
+        logStep("Creating immediate charge for upgrade", {
+          chargeAmount: chargeAmount / 100,
+          currency: newPriceObj.currency,
+          isProrated: isMidCycleUpgrade
+        });
+
+        // Create invoice item
+        await stripe.invoiceItems.create({
+          customer: profile.stripe_customer_id,
+          amount: chargeAmount,
+          currency: newPriceObj.currency,
+          description: description,
+        });
+
+        // Create invoice
+        const invoice = await stripe.invoices.create({
+          customer: profile.stripe_customer_id,
+          auto_advance: false, // Manual control for immediate payment
+          collection_method: 'charge_automatically',
+        });
+
+        // Finalize invoice
+        await stripe.invoices.finalizeInvoice(invoice.id);
+
+        // FORCE IMMEDIATE PAYMENT
+        const paidInvoice = await stripe.invoices.pay(invoice.id, {
+          paid_out_of_band: false,
+        });
+
+        logStep("Immediate payment processed", {
+          invoiceId: paidInvoice.id,
+          status: paidInvoice.status,
+          amountPaid: paidInvoice.amount_paid / 100,
+          paymentIntent: paidInvoice.payment_intent
+        });
+
+        if (paidInvoice.status !== 'paid') {
+          throw new Error(`Le paiement a échoué: ${paidInvoice.status}`);
+        }
+      } else if (priceDifference === 0) {
+        logStep("No price difference, no charge needed");
       }
+    } catch (error) {
+      logStep("ERROR: Payment failed", { error });
+      // Rollback the subscription change if payment fails
+      await stripe.subscriptions.update(
+        subscriptionData.stripe_subscription_id,
+        {
+          items: [
+            {
+              id: subscriptionItemId,
+              price: currentPrice?.id,
+            },
+          ],
+          proration_behavior: 'none',
+        }
+      );
+      throw new Error(`Échec du paiement lors de l'upgrade: ${error.message}`);
     }
 
     // Update profile with new plan
