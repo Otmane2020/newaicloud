@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigation } from "@/components/Navigation";
+import { SuperAdminNavigation } from "@/components/SuperAdminNavigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -60,8 +60,8 @@ export function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Navigation />
+    <div className="min-h-screen bg-background flex">
+      <SuperAdminNavigation />
       <main className="flex-1 ml-16 md:ml-64 transition-all duration-300 p-8">
         {children}
       </main>
