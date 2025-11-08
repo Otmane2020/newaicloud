@@ -203,34 +203,52 @@ export function EmailInbox() {
 
   const simulateIncomingEmail = async () => {
     try {
+      console.log('📧 Simulation d\'un email reçu via webhook Resend...');
+      
+      // Simuler exactement le format du webhook Resend
+      const testEmail = {
+        from: 'client.test@example.com',
+        to: 'support@newai.sale',
+        subject: `Test Email - ${new Date().toLocaleTimeString('fr-FR')}`,
+        text: 'Bonjour,\n\nCeci est un email de test pour vérifier la réception.\n\nCordialement',
+        html: '<p>Bonjour,</p><p>Ceci est un email de test pour vérifier la réception.</p><p>Cordialement</p>'
+      };
+
+      console.log('📤 Données de test:', testEmail);
+
       const { error } = await supabase
         .from('admin_emails')
         .insert({
-          from_email: 'client@example.com',
-          to_email: 'support@newai.sale',
-          subject: 'Demande de support - Test',
-          body: 'Bonjour, j\'ai besoin d\'aide avec mon compte. Ceci est un email de test.',
-          html_body: '<p>Bonjour,</p><p>J\'ai besoin d\'aide avec mon compte. Ceci est un email de test.</p>',
+          from_email: testEmail.from,
+          to_email: testEmail.to,
+          subject: testEmail.subject,
+          body: testEmail.text,
+          html_body: testEmail.html,
           direction: 'incoming',
           status: 'received',
           folder: 'inbox',
           is_read: false
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erreur lors de l\'insertion:', error);
+        throw error;
+      }
+
+      console.log('✅ Email de test créé avec succès');
 
       toast({
         title: 'Email de test reçu',
         description: 'Un email de test a été ajouté à votre boîte de réception'
       });
 
-      loadEmails();
-      loadEmailStats();
+      await loadEmails();
+      await loadEmailStats();
     } catch (error: any) {
-      console.error('Error simulating email:', error);
+      console.error('❌ Error simulating email:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de simuler l\'email',
+        description: 'Impossible de simuler l\'email: ' + error.message,
         variant: 'destructive'
       });
     }

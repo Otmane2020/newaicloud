@@ -25,10 +25,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Parse incoming email data from Resend webhook
     const emailData = await req.json();
-    console.log("📧 Email reçu:", emailData);
+    console.log("📧 Webhook Resend - Email reçu:", JSON.stringify(emailData, null, 2));
 
-    // Resend webhook format
-    const { from, to, subject, text, html } = emailData;
+    // Resend webhook format peut avoir différentes structures
+    // Format standard: { from, to, subject, text, html }
+    // Format événement: { data: { from, to, subject, ... } }
+    const emailContent = emailData.data || emailData;
+    const { from, to, subject, text, html } = emailContent;
+
+    console.log("📨 Traitement email:");
+    console.log("  - De:", from);
+    console.log("  - À:", to);
+    console.log("  - Sujet:", subject);
+
+    if (!from || !to) {
+      console.error("❌ Données email invalides - from ou to manquant");
+      throw new Error("Données email invalides");
+    }
 
     // Enregistrer l'email dans la base de données
     const { data, error } = await supabaseClient
@@ -37,22 +50,29 @@ const handler = async (req: Request): Promise<Response> => {
         from_email: from,
         to_email: to,
         subject: subject || 'Sans objet',
-        body: text || '',
+        body: text || html || '',
         html_body: html || null,
         direction: 'incoming',
         status: 'received',
         is_read: false,
-        folder: 'inbox'
+        folder: 'inbox',
+        metadata: {
+          webhook_received_at: new Date().toISOString(),
+          raw_data: emailData
+        }
       })
       .select()
       .single();
 
     if (error) {
-      console.error("❌ Erreur lors de l'enregistrement:", error);
+      console.error("❌ Erreur DB lors de l'enregistrement:", error);
       throw error;
     }
 
-    console.log("✅ Email enregistré avec succès:", data.id);
+    console.log("✅ Email enregistré avec succès!");
+    console.log("  - ID:", data.id);
+    console.log("  - Folder:", data.folder);
+    console.log("  - Status:", data.status);
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -65,10 +85,12 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error("❌ Erreur dans receive-admin-email:", error);
+    console.error("Stack:", error.stack);
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: 'Impossible d\'enregistrer l\'email' 
+        details: 'Impossible d\'enregistrer l\'email',
+        stack: error.stack 
       }),
       {
         status: 500,
