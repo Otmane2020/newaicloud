@@ -171,6 +171,24 @@ export default function RegenerateLanding({
         setHtmlContent(data.html);
         setProgress(100);
         setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
+        
+        // 💾 Sauvegarder le HTML dans la base de données
+        try {
+          const { error: saveError } = await supabase
+            .from('shopify_products')
+            .update({ landing_page_html: data.html })
+            .eq('id', product.id);
+          
+          if (saveError) {
+            console.error('[Landing] Error saving HTML:', saveError);
+            toast.warning("Landing page générée mais non sauvegardée");
+          } else {
+            console.log('[Landing] ✅ HTML saved to database');
+          }
+        } catch (saveErr) {
+          console.error('[Landing] Save error:', saveErr);
+        }
+        
         toast.success(t.landingGeneration.success.generated);
         onGenerated?.(data.html);
       } else {

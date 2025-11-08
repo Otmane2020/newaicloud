@@ -187,6 +187,7 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
   → Utilise Tailwind avec style="color: ${mainColor}" ou style="background-color: ${mainColor}" ou style="border-color: ${mainColor}"
 - Layout : ${layout}
 - Longueur : ${length} (ton ${tone})
+- **DESIGN ÉLÉGANT** : Évite les icônes colorées enfantines, privilégie des icônes monochromes (text-gray-600), des formes simples et épurées, un design sophistiqué et professionnel
 
 🧱 STRUCTURE OBLIGATOIRE :
 1. HERO SECTION
@@ -196,7 +197,8 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
    - CTA principal avec background de la couleur principale (style="background-color: ${mainColor}")
 
 2. AVANTAGES (3-5 cartes)
-   - Icônes SVG ou émojis
+   - **Icônes élégantes** : SVG monochromes simples (text-gray-600 ou text-gray-700), PAS de couleurs vives ou enfantines
+   - Design épuré et sophistiqué
    - Titres courts et percutants
    - Descriptions de 20-30 mots
 
@@ -211,14 +213,18 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
 5. GARANTIES / LIVRAISON
    - 3-4 éléments rassurants (livraison, retour, garantie, support)
 
-📱 RESPONSIVE MOBILE-FIRST :
-- Structure : <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-- Hero : <div class="flex flex-col lg:flex-row gap-8">
-- Grid avantages : <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-- Texte : text-base sm:text-lg lg:text-xl
-- Titres : text-2xl sm:text-3xl lg:text-4xl
-- Padding : p-4 sm:p-6 lg:p-8
-- Gap : gap-4 sm:gap-6 lg:gap-8
+📱 RESPONSIVE MOBILE-FIRST (CRITIQUE) :
+- **MOBILE D'ABORD** : Le design DOIT être parfait sur mobile (320px-768px) avant desktop
+- Structure : <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+- Hero : <div class="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 items-center">
+- Grid avantages : <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+- Images : <img class="w-full h-auto object-cover rounded-xl" />
+- Texte lisible mobile : text-sm sm:text-base lg:text-lg
+- Titres adaptatifs : text-xl sm:text-2xl lg:text-3xl xl:text-4xl
+- Padding mobile : p-3 sm:p-4 md:p-6 lg:p-8
+- Gap progressif : gap-3 sm:gap-4 md:gap-6 lg:gap-8
+- Boutons pleine largeur mobile : w-full sm:w-auto
+- Pas de scroll horizontal : overflow-x-hidden sur tous les conteneurs
 
 🛠️ CONTRAINTES TECHNIQUES :
 ✅ Tailwind CSS uniquement (CDN déjà chargé)
