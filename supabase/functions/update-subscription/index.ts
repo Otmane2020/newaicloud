@@ -295,7 +295,7 @@ serve(async (req) => {
       periodPreserved: true
     });
 
-    // For mid-cycle upgrades, create a custom invoice for the price difference
+    // For mid-cycle upgrades, create a custom invoice for the prorated price difference
     if (isMidCycleUpgrade) {
       try {
         const oldPriceAmount = currentPrice?.unit_amount || 0;
@@ -304,12 +304,16 @@ serve(async (req) => {
         const priceDifference = newPriceAmount - oldPriceAmount;
 
         if (priceDifference > 0) {
-          // Create an invoice item for the price difference
+          // Calculate prorated amount based on remaining days in cycle
+          const daysRemaining = totalCycleDays - daysIntoCycle;
+          const proratedAmount = Math.round((priceDifference * daysRemaining) / totalCycleDays);
+
+          // Create an invoice item for the prorated amount
           await stripe.invoiceItems.create({
             customer: profile.stripe_customer_id,
-            amount: priceDifference,
+            amount: proratedAmount,
             currency: newPriceObj.currency,
-            description: `Upgrade difference: ${oldPriceAmount / 100}${newPriceObj.currency.toUpperCase()} → ${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()}`,
+            description: `Prorata upgrade: ${daysRemaining}j restants sur ${totalCycleDays}j (${oldPriceAmount / 100} → ${newPriceAmount / 100}${newPriceObj.currency.toUpperCase()})`,
           });
 
           // Create and finalize the invoice
@@ -320,8 +324,11 @@ serve(async (req) => {
 
           await stripe.invoices.finalizeInvoice(invoice.id);
 
-          logStep("Custom invoice created for upgrade difference", {
+          logStep("Custom invoice created for prorated upgrade", {
             priceDifference: priceDifference / 100,
+            proratedAmount: proratedAmount / 100,
+            daysRemaining,
+            totalCycleDays,
             invoiceId: invoice.id
           });
         }
@@ -391,7 +398,7 @@ serve(async (req) => {
       logStep("Renewal upgrade - usage counters not reset (cycle just started)");
     }
 
-    // Calculate simple price difference for upgrade (Lovable-style logic)
+    // Calculate prorated amount for upgrade details
     let prorationDetails: any = null;
     if (isMidCycleUpgrade) {
       try {
@@ -400,22 +407,27 @@ serve(async (req) => {
         const newPriceObj = await stripe.prices.retrieve(new_price_id);
         const newPriceAmount = newPriceObj.unit_amount || 0; // in cents
         
-        // Simple logic: user pays the difference between plans
+        // Calculate prorated amount based on remaining days
         const priceDifference = newPriceAmount - oldPriceAmount;
+        const daysRemaining = totalCycleDays - daysIntoCycle;
+        const proratedAmount = Math.round((priceDifference * daysRemaining) / totalCycleDays);
         
         prorationDetails = {
           old_plan_price: oldPriceAmount / 100,
           new_plan_price: newPriceAmount / 100,
-          upgrade_cost: priceDifference / 100,
+          price_difference: priceDifference / 100,
+          prorated_amount: proratedAmount / 100,
+          days_remaining: daysRemaining,
+          total_cycle_days: totalCycleDays,
           currency: newPriceObj.currency.toUpperCase(),
-          logic: "simple_difference",
-          explanation: `Vous payez uniquement la différence: ${newPriceAmount / 100} - ${oldPriceAmount / 100} = ${priceDifference / 100}${newPriceObj.currency.toUpperCase()}`
+          logic: "prorated_by_days",
+          explanation: `Montant proraté: (${priceDifference / 100} × ${daysRemaining}j) / ${totalCycleDays}j = ${proratedAmount / 100}${newPriceObj.currency.toUpperCase()}`
         };
         
-        logStep("Simple price difference calculated", prorationDetails);
+        logStep("Prorated amount calculated", prorationDetails);
       } catch (error) {
-        logStep("Warning: Could not calculate price difference", { error });
-        prorationDetails = { error: "Could not calculate price difference" };
+        logStep("Warning: Could not calculate proration", { error });
+        prorationDetails = { error: "Could not calculate proration" };
       }
     }
 
