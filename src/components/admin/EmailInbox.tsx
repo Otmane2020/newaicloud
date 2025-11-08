@@ -104,7 +104,7 @@ export function EmailInbox() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setEmails(data || []);
+      setEmails((data || []) as AdminEmail[]);
     } catch (error) {
       console.error('Error loading emails:', error);
       toast({
