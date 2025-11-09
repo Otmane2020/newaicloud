@@ -119,8 +119,13 @@ serve(async (req) => {
       );
     }
 
-    // Return hosted invoice URL for payment
-    const paymentUrl = invoice.hosted_invoice_url;
+    // Get origin for redirect
+    const origin = req.headers.get("origin") || "https://yourdomain.com";
+    
+    // Create a payment URL that redirects back to our success page
+    const paymentUrl = invoice.hosted_invoice_url 
+      ? `${invoice.hosted_invoice_url}?return_url=${encodeURIComponent(origin + '/upgrade-success')}`
+      : null;
     
     logStep("Payment URL generated", { url: paymentUrl });
 

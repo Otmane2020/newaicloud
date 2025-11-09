@@ -65,6 +65,7 @@ import UsageAudit from "./pages/UsageAudit";
 import TestEmail from "./pages/TestEmail";
 import SetupPlans from "./pages/SetupPlans";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import UpgradeSuccess from "./pages/UpgradeSuccess";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/upgrade-success" element={<UpgradeSuccess />} />
           <Route path="/shopify/install" element={<ShopifyInstall />} />
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
           <Route path="/shopify/success" element={<ShopifySuccess />} />
