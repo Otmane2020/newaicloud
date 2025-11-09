@@ -49,7 +49,7 @@ const PricingComparison = () => {
       items: [
         { name: "AI articles per month", starter: "3", pro: "25", enterprise: "250" },
         { name: "AI chat messages", starter: "200", pro: "2,000", enterprise: "Unlimited" },
-        { name: "Editorial campaigns", starter: "1", pro: "10", enterprise: "Unlimited" },
+        { name: "AI campaigns Blog", starter: "1", pro: "10", enterprise: "Unlimited" },
         { name: "AI Vision (images)", starter: true, pro: true, enterprise: true },
         { name: "Smart chatbot", starter: true, pro: true, enterprise: true },
       ],
@@ -60,7 +60,6 @@ const PricingComparison = () => {
         { name: "Google Search Console", starter: false, pro: true, enterprise: true },
         { name: "Google Shopping Feed", starter: false, pro: true, enterprise: true },
         { name: "Google Merchant Center", starter: false, pro: true, enterprise: true },
-        { name: "Google Ads integration", starter: false, pro: false, enterprise: true },
       ],
     },
     {
@@ -68,7 +67,7 @@ const PricingComparison = () => {
       items: [
         { name: "AI Background removal", starter: true, pro: true, enterprise: true },
         { name: "Image optimization", starter: true, pro: true, enterprise: true },
-        { name: "Alt text generation", starter: "50/month", pro: "500/month", enterprise: "Unlimited" },
+        { name: "Alt text generation (counts as optimization)", starter: true, pro: true, enterprise: true },
         { name: "Media history", starter: "30 days", pro: "1 year", enterprise: "Unlimited" },
       ],
     },
