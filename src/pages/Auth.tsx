@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Sparkles, Gift } from 'lucide-react';
+import { Sparkles, Gift, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import { loginSchema, signupSchema } from '@/lib/validationSchemas';
 import { useTranslation } from '@/lib/language';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -32,10 +33,45 @@ export default function Auth() {
   useEffect(() => {
     if (user) {
       console.log('✅ User authenticated, redirecting...');
-      const destination = redirectPath || '/dashboard';
-      navigate(destination);
+      
+      // Vérifier s'il y a un pending_token Shopify à associer
+      const shopifyPending = searchParams.get('shopify_pending');
+      
+      if (shopifyPending) {
+        console.log('🔗 Claiming Shopify connection with pending token');
+        
+        // Associer la connexion Shopify au compte
+        const claimConnection = async () => {
+          try {
+            const { data, error } = await supabase.functions.invoke('claim-shopify-connection', {
+              body: { pendingToken: shopifyPending }
+            });
+
+            if (error) throw error;
+
+            if (data?.success) {
+              toast.success("Shopify store connected successfully!");
+              // Rediriger vers la page d'intégration après succès
+              navigate('/integration');
+            } else {
+              throw new Error('Failed to claim connection');
+            }
+          } catch (error) {
+            console.error('Failed to claim Shopify connection:', error);
+            toast.error("Failed to connect Shopify store. Please try again from the integration page.");
+            // Rediriger quand même vers le dashboard
+            navigate(redirectPath || '/dashboard');
+          }
+        };
+
+        claimConnection();
+      } else {
+        // Redirection normale sans Shopify pending
+        const destination = redirectPath || '/dashboard';
+        navigate(destination);
+      }
     }
-  }, [user, navigate, redirectPath]);
+  }, [user, navigate, redirectPath, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,6 +149,20 @@ export default function Auth() {
                 ? t.toasts.welcomeBonusMessage
                 : t.auth.signup}
           </p>
+
+          {searchParams.get('shopify_pending') && (
+            <Alert className="mb-6 bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800">
+              <ShoppingBag className="h-5 w-5 text-blue-600" />
+              <AlertDescription className="text-sm">
+                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  Connexion Shopify en attente
+                </p>
+                <p className="text-blue-700 dark:text-blue-300">
+                  Votre boutique {searchParams.get('shop')} sera automatiquement connectée après authentification.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {mode === 'signup' && referralCode && (
             <Alert className="mb-6 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-2 border-purple-200 dark:border-purple-800">

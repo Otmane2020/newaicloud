@@ -83,16 +83,15 @@ serve(async (req) => {
 
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-      // Récupérer le user_id depuis oauth_states
+      // Vérifier si c'est un flow avec user (ancien flow) ou sans user (nouveau flow pre-auth)
       const { data: oauthState, error: stateError } = await supabase
         .from("oauth_states")
-        .select("user_id, expires_at, shop_name")
+        .select("user_id, expires_at, shop_name, is_pre_auth")
         .eq("state_token", state)
         .single();
 
       if (stateError || !oauthState) {
         console.error("[SHOPIFY-OAUTH] State token invalide:", stateError);
-        // Rediriger vers une page d'erreur avec instructions
         const errorUrl = `${APP_URL}/shopify/success?shop=${encodeURIComponent(shop)}&status=error&reason=invalid_flow`;
         return new Response(null, { 
           status: 302, 
@@ -108,8 +107,6 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      console.log("[SHOPIFY-OAUTH] State validé pour user_id:", oauthState.user_id);
 
       // Échanger le code contre le token
       const tokenResponse = await fetch(`https://${shop}/admin/oauth/access_token`, {
@@ -134,7 +131,35 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      // Sauvegarde du token dans Supabase avec user_id
+      // 🆕 NOUVEAU FLOW PRE-AUTH : stocker dans pending_connections
+      if (oauthState.is_pre_auth) {
+        console.log("[SHOPIFY-OAUTH] Flow pre-auth détecté, création pending connection");
+        
+        const pendingToken = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
+
+        await supabase.from("shopify_pending_connections").insert({
+          shop_url: shop,
+          access_token: accessToken,
+          scope: tokenData.scope,
+          commercial_name: oauthState.shop_name || shop,
+          pending_token: pendingToken,
+          expires_at: expiresAt.toISOString(),
+          is_claimed: false,
+        });
+
+        // Nettoyer le state token
+        await supabase.from("oauth_states").delete().eq("state_token", state);
+
+        // Rediriger vers /auth avec le pending_token
+        const redirectUrl = `${APP_URL}/auth?mode=signup&shopify_pending=${pendingToken}&shop=${encodeURIComponent(shop)}`;
+        console.log("[SHOPIFY-OAUTH] Redirection vers auth avec pending token");
+        return new Response(null, { status: 302, headers: { Location: redirectUrl, ...corsHeaders } });
+      }
+
+      // ANCIEN FLOW : avec user_id (connexion depuis dashboard)
+      console.log("[SHOPIFY-OAUTH] Flow classique avec user_id:", oauthState.user_id);
+
       try {
         await supabase.from("shopify_connections").upsert({
           user_id: oauthState.user_id,
@@ -148,7 +173,6 @@ serve(async (req) => {
         });
         console.log("✅ Token enregistré pour", shop, "user:", oauthState.user_id);
 
-        // Nettoyer le state token après utilisation
         await supabase.from("oauth_states").delete().eq("state_token", state);
         console.log("✅ State token nettoyé");
       } catch (dbErr) {
@@ -160,37 +184,16 @@ serve(async (req) => {
         });
       }
 
-      // Redirection vers le front après succès
       const redirectUrl = `${APP_URL}/shopify/success?shop=${encodeURIComponent(shop)}&status=success`;
       return new Response(null, { status: 302, headers: { Location: redirectUrl, ...corsHeaders } });
     }
 
-    // 🟠 2️⃣ INITIATION OAUTH (POST) – depuis ton app (auth requise)
+    // 🟠 2️⃣ INITIATION OAUTH
     if (req.method === "POST") {
-      const authHeader = req.headers.get("Authorization");
-      if (!authHeader) {
-        return new Response(JSON.stringify({ error: "Unauthorized - Missing Authorization header" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      const token = authHeader.replace("Bearer ", "");
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser(token);
+      const body = await req.json();
+      const { shopName, commercialName, preAuth } = body;
 
-      if (authError || !user) {
-        console.error("[SHOPIFY-OAUTH] Invalid token", authError);
-        return new Response(JSON.stringify({ error: "Invalid Supabase token" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { shopName, commercialName } = await req.json();
       if (!shopName) {
         return new Response(JSON.stringify({ error: "Missing shopName" }), {
           status: 400,
@@ -198,17 +201,47 @@ serve(async (req) => {
         });
       }
 
+      let userId = null;
+
+      // Si pas en mode pre-auth, vérifier l'authentification
+      if (!preAuth) {
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader) {
+          return new Response(JSON.stringify({ error: "Unauthorized - Missing Authorization header" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const token = authHeader.replace("Bearer ", "");
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser(token);
+
+        if (authError || !user) {
+          console.error("[SHOPIFY-OAUTH] Invalid token", authError);
+          return new Response(JSON.stringify({ error: "Invalid Supabase token" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        userId = user.id;
+      }
+
       const stateToken = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
       await supabase.from("oauth_states").insert({
         state_token: stateToken,
-        user_id: user.id,
+        user_id: userId,
         shop_name: commercialName || shopName,
         expires_at: expiresAt.toISOString(),
+        is_pre_auth: preAuth === true,
       });
 
-      const redirectUri = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-oauth`;
+      const redirectUri = `${SUPABASE_URL.replace('/rest/v1', '')}/functions/v1/shopify-oauth`;
       const cleanShop = shopName.replace(".myshopify.com", "");
 
       const authUrl =
@@ -218,7 +251,7 @@ serve(async (req) => {
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&state=${stateToken}`;
 
-      console.log("[SHOPIFY-OAUTH] OAuth URL générée:", authUrl);
+      console.log("[SHOPIFY-OAUTH] OAuth URL générée (preAuth:", preAuth, "):", authUrl);
 
       return new Response(JSON.stringify({ success: true, authUrl, state: stateToken }), {
         status: 200,

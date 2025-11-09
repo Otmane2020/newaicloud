@@ -1601,25 +1601,28 @@ export type Database = {
           created_at: string | null
           expires_at: string
           id: string
+          is_pre_auth: boolean | null
           shop_name: string
           state_token: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
           expires_at: string
           id?: string
+          is_pre_auth?: boolean | null
           shop_name: string
           state_token: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
           expires_at?: string
           id?: string
+          is_pre_auth?: boolean | null
           shop_name?: string
           state_token?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2785,6 +2788,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shopify_pending_connections: {
+        Row: {
+          access_token: string
+          commercial_name: string | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          is_claimed: boolean | null
+          pending_token: string
+          scope: string | null
+          shop_url: string
+        }
+        Insert: {
+          access_token: string
+          commercial_name?: string | null
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          is_claimed?: boolean | null
+          pending_token: string
+          scope?: string | null
+          shop_url: string
+        }
+        Update: {
+          access_token?: string
+          commercial_name?: string | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          is_claimed?: boolean | null
+          pending_token?: string
+          scope?: string | null
+          shop_url?: string
+        }
+        Relationships: []
       }
       shopify_products: {
         Row: {
