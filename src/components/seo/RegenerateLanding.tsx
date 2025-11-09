@@ -409,12 +409,22 @@ export default function RegenerateLanding({
           {/* Animated Title */}
           <div className="flex items-center gap-3 mb-4 animate-pulse relative z-10">
             <Loader2 className="w-6 h-6 text-primary animate-spin" />
-            <div>
+            <div className="flex-1">
               <h3 className="font-semibold text-lg text-primary">
                 ⚡ High-Vision AI Landing Generation
               </h3>
-              <p className="text-sm text-muted-foreground">
-                {progressMessage || "Analyzing product and image with advanced Vision AI..."}
+              <p className="text-sm text-muted-foreground transition-all duration-500 animate-fade-in">
+                {progress < 10 && "🚀 Initializing advanced AI models..."}
+                {progress >= 10 && progress < 20 && "📸 Loading Vision AI — Product image analysis"}
+                {progress >= 20 && progress < 30 && "🔍 Extracting visual attributes & styling cues"}
+                {progress >= 30 && progress < 40 && "🎯 Analyzing product context & market positioning"}
+                {progress >= 40 && progress < 50 && "✍️ Generating UX-optimized copywriting"}
+                {progress >= 50 && progress < 60 && "🎨 Crafting persuasive hero sections"}
+                {progress >= 60 && progress < 70 && "📐 Building responsive layout structure"}
+                {progress >= 70 && progress < 80 && "💎 Applying premium design patterns"}
+                {progress >= 80 && progress < 90 && "🚀 Optimizing mobile experience"}
+                {progress >= 90 && progress < 100 && "✨ Final polish & conversion optimization"}
+                {progress >= 100 && "✅ High-quality landing page ready!"}
               </p>
             </div>
           </div>
@@ -425,22 +435,32 @@ export default function RegenerateLanding({
             
             {/* Floating text above bar */}
             <div className="absolute inset-0 flex justify-center items-center pointer-events-none">
-              <span className="text-xs sm:text-sm font-medium text-primary/90 bg-background/70 px-3 py-1 rounded-full shadow-sm backdrop-blur">
-                {progress < 20 && "🔧 Initializing AI Model..."}
-                {progress >= 20 && progress < 40 && "🔍 High Vision AI — Image Analyzer"}
-                {progress >= 40 && progress < 60 && "🎨 Context & UX Copywriting"}
-                {progress >= 60 && progress < 80 && "🧠 Smart Design Layout Generation"}
-                {progress >= 80 && progress < 100 && "🚀 High UX Landing Page Finalization"}
-                {progress >= 100 && "✅ Completed"}
+              <span className="text-xs sm:text-sm font-medium text-primary/90 bg-background/90 px-3 py-1 rounded-full shadow-sm backdrop-blur border border-primary/10 transition-all duration-300">
+                {progress < 15 && "🔧 AI Initialization"}
+                {progress >= 15 && progress < 30 && "👁️ Vision AI Analysis"}
+                {progress >= 30 && progress < 45 && "🧠 Context Processing"}
+                {progress >= 45 && progress < 65 && "✍️ UX Copywriting"}
+                {progress >= 65 && progress < 85 && "🎨 Layout Optimization"}
+                {progress >= 85 && progress < 100 && "🚀 Final Assembly"}
+                {progress >= 100 && "✅ Complete"}
               </span>
             </div>
           </div>
           
-          {/* Additional value labels */}
-          <div className="flex justify-between mt-4 text-xs text-muted-foreground font-medium uppercase tracking-wide relative z-10">
-            <span>High Vision AI</span>
-            <span>UX-Optimized</span>
-            <span>Responsive Design</span>
+          {/* Feature badges */}
+          <div className="flex flex-wrap gap-2 mt-4 relative z-10">
+            <div className={`text-xs px-3 py-1 rounded-full border transition-all duration-500 ${progress >= 20 ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-muted/50 border-border text-muted-foreground'}`}>
+              🔍 Vision AI Powered
+            </div>
+            <div className={`text-xs px-3 py-1 rounded-full border transition-all duration-500 ${progress >= 50 ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-muted/50 border-border text-muted-foreground'}`}>
+              ✨ UX-Optimized Copy
+            </div>
+            <div className={`text-xs px-3 py-1 rounded-full border transition-all duration-500 ${progress >= 70 ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-muted/50 border-border text-muted-foreground'}`}>
+              📱 Mobile-First Design
+            </div>
+            <div className={`text-xs px-3 py-1 rounded-full border transition-all duration-500 ${progress >= 90 ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-muted/50 border-border text-muted-foreground'}`}>
+              🎯 Conversion Focused
+            </div>
           </div>
         </div>
       )}
