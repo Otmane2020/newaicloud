@@ -16,24 +16,16 @@ export function LimitWarningBanner() {
 
   if (loading || !limits) return null;
 
-  // Show banner if trial is active and approaching any limit (>80%)
+  // Show banner if trial is active and approaching optimizations or chat limits (>80%)
   const shouldShowWarning =
     limits.isTrialing &&
     (limits.usage.optimizations_count / limits.limits.max_optimizations > 0.8 ||
-      limits.usage.articles_count / limits.limits.max_articles > 0.8 ||
-      limits.usage.chat_responses_count / limits.limits.max_chat_responses > 0.8 ||
-      limits.usage.shopify_requests_count / limits.limits.max_shopify_requests > 0.8 ||
-      limits.usage.products_count / limits.limits.max_products > 0.8 ||
-      limits.usage.shopify_stores_count / limits.limits.max_shopify_stores > 0.8);
+      limits.usage.chat_responses_count / limits.limits.max_chat_responses > 0.8);
 
-  // Show critical banner if any limit is reached (ALSO FOR PAID USERS)
+  // Show critical banner if optimizations or chat limit is reached (ALSO FOR PAID USERS)
   const limitReached =
     limits.limitReached.optimizations ||
-    limits.limitReached.articles ||
-    limits.limitReached.chat ||
-    limits.limitReached.shopifySearch ||
-    limits.limitReached.products ||
-    limits.limitReached.shopifyStores;
+    limits.limitReached.chat;
 
   // Show warning for trial users approaching limits
   if (!shouldShowWarning && !limitReached) return null;
@@ -66,11 +58,7 @@ export function LimitWarningBanner() {
     if (limitReached) {
       const limitTypes = [];
       if (limits.limitReached.optimizations) limitTypes.push(t.banners.limitWarning.limitLabels.optimizations);
-      if (limits.limitReached.articles) limitTypes.push(t.banners.limitWarning.limitLabels.articles);
       if (limits.limitReached.chat) limitTypes.push(t.banners.limitWarning.limitLabels.chat);
-      if (limits.limitReached.shopifySearch) limitTypes.push(t.banners.limitWarning.limitLabels.searches);
-      if (limits.limitReached.products) limitTypes.push(t.banners.limitWarning.limitLabels.products);
-      if (limits.limitReached.shopifyStores) limitTypes.push(t.banners.limitWarning.limitLabels.stores);
 
       if (limits.isPaid) {
         return t.banners.limitWarning.monthlyLimitReached;
