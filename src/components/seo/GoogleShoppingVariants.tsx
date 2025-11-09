@@ -575,7 +575,7 @@ export function GoogleShoppingVariants() {
       <Card>
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
