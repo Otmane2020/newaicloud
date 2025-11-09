@@ -11,51 +11,74 @@ const PricingComparison = () => {
   const pricing = {
     starter: {
       monthly: 9.99,
-      annual: 95.90
+      annual: 7.99 // 95.90/12 = ~7.99 per month
     },
     pro: {
       monthly: 49,
-      annual: 470
+      annual: 39.17 // 470/12 = ~39.17 per month
     },
     enterprise: {
       monthly: 199,
-      annual: 1912
+      annual: 159.33 // 1912/12 = ~159.33 per month
     }
   };
 
   const features = [
     {
-      category: "Products",
+      category: "Store & Products",
       items: [
-        { name: "Maximum products", starter: "1,000", pro: "10,000", enterprise: "Unlimited" },
+        { name: "Maximum products", starter: "500", pro: "5,000", enterprise: "Unlimited" },
         { name: "Shopify Import", starter: true, pro: true, enterprise: true },
-        { name: "Multi-store management", starter: "1 store", pro: "5 stores", enterprise: "Unlimited" },
+        { name: "Multi-store management", starter: "1 store", pro: "3 stores", enterprise: "Unlimited" },
+        { name: "Collections management", starter: true, pro: true, enterprise: true },
       ],
     },
     {
       category: "SEO Optimizations",
       items: [
-        { name: "Monthly optimizations", starter: "250", pro: "2,500", enterprise: "Unlimited" },
+        { name: "Monthly optimizations", starter: "100", pro: "1,000", enterprise: "Unlimited" },
         { name: "Automatic optimization", starter: true, pro: true, enterprise: true },
         { name: "Sync to Shopify", starter: true, pro: true, enterprise: true },
-        { name: "SEO quality analysis", starter: true, pro: true, enterprise: true },
+        { name: "SEO quality score", starter: true, pro: true, enterprise: true },
+        { name: "SEO Audit & Reports", starter: false, pro: true, enterprise: true },
+        { name: "Competitor analysis", starter: false, pro: false, enterprise: true },
       ],
     },
     {
-      category: "AI",
+      category: "AI Content & Chat",
       items: [
-        { name: "AI articles per month", starter: "5", pro: "50", enterprise: "500" },
-        { name: "AI chat messages", starter: "500", pro: "5,000", enterprise: "Unlimited" },
-        { name: "Editorial campaigns", starter: "2", pro: "20", enterprise: "Unlimited" },
+        { name: "AI articles per month", starter: "3", pro: "25", enterprise: "250" },
+        { name: "AI chat messages", starter: "200", pro: "2,000", enterprise: "Unlimited" },
+        { name: "Editorial campaigns", starter: "1", pro: "10", enterprise: "Unlimited" },
         { name: "AI Vision (images)", starter: true, pro: true, enterprise: true },
+        { name: "Smart chatbot", starter: true, pro: true, enterprise: true },
       ],
     },
     {
-      category: "Netlinking & Blog",
+      category: "Google Integrations",
+      items: [
+        { name: "Google Search Console", starter: false, pro: true, enterprise: true },
+        { name: "Google Shopping Feed", starter: false, pro: true, enterprise: true },
+        { name: "Google Merchant Center", starter: false, pro: true, enterprise: true },
+        { name: "Google Ads integration", starter: false, pro: false, enterprise: true },
+      ],
+    },
+    {
+      category: "Media & Images",
+      items: [
+        { name: "AI Background removal", starter: true, pro: true, enterprise: true },
+        { name: "Image optimization", starter: true, pro: true, enterprise: true },
+        { name: "Alt text generation", starter: "50/month", pro: "500/month", enterprise: "Unlimited" },
+        { name: "Media history", starter: "30 days", pro: "1 year", enterprise: "Unlimited" },
+      ],
+    },
+    {
+      category: "Blog & Netlinking",
       items: [
         { name: "SEO opportunities", starter: true, pro: true, enterprise: true },
         { name: "Blog sync to Shopify", starter: true, pro: true, enterprise: true },
-        { name: "Netlinking analysis", starter: true, pro: true, enterprise: true },
+        { name: "Netlinking analysis", starter: false, pro: true, enterprise: true },
+        { name: "Backlink monitoring", starter: false, pro: false, enterprise: true },
       ],
     },
     {
@@ -65,6 +88,7 @@ const PricingComparison = () => {
         { name: "Priority support", starter: false, pro: true, enterprise: true },
         { name: "Dedicated account manager", starter: false, pro: false, enterprise: true },
         { name: "API Access", starter: false, pro: false, enterprise: true },
+        { name: "Custom integrations", starter: false, pro: false, enterprise: true },
       ],
     },
   ];
@@ -122,7 +146,7 @@ const PricingComparison = () => {
                     ${pricing[plan as keyof typeof pricing][billingPeriod]}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    /{billingPeriod === "monthly" ? "mo" : "yr"}
+                    /mo{billingPeriod === "annual" ? " (billed annually)" : ""}
                   </div>
                 </div>
               </div>
@@ -186,7 +210,7 @@ const PricingComparison = () => {
                     ${pricing.starter[billingPeriod]}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    /{billingPeriod === "monthly" ? "month" : "year"}
+                    /mo{billingPeriod === "annual" ? " (billed annually)" : ""}
                   </span>
                 </div>
               </th>
@@ -197,7 +221,7 @@ const PricingComparison = () => {
                     ${pricing.pro[billingPeriod]}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    /{billingPeriod === "monthly" ? "month" : "year"}
+                    /mo{billingPeriod === "annual" ? " (billed annually)" : ""}
                   </span>
                 </div>
               </th>
@@ -208,7 +232,7 @@ const PricingComparison = () => {
                     ${pricing.enterprise[billingPeriod]}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    /{billingPeriod === "monthly" ? "month" : "year"}
+                    /mo{billingPeriod === "annual" ? " (billed annually)" : ""}
                   </span>
                 </div>
               </th>
