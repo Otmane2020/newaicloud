@@ -241,6 +241,7 @@ export default function RegenerateLanding({
       // ✅ ÉTAPE 4 : Générer le landing avec tous les paramètres
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
+          product_id: product.id, // 🆕 ID du produit pour la sauvegarde
           productTitle: product.title,
           imageUrl: product.image_url,
           description: product.description,

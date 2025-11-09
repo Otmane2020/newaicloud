@@ -76,6 +76,16 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
+    // Get authenticated user
+    let userId = null;
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      if (!authError && user) {
+        userId = user.id;
+      }
+    }
+
     const body = await req.json();
     const {
       product_id,
@@ -271,50 +281,56 @@ Contraintes :
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
 
-    // 💾 Sauvegarde dans product_landing_pages
-    console.log("💾 Saving landing page to database...");
-    
-    // Désactiver les anciennes versions
-    await supabaseAdmin
-      .from("product_landing_pages")
-      .update({ is_active: false })
-      .eq("product_id", productId)
-      .eq("seller_id", userId);
-    
-    // Récupérer le numéro de version
-    const { data: existingPages } = await supabaseAdmin
-      .from("product_landing_pages")
-      .select("version")
-      .eq("product_id", productId)
-      .order("version", { ascending: false })
-      .limit(1);
-    
-    const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
-    
-    // Créer la nouvelle version
-    const { error: saveError } = await supabaseAdmin
-      .from("product_landing_pages")
-      .insert({
-        product_id: productId,
-        seller_id: userId,
-        html_content: html,
-        config: {
-          language,
-          vendor_config,
-          image_url,
-          content_length,
-          max_tokens,
-          target_words,
-          sections,
-        },
-        version: newVersion,
-        is_active: true,
-      });
-    
-    if (saveError) {
-      console.error("❌ Save error:", saveError);
+    // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
+    if (userId && product_id) {
+      console.log("💾 Saving landing page to database...");
+      
+      // Désactiver les anciennes versions
+      await supabaseAdmin
+        .from("product_landing_pages")
+        .update({ is_active: false })
+        .eq("product_id", product_id)
+        .eq("seller_id", userId);
+      
+      // Récupérer le numéro de version
+      const { data: existingPages } = await supabaseAdmin
+        .from("product_landing_pages")
+        .select("version")
+        .eq("product_id", product_id)
+        .order("version", { ascending: false })
+        .limit(1);
+      
+      const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
+      
+      // Créer la nouvelle version
+      const { error: saveError } = await supabaseAdmin
+        .from("product_landing_pages")
+        .insert({
+          product_id: product_id,
+          seller_id: userId,
+          html_content: html,
+          config: {
+            language,
+            vendor,
+            image_url: imageUrl,
+            description,
+            content_length: length,
+            style,
+            layout,
+            mainColor,
+            customHighlights,
+          },
+          version: newVersion,
+          is_active: true,
+        });
+      
+      if (saveError) {
+        console.error("❌ Save error:", saveError);
+      } else {
+        console.log(`✅ Landing page v${newVersion} saved successfully`);
+      }
     } else {
-      console.log(`✅ Landing page v${newVersion} saved successfully`);
+      console.log("⚠️ Skipping save: userId or product_id not available");
     }
 
     console.log("✅ Landing page generation successful!");

@@ -212,7 +212,7 @@ serve(async (req) => {
     console.log(`[sync-landing-to-shopify] Page ${operation}:`, pageUrl);
 
     // Mettre à jour product_landing_pages avec les infos de sync
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabase
       .from("product_landing_pages")
       .update({
         shopify_page_id: pageId.toString(),
