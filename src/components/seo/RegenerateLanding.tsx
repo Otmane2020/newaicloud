@@ -50,8 +50,16 @@ export default function RegenerateLanding({
       
       const { data, error: invokeError } = await supabase.functions.invoke('generate-landing-ai', {
         body: {
-          productId: product.id,
-          config,
+          product_id: product.id,
+          productTitle: product.title,
+          imageUrl: product.image_url,
+          description: product.description,
+          style: config.style,
+          mainColor: config.colorScheme,
+          layout: config.layout,
+          length: config.contentLength,
+          customHighlights: config.customHighlights,
+          language: 'fr',
         },
       });
 
