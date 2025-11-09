@@ -2,11 +2,13 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PublicHeader } from "@/components/PublicHeader";
-import { ShoppingBag, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, ArrowRight } from "lucide-react";
+import { useTranslation } from "@/lib/language";
 
 const ShopifyInstallGuide = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const shop = searchParams.get("shop");
 
   return (
@@ -21,18 +23,18 @@ const ShopifyInstallGuide = () => {
                   <ShoppingBag className="h-12 w-12 text-primary" />
                 </div>
               </div>
-              <CardTitle className="text-3xl">Connectez votre boutique Shopify</CardTitle>
+              <CardTitle className="text-3xl">{t.integration.installGuide.title}</CardTitle>
               <CardDescription className="text-base">
-                Une dernière étape avant de profiter de NewAI pour optimiser votre SEO
+                {t.integration.installGuide.subtitle}
               </CardDescription>
             </CardHeader>
             
             <CardContent className="space-y-6">
               {shop && (
                 <div className="bg-primary/10 rounded-lg p-4 text-center border border-primary/20">
-                  <p className="text-sm text-muted-foreground mb-1">Boutique détectée</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t.integration.installGuide.storeDetected}</p>
                   <p className="font-semibold text-lg text-primary">{shop}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Vos informations seront automatiquement pré-remplies</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t.integration.installGuide.autoFilled}</p>
                 </div>
               )}
 
@@ -42,9 +44,9 @@ const ShopifyInstallGuide = () => {
                     1
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-1">Authentifiez-vous</h3>
+                    <h3 className="font-semibold mb-1">{t.integration.installGuide.step1.title}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Créez un compte ou connectez-vous en 30 secondes
+                      {t.integration.installGuide.step1.description}
                     </p>
                   </div>
                 </div>
@@ -54,9 +56,9 @@ const ShopifyInstallGuide = () => {
                     2
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-1">Redirection automatique</h3>
+                    <h3 className="font-semibold mb-1">{t.integration.installGuide.step2.title}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Vous serez redirigé vers la connexion de votre boutique
+                      {t.integration.installGuide.step2.description}
                     </p>
                   </div>
                 </div>
@@ -66,9 +68,9 @@ const ShopifyInstallGuide = () => {
                     3
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-1">Connexion en un clic</h3>
+                    <h3 className="font-semibold mb-1">{t.integration.installGuide.step3.title}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Validez simplement les informations pré-remplies
+                      {t.integration.installGuide.step3.description}
                     </p>
                   </div>
                 </div>
@@ -76,27 +78,27 @@ const ShopifyInstallGuide = () => {
 
               <div className="pt-4 space-y-3">
                 <Button
-                  onClick={() => navigate(`/auth?signup=true&redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
+                  onClick={() => navigate(`/auth?mode=signup&redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
                   className="w-full"
                   size="lg"
                 >
-                  Créer un compte gratuitement
+                  {t.integration.installGuide.createAccount}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
                 
                 <Button
-                  onClick={() => navigate(`/auth?redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
+                  onClick={() => navigate(`/auth?mode=login&redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
                   variant="outline"
                   className="w-full"
                   size="lg"
                 >
-                  J'ai déjà un compte
+                  {t.integration.installGuide.alreadyHaveAccount}
                 </Button>
               </div>
 
               <div className="bg-gradient-subtle rounded-lg p-4 text-center border">
                 <p className="text-xs text-muted-foreground">
-                  🔒 Connexion sécurisée • ⚡ Configuration en 2 minutes • 🎯 Boutique automatiquement détectée
+                  {t.integration.installGuide.secureConnection}
                 </p>
               </div>
             </CardContent>

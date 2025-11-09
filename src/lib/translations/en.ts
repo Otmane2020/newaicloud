@@ -3106,6 +3106,27 @@ export const translations = {
       sync: "Synchronization",
       metadata: "Metadata",
     },
+    installGuide: {
+      title: "Connect your Shopify store",
+      subtitle: "One last step before enjoying NewAI to optimize your SEO",
+      storeDetected: "Store detected",
+      autoFilled: "Your information will be automatically pre-filled",
+      step1: {
+        title: "Authenticate",
+        description: "Create an account or log in within 30 seconds"
+      },
+      step2: {
+        title: "Automatic redirection",
+        description: "You will be redirected to your store connection"
+      },
+      step3: {
+        title: "One-click connection",
+        description: "Simply validate the pre-filled information"
+      },
+      createAccount: "Create a free account",
+      alreadyHaveAccount: "I already have an account",
+      secureConnection: "🔒 Secure connection • ⚡ 2-minute setup • 🎯 Store automatically detected"
+    },
     sync: {
       mode: {
         title: "Sync mode",
