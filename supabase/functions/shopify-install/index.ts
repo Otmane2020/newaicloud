@@ -148,7 +148,7 @@ serve(async (req) => {
     const { error: stateError } = await supabase
       .from("oauth_states")
       .insert({
-        state: stateToken,
+        state_token: stateToken,
         shop_name: shop,
         user_id: null,
         is_pre_auth: true,
