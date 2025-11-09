@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, AlertCircle, Search, FileText, Languages, Download, ListChecks, FileJson, AlertTriangle, Info, TrendingUp } from "lucide-react";
+import { CheckCircle2, AlertCircle, Search, FileText, Languages, Download, ListChecks, FileJson, AlertTriangle, Info, TrendingUp, Plus, Copy } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { translations as enTranslations } from "@/lib/translations/en";
 import { translations as frTranslations } from "@/lib/translations/fr";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TranslationIssue {
   component: string;
@@ -22,6 +24,7 @@ interface TranslationIssue {
 const TranslationAudit = () => {
   const [issues, setIssues] = useState<TranslationIssue[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [stats, setStats] = useState({
     totalComponents: 0,
     fullyTranslated: 0,
@@ -525,6 +528,50 @@ ${issue.translationKey ? `- **Key:** \`${issue.translationKey}\`` : ''}
     }
   };
 
+  const getMissingTranslations = () => {
+    return issues.filter(i => 
+      i.severity === 'error' && 
+      i.translationKey && 
+      i.file === 'src/lib/translations/fr.ts'
+    );
+  };
+
+  const copyTranslationCode = () => {
+    const missingTranslations = getMissingTranslations();
+    
+    if (missingTranslations.length === 0) {
+      toast({
+        title: "ℹ️ No Missing Translations",
+        description: "All translations are up to date!",
+      });
+      return;
+    }
+
+    // Generate code snippet for missing translations
+    const codeSnippet = `// Add these translations to src/lib/translations/fr.ts:\n\n${missingTranslations.map(issue => {
+      const key = issue.translationKey!;
+      const value = getValueFromPath(enTranslations, key);
+      return `${key}: "${value || '[Translation needed]'}",`;
+    }).join('\n')}`;
+
+    navigator.clipboard.writeText(codeSnippet);
+    
+    toast({
+      title: "✅ Code Copied",
+      description: `Copied ${missingTranslations.length} translation keys to clipboard`,
+    });
+  };
+
+  const getValueFromPath = (obj: any, path: string): any => {
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+      if (current[key] === undefined) return null;
+      current = current[key];
+    }
+    return typeof current === 'string' ? current : JSON.stringify(current);
+  };
+
   const errorCount = issues.filter(i => i.severity === 'error').length;
   const warningCount = issues.filter(i => i.severity === 'warning').length;
   const projectStatus = errorCount === 0 && warningCount === 0 ? 'healthy' : errorCount > 0 ? 'critical' : 'warning';
@@ -708,6 +755,78 @@ ${issue.translationKey ? `- **Key:** \`${issue.translationKey}\`` : ''}
               <Search className="w-4 h-4 mr-2" />
               {isScanning ? "Scanning..." : "Re-run Audit"}
             </Button>
+
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="default" 
+                  size="lg" 
+                  className="bg-success text-success-foreground hover:bg-success/90"
+                  disabled={getMissingTranslations().length === 0}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Missing Translations
+                  {getMissingTranslations().length > 0 && (
+                    <Badge className="ml-2 px-1.5 py-0 text-xs bg-success-foreground text-success">
+                      {getMissingTranslations().length}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-success" />
+                    Add Missing Translations
+                  </DialogTitle>
+                  <DialogDescription>
+                    Copy the code below and add it to your fr.ts translation file
+                  </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-96 w-full">
+                  <div className="space-y-4">
+                    {getMissingTranslations().map((issue, index) => (
+                      <Card key={index}>
+                        <CardContent className="pt-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Badge variant="destructive" className="text-xs">
+                                Missing
+                              </Badge>
+                              <code className="text-xs text-muted-foreground">
+                                {issue.translationKey}
+                              </code>
+                            </div>
+                            <div className="bg-muted p-3 rounded-md font-mono text-sm">
+                              <div className="text-success">// English value:</div>
+                              <div className="text-foreground">
+                                {getValueFromPath(enTranslations, issue.translationKey || '')}
+                              </div>
+                              <div className="text-muted-foreground mt-2">
+                                // Add French translation for: {issue.translationKey}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                    Close
+                  </Button>
+                  <Button onClick={() => {
+                    copyTranslationCode();
+                    setShowAddDialog(false);
+                  }}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy All Code
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
             <Button 
               onClick={generateActionPlan} 
               variant="default" 
