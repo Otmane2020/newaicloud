@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, existingDescription, images, visionAnalysis, dimensions, template = "ecommerce" } = await req.json();
+    const { title, existingDescription, images, visionAnalysis, dimensions, template = "ecommerce", productId } = await req.json();
 
     if (!title) {
       throw new Error("Product title is required");

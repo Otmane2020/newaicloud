@@ -244,7 +244,7 @@ export default function ProductTitleDescription() {
           title: product.title
         });
         
-        toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}...`, { id: toastId });
+        toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}... (SEO + HTML)`, { id: toastId });
 
         // Timeout réduit à 45 secondes
         const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
@@ -298,12 +298,63 @@ export default function ProductTitleDescription() {
           .single();
 
         if (updatedProduct) {
+          // Check if description already has HTML (skip regeneration if present)
+          const hasExistingHtml = updatedProduct.description && 
+            (updatedProduct.description.includes('<div') || updatedProduct.description.includes('<section'));
+
+          if (!hasExistingHtml) {
+            // Generate HTML landing page
+            try {
+              console.log("🎨 Génération du HTML de landing page pour:", updatedProduct.title);
+              
+              const { data: htmlData, error: htmlError } = await supabase.functions.invoke(
+                'generate-product-description-html',
+                {
+                  body: {
+                    title: updatedProduct.seo_title || updatedProduct.title,
+                    existingDescription: updatedProduct.seo_description,
+                    images: [updatedProduct.image_url].filter(Boolean),
+                    visionAnalysis: null,
+                    template: 'ecommerce',
+                    productId: productId
+                  }
+                }
+              );
+
+              if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
+                console.log("✅ HTML landing page généré (10 optimisations consommées)");
+                
+                // Save HTML to shopify_products.description
+                await supabase
+                  .from("shopify_products")
+                  .update({ description: htmlData.htmlLandingPage })
+                  .eq("id", productId);
+                
+                // Update local product with HTML
+                updatedProduct.description = htmlData.htmlLandingPage;
+              } else {
+                console.warn("⚠️ Génération HTML échouée:", htmlError || htmlData?.error);
+                // Don't block the process, continue with SEO only
+              }
+            } catch (htmlErr) {
+              console.error("❌ Erreur génération HTML:", htmlErr);
+              // Don't block the process, continue with SEO only
+            }
+          } else {
+            console.log("✅ HTML déjà présent, pas de régénération");
+          }
+
           // Update optimizedProducts progressively
           setOptimizedProducts((prev) => [...prev, updatedProduct]);
           setProducts((prev) =>
             prev.map((p) =>
               p.id === productId
-                ? { ...p, seo_title: updatedProduct.seo_title, seo_description: updatedProduct.seo_description }
+                ? { 
+                    ...p, 
+                    seo_title: updatedProduct.seo_title, 
+                    seo_description: updatedProduct.seo_description,
+                    description: updatedProduct.description
+                  }
                 : p
             )
           );
