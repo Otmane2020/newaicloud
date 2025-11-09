@@ -1,607 +1,976 @@
-import { useState, useEffect } from "react";
-import { Loader2, Eye, Monitor, Smartphone, Download, Send, CheckCircle2, AlertCircle, Sparkles, Scan, Brain, Wand2, Layout, Zap, Target, Palette, FileCode } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { LandingConfig } from "./LandingConfigDialog";
-import { useTranslation } from "@/lib/language";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-interface RegenerateLandingProps {
-  product: {
-    id: string;
-    title: string;
-    handle?: string;
-    description?: string;
-    image_url?: string;
-  };
-  config: LandingConfig;
-  autoGenerate?: boolean;
-  onGenerated?: (html: string) => void;
-  onClose?: () => void;
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+function sanitizeHtmlUnsafe(html: string): string {
+  if (!html) return "";
+  let out = html
+    .replace(/^\s*```(?:html)?/gi, "")
+    .replace(/```\s*$/g, "")
+    .replace(/<\/?(script|style|iframe|object|embed)[^>]*>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
+    .replace(/\shref\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, ' href="#"')
+    .replace(/<\/?(html|head|body)[^>]*>/gi, "");
+  out = out.replace(/\sstyle\s*=\s*(['"])(.*?)\1/gi, (_m, q, css) => {
+    const kept = css
+      .split(";")
+      .map((r: string) => r.trim())
+      .filter((r: string) => /^(color|background-color|border-color)\s*:/i.test(r))
+      .join("; ");
+    return kept ? ` style=${q}${kept}${q}` : "";
+  });
+  return out.trim();
 }
 
-export default function RegenerateLanding({
-  product,
-  config,
-  autoGenerate = false,
-  onGenerated,
-  onClose,
-}: RegenerateLandingProps) {
-  const { t } = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [htmlContent, setHtmlContent] = useState("");
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [existingLanding, setExistingLanding] = useState<any>(null);
-  const [loadingExisting, setLoadingExisting] = useState(true);
+function buildVisionSummary(v: any, language = "fr") {
+  if (!v) return "";
+  const materials = Array.isArray(v.materials)
+    ? v.materials.join(", ")
+    : v.materials || (language === "en" ? "not detected" : "non détectés");
+  const palette = Array.isArray(v.palette)
+    ? v.palette.join(", ")
+    : v.palette || v.dominantColor || (language === "en" ? "not detected" : "non détectée");
+  const styles = Array.isArray(v.visualStyles)
+    ? v.visualStyles.join(", ")
+    : v.visualStyle || (language === "en" ? "not detected" : "non détecté");
+  const moods = Array.isArray(v.moods)
+    ? v.moods.join(", ")
+    : v.mood || (language === "en" ? "not detected" : "non détectée");
+  const quality = v.quality || (language === "en" ? "not detected" : "non détectée");
+  const finishes = Array.isArray(v.finishes) ? v.finishes.join(", ") : v.finish || "—";
+  const usecases = Array.isArray(v.useCases) ? v.useCases.join(", ") : v.useCases || "—";
+  const dimensions = v.dimensions || v.measurements || v.sizes || "";
+  const specs = v.specifications || "";
 
-  // Charger la landing page existante
-  useEffect(() => {
-    const loadExistingLanding = async () => {
-      try {
-        // D'abord vérifier dans product_landing_pages
-        const { data, error } = await supabase
-          .from("product_landing_pages")
-          .select("*")
-          .eq("product_id", product.id)
-          .eq("is_active", true)
+  return language === "en"
+    ? `VISION ANALYSIS (AI)
+- Dominant palette: ${palette}
+- Style: ${styles}
+- Mood: ${moods}
+- Materials: ${materials}
+- Finishes: ${finishes}
+- Quality: ${quality}
+- Use cases: ${usecases}
+${dimensions ? `- Dimensions: ${dimensions}` : ""}
+${specs ? `- Specifications: ${specs}` : ""}`
+    : `ANALYSE VISUELLE (Vision AI)
+- Palette dominante : ${palette}
+- Style : ${styles}
+- Ambiance : ${moods}
+- Matériaux : ${materials}
+- Finitions : ${finishes}
+- Qualité : ${quality}
+- Cas d'usage : ${usecases}
+${dimensions ? `- Dimensions : ${dimensions}` : ""}
+${specs ? `- Spécifications : ${specs}` : ""}`;
+}
+
+function buildEnrichedProductSummary(enriched: any, language = "fr") {
+  if (!enriched) return "";
+
+  const sections = [];
+
+  // Visual Attributes
+  const visualAttrs = [];
+  if (enriched.ai_color) visualAttrs.push(`Couleur: ${enriched.ai_color}`);
+  if (enriched.ai_material) visualAttrs.push(`Matériau: ${enriched.ai_material}`);
+  if (enriched.ai_shape) visualAttrs.push(`Forme: ${enriched.ai_shape}`);
+  if (enriched.ai_texture) visualAttrs.push(`Texture: ${enriched.ai_texture}`);
+  if (enriched.ai_pattern) visualAttrs.push(`Motif: ${enriched.ai_pattern}`);
+  if (enriched.ai_finish) visualAttrs.push(`Finition: ${enriched.ai_finish}`);
+  if (enriched.ai_design_elements) visualAttrs.push(`Éléments Design: ${enriched.ai_design_elements}`);
+  if (visualAttrs.length > 0) {
+    sections.push(language === "en" ? "VISUAL ATTRIBUTES:" : "ATTRIBUTS VISUELS:");
+    sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
+  }
+
+  // Dimensions
+  const dims = [];
+  if (enriched.smart_length) dims.push(`L ${enriched.smart_length}${enriched.smart_length_unit || ""}`);
+  if (enriched.smart_width) dims.push(`l ${enriched.smart_width}${enriched.smart_width_unit || ""}`);
+  if (enriched.smart_height) dims.push(`H ${enriched.smart_height}${enriched.smart_height_unit || ""}`);
+  if (enriched.smart_weight) dims.push(`Poids ${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
+  if (enriched.smart_diameter) dims.push(`Ø ${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
+  if (enriched.smart_depth) dims.push(`P ${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
+  if (enriched.smart_seat_height)
+    dims.push(`Hauteur d'assise ${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
+  if (dims.length > 0) {
+    sections.push(language === "en" ? "\nDIMENSIONS:" : "\nDIMENSIONS:");
+    sections.push(`- ${dims.join(" × ")}`);
+  }
+
+  // Categorization
+  const cats = [];
+  if (enriched.category) cats.push(`Catégorie: ${enriched.category}`);
+  if (enriched.sub_category) cats.push(`Sous-catégorie: ${enriched.sub_category}`);
+  if (enriched.style) cats.push(`Style: ${enriched.style}`);
+  if (enriched.room) cats.push(`Pièce: ${enriched.room}`);
+  if (enriched.functionality) cats.push(`Fonctionnalité: ${enriched.functionality}`);
+  if (cats.length > 0) {
+    sections.push(language === "en" ? "\nCATEGORIZATION:" : "\nCATÉGORISATION:");
+    sections.push(cats.map((c: string) => `- ${c}`).join("\n"));
+  }
+
+  // Quality & Analysis
+  const quality = [];
+  if (enriched.ai_vision_analysis) quality.push(`Analyse: ${enriched.ai_vision_analysis}`);
+  if (enriched.ai_presentation_quality) quality.push(`Qualité Présentation: ${enriched.ai_presentation_quality}`);
+  if (enriched.ai_craftsmanship_level) quality.push(`Niveau Artisanat: ${enriched.ai_craftsmanship_level}`);
+  if (quality.length > 0) {
+    sections.push(language === "en" ? "\nQUALITY ANALYSIS:" : "\nANALYSE QUALITÉ:");
+    sections.push(quality.map((q: string) => `- ${q}`).join("\n"));
+  }
+
+  // Conversational Text
+  if (enriched.chat_text) {
+    sections.push(language === "en" ? "\nCONVERSATIONAL DESCRIPTION:" : "\nDESCRIPTION CONVERSATIONNELLE:");
+    sections.push(enriched.chat_text);
+  }
+
+  return sections.join("\n");
+}
+
+function ensureResponsiveWrapper(html: string): string {
+  // S'assurer que le viewport meta est présent
+  if (!html.includes("viewport")) {
+    html = `<meta name="viewport" content="width=device-width, initial-scale=1.0">${html}`;
+  }
+
+  // S'assurer qu'il y a un container principal responsive
+  if (!html.includes("max-w-") && !html.includes("mx-auto")) {
+    html = `<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">${html}</div>`;
+  }
+
+  return html;
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+
+    // Get authenticated user
+    let userId = null;
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const {
+        data: { user },
+        error: authError,
+      } = await supabaseAdmin.auth.getUser(token);
+      if (!authError && user) {
+        userId = user.id;
+
+        // 🛡️ VÉRIFICATION DES LIMITES AVANT GÉNÉRATION
+        const currentMonth = new Date().toISOString().substring(0, 7) + "-01";
+
+        const { data: usage } = await supabaseAdmin
+          .from("usage_tracking")
+          .select("optimizations_count")
+          .eq("seller_id", user.id)
+          .eq("month", currentMonth)
           .maybeSingle();
 
-        if (error) throw error;
-        
-        if (data) {
-          setExistingLanding(data);
-          setHtmlContent(data.html_content);
-        } else if (product.description && product.description.includes('<!DOCTYPE html>')) {
-          // Fallback : utiliser la description si elle contient du HTML
-          console.log("📄 Loading landing page from product description");
-          setHtmlContent(product.description);
-          setExistingLanding({
-            html_content: product.description,
-            version: 1,
-            created_at: new Date().toISOString(),
-            last_synced_at: null
-          });
-        }
-      } catch (error) {
-        console.error("Erreur chargement landing:", error);
-      } finally {
-        setLoadingExisting(false);
-      }
-    };
-
-    loadExistingLanding();
-
-    if (autoGenerate && !loading) {
-      handleGenerate();
-    }
-  }, [product.id, autoGenerate]);
-
-  useEffect(() => {
-    if (autoGenerate) {
-      handleGenerate();
-    }
-  }, [autoGenerate]);
-
-  /** ----------------------------
-   * 🏷️ Resolve Vendor based on config
-   -----------------------------*/
-  const resolveVendor = async (): Promise<string> => {
-    switch (config.vendorSource) {
-      case "shopify":
-        const { data: productData } = await supabase
-          .from("shopify_products")
-          .select("vendor")
-          .eq("id", product.id)
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("subscription_status, current_plan_id")
+          .eq("id", user.id)
           .single();
-        return productData?.vendor || "Marque inconnue";
 
-      case "extract":
-        const words = product.title.split(" ");
-        const capitalizedWord = words.find(
-          (word) =>
-            word.length > 2 && word[0] === word[0].toUpperCase() && word.slice(1) === word.slice(1).toLowerCase(),
+        const { data: plan } = await supabaseAdmin
+          .from("subscription_plans")
+          .select("max_optimizations_monthly, trial_max_optimizations")
+          .eq("id", profile?.current_plan_id || "trial")
+          .single();
+
+        const currentUsage = usage?.optimizations_count || 0;
+        const maxOptimizations =
+          profile?.subscription_status === "trialing"
+            ? plan?.trial_max_optimizations || 50
+            : plan?.max_optimizations_monthly || 999999;
+
+        console.log(`[generate-landing-ai] 🔍 Usage check: ${currentUsage}/${maxOptimizations}`);
+
+        // ❌ BLOQUER si limite atteinte
+        if (currentUsage >= maxOptimizations) {
+          console.error(`[generate-landing-ai] ❌ LIMIT REACHED: ${currentUsage}/${maxOptimizations}`);
+          return new Response(
+            JSON.stringify({
+              error: "LIMIT_REACHED",
+              message: "Limite d'optimisations atteinte. Passez à un plan supérieur.",
+              usage: currentUsage,
+              limit: maxOptimizations,
+            }),
+            {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+
+        // ✅ Incrémenter IMMÉDIATEMENT (avant génération)
+        const LANDING_PAGE_COST = 5;
+        await supabaseAdmin.rpc("increment_usage", {
+          p_seller_id: user.id,
+          p_field: "optimizations_count",
+          p_increment: LANDING_PAGE_COST,
+        });
+
+        console.log(`[generate-landing-ai] ✅ Usage incremented: +${LANDING_PAGE_COST}`);
+      }
+    }
+
+    const body = await req.json();
+    const {
+      product_id,
+      productTitle,
+      imageUrl,
+      description,
+      vendor,
+      style,
+      mainColor = "#3B82F6",
+      layout,
+      length,
+      customHighlights,
+      language = "fr",
+      imageAnalysis,
+      contentLengthParams,
+      mobileOptimized = true,
+    } = body ?? {};
+
+    if (!productTitle)
+      return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    if (!product_id)
+      return new Response(JSON.stringify({ error: "Missing required field: product_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
+
+    // 🔧 STEP 1: Product Enrichment (with timeout)
+    console.log("🔧 Starting product enrichment...");
+    let enrichmentStatus = "skipped";
+    let attributesCount = 0;
+    try {
+      const enrichController = new AbortController();
+      const enrichTimeout = setTimeout(() => enrichController.abort(), 20000);
+
+      const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
+        body: { productId: product_id },
+        signal: enrichController.signal,
+      });
+
+      clearTimeout(enrichTimeout);
+
+      if (enrichError) {
+        console.log("⚠️ Enrichment failed:", enrichError.message);
+        enrichmentStatus = "failed";
+      } else {
+        console.log("✅ Enrichment completed successfully");
+        enrichmentStatus = "success";
+      }
+    } catch (err) {
+      console.log("⚠️ Enrichment timeout or error (continuing without it):", err.message);
+      enrichmentStatus = "failed";
+    }
+
+    // Fetch product data including handle, store domain, AND enriched attributes
+    console.log("📦 Fetching product data with enriched attributes...");
+    const [productRes, imagesRes, variantsRes, storeRes] = await Promise.all([
+      supabaseAdmin.from("shopify_products").select("*").eq("id", product_id).maybeSingle(),
+      supabaseAdmin
+        .from("product_images")
+        .select("src, alt_text, width, height")
+        .eq("product_id", product_id)
+        .order("position"),
+      supabaseAdmin
+        .from("product_variants")
+        .select("title, image_url, shopify_variant_id, price, sku")
+        .eq("product_id", product_id),
+      userId
+        ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+
+    const productHandle = productRes.data?.handle || "";
+    const shopifyProductId = productRes.data?.shopify_product_id || "";
+    const shopDomain = storeRes.data?.shop_domain || "";
+    const images = imagesRes.data ?? [];
+    const variants = variantsRes.data ?? [];
+    const enrichedProduct = productRes.data || {};
+
+    // Count enriched attributes
+    const enrichedFields = [
+      "ai_color",
+      "ai_material",
+      "ai_shape",
+      "ai_texture",
+      "ai_pattern",
+      "ai_finish",
+      "smart_length",
+      "smart_width",
+      "smart_height",
+      "smart_weight",
+      "category",
+      "sub_category",
+      "style",
+      "room",
+      "functionality",
+    ];
+    attributesCount = enrichedFields.filter((f) => enrichedProduct[f]).length;
+
+    console.log(
+      `✅ Product data fetched: ${images.length} images, ${variants.length} variants, ${attributesCount} enriched attributes`,
+    );
+
+    // Build enriched summary
+    const enrichedSummary = buildEnrichedProductSummary(enrichedProduct, language);
+    if (enrichedSummary) {
+      console.log("📊 Using enriched attributes in landing page generation");
+    }
+
+    // Vision AI with timeout (15s) - Optional, won't block if it fails
+    let visualAnalysis = "";
+    if (imageUrl) {
+      try {
+        console.log("🔍 Starting Vision AI analysis...");
+        const visionController = new AbortController();
+        const visionTimeout = setTimeout(() => visionController.abort(), 15000);
+
+        const { data: visionData, error: visionError } = await supabaseAdmin.functions.invoke(
+          "analyze-image-with-vision",
+          {
+            body: {
+              imageUrl,
+              productContext: `${productTitle} ${vendor || ""}`,
+              detectMeasurements: true,
+            },
+            signal: visionController.signal,
+          },
         );
 
-        if (capitalizedWord) {
-          return capitalizedWord;
+        clearTimeout(visionTimeout);
+
+        if (visionError) {
+          console.log("⚠️ Vision AI failed:", visionError.message);
+        } else if (visionData?.attributes) {
+          visualAnalysis = buildVisionSummary(visionData.attributes, language);
+          console.log("✅ Vision AI analysis completed");
         }
-
-        const fallback = words.find((w) => w.length > 3) || "Marque";
-        return fallback;
-
-      case "generate":
-        try {
-          const { data: aiData } = await supabase.functions.invoke("generate-vendor-name", {
-            body: {
-              productTitle: product.title,
-              productDescription: product.description,
-            },
-          });
-
-          if (aiData?.vendor) {
-            return aiData.vendor;
-          }
-        } catch (err) {
-          console.error("[Vendor] AI generation failed:", err);
-        }
-
-        return "Marque générée";
-
-      default:
-        return "Marque inconnue";
-    }
-  };
-
-  /** ----------------------------
-   * 🖼️ Analyze Image with AI Vision
-   -----------------------------*/
-  const analyzeImageWithAI = async (imageUrl: string): Promise<string> => {
-    if (!imageUrl) {
-      console.log("[Vision] No image URL provided");
-      return "";
-    }
-
-    try {
-      setProgressMessage(t.landingGeneration.analyzing);
-      setProgress(25);
-
-      const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
-        body: {
-          imageUrl: imageUrl,
-          productContext: `${product.title} ${config.vendorSource === 'shopify' ? '' : ''}`,
-        },
-      });
-
-      if (error) {
-        console.error("[Vision] Image analysis failed:", error);
-        return "";
+      } catch (err) {
+        console.log("⚠️ Vision AI timeout or error (continuing without it):", err.message);
       }
-
-      console.log("[Vision] Image analysis completed");
-      return data?.attributes ? JSON.stringify(data.attributes) : "";
-    } catch (err) {
-      console.error("[Vision] Image analysis error:", err);
-      return "";
+    } else {
+      console.log("⏭️ No image URL provided, skipping Vision AI");
     }
-  };
 
-  /** ----------------------------
-   * 📏 Calculate Content Length Parameters
-   -----------------------------*/
-  const getContentLengthParams = () => {
-    switch (config.contentLength) {
-      case "short":
-        return {
-          maxTokens: 800,
-          wordCount: "150-200 mots",
-          sections: 2,
-          description: "Contenu concis et impactant",
-        };
-      case "medium":
-        return {
-          maxTokens: 1200,
-          wordCount: "300-400 mots",
-          sections: 3,
-          description: "Contenu équilibré avec détails modérés",
-        };
-      case "long":
-        return {
-          maxTokens: 2000,
-          wordCount: "500-700 mots",
-          sections: 4,
-          description: "Contenu détaillé et complet",
-        };
-      default:
-        return {
-          maxTokens: 1200,
-          wordCount: "300-400 mots",
-          sections: 3,
-          description: "Contenu équilibré",
-        };
-    }
-  };
+    // Build product URLs with anchor links for navigation
+    const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
 
-  /** ----------------------------
-   * ✨ Generate Landing via AI with Progress
-   -----------------------------*/
-  const handleGenerate = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setProgress(0);
-      setProgressMessage(t.landingGeneration.preparing);
+    // Build anchor links for different sections
+    const anchorLinks = {
+      features: `${productUrl}#features`,
+      gallery: `${productUrl}#gallery`,
+      specifications: `${productUrl}#specifications`,
+      variants: `${productUrl}#variants`,
+    };
 
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setProgress(10);
+    // 🎨 STYLE GUIDES PREMIUM
+    const styleGuides: Record<string, string> = {
+      moderne:
+        "Gradients subtils, ombres douces, coins arrondis (rounded-xl), espacements généreux, typographie sans-serif, design épuré avec accents de couleur",
+      minimaliste:
+        "Espace blanc abondant, typographie épurée, lignes nettes, palette limitée à 1-2 couleurs, design fonctionnel et élégant",
+      scandinave:
+        "Tons naturels et neutres, textures organiques, simplicité fonctionnelle, ambiance chaleureuse et lumineuse",
+      premium:
+        "Contrastes élégants, typographie serif pour titres, ombres profondes, espacements luxueux, détails raffinés",
+      industriel: "Textures brutes, tons neutres et sombres, typographie bold, éléments métalliques suggérés",
+      nature: "Tons verts et terreux, textures organiques, design fluide et apaisant",
+    };
 
-      // ✅ ÉTAPE 1 : Résoudre le vendor
-      setProgressMessage(t.landingGeneration.resolving);
-      const resolvedVendor = await resolveVendor();
-      console.log("[Landing] Resolved vendor:", resolvedVendor);
+    const currentStyleGuide = styleGuides[style] || styleGuides["moderne"];
+    const tone =
+      length === "courte (400 mots)"
+        ? "concis et percutant"
+        : length === "moyenne (800 mots)"
+          ? "équilibré et informatif"
+          : "complet et détaillé";
 
-      setProgress(20);
+    // 🎯 PROMPT AMÉLIORÉ POUR SHOPIFY AVEC TOUTES LES FONCTIONNALITÉS
+    const prompt =
+      language === "en"
+        ? `
+You are a professional Shopify eCommerce designer. Create a HIGH-CONVERTING product landing page with premium design.
 
-      // ✅ ÉTAPE 2 : Analyser l'image avec vision IA
-      let imageAnalysis = "";
-      if (product.image_url) {
-        imageAnalysis = await analyzeImageWithAI(product.image_url);
-      } else {
-        setProgress(25); // Skip to same progress if no image
-      }
+🎯 OBJECTIVE: Generate a persuasive, mobile-first landing page that drives conversions.
 
-      setProgress(30);
-      setProgressMessage(t.landingGeneration.generating);
-
-      // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
-      const contentParams = getContentLengthParams();
-
-      console.log("[Landing] Content parameters:", {
-        length: config.contentLength,
-        maxTokens: contentParams.maxTokens,
-        sections: contentParams.sections,
-        hasImageAnalysis: !!imageAnalysis,
-      });
-
-      // ✅ ÉTAPE 4 : Générer le landing avec tous les paramètres
-      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
-        body: {
-          product_id: product.id, // 🆕 ID du produit pour la sauvegarde
-          productTitle: product.title,
-          imageUrl: product.image_url,
-          description: product.description,
-          vendor: resolvedVendor,
-          style: config.style,
-          mainColor: config.colorScheme,
-          layout: config.layout,
-          length: config.contentLength,
-          customHighlights: config.customHighlights,
-          imageAnalysis: imageAnalysis, // 🆕 Analyse vision IA
-          contentLengthParams: contentParams, // 🆕 Paramètres de longueur
-          mobileOptimized: true, // 🆕 Forcer l'optimisation mobile
-        },
-      });
-
-      setProgress(60);
-      setProgressMessage(t.landingGeneration.processing);
-
-      if (error) throw error;
-      if (data?.error) {
-        const message = data.error.includes("Rate limits")
-          ? t.landingGeneration.errors.rateLimit
-          : data.error.includes("Payment required")
-            ? t.landingGeneration.errors.paymentRequired
-            : data.error.includes("LIMIT_REACHED")
-              ? t.landingGeneration.errors.limitReached
-              : data.error;
-        setError(message);
-        toast.error(message);
-        return;
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setProgress(90);
-      setProgressMessage(t.landingGeneration.finalizing);
-
-      if (data?.html?.trim()) {
-        // ✅ Validation de la longueur du contenu généré
-        const wordCount = data.html.split(/\s+/).length;
-        console.log(`[Landing] Generated content: ${wordCount} words`);
-
-        setHtmlContent(data.html);
-        setProgress(100);
-        setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
-
-        toast.success(t.landingGeneration.success.generated);
-        onGenerated?.(data.html);
-        
-        // Recharger les données pour mettre à jour le badge
-        const { data: updatedLanding } = await supabase
-          .from("product_landing_pages")
-          .select("*")
-          .eq("product_id", product.id)
-          .eq("is_active", true)
-          .maybeSingle();
-        
-        if (updatedLanding) {
-          setExistingLanding(updatedLanding);
-        }
-      } else {
-        throw new Error(t.landingGeneration.errors.noGenerated);
-      }
-    } catch (err: any) {
-      console.error("Error generating landing:", err);
-      const errorMsg = err?.message || t.landingGeneration.errors.generation;
-      setError(errorMsg);
-      toast.error(errorMsg);
-      setProgress(0);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /** ----------------------------
-   * 💾 Download HTML
-   -----------------------------*/
-  const handleDownloadHTML = () => {
-    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContent);
-
-    const blob = new Blob([htmlContent], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${product.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_landing.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast.success(t.landingGeneration.preview.downloaded);
-  };
-
-  /** ----------------------------
-   * 🔄 Sync to Shopify
-   -----------------------------*/
-  const handleSyncToShopify = async () => {
-    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContentSync);
-
-    try {
-      setSyncing(true);
-      toast.info(t.landingGeneration.preview.syncInProgress);
-
-      const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
-        body: {
-          productId: product.id,
-          productTitle: product.title,
-          productHandle: product.handle,
-          htmlContent,
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) return toast.error(data.error);
-
-      toast.success(t.landingGeneration.success.synced);
-      if (data?.pageUrl) toast.info(`${t.landingGeneration.success.available} ${data.pageUrl}`, { duration: 10000 });
-      
-      // Recharger les données pour mettre à jour le badge
-      const { data: updatedLanding } = await supabase
-        .from("product_landing_pages")
-        .select("*")
-        .eq("product_id", product.id)
-        .eq("is_active", true)
-        .maybeSingle();
-      
-      if (updatedLanding) {
-        setExistingLanding(updatedLanding);
-      }
-    } catch (err: any) {
-      console.error("Error syncing to Shopify:", err);
-      toast.error(err?.message || t.landingGeneration.errors.sync);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  /** ----------------------------
-   * 🧠 UI Render
-   -----------------------------*/
-  return (
-    <div className="space-y-6">
-      {/* Existing Landing Page Status */}
-      {!loadingExisting && existingLanding && (
-        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-primary" />
-            <div>
-              <p className="font-medium text-sm">Landing page existante</p>
-              <p className="text-xs text-muted-foreground">
-                Version {existingLanding.version} • Créée le {new Date(existingLanding.created_at).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-          <Badge variant={existingLanding.last_synced_at ? "default" : "secondary"}>
-            {existingLanding.last_synced_at ? "Synchronisée" : "Non synchronisée"}
-          </Badge>
-        </div>
-      )}
-
-      {/* Progress Section */}
-      {loading && (
-        <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 rounded-2xl border border-primary/20 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.08),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.02)_50%,transparent_75%)] bg-[length:250%_250%] animate-[gradient_8s_ease_infinite]" />
-          
-          {/* Animated Title */}
-          <div className="flex items-center gap-4 mb-5 relative z-10">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-              <Sparkles className="w-6 h-6 text-primary animate-pulse relative z-10" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-lg text-foreground">
-                  AI-Powered Landing Generation
-                </h3>
-                <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                  <Zap className="w-3 h-3 mr-1" />
-                  Vision AI
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                {progress < 10 && <><Loader2 className="w-3.5 h-3.5 text-primary animate-spin" /><span className="text-sm text-muted-foreground">Initializing AI models...</span></>}
-                {progress >= 10 && progress < 20 && <><Scan className="w-3.5 h-3.5 text-primary animate-pulse" /><span className="text-sm text-muted-foreground">Analyzing product image with Vision AI</span></>}
-                {progress >= 20 && progress < 30 && <><Eye className="w-3.5 h-3.5 text-primary" /><span className="text-sm text-muted-foreground">Extracting visual attributes & styling</span></>}
-                {progress >= 30 && progress < 40 && <><Target className="w-3.5 h-3.5 text-primary" /><span className="text-sm text-muted-foreground">Market positioning analysis</span></>}
-                {progress >= 40 && progress < 50 && <><Brain className="w-3.5 h-3.5 text-primary animate-pulse" /><span className="text-sm text-muted-foreground">Generating persuasive copy</span></>}
-                {progress >= 50 && progress < 60 && <><Wand2 className="w-3.5 h-3.5 text-primary" /><span className="text-sm text-muted-foreground">Crafting hero sections</span></>}
-                {progress >= 60 && progress < 70 && <><Layout className="w-3.5 h-3.5 text-primary" /><span className="text-sm text-muted-foreground">Building responsive structure</span></>}
-                {progress >= 70 && progress < 80 && <><Palette className="w-3.5 h-3.5 text-primary animate-pulse" /><span className="text-sm text-muted-foreground">Applying design patterns</span></>}
-                {progress >= 80 && progress < 90 && <><Smartphone className="w-3.5 h-3.5 text-primary" /><span className="text-sm text-muted-foreground">Mobile optimization</span></>}
-                {progress >= 90 && progress < 100 && <><FileCode className="w-3.5 h-3.5 text-primary" /><span className="text-sm text-muted-foreground">Final optimization</span></>}
-                {progress >= 100 && <><CheckCircle2 className="w-3.5 h-3.5 text-green-600" /><span className="text-sm text-green-600 font-medium">Landing page ready!</span></>}
-              </div>
-            </div>
-          </div>
-          
-          {/* Progress bar */}
-          <div className="relative mt-4 z-10 space-y-3">
-            <Progress value={progress} showPercentage className="h-2" />
-            
-            {/* Stage indicator */}
-            <div className="flex justify-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/95 border border-primary/20 shadow-sm backdrop-blur-sm">
-                {progress < 15 && <><Loader2 className="w-3.5 h-3.5 text-primary animate-spin" /><span className="text-xs font-medium text-primary">AI Initialization</span></>}
-                {progress >= 15 && progress < 30 && <><Scan className="w-3.5 h-3.5 text-primary" /><span className="text-xs font-medium text-primary">Vision Analysis</span></>}
-                {progress >= 30 && progress < 45 && <><Brain className="w-3.5 h-3.5 text-primary" /><span className="text-xs font-medium text-primary">Context Processing</span></>}
-                {progress >= 45 && progress < 65 && <><Wand2 className="w-3.5 h-3.5 text-primary" /><span className="text-xs font-medium text-primary">Content Generation</span></>}
-                {progress >= 65 && progress < 85 && <><Layout className="w-3.5 h-3.5 text-primary" /><span className="text-xs font-medium text-primary">Layout Optimization</span></>}
-                {progress >= 85 && progress < 100 && <><Sparkles className="w-3.5 h-3.5 text-primary" /><span className="text-xs font-medium text-primary">Final Assembly</span></>}
-                {progress >= 100 && <><CheckCircle2 className="w-3.5 h-3.5 text-green-600" /><span className="text-xs font-medium text-green-600">Complete</span></>}
-              </div>
-            </div>
-          </div>
-          
-          {/* Feature badges */}
-          <div className="flex flex-wrap gap-2 mt-5 relative z-10">
-            <div className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-500 ${progress >= 20 ? 'bg-primary/10 border-primary/30 text-primary shadow-sm' : 'bg-muted/50 border-border text-muted-foreground'}`}>
-              <Scan className="w-3.5 h-3.5" />
-              <span className="font-medium">Vision AI</span>
-            </div>
-            <div className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-500 ${progress >= 50 ? 'bg-primary/10 border-primary/30 text-primary shadow-sm' : 'bg-muted/50 border-border text-muted-foreground'}`}>
-              <Brain className="w-3.5 h-3.5" />
-              <span className="font-medium">UX Optimized</span>
-            </div>
-            <div className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-500 ${progress >= 70 ? 'bg-primary/10 border-primary/30 text-primary shadow-sm' : 'bg-muted/50 border-border text-muted-foreground'}`}>
-              <Smartphone className="w-3.5 h-3.5" />
-              <span className="font-medium">Mobile First</span>
-            </div>
-            <div className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-500 ${progress >= 90 ? 'bg-primary/10 border-primary/30 text-primary shadow-sm' : 'bg-muted/50 border-border text-muted-foreground'}`}>
-              <Target className="w-3.5 h-3.5" />
-              <span className="font-medium">Conversion Focused</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error Section */}
-      {error && !loading && (
-        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-destructive">{t.landingGeneration.errors.generation}</p>
-              <p className="text-sm text-destructive/90 mt-1">{error}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleGenerate}>
-              {t.landingConfig.buttons.confirm}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Success State */}
-      {htmlContent && !loading && (
-        <div className="space-y-4">
-          <div className="bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-xl p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-              <div className="flex-1">
-                <p className="font-semibold text-green-700 text-sm sm:text-base">
-                  {t.landingGeneration.success.generated} • {getContentLengthParams().wordCount}
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  {t.landingGeneration.preview.description} • Optimisé mobile
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                <span className="hidden sm:inline">{t.landingGeneration.preview.title}</span>
-                <span className="sm:hidden">Aperçu</span>
-              </h3>
-              <Tabs
-                value={previewMode}
-                onValueChange={(v) => setPreviewMode(v as "desktop" | "mobile")}
-                className="w-auto"
-              >
-                <TabsList className="h-8">
-                  <TabsTrigger value="desktop" className="text-xs sm:text-sm px-2 sm:px-3">
-                    <Monitor className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.desktop}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="mobile" className="text-xs sm:text-sm px-2 sm:px-3">
-                    <Smartphone className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.mobile}</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                onClick={handleDownloadHTML}
-                variant="outline"
-                size="sm"
-                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
-              >
-                <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{t.landingGeneration.preview.download}</span>
-                <span className="sm:hidden">Télécharger</span>
-              </Button>
-
-              <Button
-                onClick={handleSyncToShopify}
-                disabled={syncing}
-                size="sm"
-                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
-              >
-                {syncing ? (
-                  <>
-                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.synchronizing}</span>
-                    <span className="sm:hidden">Sync...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.syncShopify}</span>
-                    <span className="sm:hidden">Synchroniser</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          <div
-            className={`border rounded-xl overflow-auto bg-white shadow-inner transition-all duration-300 ${
-              previewMode === "mobile"
-                ? "max-w-[375px] mx-auto p-2 sm:p-4 max-h-[600px] sm:max-h-[650px]"
-                : "p-4 sm:p-6 lg:p-8 max-h-[500px] sm:max-h-[650px]"
-            }`}
-          >
-            <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
-          </div>
-        </div>
-      )}
-
-      {/* Initial State */}
-      {!loading && !htmlContent && !error && (
-        <div className="text-center py-10 text-muted-foreground border rounded-xl bg-muted/10">
-          <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary/70 animate-pulse" />
-          <p className="text-sm">{t.landingGeneration.initializing}</p>
-        </div>
-      )}
-    </div>
-  );
+📦 PRODUCT DATA:
+- Title: ${productTitle}
+${vendor ? `- Brand: ${vendor}` : ""}
+${imageUrl ? `- Main Image: ${imageUrl}` : ""}
+${description ? `- Description: ${description}` : ""}
+${
+  customHighlights
+    ? `\n🌟 KEY SELLING POINTS:\n${customHighlights
+        .split("\n")
+        .map((h: string) => `- ${h.trim()}`)
+        .filter((h: string) => h.length > 2)
+        .join("\n")}`
+    : ""
 }
+
+📸 IMAGES GALLERY (${images.length} images):
+${images.map((img: any, index: number) => `- Image ${index + 1}: ${img.src}${img.width && img.height ? ` (${img.width}x${img.height}px)` : ""}${img.alt_text ? ` - ${img.alt_text}` : ""}`).join("\n")}
+
+🔄 PRODUCT VARIANTS (${variants.length} variants):
+${variants.map((v: any) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}${v.price ? ` - $${v.price}` : ""}`).join("\n")}
+
+${enrichedSummary ? `\n💎 PRODUCT ATTRIBUTES:\n${enrichedSummary}\n` : ""}
+${visualAnalysis ? `${visualAnalysis}\n` : ""}
+
+🎨 PREMIUM DESIGN:
+- Style: ${style} → ${currentStyleGuide}
+- Primary Color: ${mainColor} (use for buttons, accents, highlights)
+- Layout: ${layout}
+- Tone: ${tone}
+- Mobile Optimized: ${mobileOptimized}
+
+🛒 SHOPIFY NAVIGATION LINKS (USE THESE FOR SMOOTH SCROLLING):
+- "View Features" → <a href="${anchorLinks.features}" target="_blank">
+- "See Gallery" → <a href="${anchorLinks.gallery}" target="_blank">
+- "Technical Specs" → <a href="${anchorLinks.specifications}" target="_blank">
+- "View Options" → <a href="${anchorLinks.variants}" target="_blank">
+- "Discover Product" → <a href="${productUrl}" target="_blank">
+
+📱 MANDATORY SECTIONS STRUCTURE:
+1. HERO SECTION (with smooth scroll navigation)
+   - Eye-catching headline with ${mainColor} accent
+   - Compelling subheadline
+   - High-quality product image gallery (use all ${images.length} images)
+   - Navigation buttons to other sections
+
+2. FEATURES & BENEFITS (id="features")
+   - 3-4 key benefits with elegant icons
+   - Focus on customer pain points and solutions
+
+3. IMAGE GALLERY (id="gallery")
+   - Display all ${images.length} product images in ${layout} layout
+   - Show image dimensions when available
+   - Responsive grid or carousel
+
+4. TECHNICAL SPECIFICATIONS (id="specifications")
+   - Detailed specifications table
+   - Dimensions, materials, finishes
+   - Technical data from enriched attributes
+
+5. VARIANTS & OPTIONS (id="variants")
+   - Display all ${variants.length} variants
+   - Show variant images, prices, SKUs
+   - Clear differentiation between options
+
+6. TRUST & GUARANTEE
+   - Shipping, returns, warranty badges
+   - Social proof elements
+
+🎨 DESIGN RULES:
+• MOBILE-FIRST: Start with mobile layout (320px)
+• Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+• Responsive grid: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
+• Typography: text-base sm:text-lg lg:text-xl
+• Images: w-full h-auto object-cover with proper aspect ratios
+• Use Tailwind CSS only
+• No <script> or <style> tags
+• Clean HTML ready for Shopify
+• Smooth scroll navigation between sections
+
+📸 IMAGE LAYOUT EXAMPLES:
+${
+  layout === "grid"
+    ? `
+Grid Layout:
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  ${images.map((img: any) => `<img src="${img.src}" alt="${img.alt_text || productTitle}" class="w-full h-64 object-cover rounded-lg shadow-md" />`).join("\n  ")}
+</div>
+`
+    : ""
+}
+
+${
+  layout === "carousel"
+    ? `
+Carousel Layout:
+<div class="flex overflow-x-auto snap-x snap-mandatory space-x-4 py-4">
+  ${images.map((img: any) => `<div class="flex-shrink-0 w-80 snap-center"><img src="${img.src}" alt="${img.alt_text || productTitle}" class="w-full h-64 object-cover rounded-lg shadow-md" /></div>`).join("\n  ")}
+</div>
+`
+    : ""
+}
+
+${
+  layout === "masonry"
+    ? `
+Masonry Layout:
+<div class="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+  ${images.map((img: any) => `<img src="${img.src}" alt="${img.alt_text || productTitle}" class="w-full mb-4 rounded-lg shadow-md break-inside-avoid" />`).join("\n  ")}
+</div>
+`
+    : ""
+}
+
+NAVIGATION BUTTON EXAMPLES:
+<div class="flex flex-wrap gap-3 justify-center">
+  <a href="${anchorLinks.features}" target="_blank" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-${mainColor.replace("#", "")} hover:opacity-90 transition-all">
+    View Features
+  </a>
+  <a href="${anchorLinks.gallery}" target="_blank" class="inline-flex items-center px-6 py-3 border border-${mainColor.replace("#", "")} text-base font-medium rounded-md text-${mainColor.replace("#", "")} bg-transparent hover:bg-${mainColor.replace("#", "")} hover:text-white transition-all">
+    See Gallery
+  </a>
+  <a href="${anchorLinks.specifications}" target="_blank" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+    Technical Specs
+  </a>
+</div>
+
+Return ONLY clean HTML without markdown.
+`
+        : `
+Tu es un designer Shopify expert. Crée une LANDING PAGE PREMIUM qui convertit.
+
+🎯 OBJECTIF: Générer une page produit mobile-first et persuasive.
+
+📦 DONNÉES PRODUIT:
+- Titre: ${productTitle}
+${vendor ? `- Marque: ${vendor}` : ""}
+${imageUrl ? `- Image: ${imageUrl}` : ""}
+${description ? `- Description: ${description}` : ""}
+${
+  customHighlights
+    ? `\n🌟 ARGUMENTS CLÉS:\n${customHighlights
+        .split("\n")
+        .map((h: string) => `- ${h.trim()}`)
+        .filter((h: string) => h.length > 2)
+        .join("\n")}`
+    : ""
+}
+
+📸 GALERIE IMAGES (${images.length} images):
+${images.map((img: any, index: number) => `- Image ${index + 1}: ${img.src}${img.width && img.height ? ` (${img.width}x${img.height}px)` : ""}${img.alt_text ? ` - ${img.alt_text}` : ""}`).join("\n")}
+
+🔄 VARIANTES PRODUIT (${variants.length} variantes):
+${variants.map((v: any) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}${v.price ? ` - ${v.price}€` : ""}`).join("\n")}
+
+${enrichedSummary ? `\n💎 ATTRIBUTS PRODUIT:\n${enrichedSummary}\n` : ""}
+${visualAnalysis ? `${visualAnalysis}\n` : ""}
+
+🎨 DESIGN PREMIUM:
+- Style: ${style} → ${currentStyleGuide}
+- Couleur: ${mainColor} (boutons, accents, surbrillance)
+- Layout: ${layout}
+- Ton: ${tone}
+- Optimisé Mobile: ${mobileOptimized}
+
+🛒 LIENS DE NAVIGATION SHOPIFY (UTILISER POUR LE SCROLL):
+- "Voir les caractéristiques" → <a href="${anchorLinks.features}" target="_blank">
+- "Voir la galerie" → <a href="${anchorLinks.gallery}" target="_blank">
+- "Spécifications techniques" → <a href="${anchorLinks.specifications}" target="_blank">
+- "Voir les options" → <a href="${anchorLinks.variants}" target="_blank">
+- "Découvrir le produit" → <a href="${productUrl}" target="_blank">
+
+📱 STRUCTURE OBLIGATOIRE:
+1. SECTION HERO (avec navigation par scroll)
+   - Titre accrocheur avec couleur ${mainColor}
+   - Sous-titre persuasif
+   - Galerie d'images produit (utiliser les ${images.length} images)
+   - Boutons de navigation vers autres sections
+
+2. CARACTÉRISTIQUES (id="features")
+   - 3-4 avantages clés avec icônes élégantes
+   - Focus sur problèmes clients et solutions
+
+3. GALERIE IMAGES (id="gallery")
+   - Afficher les ${images.length} images produit en layout ${layout}
+   - Montrer dimensions images si disponibles
+   - Grid responsive ou carousel
+
+4. SPÉCIFICATIONS TECHNIQUES (id="specifications")
+   - Tableau détaillé des spécifications
+   - Dimensions, matériaux, finitions
+   - Données techniques des attributs enrichis
+
+5. VARIANTES & OPTIONS (id="variants")
+   - Afficher les ${variants.length} variantes
+   - Montrer images variantes, prix, SKU
+   - Différenciation claire entre options
+
+6. CONFIANCE & GARANTIE
+   - Badges livraison, retour, garantie
+   - Éléments preuve sociale
+
+🎨 RÈGLES DESIGN:
+• MOBILE-FIRST: Commencer layout mobile (320px)
+• Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+• Grid responsive: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
+• Typographie: text-base sm:text-lg lg:text-xl
+• Images: w-full h-auto object-cover avec bons ratios
+• Utiliser Tailwind CSS uniquement
+• Pas de balises <script> ou <style>
+• HTML propre pour Shopify
+• Navigation fluide entre sections
+
+📸 EXEMPLES LAYOUT IMAGES:
+${
+  layout === "grid"
+    ? `
+Layout Grid:
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  ${images.map((img: any) => `<img src="${img.src}" alt="${img.alt_text || productTitle}" class="w-full h-64 object-cover rounded-lg shadow-md" />`).join("\n  ")}
+</div>
+`
+    : ""
+}
+
+${
+  layout === "carousel"
+    ? `
+Layout Carousel:
+<div class="flex overflow-x-auto snap-x snap-mandatory space-x-4 py-4">
+  ${images.map((img: any) => `<div class="flex-shrink-0 w-80 snap-center"><img src="${img.src}" alt="${img.alt_text || productTitle}" class="w-full h-64 object-cover rounded-lg shadow-md" /></div>`).join("\n  ")}
+</div>
+`
+    : ""
+}
+
+${
+  layout === "masonry"
+    ? `
+Layout Masonry:
+<div class="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+  ${images.map((img: any) => `<img src="${img.src}" alt="${img.alt_text || productTitle}" class="w-full mb-4 rounded-lg shadow-md break-inside-avoid" />`).join("\n  ")}
+</div>
+`
+    : ""
+}
+
+EXEMPLES BOUTONS NAVIGATION:
+<div class="flex flex-wrap gap-3 justify-center">
+  <a href="${anchorLinks.features}" target="_blank" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-${mainColor.replace("#", "")} hover:opacity-90 transition-all">
+    Voir caractéristiques
+  </a>
+  <a href="${anchorLinks.gallery}" target="_blank" class="inline-flex items-center px-6 py-3 border border-${mainColor.replace("#", "")} text-base font-medium rounded-md text-${mainColor.replace("#", "")} bg-transparent hover:bg-${mainColor.replace("#", "")} hover:text-white transition-all">
+    Voir galerie
+  </a>
+  <a href="${anchorLinks.specifications}" target="_blank" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+    Spécifications
+  </a>
+</div>
+
+Retourne UNIQUEMENT du HTML propre sans markdown.
+`;
+
+    // 🔄 RETRY LOGIC FOR AI GENERATION
+    console.log("🤖 Starting AI generation with retry logic...");
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 2000;
+    let lastError: Error | null = null;
+    let html = "";
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[generate-landing-ai] Attempt ${attempt}/${MAX_RETRIES}`);
+
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              {
+                role: "system",
+                content:
+                  language === "en"
+                    ? "You are a professional Shopify landing page designer. Create beautiful, mobile-first HTML pages with conversion-optimized design and smooth navigation between sections."
+                    : "Tu es un designer expert de landing pages Shopify. Crée des pages HTML mobile-first avec un design optimisé pour la conversion et une navigation fluide entre les sections.",
+              },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 4500,
+          }),
+        });
+
+        // Handle permanent errors - don't retry
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({
+              error: "Rate limits exceeded. Please try again later.",
+            }),
+            {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({
+              error: "Payment required. Please add funds to your Lovable AI workspace.",
+            }),
+            {
+              status: 402,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+
+        // Temporary errors (503, 502, 504) - retry
+        if ([502, 503, 504].includes(response.status) && attempt < MAX_RETRIES) {
+          console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+          continue;
+        }
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`[generate-landing-ai] ❌ API error (attempt ${attempt}):`, response.status, errText);
+
+          if (attempt < MAX_RETRIES) {
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue;
+          }
+
+          return new Response(JSON.stringify({ error: `Lovable AI API error: ${response.status}` }), {
+            status: response.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Success - parse and clean HTML
+        const data = await response.json().catch(() => null);
+        html = data?.choices?.[0]?.message?.content?.trim() || "";
+
+        if (html) {
+          html = sanitizeHtmlUnsafe(html);
+          html = ensureResponsiveWrapper(html);
+          console.log("[generate-landing-ai] 🧹 HTML cleaned and wrapped, final length:", html.length);
+        }
+
+        // Validate HTML
+        if (!html) {
+          console.warn("[generate-landing-ai] ⚠️ Empty HTML response from AI");
+          if (attempt < MAX_RETRIES) {
+            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to empty response...`);
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue;
+          }
+          return new Response(
+            JSON.stringify({
+              error: language === "en" ? "No content generated by AI." : "Aucun contenu généré par l'IA.",
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        if (html.length < 1000) {
+          console.warn("[generate-landing-ai] ⚠️ Generated HTML too short:", html.length);
+          if (attempt < MAX_RETRIES) {
+            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to short content...`);
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue;
+          }
+          return new Response(
+            JSON.stringify({
+              error: language === "en" ? "Generated content too short." : "Le contenu généré est trop court.",
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        // Success!
+        console.log("[generate-landing-ai] ✅ HTML generated successfully, length:", html.length);
+        break;
+      } catch (networkError) {
+        lastError = networkError instanceof Error ? networkError : new Error(String(networkError));
+        console.error(`[generate-landing-ai] 💥 Network error (attempt ${attempt}):`, lastError);
+
+        if (attempt < MAX_RETRIES) {
+          console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to network error...`);
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+          continue;
+        }
+      }
+    }
+
+    // If we get here and html is empty, all retries failed
+    if (!html) {
+      console.error("[generate-landing-ai] ❌ All retry attempts failed");
+      return new Response(
+        JSON.stringify({
+          error:
+            lastError?.message ||
+            (language === "en" ? "Service temporarily unavailable." : "Service temporairement indisponible."),
+        }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // 💾 CRÉATION/MISE À JOUR DANS SHOPIFY_PRODUCTS
+    if (userId && product_id) {
+      console.log("💾 Saving to shopify_products...");
+
+      // Vérifier d'abord si le produit existe déjà
+      const { data: existingProduct, error: checkError } = await supabaseAdmin
+        .from("shopify_products")
+        .select("id, shopify_id, title")
+        .eq("id", product_id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("❌ Error checking existing product:", checkError);
+      }
+
+      if (existingProduct) {
+        // 🆕 MISE À JOUR du produit existant
+        console.log("📝 Updating existing shopify_products...");
+
+        const { error: updateError } = await supabaseAdmin
+          .from("shopify_products")
+          .update({
+            description: html, // ✅ HTML dans le champ description
+            title: productTitle, // Mettre à jour le titre aussi
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", product_id);
+
+        if (updateError) {
+          console.error("❌ Shopify products update error:", updateError);
+        } else {
+          console.log("✅ Shopify products updated successfully");
+        }
+      } else {
+        // 🆕 CRÉATION d'un nouveau produit
+        console.log("📝 Creating new shopify_products row...");
+
+        // Récupérer le store_id de l'utilisateur
+        const { data: storeData } = await supabaseAdmin
+          .from("shopify_connections")
+          .select("id")
+          .eq("seller_id", userId)
+          .single();
+
+        const { error: insertError } = await supabaseAdmin.from("shopify_products").insert({
+          id: product_id,
+          seller_id: userId,
+          store_id: storeData?.id || userId, // Fallback si pas de store_id
+          shopify_id: 0, // Valeur par défaut
+          title: productTitle,
+          description: html, // ✅ HTML dans description
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        if (insertError) {
+          console.error("❌ Shopify products creation error:", insertError);
+        } else {
+          console.log("✅ New shopify_products row created successfully");
+        }
+      }
+
+      // 💾 Sauvegarde dans product_landing_pages (historique)
+      console.log("💾 Saving to product_landing_pages...");
+
+      // Désactiver les anciennes versions
+      await supabaseAdmin
+        .from("product_landing_pages")
+        .update({ is_active: false })
+        .eq("product_id", product_id)
+        .eq("seller_id", userId);
+
+      // Récupérer le numéro de version
+      const { data: existingPages } = await supabaseAdmin
+        .from("product_landing_pages")
+        .select("version")
+        .eq("product_id", product_id)
+        .order("version", { ascending: false })
+        .limit(1);
+
+      const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
+
+      // Créer la nouvelle version
+      const { error: saveError } = await supabaseAdmin.from("product_landing_pages").insert({
+        product_id: product_id,
+        seller_id: userId,
+        html_content: html,
+        config: {
+          language,
+          vendor,
+          image_url: imageUrl,
+          description,
+          content_length: length,
+          style,
+          layout,
+          mainColor,
+          customHighlights,
+          enrichment_status: enrichmentStatus,
+          attributes_count: attributesCount,
+          images_count: images.length,
+          variants_count: variants.length,
+          mobile_optimized: mobileOptimized,
+        },
+        version: newVersion,
+        is_active: true,
+      });
+
+      if (saveError) {
+        console.error("❌ Landing pages save error:", saveError);
+      } else {
+        console.log(`✅ Landing page v${newVersion} saved successfully`);
+      }
+    } else {
+      console.log("⚠️ Skipping save: userId or product_id not available");
+    }
+
+    console.log("✅ Landing page generation successful!");
+    return new Response(
+      JSON.stringify({
+        html,
+        enrichment_status: enrichmentStatus,
+        attributes_count: attributesCount,
+        images_count: images.length,
+        variants_count: variants.length,
+        saved_to_shopify: !!(userId && product_id),
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  } catch (err) {
+    console.error("💥 ERROR:", err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
