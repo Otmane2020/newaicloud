@@ -178,7 +178,16 @@ ${imageUrl ? `- Image produit : ${imageUrl}` : ""}
 ${description ? `- Description : ${description}` : ""}
 ${customHighlights ? `\n🌟 POINTS FORTS À METTRE EN AVANT (PRIORITAIRE) :\n${customHighlights.split('\n').map((h: string) => `- ${h.trim()}`).filter((h: string) => h.length > 2).join('\n')}` : ""}
 
-${visualAnalysis ? `${visualAnalysis}` : ""}
+${visualAnalysis ? `
+🔍 VISION AI - RÈGLE ABSOLUE :
+${visualAnalysis}
+⚠️ **CRITIQUE** : Tu DOIS utiliser ces informations Vision AI dans le contenu :
+- Mentionner la couleur dominante dans la description
+- Intégrer le style visuel identifié dans le copywriting
+- Référencer les matériaux détectés
+- Évoquer l'ambiance et la qualité perçue
+- Adapter le ton et les bénéfices selon l'analyse visuelle
+` : ""}
 
 🎨 DESIGN & STYLE :
 - Style visuel : ${style}
@@ -187,7 +196,12 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
   → **CRITIQUE** : Applique cette couleur aux boutons CTA, liens, bordures d'accent, titres importants
   → Utilise Tailwind avec style="color: ${mainColor}" ou style="background-color: ${mainColor}" ou style="border-color: ${mainColor}"
 - Layout : ${layout}
-- Longueur : ${length} (ton ${tone})
+- **LONGUEUR STRICTE** : ${length} (ton ${tone})
+  ⚠️ **RÈGLE ABSOLUE** : Respecte EXACTEMENT la longueur demandée :
+  - "courte (400 mots)" = 350-450 mots MAX
+  - "moyenne (800 mots)" = 700-900 mots
+  - "longue (1200 mots)" = 1100-1300 mots
+  NE PAS dépasser ces limites, c'est une contrainte client non négociable.
 - **DESIGN ÉLÉGANT** : Évite les icônes colorées enfantines, privilégie des icônes monochromes (text-gray-600), des formes simples et épurées, un design sophistiqué et professionnel
 
 🧱 STRUCTURE OBLIGATOIRE :
@@ -201,7 +215,7 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
    - **Icônes élégantes** : SVG monochromes simples (text-gray-600 ou text-gray-700), PAS de couleurs vives ou enfantines
    - Design épuré et sophistiqué
    - Titres courts et percutants
-   - Descriptions de 20-30 mots
+   - Descriptions de 20-30 mots${visualAnalysis ? "\n   - **Intégrer les insights Vision AI** dans les avantages (couleurs, matériaux, style)" : ""}
 
 3. CARACTÉRISTIQUES TECHNIQUES
    - Liste structurée avec badges/pills
@@ -214,18 +228,21 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
 5. GARANTIES / LIVRAISON
    - 3-4 éléments rassurants (livraison, retour, garantie, support)
 
-📱 RESPONSIVE MOBILE-FIRST (CRITIQUE) :
-- **MOBILE D'ABORD** : Le design DOIT être parfait sur mobile (320px-768px) avant desktop
-- Structure : <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+📱 RESPONSIVE MOBILE-FIRST (CRITIQUE - RÈGLE ABSOLUE) :
+⚠️ **NON NÉGOCIABLE** : Le design DOIT être PARFAIT sur mobile (320px-428px) AVANT desktop
+- **Test mental** : Visualise CHAQUE élément sur un iPhone SE (320px) avant de coder
+- Structure : <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 max-w-7xl">
 - Hero : <div class="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 items-center">
-- Grid avantages : <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-- Images : <img class="w-full h-auto object-cover rounded-xl" />
-- Texte lisible mobile : text-sm sm:text-base lg:text-lg
-- Titres adaptatifs : text-xl sm:text-2xl lg:text-3xl xl:text-4xl
-- Padding mobile : p-3 sm:p-4 md:p-6 lg:p-8
-- Gap progressif : gap-3 sm:gap-4 md:gap-6 lg:gap-8
-- Boutons pleine largeur mobile : w-full sm:w-auto
-- Pas de scroll horizontal : overflow-x-hidden sur tous les conteneurs
+- Grid avantages : <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+- Images : <img class="w-full h-auto object-cover rounded-lg sm:rounded-xl max-w-full" />
+- Texte lisible mobile : text-xs sm:text-sm md:text-base lg:text-lg (JAMAIS de texte < 12px)
+- Titres adaptatifs : text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl
+- Padding mobile : p-2 sm:p-3 md:p-4 lg:p-6 xl:p-8
+- Gap progressif : gap-2 sm:gap-3 md:gap-4 lg:gap-6 xl:gap-8
+- Boutons pleine largeur mobile : w-full sm:w-auto py-3 (touch-friendly 44px min)
+- **Pas de scroll horizontal** : overflow-x-hidden + max-w-full sur TOUS les conteneurs
+- **Touch targets** : min-h-[44px] min-w-[44px] sur tous les éléments cliquables
+- **Lisibilité** : line-height-relaxed (1.6) sur paragraphes, max-w-prose pour limiter longueur lignes
 
 🛠️ CONTRAINTES TECHNIQUES :
 ✅ Tailwind CSS uniquement (CDN déjà chargé)

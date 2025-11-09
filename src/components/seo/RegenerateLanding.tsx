@@ -278,48 +278,66 @@ export default function RegenerateLanding({
       {/* Success State */}
       {htmlContent && !loading && (
         <div className="space-y-4">
-          <div className="bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <div>
-                <p className="font-semibold text-green-700">{t.landingGeneration.success.generated}</p>
-                <p className="text-sm text-muted-foreground">{t.landingGeneration.preview.description}</p>
+          <div className="bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-xl p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+              <div className="flex-1">
+                <p className="font-semibold text-green-700 text-sm sm:text-base">{t.landingGeneration.success.generated}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">{t.landingGeneration.preview.description}</p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Eye className="w-5 h-5 text-primary" />
-              {t.landingGeneration.preview.title}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as "desktop" | "mobile")}>
-                <TabsList>
-                  <TabsTrigger value="desktop">
-                    <Monitor className="h-4 w-4 mr-1" /> {t.landingGeneration.preview.desktop}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <span className="hidden sm:inline">{t.landingGeneration.preview.title}</span>
+                <span className="sm:hidden">Aperçu</span>
+              </h3>
+              <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as "desktop" | "mobile")} className="w-auto">
+                <TabsList className="h-8">
+                  <TabsTrigger value="desktop" className="text-xs sm:text-sm px-2 sm:px-3">
+                    <Monitor className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">{t.landingGeneration.preview.desktop}</span>
                   </TabsTrigger>
-                  <TabsTrigger value="mobile">
-                    <Smartphone className="h-4 w-4 mr-1" /> {t.landingGeneration.preview.mobile}
+                  <TabsTrigger value="mobile" className="text-xs sm:text-sm px-2 sm:px-3">
+                    <Smartphone className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">{t.landingGeneration.preview.mobile}</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
+            </div>
 
-              <Button onClick={handleDownloadHTML} variant="outline" size="sm" className="gap-2">
-                <Download className="w-4 h-4" />
-                {t.landingGeneration.preview.download}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                onClick={handleDownloadHTML} 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
+              >
+                <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">{t.landingGeneration.preview.download}</span>
+                <span className="sm:hidden">Télécharger</span>
               </Button>
 
-              <Button onClick={handleSyncToShopify} disabled={syncing} size="sm" className="gap-2">
+              <Button 
+                onClick={handleSyncToShopify} 
+                disabled={syncing} 
+                size="sm" 
+                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
+              >
                 {syncing ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {t.landingGeneration.preview.synchronizing}
+                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                    <span className="hidden sm:inline">{t.landingGeneration.preview.synchronizing}</span>
+                    <span className="sm:hidden">Sync...</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
-                    {t.landingGeneration.preview.syncShopify}
+                    <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">{t.landingGeneration.preview.syncShopify}</span>
+                    <span className="sm:hidden">Synchroniser</span>
                   </>
                 )}
               </Button>
@@ -328,7 +346,9 @@ export default function RegenerateLanding({
 
           <div
             className={`border rounded-xl overflow-auto bg-white shadow-inner transition-all duration-300 ${
-              previewMode === "mobile" ? "max-w-md mx-auto p-4" : "p-8 max-h-[650px]"
+              previewMode === "mobile" 
+                ? "max-w-[375px] mx-auto p-2 sm:p-4 max-h-[600px] sm:max-h-[650px]" 
+                : "p-4 sm:p-6 lg:p-8 max-h-[500px] sm:max-h-[650px]"
             }`}
           >
             <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
