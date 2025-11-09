@@ -49,6 +49,9 @@ const ShopifyInstall = () => {
             timestamp,
             allParams: Object.fromEntries(searchParams.entries()),
           },
+        }).catch((networkError) => {
+          console.error('[ShopifyInstall] Network error:', networkError);
+          throw new Error(`Erreur réseau: ${networkError.message || 'Impossible de contacter le serveur'}`);
         });
 
         console.log('[ShopifyInstall] Response:', { data, error });

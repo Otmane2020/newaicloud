@@ -237,6 +237,9 @@ verify_jwt = false
 [functions.generate-vendor-name]
 verify_jwt = false
 
+[functions.shopify-install]
+verify_jwt = false
+
 [functions.admin-get-user-subscriptions]
 verify_jwt = true
 
