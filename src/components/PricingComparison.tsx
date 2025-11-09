@@ -31,6 +31,15 @@ const PricingComparison = () => {
       ]
     },
     {
+      category: "AI Image Generation",
+      items: [
+        { name: "Alt image Vision", starter: true, pro: true, enterprise: true },
+        { name: "Landing product page", starter: true, pro: true, enterprise: true },
+        { name: "Image white background", starter: true, pro: true, enterprise: true },
+        { name: "Generate background", starter: true, pro: true, enterprise: true },
+      ]
+    },
+    {
       category: "AI",
       items: [
         { name: "AI articles per month", starter: "5", pro: "10 - 1,000", enterprise: "100 - 10,000" },
@@ -176,36 +185,34 @@ const PricingComparison = () => {
   const prices = getPriceDisplay();
   
   return (
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="p-4 text-left font-semibold">
-                <div className="flex items-center gap-4">
-                  <span>Features</span>
-                  {/* Billing Toggle */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setBillingPeriod('monthly')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        billingPeriod === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Monthly
-                    </button>
-                    <button
-                      onClick={() => setBillingPeriod('annual')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors relative ${
-                        billingPeriod === 'annual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Annual
-                      <Badge className="absolute -top-1 -right-1 bg-success text-[10px] px-1 py-0">-20%</Badge>
-                    </button>
-                  </div>
-                </div>
-              </th>
+    <div className="space-y-6">
+      {/* Billing Toggle Above Table */}
+      <div className="flex items-center justify-center gap-4">
+        <button
+          onClick={() => setBillingPeriod('monthly')}
+          className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${
+            billingPeriod === 'monthly' ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Monthly
+        </button>
+        <button
+          onClick={() => setBillingPeriod('annual')}
+          className={`px-6 py-2.5 rounded-lg font-medium transition-colors relative ${
+            billingPeriod === 'annual' ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Annual
+          <Badge className="absolute -top-2 -right-2 bg-success text-xs">-20%</Badge>
+        </button>
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="p-4 text-left font-semibold">Features</th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge variant="outline">Starter</Badge>
@@ -263,6 +270,7 @@ const PricingComparison = () => {
         </table>
       </div>
     </Card>
+    </div>
   );
 };
 
