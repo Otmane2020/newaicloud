@@ -252,6 +252,17 @@ Deno.serve(async (req: Request) => {
     console.log(`   - Custom collections: ${customCount}`);
     console.log(`   - Successfully imported: ${upsertedCount}`);
     console.log(`   - Errors: ${errorCount}`);
+    
+    console.log(`📊 [IMPORT-COLLECTIONS] Summary:`);
+    console.log(`   - Total collections fetched: ${allCollections.length}`);
+    console.log(`   - Smart collections: ${smartCount}`);
+    console.log(`   - Custom collections: ${customCount}`);
+    console.log(`   - Successfully imported: ${upsertedCount}`);
+    console.log(`   - Failed: ${errorCount}`);
+
+    if (errorCount > 0) {
+      console.warn(`⚠️ [IMPORT-COLLECTIONS] Some collections failed to import. Check logs above for details.`);
+    }
 
     return new Response(JSON.stringify({
       success: true,

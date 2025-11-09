@@ -475,7 +475,7 @@ export default function ShopifyConnectionsList() {
         
         try {
           let result;
-          const timeoutMs = 30000; // 30 seconds timeout
+          const timeoutMs = 180000; // 3 minutes timeout (consistent with useShopifySync)
           
           const executeWithTimeout = async (promise: Promise<any>) => {
             const timeoutPromise = new Promise((_, reject) => 
