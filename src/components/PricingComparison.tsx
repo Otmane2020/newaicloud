@@ -8,7 +8,7 @@ import { getCurrencySymbol } from '@/lib/formatUtils';
 
 const PricingComparison = () => {
   const isMobile = useIsMobile();
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
 
   const allPlans = [
     { id: 'starter', name: 'Starter', priceMonthly: 9.99, priceYearly: 95.9, products: 100, optimizations: 100, articles: 10, chat: 100, stores: 1, campaigns: 0, support: 'email', api: false },
@@ -108,7 +108,7 @@ const PricingComparison = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="p-3 text-left font-semibold sticky left-0 bg-muted/50 z-10 min-w-[180px]">{t.pricingTable.features}</th>
+              <th className="p-3 text-left font-semibold sticky left-0 bg-muted/50 z-10 min-w-[180px]">Fonctionnalités</th>
               {allPlans.map((plan) => {
                 const isEnterprise = plan.id.startsWith('enterprise');
                 const isPro = plan.id.startsWith('pro');
@@ -159,7 +159,7 @@ const PricingComparison = () => {
         </table>
       </div>
       <div className="p-4 bg-muted/30 text-xs text-muted-foreground text-center">
-        {t.pricingTable.scrollHint}
+        Faites défiler horizontalement pour voir tous les plans
       </div>
     </Card>
   );
