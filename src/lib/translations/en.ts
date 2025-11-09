@@ -1181,6 +1181,50 @@ export const translations = {
     },
   },
   
+  searchConsole: {
+    products: {
+      title: "Product Analysis",
+      description: "Analyze your product performance in Google Search Console",
+      performanceTracking: {
+        title: "Performance Tracking",
+        description: "Track clicks, impressions and CTR for each product",
+      },
+      suggestedOptimizations: {
+        title: "Suggested Optimizations",
+        description: "Identify products to optimize as a priority",
+      },
+      automaticAlerts: {
+        title: "Automatic Alerts",
+        description: "Receive alerts in case of significant drop",
+      },
+      underDevelopment: "Feature under development",
+      underDevelopmentDesc: "This section will soon be available to analyze your products",
+    },
+    sitemaps: {
+      title: "Sitemaps and Indexing",
+      description: "Manage your sitemaps and track indexing of your pages and products",
+      indexed: "Indexed Pages",
+      pending: "Pending",
+      errors: "Errors",
+      submitSitemap: "Submit a sitemap",
+      submitSitemapDescription: "Submit your sitemap URL to Google Search Console",
+      submitButton: "Submit",
+      placeholder: "https://example.com/sitemap.xml",
+      productSitemap: {
+        title: "Product Sitemap",
+        description: "Automatically generate a sitemap for all your products",
+        action: "Generate",
+      },
+      pageSitemap: {
+        title: "Page Sitemap",
+        description: "Include all your static pages and collections",
+        action: "Generate",
+      },
+      underDevelopment: "Feature under development",
+      underDevelopmentDesc: "Full sitemap management will be available soon",
+    },
+  },
+  
   smartPricing: {
     errors: {
       loadData: "Error loading data",

@@ -1181,6 +1181,50 @@ export const translations = {
     },
   },
   
+  searchConsole: {
+    products: {
+      title: "Analyse des Produits",
+      description: "Analysez les performances de vos produits dans la Console Google Search",
+      performanceTracking: {
+        title: "Suivi des performances",
+        description: "Suivez les clics, impressions et CTR de chaque produit",
+      },
+      suggestedOptimizations: {
+        title: "Optimisations suggérées",
+        description: "Identifiez les produits à optimiser en priorité",
+      },
+      automaticAlerts: {
+        title: "Alertes automatiques",
+        description: "Recevez des alertes en cas de baisse significative",
+      },
+      underDevelopment: "Fonctionnalité en développement",
+      underDevelopmentDesc: "Cette section sera bientôt disponible pour analyser vos produits",
+    },
+    sitemaps: {
+      title: "Sitemaps et Indexation",
+      description: "Gérez vos sitemaps et suivez l'indexation de vos pages et produits",
+      indexed: "Pages indexées",
+      pending: "En attente",
+      errors: "Erreurs",
+      submitSitemap: "Soumettre un sitemap",
+      submitSitemapDescription: "Soumettez l'URL de votre sitemap à Google Search Console",
+      submitButton: "Soumettre",
+      placeholder: "https://example.com/sitemap.xml",
+      productSitemap: {
+        title: "Sitemap des produits",
+        description: "Générez automatiquement un sitemap pour tous vos produits",
+        action: "Générer",
+      },
+      pageSitemap: {
+        title: "Sitemap des pages",
+        description: "Incluez toutes vos pages statiques et collections",
+        action: "Générer",
+      },
+      underDevelopment: "Fonctionnalité en développement",
+      underDevelopmentDesc: "La gestion complète des sitemaps sera bientôt disponible",
+    },
+  },
+  
   smartPricing: {
     errors: {
       loadData: "Erreur lors du chargement des données",

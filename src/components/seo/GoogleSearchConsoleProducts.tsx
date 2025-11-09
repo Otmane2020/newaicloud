@@ -1,11 +1,13 @@
 import { Card } from '@/components/ui/card';
 import { Package, TrendingUp, AlertCircle } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface GoogleSearchConsoleProductsProps {
   selectedDomain: string;
 }
 
 export function GoogleSearchConsoleProducts({ selectedDomain }: GoogleSearchConsoleProductsProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       <Card className="p-8">
@@ -16,37 +18,37 @@ export function GoogleSearchConsoleProducts({ selectedDomain }: GoogleSearchCons
             </div>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Analyse des Produits</h2>
+            <h2 className="text-2xl font-bold">{t.searchConsole.products.title}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Analysez les performances de vos produits dans la Console Google Search
+              {t.searchConsole.products.description}
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-3 mt-8 text-left">
             <Card className="p-4 bg-accent/50">
               <TrendingUp className="h-6 w-6 mb-2 text-primary" />
-              <h4 className="font-semibold mb-1">Suivi des performances</h4>
+              <h4 className="font-semibold mb-1">{t.searchConsole.products.performanceTracking.title}</h4>
               <p className="text-sm text-muted-foreground">
-                Suivez les clics, impressions et CTR de chaque produit
+                {t.searchConsole.products.performanceTracking.description}
               </p>
             </Card>
             <Card className="p-4 bg-accent/50">
               <Package className="h-6 w-6 mb-2 text-primary" />
-              <h4 className="font-semibold mb-1">Optimisations suggérées</h4>
+              <h4 className="font-semibold mb-1">{t.searchConsole.products.suggestedOptimizations.title}</h4>
               <p className="text-sm text-muted-foreground">
-                Identifiez les produits à optimiser en priorité
+                {t.searchConsole.products.suggestedOptimizations.description}
               </p>
             </Card>
             <Card className="p-4 bg-accent/50">
               <AlertCircle className="h-6 w-6 mb-2 text-primary" />
-              <h4 className="font-semibold mb-1">Alertes automatiques</h4>
+              <h4 className="font-semibold mb-1">{t.searchConsole.products.automaticAlerts.title}</h4>
               <p className="text-sm text-muted-foreground">
-                Recevez des alertes en cas de baisse significative
+                {t.searchConsole.products.automaticAlerts.description}
               </p>
             </Card>
           </div>
           <div className="pt-6 text-sm text-muted-foreground">
-            <p>🚧 Fonctionnalité en développement</p>
-            <p>Cette section sera bientôt disponible pour analyser vos produits</p>
+            <p>🚧 {t.searchConsole.products.underDevelopment}</p>
+            <p>{t.searchConsole.products.underDevelopmentDesc}</p>
           </div>
         </div>
       </Card>
