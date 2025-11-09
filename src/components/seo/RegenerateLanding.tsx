@@ -22,12 +22,12 @@ interface RegenerateLandingProps {
   onClose?: () => void;
 }
 
-export default function RegenerateLanding({ 
-  product, 
+export default function RegenerateLanding({
+  product,
   config,
   autoGenerate = false,
   onGenerated,
-  onClose 
+  onClose,
 }: RegenerateLandingProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -49,62 +49,117 @@ export default function RegenerateLanding({
    -----------------------------*/
   const resolveVendor = async (): Promise<string> => {
     switch (config.vendorSource) {
-      case 'shopify':
-        // Option 1 : Importer de Shopify
-        console.log('[Vendor] Importing from Shopify...');
+      case "shopify":
         const { data: productData } = await supabase
-          .from('shopify_products')
-          .select('vendor')
-          .eq('id', product.id)
+          .from("shopify_products")
+          .select("vendor")
+          .eq("id", product.id)
           .single();
-        
-        return productData?.vendor || 'Marque inconnue';
+        return productData?.vendor || "Marque inconnue";
 
-      case 'extract':
-        // Option 2 : Extraire du titre
-        console.log('[Vendor] Extracting from title...');
-        const words = product.title.split(' ');
-        
-        // Chercher le premier mot capitalisé (ex: "Table basse Alia" → "Alia")
-        const capitalizedWord = words.find(word => 
-          word.length > 2 && 
-          word[0] === word[0].toUpperCase() && 
-          word.slice(1) === word.slice(1).toLowerCase()
+      case "extract":
+        const words = product.title.split(" ");
+        const capitalizedWord = words.find(
+          (word) =>
+            word.length > 2 && word[0] === word[0].toUpperCase() && word.slice(1) === word.slice(1).toLowerCase(),
         );
-        
+
         if (capitalizedWord) {
-          console.log(`[Vendor] Extracted: "${capitalizedWord}"`);
           return capitalizedWord;
         }
-        
-        // Fallback : premier mot de plus de 3 lettres
-        const fallback = words.find(w => w.length > 3) || 'Marque';
-        console.log(`[Vendor] Fallback: "${fallback}"`);
+
+        const fallback = words.find((w) => w.length > 3) || "Marque";
         return fallback;
 
-      case 'generate':
-        // Option 3 : Générer avec l'IA
-        console.log('[Vendor] Generating with AI...');
+      case "generate":
         try {
-          const { data: aiData } = await supabase.functions.invoke('generate-vendor-name', {
+          const { data: aiData } = await supabase.functions.invoke("generate-vendor-name", {
             body: {
               productTitle: product.title,
               productDescription: product.description,
-            }
+            },
           });
-          
+
           if (aiData?.vendor) {
-            console.log(`[Vendor] Generated: "${aiData.vendor}"`);
             return aiData.vendor;
           }
         } catch (err) {
-          console.error('[Vendor] AI generation failed:', err);
+          console.error("[Vendor] AI generation failed:", err);
         }
-        
-        return 'Marque générée';
+
+        return "Marque générée";
 
       default:
-        return 'Marque inconnue';
+        return "Marque inconnue";
+    }
+  };
+
+  /** ----------------------------
+   * 🖼️ Analyze Image with AI Vision
+   -----------------------------*/
+  const analyzeImageWithAI = async (imageUrl: string): Promise<string> => {
+    if (!imageUrl) {
+      console.log("[Vision] No image URL provided");
+      return "";
+    }
+
+    try {
+      setProgressMessage(t.landingGeneration.analyzingImage);
+      setProgress(25);
+
+      const { data, error } = await supabase.functions.invoke("analyze-product-image", {
+        body: {
+          imageUrl: imageUrl,
+          maxTokens: 500, // Limiter la longueur de la description
+        },
+      });
+
+      if (error) {
+        console.error("[Vision] Image analysis failed:", error);
+        return "";
+      }
+
+      console.log("[Vision] Image analysis completed");
+      return data?.analysis || "";
+    } catch (err) {
+      console.error("[Vision] Image analysis error:", err);
+      return "";
+    }
+  };
+
+  /** ----------------------------
+   * 📏 Calculate Content Length Parameters
+   -----------------------------*/
+  const getContentLengthParams = () => {
+    switch (config.contentLength) {
+      case "short":
+        return {
+          maxTokens: 800,
+          wordCount: "150-200 mots",
+          sections: 2,
+          description: "Contenu concis et impactant",
+        };
+      case "medium":
+        return {
+          maxTokens: 1200,
+          wordCount: "300-400 mots",
+          sections: 3,
+          description: "Contenu équilibré avec détails modérés",
+        };
+      case "long":
+        return {
+          maxTokens: 2000,
+          wordCount: "500-700 mots",
+          sections: 4,
+          description: "Contenu détaillé et complet",
+        };
+      default:
+        return {
+          maxTokens: 1200,
+          wordCount: "300-400 mots",
+          sections: 3,
+          description: "Contenu équilibré",
+        };
     }
   };
 
@@ -118,21 +173,38 @@ export default function RegenerateLanding({
       setProgress(0);
       setProgressMessage(t.landingGeneration.preparing);
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
       setProgress(10);
-      
-      // ✅ ÉTAPE 1 : Résoudre le vendor selon l'option choisie
+
+      // ✅ ÉTAPE 1 : Résoudre le vendor
       setProgressMessage(t.landingGeneration.resolving);
       const resolvedVendor = await resolveVendor();
-      console.log('[Landing] Resolved vendor:', resolvedVendor);
+      console.log("[Landing] Resolved vendor:", resolvedVendor);
 
       setProgress(20);
-      setProgressMessage(t.landingGeneration.analyzing);
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // ✅ ÉTAPE 2 : Analyser l'image avec vision IA
+      let imageAnalysis = "";
+      if (product.image_url) {
+        imageAnalysis = await analyzeImageWithAI(product.image_url);
+      } else {
+        setProgress(25); // Skip to same progress if no image
+      }
+
       setProgress(30);
       setProgressMessage(t.landingGeneration.generating);
 
+      // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
+      const contentParams = getContentLengthParams();
+
+      console.log("[Landing] Content parameters:", {
+        length: config.contentLength,
+        maxTokens: contentParams.maxTokens,
+        sections: contentParams.sections,
+        hasImageAnalysis: !!imageAnalysis,
+      });
+
+      // ✅ ÉTAPE 4 : Générer le landing avec tous les paramètres
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
           productTitle: product.title,
@@ -144,6 +216,9 @@ export default function RegenerateLanding({
           layout: config.layout,
           length: config.contentLength,
           customHighlights: config.customHighlights,
+          imageAnalysis: imageAnalysis, // 🆕 Analyse vision IA
+          contentLengthParams: contentParams, // 🆕 Paramètres de longueur
+          mobileOptimized: true, // 🆕 Forcer l'optimisation mobile
         },
       });
 
@@ -164,15 +239,19 @@ export default function RegenerateLanding({
         return;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setProgress(90);
       setProgressMessage(t.landingGeneration.finalizing);
 
       if (data?.html?.trim()) {
+        // ✅ Validation de la longueur du contenu généré
+        const wordCount = data.html.split(/\s+/).length;
+        console.log(`[Landing] Generated content: ${wordCount} words`);
+
         setHtmlContent(data.html);
         setProgress(100);
         setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
-        
+
         toast.success(t.landingGeneration.success.generated);
         onGenerated?.(data.html);
       } else {
@@ -282,8 +361,12 @@ export default function RegenerateLanding({
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
               <div className="flex-1">
-                <p className="font-semibold text-green-700 text-sm sm:text-base">{t.landingGeneration.success.generated}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">{t.landingGeneration.preview.description}</p>
+                <p className="font-semibold text-green-700 text-sm sm:text-base">
+                  {t.landingGeneration.success.generated} • {getContentLengthParams().wordCount}
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  {t.landingGeneration.preview.description} • Optimisé mobile
+                </p>
               </div>
             </div>
           </div>
@@ -295,7 +378,11 @@ export default function RegenerateLanding({
                 <span className="hidden sm:inline">{t.landingGeneration.preview.title}</span>
                 <span className="sm:hidden">Aperçu</span>
               </h3>
-              <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as "desktop" | "mobile")} className="w-auto">
+              <Tabs
+                value={previewMode}
+                onValueChange={(v) => setPreviewMode(v as "desktop" | "mobile")}
+                className="w-auto"
+              >
                 <TabsList className="h-8">
                   <TabsTrigger value="desktop" className="text-xs sm:text-sm px-2 sm:px-3">
                     <Monitor className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
@@ -310,10 +397,10 @@ export default function RegenerateLanding({
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2">
-              <Button 
-                onClick={handleDownloadHTML} 
-                variant="outline" 
-                size="sm" 
+              <Button
+                onClick={handleDownloadHTML}
+                variant="outline"
+                size="sm"
                 className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
               >
                 <Download className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -321,10 +408,10 @@ export default function RegenerateLanding({
                 <span className="sm:hidden">Télécharger</span>
               </Button>
 
-              <Button 
-                onClick={handleSyncToShopify} 
-                disabled={syncing} 
-                size="sm" 
+              <Button
+                onClick={handleSyncToShopify}
+                disabled={syncing}
+                size="sm"
                 className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
               >
                 {syncing ? (
@@ -346,8 +433,8 @@ export default function RegenerateLanding({
 
           <div
             className={`border rounded-xl overflow-auto bg-white shadow-inner transition-all duration-300 ${
-              previewMode === "mobile" 
-                ? "max-w-[375px] mx-auto p-2 sm:p-4 max-h-[600px] sm:max-h-[650px]" 
+              previewMode === "mobile"
+                ? "max-w-[375px] mx-auto p-2 sm:p-4 max-h-[600px] sm:max-h-[650px]"
                 : "p-4 sm:p-6 lg:p-8 max-h-[500px] sm:max-h-[650px]"
             }`}
           >
