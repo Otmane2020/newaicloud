@@ -980,7 +980,10 @@ export function PageOptimization() {
                                 setShowUpgradeDialog(true);
                                 return;
                               }
-                              handleOptimizePage(page.id, page.optimized);
+                              // Sélectionner UNIQUEMENT cette page
+                              setSelectedPages(new Set([page.id]));
+                              // Déclencher le processus "Optimiser sélection"
+                              setTimeout(() => handleOptimizeSelected(), 0);
                             }}
                             disabled={optimizing}
                             title={page.optimized ? "Re-optimize" : "Optimize"}

@@ -1448,7 +1448,7 @@ export function CollectionOptimization() {
                           <Button
                             size="sm"
                             variant="default"
-                            onClick={async () => {
+                            onClick={() => {
                               if (!canDoAction('optimizations')) {
                                 toast.error("Limite atteinte", {
                                   description: `Vous avez atteint votre limite mensuelle de ${limits.limits.max_optimizations} optimisations.`,
@@ -1456,25 +1456,10 @@ export function CollectionOptimization() {
                                 setShowUpgradeDialog(true);
                                 return;
                               }
-                              setOptimizing(true);
-                              try {
-                                const { data, error } = await supabase.functions.invoke('generate-collection-seo', {
-                                  body: { collection_ids: [collection.id] }
-                                });
-                                if (error) throw error;
-                                const { data: updatedCollection } = await supabase.from('shopify_collections').select('*').eq('id', collection.id).single();
-                                if (updatedCollection) {
-                                  setOptimizedCollections([updatedCollection]);
-                                  setShowResultsDialog(true);
-                                  toast.success('Collection optimisée !');
-                                }
-                                await fetchCollections();
-                                await refreshLimits();
-                              } catch (error: any) {
-                                toast.error(error.message || 'Erreur lors de l\'optimisation');
-                              } finally {
-                                setOptimizing(false);
-                              }
+                              // Sélectionner UNIQUEMENT cette collection
+                              setSelectedCollections(new Set([collection.id]));
+                              // Déclencher le processus "Optimiser sélection"
+                              setTimeout(() => handleOptimizeSelected(), 0);
                             }}
                             disabled={optimizing}
                             title="Optimize"

@@ -1290,7 +1290,7 @@ export function SeoOptimization() {
                           <Button
                             variant="default"
                             size="sm"
-                            onClick={async () => {
+                            onClick={() => {
                               if (!canDoAction('optimizations')) {
                                 toast.error("Limite atteinte", {
                                   description: `Vous avez atteint votre limite mensuelle de ${limits.limits.max_optimizations} optimisations.`,
@@ -1298,20 +1298,10 @@ export function SeoOptimization() {
                                 setShowUpgradeDialog(true);
                                 return;
                               }
-                              setGenerating(true);
-                              try {
-                                const { error } = await supabase.functions.invoke("generate-seo-with-deepseek", {
-                                  body: { productId: product.id },
-                                });
-                                if (error) throw error;
-                                toast.success(t.seo.optimization.productOptimized);
-                                await fetchProducts();
-                                await refreshLimits();
-                              } catch (error: any) {
-                                toast.error(error.message || t.seo.optimization.optimizationError);
-                              } finally {
-                                setGenerating(false);
-                              }
+                              // Sélectionner UNIQUEMENT ce produit
+                              setSelectedProducts(new Set([product.id]));
+                              // Déclencher le processus "Optimiser sélection"
+                              setTimeout(() => handleGenerateForSelected(), 0);
                             }}
                             disabled={generating}
                             title={t.seo.optimization.optimize}
