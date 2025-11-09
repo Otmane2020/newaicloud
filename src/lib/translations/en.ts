@@ -776,6 +776,7 @@ export const translations = {
     export: "Export",
     import: "Import",
     impossible: "Impossible",
+    dataRefreshed: "Data refreshed",
   },
   
   navigation: {
