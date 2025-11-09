@@ -33,6 +33,13 @@ const ShopifyInstall = () => {
       }
 
       try {
+        console.log('[ShopifyInstall] Calling edge function with params:', {
+          hmac: hmac?.substring(0, 10) + '...',
+          host,
+          shop,
+          timestamp
+        });
+
         // Call edge function to validate and initiate OAuth
         const { data, error } = await supabase.functions.invoke('shopify-install', {
           body: {
@@ -43,6 +50,8 @@ const ShopifyInstall = () => {
             allParams: Object.fromEntries(searchParams.entries()),
           },
         });
+
+        console.log('[ShopifyInstall] Response:', { data, error });
 
         if (error) {
           console.error('[ShopifyInstall] Error:', error);
@@ -56,6 +65,7 @@ const ShopifyInstall = () => {
           // Redirect to Shopify OAuth page
           window.location.href = data.authUrl;
         } else {
+          console.error('[ShopifyInstall] No authUrl in response:', data);
           setStatus('error');
           setErrorMessage('URL d\'autorisation manquante');
         }
