@@ -52,10 +52,11 @@ serve(async (req) => {
       .from('shopify_connections')
       .select('store_url, encrypted_access_token')
       .eq('id', product.store_id)
-      .eq('seller_id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (connectionError || !connection) {
+      console.error('[sync-landing-to-shopify] Connection error:', connectionError);
       throw new Error('Shopify connection not found');
     }
 
