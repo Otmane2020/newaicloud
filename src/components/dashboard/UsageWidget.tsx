@@ -33,6 +33,13 @@ export function UsageWidget() {
       blocked: limits.limitReached.products
     },
     {
+      label: 'Boutiques Shopify',
+      current: limits.usage.shopify_stores_count,
+      max: limits.limits.max_shopify_stores,
+      color: 'indigo',
+      blocked: limits.limitReached.shopifyStores
+    },
+    {
       label: 'Optimisations',
       current: limits.usage.optimizations_count,
       max: limits.limits.max_optimizations,
@@ -62,12 +69,8 @@ export function UsageWidget() {
     }
   ];
 
-  // Only show warning if actually blocked (not just 0/0 for disabled features)
-  const hasAnyLimitReached = (limits.limitReached.products && limits.limits.max_products < 999999) || 
-                             (limits.limitReached.optimizations && limits.limits.max_optimizations < 999999) || 
-                             (limits.limitReached.articles && limits.limits.max_articles < 999999) ||
-                             (limits.limitReached.chat && limits.limits.max_chat_responses < 999999) ||
-                             (limits.limitReached.campaigns && limits.limits.max_campaigns > 0);
+  // CRITICAL: Only show warning for optimizations and chat AI limits
+  const hasAnyLimitReached = limits.limitReached.optimizations || limits.limitReached.chat;
 
   return (
     <Card>
