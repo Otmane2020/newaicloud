@@ -44,20 +44,49 @@ serve(async (req) => {
       .single();
 
     if (productError || !product) {
+      console.error('[sync-landing-to-shopify] Product not found:', productError);
       throw new Error('Product not found');
     }
 
-    // Get Shopify credentials
-    const { data: connection, error: connectionError } = await supabase
-      .from('shopify_connections')
-      .select('store_url, encrypted_access_token')
-      .eq('id', product.store_id)
-      .eq('user_id', user.id)
-      .single();
+    console.log('[sync-landing-to-shopify] Product store_id:', product.store_id);
 
-    if (connectionError || !connection) {
-      console.error('[sync-landing-to-shopify] Connection error:', connectionError);
-      throw new Error('Shopify connection not found');
+    // Get Shopify credentials
+    // If product doesn't have a store_id, try to get the first active connection
+    let connection;
+    if (product.store_id) {
+      const { data, error: connectionError } = await supabase
+        .from('shopify_connections')
+        .select('store_url, encrypted_access_token')
+        .eq('id', product.store_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (connectionError || !data) {
+        console.error('[sync-landing-to-shopify] Connection not found for store_id:', product.store_id, connectionError);
+      } else {
+        connection = data;
+      }
+    }
+
+    // Fallback: if no connection found, try to get the first active connection for the user
+    if (!connection) {
+      console.log('[sync-landing-to-shopify] No store_id or connection not found, fetching first active connection');
+      const { data, error: fallbackError } = await supabase
+        .from('shopify_connections')
+        .select('store_url, encrypted_access_token')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fallbackError || !data) {
+        console.error('[sync-landing-to-shopify] No active Shopify connection found for user:', user.id, fallbackError);
+        throw new Error('No active Shopify connection found. Please connect your Shopify store first.');
+      }
+
+      connection = data;
+      console.log('[sync-landing-to-shopify] Using fallback connection');
     }
 
     // Decrypt access token
