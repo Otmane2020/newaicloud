@@ -104,7 +104,7 @@ export default function RegenerateLanding({
     }
 
     try {
-      setProgressMessage(t.landingGeneration.analyzingImage);
+      setProgressMessage(t.landingGeneration.analyzing);
       setProgress(25);
 
       const { data, error } = await supabase.functions.invoke("analyze-product-image", {
