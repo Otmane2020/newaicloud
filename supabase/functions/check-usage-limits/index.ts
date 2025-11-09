@@ -65,7 +65,21 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('[LIMITS] Error fetching profile:', profileError);
+      return new Response(
+        JSON.stringify({ error: TRANSLATIONS[lang].errorCheckingLimits }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!profile) {
+      console.error('[LIMITS] No profile found for user');
+      return new Response(
+        JSON.stringify({ error: TRANSLATIONS[lang].errorCheckingLimits }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Determine if user is in trial or paid subscription
     // A user is in trial if:
@@ -139,6 +153,14 @@ serve(async (req) => {
       .eq('seller_id', user.id)
       .eq('month', monthKey)
       .maybeSingle();
+
+    if (usageError) {
+      console.error('[LIMITS] Error fetching usage:', usageError);
+      return new Response(
+        JSON.stringify({ error: TRANSLATIONS[lang].errorCheckingLimits }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Si pas d'entrée pour ce mois, en créer une
     let currentUsage = usage;
@@ -307,11 +329,24 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    const lang = detectLanguage(req);
-    console.error(`${TRANSLATIONS[lang].errorCheckingLimits}:`, error);
+    console.error('[LIMITS] Unexpected error in check-usage-limits:', error);
+    
+    // Try to detect language, fallback to 'en' if it fails
+    let lang: 'fr' | 'en' = 'en';
+    try {
+      lang = detectLanguage(req);
+    } catch (e) {
+      console.error('[LIMITS] Could not detect language:', e);
+    }
+    
     const errorMessage = error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError;
+    console.error(`[LIMITS] ${TRANSLATIONS[lang].errorCheckingLimits}: ${errorMessage}`);
+    
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error instanceof Error ? error.stack : undefined
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
