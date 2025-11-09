@@ -83,7 +83,7 @@ export function BillingPortal() {
 
       if (error) {
         toast({
-          title: "Erreur",
+          title: t.common.error,
           description: "Impossible d'accéder au portail de facturation pour le moment.",
           variant: "destructive"
         });

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useTranslation } from "@/lib/language";
 
 interface OptimizationConfirmDialogProps {
   open: boolean;
@@ -30,6 +31,7 @@ export function OptimizationConfirmDialog({
   maxOptimizations,
   isTrialing,
 }: OptimizationConfirmDialogProps) {
+  const { t } = useTranslation();
   const remainingBefore = maxOptimizations - currentUsage;
   const remainingAfter = remainingBefore - selectedCount;
   const usagePercentageBefore = (currentUsage / maxOptimizations) * 100;
@@ -150,7 +152,7 @@ export function OptimizationConfirmDialog({
             disabled={willExceedLimit}
             className="min-w-[120px]"
           >
-            {willExceedLimit ? "Impossible" : "Confirmer"}
+            {willExceedLimit ? t.common.impossible : t.common.confirm}
           </Button>
         </DialogFooter>
       </DialogContent>

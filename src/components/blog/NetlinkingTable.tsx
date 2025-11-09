@@ -210,7 +210,7 @@ export function NetlinkingTable() {
       await loadNetlinking();
     } catch (error: any) {
       console.error('Error checking links:', error);
-      toast.error('Erreur lors de la vérification des liens');
+      toast.error(t.common.error);
     } finally {
       setChecking(false);
     }
@@ -231,7 +231,7 @@ export function NetlinkingTable() {
       await loadNetlinking();
     } catch (error: any) {
       console.error('Error deleting link:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error(t.common.error);
     } finally {
       setDeleteDialogOpen(false);
       setLinkToDelete(null);

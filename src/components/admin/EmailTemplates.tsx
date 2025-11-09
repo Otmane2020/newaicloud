@@ -101,7 +101,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
   const saveTemplate = async () => {
     if (!name || !subject || !body) {
       toast({
-        title: "Erreur",
+        title: t.common.error,
         description: t.superAdmin.emailTemplates.toasts.fillRequired,
         variant: 'destructive'
       });
@@ -126,7 +126,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
           .eq('id', editingTemplate.id);
 
         if (error) throw error;
-        toast({ title: "Succès", description: t.superAdmin.emailTemplates.toasts.updated });
+        toast({ title: t.common.success, description: t.superAdmin.emailTemplates.toasts.updated });
       } else {
         // Create
         const { error } = await supabase
@@ -141,7 +141,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
           });
 
         if (error) throw error;
-        toast({ title: "Succès", description: t.superAdmin.emailTemplates.toasts.created });
+        toast({ title: t.common.success, description: t.superAdmin.emailTemplates.toasts.created });
       }
 
       setIsDialogOpen(false);
@@ -150,7 +150,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
     } catch (error: any) {
       console.error('Error saving template:', error);
       toast({
-        title: "Erreur",
+        title: t.common.error,
         description: error.message || t.superAdmin.emailTemplates.toasts.saveError,
         variant: 'destructive'
       });
@@ -168,12 +168,12 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
 
       if (error) throw error;
       
-      toast({ title: "Succès", description: t.superAdmin.emailTemplates.toasts.deleted });
+      toast({ title: t.common.success, description: t.superAdmin.emailTemplates.toasts.deleted });
       loadTemplates();
     } catch (error: any) {
       console.error('Error deleting template:', error);
       toast({
-        title: "Erreur",
+        title: t.common.error,
         description: t.superAdmin.emailTemplates.toasts.deleteError,
         variant: 'destructive'
       });
@@ -195,12 +195,12 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
 
       if (error) throw error;
       
-      toast({ title: "Succès", description: t.superAdmin.emailTemplates.toasts.duplicated });
+      toast({ title: t.common.success, description: t.superAdmin.emailTemplates.toasts.duplicated });
       loadTemplates();
     } catch (error: any) {
       console.error('Error duplicating template:', error);
       toast({
-        title: "Erreur",
+        title: t.common.error,
         description: t.superAdmin.emailTemplates.toasts.duplicateError,
         variant: 'destructive'
       });

@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, TrendingUp, Users, DollarSign, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from '@/lib/language';
 
 interface PlanStats {
   plan_id: string;
@@ -34,11 +35,12 @@ interface UserDetail {
 }
 
 export function AdvancedAnalytics() {
+  const { toast } = useToast();
+  const { t } = useTranslation();
   const [planStats, setPlanStats] = useState<PlanStats[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>("all");
   const [userDetails, setUserDetails] = useState<UserDetail[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     loadAnalytics();
@@ -159,7 +161,7 @@ export function AdvancedAnalytics() {
     } catch (error) {
       console.error('Error loading analytics:', error);
       toast({
-        title: 'Erreur',
+        title: t.common.error,
         description: 'Impossible de charger les analytics',
         variant: 'destructive'
       });

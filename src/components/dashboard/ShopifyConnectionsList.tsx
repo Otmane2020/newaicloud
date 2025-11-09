@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ShopifySyncSettings } from '@/components/integration/ShopifySyncSettings';
 import { SimpleSyncProgress } from '@/components/integration/SyncProgressDialog';
 import { SyncResultDialog } from '@/components/integration/SyncResultDialog';
+import { useTranslation } from '@/lib/language';
 
 import {
   AlertDialog,
@@ -41,6 +42,7 @@ interface ShopifyConnection {
 
 export default function ShopifyConnectionsList() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [connections, setConnections] = useState<ShopifyConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [importingStoreId, setImportingStoreId] = useState<string | null>(null);
@@ -279,7 +281,7 @@ export default function ShopifyConnectionsList() {
       setConnections(data || []);
     } catch (error) {
       console.error('Error loading connections:', error);
-      toast.error('Erreur lors du chargement des connexions');
+      toast.error(t.common.error);
     } finally {
       setLoading(false);
     }
@@ -346,7 +348,7 @@ export default function ShopifyConnectionsList() {
       setStoreToDelete(null);
     } catch (error) {
       console.error('Error deleting connection:', error);
-      toast.error('Erreur lors de la déconnexion');
+      toast.error(t.common.error);
     }
   };
 

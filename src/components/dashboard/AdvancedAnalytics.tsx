@@ -119,7 +119,7 @@ export function AdvancedAnalytics() {
     } catch (error) {
       console.error('Error loading analytics:', error);
       toast({
-        title: "Erreur",
+        title: t.common.error,
         description: "Impossible de charger les analytics",
         variant: "destructive"
       });

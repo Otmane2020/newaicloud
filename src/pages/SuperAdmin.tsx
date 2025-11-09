@@ -17,6 +17,7 @@ import { UserActivityHistory } from '@/components/admin/UserActivityHistory';
 import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
 import { EmailTemplates } from '@/components/admin/EmailTemplates';
 import { EmailStatsDashboard } from '@/components/admin/EmailStatsDashboard';
+import { useTranslation } from '@/lib/language';
 
 interface StripeSubscription {
   id: string;
@@ -67,6 +68,8 @@ interface SuperAdminProps {
 }
 
 export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps) {
+  const { toast } = useToast();
+  const { t } = useTranslation();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [stores, setStores] = useState<ShopifyStore[]>([]);
@@ -76,7 +79,6 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
   const [hasNewEmail, setHasNewEmail] = useState(false);
   const [billingFilter, setBillingFilter] = useState<'all' | 'monthly' | 'yearly'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'trialing' | 'inactive' | 'canceled'>('all');
-  const { toast } = useToast();
 
   useEffect(() => {
     loadData();
@@ -155,7 +157,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
           hasStripeData: false
         })));
         toast({
-          title: "Erreur Stripe",
+          title: t.common.error,
           description: "Impossible de charger les données Stripe",
           variant: "destructive"
         });
@@ -166,7 +168,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
-        title: "Erreur",
+        title: t.common.error,
         description: "Erreur lors du chargement des données",
         variant: "destructive"
       });
@@ -207,14 +209,14 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       if (error) throw error;
 
       toast({
-        title: 'Succès',
+        title: t.common.success,
         description: 'Plan mis à jour avec succès'
       });
       loadData();
     } catch (error) {
       console.error('Error updating plan:', error);
       toast({
-        title: 'Erreur',
+        title: t.common.error,
         description: 'Impossible de mettre à jour le plan',
         variant: 'destructive'
       });
@@ -234,14 +236,14 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       if (error) throw error;
 
       toast({
-        title: 'Succès',
+        title: t.common.success,
         description: 'Statut mis à jour avec succès'
       });
       loadData();
     } catch (error) {
       console.error('Error updating status:', error);
       toast({
-        title: 'Erreur',
+        title: t.common.error,
         description: 'Impossible de mettre à jour le statut',
         variant: 'destructive'
       });
@@ -256,7 +258,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       const targetPlan = plans.find(p => p.id === targetPlanId);
       if (!targetPlan) {
         toast({
-          title: 'Erreur',
+          title: t.common.error,
           description: 'Plan introuvable',
           variant: 'destructive'
         });
@@ -282,7 +284,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
     } catch (error) {
       console.error('Error changing plan:', error);
       toast({
-        title: 'Erreur',
+        title: t.common.error,
         description: 'Impossible de changer le plan',
         variant: 'destructive'
       });

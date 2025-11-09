@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Shield, AlertCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { useTranslation } from "@/lib/language";
 
 const loginSchema = z.object({
   email: z.string().email("Email invalide"),
@@ -17,6 +18,7 @@ const loginSchema = z.object({
 export default function AdminSuperLogin() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -62,7 +64,7 @@ export default function AdminSuperLogin() {
       if (authError) {
         toast({
           variant: "destructive",
-          title: "Erreur de connexion",
+          title: t.common.error,
           description: "Email ou mot de passe invalide",
         });
         return;
@@ -71,7 +73,7 @@ export default function AdminSuperLogin() {
       if (!authData.user) {
         toast({
           variant: "destructive",
-          title: "Erreur",
+          title: t.common.error,
           description: "Impossible de récupérer les informations utilisateur",
         });
         return;
@@ -86,7 +88,7 @@ export default function AdminSuperLogin() {
         await supabase.auth.signOut();
         toast({
           variant: "destructive",
-          title: "Erreur de vérification",
+          title: t.common.error,
           description: "Impossible de vérifier les permissions",
         });
         return;
@@ -118,7 +120,7 @@ export default function AdminSuperLogin() {
       } else {
         toast({
           variant: "destructive",
-          title: "Erreur",
+          title: t.common.error,
           description: "Une erreur inattendue s'est produite",
         });
       }

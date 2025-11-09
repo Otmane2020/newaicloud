@@ -47,6 +47,7 @@ import { OptimizeAllDialog } from './OptimizeAllDialog';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '@/lib/language';
 
 interface PreviewImage {
   productId: string;
@@ -71,6 +72,7 @@ interface Product {
 
 export function GoogleShopping() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -138,7 +140,7 @@ export function GoogleShopping() {
       calculateOptimizationScore(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Erreur lors du chargement des produits');
+      toast.error(t.common.error);
     } finally {
       setLoading(false);
     }
@@ -205,7 +207,7 @@ export function GoogleShopping() {
       await fetchProducts();
     } catch (error) {
       console.error('Error saving:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error(t.common.error);
     } finally {
       setSaving(false);
     }
