@@ -65,7 +65,15 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('[LIMITS] Profile error:', profileError);
+      throw new Error(`Failed to fetch user profile: ${profileError.message || 'Unknown error'}`);
+    }
+
+    if (!profile) {
+      console.error('[LIMITS] No profile found for user:', user.id);
+      throw new Error('User profile not found');
+    }
 
     // Determine if user is in trial or paid subscription
     // A user is in trial if:
@@ -186,7 +194,13 @@ serve(async (req) => {
       .eq('seller_id', user.id);
 
     if (countError) {
-      console.error('[LIMITS] Error counting real products:', countError);
+      console.error('[LIMITS] Error counting real products:', {
+        message: countError.message || 'Unknown error',
+        details: countError.details || 'No details',
+        hint: countError.hint || 'No hint',
+        code: countError.code || 'No code'
+      });
+      // Continue without correcting products count if there's an error
     } else if (realProductCount !== null && currentUsage.products_count !== realProductCount) {
       console.warn(`[LIMITS] ⚠️ Inconsistency detected: usage_tracking shows ${currentUsage.products_count} products but real count is ${realProductCount}`);
       
@@ -308,10 +322,25 @@ serve(async (req) => {
     );
   } catch (error) {
     const lang = detectLanguage(req);
-    console.error(`${TRANSLATIONS[lang].errorCheckingLimits}:`, error);
-    const errorMessage = error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError;
+    console.error(`${TRANSLATIONS[lang].errorCheckingLimits}:`, {
+      error,
+      message: error instanceof Error ? error.message : 'No message',
+      stack: error instanceof Error ? error.stack : 'No stack',
+      type: typeof error,
+      stringified: JSON.stringify(error, null, 2)
+    });
+    
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : (typeof error === 'object' && error !== null && 'message' in error)
+        ? String((error as any).message)
+        : TRANSLATIONS[lang].unknownError;
+    
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: errorMessage || TRANSLATIONS[lang].unknownError,
+        details: error instanceof Error ? error.stack : undefined
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
