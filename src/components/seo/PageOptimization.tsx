@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
+import { OptimizationConfirmDialog } from './OptimizationConfirmDialog';
 import {
   Search,
   RefreshCw,
@@ -88,6 +89,7 @@ export function PageOptimization() {
     (searchParams.get("filter") as QualityFilter) || "all"
   );
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showOptimizeAllConfirmDialog, setShowOptimizeAllConfirmDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 50;
   
@@ -311,7 +313,7 @@ export function PageOptimization() {
   };
 
   const handleOptimizeAll = async () => {
-    // Check limits BEFORE optimizing
+    // Check limits BEFORE showing confirmation dialog
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
         toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
@@ -327,6 +329,13 @@ export function PageOptimization() {
       toast.info('All pages are already optimized');
       return;
     }
+    
+    // Show confirmation dialog
+    setShowOptimizeAllConfirmDialog(true);
+  };
+
+  const handleConfirmOptimizeAll = async () => {
+    const pagesToOptimize = pages.filter(p => !p.optimized);
     
     setOptimizing(true);
     let successCount = 0;
@@ -1064,6 +1073,17 @@ export function PageOptimization() {
         </Card>
       )}
       
+      {/* Optimize All Confirmation Dialog */}
+      <OptimizationConfirmDialog
+        open={showOptimizeAllConfirmDialog}
+        onOpenChange={setShowOptimizeAllConfirmDialog}
+        onConfirm={handleConfirmOptimizeAll}
+        selectedCount={pages.filter(p => !p.optimized).length}
+        currentUsage={limits?.usage.optimizations_count || 0}
+        maxOptimizations={limits?.limits.max_optimizations || 0}
+        isTrialing={limits?.isTrialing || false}
+      />
+
       {/* Upgrade Dialog */}
       <UpgradeDialog
         open={showUpgradeDialog}
