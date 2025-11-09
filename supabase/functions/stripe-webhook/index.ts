@@ -509,14 +509,6 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     
     console.log('📋 Invoice:', invoice.id, 'Billing reason:', billing_reason);
     
-    // Only reset counters for subscription cycle renewals
-    if (billing_reason !== 'subscription_cycle') {
-      console.log('ℹ️ Not a subscription cycle renewal, skipping quota reset');
-      return;
-    }
-    
-    console.log('🔄 Subscription cycle renewal detected, resetting monthly quotas...');
-    
     // Find user by subscription or customer
     let userId: string | null = null;
     
@@ -543,49 +535,154 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     }
     
     if (!userId) {
-      console.warn('⚠️ No user found for invoice, cannot reset quotas');
+      console.warn('⚠️ No user found for invoice');
       return;
     }
     
-    // Reset monthly usage counters (preserve products_count and shopify_stores_count)
-    const currentMonth = new Date();
-    currentMonth.setDate(1);
-    currentMonth.setHours(0, 0, 0, 0);
-    const monthKey = currentMonth.toISOString().split('T')[0];
+    // Handle plan upgrade/change (when user pays a proration invoice)
+    if (billing_reason === 'subscription_update' && subscription && typeof subscription === 'string') {
+      console.log('🔄 Plan upgrade detected, syncing subscription...');
+      
+      try {
+        // Get updated subscription from Stripe
+        const subscriptionDetails = await stripe.subscriptions.retrieve(subscription);
+        const stripePriceId = subscriptionDetails.items.data[0].price.id;
+        
+        console.log('💰 New Stripe Price ID:', stripePriceId);
+        
+        // Find the corresponding plan in our database
+        const { data: plans } = await supabase
+          .from('subscription_plans')
+          .select('id, stripe_price_id_monthly, stripe_price_id_yearly, name')
+          .eq('is_active', true);
+        
+        const matchingPlan = plans?.find(
+          plan => plan.stripe_price_id_monthly === stripePriceId || plan.stripe_price_id_yearly === stripePriceId
+        );
+        
+        if (matchingPlan) {
+          console.log('✅ Mapped to plan:', matchingPlan.id, matchingPlan.name);
+          
+          // Determine billing period
+          const billingPeriod = subscriptionDetails.items.data[0].price.recurring?.interval === 'year' 
+            ? 'yearly' 
+            : 'monthly';
+          
+          // Update subscription record
+          const { error: subError } = await supabase
+            .from('subscriptions')
+            .update({
+              plan_id: matchingPlan.id,
+              billing_period: billingPeriod,
+              status: subscriptionDetails.status,
+              current_period_start: new Date(subscriptionDetails.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscriptionDetails.current_period_end * 1000).toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('stripe_subscription_id', subscription);
+          
+          if (subError) {
+            console.error('❌ Error updating subscription:', subError);
+          } else {
+            console.log('✅ Subscription record updated');
+          }
+          
+          // Update profile
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              current_plan_id: matchingPlan.id,
+              subscription_status: subscriptionDetails.status,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+          
+          if (profileError) {
+            console.error('❌ Error updating profile:', profileError);
+          } else {
+            console.log('✅ Profile updated with new plan');
+          }
+          
+          // Get user email for notification
+          const { data: userData } = await supabase.auth.admin.getUserById(userId);
+          const userEmail = userData?.user?.email;
+          const userName = userData?.user?.user_metadata?.full_name;
+          
+          // Send upgrade confirmation email
+          if (userEmail) {
+            try {
+              console.log('📧 Sending upgrade confirmation email');
+              await supabase.functions.invoke('send-subscription-confirmed', {
+                body: {
+                  email: userEmail,
+                  planName: matchingPlan.name,
+                  fullName: userName,
+                  isUpgrade: true
+                }
+              });
+              console.log('✅ Upgrade confirmation email sent');
+            } catch (emailError) {
+              console.error('❌ Error sending upgrade email:', emailError);
+            }
+          }
+          
+          console.log('✅ Plan upgrade sync completed');
+        } else {
+          console.warn('⚠️ No matching plan found for Stripe price:', stripePriceId);
+        }
+      } catch (upgradeError) {
+        console.error('❌ Error handling plan upgrade:', upgradeError);
+      }
+      
+      return;
+    }
     
-    // Get current usage to preserve product/store counts
-    const { data: currentUsage } = await supabase
-      .from('usage_tracking')
-      .select('products_count, shopify_stores_count')
-      .eq('seller_id', userId)
-      .eq('month', monthKey)
-      .single();
-    
-    console.log('💾 Resetting monthly counters for user:', userId);
-    const { error: usageError } = await supabase
-      .from('usage_tracking')
-      .upsert({
-        seller_id: userId,
-        month: monthKey,
-        optimizations_count: 0,
-        articles_count: 0,
-        chat_responses_count: 0,
-        shopify_requests_count: 0,
-        campaigns_count: 0,
-        products_count: currentUsage?.products_count || 0,
-        shopify_stores_count: currentUsage?.shopify_stores_count || 0,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'seller_id,month'
-      });
-    
-    if (usageError) {
-      console.error('❌ Error resetting usage counters:', usageError);
+    // Handle subscription cycle renewal (reset quotas)
+    if (billing_reason === 'subscription_cycle') {
+      console.log('🔄 Subscription cycle renewal detected, resetting monthly quotas...');
+      
+      // Reset monthly usage counters (preserve products_count and shopify_stores_count)
+      const currentMonth = new Date();
+      currentMonth.setDate(1);
+      currentMonth.setHours(0, 0, 0, 0);
+      const monthKey = currentMonth.toISOString().split('T')[0];
+      
+      // Get current usage to preserve product/store counts
+      const { data: currentUsage } = await supabase
+        .from('usage_tracking')
+        .select('products_count, shopify_stores_count')
+        .eq('seller_id', userId)
+        .eq('month', monthKey)
+        .single();
+      
+      console.log('💾 Resetting monthly counters for user:', userId);
+      const { error: usageError } = await supabase
+        .from('usage_tracking')
+        .upsert({
+          seller_id: userId,
+          month: monthKey,
+          optimizations_count: 0,
+          articles_count: 0,
+          chat_responses_count: 0,
+          shopify_requests_count: 0,
+          campaigns_count: 0,
+          products_count: currentUsage?.products_count || 0,
+          shopify_stores_count: currentUsage?.shopify_stores_count || 0,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'seller_id,month'
+        });
+      
+      if (usageError) {
+        console.error('❌ Error resetting usage counters:', usageError);
+      } else {
+        console.log('✅ Monthly usage counters reset successfully', {
+          preservedProducts: currentUsage?.products_count || 0,
+          preservedStores: currentUsage?.shopify_stores_count || 0
+        });
+      }
     } else {
-      console.log('✅ Monthly usage counters reset successfully', {
-        preservedProducts: currentUsage?.products_count || 0,
-        preservedStores: currentUsage?.shopify_stores_count || 0
-      });
+      console.log('ℹ️ Billing reason:', billing_reason, '- no specific action needed');
     }
   } catch (error) {
     console.error('❌ Error in handleInvoicePaymentSucceeded:', error);
