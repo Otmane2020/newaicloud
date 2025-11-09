@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw } from "lucide-react";
+import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -176,33 +176,40 @@ export default function Products() {
       {/* Sticky header for mobile */}
       <div className="sticky top-0 bg-background border-b z-10 p-4">
         <div className="flex items-center justify-between mb-3">
+          <div>
+            <h1 className="text-xl font-bold">{t.products.title}</h1>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              {products.length} / {
+                limits?.limits?.max_products && limits.limits.max_products >= 999999 
+                  ? <Infinity className="w-3 h-3" />
+                  : (limits?.limits?.max_products || "...")
+              } • {
+                limits 
+                  ? (limits.limits.max_products >= 999999 
+                      ? <span className="flex items-center gap-1">slots <Infinity className="w-3 h-3" /></span>
+                      : tf('products.slotsAvailable', { slots: Math.max(0, (limits.limits.max_products || 0) - (limits.usage.products_count || 0)) }))
+                  : t.common.loading
+              }
+            </p>
+          </div>
           <div className="flex items-center gap-2">
-            <div>
-              <h1 className="text-xl font-bold">{t.products.title}</h1>
-              <p className="text-xs text-muted-foreground">
-                {products.length} / {limits?.limits?.max_products || "..."} • {
-                  limits 
-                    ? tf('products.slotsAvailable', { slots: Math.max(0, (limits.limits.max_products || 0) - (limits.usage.products_count || 0)) })
-                    : t.common.loading
-                }
-              </p>
-            </div>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
+              onClick={async () => {
                 refreshLimits();
-                toast.success(t.common.dataRefreshed || "Données actualisées");
+                await loadProducts();
+                toast.success(t.common.dataRefreshed);
               }}
-              className="h-8 w-8 flex-shrink-0"
+              className="h-9 w-9 flex-shrink-0"
             >
               <RefreshCw className="w-4 h-4" />
             </Button>
+            <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
+              <Plus className="w-4 h-4 mr-2" />
+              {t.products.importProducts}
+            </Button>
           </div>
-          <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
-            <Plus className="w-4 h-4 mr-2" />
-            {t.products.importProducts}
-          </Button>
         </div>
 
         {/* Search bar */}
