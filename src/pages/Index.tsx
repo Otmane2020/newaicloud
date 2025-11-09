@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
 import { PublicHeader } from "@/components/PublicHeader";
-import PricingComparison from "@/components/PricingComparison";
+
 import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
 import { ContactForm } from "@/components/ContactForm";
 import { useAuth } from "@/contexts/AuthContext";
@@ -367,14 +367,6 @@ const Index = () => {
           })}
         </div>
 
-        {/* Comparison Table */}
-        <div className="mt-16">
-          <div className="text-center mb-8">
-            <h3 className="text-3xl font-bold mb-2">{t.landing.pricing.comparisonTitle}</h3>
-            <p className="text-muted-foreground">{t.landing.pricing.comparisonSubtitle}</p>
-          </div>
-          <PricingComparison />
-        </div>
 
       </section>
 
