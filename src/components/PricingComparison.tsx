@@ -3,81 +3,46 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import React from "react";
+import { useTranslation } from "@/lib/language";
+import { getCurrencySymbol } from "@/lib/formatUtils";
 
 const PricingComparison = () => {
   const isMobile = useIsMobile();
-  const [billingPeriod, setBillingPeriod] = React.useState<"monthly" | "annual">("monthly");
-
-  const pricing = {
-    starter: {
-      monthly: 9.99,
-      annual: 7.99 // 95.90/12 = ~7.99 per month
-    },
-    pro: {
-      monthly: 49,
-      annual: 39.17 // 470/12 = ~39.17 per month
-    },
-    enterprise: {
-      monthly: 199,
-      annual: 159.33 // 1912/12 = ~159.33 per month
-    }
-  };
+  const { language } = useTranslation();
 
   const features = [
     {
-      category: "Store & Products",
+      category: "Products",
       items: [
-        { name: "Maximum products", starter: "500", pro: "5,000", enterprise: "Unlimited" },
+        { name: "Maximum products", starter: "1,000", pro: "5,000 - 320,000", enterprise: "100,000 - 12,800,000" },
         { name: "Shopify Import", starter: true, pro: true, enterprise: true },
-        { name: "Multi-store management", starter: "1 store", pro: "3 stores", enterprise: "Unlimited" },
-        { name: "Collections management", starter: true, pro: true, enterprise: true },
+        { name: "Multi-store management", starter: "1", pro: "2 - 128", enterprise: "10 - 1,280" },
       ],
     },
     {
       category: "SEO Optimizations",
       items: [
-        { name: "Monthly optimizations", starter: "100", pro: "1,000", enterprise: "Unlimited" },
+        { name: "Monthly optimizations", starter: "250", pro: "500 - 32,000", enterprise: "5,000 - 640,000" },
         { name: "Automatic optimization", starter: true, pro: true, enterprise: true },
         { name: "Sync to Shopify", starter: true, pro: true, enterprise: true },
-        { name: "SEO quality score", starter: true, pro: true, enterprise: true },
-        { name: "SEO Audit & Reports", starter: false, pro: true, enterprise: true },
-        { name: "Competitor analysis", starter: false, pro: false, enterprise: true },
+        { name: "SEO quality analysis", starter: true, pro: true, enterprise: true },
       ],
     },
     {
-      category: "AI Content & Chat",
+      category: "AI",
       items: [
-        { name: "AI articles per month", starter: "3", pro: "25", enterprise: "250" },
-        { name: "AI chat messages", starter: "200", pro: "2,000", enterprise: "Unlimited" },
-        { name: "AI campaigns Blog", starter: "1", pro: "10", enterprise: "Unlimited" },
+        { name: "AI articles per month", starter: "5", pro: "10 - 640", enterprise: "100 - 12,800" },
+        { name: "AI chat per month", starter: "500", pro: "1,000 - 64,000", enterprise: "10,000 - 1,280,000" },
+        { name: "Editorial campaigns", starter: "2", pro: "5 - 320", enterprise: "50 - 6,400" },
         { name: "AI Vision (images)", starter: true, pro: true, enterprise: true },
-        { name: "Smart chatbot", starter: true, pro: true, enterprise: true },
       ],
     },
     {
-      category: "Google Integrations",
-      items: [
-        { name: "Google Search Console", starter: false, pro: true, enterprise: true },
-        { name: "Google Shopping Feed", starter: false, pro: true, enterprise: true },
-        { name: "Google Merchant Center", starter: false, pro: true, enterprise: true },
-      ],
-    },
-    {
-      category: "Media & Images",
-      items: [
-        { name: "AI Background removal", starter: true, pro: true, enterprise: true },
-        { name: "Image optimization", starter: true, pro: true, enterprise: true },
-        { name: "Alt text generation (counts as optimization)", starter: true, pro: true, enterprise: true },
-        { name: "Media history", starter: "30 days", pro: "1 year", enterprise: "Unlimited" },
-      ],
-    },
-    {
-      category: "Blog & Netlinking",
+      category: "Netlinking & Blog",
       items: [
         { name: "SEO opportunities", starter: true, pro: true, enterprise: true },
         { name: "Blog sync to Shopify", starter: true, pro: true, enterprise: true },
-        { name: "Netlinking analysis", starter: false, pro: true, enterprise: true },
-        { name: "Backlink monitoring", starter: false, pro: false, enterprise: true },
+        { name: "Netlinking analysis", starter: true, pro: true, enterprise: true },
       ],
     },
     {
@@ -87,7 +52,6 @@ const PricingComparison = () => {
         { name: "Priority support", starter: false, pro: true, enterprise: true },
         { name: "Dedicated account manager", starter: false, pro: false, enterprise: true },
         { name: "API Access", starter: false, pro: false, enterprise: true },
-        { name: "Custom integrations", starter: false, pro: false, enterprise: true },
       ],
     },
   ];
@@ -107,32 +71,15 @@ const PricingComparison = () => {
   if (isMobile) {
     const plans = ["starter", "pro", "enterprise"];
     const planNames = { starter: "Starter", pro: "Pro", enterprise: "Enterprise" };
+    const currency = getCurrencySymbol(language);
+    const planPrices = {
+      starter: `${currency}9.99/mois`,
+      pro: `${currency}49 - ${currency}4,900/mois`,
+      enterprise: `${currency}199 - ${currency}19,900/mois`,
+    };
 
     return (
       <div className="space-y-4">
-        <div className="flex justify-center gap-2 mb-6">
-          <button
-            onClick={() => setBillingPeriod("monthly")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              billingPeriod === "monthly"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setBillingPeriod("annual")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              billingPeriod === "annual"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
-            Annual
-            <span className="ml-1 text-xs">(Save 20%)</span>
-          </button>
-        </div>
         {plans.map((plan) => (
           <Card key={plan} className="overflow-hidden">
             <CardHeader className="bg-muted/50 pb-3">
@@ -140,14 +87,7 @@ const PricingComparison = () => {
                 <Badge variant={plan === "pro" ? "default" : "outline"}>
                   {planNames[plan as keyof typeof planNames]}
                 </Badge>
-                <div className="text-right">
-                  <div className="text-lg font-bold">
-                    ${pricing[plan as keyof typeof pricing][billingPeriod]}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    /mo{billingPeriod === "annual" ? " (billed annually)" : ""}
-                  </div>
-                </div>
+                <span className="text-lg font-bold">{planPrices[plan as keyof typeof planPrices]}</span>
               </div>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
@@ -172,31 +112,10 @@ const PricingComparison = () => {
   }
 
   // Desktop: Table
+  const currency = getCurrencySymbol(language);
+
   return (
     <Card className="overflow-hidden">
-      <div className="flex justify-center gap-2 p-4 border-b bg-muted/20">
-        <button
-          onClick={() => setBillingPeriod("monthly")}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            billingPeriod === "monthly"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
-          }`}
-        >
-          Monthly
-        </button>
-        <button
-          onClick={() => setBillingPeriod("annual")}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            billingPeriod === "annual"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
-          }`}
-        >
-          Annual
-          <span className="ml-2 text-xs">(Save 20%)</span>
-        </button>
-      </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -205,34 +124,26 @@ const PricingComparison = () => {
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge variant="outline">Starter</Badge>
-                  <span className="text-2xl font-bold">
-                    ${pricing.starter[billingPeriod]}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    /mo{billingPeriod === "annual" ? " (billed annually)" : ""}
-                  </span>
+                  <span className="text-2xl font-bold">{currency}9.99</span>
+                  <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge className="bg-primary">Pro</Badge>
                   <span className="text-2xl font-bold">
-                    ${pricing.pro[billingPeriod]}
+                    {currency}49 - {currency}4,900
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    /mo{billingPeriod === "annual" ? " (billed annually)" : ""}
-                  </span>
+                  <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge className="bg-success">Enterprise</Badge>
                   <span className="text-2xl font-bold">
-                    ${pricing.enterprise[billingPeriod]}
+                    {currency}199 - {currency}19,900
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    /mo{billingPeriod === "annual" ? " (billed annually)" : ""}
-                  </span>
+                  <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
             </tr>
