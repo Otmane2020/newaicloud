@@ -12,7 +12,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     console.log("🏗️ [IMPORT-COLLECTIONS] Starting import...");
-    console.log("🔄 [IMPORT-COLLECTIONS] Version: 1.0.2 - Deployed: 2025-11-02T10:30:00Z");
+    console.log("🔄 [IMPORT-COLLECTIONS] Version: 1.1.0 - Fixed parameters usage");
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -34,28 +34,68 @@ Deno.serve(async (req: Request) => {
 
     console.log(`👤 [IMPORT-COLLECTIONS] User: ${user.id}`);
 
-    // Get user's Shopify connection
-    const { data: connection, error: connectionError } = await supabase
-      .from("shopify_connections")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .single();
+    // Read request body parameters
+    const body = await req.json().catch(() => ({}));
+    const { shopName: bodyShopName, apiSecret: bodyApiSecret, storeId: bodyStoreId } = body;
+    
+    console.log(`📦 [IMPORT-COLLECTIONS] Body params:`, {
+      shopName: bodyShopName || 'not provided',
+      hasApiSecret: !!bodyApiSecret,
+      storeId: bodyStoreId || 'not provided'
+    });
 
-    if (connectionError || !connection) {
-      throw new Error("No active Shopify connection found");
+    let connection: any;
+    let shopifyUrl: string;
+    let accessToken: string;
+
+    // Use body parameters if provided, otherwise fallback to active connection
+    if (bodyShopName && bodyApiSecret && bodyStoreId) {
+      console.log(`✅ [IMPORT-COLLECTIONS] Using provided parameters`);
+      
+      // Validate store belongs to user
+      const { data: storeData, error: storeError } = await supabase
+        .from("shopify_connections")
+        .select("*")
+        .eq("id", bodyStoreId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (storeError || !storeData) {
+        throw new Error("Store not found or unauthorized");
+      }
+
+      connection = storeData;
+      shopifyUrl = `https://${bodyShopName}.myshopify.com`;
+      accessToken = bodyApiSecret;
+      
+      console.log(`🏪 [IMPORT-COLLECTIONS] Store: ${shopifyUrl}`);
+    } else {
+      console.log(`⚠️ [IMPORT-COLLECTIONS] Missing body params, falling back to active connection`);
+      
+      // Fallback: Get user's active Shopify connection
+      const { data: connectionData, error: connectionError } = await supabase
+        .from("shopify_connections")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .single();
+
+      if (connectionError || !connectionData) {
+        throw new Error("No active Shopify connection found");
+      }
+
+      connection = connectionData;
+      
+      const storeUrl = connection.store_url.replace(/\/$/, "").trim();
+      shopifyUrl = storeUrl.startsWith('http://') || storeUrl.startsWith('https://') 
+        ? storeUrl 
+        : `https://${storeUrl}`;
+      accessToken = connection.access_token;
+      
+      console.log(`🏪 [IMPORT-COLLECTIONS] Store (fallback): ${shopifyUrl}`);
     }
-
-    console.log(`🏪 [IMPORT-COLLECTIONS] Store: ${connection.store_url}`);
-
-    // Ensure URL has https:// protocol
-    const storeUrl = connection.store_url.replace(/\/$/, "").trim();
-    const shopifyUrl = storeUrl.startsWith('http://') || storeUrl.startsWith('https://') 
-      ? storeUrl 
-      : `https://${storeUrl}`;
     
     console.log(`🔗 [IMPORT-COLLECTIONS] Using URL: ${shopifyUrl}`);
-    const accessToken = connection.access_token;
 
     let allCollections: any[] = [];
     let smartCount = 0;

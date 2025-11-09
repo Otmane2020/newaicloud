@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { useShopifySync } from "@/hooks/useShopifySync";
+import { useStore } from "@/contexts/StoreContext";
+import { SimpleSyncProgress } from "@/components/integration/SyncProgressDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,6 +49,8 @@ export default function Products() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { limits, refresh: refreshLimits } = useUsageLimits();
+  const { selectedStore } = useStore();
+  const { isSyncing, currentSyncType, syncShopifyStore } = useShopifySync();
   const { t, tf } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -457,6 +462,8 @@ export default function Products() {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <SimpleSyncProgress open={isSyncing} currentType={currentSyncType} />
+      
       {/* Sticky header for mobile */}
       <div className="sticky top-0 bg-background border-b z-10 p-4">
         <div className="flex items-center justify-between mb-3">
@@ -477,8 +484,22 @@ export default function Products() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => navigate("/integration?tab=sync")} variant="outline" className="h-9 px-3">
-              <RefreshCw className="w-4 h-4 mr-2" />
+            <Button 
+              size="sm" 
+              onClick={async () => {
+                if (!selectedStore) {
+                  toast.error("Aucune boutique sélectionnée");
+                  return;
+                }
+                await syncShopifyStore(selectedStore);
+                await loadProducts();
+                await refreshLimits();
+              }} 
+              variant="outline" 
+              className="h-9 px-3"
+              disabled={isSyncing || !selectedStore}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
               Synchroniser
             </Button>
             <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
