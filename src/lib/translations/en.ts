@@ -3191,11 +3191,14 @@ export const translations = {
   subscription: {
     invalidTrial: {
       title: "Action Required: Payment Validation",
-      description: "Your subscription is in an invalid state. This can happen if the initial payment was not completed correctly or if the Stripe webhook was not received. To continue using all features, you must finalize your subscription setup by clicking the button below. This will redirect you to a secure payment page to validate your subscription.",
+      description: "Your subscription is in an invalid state. You have a paid plan but the payment has not been completed.",
+      clickBelow: "Click the button below to complete payment and activate your subscription.",
       button: "Validate My Payment",
       processing: "Processing...",
       toasts: {
         redirecting: "Redirecting to payment...",
+        unableToFix: "Unable to fix subscription. Please contact support.",
+        failed: "Failed to fix subscription. Please contact support.",
         error: "Error generating payment session",
       },
     },

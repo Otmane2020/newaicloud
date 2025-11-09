@@ -3288,11 +3288,14 @@ export const translations = {
   subscription: {
     invalidTrial: {
       title: "Action Requise : Validation de Paiement",
-      description: "Votre abonnement est dans un état invalide. Ceci peut arriver si le paiement initial n'a pas été finalisé correctement ou si le webhook Stripe n'a pas été reçu. Pour continuer à utiliser toutes les fonctionnalités, vous devez finaliser la configuration de votre abonnement en cliquant sur le bouton ci-dessous. Cela vous redirigera vers une page de paiement sécurisée pour valider votre souscription.",
+      description: "Votre abonnement est dans un état invalide. Vous avez un plan payant mais le paiement n'a pas été effectué.",
+      clickBelow: "Cliquez sur le bouton ci-dessous pour compléter le paiement et activer votre abonnement.",
       button: "Valider Mon Paiement",
       processing: "Traitement en cours...",
       toasts: {
         redirecting: "Redirection vers le paiement...",
+        unableToFix: "Impossible de corriger l'abonnement. Veuillez contacter le support.",
+        failed: "Échec de la correction de l'abonnement. Veuillez contacter le support.",
         error: "Erreur lors de la génération de la session de paiement",
       },
     },

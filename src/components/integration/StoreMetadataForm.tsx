@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Store, Loader2 } from 'lucide-react';
+import { useTranslation } from '@/lib/language';
 
 interface StoreMetadata {
   store_label: string;
@@ -18,6 +19,7 @@ interface StoreMetadata {
 }
 
 export function StoreMetadataForm() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export function StoreMetadataForm() {
       }
     } catch (error) {
       console.error('Error loading metadata:', error);
-      toast.error('Erreur lors du chargement des métadonnées');
+      toast.error(t.integration.store.metadata.toasts.errorLoading);
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ export function StoreMetadataForm() {
 
   const handleSave = async () => {
     if (!storeId) {
-      toast.error('Aucune boutique active trouvée');
+      toast.error(t.integration.store.metadata.toasts.noStore);
       return;
     }
 
@@ -82,10 +84,10 @@ export function StoreMetadataForm() {
 
       if (error) throw error;
 
-      toast.success('Métadonnées enregistrées avec succès');
+      toast.success(t.integration.store.metadata.toasts.saved);
     } catch (error) {
       console.error('Error saving metadata:', error);
-      toast.error('Erreur lors de l\'enregistrement');
+      toast.error(t.integration.store.metadata.toasts.errorSaving);
     } finally {
       setSaving(false);
     }
@@ -105,7 +107,7 @@ export function StoreMetadataForm() {
     return (
       <Card>
         <CardContent className="p-6 text-center text-muted-foreground">
-          Aucune boutique connectée. Connectez une boutique pour gérer ses métadonnées.
+          {t.integration.store.metadata.toasts.noStoreConnected}
         </CardContent>
       </Card>
     );
@@ -116,59 +118,59 @@ export function StoreMetadataForm() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Store className="w-5 h-5" />
-          <CardTitle>Métadonnées de la Boutique</CardTitle>
+          <CardTitle>{t.integration.store.metadata.title}</CardTitle>
         </div>
         <CardDescription>
-          Ces informations améliorent la génération SEO et les contenus générés par IA
+          {t.integration.store.metadata.description}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="store_label">
-              Nom Commercial <span className="text-destructive">*</span>
+              {t.integration.store.metadata.fields.label} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="store_label"
-              placeholder="ex: Sweet Deco"
+              placeholder={t.integration.store.metadata.placeholders.label}
               value={metadata.store_label}
               onChange={(e) => setMetadata({ ...metadata, store_label: e.target.value })}
             />
             <p className="text-xs text-muted-foreground">
-              Nom affiché publiquement (différent de l'identifiant technique)
+              {t.integration.store.metadata.hints.label}
             </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="store_category">
-              Secteur d'Activité <span className="text-destructive">*</span>
+              {t.integration.store.metadata.fields.category} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="store_category"
-              placeholder="ex: Décoration d'intérieur"
+              placeholder={t.integration.store.metadata.placeholders.category}
               value={metadata.store_category}
               onChange={(e) => setMetadata({ ...metadata, store_category: e.target.value })}
             />
             <p className="text-xs text-muted-foreground">
-              Aide l'IA à cibler les bons mots-clés SEO
+              {t.integration.store.metadata.hints.category}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="store_phone">Téléphone</Label>
+            <Label htmlFor="store_phone">{t.integration.store.metadata.fields.phone}</Label>
             <Input
               id="store_phone"
-              placeholder="ex: +33 1 23 45 67 89"
+              placeholder={t.integration.store.metadata.placeholders.phone}
               value={metadata.store_phone}
               onChange={(e) => setMetadata({ ...metadata, store_phone: e.target.value })}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="store_business_hours">Horaires d'Ouverture</Label>
+            <Label htmlFor="store_business_hours">{t.integration.store.metadata.fields.hours}</Label>
             <Input
               id="store_business_hours"
-              placeholder="ex: Lun-Ven 9h-18h"
+              placeholder={t.integration.store.metadata.placeholders.hours}
               value={metadata.store_business_hours}
               onChange={(e) => setMetadata({ ...metadata, store_business_hours: e.target.value })}
             />
@@ -176,10 +178,10 @@ export function StoreMetadataForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="store_address">Adresse</Label>
+          <Label htmlFor="store_address">{t.integration.store.metadata.fields.address}</Label>
           <Input
             id="store_address"
-            placeholder="ex: Paris, France"
+            placeholder={t.integration.store.metadata.placeholders.address}
             value={metadata.store_address}
             onChange={(e) => setMetadata({ ...metadata, store_address: e.target.value })}
           />
@@ -187,17 +189,17 @@ export function StoreMetadataForm() {
 
         <div className="space-y-2">
           <Label htmlFor="store_description">
-            Description <span className="text-destructive">*</span>
+            {t.integration.store.metadata.fields.description} <span className="text-destructive">*</span>
           </Label>
           <Textarea
             id="store_description"
-            placeholder="ex: Spécialiste en décoration scandinave haut de gamme. Nous proposons..."
+            placeholder={t.integration.store.metadata.placeholders.description}
             value={metadata.store_description}
             onChange={(e) => setMetadata({ ...metadata, store_description: e.target.value })}
             rows={4}
           />
           <p className="text-xs text-muted-foreground">
-            Description courte de votre boutique pour enrichir les contenus IA (blogs, SEO, etc.)
+            {t.integration.store.metadata.hints.description}
           </p>
         </div>
 
@@ -205,10 +207,10 @@ export function StoreMetadataForm() {
           {saving ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Enregistrement...
+              {t.common.saving}...
             </>
           ) : (
-            'Enregistrer les Métadonnées'
+            t.integration.store.metadata.button
           )}
         </Button>
       </CardContent>

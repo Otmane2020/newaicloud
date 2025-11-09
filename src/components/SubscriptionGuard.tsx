@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 
 interface Profile {
   subscription_status: string | null;
@@ -16,6 +17,7 @@ interface Profile {
 
 export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -170,14 +172,14 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       
       if (data?.checkout_url) {
-        toast.success('Redirecting to payment...');
+        toast.success(t.subscription.invalidTrial.toasts.redirecting);
         window.location.href = data.checkout_url;
       } else {
-        toast.error('Unable to fix subscription. Please contact support.');
+        toast.error(t.subscription.invalidTrial.toasts.unableToFix);
       }
     } catch (error) {
       console.error('Error fixing subscription:', error);
-      toast.error('Failed to fix subscription. Please contact support.');
+      toast.error(t.subscription.invalidTrial.toasts.failed);
     } finally {
       setFixingSubscription(false);
     }
@@ -198,14 +200,14 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         <Alert variant="destructive" className="max-w-2xl">
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle className="text-xl font-bold mb-2">
-            Action Requise : Validation de Paiement
+            {t.subscription.invalidTrial.title}
           </AlertTitle>
           <AlertDescription className="space-y-4">
             <p className="text-base">
-              Votre abonnement est dans un état invalide. Vous avez un plan payant mais le paiement n'a pas été effectué.
+              {t.subscription.invalidTrial.description}
             </p>
             <p className="text-sm text-muted-foreground">
-              Cliquez sur le bouton ci-dessous pour compléter le paiement et activer votre abonnement.
+              {t.subscription.invalidTrial.clickBelow}
             </p>
             <Button 
               onClick={handleFixSubscription} 
@@ -213,7 +215,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
               size="lg"
               className="w-full"
             >
-              {fixingSubscription ? 'Traitement en cours...' : 'Valider Mon Paiement'}
+              {fixingSubscription ? t.subscription.invalidTrial.processing : t.subscription.invalidTrial.button}
             </Button>
           </AlertDescription>
         </Alert>
