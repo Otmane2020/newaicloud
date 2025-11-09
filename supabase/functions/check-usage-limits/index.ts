@@ -31,35 +31,6 @@ function detectLanguage(req: Request): 'fr' | 'en' {
   return acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
 }
 
-// Retry utility for database queries with exponential backoff
-async function retryWithBackoff<T>(
-  operation: () => Promise<T>,
-  maxRetries = 5,
-  baseDelay = 2000
-): Promise<T> {
-  let lastError: Error | undefined;
-  
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error as Error;
-      
-      // Don't retry on the last attempt
-      if (attempt === maxRetries - 1) {
-        throw lastError;
-      }
-      
-      // Calculate delay with exponential backoff + jitter
-      const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
-      console.log(`[LIMITS] Retry attempt ${attempt + 1}/${maxRetries} after ${Math.round(delay)}ms delay...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  
-  throw lastError || new Error('Operation failed after retries');
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -67,22 +38,10 @@ serve(async (req) => {
 
   try {
     const lang = detectLanguage(req);
-    
-    // Create Supabase client with extended timeout settings
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { 
-        auth: { persistSession: false },
-        db: {
-          schema: 'public',
-        },
-        global: {
-          headers: {
-            'x-connection-timeout': '30000', // 30 second timeout
-          }
-        }
-      }
+      { auth: { persistSession: false } }
     );
 
     const authHeader = req.headers.get('Authorization');
@@ -92,70 +51,21 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
-    // Get user with retry logic
-    let user;
-    try {
-      const userResult = await retryWithBackoff(async () => {
-        console.log('[LIMITS] Fetching user from auth...');
-        const result = await supabaseClient.auth.getUser(token);
-        
-        if (result.error) {
-          throw new Error(`Auth failed: ${result.error.message}`);
-        }
-        
-        if (!result.data?.user) {
-          throw new Error('No user data returned');
-        }
-        
-        return result.data.user;
-      }, 5, 2000); // 5 retries, 2 second base delay
-      
-      user = userResult;
-    } catch (userError) {
-      console.error('[LIMITS] Auth error after retries:', userError);
+    if (userError || !user) {
+      console.error('[LIMITS] Auth error:', userError);
       throw new Error(TRANSLATIONS[lang].unauthorized);
     }
 
-    // Get user profile with retry logic
-    let profile;
-    let profileError;
-    
-    try {
-      const result = await retryWithBackoff(async () => {
-        console.log('[LIMITS] Fetching user profile...');
-        const queryResult = await supabaseClient
-          .from('profiles')
-          .select('subscription_status, current_plan_id, trial_ends_at')
-          .eq('id', user.id)
-          .single();
-        
-        if (queryResult.error) {
-          console.error('[LIMITS] Profile fetch error:', queryResult.error);
-          throw new Error(`Profile query failed: ${queryResult.error.message}`);
-        }
-        
-        if (!queryResult.data) {
-          throw new Error('No profile data returned');
-        }
-        
-        return queryResult.data;
-      });
-      
-      profile = result;
-    } catch (error) {
-      profileError = error;
-    }
+    // Get user profile
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('subscription_status, current_plan_id, trial_ends_at')
+      .eq('id', user.id)
+      .single();
 
-    if (profileError) {
-      console.error('[LIMITS] Profile error after retries:', profileError);
-      throw new Error(`Failed to fetch user profile: ${profileError.message || 'Unknown error'}`);
-    }
-
-    if (!profile) {
-      console.error('[LIMITS] No profile found for user:', user.id);
-      throw new Error('User profile not found');
-    }
+    if (profileError) throw profileError;
 
     // Determine if user is in trial or paid subscription
     // A user is in trial if:
@@ -176,137 +86,67 @@ serve(async (req) => {
     
     console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
-    // Get plan limits with retry logic
+    // Get plan limits
     let plan;
     if (!isTrialing && profile.current_plan_id) {
       // User is NOT in trial and has paid plan - fetch it
-      try {
-        const paidPlan = await retryWithBackoff(async () => {
-          console.log('[LIMITS] Fetching paid plan...');
-          const result = await supabaseClient
-            .from('subscription_plans')
-            .select('*')
-            .eq('id', profile.current_plan_id)
-            .single();
-          
-          if (result.error) {
-            throw new Error(`Plan query failed: ${result.error.message}`);
-          }
-          
-          return result.data;
-        });
-        
-        plan = paidPlan;
-      } catch (planError) {
-        console.error('[LIMITS] Error fetching paid plan after retries:', planError);
+      const { data: paidPlan, error: planError } = await supabaseClient
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', profile.current_plan_id)
+        .single();
+
+      if (planError) {
+        console.error('[LIMITS] Error fetching paid plan:', planError);
         // Fallback to starter plan if paid plan not found
-        try {
-          const starterPlan = await retryWithBackoff(async () => {
-            const result = await supabaseClient
-              .from('subscription_plans')
-              .select('*')
-              .eq('id', 'starter')
-              .single();
-            
-            if (result.error) throw new Error(`Starter plan query failed: ${result.error.message}`);
-            return result.data;
-          });
-          plan = starterPlan;
-        } catch (err) {
-          console.error('[LIMITS] Failed to fetch fallback starter plan:', err);
-          throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
-        }
+        const { data: starterPlan } = await supabaseClient
+          .from('subscription_plans')
+          .select('*')
+          .eq('id', 'starter')
+          .single();
+        plan = starterPlan;
+      } else {
+        plan = paidPlan;
       }
     } else {
       // User is in trial - use trial plan limits
-      try {
-        const trialPlan = await retryWithBackoff(async () => {
-          console.log('[LIMITS] Fetching trial plan...');
-          const result = await supabaseClient
-            .from('subscription_plans')
-            .select('*')
-            .eq('id', 'trial')
-            .single();
-          
-          if (result.error) {
-            throw new Error(`Trial plan query failed: ${result.error.message}`);
-          }
-          
-          return result.data;
-        });
-        
-        plan = trialPlan;
-      } catch (planError) {
-        console.error('[LIMITS] Error fetching trial plan after retries:', planError);
+      const { data: trialPlan, error: planError } = await supabaseClient
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', 'trial')
+        .single();
+      
+      if (planError) {
+        console.error('[LIMITS] Error fetching trial plan:', planError);
         throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
       }
+      plan = trialPlan;
     }
     
     if (!plan) throw new Error(TRANSLATIONS[lang].noPlanConfiguration);
     
     console.log(`[LIMITS] Using plan: ${plan.id} - isTrialing: ${isTrialing}, isPaid: ${isPaid}`);
 
-    // Get current month usage with retry logic
+    // Get current month usage
     const currentMonth = new Date();
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
     const monthKey = currentMonth.toISOString().split('T')[0];
 
-    let currentUsage;
-    try {
-      const usage = await retryWithBackoff(async () => {
-        console.log('[LIMITS] Fetching usage tracking...');
-        const result = await supabaseClient
-          .from('usage_tracking')
-          .select('*')
-          .eq('seller_id', user.id)
-          .eq('month', monthKey)
-          .maybeSingle();
-        
-        // maybeSingle doesn't throw error if no rows, so just return data
-        return result.data;
-      });
-      
-      currentUsage = usage;
-    } catch (err) {
-      console.error('[LIMITS] Error fetching usage after retries:', err);
-      // Continue with null usage, will create new entry below
-      currentUsage = null;
-    }
+    const { data: usage, error: usageError } = await supabaseClient
+      .from('usage_tracking')
+      .select('*')
+      .eq('seller_id', user.id)
+      .eq('month', monthKey)
+      .maybeSingle();
 
     // Si pas d'entrée pour ce mois, en créer une
+    let currentUsage = usage;
     if (!currentUsage) {
       console.log('[LIMITS] Creating usage_tracking entry for current month');
-      try {
-        const newUsage = await retryWithBackoff(async () => {
-          const result = await supabaseClient
-            .from('usage_tracking')
-            .insert({
-              seller_id: user.id,
-              month: monthKey,
-              optimizations_count: 0,
-              articles_count: 0,
-              chat_responses_count: 0,
-              shopify_requests_count: 0,
-              products_count: 0,
-              shopify_stores_count: 0,
-              campaigns_count: 0,
-            })
-            .select()
-            .single();
-          
-          if (result.error) {
-            throw new Error(`Usage insert failed: ${result.error.message}`);
-          }
-          
-          return result.data;
-        });
-        
-        currentUsage = newUsage;
-      } catch (createError) {
-        console.error('[LIMITS] Error creating usage entry after retries:', createError);
-        // Use default values if creation fails
-        currentUsage = {
+      const { data: newUsage, error: createError } = await supabaseClient
+        .from('usage_tracking')
+        .insert({
           seller_id: user.id,
           month: monthKey,
           optimizations_count: 0,
@@ -316,7 +156,24 @@ serve(async (req) => {
           products_count: 0,
           shopify_stores_count: 0,
           campaigns_count: 0,
+        })
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('[LIMITS] Error creating usage_tracking:', createError);
+        // Fallback to default values if creation fails
+        currentUsage = {
+          optimizations_count: 0,
+          articles_count: 0,
+          chat_responses_count: 0,
+          shopify_requests_count: 0,
+          products_count: 0,
+          shopify_stores_count: 0,
+          campaigns_count: 0,
         };
+      } else {
+        currentUsage = newUsage;
       }
     }
     
@@ -329,13 +186,7 @@ serve(async (req) => {
       .eq('seller_id', user.id);
 
     if (countError) {
-      console.error('[LIMITS] Error counting real products:', {
-        message: countError.message || 'Unknown error',
-        details: countError.details || 'No details',
-        hint: countError.hint || 'No hint',
-        code: countError.code || 'No code'
-      });
-      // Continue without correcting products count if there's an error
+      console.error('[LIMITS] Error counting real products:', countError);
     } else if (realProductCount !== null && currentUsage.products_count !== realProductCount) {
       console.warn(`[LIMITS] ⚠️ Inconsistency detected: usage_tracking shows ${currentUsage.products_count} products but real count is ${realProductCount}`);
       
@@ -457,25 +308,10 @@ serve(async (req) => {
     );
   } catch (error) {
     const lang = detectLanguage(req);
-    console.error(`${TRANSLATIONS[lang].errorCheckingLimits}:`, {
-      error,
-      message: error instanceof Error ? error.message : 'No message',
-      stack: error instanceof Error ? error.stack : 'No stack',
-      type: typeof error,
-      stringified: JSON.stringify(error, null, 2)
-    });
-    
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : (typeof error === 'object' && error !== null && 'message' in error)
-        ? String((error as any).message)
-        : TRANSLATIONS[lang].unknownError;
-    
+    console.error(`${TRANSLATIONS[lang].errorCheckingLimits}:`, error);
+    const errorMessage = error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError;
     return new Response(
-      JSON.stringify({ 
-        error: errorMessage || TRANSLATIONS[lang].unknownError,
-        details: error instanceof Error ? error.stack : undefined
-      }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -20,86 +20,80 @@ serve(async (req) => {
     // 🛡️ VÉRIFICATION DES LIMITES AVANT GÉNÉRATION
     const authHeader = req.headers.get("Authorization");
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-
+    
     if (authHeader) {
       const supabaseAdmin = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
       );
-
-      const token = authHeader.replace("Bearer ", "");
-      const {
-        data: { user },
-      } = await supabaseAdmin.auth.getUser(token);
-
+      
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      
       if (user) {
-        const currentMonth = new Date().toISOString().substring(0, 7) + "-01";
-
+        const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
+        
         // Récupérer usage actuel
         const { data: usage } = await supabaseAdmin
-          .from("usage_tracking")
-          .select("optimizations_count")
-          .eq("seller_id", user.id)
-          .eq("month", currentMonth)
+          .from('usage_tracking')
+          .select('optimizations_count')
+          .eq('seller_id', user.id)
+          .eq('month', currentMonth)
           .maybeSingle();
-
+        
         // Récupérer profil et plan
         const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("subscription_status, current_plan_id")
-          .eq("id", user.id)
+          .from('profiles')
+          .select('subscription_status, current_plan_id')
+          .eq('id', user.id)
           .single();
-
+        
         const { data: plan } = await supabaseAdmin
-          .from("subscription_plans")
-          .select("max_optimizations_monthly, trial_max_optimizations")
-          .eq("id", profile?.current_plan_id || "trial")
+          .from('subscription_plans')
+          .select('max_optimizations_monthly, trial_max_optimizations')
+          .eq('id', profile?.current_plan_id || 'trial')
           .single();
-
+        
         const currentUsage = usage?.optimizations_count || 0;
-        const maxOptimizations =
-          profile?.subscription_status === "trialing"
-            ? plan?.trial_max_optimizations || 50
-            : plan?.max_optimizations_monthly || 999999;
-
+        const maxOptimizations = profile?.subscription_status === 'trialing' 
+          ? (plan?.trial_max_optimizations || 50)
+          : (plan?.max_optimizations_monthly || 999999);
+        
         console.log(`[generate-landing-ai] 🔍 Usage check: ${currentUsage}/${maxOptimizations}`);
-
+        
         // ❌ BLOQUER si limite atteinte
         if (currentUsage >= maxOptimizations) {
           console.error(`[generate-landing-ai] ❌ LIMIT REACHED: ${currentUsage}/${maxOptimizations}`);
           return new Response(
-            JSON.stringify({
-              error: "LIMIT_REACHED",
-              message: "Limite d'optimisations atteinte. Passez à un plan supérieur.",
+            JSON.stringify({ 
+              error: 'LIMIT_REACHED',
+              message: 'Limite d\'optimisations atteinte. Passez à un plan supérieur.',
               usage: currentUsage,
-              limit: maxOptimizations,
+              limit: maxOptimizations
             }),
-            {
+            { 
               status: 429,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
+              headers: { ...corsHeaders, "Content-Type": "application/json" } 
+            }
           );
         }
-
+        
         // ✅ Incrémenter IMMÉDIATEMENT (avant génération pour éviter les abus)
         const LANDING_PAGE_COST = 5; // 1 landing page = 5 optimisations (valeur augmentée car contenu riche + Vision AI + design personnalisé)
-
+        
         await supabaseAdmin.rpc("increment_usage", {
           p_seller_id: user.id,
           p_field: "optimizations_count",
-          p_increment: LANDING_PAGE_COST,
+          p_increment: LANDING_PAGE_COST
         });
-
-        console.log(
-          `[generate-landing-ai] ✅ Usage incremented: +${LANDING_PAGE_COST} (now ${currentUsage + LANDING_PAGE_COST}/${maxOptimizations})`,
-        );
+        
+        console.log(`[generate-landing-ai] ✅ Usage incremented: +${LANDING_PAGE_COST} (now ${currentUsage + LANDING_PAGE_COST}/${maxOptimizations})`);
       }
     }
-
+    
     const body = await req.json();
 
-    const { productTitle, imageUrl, description, vendor, style, mainColor, layout, length, customHighlights } =
-      body ?? {};
+    const { productTitle, imageUrl, description, vendor, style, mainColor, layout, length, customHighlights } = body ?? {};
 
     if (!productTitle) {
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
@@ -123,10 +117,10 @@ serve(async (req) => {
 
     // 🔍 VISION AI ANALYSIS
     let visualAnalysis = "";
-
+    
     if (imageUrl && authHeader) {
       console.log("[generate-landing-ai] 🔍 Analyzing image with Vision AI...");
-
+      
       try {
         const visionResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-image-with-vision`, {
           method: "POST",
@@ -163,21 +157,15 @@ ANALYSE VISUELLE DU PRODUIT (Vision AI) :
 
     // 🎨 STYLE GUIDES
     const styleGuides: Record<string, string> = {
-      moderne:
-        "Gradients subtils, ombres douces, coins arrondis (rounded-2xl), espacements généreux, typographie sans-serif (font-sans), palette noir/blanc avec accents de couleur vive",
-      minimaliste:
-        "Beaucoup d'espace blanc, typographie épurée, pas de décorations superflues, 1-2 couleurs max, lignes fines (border), sans ombres ou ombres ultra-légères (shadow-sm)",
-      scandinave:
-        "Tons naturels (beige, blanc cassé, gris clair), bois et textures organiques suggérées, simplicité fonctionnelle, typographie claire, ambiance chaleureuse et accueillante",
-      premium:
-        "Or/noir/blanc, typographie serif (font-serif) pour titres, ombres prononcées (shadow-2xl), gradients métalliques, espacements larges, détails raffinés",
-      neutre:
-        "Gris/blanc/noir uniquement, pas de couleurs vives, design sobre, typographie classique, structure équilibrée",
-      coloré:
-        "Palette vibrante multi-couleurs, dégradés audacieux, énergie visuelle, contrastes forts, design dynamique",
+      'moderne': 'Gradients subtils, ombres douces, coins arrondis (rounded-2xl), espacements généreux, typographie sans-serif (font-sans), palette noir/blanc avec accents de couleur vive',
+      'minimaliste': 'Beaucoup d\'espace blanc, typographie épurée, pas de décorations superflues, 1-2 couleurs max, lignes fines (border), sans ombres ou ombres ultra-légères (shadow-sm)',
+      'scandinave': 'Tons naturels (beige, blanc cassé, gris clair), bois et textures organiques suggérées, simplicité fonctionnelle, typographie claire, ambiance chaleureuse et accueillante',
+      'premium': 'Or/noir/blanc, typographie serif (font-serif) pour titres, ombres prononcées (shadow-2xl), gradients métalliques, espacements larges, détails raffinés',
+      'neutre': 'Gris/blanc/noir uniquement, pas de couleurs vives, design sobre, typographie classique, structure équilibrée',
+      'coloré': 'Palette vibrante multi-couleurs, dégradés audacieux, énergie visuelle, contrastes forts, design dynamique'
     };
 
-    const currentStyleGuide = styleGuides[style] || styleGuides["moderne"];
+    const currentStyleGuide = styleGuides[style] || styleGuides['moderne'];
 
     // 🪄 ENHANCED AI PROMPT
     const prompt = `
@@ -188,17 +176,18 @@ Tu es un designer UX/UI expert et copywriter e-commerce spécialisé dans les la
 ${vendor ? `- Marque : ${vendor}` : ""}
 ${imageUrl ? `- Image produit : ${imageUrl}` : ""}
 ${description ? `- Description : ${description}` : ""}
-${
-  customHighlights
-    ? `\n🌟 POINTS FORTS À METTRE EN AVANT (PRIORITAIRE) :\n${customHighlights
-        .split("\n")
-        .map((h: string) => `- ${h.trim()}`)
-        .filter((h: string) => h.length > 2)
-        .join("\n")}`
-    : ""
-}
+${customHighlights ? `\n🌟 POINTS FORTS À METTRE EN AVANT (PRIORITAIRE) :\n${customHighlights.split('\n').map((h: string) => `- ${h.trim()}`).filter((h: string) => h.length > 2).join('\n')}` : ""}
 
-${visualAnalysis ? `${visualAnalysis}` : ""}
+${visualAnalysis ? `
+🔍 VISION AI - RÈGLE ABSOLUE :
+${visualAnalysis}
+⚠️ **CRITIQUE** : Tu DOIS utiliser ces informations Vision AI dans le contenu :
+- Mentionner la couleur dominante dans la description
+- Intégrer le style visuel identifié dans le copywriting
+- Référencer les matériaux détectés
+- Évoquer l'ambiance et la qualité perçue
+- Adapter le ton et les bénéfices selon l'analyse visuelle
+` : ""}
 
 🎨 DESIGN & STYLE :
 - Style visuel : ${style}
@@ -207,7 +196,12 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
   → **CRITIQUE** : Applique cette couleur aux boutons CTA, liens, bordures d'accent, titres importants
   → Utilise Tailwind avec style="color: ${mainColor}" ou style="background-color: ${mainColor}" ou style="border-color: ${mainColor}"
 - Layout : ${layout}
-- Longueur : ${length} (ton ${tone})
+- **LONGUEUR STRICTE** : ${length} (ton ${tone})
+  ⚠️ **RÈGLE ABSOLUE** : Respecte EXACTEMENT la longueur demandée :
+  - "courte (400 mots)" = 350-450 mots MAX
+  - "moyenne (800 mots)" = 700-900 mots
+  - "longue (1200 mots)" = 1100-1300 mots
+  NE PAS dépasser ces limites, c'est une contrainte client non négociable.
 - **DESIGN ÉLÉGANT** : Évite les icônes colorées enfantines, privilégie des icônes monochromes (text-gray-600), des formes simples et épurées, un design sophistiqué et professionnel
 
 🧱 STRUCTURE OBLIGATOIRE :
@@ -221,7 +215,7 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
    - **Icônes élégantes** : SVG monochromes simples (text-gray-600 ou text-gray-700), PAS de couleurs vives ou enfantines
    - Design épuré et sophistiqué
    - Titres courts et percutants
-   - Descriptions de 20-30 mots
+   - Descriptions de 20-30 mots${visualAnalysis ? "\n   - **Intégrer les insights Vision AI** dans les avantages (couleurs, matériaux, style)" : ""}
 
 3. CARACTÉRISTIQUES TECHNIQUES
    - Liste structurée avec badges/pills
@@ -234,18 +228,21 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
 5. GARANTIES / LIVRAISON
    - 3-4 éléments rassurants (livraison, retour, garantie, support)
 
-📱 RESPONSIVE MOBILE-FIRST (CRITIQUE) :
-- **MOBILE D'ABORD** : Le design DOIT être parfait sur mobile (320px-768px) avant desktop
-- Structure : <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+📱 RESPONSIVE MOBILE-FIRST (CRITIQUE - RÈGLE ABSOLUE) :
+⚠️ **NON NÉGOCIABLE** : Le design DOIT être PARFAIT sur mobile (320px-428px) AVANT desktop
+- **Test mental** : Visualise CHAQUE élément sur un iPhone SE (320px) avant de coder
+- Structure : <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 max-w-7xl">
 - Hero : <div class="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 items-center">
-- Grid avantages : <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-- Images : <img class="w-full h-auto object-cover rounded-xl" />
-- Texte lisible mobile : text-sm sm:text-base lg:text-lg
-- Titres adaptatifs : text-xl sm:text-2xl lg:text-3xl xl:text-4xl
-- Padding mobile : p-3 sm:p-4 md:p-6 lg:p-8
-- Gap progressif : gap-3 sm:gap-4 md:gap-6 lg:gap-8
-- Boutons pleine largeur mobile : w-full sm:w-auto
-- Pas de scroll horizontal : overflow-x-hidden sur tous les conteneurs
+- Grid avantages : <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+- Images : <img class="w-full h-auto object-cover rounded-lg sm:rounded-xl max-w-full" />
+- Texte lisible mobile : text-xs sm:text-sm md:text-base lg:text-lg (JAMAIS de texte < 12px)
+- Titres adaptatifs : text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl
+- Padding mobile : p-2 sm:p-3 md:p-4 lg:p-6 xl:p-8
+- Gap progressif : gap-2 sm:gap-3 md:gap-4 lg:gap-6 xl:gap-8
+- Boutons pleine largeur mobile : w-full sm:w-auto py-3 (touch-friendly 44px min)
+- **Pas de scroll horizontal** : overflow-x-hidden + max-w-full sur TOUS les conteneurs
+- **Touch targets** : min-h-[44px] min-w-[44px] sur tous les éléments cliquables
+- **Lisibilité** : line-height-relaxed (1.6) sur paragraphes, max-w-prose pour limiter longueur lignes
 
 🛠️ CONTRAINTES TECHNIQUES :
 ✅ Tailwind CSS uniquement (CDN déjà chargé)
@@ -268,12 +265,12 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
 `;
 
     console.log("[generate-landing-ai] 🧠 Sending prompt to Lovable Gateway...");
-    console.log("[generate-landing-ai] Request details:", {
-      productTitle,
-      style,
-      layout,
+    console.log("[generate-landing-ai] Request details:", { 
+      productTitle, 
+      style, 
+      layout, 
       length,
-      hasImage: !!imageUrl,
+      hasImage: !!imageUrl 
     });
 
     // 🔄 Retry logic for temporary failures
@@ -313,33 +310,27 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
 
           // Permanent errors - don't retry
           if (response.status === 429) {
-            return new Response(
-              JSON.stringify({
-                error: "Rate limits exceeded. Please try again later.",
-              }),
-              {
-                status: 429,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-              },
-            );
+            return new Response(JSON.stringify({ 
+              error: "Rate limits exceeded. Please try again later." 
+            }), {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
           }
 
           if (response.status === 402) {
-            return new Response(
-              JSON.stringify({
-                error: "Payment required. Please add funds to your Lovable AI workspace.",
-              }),
-              {
-                status: 402,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-              },
-            );
+            return new Response(JSON.stringify({ 
+              error: "Payment required. Please add funds to your Lovable AI workspace." 
+            }), {
+              status: 402,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
           }
 
           // Temporary errors (503, 502, 504) - retry
           if ([502, 503, 504].includes(response.status) && attempt < MAX_RETRIES) {
             console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms...`);
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
             continue; // Try again
           }
 
@@ -358,11 +349,11 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
         // 🧹 CLEAN HTML - Remove markdown code blocks
         if (html) {
           html = html
-            .replace(/^```html\s*/i, "") // Remove ```html at start
-            .replace(/^```\s*/m, "") // Remove ``` at start
-            .replace(/\s*```$/m, "") // Remove ``` at end
+            .replace(/^```html\s*/i, '')  // Remove ```html at start
+            .replace(/^```\s*/m, '')       // Remove ``` at start
+            .replace(/\s*```$/m, '')       // Remove ``` at end
             .trim();
-
+          
           console.log("[generate-landing-ai] 🧹 HTML cleaned, final length:", html.length);
         }
 
@@ -371,11 +362,11 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
 
         if (!html) {
           console.warn("[generate-landing-ai] ⚠️ Empty HTML response from AI");
-
+          
           // If we have retries left, try again
           if (attempt < MAX_RETRIES) {
             console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to empty response...`);
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
             continue;
           }
 
@@ -388,7 +379,7 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
         }
 
         // Validation du HTML généré
-        if (html.includes("<html") || html.includes("<head") || html.includes("<body")) {
+        if (html.includes('<html') || html.includes('<head') || html.includes('<body')) {
           console.warn("[generate-landing-ai] ⚠️ HTML contains forbidden tags (html/head/body)");
           return new Response(
             JSON.stringify({
@@ -400,11 +391,11 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
 
         if (html.length < 500) {
           console.warn("[generate-landing-ai] ⚠️ Generated HTML too short:", html.length);
-
+          
           // If we have retries left, try again
           if (attempt < MAX_RETRIES) {
             console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to short content...`);
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
             continue;
           }
 
@@ -422,14 +413,15 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
         return new Response(JSON.stringify({ html }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+
       } catch (networkError) {
         lastError = networkError instanceof Error ? networkError : new Error(String(networkError));
         console.error(`[generate-landing-ai] 💥 Network error (attempt ${attempt}):`, lastError);
-
+        
         // Retry on network errors if we have attempts left
         if (attempt < MAX_RETRIES) {
           console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to network error...`);
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
           continue;
         }
       }
@@ -446,6 +438,7 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
+
   } catch (err) {
     console.error("[generate-landing-ai] 💥 Error:", err);
     return new Response(
