@@ -711,9 +711,70 @@ Retourne UNIQUEMENT du HTML propre sans markdown.
       );
     }
 
-    // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
+    // 💾 CRÉATION/MISE À JOUR DANS SHOPIFY_PRODUCTS
     if (userId && product_id) {
-      console.log("💾 Saving landing page to database...");
+      console.log("💾 Saving to shopify_products...");
+
+      // Vérifier d'abord si le produit existe déjà
+      const { data: existingProduct, error: checkError } = await supabaseAdmin
+        .from("shopify_products")
+        .select("id, shopify_id, title")
+        .eq("id", product_id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("❌ Error checking existing product:", checkError);
+      }
+
+      if (existingProduct) {
+        // 🆕 MISE À JOUR du produit existant
+        console.log("📝 Updating existing shopify_products...");
+
+        const { error: updateError } = await supabaseAdmin
+          .from("shopify_products")
+          .update({
+            description: html, // ✅ HTML dans le champ description
+            title: productTitle, // Mettre à jour le titre aussi
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", product_id);
+
+        if (updateError) {
+          console.error("❌ Shopify products update error:", updateError);
+        } else {
+          console.log("✅ Shopify products updated successfully");
+        }
+      } else {
+        // 🆕 CRÉATION d'un nouveau produit
+        console.log("📝 Creating new shopify_products row...");
+
+        // Récupérer le store_id de l'utilisateur
+        const { data: storeData } = await supabaseAdmin
+          .from("shopify_connections")
+          .select("id")
+          .eq("seller_id", userId)
+          .single();
+
+        const { error: insertError } = await supabaseAdmin.from("shopify_products").insert({
+          id: product_id,
+          seller_id: userId,
+          store_id: storeData?.id || userId, // Fallback si pas de store_id
+          shopify_id: 0, // Valeur par défaut
+          title: productTitle,
+          description: html, // ✅ HTML dans description
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        if (insertError) {
+          console.error("❌ Shopify products creation error:", insertError);
+        } else {
+          console.log("✅ New shopify_products row created successfully");
+        }
+      }
+
+      // 💾 Sauvegarde dans product_landing_pages (historique)
+      console.log("💾 Saving to product_landing_pages...");
 
       // Désactiver les anciennes versions
       await supabaseAdmin
@@ -755,25 +816,9 @@ Retourne UNIQUEMENT du HTML propre sans markdown.
       });
 
       if (saveError) {
-        console.error("❌ Save error:", saveError);
+        console.error("❌ Landing pages save error:", saveError);
       } else {
         console.log(`✅ Landing page v${newVersion} saved successfully`);
-
-        // 🆕 MISE À JOUR DE LA DESCRIPTION DU PRODUIT
-        console.log("📝 Updating product description with landing page HTML...");
-        const { error: updateError } = await supabaseAdmin
-          .from("shopify_products")
-          .update({
-            description: html,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", product_id);
-
-        if (updateError) {
-          console.error("❌ Product update error:", updateError);
-        } else {
-          console.log("✅ Product description updated successfully");
-        }
       }
     } else {
       console.log("⚠️ Skipping save: userId or product_id not available");
@@ -785,6 +830,7 @@ Retourne UNIQUEMENT du HTML propre sans markdown.
         html,
         enrichment_status: enrichmentStatus,
         attributes_count: attributesCount,
+        saved_to_shopify: !!(userId && product_id),
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
