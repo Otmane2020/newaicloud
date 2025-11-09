@@ -6,20 +6,36 @@ import React from "react";
 
 const PricingComparison = () => {
   const isMobile = useIsMobile();
+  const [billingPeriod, setBillingPeriod] = React.useState<"monthly" | "annual">("monthly");
+
+  const pricing = {
+    starter: {
+      monthly: 9.99,
+      annual: 95.90
+    },
+    pro: {
+      monthly: 49,
+      annual: 470
+    },
+    enterprise: {
+      monthly: 199,
+      annual: 1912
+    }
+  };
 
   const features = [
     {
       category: "Products",
       items: [
-        { name: "Maximum products", starter: "1,000", pro: "5,000 - 320,000", enterprise: "100,000 - 12,800,000" },
+        { name: "Maximum products", starter: "1,000", pro: "10,000", enterprise: "Unlimited" },
         { name: "Shopify Import", starter: true, pro: true, enterprise: true },
-        { name: "Multi-store management", starter: "1", pro: "2 - 128", enterprise: "10 - 1,280" },
+        { name: "Multi-store management", starter: "1 store", pro: "5 stores", enterprise: "Unlimited" },
       ],
     },
     {
       category: "SEO Optimizations",
       items: [
-        { name: "Monthly optimizations", starter: "250", pro: "500 - 32,000", enterprise: "5,000 - 640,000" },
+        { name: "Monthly optimizations", starter: "250", pro: "2,500", enterprise: "Unlimited" },
         { name: "Automatic optimization", starter: true, pro: true, enterprise: true },
         { name: "Sync to Shopify", starter: true, pro: true, enterprise: true },
         { name: "SEO quality analysis", starter: true, pro: true, enterprise: true },
@@ -28,9 +44,9 @@ const PricingComparison = () => {
     {
       category: "AI",
       items: [
-        { name: "AI articles per month", starter: "5", pro: "10 - 640", enterprise: "100 - 12,800" },
-        { name: "AI chat per month", starter: "500", pro: "1,000 - 64,000", enterprise: "10,000 - 1,280,000" },
-        { name: "Editorial campaigns", starter: "2", pro: "5 - 320", enterprise: "50 - 6,400" },
+        { name: "AI articles per month", starter: "5", pro: "50", enterprise: "500" },
+        { name: "AI chat messages", starter: "500", pro: "5,000", enterprise: "Unlimited" },
+        { name: "Editorial campaigns", starter: "2", pro: "20", enterprise: "Unlimited" },
         { name: "AI Vision (images)", starter: true, pro: true, enterprise: true },
       ],
     },
@@ -68,10 +84,32 @@ const PricingComparison = () => {
   if (isMobile) {
     const plans = ["starter", "pro", "enterprise"];
     const planNames = { starter: "Starter", pro: "Pro", enterprise: "Enterprise" };
-    const planPrices = { starter: "$9.99/mois", pro: "$98 - $4,900/mois", enterprise: "$199 - $19,900/mois" };
 
     return (
       <div className="space-y-4">
+        <div className="flex justify-center gap-2 mb-6">
+          <button
+            onClick={() => setBillingPeriod("monthly")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              billingPeriod === "monthly"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBillingPeriod("annual")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              billingPeriod === "annual"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            Annual
+            <span className="ml-1 text-xs">(Save 20%)</span>
+          </button>
+        </div>
         {plans.map((plan) => (
           <Card key={plan} className="overflow-hidden">
             <CardHeader className="bg-muted/50 pb-3">
@@ -79,7 +117,14 @@ const PricingComparison = () => {
                 <Badge variant={plan === "pro" ? "default" : "outline"}>
                   {planNames[plan as keyof typeof planNames]}
                 </Badge>
-                <span className="text-lg font-bold">{planPrices[plan as keyof typeof planPrices]}</span>
+                <div className="text-right">
+                  <div className="text-lg font-bold">
+                    ${pricing[plan as keyof typeof pricing][billingPeriod]}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    /{billingPeriod === "monthly" ? "mo" : "yr"}
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
@@ -106,6 +151,29 @@ const PricingComparison = () => {
   // Desktop: Table
   return (
     <Card className="overflow-hidden">
+      <div className="flex justify-center gap-2 p-4 border-b bg-muted/20">
+        <button
+          onClick={() => setBillingPeriod("monthly")}
+          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            billingPeriod === "monthly"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          }`}
+        >
+          Monthly
+        </button>
+        <button
+          onClick={() => setBillingPeriod("annual")}
+          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            billingPeriod === "annual"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          }`}
+        >
+          Annual
+          <span className="ml-2 text-xs">(Save 20%)</span>
+        </button>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -114,22 +182,34 @@ const PricingComparison = () => {
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge variant="outline">Starter</Badge>
-                  <span className="text-2xl font-bold">$9.99</span>
-                  <span className="text-xs text-muted-foreground">/month</span>
+                  <span className="text-2xl font-bold">
+                    ${pricing.starter[billingPeriod]}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    /{billingPeriod === "monthly" ? "month" : "year"}
+                  </span>
                 </div>
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge className="bg-primary">Pro</Badge>
-                  <span className="text-2xl font-bold">$98 - $4,900</span>
-                  <span className="text-xs text-muted-foreground">/month</span>
+                  <span className="text-2xl font-bold">
+                    ${pricing.pro[billingPeriod]}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    /{billingPeriod === "monthly" ? "month" : "year"}
+                  </span>
                 </div>
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge className="bg-success">Enterprise</Badge>
-                  <span className="text-2xl font-bold">$199 - $19,900</span>
-                  <span className="text-xs text-muted-foreground">/month</span>
+                  <span className="text-2xl font-bold">
+                    ${pricing.enterprise[billingPeriod]}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    /{billingPeriod === "monthly" ? "month" : "year"}
+                  </span>
                 </div>
               </th>
             </tr>
