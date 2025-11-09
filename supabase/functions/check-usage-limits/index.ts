@@ -31,6 +31,35 @@ function detectLanguage(req: Request): 'fr' | 'en' {
   return acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
 }
 
+// Retry utility for database queries with exponential backoff
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1000
+): Promise<T> {
+  let lastError: Error | undefined;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+      
+      // Don't retry on the last attempt
+      if (attempt === maxRetries - 1) {
+        throw lastError;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.log(`[LIMITS] Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms delay...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError || new Error('Operation failed after retries');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -58,15 +87,38 @@ serve(async (req) => {
       throw new Error(TRANSLATIONS[lang].unauthorized);
     }
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('subscription_status, current_plan_id, trial_ends_at')
-      .eq('id', user.id)
-      .single();
+    // Get user profile with retry logic
+    let profile;
+    let profileError;
+    
+    try {
+      const result = await retryWithBackoff(async () => {
+        console.log('[LIMITS] Fetching user profile...');
+        const queryResult = await supabaseClient
+          .from('profiles')
+          .select('subscription_status, current_plan_id, trial_ends_at')
+          .eq('id', user.id)
+          .single();
+        
+        if (queryResult.error) {
+          console.error('[LIMITS] Profile fetch error:', queryResult.error);
+          throw new Error(`Profile query failed: ${queryResult.error.message}`);
+        }
+        
+        if (!queryResult.data) {
+          throw new Error('No profile data returned');
+        }
+        
+        return queryResult.data;
+      });
+      
+      profile = result;
+    } catch (error) {
+      profileError = error;
+    }
 
     if (profileError) {
-      console.error('[LIMITS] Profile error:', profileError);
+      console.error('[LIMITS] Profile error after retries:', profileError);
       throw new Error(`Failed to fetch user profile: ${profileError.message || 'Unknown error'}`);
     }
 
@@ -94,67 +146,137 @@ serve(async (req) => {
     
     console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
-    // Get plan limits
+    // Get plan limits with retry logic
     let plan;
     if (!isTrialing && profile.current_plan_id) {
       // User is NOT in trial and has paid plan - fetch it
-      const { data: paidPlan, error: planError } = await supabaseClient
-        .from('subscription_plans')
-        .select('*')
-        .eq('id', profile.current_plan_id)
-        .single();
-
-      if (planError) {
-        console.error('[LIMITS] Error fetching paid plan:', planError);
-        // Fallback to starter plan if paid plan not found
-        const { data: starterPlan } = await supabaseClient
-          .from('subscription_plans')
-          .select('*')
-          .eq('id', 'starter')
-          .single();
-        plan = starterPlan;
-      } else {
+      try {
+        const paidPlan = await retryWithBackoff(async () => {
+          console.log('[LIMITS] Fetching paid plan...');
+          const result = await supabaseClient
+            .from('subscription_plans')
+            .select('*')
+            .eq('id', profile.current_plan_id)
+            .single();
+          
+          if (result.error) {
+            throw new Error(`Plan query failed: ${result.error.message}`);
+          }
+          
+          return result.data;
+        });
+        
         plan = paidPlan;
+      } catch (planError) {
+        console.error('[LIMITS] Error fetching paid plan after retries:', planError);
+        // Fallback to starter plan if paid plan not found
+        try {
+          const starterPlan = await retryWithBackoff(async () => {
+            const result = await supabaseClient
+              .from('subscription_plans')
+              .select('*')
+              .eq('id', 'starter')
+              .single();
+            
+            if (result.error) throw new Error(`Starter plan query failed: ${result.error.message}`);
+            return result.data;
+          });
+          plan = starterPlan;
+        } catch (err) {
+          console.error('[LIMITS] Failed to fetch fallback starter plan:', err);
+          throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
+        }
       }
     } else {
       // User is in trial - use trial plan limits
-      const { data: trialPlan, error: planError } = await supabaseClient
-        .from('subscription_plans')
-        .select('*')
-        .eq('id', 'trial')
-        .single();
-      
-      if (planError) {
-        console.error('[LIMITS] Error fetching trial plan:', planError);
+      try {
+        const trialPlan = await retryWithBackoff(async () => {
+          console.log('[LIMITS] Fetching trial plan...');
+          const result = await supabaseClient
+            .from('subscription_plans')
+            .select('*')
+            .eq('id', 'trial')
+            .single();
+          
+          if (result.error) {
+            throw new Error(`Trial plan query failed: ${result.error.message}`);
+          }
+          
+          return result.data;
+        });
+        
+        plan = trialPlan;
+      } catch (planError) {
+        console.error('[LIMITS] Error fetching trial plan after retries:', planError);
         throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
       }
-      plan = trialPlan;
     }
     
     if (!plan) throw new Error(TRANSLATIONS[lang].noPlanConfiguration);
     
     console.log(`[LIMITS] Using plan: ${plan.id} - isTrialing: ${isTrialing}, isPaid: ${isPaid}`);
 
-    // Get current month usage
+    // Get current month usage with retry logic
     const currentMonth = new Date();
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
     const monthKey = currentMonth.toISOString().split('T')[0];
 
-    const { data: usage, error: usageError } = await supabaseClient
-      .from('usage_tracking')
-      .select('*')
-      .eq('seller_id', user.id)
-      .eq('month', monthKey)
-      .maybeSingle();
+    let currentUsage;
+    try {
+      const usage = await retryWithBackoff(async () => {
+        console.log('[LIMITS] Fetching usage tracking...');
+        const result = await supabaseClient
+          .from('usage_tracking')
+          .select('*')
+          .eq('seller_id', user.id)
+          .eq('month', monthKey)
+          .maybeSingle();
+        
+        // maybeSingle doesn't throw error if no rows, so just return data
+        return result.data;
+      });
+      
+      currentUsage = usage;
+    } catch (err) {
+      console.error('[LIMITS] Error fetching usage after retries:', err);
+      // Continue with null usage, will create new entry below
+      currentUsage = null;
+    }
 
     // Si pas d'entrée pour ce mois, en créer une
-    let currentUsage = usage;
     if (!currentUsage) {
       console.log('[LIMITS] Creating usage_tracking entry for current month');
-      const { data: newUsage, error: createError } = await supabaseClient
-        .from('usage_tracking')
-        .insert({
+      try {
+        const newUsage = await retryWithBackoff(async () => {
+          const result = await supabaseClient
+            .from('usage_tracking')
+            .insert({
+              seller_id: user.id,
+              month: monthKey,
+              optimizations_count: 0,
+              articles_count: 0,
+              chat_responses_count: 0,
+              shopify_requests_count: 0,
+              products_count: 0,
+              shopify_stores_count: 0,
+              campaigns_count: 0,
+            })
+            .select()
+            .single();
+          
+          if (result.error) {
+            throw new Error(`Usage insert failed: ${result.error.message}`);
+          }
+          
+          return result.data;
+        });
+        
+        currentUsage = newUsage;
+      } catch (createError) {
+        console.error('[LIMITS] Error creating usage entry after retries:', createError);
+        // Use default values if creation fails
+        currentUsage = {
           seller_id: user.id,
           month: monthKey,
           optimizations_count: 0,
@@ -164,24 +286,7 @@ serve(async (req) => {
           products_count: 0,
           shopify_stores_count: 0,
           campaigns_count: 0,
-        })
-        .select()
-        .single();
-      
-      if (createError) {
-        console.error('[LIMITS] Error creating usage_tracking:', createError);
-        // Fallback to default values if creation fails
-        currentUsage = {
-          optimizations_count: 0,
-          articles_count: 0,
-          chat_responses_count: 0,
-          shopify_requests_count: 0,
-          products_count: 0,
-          shopify_stores_count: 0,
-          campaigns_count: 0,
         };
-      } else {
-        currentUsage = newUsage;
       }
     }
     
