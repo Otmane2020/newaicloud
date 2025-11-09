@@ -1674,45 +1674,47 @@ export const translations = {
           },
           export: {
             title: "1️⃣ Export generated ALT texts",
-            step1: "Click the \"Export Homepage ALT\" button above",
-            step2: "The downloaded file contains:",
-            listItems: [
-              "The URL of each image",
-              "The current ALT text",
-              "The new AI-optimized ALT text",
+            steps: [
+              "Click the <strong>\"Export Homepage ALT\"</strong> button above",
+              "The downloaded file contains: <ul class='list-disc pl-5 mt-2'><li>The URL of each image</li><li>The current ALT text</li><li>The new AI-optimized ALT text</li></ul>",
             ],
+            csvHeaders: ["Image URL", "Current ALT", "New ALT", "Section"],
+            csvExample: ["cdn.shopify.com/...", "banner", "Modern sofa...", "Hero"],
           },
           modify: {
             title: "2️⃣ Edit in Shopify Theme Editor",
-            step1: {
-              title: "Access Theme Editor",
-              instructions: [
-                "Go to Shopify Admin → Online Store → Themes",
-                "Click \"Customize\" on your active theme",
-              ],
-            },
-            step2: {
-              title: "Locate your images",
-              instructions: [
-                "Browse through your homepage sections (Hero, Banner, Gallery, etc.)",
-                "Identify images listed in the CSV file",
-              ],
-            },
-            step3: {
-              title: "Update ALT texts",
-              instructions: [
-                "For each image, click on it in the editor",
-                "Look for the \"Alt text\" or \"Alternative text\" field",
-                "Replace with the new ALT text from the CSV file",
-                "Repeat for all images",
-              ],
-            },
-            step4: {
-              title: "Save",
-              instructions: [
-                "Click \"Save\" at the top right of the Theme Editor",
-              ],
-            },
+            stepLabel: "Step",
+            steps: [
+              {
+                title: "Access Theme Editor",
+                instructions: [
+                  "Go to <strong>Shopify Admin → Online Store → Themes</strong>",
+                  "Click <strong>\"Customize\"</strong> on your active theme",
+                ],
+              },
+              {
+                title: "Locate your images",
+                instructions: [
+                  "Browse through your homepage sections (Hero, Banner, Gallery, etc.)",
+                  "Identify images listed in the CSV file",
+                ],
+              },
+              {
+                title: "Update ALT texts",
+                instructions: [
+                  "For each image, click on it in the editor",
+                  "Look for the <strong>\"Alt text\"</strong> or <strong>\"Alternative text\"</strong> field",
+                  "Replace with the new ALT text from the CSV file",
+                  "Repeat for all images",
+                ],
+              },
+              {
+                title: "Save",
+                instructions: [
+                  "Click <strong>\"Save\"</strong> at the top right of the Theme Editor",
+                ],
+              },
+            ],
           },
           bestPractices: {
             title: "✅ SEO Best Practices",
@@ -1733,12 +1735,7 @@ export const translations = {
           },
           rescan: {
             title: "3️⃣ Re-scan after modification",
-            description: "Once your modifications are done in Shopify:",
-            instructions: [
-              "Return to this page",
-              "Click \"Re-scan Homepage\"",
-              "Verify that your SEO score improves",
-            ],
+            description: "Once your modifications are done in Shopify: <ul class='list-disc pl-5 mt-2'><li>Return to this page</li><li>Click <strong>\"Re-scan Homepage\"</strong></li><li>Verify that your SEO score improves ✅</li></ul>",
           },
         },
       },

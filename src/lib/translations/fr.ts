@@ -1677,45 +1677,47 @@ export const translations = {
           },
           export: {
             title: "1️⃣ Exporter les ALT texts générés",
-            step1: "Cliquez sur le bouton \"Export Homepage ALT\" ci-dessus",
-            step2: "Le fichier téléchargé contient :",
-            listItems: [
-              "L'URL de chaque image",
-              "Le texte ALT actuel",
-              "Le nouveau texte ALT optimisé par l'IA",
+            steps: [
+              "Cliquez sur le bouton <strong>\"Export Homepage ALT\"</strong> ci-dessus",
+              "Le fichier téléchargé contient : <ul class='list-disc pl-5 mt-2'><li>L'URL de chaque image</li><li>Le texte ALT actuel</li><li>Le nouveau texte ALT optimisé par l'IA</li></ul>",
             ],
+            csvHeaders: ["URL Image", "ALT Actuel", "Nouveau ALT", "Section"],
+            csvExample: ["cdn.shopify.com/...", "banner", "Canapé moderne...", "Hero"],
           },
           modify: {
             title: "2️⃣ Modifier dans Shopify Theme Editor",
-            step1: {
-              title: "Accéder au Theme Editor",
-              instructions: [
-                "Allez dans Shopify Admin → Boutique en ligne → Thèmes",
-                "Cliquez sur \"Personnaliser\" sur votre thème actif",
-              ],
-            },
-            step2: {
-              title: "Localiser vos images",
-              instructions: [
-                "Parcourez les sections de votre homepage (Hero, Banner, Gallery, etc.)",
-                "Identifiez les images listées dans le fichier CSV",
-              ],
-            },
-            step3: {
-              title: "Mettre à jour les ALT texts",
-              instructions: [
-                "Pour chaque image, cliquez dessus dans l'éditeur",
-                "Cherchez le champ \"Texte alternatif\" ou \"ALT text\"",
-                "Remplacez par le nouveau texte ALT du fichier CSV",
-                "Répétez pour toutes les images",
-              ],
-            },
-            step4: {
-              title: "Sauvegarder",
-              instructions: [
-                "Cliquez sur \"Enregistrer\" en haut à droite du Theme Editor",
-              ],
-            },
+            stepLabel: "Étape",
+            steps: [
+              {
+                title: "Accéder au Theme Editor",
+                instructions: [
+                  "Allez dans <strong>Shopify Admin → Boutique en ligne → Thèmes</strong>",
+                  "Cliquez sur <strong>\"Personnaliser\"</strong> sur votre thème actif",
+                ],
+              },
+              {
+                title: "Localiser vos images",
+                instructions: [
+                  "Parcourez les sections de votre homepage (Hero, Banner, Gallery, etc.)",
+                  "Identifiez les images listées dans le fichier CSV",
+                ],
+              },
+              {
+                title: "Mettre à jour les ALT texts",
+                instructions: [
+                  "Pour chaque image, cliquez dessus dans l'éditeur",
+                  "Cherchez le champ <strong>\"Texte alternatif\"</strong> ou <strong>\"ALT text\"</strong>",
+                  "Remplacez par le nouveau texte ALT du fichier CSV",
+                  "Répétez pour toutes les images",
+                ],
+              },
+              {
+                title: "Sauvegarder",
+                instructions: [
+                  "Cliquez sur <strong>\"Enregistrer\"</strong> en haut à droite du Theme Editor",
+                ],
+              },
+            ],
           },
           bestPractices: {
             title: "✅ Bonnes Pratiques SEO",
@@ -1736,12 +1738,7 @@ export const translations = {
           },
           rescan: {
             title: "3️⃣ Re-scanner après modification",
-            description: "Une fois vos modifications terminées dans Shopify :",
-            instructions: [
-              "Retournez sur cette page",
-              "Cliquez sur \"Re-scan Homepage\"",
-              "Vérifiez que votre score SEO s'améliore",
-            ],
+            description: "Une fois vos modifications terminées dans Shopify : <ul class='list-disc pl-5 mt-2'><li>Retournez sur cette page</li><li>Cliquez sur <strong>\"Re-scan Homepage\"</strong></li><li>Vérifiez que votre score SEO s'améliore ✅</li></ul>",
           },
         },
       },
