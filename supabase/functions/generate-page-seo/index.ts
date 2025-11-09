@@ -204,9 +204,37 @@ ${elements.bodyText}
       if (pageError) throw pageError;
 
       pageTitle = page.title;
-      textContent = page.body_html?.replace(/<[^>]*>/g, ' ').substring(0, 1000) || '';
+      let baseContent = page.body_html?.replace(/<[^>]*>/g, ' ').substring(0, 800) || '';
       
-      console.log(`Generating SEO for page: ${pageTitle}`);
+      // Si c'est une page de contact, récupérer le nom de la boutique via user_id
+      const isContactPage = page.title.toLowerCase().includes('contact') || 
+                           page.handle?.toLowerCase().includes('contact') ||
+                           baseContent.toLowerCase().includes('contact');
+      
+      if (isContactPage) {
+        const { data: storeData } = await supabaseClient
+          .from('shopify_connections')
+          .select('store_name, store_label, store_phone, store_email, store_address')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+        
+        if (storeData) {
+          const storeName = storeData.store_label || storeData.store_name || '';
+          textContent = `PAGE DE CONTACT - Boutique: ${storeName}
+${storeData.store_phone ? `Téléphone: ${storeData.store_phone}` : ''}
+${storeData.store_email ? `Email: ${storeData.store_email}` : ''}
+${storeData.store_address ? `Adresse: ${storeData.store_address}` : ''}
+
+${baseContent}`;
+        } else {
+          textContent = baseContent;
+        }
+      } else {
+        textContent = baseContent;
+      }
+      
+      console.log(`Generating SEO for page: ${pageTitle}${isContactPage ? ' (Contact page)' : ''}`);
     }
 
     // Get store language
