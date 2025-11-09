@@ -426,21 +426,19 @@ export function SeoOptimization() {
         return false;
       }
 
-      // Otherwise, only products not yet enriched
-      return p.enrichment_status !== "enriched";
+      // For paid users, allow re-optimization
+      return true;
     });
 
-    // Check if all selected products are already optimized
+    // Check if products can be optimized based on user status
     const selectedProductsList = products.filter((p) => idsToUse.has(p.id));
-    const allAlreadyOptimized = selectedProductsList.every((p) => p.enrichment_status === "enriched");
-
+    
     if (productsToGenerate.length === 0) {
-      if (allAlreadyOptimized) {
-        toast.warning(t.seo.optimization.alreadyOptimized);
-      } else if (limits?.isTrialing) {
-        // Show upgrade dialog instead of toast for better UX
+      if (limits?.isTrialing) {
+        // In trial, all selected products have already been optimized once
         setShowUpgradeDialog(true);
       } else {
+        // This shouldn't happen for paid users since we allow re-optimization
         toast.info(t.seo.optimization.noProductsSelected);
       }
       return;
