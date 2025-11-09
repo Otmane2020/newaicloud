@@ -95,18 +95,39 @@ serve(async (req) => {
       stripeSubscription.items.data[0].price.id
     );
 
-    // Calculate proration amount
+    // Calculate proration amount with detailed breakdown
     let prorationAmount = 0;
+    let breakdown = null;
+    
     if (!isRenewalUpgrade && newPrice.unit_amount && currentPrice.unit_amount) {
-      const priceDifference = (newPrice.unit_amount - currentPrice.unit_amount) / 100; // Convert to dollars
-      prorationAmount = (priceDifference * daysRemaining) / totalCycleDays;
+      const currentPlanTotal = currentPrice.unit_amount / 100;
+      const newPlanTotal = newPrice.unit_amount / 100;
+      const consumedAmount = (currentPlanTotal * daysIntoCycle) / totalCycleDays;
+      const unusedCredit = (currentPlanTotal * daysRemaining) / totalCycleDays;
+      const newPlanProrated = (newPlanTotal * daysRemaining) / totalCycleDays;
+      const netCharge = newPlanProrated - unusedCredit;
+      
+      prorationAmount = netCharge;
+      
+      breakdown = {
+        currentPlanTotal,
+        newPlanTotal,
+        daysConsumed: daysIntoCycle,
+        daysRemaining,
+        totalCycleDays,
+        consumedAmount,
+        unusedCredit,
+        newPlanProrated,
+        netCharge
+      };
     }
 
     logStep("Proration calculated", {
       currentPrice: currentPrice.unit_amount ? currentPrice.unit_amount / 100 : 0,
       newPrice: newPrice.unit_amount ? newPrice.unit_amount / 100 : 0,
       prorationAmount,
-      willProrate: !isRenewalUpgrade
+      willProrate: !isRenewalUpgrade,
+      breakdown
     });
 
     return new Response(
@@ -116,6 +137,7 @@ serve(async (req) => {
         daysIntoCycle,
         daysRemaining,
         renewalDate: new Date(periodEnd * 1000).toISOString(),
+        breakdown,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

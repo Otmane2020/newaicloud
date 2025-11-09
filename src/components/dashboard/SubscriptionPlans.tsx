@@ -54,6 +54,7 @@ export function SubscriptionPlans() {
     priceId: string;
     prorationAmount: number;
     hasActiveSubscription: boolean;
+    breakdown?: any;
   } | null>(null);
 
   useEffect(() => {
@@ -169,7 +170,8 @@ export function SubscriptionPlans() {
           planName: selectedPlan.name,
           priceId: newPriceId,
           prorationAmount: prorationData.prorationAmount || 0,
-          hasActiveSubscription: true
+          hasActiveSubscription: true,
+          breakdown: prorationData.breakdown || null
         });
         setConfirmDialogOpen(true);
       } else {
@@ -572,6 +574,7 @@ export function SubscriptionPlans() {
         isLoading={!!checkoutLoading}
         onConfirm={handleConfirmPlanChange}
         isUpgrade={getPlanLevel(pendingPlanChange?.planId || '') > getPlanLevel(currentPlanId || '')}
+        breakdown={pendingPlanChange?.breakdown}
       />
     </div>
   );
