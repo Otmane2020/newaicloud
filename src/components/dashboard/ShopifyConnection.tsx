@@ -15,7 +15,6 @@ import { shopifyConnectionSchema } from '@/lib/validationSchemas';
 import { ImportProgressDialog } from './ImportProgressDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { useTranslation } from '@/lib/language';
-import { UpgradeDialog } from '@/components/UpgradeDialog';
 
 export function ShopifyConnection() {
   const { user } = useAuth();
@@ -24,7 +23,6 @@ export function ShopifyConnection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [importJobId, setImportJobId] = useState<string | null>(null);
   const [importPhase, setImportPhase] = useState<'products' | 'pages' | 'complete'>('products');
   const [productsImported, setProductsImported] = useState(0);
@@ -403,9 +401,12 @@ export function ShopifyConnection() {
       toast.error('Limite de produits atteinte', {
         description: limits?.isTrialing 
           ? 'Passez à un plan payant pour importer plus de produits.'
-          : 'Limite mensuelle atteinte. Upgradez votre plan pour continuer.'
+          : 'Limite mensuelle atteinte. Upgradez votre plan pour continuer.',
+        action: {
+          label: 'Voir les plans',
+          onClick: () => navigate('/subscription')
+        }
       });
-      setShowUpgradeDialog(true);
       return;
     }
 
@@ -779,14 +780,6 @@ export function ShopifyConnection() {
         limitReached={limitReached}
         maxProducts={limits?.limits?.max_products || 50}
         totalShopifyProducts={totalShopifyProducts}
-      />
-
-      <UpgradeDialog
-        open={showUpgradeDialog}
-        onOpenChange={setShowUpgradeDialog}
-        limitType="optimizations"
-        usage={limits?.usage.products_count}
-        limit={limits?.limits.max_products}
       />
     </div>
   );

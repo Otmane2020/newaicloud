@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CreditCard } from 'lucide-react';
@@ -38,6 +39,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [subscriptionChannel, setSubscriptionChannel] = useState<any>(null);
+  const [planTier, setPlanTier] = useState<'pro' | 'enterprise'>('pro');
   const { t, tf, language } = useTranslation();
 
   const limitTitle = t.dialogs.limit.limitTypes[limitType];
@@ -289,7 +291,24 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
     }
   };
 
-  const selectedPlan = availablePlans.find(p => p.id === selectedPlanId);
+  // Filter plans by selected tier
+  const filteredPlans = availablePlans.filter(plan => {
+    const planName = plan.name.toLowerCase();
+    if (planTier === 'pro') {
+      return planName.includes('pro') && !planName.includes('enterprise');
+    } else {
+      return planName.includes('enterprise');
+    }
+  });
+
+  // Auto-select first plan when tier changes
+  useEffect(() => {
+    if (filteredPlans.length > 0 && !filteredPlans.find(p => p.id === selectedPlanId)) {
+      setSelectedPlanId(filteredPlans[0].id);
+    }
+  }, [planTier, filteredPlans]);
+
+  const selectedPlan = filteredPlans.find(p => p.id === selectedPlanId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -311,6 +330,13 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
           
           {availablePlans.length > 0 && (
             <>
+              <Tabs value={planTier} onValueChange={(value) => setPlanTier(value as 'pro' | 'enterprise')} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="pro">Pro</TabsTrigger>
+                  <TabsTrigger value="enterprise">Enterprise</TabsTrigger>
+                </TabsList>
+              </Tabs>
+
               <div className="space-y-3">
                 <p className="text-muted-foreground font-medium text-sm sm:text-base">
                   {t.dialogs.upgrade.chooseOptimizations}
@@ -321,7 +347,7 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
                     <SelectValue placeholder={t.dialogs.upgrade.selectPlan} />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
-                    {availablePlans.map((plan) => (
+                    {filteredPlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
                         <span className="text-xs sm:text-sm">
                           {tf('dashboard.plans.optimizationsCount', { count: plan.max_optimizations_monthly })} - {plan.price_monthly}{getCurrencySymbol(language)}/mois

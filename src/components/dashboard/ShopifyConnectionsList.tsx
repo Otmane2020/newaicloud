@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ImportProgressDialog } from './ImportProgressDialog';
-import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { ImportConfirmDialog } from '@/components/integration/ImportConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -66,8 +65,6 @@ export default function ShopifyConnectionsList() {
   const [maxProducts, setMaxProducts] = useState(0);
   const [totalShopifyProducts, setTotalShopifyProducts] = useState(0);
   
-  // Upgrade dialog state
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [usageLimits, setUsageLimits] = useState<any>(null);
   const [pendingImportStore, setPendingImportStore] = useState<ShopifyConnection | null>(null);
   
@@ -839,12 +836,16 @@ export default function ShopifyConnectionsList() {
 
   const handleUpgradeFromImport = () => {
     setShowProgressDialog(false);
-    setShowUpgradeDialog(true);
+    toast.error('Limite de produits atteinte', {
+      description: 'Upgradez votre plan pour continuer l\'importation.',
+      action: {
+        label: 'Voir les plans',
+        onClick: () => navigate('/subscription')
+      }
+    });
   };
 
   const handleUpgradeComplete = async () => {
-    setShowUpgradeDialog(false);
-    
     // Wait a bit for the subscription to be fully updated
     await new Promise(resolve => setTimeout(resolve, 2000));
     
@@ -883,10 +884,16 @@ export default function ShopifyConnectionsList() {
       
       setMaxProducts(maxProductsAllowed);
       
-      // If no slots available, show upgrade dialog
+      // If no slots available, navigate to subscription page
       if (availableSlots === 0) {
         setPendingImportStore(store);
-        setShowUpgradeDialog(true);
+        toast.error('Limite de produits atteinte', {
+          description: 'Upgradez votre plan pour importer plus de produits.',
+          action: {
+            label: 'Voir les plans',
+            onClick: () => navigate('/subscription')
+          }
+        });
         setImportingStoreId(null);
         return;
       }
@@ -1300,16 +1307,6 @@ export default function ShopifyConnectionsList() {
         maxProducts={maxProducts}
         totalShopifyProducts={totalShopifyProducts}
         onUpgrade={handleUpgradeFromImport}
-      />
-
-      <UpgradeDialog
-        open={showUpgradeDialog}
-        onOpenChange={setShowUpgradeDialog}
-        limitType="optimizations"
-        usage={usageLimits?.usage?.products_count}
-        limit={usageLimits?.limits?.max_products}
-        currentPlan={usageLimits?.plan_name}
-        onUpgradeComplete={handleUpgradeComplete}
       />
 
       <SimpleSyncProgress
