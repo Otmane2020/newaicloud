@@ -321,7 +321,7 @@ export function calculateDetailedSeoScore(
   const descScore = calculateDescriptionScore(description);
   const tagsScore = calculateTagsScore(tags);
   
-  // Pondération : Title 35% + Description 35% + Tags 15% + Image 6% + URL 6% - More strict
+  // Pondération : Title 35% + Description 35% + Tags 15% + Image 6% + URL 6%
   let weightedScore = Math.round(
     (titleScore.score * 0.35) +
     (descScore.score * 0.35) +
@@ -330,12 +330,13 @@ export function calculateDetailedSeoScore(
     (hasUrl ? 6 : 0) // URL 6 points (reduced from 8)
   );
 
-  // Bonus +15 points pour contenu optimisé par IA (increased for easier 80%)
+  // Bonus +10 points pour contenu optimisé par IA (reduced for more variation)
   if (optimizationCount && optimizationCount > 0) {
-    weightedScore = Math.min(95, weightedScore + 15);
+    weightedScore = Math.min(95, weightedScore + 10);
   }
 
-  // IMPORTANT: Produit importé non optimisé ne peut jamais dépasser 75%
+  // IMPORTANT: Produit non optimisé plafonné à 75%, mais varie selon la qualité réelle
+  // Le score réel peut être 20%, 35%, 50%, 68%, etc. selon le contenu
   const maxScore = (optimizationCount && optimizationCount > 0) ? 95 : 75;
 
   return {
