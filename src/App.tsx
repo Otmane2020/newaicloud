@@ -49,6 +49,7 @@ import Shopping from "./pages/Shopping";
 import SearchProducts from "./pages/SearchProducts";
 import ChatHistory from "./pages/ChatHistory";
 import ProductDetail from "./pages/ProductDetail";
+import ShopifyInstall from "./pages/ShopifyInstall";
 import NotFound from "./pages/NotFound";
 import ChatSettings from "./pages/ChatSettings";
 import ChatRobot from "./pages/ChatRobot";
@@ -90,6 +91,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/shopify/install" element={<ShopifyInstall />} />
             <Route
               path="/onboarding"
               element={
