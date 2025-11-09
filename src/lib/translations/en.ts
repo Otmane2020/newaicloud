@@ -1272,6 +1272,160 @@ export const translations = {
     },
   },
 
+  superAdmin: {
+    navigation: {
+      title: "Super Admin",
+      dashboard: "Dashboard",
+      users: "Users",
+      emails: "Emails",
+      templates: "Templates",
+      emailStats: "Email Stats",
+      analytics: "Analytics",
+      logout: "Logout"
+    },
+    toasts: {
+      logoutSuccess: {
+        title: "Logged out successfully",
+        description: "See you soon!"
+      },
+      logoutError: {
+        title: "Error",
+        description: "Unable to log out"
+      }
+    },
+    emailStats: {
+      title: "Email Statistics",
+      description: "Detailed analysis of your communications",
+      timeRange: {
+        last7: "Last 7 days",
+        last14: "Last 14 days",
+        last30: "Last 30 days",
+        last90: "Last 90 days"
+      },
+      exportButton: "Export CSV",
+      cards: {
+        total: "Total Emails",
+        sent: "Sent",
+        received: "Received",
+        responseRate: "Response rate",
+        responseTime: "Response time",
+        average: "Average",
+        ofTotal: "of total",
+        replied: "replied"
+      },
+      charts: {
+        dailyVolume: "Daily volume",
+        responseEvolution: "Response evolution",
+        topSenders: "Top 10 Senders",
+        sent: "Sent",
+        received: "Received",
+        replied: "Replied"
+      },
+      table: {
+        email: "Email",
+        count: "Count",
+        replies: "Replies",
+        rate: "Rate",
+        avgTime: "Avg time (h)"
+      },
+      csv: {
+        title: "Email Statistics",
+        period: "Period",
+        lastDays: "last days",
+        metric: "Metric",
+        value: "Value",
+        totalEmails: "Total emails",
+        emailsSent: "Emails sent",
+        emailsReceived: "Emails received",
+        emailsWithReply: "Emails with reply",
+        avgResponseTime: "Average response time (h)",
+        dailyStats: "Daily statistics",
+        date: "Date",
+        sent: "Sent",
+        received: "Received",
+        replied: "Replied",
+        topSenders: "Top senders",
+        number: "Number",
+        responses: "Responses"
+      }
+    },
+    emailTemplates: {
+      title: "Email Templates",
+      description: "Manage your quick response templates",
+      newTemplate: "New Template",
+      editTemplate: "Edit Template",
+      deleteConfirm: "Are you sure you want to delete this template?",
+      form: {
+        name: "Template name",
+        category: "Category",
+        subject: "Subject",
+        variables: "Available variables",
+        variablesHelp: "Use {{variable}} in content to replace automatically",
+        variablesPlaceholder: "Comma-separated: name, email, plan, subject",
+        bodyText: "Message body (text)",
+        bodyHtml: "Message body (optional HTML)"
+      },
+      categories: {
+        general: "General",
+        onboarding: "Onboarding",
+        support: "Support",
+        sales: "Sales"
+      },
+      buttons: {
+        cancel: "Cancel",
+        update: "Update",
+        create: "Create",
+        use: "Use",
+        preview: "Preview",
+        edit: "Edit",
+        duplicate: "Duplicate",
+        delete: "Delete"
+      },
+      usageCount: "Used {count} times",
+      toasts: {
+        loadError: "Unable to load templates",
+        fillRequired: "Please fill all required fields",
+        updated: "Template updated",
+        created: "Template created",
+        saveError: "Unable to save template",
+        deleted: "Template deleted",
+        deleteError: "Unable to delete template",
+        duplicated: "Template duplicated",
+        duplicateError: "Unable to duplicate template"
+      },
+      preview: {
+        title: "Preview",
+        subject: "Subject",
+        htmlPreview: "HTML Preview",
+        body: "Message body"
+      }
+    },
+    userActivity: {
+      title: "Activity History",
+      description: "Detailed tracking of user actions",
+      filters: {
+        user: "User",
+        allUsers: "All users",
+        store: "Store",
+        allStores: "All stores",
+        page: "Page",
+        allPages: "All pages"
+      },
+      stats: {
+        total: "Total",
+        totalActivities: "Total activities",
+        today: "Today",
+        todayActivities: "Today's activities",
+        thisWeek: "This week",
+        last7Days: "Last 7 days",
+        thisMonth: "This month",
+        last30Days: "Last 30 days",
+        topPages: "Most visited pages",
+        topActions: "Most frequent actions"
+      },
+      noActivities: "No activities found"
+    }
+  },
   account: {
     title: "Account Settings",
     trial: "Trial",
@@ -2672,6 +2826,144 @@ export const translations = {
     feed: "Shopping Feed",
     optimize: "Optimize for Google",
     syncAll: "Sync All Products",
+  },
+
+  onboardingTour: {
+    welcome: "Welcome to your SEO platform",
+    description: "Follow these steps to get your first results in less than 10 minutes",
+    progress: "Progress",
+    completed: "completed",
+    quickWins: "Quick Wins",
+    recommended: "Recommended",
+    quickWinsDescription: "Start with these actions for immediate results",
+    congratulations: "Congratulations! 🎉",
+    completionMessage: "You've completed the onboarding. Your store is ready to take off!",
+    startOptimization: "Start optimization",
+    dismissToast: {
+      title: "Onboarding completed",
+      description: "You can always access guides from settings"
+    },
+    steps: {
+      connectShopify: {
+        title: "Connect your Shopify store",
+        description: "Sync your products in 1 click",
+        action: "Connect"
+      },
+      optimizeFirstProduct: {
+        title: "Optimize your first product",
+        description: "Improve product SEO in 30 seconds",
+        action: "Optimize"
+      },
+      generateArticle: {
+        title: "Create your first blog article",
+        description: "Generate AI-optimized SEO content",
+        action: "Create"
+      },
+      setupAutomation: {
+        title: "Enable automatic optimizations",
+        description: "Let AI work for you",
+        action: "Enable"
+      },
+      viewAnalytics: {
+        title: "View your first statistics",
+        description: "Track the impact of your optimizations",
+        action: "View"
+      }
+    }
+  },
+
+  pricingTable: {
+    features: "Features",
+    priceMonthly: "Monthly price",
+    priceYearly: "Yearly price",
+    productsMax: "Max products",
+    optimizationsPerMonth: "Optimizations/month",
+    articlesPerMonth: "AI Articles/month",
+    chatResponsesPerMonth: "Chat responses/month",
+    shopifyStores: "Shopify stores",
+    editorialCampaigns: "Editorial campaigns",
+    support: "Support",
+    supportEmail: "Email",
+    supportPriority: "Priority",
+    supportDedicated: "Dedicated",
+    apiAccess: "API Access",
+    apiIncluded: "API Access included",
+    yes: "Yes",
+    no: "No",
+    products: "Products",
+    optimizations: "Optimizations",
+    articles: "Articles",
+    chat: "Chat",
+    scrollHint: "💡 Scroll horizontally to see all plans"
+  },
+
+  advancedAnalytics: {
+    title: "Advanced Analytics",
+    description: "Detailed insights and AI predictions",
+    periods: {
+      sevenDays: "7 days",
+      thirtyDays: "30 days",
+      ninetyDays: "90 days"
+    },
+    export: {
+      pdf: "PDF",
+      excel: "Excel"
+    },
+    kpis: {
+      seoScore: "SEO Score",
+      products: "Products",
+      optimizations: "Optimizations",
+      articles: "Articles"
+    },
+    comparison: {
+      vsPrevious: "vs previous period"
+    },
+    tabs: {
+      trends: "Trends",
+      heatmap: "SEO Heatmap",
+      predictions: "AI Predictions"
+    },
+    trends: {
+      title: "Metrics Evolution",
+      description: "Track your performance over {period}",
+      dailyActivity: "Daily Activity",
+      seoScore: "SEO Score",
+      optimizations: "Optimizations",
+      articles: "Articles"
+    },
+    heatmap: {
+      title: "SEO Heatmap by Category",
+      description: "Performance and trends of each section"
+    },
+    predictions: {
+      nextWeek: {
+        title: "Next Week Predictions",
+        description: "Estimates based on your current trends",
+        optimizations: "Estimated optimizations",
+        seoScore: "Predicted SEO score"
+      },
+      nextMonth: {
+        title: "Next Month Predictions",
+        description: "30-day projection",
+        optimizations: "Estimated optimizations",
+        seoScore: "Predicted SEO score"
+      }
+    },
+    loading: "Loading analytics...",
+    toasts: {
+      exportPdf: {
+        title: "Exporting",
+        description: "Generating PDF report..."
+      },
+      exportExcel: {
+        title: "Exporting",
+        description: "Generating Excel file..."
+      },
+      error: {
+        title: "Error",
+        description: "Unable to load analytics"
+      }
+    }
   },
 
   notificationSettings: {

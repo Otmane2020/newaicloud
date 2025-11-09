@@ -1274,6 +1274,161 @@ export const translations = {
     },
   },
 
+  superAdmin: {
+    navigation: {
+      title: "Super Admin",
+      dashboard: "Dashboard",
+      users: "Utilisateurs",
+      emails: "Emails",
+      templates: "Templates",
+      emailStats: "Stats Emails",
+      analytics: "Analytics",
+      logout: "Déconnexion"
+    },
+    toasts: {
+      logoutSuccess: {
+        title: "Déconnexion réussie",
+        description: "À bientôt !"
+      },
+      logoutError: {
+        title: "Erreur",
+        description: "Impossible de se déconnecter"
+      }
+    },
+    emailStats: {
+      title: "Statistiques Emails",
+      description: "Analyse détaillée de vos communications",
+      timeRange: {
+        last7: "7 derniers jours",
+        last14: "14 derniers jours",
+        last30: "30 derniers jours",
+        last90: "90 derniers jours"
+      },
+      exportButton: "Export CSV",
+      cards: {
+        total: "Total Emails",
+        sent: "Envoyés",
+        received: "Reçus",
+        responseRate: "Taux réponse",
+        responseTime: "Temps réponse",
+        average: "Moyenne",
+        ofTotal: "du total",
+        replied: "répondus"
+      },
+      charts: {
+        dailyVolume: "Volume quotidien",
+        responseEvolution: "Évolution des réponses",
+        topSenders: "Top 10 Expéditeurs",
+        sent: "Envoyés",
+        received: "Reçus",
+        replied: "Répondus"
+      },
+      table: {
+        email: "Email",
+        count: "Nombre",
+        replies: "Réponses",
+        rate: "Taux",
+        avgTime: "Temps moy (h)"
+      },
+      csv: {
+        title: "Statistiques Emails",
+        period: "Période",
+        lastDays: "derniers jours",
+        metric: "Métrique",
+        value: "Valeur",
+        totalEmails: "Total emails",
+        emailsSent: "Emails envoyés",
+        emailsReceived: "Emails reçus",
+        emailsWithReply: "Emails avec réponse",
+        avgResponseTime: "Temps de réponse moyen (h)",
+        dailyStats: "Statistiques par jour",
+        date: "Date",
+        sent: "Envoyés",
+        received: "Reçus",
+        replied: "Répondus",
+        topSenders: "Top expéditeurs",
+        number: "Nombre",
+        responses: "Réponses"
+      }
+    },
+    emailTemplates: {
+      title: "Templates d'Emails",
+      description: "Gérez vos templates de réponses rapides",
+      newTemplate: "Nouveau Template",
+      editTemplate: "Modifier le Template",
+      deleteConfirm: "Êtes-vous sûr de vouloir supprimer ce template ?",
+      form: {
+        name: "Nom du template",
+        category: "Catégorie",
+        subject: "Sujet",
+        variables: "Variables disponibles",
+        variablesHelp: "Utilisez {{variable}} dans le contenu pour les remplacer automatiquement",
+        variablesPlaceholder: "Séparées par des virgules: nom, email, plan, subject",
+        bodyText: "Corps du message (texte)",
+        bodyHtml: "Corps du message (HTML optionnel)"
+      },
+      categories: {
+        general: "Général",
+        onboarding: "Onboarding",
+        support: "Support",
+        sales: "Ventes"
+      },
+      buttons: {
+        cancel: "Annuler",
+        update: "Mettre à jour",
+        create: "Créer",
+        use: "Utiliser",
+        preview: "Aperçu",
+        edit: "Éditer",
+        duplicate: "Dupliquer",
+        delete: "Supprimer"
+      },
+      usageCount: "Utilisé {count} fois",
+      toasts: {
+        loadError: "Impossible de charger les templates",
+        fillRequired: "Veuillez remplir tous les champs obligatoires",
+        updated: "Template mis à jour",
+        created: "Template créé",
+        saveError: "Impossible de sauvegarder le template",
+        deleted: "Template supprimé",
+        deleteError: "Impossible de supprimer le template",
+        duplicated: "Template dupliqué",
+        duplicateError: "Impossible de dupliquer le template"
+      },
+      preview: {
+        title: "Aperçu",
+        subject: "Sujet",
+        htmlPreview: "Aperçu HTML",
+        body: "Corps du message"
+      }
+    },
+    userActivity: {
+      title: "Historique des activités",
+      description: "Suivi détaillé des actions des utilisateurs",
+      filters: {
+        user: "Utilisateur",
+        allUsers: "Tous les utilisateurs",
+        store: "Boutique",
+        allStores: "Toutes les boutiques",
+        page: "Page",
+        allPages: "Toutes les pages"
+      },
+      stats: {
+        total: "Total",
+        totalActivities: "Activités totales",
+        today: "Aujourd'hui",
+        todayActivities: "Activités du jour",
+        thisWeek: "Cette semaine",
+        last7Days: "7 derniers jours",
+        thisMonth: "Ce mois",
+        last30Days: "30 derniers jours",
+        topPages: "Pages les plus visitées",
+        topActions: "Actions les plus fréquentes"
+      },
+      noActivities: "Aucune activité trouvée"
+    }
+  },
+
   account: {
     title: "Paramètres du Compte",
     trial: "Essai",
@@ -2763,6 +2918,144 @@ export const translations = {
       completed: "Terminé",
       actionPlan: "Plan d'action",
       priorityActions: "{{count}} actions prioritaires",
+    }
+  },
+
+  onboardingTour: {
+    welcome: "Bienvenue sur votre plateforme SEO",
+    description: "Suivez ces étapes pour obtenir vos premiers résultats en moins de 10 minutes",
+    progress: "Progression",
+    completed: "complétées",
+    quickWins: "Quick Wins",
+    recommended: "Recommandé",
+    quickWinsDescription: "Commencez par ces actions pour des résultats immédiats",
+    congratulations: "Félicitations ! 🎉",
+    completionMessage: "Vous avez terminé l'onboarding. Votre boutique est prête à décoller !",
+    startOptimization: "Commencer l'optimisation",
+    dismissToast: {
+      title: "Onboarding terminé",
+      description: "Vous pouvez toujours accéder aux guides depuis les paramètres"
+    },
+    steps: {
+      connectShopify: {
+        title: "Connectez votre boutique Shopify",
+        description: "Synchronisez vos produits en 1 clic",
+        action: "Connecter"
+      },
+      optimizeFirstProduct: {
+        title: "Optimisez votre premier produit",
+        description: "Améliorez le SEO d'un produit en 30 secondes",
+        action: "Optimiser"
+      },
+      generateArticle: {
+        title: "Créez votre premier article de blog",
+        description: "Générez du contenu optimisé SEO avec l'IA",
+        action: "Créer"
+      },
+      setupAutomation: {
+        title: "Activez les optimisations automatiques",
+        description: "Laissez l'IA travailler pour vous",
+        action: "Activer"
+      },
+      viewAnalytics: {
+        title: "Consultez vos premières statistiques",
+        description: "Suivez l'impact de vos optimisations",
+        action: "Voir"
+      }
+    }
+  },
+
+  pricingTable: {
+    features: "Fonctionnalités",
+    priceMonthly: "Prix mensuel",
+    priceYearly: "Prix annuel",
+    productsMax: "Produits max",
+    optimizationsPerMonth: "Optimisations/mois",
+    articlesPerMonth: "Articles AI/mois",
+    chatResponsesPerMonth: "Réponses chat/mois",
+    shopifyStores: "Boutiques Shopify",
+    editorialCampaigns: "Campagnes éditoriales",
+    support: "Support",
+    supportEmail: "Email",
+    supportPriority: "Prioritaire",
+    supportDedicated: "Dédié",
+    apiAccess: "Accès API",
+    apiIncluded: "Accès API inclus",
+    yes: "Oui",
+    no: "Non",
+    products: "Produits",
+    optimizations: "Optimisations",
+    articles: "Articles",
+    chat: "Chat",
+    scrollHint: "💡 Tableau scrollable horizontalement pour voir tous les plans"
+  },
+
+  advancedAnalytics: {
+    title: "Analytics Avancés",
+    description: "Insights détaillés et prédictions IA",
+    periods: {
+      sevenDays: "7 jours",
+      thirtyDays: "30 jours",
+      ninetyDays: "90 jours"
+    },
+    export: {
+      pdf: "PDF",
+      excel: "Excel"
+    },
+    kpis: {
+      seoScore: "Score SEO",
+      products: "Produits",
+      optimizations: "Optimisations",
+      articles: "Articles"
+    },
+    comparison: {
+      vsPrevious: "vs période précédente"
+    },
+    tabs: {
+      trends: "Tendances",
+      heatmap: "Heatmap SEO",
+      predictions: "Prédictions IA"
+    },
+    trends: {
+      title: "Evolution des Métriques",
+      description: "Suivi de vos performances sur {period}",
+      dailyActivity: "Activité Quotidienne",
+      seoScore: "Score SEO",
+      optimizations: "Optimisations",
+      articles: "Articles"
+    },
+    heatmap: {
+      title: "Heatmap SEO par Catégorie",
+      description: "Performance et tendances de chaque section"
+    },
+    predictions: {
+      nextWeek: {
+        title: "Prédictions Semaine Prochaine",
+        description: "Estimations basées sur vos tendances actuelles",
+        optimizations: "Optimisations estimées",
+        seoScore: "Score SEO prévu"
+      },
+      nextMonth: {
+        title: "Prédictions Mois Prochain",
+        description: "Projection à 30 jours",
+        optimizations: "Optimisations estimées",
+        seoScore: "Score SEO prévu"
+      }
+    },
+    loading: "Chargement des analytics...",
+    toasts: {
+      exportPdf: {
+        title: "Export en cours",
+        description: "Génération du rapport PDF..."
+      },
+      exportExcel: {
+        title: "Export en cours",
+        description: "Génération du fichier Excel..."
+      },
+      error: {
+        title: "Erreur",
+        description: "Impossible de charger les analytics"
+      }
     }
   },
 
