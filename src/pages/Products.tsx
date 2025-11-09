@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, ArrowLeftRight } from "lucide-react";
+import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useShopifySync } from "@/hooks/useShopifySync";
 
 interface Product {
   id: string;
@@ -50,18 +51,7 @@ export default function Products() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(false);
   const ITEMS_PER_PAGE = 20;
-
-  useEffect(() => {
-    if (user) {
-      loadProducts();
-    }
-  }, [user, currentPage]);
-
-  useEffect(() => {
-    filterAndSortProducts();
-  }, [products, searchQuery, statusFilter, sortBy]);
 
   const loadProducts = async () => {
     try {
@@ -94,6 +84,19 @@ export default function Products() {
       setLoading(false);
     }
   };
+
+  const { isSyncing, currentSyncType, syncShopifyStore } = useShopifySync();
+
+  useEffect(() => {
+    if (user) {
+      loadProducts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, currentPage]);
+
+  useEffect(() => {
+    filterAndSortProducts();
+  }, [products, searchQuery, statusFilter, sortBy]);
 
   const filterAndSortProducts = () => {
     let filtered = [...products];
@@ -143,47 +146,32 @@ export default function Products() {
   };
 
   const handleSync = async () => {
+    if (!user?.id) {
+      toast.error("Utilisateur non authentifié");
+      return;
+    }
+
     try {
-      setIsSyncing(true);
-      
-      // Get the store connection
-      const { data: store, error: storeError } = await supabase
+      // @ts-ignore - Avoid deep type inference
+      const { data: store, error } = await supabase
         .from('shopify_connections')
-        .select('id, store_name')
-        .eq('user_id', user?.id)
-        .eq('is_active', true)
+        .select('id, store_url, store_name')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
-      if (storeError || !store) {
+      if (error || !store) {
         toast.error("Aucune boutique Shopify connectée");
         return;
       }
-
-      toast.info("Synchronisation en cours...");
-
-      // Trigger sync
-      const { error: syncError } = await supabase.functions.invoke('trigger-auto-sync', {
-        body: { storeId: store.id }
-      });
-
-      if (syncError) throw syncError;
-
-      // Wait a bit for the sync to process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Refresh data
-      await Promise.all([
-        loadProducts(),
-        refreshLimits()
-      ]);
-
-      toast.success("Synchronisation terminée");
-    } catch (error: any) {
-      console.error("Sync error:", error);
-      toast.error(`Erreur de synchronisation: ${error.message}`);
-    } finally {
-      setIsSyncing(false);
+      
+      await syncShopifyStore(store as any);
+      await loadProducts();
+      await refreshLimits();
+    } catch (err) {
+      console.error('Sync error:', err);
     }
   };
 
@@ -260,13 +248,13 @@ export default function Products() {
             >
               {isSyncing ? (
                 <>
-                  <ArrowLeftRight className="w-4 h-4 animate-pulse" />
-                  Sync...
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  {currentSyncType ? `Sync ${currentSyncType}...` : 'Synchronisation...'}
                 </>
               ) : (
                 <>
-                  <ArrowLeftRight className="w-4 h-4" />
-                  Synchroniser
+                  <RefreshCw className="w-4 h-4" />
+                  Synchroniser maintenant
                 </>
               )}
             </Button>
