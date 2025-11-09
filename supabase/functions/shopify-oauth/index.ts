@@ -78,8 +78,36 @@ serve(async (req) => {
     const state = url.searchParams.get("state");
 
     // 🟢 1️⃣ CALLBACK PUBLIC – Shopify redirige ici après installation
-    if (req.method === "GET" && code && shop) {
-      console.log("[SHOPIFY-OAUTH] Callback public reçu de Shopify", { shop });
+    if (req.method === "GET" && code && shop && state) {
+      console.log("[SHOPIFY-OAUTH] Callback public reçu de Shopify", { shop, state });
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      // Récupérer le user_id depuis oauth_states
+      const { data: oauthState, error: stateError } = await supabase
+        .from("oauth_states")
+        .select("user_id, expires_at, shop_name")
+        .eq("state_token", state)
+        .single();
+
+      if (stateError || !oauthState) {
+        console.error("[SHOPIFY-OAUTH] State token invalide:", stateError);
+        return new Response(JSON.stringify({ error: "Invalid state token" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Vérifier que le state n'a pas expiré
+      if (new Date(oauthState.expires_at) < new Date()) {
+        console.error("[SHOPIFY-OAUTH] State token expiré");
+        return new Response(JSON.stringify({ error: "State token expired" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log("[SHOPIFY-OAUTH] State validé pour user_id:", oauthState.user_id);
 
       // Échanger le code contre le token
       const tokenResponse = await fetch(`https://${shop}/admin/oauth/access_token`, {
@@ -104,20 +132,29 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      // Sauvegarde du token dans Supabase
+      // Sauvegarde du token dans Supabase avec user_id
       try {
-        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         await supabase.from("shopify_connections").upsert({
+          user_id: oauthState.user_id,
           store_url: shop,
+          commercial_name: oauthState.shop_name,
           access_token: accessToken,
           scope: tokenData.scope,
           connected_at: new Date().toISOString(),
           is_active: true,
           connection_type: "oauth",
         });
-        console.log("✅ Token enregistré pour", shop);
+        console.log("✅ Token enregistré pour", shop, "user:", oauthState.user_id);
+
+        // Nettoyer le state token après utilisation
+        await supabase.from("oauth_states").delete().eq("state_token", state);
+        console.log("✅ State token nettoyé");
       } catch (dbErr) {
         console.error("⚠️ Erreur Supabase save:", dbErr);
+        return new Response(JSON.stringify({ error: "Database error", details: String(dbErr) }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       // Redirection vers le front après succès
@@ -193,7 +230,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("💥 [SHOPIFY-OAUTH] Error:", error);
-    return new Response(JSON.stringify({ error: error.message || "Internal server error" }), {
+    return new Response(JSON.stringify({ error: String(error) || "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
