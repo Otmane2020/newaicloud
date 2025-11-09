@@ -7,6 +7,7 @@ import { CheckCircle2, Sparkles, ShoppingBag, Zap, FileText, MessageSquare, BarC
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/lib/language";
+import { ImportProgressDialog } from "@/components/dashboard/ImportProgressDialog";
 
 interface PlanLimits {
   name: string;
@@ -26,6 +27,8 @@ export default function UpgradeSuccess() {
   const [loading, setLoading] = useState(true);
   const [planLimits, setPlanLimits] = useState<PlanLimits | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [totalShopifyProducts, setTotalShopifyProducts] = useState(0);
 
   useEffect(() => {
     const loadPlanDetails = async () => {
@@ -61,6 +64,29 @@ export default function UpgradeSuccess() {
         if (planError) throw planError;
 
         setPlanLimits(plan);
+
+        // Récupérer le nombre total de produits Shopify
+        const { data: stores } = await supabase
+          .from('shopify_connections')
+          .select('id, store_name')
+          .eq('user_id', user.id)
+          .limit(1)
+          .single();
+
+        if (stores?.store_name) {
+          // Appeler la fonction edge pour obtenir le nombre total de produits
+          const { data: countData } = await supabase.functions.invoke('get-shopify-product-count', {
+            body: { shop: stores.store_name }
+          });
+
+          const totalProducts = countData?.count || 0;
+          setTotalShopifyProducts(totalProducts);
+
+          // Si le nouveau max_products est inférieur au total Shopify, ouvrir la popup
+          if (plan.max_products !== -1 && plan.max_products < totalProducts) {
+            setShowImportDialog(true);
+          }
+        }
       } catch (err: any) {
         console.error('Error loading plan details:', err);
         setError(err.message || "Erreur lors du chargement des détails du plan");
@@ -255,6 +281,29 @@ export default function UpgradeSuccess() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Import Dialog */}
+      <ImportProgressDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        phase="complete"
+        progress={{
+          percentage: 0,
+          currentPage: 0,
+          totalPages: 0,
+          productsProcessed: 0
+        }}
+        productsImported={0}
+        pagesImported={0}
+        articlesImported={0}
+        collectionsImported={0}
+        imagesImported={0}
+        importedItems={[]}
+        limitReached={true}
+        maxProducts={planLimits?.max_products || 0}
+        totalShopifyProducts={totalShopifyProducts}
+        onUpgrade={() => navigate('/integration')}
+      />
     </div>
   );
 }
