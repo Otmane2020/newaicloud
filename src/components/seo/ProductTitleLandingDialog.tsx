@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, Monitor, Smartphone, Eye, CheckCircle2, Sparkles, X } from "lucide-react";
-import { EnhancedProgressDisplay } from "@/components/ui/enhanced-progress";
 import { responsiveDialogClasses, responsivePadding } from "@/lib/dialogUtils";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -194,13 +193,28 @@ export function ProductTitleLandingDialog({
         </DialogHeader>
 
         {isGenerating ? (
-          <div className="py-6 space-y-6">
+          <div className="py-6 space-y-4">
+            <div className="flex items-center justify-center">
+              <div className="relative">
+                <Sparkles className="h-12 w-12 text-primary animate-spin" style={{ animationDuration: "3s" }} />
+                <div className="absolute inset-0 h-12 w-12 bg-primary/20 rounded-full animate-ping" />
+              </div>
+            </div>
+
             {currentProcessing && (
-              <EnhancedProgressDisplay
-                currentIndex={currentProcessing.index}
-                total={currentProcessing.total}
-                title={currentProcessing.title}
-              />
+              <div className="text-center space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <p className="text-sm font-semibold text-primary truncate px-4">
+                  {currentProcessing.title.substring(0, 50)}...
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <span className="animate-pulse">●</span>
+                  <span>Analyse IA</span>
+                  <span className="animate-pulse delay-75">●</span>
+                  <span>Génération SEO</span>
+                  <span className="animate-pulse delay-150">●</span>
+                  <span>Création HTML</span>
+                </div>
+              </div>
             )}
 
             <div className="max-w-md mx-auto space-y-2">
