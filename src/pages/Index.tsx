@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/Footer";
 import { PublicHeader } from "@/components/PublicHeader";
+import PricingComparison from "@/components/PricingComparison";
 
 import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
 import { ContactForm } from "@/components/ContactForm";
@@ -367,7 +368,14 @@ const Index = () => {
           })}
         </div>
 
-
+        {/* Detailed Pricing Comparison */}
+        <div className="container mx-auto px-4 pb-16">
+          <div className="text-center mb-12">
+            <h3 className="text-3xl font-bold mb-4">{t.landing.pricing.comparisonTitle || "Compare Plans in Detail"}</h3>
+            <p className="text-muted-foreground">{t.landing.pricing.comparisonSubtitle || "See all features side by side"}</p>
+          </div>
+          <PricingComparison />
+        </div>
       </section>
 
       {/* Contact Section */}
