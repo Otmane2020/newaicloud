@@ -271,13 +271,51 @@ Contraintes :
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
 
-    // Cache
-    console.log("💾 Caching generated HTML...");
-    await supabaseAdmin.from("ai_cache").upsert({
-      title: productTitle,
-      html,
-      created_at: new Date().toISOString(),
-    });
+    // 💾 Sauvegarde dans product_landing_pages
+    console.log("💾 Saving landing page to database...");
+    
+    // Désactiver les anciennes versions
+    await supabaseAdmin
+      .from("product_landing_pages")
+      .update({ is_active: false })
+      .eq("product_id", productId)
+      .eq("seller_id", userId);
+    
+    // Récupérer le numéro de version
+    const { data: existingPages } = await supabaseAdmin
+      .from("product_landing_pages")
+      .select("version")
+      .eq("product_id", productId)
+      .order("version", { ascending: false })
+      .limit(1);
+    
+    const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
+    
+    // Créer la nouvelle version
+    const { error: saveError } = await supabaseAdmin
+      .from("product_landing_pages")
+      .insert({
+        product_id: productId,
+        seller_id: userId,
+        html_content: html,
+        config: {
+          language,
+          vendor_config,
+          image_url,
+          content_length,
+          max_tokens,
+          target_words,
+          sections,
+        },
+        version: newVersion,
+        is_active: true,
+      });
+    
+    if (saveError) {
+      console.error("❌ Save error:", saveError);
+    } else {
+      console.log(`✅ Landing page v${newVersion} saved successfully`);
+    }
 
     console.log("✅ Landing page generation successful!");
     return new Response(JSON.stringify({ html }), {

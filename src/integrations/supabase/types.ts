@@ -1847,6 +1847,59 @@ export type Database = {
           },
         ]
       }
+      product_landing_pages: {
+        Row: {
+          config: Json | null
+          created_at: string
+          html_content: string
+          id: string
+          is_active: boolean | null
+          last_synced_at: string | null
+          product_id: string
+          seller_id: string
+          shopify_page_id: string | null
+          shopify_page_url: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          html_content: string
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          product_id: string
+          seller_id: string
+          shopify_page_id?: string | null
+          shopify_page_url?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          html_content?: string
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          product_id?: string
+          seller_id?: string
+          shopify_page_id?: string | null
+          shopify_page_url?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_landing_pages_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
           ai_color: string | null

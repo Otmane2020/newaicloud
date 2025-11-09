@@ -211,6 +211,23 @@ serve(async (req) => {
 
     console.log(`[sync-landing-to-shopify] Page ${operation}:`, pageUrl);
 
+    // Mettre à jour product_landing_pages avec les infos de sync
+    const { error: updateError } = await supabaseAdmin
+      .from("product_landing_pages")
+      .update({
+        shopify_page_id: pageId.toString(),
+        shopify_page_url: pageUrl,
+        last_synced_at: new Date().toISOString(),
+      })
+      .eq("product_id", productId)
+      .eq("is_active", true);
+
+    if (updateError) {
+      console.error("⚠️ Error updating sync metadata:", updateError);
+    } else {
+      console.log("✅ Sync metadata saved successfully");
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 

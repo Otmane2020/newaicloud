@@ -3,6 +3,7 @@ import { Loader2, Eye, Monitor, Smartphone, Download, Send, CheckCircle2, AlertC
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { LandingConfig } from "./LandingConfigDialog";
@@ -37,6 +38,39 @@ export default function RegenerateLanding({
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [existingLanding, setExistingLanding] = useState<any>(null);
+  const [loadingExisting, setLoadingExisting] = useState(true);
+
+  // Charger la landing page existante
+  useEffect(() => {
+    const loadExistingLanding = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("product_landing_pages")
+          .select("*")
+          .eq("product_id", product.id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (error) throw error;
+        
+        if (data) {
+          setExistingLanding(data);
+          setHtmlContent(data.html_content);
+        }
+      } catch (error) {
+        console.error("Erreur chargement landing:", error);
+      } finally {
+        setLoadingExisting(false);
+      }
+    };
+
+    loadExistingLanding();
+
+    if (autoGenerate && !loading) {
+      handleGenerate();
+    }
+  }, [product.id, autoGenerate]);
 
   useEffect(() => {
     if (autoGenerate) {
@@ -254,6 +288,18 @@ export default function RegenerateLanding({
 
         toast.success(t.landingGeneration.success.generated);
         onGenerated?.(data.html);
+        
+        // Recharger les données pour mettre à jour le badge
+        const { data: updatedLanding } = await supabase
+          .from("product_landing_pages")
+          .select("*")
+          .eq("product_id", product.id)
+          .eq("is_active", true)
+          .maybeSingle();
+        
+        if (updatedLanding) {
+          setExistingLanding(updatedLanding);
+        }
       } else {
         throw new Error(t.landingGeneration.errors.noGenerated);
       }
@@ -311,6 +357,18 @@ export default function RegenerateLanding({
 
       toast.success(t.landingGeneration.success.synced);
       if (data?.pageUrl) toast.info(`${t.landingGeneration.success.available} ${data.pageUrl}`, { duration: 10000 });
+      
+      // Recharger les données pour mettre à jour le badge
+      const { data: updatedLanding } = await supabase
+        .from("product_landing_pages")
+        .select("*")
+        .eq("product_id", product.id)
+        .eq("is_active", true)
+        .maybeSingle();
+      
+      if (updatedLanding) {
+        setExistingLanding(updatedLanding);
+      }
     } catch (err: any) {
       console.error("Error syncing to Shopify:", err);
       toast.error(err?.message || t.landingGeneration.errors.sync);
@@ -324,6 +382,24 @@ export default function RegenerateLanding({
    -----------------------------*/
   return (
     <div className="space-y-6">
+      {/* Existing Landing Page Status */}
+      {!loadingExisting && existingLanding && (
+        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-primary" />
+            <div>
+              <p className="font-medium text-sm">Landing page existante</p>
+              <p className="text-xs text-muted-foreground">
+                Version {existingLanding.version} • Créée le {new Date(existingLanding.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+          <Badge variant={existingLanding.last_synced_at ? "default" : "secondary"}>
+            {existingLanding.last_synced_at ? "Synchronisée" : "Non synchronisée"}
+          </Badge>
+        </div>
+      )}
+
       {/* Progress Section */}
       {loading && (
         <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 rounded-2xl border border-primary/20">
