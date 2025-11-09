@@ -1040,7 +1040,15 @@ export default function ProductTitleDescription() {
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <p className="font-medium">{product.seo_title || product.title}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{product.seo_title || product.title}</p>
+                          {product.description && product.description.includes('<!DOCTYPE html>') && (
+                            <Badge variant="default" className="gap-1 text-xs">
+                              <FileText className="h-3 w-3" />
+                              Landing
+                            </Badge>
+                          )}
+                        </div>
                          {product.seo_title && product.title !== product.seo_title && (
                            <p className="text-xs text-muted-foreground line-clamp-1">
                              {t.contentOptimization.table.original}: {product.title}

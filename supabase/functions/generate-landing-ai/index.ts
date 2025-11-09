@@ -540,6 +540,22 @@ STRUCTURE BOUTONS:
         console.error("❌ Save error:", saveError);
       } else {
         console.log(`✅ Landing page v${newVersion} saved successfully`);
+        
+        // 🆕 MISE À JOUR DE LA DESCRIPTION DU PRODUIT
+        console.log("📝 Updating product description with landing page HTML...");
+        const { error: updateError } = await supabaseAdmin
+          .from("shopify_products")
+          .update({ 
+            description: html,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", product_id);
+        
+        if (updateError) {
+          console.error("❌ Product update error:", updateError);
+        } else {
+          console.log("✅ Product description updated successfully");
+        }
       }
     } else {
       console.log("⚠️ Skipping save: userId or product_id not available");

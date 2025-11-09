@@ -45,6 +45,7 @@ export default function RegenerateLanding({
   useEffect(() => {
     const loadExistingLanding = async () => {
       try {
+        // D'abord vérifier dans product_landing_pages
         const { data, error } = await supabase
           .from("product_landing_pages")
           .select("*")
@@ -57,6 +58,16 @@ export default function RegenerateLanding({
         if (data) {
           setExistingLanding(data);
           setHtmlContent(data.html_content);
+        } else if (product.description && product.description.includes('<!DOCTYPE html>')) {
+          // Fallback : utiliser la description si elle contient du HTML
+          console.log("📄 Loading landing page from product description");
+          setHtmlContent(product.description);
+          setExistingLanding({
+            html_content: product.description,
+            version: 1,
+            created_at: new Date().toISOString(),
+            last_synced_at: null
+          });
         }
       } catch (error) {
         console.error("Erreur chargement landing:", error);

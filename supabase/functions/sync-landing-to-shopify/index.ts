@@ -211,6 +211,46 @@ serve(async (req) => {
 
     console.log(`[sync-landing-to-shopify] Page ${operation}:`, pageUrl);
 
+    // 🆕 SYNCHRONISER LA DESCRIPTION DU PRODUIT SHOPIFY
+    console.log('📝 Updating Shopify product description...');
+    
+    // Récupérer le shopify_product_id
+    const { data: productData, error: productFetchError } = await supabase
+      .from('shopify_products')
+      .select('shopify_product_id')
+      .eq('id', productId)
+      .single();
+    
+    if (productFetchError || !productData?.shopify_product_id) {
+      console.error('❌ Could not fetch shopify_product_id:', productFetchError);
+    } else {
+      const shopifyProductId = productData.shopify_product_id;
+      
+      const updateProductResponse = await fetch(
+        `${storeUrl}/admin/api/2025-01/products/${shopifyProductId}.json`,
+        {
+          method: 'PUT',
+          headers: {
+            'X-Shopify-Access-Token': accessToken,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            product: {
+              id: shopifyProductId,
+              body_html: htmlContent
+            }
+          })
+        }
+      );
+
+      if (!updateProductResponse.ok) {
+        const errorText = await updateProductResponse.text();
+        console.error('❌ Failed to update product description in Shopify:', errorText);
+      } else {
+        console.log('✅ Product description synced to Shopify');
+      }
+    }
+
     // Mettre à jour product_landing_pages avec les infos de sync
     const { error: updateError } = await supabase
       .from("product_landing_pages")
