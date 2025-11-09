@@ -21,17 +21,18 @@ const ShopifyInstallGuide = () => {
                   <ShoppingBag className="h-12 w-12 text-primary" />
                 </div>
               </div>
-              <CardTitle className="text-3xl">Bienvenue sur NewAI</CardTitle>
+              <CardTitle className="text-3xl">Connectez votre boutique Shopify</CardTitle>
               <CardDescription className="text-base">
-                Pour connecter votre boutique Shopify, suivez ces étapes simples
+                Une dernière étape avant de profiter de NewAI pour optimiser votre SEO
               </CardDescription>
             </CardHeader>
             
             <CardContent className="space-y-6">
               {shop && (
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Boutique à connecter</p>
-                  <p className="font-semibold text-lg">{shop}</p>
+                <div className="bg-primary/10 rounded-lg p-4 text-center border border-primary/20">
+                  <p className="text-sm text-muted-foreground mb-1">Boutique détectée</p>
+                  <p className="font-semibold text-lg text-primary">{shop}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Vos informations seront automatiquement pré-remplies</p>
                 </div>
               )}
 
@@ -41,12 +42,11 @@ const ShopifyInstallGuide = () => {
                     1
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-1">Créez un compte NewAI</h3>
+                    <h3 className="font-semibold mb-1">Authentifiez-vous</h3>
                     <p className="text-sm text-muted-foreground">
-                      Ou connectez-vous si vous avez déjà un compte
+                      Créez un compte ou connectez-vous en 30 secondes
                     </p>
                   </div>
-                  <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
                 </div>
 
                 <div className="flex gap-4">
@@ -54,12 +54,11 @@ const ShopifyInstallGuide = () => {
                     2
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-1">Accédez à la page Intégration</h3>
+                    <h3 className="font-semibold mb-1">Redirection automatique</h3>
                     <p className="text-sm text-muted-foreground">
-                      Vous serez automatiquement redirigé après connexion
+                      Vous serez redirigé vers la connexion de votre boutique
                     </p>
                   </div>
-                  <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
                 </div>
 
                 <div className="flex gap-4">
@@ -67,38 +66,37 @@ const ShopifyInstallGuide = () => {
                     3
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-1">Connectez votre boutique</h3>
+                    <h3 className="font-semibold mb-1">Connexion en un clic</h3>
                     <p className="text-sm text-muted-foreground">
-                      Le nom de votre boutique sera pré-rempli automatiquement
+                      Validez simplement les informations pré-remplies
                     </p>
                   </div>
-                  <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
                 </div>
               </div>
 
               <div className="pt-4 space-y-3">
                 <Button
-                  onClick={() => navigate(`/auth?redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
+                  onClick={() => navigate(`/auth?signup=true&redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
                   className="w-full"
                   size="lg"
                 >
-                  Se connecter
+                  Créer un compte gratuitement
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
                 
                 <Button
-                  onClick={() => navigate(`/auth?signup=true&redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
+                  onClick={() => navigate(`/auth?redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
                   variant="outline"
                   className="w-full"
                   size="lg"
                 >
-                  Créer un compte
+                  J'ai déjà un compte
                 </Button>
               </div>
 
-              <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="bg-gradient-subtle rounded-lg p-4 text-center border">
                 <p className="text-xs text-muted-foreground">
-                  Cette étape est nécessaire pour garantir la sécurité de votre connexion et associer votre boutique à votre compte.
+                  🔒 Connexion sécurisée • ⚡ Configuration en 2 minutes • 🎯 Boutique automatiquement détectée
                 </p>
               </div>
             </CardContent>

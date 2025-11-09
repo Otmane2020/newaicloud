@@ -20,12 +20,18 @@ interface ShopifyConnectionWizardProps {
 }
 
 export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess, initialShopDomain }: ShopifyConnectionWizardProps) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2>(initialShopDomain ? 2 : 1);
   const { limits, refresh: refreshLimits } = useUsageLimits();
   const { t } = useTranslation();
 
   // Step 1 data
-  const [commercialName, setCommercialName] = useState("");
+  const [commercialName, setCommercialName] = useState(
+    initialShopDomain 
+      ? initialShopDomain.replace('.myshopify.com', '').split('-').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ')
+      : ""
+  );
   const [shopifyCode, setShopifyCode] = useState(initialShopDomain?.replace('.myshopify.com', '') || "");
 
   // Step 2 data (Manual)
@@ -293,6 +299,11 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess, initial
           <div className="space-y-6">
             {/* Summary */}
             <div className="bg-muted p-4 rounded-lg space-y-2">
+              {initialShopDomain && (
+                <div className="text-xs text-primary mb-2 font-medium">
+                  ✨ Boutique détectée automatiquement depuis Shopify
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold">{commercialName}</p>

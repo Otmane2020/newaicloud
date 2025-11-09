@@ -15,8 +15,9 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
+  const initialMode = searchParams.get('mode') === 'signup' || searchParams.get('signup') === 'true' ? 'signup' : 'login';
   const referralCode = searchParams.get('ref');
+  const redirectPath = searchParams.get('redirect');
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,10 +31,11 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      console.log('✅ User authenticated, redirecting to dashboard');
-      navigate('/dashboard');
+      console.log('✅ User authenticated, redirecting...');
+      const destination = redirectPath || '/dashboard';
+      navigate(destination);
     }
-  }, [user, navigate]);
+  }, [user, navigate, redirectPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
