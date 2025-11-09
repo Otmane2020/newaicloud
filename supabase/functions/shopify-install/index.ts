@@ -144,7 +144,9 @@ serve(async (req) => {
     
     const stateToken = crypto.randomUUID();
     
-    // Sauvegarder le state token en mode pre-auth
+    // Sauvegarder le state token en mode pre-auth (expire dans 15 minutes)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    
     const { error: stateError } = await supabase
       .from("oauth_states")
       .insert({
@@ -152,6 +154,7 @@ serve(async (req) => {
         shop_name: shop,
         user_id: null,
         is_pre_auth: true,
+        expires_at: expiresAt,
         created_at: new Date().toISOString(),
       });
 
