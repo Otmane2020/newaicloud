@@ -4,7 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, TrendingUp, CheckCircle, Sparkles } from 'lucide-react';
+import { AlertCircle, TrendingUp, CheckCircle, Sparkles, Infinity } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 
 export function UsageWidget() {
@@ -14,13 +14,12 @@ export function UsageWidget() {
 
   if (loading || !limits) return null;
 
-  const formatLimit = (limit: number) => {
-    if (limit === -1 || limit >= 999999) return '∞';
-    return limit.toString();
+  const isUnlimitedValue = (limit: number) => {
+    return limit === -1 || limit >= 999999;
   };
 
   const calculatePercentage = (current: number, max: number) => {
-    if (max === -1 || max >= 999999) return 0;
+    if (isUnlimitedValue(max)) return 0;
     return Math.round((current / max) * 100);
   };
 
@@ -89,19 +88,19 @@ export function UsageWidget() {
             const percentage = calculatePercentage(item.current, item.max);
             const isNearLimit = percentage >= 80 && percentage < 100;
             const isAtLimit = percentage >= 100 || item.blocked;
-            const isUnlimited = item.max === -1 || item.max >= 999999;
+            const isUnlimited = isUnlimitedValue(item.max);
             
             return (
               <div key={item.label} className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">{item.label}</span>
                   <div className="flex items-center gap-2">
-                    <span className={`font-medium ${
+                    <span className={`font-medium flex items-center gap-1 ${
                       isAtLimit ? 'text-red-600 dark:text-red-400' : 
                       isNearLimit ? 'text-orange-600 dark:text-orange-400' : 
                       'text-muted-foreground'
                     }`}>
-                      {item.current} / {formatLimit(item.max)}
+                      {item.current} / {isUnlimited ? <Infinity className="w-3.5 h-3.5" /> : item.max}
                     </span>
                     {isAtLimit && <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />}
                     {!isAtLimit && isNearLimit && <TrendingUp className="w-4 h-4 text-orange-600 dark:text-orange-400" />}

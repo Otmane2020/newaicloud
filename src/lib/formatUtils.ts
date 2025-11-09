@@ -4,10 +4,9 @@
  * @returns Formatted string with ∞ for unlimited or formatted number
  */
 export const formatLimit = (limit: number | null | undefined): string => {
-  if (limit === null || limit === undefined) return '∞';
-  if (limit === 999999 || limit === 9999999) return '∞';
-  if (limit >= 1000) return `${(limit / 1000).toFixed(0)}K`;
-  return limit.toLocaleString('fr-FR');
+  if (isUnlimited(limit)) return '∞';
+  if (limit! >= 1000) return `${(limit! / 1000).toFixed(0)}K`;
+  return limit!.toLocaleString('fr-FR');
 };
 
 /**
@@ -16,7 +15,7 @@ export const formatLimit = (limit: number | null | undefined): string => {
  * @returns true if the limit is considered unlimited
  */
 export const isUnlimited = (limit: number | null | undefined): boolean => {
-  return limit === null || limit === undefined || limit >= 999999;
+  return limit === null || limit === undefined || limit === -1 || limit >= 999999;
 };
 
 /**

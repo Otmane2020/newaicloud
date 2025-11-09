@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText, Settings, Edit } from "lucide-react";
+import { Store, Trash2, RefreshCw, CheckCircle, XCircle, AlertCircle, AlertTriangle, Package, FileText, Settings, Edit, Infinity } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -1086,8 +1086,13 @@ export default function ShopifyConnectionsList() {
                         )}
                       </Badge>
                       {usageLimits && (
-                        <Badge variant="outline" className="text-xs">
-                          {usageLimits.usage?.products_count || 0}/{usageLimits.limits?.max_products || 0} produits
+                        <Badge variant="outline" className="text-xs flex items-center gap-1">
+                          {usageLimits.usage?.products_count || 0}/
+                          {usageLimits.limits?.max_products && usageLimits.limits.max_products >= 999999 ? (
+                            <Infinity className="w-3 h-3" />
+                          ) : (
+                            usageLimits.limits?.max_products || 0
+                          )} produits
                         </Badge>
                       )}
                     </div>

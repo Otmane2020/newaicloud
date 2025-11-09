@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity } from "lucide-react";
+import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, ArrowLeftRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,7 @@ export default function Products() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
   const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
@@ -141,6 +142,51 @@ export default function Products() {
     return Math.round(((comparePrice - price) / comparePrice) * 100);
   };
 
+  const handleSync = async () => {
+    try {
+      setIsSyncing(true);
+      
+      // Get the store connection
+      const { data: store, error: storeError } = await supabase
+        .from('shopify_connections')
+        .select('id, store_name')
+        .eq('user_id', user?.id)
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+
+      if (storeError || !store) {
+        toast.error("Aucune boutique Shopify connectée");
+        return;
+      }
+
+      toast.info("Synchronisation en cours...");
+
+      // Trigger sync
+      const { error: syncError } = await supabase.functions.invoke('trigger-auto-sync', {
+        body: { storeId: store.id }
+      });
+
+      if (syncError) throw syncError;
+
+      // Wait a bit for the sync to process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Refresh data
+      await Promise.all([
+        loadProducts(),
+        refreshLimits()
+      ]);
+
+      toast.success("Synchronisation terminée");
+    } catch (error: any) {
+      console.error("Sync error:", error);
+      toast.error(`Erreur de synchronisation: ${error.message}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-subtle p-4">
@@ -204,6 +250,25 @@ export default function Products() {
               className="h-9 w-9 flex-shrink-0"
             >
               <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSync}
+              disabled={isSyncing}
+              className="h-9 px-3 gap-2"
+            >
+              {isSyncing ? (
+                <>
+                  <ArrowLeftRight className="w-4 h-4 animate-pulse" />
+                  Sync...
+                </>
+              ) : (
+                <>
+                  <ArrowLeftRight className="w-4 h-4" />
+                  Synchroniser
+                </>
+              )}
             </Button>
             <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
               <Plus className="w-4 h-4 mr-2" />
