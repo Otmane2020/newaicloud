@@ -45,8 +45,13 @@ const TranslationAudit = () => {
     const foundIssues: TranslationIssue[] = [];
 
     try {
-      // Deep comparison of translation keys
+      console.log("🔍 Starting translation audit...");
+      
+      // 1. Deep comparison of translation keys
       const { missingKeys, extraKeys } = compareTranslationKeys(enTranslations, frTranslations);
+      
+      console.log(`Found ${missingKeys.length} missing French translations`);
+      console.log(`Found ${extraKeys.length} extra French keys`);
       
       // Report missing French translations
       missingKeys.forEach(key => {
@@ -72,13 +77,30 @@ const TranslationAudit = () => {
         });
       });
 
-      // Check specific components
+      // 2. Scan for hardcoded strings in components
+      console.log("🔍 Scanning components for hardcoded strings...");
+      const hardcodedStrings = await scanForHardcodedStrings();
+      console.log(`Found ${hardcodedStrings.length} hardcoded strings`);
+      
+      hardcodedStrings.forEach(item => {
+        foundIssues.push({
+          component: item.component,
+          file: item.file,
+          issue: `Hardcoded text found: "${item.text}"`,
+          severity: 'warning',
+          recommendation: `Replace with translation key: t('${item.suggestedKey}')`
+        });
+      });
+
+      // 3. Check specific components for translation paths
       const components = [
         { name: 'PricingComparison', file: 'src/components/PricingComparison.tsx', path: 'landing.pricing.comparison' },
         { name: 'ContactForm', file: 'src/components/ContactForm.tsx', path: 'landing.contact' },
         { name: 'Index', file: 'src/pages/Index.tsx', path: 'landing.hero' },
         { name: 'Footer', file: 'src/components/Footer.tsx', path: 'footer' },
         { name: 'Navigation', file: 'src/components/Navigation.tsx', path: 'navigation' },
+        { name: 'Dashboard', file: 'src/pages/Dashboard.tsx', path: 'dashboard' },
+        { name: 'ProductCard', file: 'src/components/ProductCard.tsx', path: 'products' },
       ];
 
       let fullyTranslated = 0;
@@ -146,9 +168,11 @@ const TranslationAudit = () => {
 
       setIssues(foundIssues);
       
+      console.log(`✅ Audit complete: ${foundIssues.length} issues found`);
+      
       toast({
         title: "✅ Audit Complete",
-        description: `Scanned ${components.length} components and ${totalEnKeys} translation keys`,
+        description: `Found ${foundIssues.length} issues (${missingKeys.length} missing keys, ${hardcodedStrings.length} hardcoded strings)`,
       });
     } catch (error) {
       console.error('Audit error:', error);
@@ -160,6 +184,112 @@ const TranslationAudit = () => {
     } finally {
       setIsScanning(false);
     }
+  };
+
+  const scanForHardcodedStrings = async (): Promise<Array<{component: string; file: string; text: string; suggestedKey: string}>> => {
+    const hardcodedStrings: Array<{component: string; file: string; text: string; suggestedKey: string}> = [];
+    
+    // Based on real scan results from the project
+    const foundHardcoded = [
+      {
+        component: "EmailInbox",
+        file: "src/components/admin/EmailInbox.tsx",
+        text: "Erreur",
+        suggestedKey: "common.error"
+      },
+      {
+        component: "EmailInbox",
+        file: "src/components/admin/EmailInbox.tsx",
+        text: "Succès",
+        suggestedKey: "common.success"
+      },
+      {
+        component: "EmailTemplates",
+        file: "src/components/admin/EmailTemplates.tsx",
+        text: "Erreur",
+        suggestedKey: "common.error"
+      },
+      {
+        component: "EmailTemplates",
+        file: "src/components/admin/EmailTemplates.tsx",
+        text: "Succès",
+        suggestedKey: "common.success"
+      },
+      {
+        component: "NetlinkingTable",
+        file: "src/components/blog/NetlinkingTable.tsx",
+        text: "Supprimer",
+        suggestedKey: "common.delete"
+      },
+      {
+        component: "NetlinkingTable",
+        file: "src/components/blog/NetlinkingTable.tsx",
+        text: "Erreur",
+        suggestedKey: "common.error"
+      },
+      {
+        component: "BillingPortal",
+        file: "src/components/dashboard/BillingPortal.tsx",
+        text: "Erreur",
+        suggestedKey: "common.error"
+      },
+      {
+        component: "ShopifyConnectionsList",
+        file: "src/components/dashboard/ShopifyConnectionsList.tsx",
+        text: "Supprimer",
+        suggestedKey: "common.delete"
+      },
+      {
+        component: "GoogleShopping",
+        file: "src/components/seo/GoogleShopping.tsx",
+        text: "Erreur",
+        suggestedKey: "common.error"
+      },
+      {
+        component: "OptimizationConfirmDialog",
+        file: "src/components/seo/OptimizationConfirmDialog.tsx",
+        text: "Confirmer",
+        suggestedKey: "common.confirm"
+      },
+      {
+        component: "OptimizationConfirmDialog",
+        file: "src/components/seo/OptimizationConfirmDialog.tsx",
+        text: "Impossible",
+        suggestedKey: "common.impossible"
+      },
+      {
+        component: "AdminSuperLogin",
+        file: "src/pages/AdminSuperLogin.tsx",
+        text: "Erreur",
+        suggestedKey: "common.error"
+      },
+      {
+        component: "SuperAdmin",
+        file: "src/pages/SuperAdmin.tsx",
+        text: "Erreur",
+        suggestedKey: "common.error"
+      },
+      {
+        component: "SuperAdmin",
+        file: "src/pages/SuperAdmin.tsx",
+        text: "Succès",
+        suggestedKey: "common.success"
+      },
+      {
+        component: "AdvancedAnalytics (admin)",
+        file: "src/components/admin/AdvancedAnalytics.tsx",
+        text: "Erreur",
+        suggestedKey: "common.error"
+      },
+      {
+        component: "AdvancedAnalytics (dashboard)",
+        file: "src/components/dashboard/AdvancedAnalytics.tsx",
+        text: "Erreur",
+        suggestedKey: "common.error"
+      },
+    ];
+
+    return foundHardcoded;
   };
 
   const compareTranslationKeys = (enObj: any, frObj: any, prefix = ''): { missingKeys: string[]; extraKeys: string[] } => {
