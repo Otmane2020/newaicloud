@@ -745,10 +745,10 @@ export default function ProductTitleDescription() {
             <div className="space-y-2">
               <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
                 <Sparkles className="h-6 w-6 sm:h-8 sm:h-8 text-primary" />
-                Contenu Produit Optimisé
+                {t.contentOptimization.hero.title}
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base">
-                Créez des titres captivants et des descriptions riches en HTML pour séduire vos clients et améliorer votre visibilité naturelle
+                {t.contentOptimization.hero.description}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -768,12 +768,12 @@ export default function ProductTitleDescription() {
                 {generating ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Optimisation...
+                    {t.contentOptimization.buttons.optimizing}
                   </>
                 ) : (
                   <>
                     <Wand2 className="h-4 w-4" />
-                    Optimiser tout
+                    {t.contentOptimization.buttons.optimizeAll}
                   </>
                 )}
               </Button>
@@ -785,11 +785,11 @@ export default function ProductTitleDescription() {
                   );
                   
                   if (productsToSync.length === 0) {
-                    toast.error("Aucun produit optimisé à synchroniser");
+                    toast.error(t.contentOptimization.toasts.noProductToSync);
                     return;
                   }
                   
-                  const toastId = toast.loading(`Synchronisation de ${productsToSync.length} produit(s)...`);
+                  const toastId = toast.loading(`${t.contentOptimization.buttons.synchronizing} ${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}...`);
                   
                   try {
                     for (const product of productsToSync) {
@@ -802,10 +802,10 @@ export default function ProductTitleDescription() {
                         }
                       });
                     }
-                    toast.success(`${productsToSync.length} produit(s) synchronisé(s)`, { id: toastId });
+                    toast.success(`${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}`, { id: toastId });
                   } catch (error) {
                     console.error("Sync error:", error);
-                    toast.error("Erreur lors de la synchronisation", { id: toastId });
+                    toast.error(t.contentOptimization.toasts.syncError, { id: toastId });
                   }
                 }}
                 disabled={syncingToShopify}
@@ -817,7 +817,7 @@ export default function ProductTitleDescription() {
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                Synchroniser tout
+                {t.contentOptimization.buttons.syncAll}
               </Button>
               <Button
                 variant="outline"
@@ -827,11 +827,11 @@ export default function ProductTitleDescription() {
                     .filter(p => p && p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title)) as Product[];
                   
                   if (productsToSync.length === 0) {
-                    toast.error("Aucun produit sélectionné à synchroniser");
+                    toast.error(t.contentOptimization.toasts.noSelectedProduct);
                     return;
                   }
                   
-                  const toastId = toast.loading(`Synchronisation de ${productsToSync.length} produit(s)...`);
+                  const toastId = toast.loading(`${t.contentOptimization.buttons.synchronizing} ${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}...`);
                   
                   try {
                     for (const product of productsToSync) {
@@ -844,11 +844,11 @@ export default function ProductTitleDescription() {
                         }
                       });
                     }
-                    toast.success(`${productsToSync.length} produit(s) synchronisé(s)`, { id: toastId });
+                    toast.success(`${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}`, { id: toastId });
                     setSelectedProducts(new Set());
                   } catch (error) {
                     console.error("Sync error:", error);
-                    toast.error("Erreur lors de la synchronisation", { id: toastId });
+                    toast.error(t.contentOptimization.toasts.syncError, { id: toastId });
                   }
                 }}
                 disabled={syncingToShopify || selectedProducts.size === 0}
@@ -860,7 +860,7 @@ export default function ProductTitleDescription() {
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                Synchroniser sélectionnés ({selectedProducts.size})
+                {t.contentOptimization.buttons.syncSelected} ({selectedProducts.size})
               </Button>
             </div>
           </div>
@@ -874,7 +874,7 @@ export default function ProductTitleDescription() {
                 <ImageIcon className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total produits</p>
+                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.totalProducts}</p>
                 <p className="text-2xl font-bold">{products.length}</p>
               </div>
             </div>
@@ -886,7 +886,7 @@ export default function ProductTitleDescription() {
                 <Sparkles className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Optimisés</p>
+                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.optimized}</p>
                 <p className="text-2xl font-bold">
                   {products.filter((p) => p.seo_title || p.seo_description).length}
                 </p>
@@ -900,7 +900,7 @@ export default function ProductTitleDescription() {
                 <Wand2 className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Sélectionnés</p>
+                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.selected}</p>
                 <p className="text-2xl font-bold">{selectedProducts.size}</p>
               </div>
             </div>
@@ -914,7 +914,7 @@ export default function ProductTitleDescription() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher un produit..."
+                  placeholder={t.contentOptimization.search.placeholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -928,7 +928,7 @@ export default function ProductTitleDescription() {
                 size="sm"
                 onClick={() => {
                   if (!canDoAction('optimizations')) {
-                    toast.error("Limite d'optimisations atteinte");
+                    toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
                     return;
                   }
@@ -937,7 +937,7 @@ export default function ProductTitleDescription() {
                 disabled={generating || selectedProducts.size === 0}
               >
                 <Wand2 className="h-4 w-4 mr-2" />
-                Optimiser ({selectedProducts.size})
+                {t.contentOptimization.buttons.optimize} ({selectedProducts.size})
               </Button>
 
               <Button
@@ -945,7 +945,7 @@ export default function ProductTitleDescription() {
                 size="sm"
                 onClick={async () => {
                   if (!canDoAction('optimizations')) {
-                    toast.error("Limite d'optimisations atteinte");
+                    toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
                     return;
                   }
@@ -959,7 +959,7 @@ export default function ProductTitleDescription() {
                 ) : (
                   <Square className="h-4 w-4 mr-2" />
                 )}
-                Fond blanc ({selectedProducts.size})
+                {t.contentOptimization.buttons.whiteBg} ({selectedProducts.size})
               </Button>
 
               <Button
@@ -967,7 +967,7 @@ export default function ProductTitleDescription() {
                 size="sm"
                 onClick={async () => {
                   if (!canDoAction('optimizations')) {
-                    toast.error("Limite d'optimisations atteinte");
+                    toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
                     return;
                   }
@@ -982,7 +982,7 @@ export default function ProductTitleDescription() {
                 ) : (
                   <Palette className="h-4 w-4 mr-2" />
                 )}
-                Arrière-plan IA ({selectedProducts.size})
+                {t.contentOptimization.buttons.aiBg} ({selectedProducts.size})
               </Button>
             </div>
           </div>
@@ -992,8 +992,8 @@ export default function ProductTitleDescription() {
         <Alert>
           <ImageIcon className="h-4 w-4" />
           <AlertDescription>
-            <strong>Fond blanc :</strong> Supprime automatiquement l'arrière-plan et ajoute un fond blanc professionnel.
-            {" "}<strong>Arrière-plan IA :</strong> Génère un nouvel arrière-plan personnalisé avec l'intelligence artificielle.
+            <strong>{t.contentOptimization.buttons.whiteBg} :</strong> {t.contentOptimization.alerts.whiteBg}
+            {" "}<strong>{t.contentOptimization.buttons.aiBg} :</strong> {t.contentOptimization.alerts.aiBg}
           </AlertDescription>
         </Alert>
 
@@ -1009,11 +1009,11 @@ export default function ProductTitleDescription() {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead className="w-20">Image</TableHead>
-                  <TableHead>Titre</TableHead>
-                  <TableHead className="hidden lg:table-cell">Description</TableHead>
-                  <TableHead className="w-32">Statut</TableHead>
-                  <TableHead className="w-40">Actions</TableHead>
+                  <TableHead className="w-20">{t.contentOptimization.table.headers.image}</TableHead>
+                  <TableHead>{t.contentOptimization.table.headers.title}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t.contentOptimization.table.headers.description}</TableHead>
+                  <TableHead className="w-32">{t.contentOptimization.table.headers.status}</TableHead>
+                  <TableHead className="w-40">{t.contentOptimization.table.headers.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1041,11 +1041,11 @@ export default function ProductTitleDescription() {
                     <TableCell>
                       <div className="space-y-1">
                         <p className="font-medium">{product.seo_title || product.title}</p>
-                        {product.seo_title && product.title !== product.seo_title && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            Original: {product.title}
-                          </p>
-                        )}
+                         {product.seo_title && product.title !== product.seo_title && (
+                           <p className="text-xs text-muted-foreground line-clamp-1">
+                             {t.contentOptimization.table.original}: {product.title}
+                           </p>
+                         )}
                       </div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
@@ -1054,20 +1054,20 @@ export default function ProductTitleDescription() {
                           {product.seo_description}
                         </p>
                       ) : (
-                        <p className="text-sm text-muted-foreground italic">Aucune description optimisée</p>
+                        <p className="text-sm text-muted-foreground italic">{t.contentOptimization.table.noOptimizedDesc}</p>
                       )}
                     </TableCell>
                     <TableCell>
                       {hasRichHtmlDescription(product) ? (
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          ✨ Contenu Premium
+                          ✨ {t.contentOptimization.table.status.premiumContent}
                         </Badge>
                       ) : product.seo_title || product.seo_description ? (
                         <Badge variant="secondary">
-                          Contenu Basique ✓
+                          {t.contentOptimization.table.status.basicContent} ✓
                         </Badge>
                       ) : (
-                        <Badge variant="outline">À optimiser</Badge>
+                        <Badge variant="outline">{t.contentOptimization.table.status.toOptimize}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -1080,7 +1080,7 @@ export default function ProductTitleDescription() {
                               onClick={() => {
                                 // Vérifier les limites AVANT de sélectionner et optimiser
                                 if (!canDoAction('optimizations')) {
-                                  toast.error("Limite d'optimisations atteinte");
+                                  toast.error(t.contentOptimization.toasts.limitReached);
                                   setShowUpgradeDialog(true);
                                   return;
                                 }
@@ -1093,7 +1093,7 @@ export default function ProductTitleDescription() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Optimiser</p>
+                            <p>{t.contentOptimization.tooltips.optimize}</p>
                           </TooltipContent>
                         </Tooltip>
 
@@ -1105,7 +1105,7 @@ export default function ProductTitleDescription() {
                               onClick={async () => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
-                                  toast.error("Limite d'optimisations atteinte");
+                                  toast.error(t.contentOptimization.toasts.limitReached);
                                   setShowUpgradeDialog(true);
                                   return;
                                 }
@@ -1123,7 +1123,7 @@ export default function ProductTitleDescription() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Fond blanc</p>
+                            <p>{t.contentOptimization.tooltips.whiteBg}</p>
                           </TooltipContent>
                         </Tooltip>
 
@@ -1135,7 +1135,7 @@ export default function ProductTitleDescription() {
                               onClick={async () => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
-                                  toast.error("Limite d'optimisations atteinte");
+                                  toast.error(t.contentOptimization.toasts.limitReached);
                                   setShowUpgradeDialog(true);
                                   return;
                                 }
@@ -1154,7 +1154,7 @@ export default function ProductTitleDescription() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Arrière-plan IA</p>
+                            <p>{t.contentOptimization.tooltips.aiBg}</p>
                           </TooltipContent>
                         </Tooltip>
 
@@ -1168,7 +1168,7 @@ export default function ProductTitleDescription() {
                                   setOptimizedProducts([product]);
                                   setShowLandingPreviewDialog(true);
                                 } else {
-                                  toast.error("Ce produit n'a pas encore été optimisé");
+                                  toast.error(t.contentOptimization.toasts.notOptimizedYet);
                                 }
                               }}
                             >
@@ -1176,7 +1176,7 @@ export default function ProductTitleDescription() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Visualiser</p>
+                            <p>{t.contentOptimization.tooltips.view}</p>
                           </TooltipContent>
                         </Tooltip>
 
@@ -1188,7 +1188,7 @@ export default function ProductTitleDescription() {
                               onClick={() => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
-                                  toast.error("Limite d'optimisations atteinte");
+                                  toast.error(t.contentOptimization.toasts.limitReached);
                                   setShowUpgradeDialog(true);
                                   return;
                                 }
@@ -1201,7 +1201,7 @@ export default function ProductTitleDescription() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Générer Landing Page IA</p>
+                            <p>{t.contentOptimization.tooltips.generateLanding}</p>
                           </TooltipContent>
                         </Tooltip>
                         
@@ -1212,7 +1212,7 @@ export default function ProductTitleDescription() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={async () => {
-                                  const toastId = toast.loading("Synchronisation...");
+                                  const toastId = toast.loading(t.contentOptimization.buttons.synchronizing);
                                   try {
                                     const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
                                       body: {
@@ -1224,10 +1224,10 @@ export default function ProductTitleDescription() {
                                     });
                                     
                                     if (error) throw error;
-                                    toast.success("Synchronisé avec Shopify", { id: toastId });
+                                    toast.success(t.contentOptimization.toasts.productsSynced, { id: toastId });
                                   } catch (error) {
                                     console.error("Sync error:", error);
-                                    toast.error("Erreur lors de la synchronisation", { id: toastId });
+                                    toast.error(t.contentOptimization.toasts.syncError, { id: toastId });
                                   }
                                 }}
                               >
@@ -1235,7 +1235,7 @@ export default function ProductTitleDescription() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Synchroniser</p>
+                              <p>{t.contentOptimization.tooltips.sync}</p>
                             </TooltipContent>
                           </Tooltip>
                         )}
@@ -1248,7 +1248,7 @@ export default function ProductTitleDescription() {
 
             {filteredProducts.length === 0 && (
               <div className="p-8 text-center text-muted-foreground">
-                Aucun produit trouvé
+                {t.contentOptimization.empty.title}
               </div>
             )}
           </ScrollArea>
@@ -1262,17 +1262,17 @@ export default function ProductTitleDescription() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Square className="h-5 w-5 text-primary" />
-              Configuration Fond Blanc
+              {t.contentOptimization.dialogs.whiteBg.title}
             </DialogTitle>
             <DialogDescription>
-              Choisissez quelle photo de la galerie vous souhaitez retravailler
+              {t.contentOptimization.dialogs.whiteBg.description}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* Gallery Image Selection */}
             {Array.from(selectedProducts).length > 0 && (
               <div className="space-y-3">
-                <Label className="text-base font-semibold">Sélection de la photo à retravailler</Label>
+                <Label className="text-base font-semibold">{t.contentOptimization.dialogs.whiteBg.imageSelection}</Label>
                 {Array.from(selectedProducts).map((productId) => {
                   const product = products.find(p => p.id === productId);
                   const images = galleryImages.get(productId) || [];

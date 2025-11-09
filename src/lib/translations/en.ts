@@ -181,9 +181,78 @@ export const translations = {
 
   // ============= Product Content Optimization =============
   contentOptimization: {
-    title: "Premium Product Content Generation",
+    title: "Optimized Product Content",
+    subtitle: "Create captivating titles and rich HTML descriptions to seduce your customers and improve your natural visibility",
     description: "Generate professional HTML descriptions with structured titles (H1, H2, H3), automatic product photo integration and mobile-optimized layout for search engines.",
     infoAlert: "Create rich HTML descriptions with structured titles (H1, H2, H3), integrated media and professional layout to attract your customers and improve your natural referencing.",
+    
+    hero: {
+      title: "Optimized Product Content",
+      description: "Create captivating titles and rich HTML descriptions to seduce your customers and improve your natural visibility"
+    },
+    
+    stats: {
+      totalProducts: "Total products",
+      optimized: "Optimized",
+      selected: "Selected"
+    },
+    
+    search: {
+      placeholder: "Search for a product..."
+    },
+    
+    table: {
+      headers: {
+        image: "Image",
+        title: "Title",
+        description: "Description",
+        status: "Status",
+        actions: "Actions"
+      },
+      status: {
+        premiumContent: "Premium Content",
+        basicContent: "Basic Content",
+        toOptimize: "To optimize"
+      },
+      noOptimizedDesc: "No optimized description",
+      original: "Original"
+    },
+    
+    tooltips: {
+      optimize: "Optimize",
+      whiteBg: "White background",
+      aiBg: "AI Background",
+      view: "View",
+      generateLanding: "Generate AI Landing Page",
+      sync: "Sync"
+    },
+    
+    alerts: {
+      whiteBg: "White background: Automatically removes the background and adds a professional white background.",
+      aiBg: "AI Background: Generates a new personalized background with artificial intelligence."
+    },
+    
+    dialogs: {
+      whiteBg: {
+        title: "White Background Configuration",
+        description: "Choose which photo from the gallery you want to rework",
+        imageSelection: "Photo selection to rework"
+      },
+      optimizationConfirm: {
+        optimizing: "Optimizing selected products..."
+      }
+    },
+    
+    toasts: {
+      limitReached: "Optimization limit reached",
+      productsSynced: "product(s) synced",
+      productsOptimized: "product(s) optimized",
+      noProductToOptimize: "No product to optimize",
+      noProductToSync: "No optimized product to sync",
+      noSelectedProduct: "No selected product to sync",
+      syncError: "Error during synchronization",
+      notOptimizedYet: "This product has not been optimized yet"
+    },
     
     templates: {
       label: "Description style",
@@ -206,8 +275,16 @@ export const translations = {
     },
     
     buttons: {
-      generate: "Generate Premium Content",
-      generating: "Generating..."
+      optimizeAll: "Optimize all",
+      syncAll: "Sync all",
+      syncSelected: "Sync selected",
+      optimize: "Optimize",
+      whiteBg: "White background",
+      aiBg: "AI Background",
+      optimizing: "Optimizing...",
+      generating: "Generating...",
+      synchronizing: "Synchronizing...",
+      generate: "Generate Premium Content"
     },
     
     preview: {
@@ -238,7 +315,7 @@ export const translations = {
     },
     
     empty: {
-      title: "No products",
+      title: "No products found",
       description: "Import products from Shopify to get started"
     },
     

@@ -181,9 +181,78 @@ export const translations = {
 
   // ============= Product Content Optimization =============
   contentOptimization: {
-    title: "Génération de Contenu Produit Premium",
+    title: "Contenu Produit Optimisé",
+    subtitle: "Créez des titres captivants et des descriptions riches en HTML pour séduire vos clients et améliorer votre visibilité naturelle",
     description: "Générez des descriptions HTML professionnelles avec titres structurés (H1, H2, H3), intégration automatique des photos produits et mise en page optimisée pour mobile et moteurs de recherche.",
     infoAlert: "Créez des descriptions HTML riches avec titres structurés (H1, H2, H3), médias intégrés et mise en page professionnelle pour séduire vos clients et améliorer votre référencement naturel.",
+    
+    hero: {
+      title: "Contenu Produit Optimisé",
+      description: "Créez des titres captivants et des descriptions riches en HTML pour séduire vos clients et améliorer votre visibilité naturelle"
+    },
+    
+    stats: {
+      totalProducts: "Total produits",
+      optimized: "Optimisés",
+      selected: "Sélectionnés"
+    },
+    
+    search: {
+      placeholder: "Rechercher un produit..."
+    },
+    
+    table: {
+      headers: {
+        image: "Image",
+        title: "Titre",
+        description: "Description",
+        status: "Statut",
+        actions: "Actions"
+      },
+      status: {
+        premiumContent: "Contenu Premium",
+        basicContent: "Contenu Basique",
+        toOptimize: "À optimiser"
+      },
+      noOptimizedDesc: "Aucune description optimisée",
+      original: "Original"
+    },
+    
+    tooltips: {
+      optimize: "Optimiser",
+      whiteBg: "Fond blanc",
+      aiBg: "Arrière-plan IA",
+      view: "Visualiser",
+      generateLanding: "Générer Landing Page IA",
+      sync: "Synchroniser"
+    },
+    
+    alerts: {
+      whiteBg: "Fond blanc : Supprime automatiquement l'arrière-plan et ajoute un fond blanc professionnel.",
+      aiBg: "Arrière-plan IA : Génère un nouvel arrière-plan personnalisé avec l'intelligence artificielle."
+    },
+    
+    dialogs: {
+      whiteBg: {
+        title: "Configuration Fond Blanc",
+        description: "Choisissez quelle photo de la galerie vous souhaitez retravailler",
+        imageSelection: "Sélection de la photo à retravailler"
+      },
+      optimizationConfirm: {
+        optimizing: "Optimisation des produits sélectionnés..."
+      }
+    },
+    
+    toasts: {
+      limitReached: "Limite d'optimisations atteinte",
+      productsSynced: "produit(s) synchronisé(s)",
+      productsOptimized: "produit(s) optimisé(s)",
+      noProductToOptimize: "Aucun produit à optimiser",
+      noProductToSync: "Aucun produit optimisé à synchroniser",
+      noSelectedProduct: "Aucun produit sélectionné à synchroniser",
+      syncError: "Erreur lors de la synchronisation",
+      notOptimizedYet: "Ce produit n'a pas encore été optimisé"
+    },
     
     templates: {
       label: "Style de description",
@@ -206,8 +275,16 @@ export const translations = {
     },
     
     buttons: {
-      generate: "Générer Contenu Premium",
-      generating: "Génération..."
+      optimizeAll: "Optimiser tout",
+      syncAll: "Synchroniser tout",
+      syncSelected: "Synchroniser sélectionnés",
+      optimize: "Optimiser",
+      whiteBg: "Fond blanc",
+      aiBg: "Arrière-plan IA",
+      optimizing: "Optimisation...",
+      generating: "Génération...",
+      synchronizing: "Synchronisation...",
+      generate: "Générer Contenu Premium"
     },
     
     preview: {
@@ -238,7 +315,7 @@ export const translations = {
     },
     
     empty: {
-      title: "Aucun produit",
+      title: "Aucun produit trouvé",
       description: "Importez des produits depuis Shopify pour commencer"
     },
     
