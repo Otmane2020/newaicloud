@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +59,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface Collection {
   id: string;
@@ -256,6 +266,22 @@ export function CollectionOptimization() {
     });
   }
 
+  // Pagination with cache and scroll
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedCollections,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePaginatedSeo({
+    items: sortedCollections,
+    itemsPerPage: 50,
+    cacheKey: 'seo-collections',
+  });
+
   const tabs = [
     { id: 'all' as QuickFilterTab, label: t.collections.optimization.tabs.all, count: collections.length },
     { id: 'not-optimized' as QuickFilterTab, label: t.collections.optimization.tabs.notOptimized, count: notOptimizedCount },
@@ -285,10 +311,10 @@ export function CollectionOptimization() {
   };
 
   const handleSelectAll = () => {
-    if (selectedCollections.size === sortedCollections.length) {
+    if (selectedCollections.size === paginatedCollections.length) {
       setSelectedCollections(new Set());
     } else {
-      setSelectedCollections(new Set(sortedCollections.map((c) => c.id)));
+      setSelectedCollections(new Set(paginatedCollections.map((c) => c.id)));
     }
   };
 
@@ -997,7 +1023,7 @@ export function CollectionOptimization() {
         <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Checkbox 
-              checked={selectedCollections.size === sortedCollections.length && sortedCollections.length > 0}
+              checked={selectedCollections.size === paginatedCollections.length && paginatedCollections.length > 0}
               onCheckedChange={handleSelectAll}
             />
             <span className="text-sm font-medium">
@@ -1245,7 +1271,7 @@ export function CollectionOptimization() {
         </div>
       )}
 
-      {!optimizing && !syncing && sortedCollections.length === 0 && (
+      {!optimizing && !syncing && paginatedCollections.length === 0 && filteredCollections.length === 0 && (
         <Card className="p-12 text-center">
           <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Aucune collection trouvée</h3>
@@ -1255,7 +1281,7 @@ export function CollectionOptimization() {
         </Card>
       )}
 
-      {!optimizing && !syncing && sortedCollections.length > 0 && viewMode === 'list' && (
+      {!optimizing && !syncing && paginatedCollections.length > 0 && viewMode === 'list' && (
         <Card className="overflow-hidden">
           <div className="max-h-[600px] overflow-y-auto">
             <Table>
@@ -1263,7 +1289,7 @@ export function CollectionOptimization() {
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedCollections.size === sortedCollections.length}
+                      checked={selectedCollections.size === paginatedCollections.length}
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
@@ -1290,7 +1316,7 @@ export function CollectionOptimization() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedCollections.map((collection) => {
+                {paginatedCollections.map((collection) => {
                   const seoScore = calculateCollectionSeoScore(collection);
                   const scoreBadge = getSeoScoreBadge(seoScore);
                   
@@ -1479,9 +1505,9 @@ export function CollectionOptimization() {
         </Card>
       )}
 
-      {!optimizing && !syncing && sortedCollections.length > 0 && viewMode === 'grid' && (
+      {!optimizing && !syncing && paginatedCollections.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sortedCollections.map((collection) => {
+          {paginatedCollections.map((collection) => {
             const seoScore = calculateCollectionSeoScore(collection);
             const scoreBadge = getSeoScoreBadge(seoScore);
             
@@ -1577,6 +1603,53 @@ export function CollectionOptimization() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={previousPage}
+                  className={!hasPreviousPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              
+              {[...Array(totalPages)].map((_, index) => {
+                const page = index + 1;
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => goToPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                  return <PaginationEllipsis key={page} />;
+                }
+                return null;
+              })}
+              
+              <PaginationItem>
+                <PaginationNext
+                  onClick={nextPage}
+                  className={!hasNextPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
 

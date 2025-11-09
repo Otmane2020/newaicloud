@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/lib/language';
+import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,6 +23,15 @@ import {
 import { SeoHeroBanner } from './SeoHeroBanner';
 import { VisionAIBanner } from './VisionAIBanner';
 import { HomepageAltGuide } from './HomepageAltGuide';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface ProductImage {
   id: string;
@@ -410,6 +420,22 @@ export function SeoAltImageList() {
     })
   })).filter(p => p.images.length > 0);
 
+  // Pagination with cache and scroll
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedProducts,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePaginatedSeo({
+    items: filteredProducts,
+    itemsPerPage: 50,
+    cacheKey: 'seo-alt-images',
+  });
+
   const allImages = products.flatMap(p => p.images);
   const stats = {
     total: allImages.length,
@@ -598,14 +624,14 @@ export function SeoAltImageList() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  if (expandedProducts.size === filteredProducts.length) {
+                  if (expandedProducts.size === paginatedProducts.length) {
                     setExpandedProducts(new Set());
                   } else {
-                    setExpandedProducts(new Set(filteredProducts.map(p => p.id)));
+                    setExpandedProducts(new Set(paginatedProducts.map(p => p.id)));
                   }
                 }}
               >
-                {expandedProducts.size === filteredProducts.length ? (
+                {expandedProducts.size === paginatedProducts.length ? (
                   <>
                     <ChevronDown className="mr-2 h-4 w-4" />
                     Tout replier
@@ -711,7 +737,7 @@ export function SeoAltImageList() {
 
       {/* Products List with Collapsible Images */}
       <ScrollArea className="h-[600px]">
-        {filteredProducts.length === 0 ? (
+        {paginatedProducts.length === 0 ? (
           <div className="text-center py-12">
             <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <p className="text-lg text-muted-foreground">Aucune image trouvée</p>
@@ -777,7 +803,7 @@ export function SeoAltImageList() {
             )}
 
             {/* Product Images */}
-            {filteredProducts.filter(p => p.id !== 'homepage').map((product) => {
+            {paginatedProducts.filter(p => p.id !== 'homepage').map((product) => {
               const isExpanded = expandedProducts.has(product.id);
               const mainImage = product.images.find(img => img.position === 0) || product.images[0];
               const imagesWithAlt = product.images.filter(img => img.alt_text).length;
@@ -869,6 +895,53 @@ export function SeoAltImageList() {
           </div>
         )}
       </ScrollArea>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={previousPage}
+                  className={!hasPreviousPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              
+              {[...Array(totalPages)].map((_, index) => {
+                const page = index + 1;
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => goToPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                  return <PaginationEllipsis key={page} />;
+                }
+                return null;
+              })}
+              
+              <PaginationItem>
+                <PaginationNext
+                  onClick={nextPage}
+                  className={!hasNextPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       {/* Dialogs */}
       <ProgressDialog

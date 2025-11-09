@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { usePaginatedSeo } from "@/hooks/usePaginatedSeo";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -47,6 +48,15 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 import { ShopifySyncSuccessDialog } from "./ShopifySyncSuccessDialog";
 import { VisionAIBanner } from "./VisionAIBanner";
@@ -311,6 +321,22 @@ export function SeoOptimization() {
     });
   }
 
+  // Pagination with cache and scroll
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedProducts,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePaginatedSeo({
+    items: sortedProducts,
+    itemsPerPage: 50,
+    cacheKey: 'seo-products',
+  });
+
   const tabs = [
     { id: "all" as QuickFilterTab, label: t.seo.optimization.allProducts, count: products.length },
     { id: "not-enriched" as QuickFilterTab, label: t.seo.optimization.toOptimize, count: notEnrichedCount },
@@ -347,10 +373,10 @@ export function SeoOptimization() {
   };
 
   const handleSelectAll = () => {
-    if (selectedProducts.size === sortedProducts.length) {
+    if (selectedProducts.size === paginatedProducts.length) {
       setSelectedProducts(new Set());
     } else {
-      setSelectedProducts(new Set(sortedProducts.map((p) => p.id)));
+      setSelectedProducts(new Set(paginatedProducts.map((p) => p.id)));
     }
   };
 
@@ -830,7 +856,7 @@ export function SeoOptimization() {
         <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Checkbox
-              checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
+              checked={selectedProducts.size === paginatedProducts.length && paginatedProducts.length > 0}
               onCheckedChange={handleSelectAll}
             />
             <span className="text-sm font-medium">
@@ -1125,7 +1151,7 @@ export function SeoOptimization() {
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
+                      checked={selectedProducts.size === paginatedProducts.length && paginatedProducts.length > 0}
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
@@ -1150,7 +1176,7 @@ export function SeoOptimization() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedProducts.map((product) => {
+                {paginatedProducts.map((product) => {
                   const seoScore = calculateDetailedSeoScore(
                     product.seo_title,
                     product.seo_description,
@@ -1318,7 +1344,7 @@ export function SeoOptimization() {
       ) : (
         // Grid View
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProducts.map((product) => {
+          {paginatedProducts.map((product) => {
             const seoScore = calculateDetailedSeoScore(
               product.seo_title,
               product.seo_description,
@@ -1429,6 +1455,54 @@ export function SeoOptimization() {
         <div className="text-center py-12 bg-muted/30 rounded-lg">
           <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">No products found</p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={previousPage}
+                  className={!hasPreviousPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              
+              {[...Array(totalPages)].map((_, index) => {
+                const page = index + 1;
+                // Show first page, last page, current page, and pages around current
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => goToPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                  return <PaginationEllipsis key={page} />;
+                }
+                return null;
+              })}
+              
+              <PaginationItem>
+                <PaginationNext
+                  onClick={nextPage}
+                  className={!hasNextPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
 
