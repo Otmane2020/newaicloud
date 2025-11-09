@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
+import { useStore } from '@/contexts/StoreContext';
 
 interface GoogleSearchConsoleSitemapsProps {
   selectedDomain: string;
@@ -9,6 +11,15 @@ interface GoogleSearchConsoleSitemapsProps {
 
 export function GoogleSearchConsoleSitemaps({ selectedDomain }: GoogleSearchConsoleSitemapsProps) {
   const { t } = useTranslation();
+  const { selectedStore } = useStore();
+  const [sitemapUrl, setSitemapUrl] = useState('');
+
+  useEffect(() => {
+    if (selectedStore?.store_url) {
+      const cleanUrl = selectedStore.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      setSitemapUrl(`https://${cleanUrl}/sitemap.xml`);
+    }
+  }, [selectedStore]);
   return (
     <div className="space-y-6">
       <Card className="p-8">
@@ -58,6 +69,8 @@ export function GoogleSearchConsoleSitemaps({ selectedDomain }: GoogleSearchCons
             <div className="flex gap-2">
               <input
                 type="text"
+                value={sitemapUrl}
+                onChange={(e) => setSitemapUrl(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 placeholder={t.searchConsole.sitemaps.placeholder}
               />

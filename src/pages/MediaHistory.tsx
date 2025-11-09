@@ -1,25 +1,37 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Image as ImageIcon, Clock, Download } from "lucide-react";
+import { Loader2, Image as ImageIcon, Clock, Download, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function MediaHistory() {
+  const queryClient = useQueryClient();
+
   const { data: history, isLoading } = useQuery({
     queryKey: ['media-history'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Récupérer l'historique avec les produits associés
+      // Récupérer l'historique avec les produits et images
       const { data, error } = await supabase
         .from('product_image_history')
         .select(`
           *,
-          shopify_products!product_image_history_product_id_fkey(title)
+          shopify_products!product_image_history_product_id_fkey(
+            title,
+            product_images(id, position)
+          )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -32,6 +44,48 @@ export default function MediaHistory() {
       return data;
     }
   });
+
+  const applyToImage = useMutation({
+    mutationFn: async ({ 
+      historyId, 
+      targetImageId, 
+      optimizedUrl 
+    }: { 
+      historyId: string; 
+      targetImageId: string; 
+      optimizedUrl: string;
+    }) => {
+      // Update product image
+      const { error: updateError } = await supabase
+        .from('product_images')
+        .update({ 
+          src: optimizedUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', targetImageId);
+
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      toast.success('Image appliquée avec succès');
+      queryClient.invalidateQueries({ queryKey: ['media-history'] });
+      queryClient.invalidateQueries({ queryKey: ['product-images'] });
+    },
+    onError: (error) => {
+      console.error('Error applying image:', error);
+      toast.error('Erreur lors de l\'application');
+    }
+  });
+
+  const handleDownload = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Téléchargement démarré');
+  };
 
   const getOptimizationTypeLabel = (type: string) => {
     switch (type) {
@@ -154,19 +208,51 @@ export default function MediaHistory() {
                       )}
                     </div>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                    >
-                      <a
-                        href={item.optimized_url}
-                        download
-                        className="flex items-center gap-2"
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownload(
+                          item.optimized_url, 
+                          `${productTitle}-v${item.version_number}.png`
+                        )}
                       >
                         <Download className="w-4 h-4" />
-                      </a>
-                    </Button>
+                      </Button>
+
+                      {item.shopify_products?.product_images && 
+                       item.shopify_products.product_images.length > 0 && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              disabled={applyToImage.isPending}
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-1" />
+                              Appliquer
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {item.shopify_products.product_images
+                              .sort((a: any, b: any) => a.position - b.position)
+                              .map((img: any, idx: number) => (
+                                <DropdownMenuItem
+                                  key={img.id}
+                                  onClick={() => applyToImage.mutate({
+                                    historyId: item.id,
+                                    targetImageId: img.id,
+                                    optimizedUrl: item.optimized_url
+                                  })}
+                                >
+                                  {idx === 0 ? '📸 Image principale' : `📷 Image ${idx + 1}`}
+                                </DropdownMenuItem>
+                              ))
+                            }
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
