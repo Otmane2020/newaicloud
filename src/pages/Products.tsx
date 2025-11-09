@@ -58,6 +58,11 @@ export default function Products() {
   const [totalCount, setTotalCount] = useState(0);
   const ITEMS_PER_PAGE = 20;
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   const loadProducts = async () => {
     try {
       setLoading(true);

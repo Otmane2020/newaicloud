@@ -181,6 +181,11 @@ export function PageOptimization() {
     currentPage * ITEMS_PER_PAGE
   );
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   const handleSelectAll = () => {
     if (selectedPages.size === filteredPages.length) {
       setSelectedPages(new Set());

@@ -181,6 +181,11 @@ export default function ProductTitleDescription() {
     currentPage * ITEMS_PER_PAGE
   );
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   const handleSelectAll = () => {
     if (selectedProducts.size === filteredProducts.length) {
       setSelectedProducts(new Set());
