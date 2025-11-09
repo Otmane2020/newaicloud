@@ -140,20 +140,24 @@ export default function RegenerateLanding({
    -----------------------------*/
   const analyzeImagesWithAI = async (imageUrls: string[]): Promise<string> => {
     if (!imageUrls || imageUrls.length === 0) {
-      console.log("[Vision] No images to analyze");
+      console.log("⚠️ [Vision] No images to analyze");
       return "";
     }
 
     try {
+      console.log(`🔍 [Vision] Starting analysis for ${imageUrls.length} images...`);
       setProgressMessage(t.landingGeneration.analyzing);
       setProgress(25);
 
       // Analyze up to 5 images to avoid excessive API calls
       const imagesToAnalyze = imageUrls.slice(0, 5);
+      console.log(`📊 [Vision] Will analyze ${imagesToAnalyze.length} images (max 5)`);
       const analyses: string[] = [];
 
       for (let i = 0; i < imagesToAnalyze.length; i++) {
         try {
+          console.log(`🔍 [Vision] Analyzing image ${i + 1}/${imagesToAnalyze.length}: ${imagesToAnalyze[i]}`);
+          
           const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
             body: {
               imageUrl: imagesToAnalyze[i],
@@ -161,7 +165,12 @@ export default function RegenerateLanding({
             },
           });
 
-          if (!error && data?.attributes) {
+          if (error) {
+            console.error(`❌ [Vision] Error for image ${i + 1}:`, error);
+          } else if (!data?.attributes) {
+            console.warn(`⚠️ [Vision] No attributes returned for image ${i + 1}`);
+          } else {
+            console.log(`✅ [Vision] Image ${i + 1} analyzed successfully:`, data.attributes);
             analyses.push(`
 Image ${i + 1}:
 - Couleur: ${data.attributes.dominantColor || "N/A"}
@@ -171,14 +180,18 @@ Image ${i + 1}:
           `);
           }
         } catch (err) {
-          console.warn(`[Vision] Failed to analyze image ${i + 1}:`, err);
+          console.error(`❌ [Vision] Exception analyzing image ${i + 1}:`, err);
         }
+        
+        // Update progress per image
+        const imageProgress = 25 + (i + 1) * (10 / imagesToAnalyze.length);
+        setProgress(Math.round(imageProgress));
       }
 
-      console.log(`[Vision] Analyzed ${analyses.length} images`);
+      console.log(`✅ [Vision] Analysis complete: ${analyses.length}/${imagesToAnalyze.length} images analyzed successfully`);
       return analyses.length > 0 ? analyses.join("\n") : "";
     } catch (err) {
-      console.error("[Vision] Image analysis error:", err);
+      console.error("❌ [Vision] Image analysis error:", err);
       return "";
     }
   };
@@ -224,6 +237,7 @@ Image ${i + 1}:
    -----------------------------*/
   const handleGenerate = async () => {
     try {
+      console.log("🚀 [Landing] Starting generation process...");
       setLoading(true);
       setError(null);
       setProgress(0);
@@ -233,13 +247,15 @@ Image ${i + 1}:
       setProgress(10);
 
       // ✅ ÉTAPE 1 : Résoudre le vendor
+      console.log("📦 [Landing] Step 1: Resolving vendor...");
       setProgressMessage(t.landingGeneration.resolving);
       const resolvedVendor = await resolveVendor();
-      console.log("[Landing] Resolved vendor:", resolvedVendor);
+      console.log("✅ [Landing] Vendor resolved:", resolvedVendor);
 
       setProgress(15);
 
       // ✅ ÉTAPE 2 : Récupérer toutes les images du produit
+      console.log("🖼️ [Landing] Step 2: Fetching product images...");
       setProgressMessage("Récupération des images...");
       const productImages = await fetchProductImages();
       const allImageUrls = [
@@ -247,22 +263,28 @@ Image ${i + 1}:
         ...productImages.map(img => img.image_url)
       ].filter((url, index, arr) => arr.indexOf(url) === index); // Remove duplicates
 
-      console.log(`[Landing] Found ${allImageUrls.length} product images`);
+      console.log(`✅ [Landing] Found ${allImageUrls.length} product images:`, allImageUrls);
       setProgress(20);
 
       // ✅ ÉTAPE 3 : Récupérer les variantes du produit
+      console.log("🎨 [Landing] Step 3: Fetching product variants...");
       setProgressMessage("Récupération des variantes...");
       const variants = await fetchProductVariants();
-      console.log(`[Landing] Found ${variants.length} product variants`);
+      console.log(`✅ [Landing] Found ${variants.length} product variants`);
       setProgress(22);
 
       // ✅ ÉTAPE 4 : Analyser toutes les images avec Vision IA
+      console.log("🔍 [Landing] Step 4: Analyzing images with Vision AI...");
       let imageAnalysis = "";
       if (allImageUrls.length > 0) {
         imageAnalysis = await analyzeImagesWithAI(allImageUrls);
+        console.log("✅ [Landing] Vision AI analysis completed");
+      } else {
+        console.log("⚠️ [Landing] No images to analyze");
       }
 
       setProgress(35);
+      console.log("🤖 [Landing] Step 5: Generating landing page with AI...");
       setProgressMessage(t.landingGeneration.generating);
 
       // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
@@ -276,6 +298,15 @@ Image ${i + 1}:
       });
 
       // ✅ ÉTAPE 5 : Générer le landing avec tous les paramètres
+      console.log("📤 [Landing] Calling generate-landing-ai function with:", {
+        title: product.title,
+        imagesCount: allImageUrls.length,
+        variantsCount: variants.length,
+        hasImageAnalysis: !!imageAnalysis,
+        style: config.style,
+        layout: config.layout
+      });
+      
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
           productTitle: product.title,
@@ -298,8 +329,14 @@ Image ${i + 1}:
       setProgress(60);
       setProgressMessage(t.landingGeneration.processing);
 
-      if (error) throw error;
+      console.log("📥 [Landing] Response received from generate-landing-ai");
+      
+      if (error) {
+        console.error("❌ [Landing] Function error:", error);
+        throw error;
+      }
       if (data?.error) {
+        console.error("❌ [Landing] API returned error:", data.error);
         const message = data.error.includes("Rate limits")
           ? t.landingGeneration.errors.rateLimit
           : data.error.includes("Payment required")
@@ -319,7 +356,7 @@ Image ${i + 1}:
       if (data?.html?.trim()) {
         // ✅ Validation de la longueur du contenu généré
         const wordCount = data.html.split(/\s+/).length;
-        console.log(`[Landing] Generated content: ${wordCount} words`);
+        console.log(`✅ [Landing] Generated content: ${wordCount} words`);
 
         setHtmlContent(data.html);
         setProgress(100);
@@ -327,17 +364,26 @@ Image ${i + 1}:
 
         toast.success(t.landingGeneration.success.generated);
         onGenerated?.(data.html);
+        
+        console.log("🎉 [Landing] Generation process completed successfully!");
       } else {
+        console.error("❌ [Landing] No HTML content in response");
         throw new Error(t.landingGeneration.errors.noGenerated);
       }
     } catch (err: any) {
-      console.error("Error generating landing:", err);
+      console.error("❌ [Landing] Generation error:", err);
+      console.error("Error details:", {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack
+      });
       const errorMsg = err?.message || t.landingGeneration.errors.generation;
       setError(errorMsg);
       toast.error(errorMsg);
       setProgress(0);
     } finally {
       setLoading(false);
+      console.log("🏁 [Landing] Generation process ended");
     }
   };
 
