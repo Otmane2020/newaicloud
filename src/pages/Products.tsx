@@ -477,18 +477,9 @@ export default function Products() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                refreshLimits();
-                await loadProducts();
-                toast.success(t.common.dataRefreshed);
-              }}
-              className="h-9 px-3"
-            >
+            <Button size="sm" onClick={() => navigate("/integration?tab=sync")} variant="outline" className="h-9 px-3">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh Data
+              Synchroniser
             </Button>
             <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
               <Plus className="w-4 h-4 mr-2" />
