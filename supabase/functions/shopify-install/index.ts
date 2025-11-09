@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
 /**
@@ -58,7 +58,18 @@ serve(async (req) => {
   try {
     console.log('[SHOPIFY-INSTALL] Request received');
 
-    const { hmac, host, shop, timestamp, allParams } = await req.json();
+    // Extraire les paramètres de l'URL
+    const url = new URL(req.url);
+    const shop = url.searchParams.get("shop");
+    const hmac = url.searchParams.get("hmac");
+    const timestamp = url.searchParams.get("timestamp");
+    const host = url.searchParams.get("host");
+
+    // Construire allParams pour la validation HMAC
+    const allParams: Record<string, string> = {};
+    url.searchParams.forEach((value, key) => {
+      allParams[key] = value;
+    });
 
     console.log('[SHOPIFY-INSTALL] Parameters:', {
       hasHmac: !!hmac,
@@ -121,17 +132,82 @@ serve(async (req) => {
       );
     }
 
-    // Rediriger vers la page d'installation qui lancera automatiquement l'OAuth
-    const appUrl = "https://newai.sale";
-    const installUrl = `${appUrl}/shopify/install?shop=${encodeURIComponent(shop)}`;
+    // Créer un state token pour l'OAuth
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing Supabase configuration");
+    }
 
-    console.log('[SHOPIFY-INSTALL] Redirecting to install page:', installUrl);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const stateToken = crypto.randomUUID();
+    
+    // Sauvegarder le state token en mode pre-auth
+    const { error: stateError } = await supabase
+      .from("oauth_states")
+      .insert({
+        state: stateToken,
+        shop_name: shop,
+        user_id: null,
+        is_pre_auth: true,
+        created_at: new Date().toISOString(),
+      });
+
+    if (stateError) {
+      console.error('[SHOPIFY-INSTALL] Error saving state:', stateError);
+      throw new Error("Failed to save OAuth state");
+    }
+
+    // Scopes requis
+    const scopes = [
+      "read_analytics",
+      "read_assigned_fulfillment_orders", "write_assigned_fulfillment_orders",
+      "write_checkout_branding_settings",
+      "write_checkouts",
+      "write_draft_orders", "read_draft_orders",
+      "read_files", "write_files",
+      "write_inventory", "read_inventory",
+      "write_inventory_shipments", "read_inventory_shipments",
+      "write_inventory_shipments_received_items", "read_inventory_shipments_received_items",
+      "write_inventory_transfers", "read_inventory_transfers",
+      "read_legal_policies", "write_legal_policies",
+      "write_locations", "read_locations",
+      "read_online_store_pages", "write_online_store_pages",
+      "write_order_edits",
+      "read_orders", "write_orders",
+      "read_privacy_settings", "write_privacy_settings",
+      "read_product_feeds", "write_product_feeds",
+      "read_product_listings", "write_product_listings",
+      "read_products", "write_products",
+      "read_publications", "write_publications",
+      "read_shipping", "write_shipping",
+      "read_content", "write_content",
+      "write_theme_code",
+      "read_themes", "write_themes",
+      "customer_read_orders", "customer_write_orders",
+      "unauthenticated_read_product_pickup_locations",
+      "unauthenticated_read_product_inventory",
+      "unauthenticated_read_product_listings",
+      "unauthenticated_read_product_tags",
+    ].join(",");
+
+    // Construire l'URL OAuth
+    const redirectUri = `${supabaseUrl}/functions/v1/shopify-oauth`;
+    const authUrl = `https://${shop}/admin/oauth/authorize?` +
+      `client_id=${apiKey}&` +
+      `scope=${encodeURIComponent(scopes)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `state=${stateToken}`;
+
+    console.log('[SHOPIFY-INSTALL] Redirecting to OAuth:', authUrl);
 
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        "Location": installUrl,
+        "Location": authUrl,
       },
     });
   } catch (error) {

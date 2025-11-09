@@ -30,9 +30,9 @@ Cette erreur se produit parce que l'application ne gérait pas correctement le f
 <Route path="/shopify/install" element={<ShopifyInstall />} />
 ```
 
-## Configuration Requise dans Shopify Partner Dashboard
+## ⚠️ CONFIGURATION OBLIGATOIRE - Shopify Partner Dashboard
 
-Pour que l'installation fonctionne correctement, vous DEVEZ configurer les URLs suivantes dans votre **Shopify Partner Dashboard** :
+Pour que l'installation fonctionne, configurez ces URLs dans votre **Shopify Partner Dashboard** :
 
 ### Étapes de Configuration :
 
@@ -47,10 +47,11 @@ Pour que l'installation fonctionne correctement, vous DEVEZ configurer les URLs 
 3. **Configurez les URLs**
    - Allez dans **Configuration** → **App setup** → **URLs**
    
-   **App URL** (URL de l'application) :
+   **⚠️ IMPORTANT - App URL** (URL d'installation) :
    ```
-   https://newai.sale/shopify/install
+   https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-install
    ```
+   ⚠️ Cette URL DOIT pointer vers l'edge function, pas vers la page React!
    
    **Allowed redirection URL(s)** (URLs de redirection autorisées) :
    ```
@@ -60,29 +61,53 @@ Pour que l'installation fonctionne correctement, vous DEVEZ configurer les URLs 
 4. **Sauvegardez les Modifications**
    - Cliquez sur **Save** en haut à droite
 
-## Flux OAuth Complet
+### Pourquoi l'edge function?
+
+L'App URL doit pointer vers l'edge function car:
+- Elle valide le HMAC envoyé par Shopify (sécurité)
+- Elle vérifie le timestamp (protection contre replay attacks)
+- Elle initie le flux OAuth automatiquement
+- Elle gère le mode pre-auth (installation avant création de compte)
+
+## Nouveau Flux OAuth Complet (Pre-Auth)
 
 ```mermaid
 sequenceDiagram
-    participant M as Marchand
-    participant S as Shopify
-    participant A as newai.sale/shopify/install
-    participant E as shopify-install Edge Function
-    participant O as shopify-oauth Edge Function
-    participant D as newai.sale/integration
+    participant M as Marchand Shopify
+    participant S as Shopify App Store
+    participant I as shopify-install Edge Function
+    participant O as shopify-oauth Edge Function  
+    participant A as /auth (Sign Up/Login)
+    participant C as claim-shopify-connection
+    participant D as /integration
 
     M->>S: Clique "Install App"
-    S->>A: Redirige avec hmac, shop, timestamp, host
-    A->>E: POST avec paramètres d'installation
-    E->>E: Valide HMAC et timestamp
-    E->>S: Génère URL OAuth avec scopes
+    S->>I: GET avec hmac, shop, timestamp, host
+    I->>I: Valide HMAC et timestamp
+    I->>I: Crée state token (pre-auth mode)
+    I->>S: Redirige vers OAuth (302)
     S->>M: Affiche page d'autorisation
     M->>S: Accepte les permissions
-    S->>O: Callback avec code + state
+    S->>O: GET callback avec code + state
     O->>S: Échange code contre access_token
-    O->>O: Sauvegarde connexion en DB
-    O->>D: Redirige vers /integration?success=true
+    O->>O: Sauvegarde dans pending_connections
+    O->>A: Redirige avec shopify_pending token
+    M->>A: Fait Sign Up ou Login
+    A->>C: Appelle claim-shopify-connection
+    C->>C: Associe store à user_id
+    A->>D: Redirige vers /integration
+    D->>M: Affiche connexion Shopify réussie
 ```
+
+### Explication du Flux
+
+1. **Installation depuis Shopify** : Le marchand clique sur "Install" dans l'App Store
+2. **Validation HMAC** : L'edge function `shopify-install` valide que la requête vient bien de Shopify
+3. **OAuth Automatique** : Redirection immédiate vers Shopify pour autoriser l'app (installation réelle)
+4. **Sauvegarde Temporaire** : Le token est sauvegardé dans `pending_connections` (pas encore lié à un utilisateur)
+5. **Authentification** : L'utilisateur crée un compte ou se connecte
+6. **Association** : Le store est automatiquement associé au compte utilisateur
+7. **Succès** : Redirection vers la page d'intégration
 
 ## Paramètres d'Installation
 
