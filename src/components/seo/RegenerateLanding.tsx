@@ -403,15 +403,45 @@ export default function RegenerateLanding({
 
       {/* Progress Section */}
       {loading && (
-        <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 rounded-2xl border border-primary/20">
-          <div className="flex items-center gap-3 mb-4">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">{t.landingGeneration.generating}...</h3>
-              <p className="text-sm text-muted-foreground">{progressMessage}</p>
+        <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 rounded-2xl border border-primary/20 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.08),transparent_60%)]" />
+          
+          {/* Animated Title */}
+          <div className="flex items-center gap-3 mb-4 animate-pulse relative z-10">
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+            <div>
+              <h3 className="font-semibold text-lg text-primary">
+                ⚡ High-Vision AI Landing Generation
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {progressMessage || "Analyzing product and image with advanced Vision AI..."}
+              </p>
             </div>
           </div>
-          <Progress value={progress} showPercentage />
+          
+          {/* Progress bar */}
+          <div className="relative mt-4 z-10">
+            <Progress value={progress} showPercentage />
+            
+            {/* Floating text above bar */}
+            <div className="absolute inset-0 flex justify-center items-center pointer-events-none">
+              <span className="text-xs sm:text-sm font-medium text-primary/90 bg-background/70 px-3 py-1 rounded-full shadow-sm backdrop-blur">
+                {progress < 20 && "🔧 Initializing AI Model..."}
+                {progress >= 20 && progress < 40 && "🔍 High Vision AI — Image Analyzer"}
+                {progress >= 40 && progress < 60 && "🎨 Context & UX Copywriting"}
+                {progress >= 60 && progress < 80 && "🧠 Smart Design Layout Generation"}
+                {progress >= 80 && progress < 100 && "🚀 High UX Landing Page Finalization"}
+                {progress >= 100 && "✅ Completed"}
+              </span>
+            </div>
+          </div>
+          
+          {/* Additional value labels */}
+          <div className="flex justify-between mt-4 text-xs text-muted-foreground font-medium uppercase tracking-wide relative z-10">
+            <span>High Vision AI</span>
+            <span>UX-Optimized</span>
+            <span>Responsive Design</span>
+          </div>
         </div>
       )}
 
