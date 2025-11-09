@@ -120,7 +120,7 @@ serve(async (req) => {
     }
 
     // Get origin for redirect
-    const origin = req.headers.get("origin") || "https://yourdomain.com";
+    const origin = req.headers.get("origin") || `https://${req.headers.get("host")}`;
     
     // Create a payment URL that redirects back to our success page
     const paymentUrl = invoice.hosted_invoice_url 
