@@ -121,17 +121,17 @@ serve(async (req) => {
       );
     }
 
-    // Rediriger vers la page de guide avec le nom de la boutique
+    // Rediriger vers la page d'installation qui lancera automatiquement l'OAuth
     const appUrl = "https://newai.sale";
-    const guideUrl = `${appUrl}/shopify/guide?shop=${encodeURIComponent(shop)}`;
+    const installUrl = `${appUrl}/shopify/install?shop=${encodeURIComponent(shop)}`;
 
-    console.log('[SHOPIFY-INSTALL] Redirecting to guide:', guideUrl);
+    console.log('[SHOPIFY-INSTALL] Redirecting to install page:', installUrl);
 
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        "Location": guideUrl,
+        "Location": installUrl,
       },
     });
   } catch (error) {

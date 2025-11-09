@@ -4,12 +4,59 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PublicHeader } from "@/components/PublicHeader";
 import { ShoppingBag, ArrowRight } from "lucide-react";
 import { useTranslation } from "@/lib/language";
+import { toast } from "sonner";
+import { useState } from "react";
 
 const ShopifyInstallGuide = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const shop = searchParams.get("shop");
+  const [installing, setInstalling] = useState(false);
+
+  const handleInstallApp = async () => {
+    if (!shop) {
+      toast.error("Shop parameter missing");
+      return;
+    }
+
+    setInstalling(true);
+    try {
+      console.log("[GUIDE] Initiating pre-auth OAuth for:", shop);
+      
+      const response = await fetch(
+        `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-oauth`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            shopName: shop,
+            commercialName: shop,
+            preAuth: true,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to initiate OAuth");
+      }
+
+      const data = await response.json();
+      
+      if (data.authUrl) {
+        console.log("[GUIDE] Redirecting to Shopify:", data.authUrl);
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error("No auth URL received");
+      }
+    } catch (error) {
+      console.error("[GUIDE] Install error:", error);
+      toast.error("Failed to start installation. Please try again.");
+      setInstalling(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -77,20 +124,43 @@ const ShopifyInstallGuide = () => {
               </div>
 
               <div className="pt-4 space-y-3">
+                {shop && (
+                  <Button
+                    onClick={handleInstallApp}
+                    className="w-full"
+                    size="lg"
+                    disabled={installing}
+                  >
+                    {installing ? "Installation en cours..." : "🚀 Installer l'app maintenant"}
+                    {!installing && <ArrowRight className="ml-2 h-4 w-4" />}
+                  </Button>
+                )}
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">ou</span>
+                  </div>
+                </div>
+                
                 <Button
                   onClick={() => navigate(`/auth?mode=signup&redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
+                  variant="outline"
                   className="w-full"
                   size="lg"
+                  disabled={installing}
                 >
                   {t.integration.installGuide.createAccount}
-                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
                 
                 <Button
                   onClick={() => navigate(`/auth?mode=login&redirect=/integration${shop ? `?shop=${encodeURIComponent(shop)}` : ''}`)}
-                  variant="outline"
+                  variant="ghost"
                   className="w-full"
                   size="lg"
+                  disabled={installing}
                 >
                   {t.integration.installGuide.alreadyHaveAccount}
                 </Button>
