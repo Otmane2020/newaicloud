@@ -659,11 +659,15 @@ ${issue.translationKey ? `- **Key:** \`${issue.translationKey}\`` : ''}
   };
 
   const getMissingTranslations = () => {
-    return issues.filter(i => 
+    const missing = issues.filter(i => 
       i.severity === 'error' && 
       i.translationKey && 
       i.file === 'src/lib/translations/fr.ts'
     );
+    console.log('🔍 Missing translations found:', missing.length);
+    console.log('📊 Total issues:', issues.length);
+    console.log('Issues with translationKey:', issues.filter(i => i.translationKey).length);
+    return missing;
   };
 
   const copyTranslationCode = () => {
@@ -892,7 +896,11 @@ ${issue.translationKey ? `- **Key:** \`${issue.translationKey}\`` : ''}
                   variant="default" 
                   size="lg" 
                   className="bg-success text-success-foreground hover:bg-success/90"
-                  disabled={getMissingTranslations().length === 0}
+                  disabled={getMissingTranslations().length === 0 && errorCount === 0}
+                  onClick={() => {
+                    console.log('Button clicked!');
+                    console.log('Missing translations:', getMissingTranslations().length);
+                  }}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Missing Translations
