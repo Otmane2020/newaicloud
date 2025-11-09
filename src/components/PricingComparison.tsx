@@ -3,12 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import React from "react";
-import { useTranslation } from "@/lib/language";
-import { getCurrencySymbol } from "@/lib/formatUtils";
 
 const PricingComparison = () => {
   const isMobile = useIsMobile();
-  const { language } = useTranslation();
 
   const features = [
     {
@@ -71,12 +68,7 @@ const PricingComparison = () => {
   if (isMobile) {
     const plans = ["starter", "pro", "enterprise"];
     const planNames = { starter: "Starter", pro: "Pro", enterprise: "Enterprise" };
-    const currency = getCurrencySymbol(language);
-    const planPrices = {
-      starter: `${currency}9.99/mois`,
-      pro: `${currency}49 - ${currency}4,900/mois`,
-      enterprise: `${currency}199 - ${currency}19,900/mois`,
-    };
+    const planPrices = { starter: "$9.99/mois", pro: "$98 - $4,900/mois", enterprise: "$199 - $19,900/mois" };
 
     return (
       <div className="space-y-4">
@@ -112,8 +104,6 @@ const PricingComparison = () => {
   }
 
   // Desktop: Table
-  const currency = getCurrencySymbol(language);
-
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
@@ -124,25 +114,21 @@ const PricingComparison = () => {
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge variant="outline">Starter</Badge>
-                  <span className="text-2xl font-bold">{currency}9.99</span>
+                  <span className="text-2xl font-bold">$9.99</span>
                   <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge className="bg-primary">Pro</Badge>
-                  <span className="text-2xl font-bold">
-                    {currency}49 - {currency}4,900
-                  </span>
+                  <span className="text-2xl font-bold">$98 - $4,900</span>
                   <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge className="bg-success">Enterprise</Badge>
-                  <span className="text-2xl font-bold">
-                    {currency}199 - {currency}19,900
-                  </span>
+                  <span className="text-2xl font-bold">$199 - $19,900</span>
                   <span className="text-xs text-muted-foreground">/month</span>
                 </div>
               </th>
