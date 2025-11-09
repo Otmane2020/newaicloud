@@ -92,9 +92,11 @@ serve(async (req) => {
 
       if (stateError || !oauthState) {
         console.error("[SHOPIFY-OAUTH] State token invalide:", stateError);
-        return new Response(JSON.stringify({ error: "Invalid state token" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        // Rediriger vers une page d'erreur avec instructions
+        const errorUrl = `${APP_URL}/shopify/success?shop=${encodeURIComponent(shop)}&status=error&reason=invalid_flow`;
+        return new Response(null, { 
+          status: 302, 
+          headers: { Location: errorUrl, ...corsHeaders } 
         });
       }
 
