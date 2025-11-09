@@ -135,8 +135,9 @@ export function PageOptimization() {
         body_html: page.body_html || '',
         seo_title: page.seo_title,
         seo_description: page.seo_description,
-        optimized: !!(page.seo_title && page.seo_description),
-        last_synced_at: page.last_synced_at
+        optimized: (page.optimization_count || 0) > 0, // Based on AI optimization, not just data presence
+        last_synced_at: page.last_synced_at,
+        optimization_count: page.optimization_count || 0
       }));
       
       setPages(mappedPages);
