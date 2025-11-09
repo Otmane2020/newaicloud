@@ -8,92 +8,77 @@ import { PublicHeader } from "@/components/PublicHeader";
 const ShopifyInstall = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<'loading' | 'error' | 'success'>('loading');
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   useEffect(() => {
-    console.log('[ShopifyInstall] ========== useEffect TRIGGERED ==========');
-    console.log('[ShopifyInstall] Current location:', {
-      href: window.location.href,
-      search: window.location.search,
-      pathname: window.location.pathname
-    });
-    
-    const handleInstall = async () => {
-      // Get parameters from Shopify install request
-      const hmac = searchParams.get('hmac');
-      const host = searchParams.get('host');
-      const shop = searchParams.get('shop');
-      const timestamp = searchParams.get('timestamp');
+    console.log("🧩 [ShopifyInstall] useEffect TRIGGERED");
+    console.log("➡️ Current URL:", window.location.href);
 
-      console.log('[ShopifyInstall] Install request received', {
-        hasHmac: !!hmac,
-        hasHost: !!host,
-        hasShop: !!shop,
-        hasTimestamp: !!timestamp,
+    const handleInstall = async () => {
+      const hmac = searchParams.get("hmac");
+      const host = searchParams.get("host");
+      const shop = searchParams.get("shop");
+      const timestamp = searchParams.get("timestamp");
+
+      console.log("[ShopifyInstall] URL Params:", {
+        hmac,
+        host,
+        shop,
+        timestamp,
       });
 
       if (!shop || !hmac || !timestamp) {
-        setStatus('error');
-        setErrorMessage('Paramètres d\'installation manquants. Veuillez réessayer depuis Shopify.');
+        setStatus("error");
+        setErrorMessage("Paramètres d'installation manquants. Veuillez réessayer depuis Shopify.");
         return;
       }
 
       try {
-        console.log('[ShopifyInstall] 🚀 About to call edge function...');
-        console.log('[ShopifyInstall] Edge function params:', {
-          hmac: hmac?.substring(0, 10) + '...',
-          host,
-          shop,
-          timestamp
+        console.log("[ShopifyInstall] ⏳ Appel de la fonction Edge...");
+
+        const invokeResult = await supabase.functions.invoke("shopify-install", {
+          body: {
+            hmac,
+            host,
+            shop,
+            timestamp,
+            allParams: Object.fromEntries(searchParams.entries()),
+          },
         });
 
-        let invokeResult;
-        try {
-          console.log('[ShopifyInstall] Invoking supabase.functions.invoke...');
-          invokeResult = await supabase.functions.invoke('shopify-install', {
-            body: {
-              hmac,
-              host,
-              shop,
-              timestamp,
-              allParams: Object.fromEntries(searchParams.entries()),
-            },
-          });
-          console.log('[ShopifyInstall] ✅ Edge function invoked successfully');
-        } catch (networkError) {
-          console.error('[ShopifyInstall] ❌ Network error during invoke:', networkError);
-          throw new Error(`Erreur réseau: ${networkError instanceof Error ? networkError.message : 'Erreur inconnue'}`);
-        }
+        console.log("[ShopifyInstall] ✅ Résultat Edge:", invokeResult);
 
-        const { data, error } = invokeResult;
-        console.log('[ShopifyInstall] Edge function response:', { 
-          hasData: !!data, 
-          hasError: !!error,
-          data,
-          error 
-        });
-
-        if (error) {
-          console.error('[ShopifyInstall] Error:', error);
-          setStatus('error');
-          setErrorMessage(error.message || 'Erreur lors de l\'installation');
+        // Si erreur HTTP côté Supabase (ex: 500 ou 403)
+        if (!invokeResult || invokeResult.error || !invokeResult.data) {
+          console.error("[ShopifyInstall] ❌ Erreur invoke:", invokeResult.error);
+          setStatus("error");
+          setErrorMessage(
+            invokeResult.error?.message || "Erreur serveur : impossible de contacter le module d'installation.",
+          );
           return;
         }
 
-        if (data?.authUrl) {
-          console.log('[ShopifyInstall] Redirecting to OAuth:', data.authUrl);
-          // Redirect to Shopify OAuth page
-          window.location.href = data.authUrl;
-        } else {
-          console.error('[ShopifyInstall] No authUrl in response:', data);
-          setStatus('error');
-          setErrorMessage('URL d\'autorisation manquante');
+        const { data } = invokeResult;
+
+        if (!data.authUrl) {
+          console.error("[ShopifyInstall] ⚠️ Pas d'URL OAuth reçue :", data);
+          setStatus("error");
+          setErrorMessage("URL d'autorisation manquante. Le serveur n'a pas renvoyé le lien d'installation Shopify.");
+          return;
         }
+
+        console.log("[ShopifyInstall] 🌍 Redirection vers OAuth:", data.authUrl);
+        setStatus("success");
+
+        // Redirection directe vers Shopify OAuth
+        setTimeout(() => {
+          window.location.href = data.authUrl;
+        }, 1000);
       } catch (err) {
-        console.error('[ShopifyInstall] Exception:', err);
-        setStatus('error');
-        setErrorMessage(err instanceof Error ? err.message : 'Erreur inconnue');
+        console.error("[ShopifyInstall] 💥 Exception:", err);
+        setStatus("error");
+        setErrorMessage(err instanceof Error ? err.message : "Erreur inconnue pendant l'installation.");
       }
     };
 
@@ -103,20 +88,21 @@ const ShopifyInstall = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <PublicHeader />
-      
+
       <div className="container mx-auto px-4 py-24">
         <div className="max-w-md mx-auto">
           <Card>
             <CardHeader>
               <CardTitle className="text-center">Installation Shopify</CardTitle>
               <CardDescription className="text-center">
-                {status === 'loading' && 'Préparation de l\'installation...'}
-                {status === 'error' && 'Erreur d\'installation'}
-                {status === 'success' && 'Redirection en cours...'}
+                {status === "loading" && "Préparation de l'installation..."}
+                {status === "error" && "Erreur d'installation"}
+                {status === "success" && "Redirection en cours..."}
               </CardDescription>
             </CardHeader>
+
             <CardContent>
-              {status === 'loading' && (
+              {status === "loading" && (
                 <div className="flex flex-col items-center justify-center py-8 space-y-4">
                   <Loader2 className="w-12 h-12 animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground text-center">
@@ -125,28 +111,21 @@ const ShopifyInstall = () => {
                 </div>
               )}
 
-              {status === 'error' && (
+              {status === "error" && (
                 <div className="py-4">
                   <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                    <p className="text-sm text-destructive font-medium mb-2">
-                      Erreur
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {errorMessage}
-                    </p>
+                    <p className="text-sm text-destructive font-medium mb-2">Erreur</p>
+                    <p className="text-sm text-muted-foreground">{errorMessage}</p>
                   </div>
                   <div className="mt-4 text-center">
-                    <a 
-                      href="/integration" 
-                      className="text-sm text-primary hover:underline"
-                    >
+                    <a href="/integration" className="text-sm text-primary hover:underline">
                       Retour à l'intégration
                     </a>
                   </div>
                 </div>
               )}
 
-              {status === 'success' && (
+              {status === "success" && (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2 className="w-8 h-8 animate-spin text-success mb-4" />
                   <p className="text-sm text-muted-foreground text-center">
