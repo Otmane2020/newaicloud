@@ -649,7 +649,11 @@ export const translations = {
     save: "Save"
   },
   common: {
+    error: "Error",
+    success: "Success",
     loading: "Loading...",
+    saving: "Saving...",
+    saved: "Saved",
     save: "Save",
     cancel: "Cancel",
     delete: "Delete",
@@ -689,6 +693,12 @@ export const translations = {
     disconnect: "Disconnect",
     publish: "Publish",
     preview: "Preview",
+    validate: "Validate",
+    create: "Create",
+    add: "Add",
+    export: "Export",
+    import: "Import",
+    impossible: "Impossible",
   },
   
   navigation: {
@@ -1652,6 +1662,85 @@ export const translations = {
       success: {
         generated: "SEO generated successfully",
         synced: "SEO synced successfully to Shopify",
+      },
+      altGuide: {
+        title: "Guide: Edit Homepage ALT Texts",
+        description: "Complete instructions to manually update ALT texts for your Shopify homepage",
+        sections: {
+          limitation: {
+            title: "⚠️ Why this limitation?",
+            description: "Your homepage images are integrated into your Shopify theme (banners, sliders, sections).",
+            note: "💡 The Shopify API does not allow apps to modify these images. You must edit them manually in the Theme Editor.",
+          },
+          export: {
+            title: "1️⃣ Export generated ALT texts",
+            step1: "Click the \"Export Homepage ALT\" button above",
+            step2: "The downloaded file contains:",
+            listItems: [
+              "The URL of each image",
+              "The current ALT text",
+              "The new AI-optimized ALT text",
+            ],
+          },
+          modify: {
+            title: "2️⃣ Edit in Shopify Theme Editor",
+            step1: {
+              title: "Access Theme Editor",
+              instructions: [
+                "Go to Shopify Admin → Online Store → Themes",
+                "Click \"Customize\" on your active theme",
+              ],
+            },
+            step2: {
+              title: "Locate your images",
+              instructions: [
+                "Browse through your homepage sections (Hero, Banner, Gallery, etc.)",
+                "Identify images listed in the CSV file",
+              ],
+            },
+            step3: {
+              title: "Update ALT texts",
+              instructions: [
+                "For each image, click on it in the editor",
+                "Look for the \"Alt text\" or \"Alternative text\" field",
+                "Replace with the new ALT text from the CSV file",
+                "Repeat for all images",
+              ],
+            },
+            step4: {
+              title: "Save",
+              instructions: [
+                "Click \"Save\" at the top right of the Theme Editor",
+              ],
+            },
+          },
+          bestPractices: {
+            title: "✅ SEO Best Practices",
+            doTitle: "✅ DO:",
+            doList: [
+              "Use AI-generated ALT texts (SEO optimized)",
+              "Be descriptive and precise (10-15 words ideally)",
+              "Include relevant keywords naturally",
+              "Describe what the image shows",
+            ],
+            dontTitle: "❌ DON'T:",
+            dontList: [
+              "Generic ALT texts (\"image\", \"photo\", \"banner\")",
+              "Keyword stuffing",
+              "Texts too long (>125 characters)",
+              "Leave ALT texts empty",
+            ],
+          },
+          rescan: {
+            title: "3️⃣ Re-scan after modification",
+            description: "Once your modifications are done in Shopify:",
+            instructions: [
+              "Return to this page",
+              "Click \"Re-scan Homepage\"",
+              "Verify that your SEO score improves",
+            ],
+          },
+        },
       },
     },
     articleLanding: {
@@ -2942,6 +3031,48 @@ export const translations = {
       metadata: "Metadata",
     },
     sync: {
+      mode: {
+        title: "Sync mode",
+        description: "Choose how to manage AI-optimized content",
+        smart: {
+          title: "Smart (Recommended)",
+          description: "Protects AI-optimized content. ONLY replaces non-optimized content. Ideal for preserving your SEO optimizations while retrieving new data.",
+        },
+        full: {
+          title: "Full",
+          description: "Overwrites ALL content with Shopify data. ⚠️ You will lose all AI optimizations (titles, descriptions, ALT texts). Only use if you want a complete reset.",
+        },
+      },
+      contentTypes: {
+        title: "Content types to sync",
+        products: "Products",
+        collections: "Collections",
+        pages: "Pages",
+        articles: "Articles",
+        images: "Images",
+      },
+      schedule: {
+        title: "Sync schedule",
+        hour: "Sync time (24h)",
+        day: "Day of week",
+        dayOfMonth: "Day of month (1-31)",
+        timezone: "Timezone",
+        nextSync: "Next sync",
+        planned: "Scheduled for",
+      },
+      daysOfWeek: {
+        monday: "Monday",
+        tuesday: "Tuesday",
+        wednesday: "Wednesday",
+        thursday: "Thursday",
+        friday: "Friday",
+        saturday: "Saturday",
+        sunday: "Sunday",
+      },
+      history: {
+        title: "Sync history",
+        noRecent: "No recent synchronization",
+      },
       progress: {
         title: "Synchronization in Progress...",
         importing: "Importing {{type}}",
@@ -2966,6 +3097,41 @@ export const translations = {
       noRecentSync: "No recent synchronization",
       selectContentType: "Select at least one content type",
     },
+    store: {
+      metadata: {
+        title: "Store Metadata",
+        description: "This information improves AI SEO generation by providing precise context about your business.",
+        fields: {
+          label: "Business Name",
+          category: "Business Sector",
+          phone: "Phone",
+          address: "Address",
+          hours: "Business Hours",
+          description: "Store description",
+        },
+        placeholders: {
+          label: "e.g.: Sweet Deco",
+          category: "e.g.: Interior Design",
+          phone: "e.g.: +33 1 23 45 67 89",
+          hours: "e.g.: Mon-Fri 9am-6pm, Sat 10am-5pm",
+          address: "e.g.: 123 rue de Rivoli, 75001 Paris, France",
+          description: "Briefly describe your business and positioning...",
+        },
+        hints: {
+          label: "Publicly displayed name (used for SEO and AI)",
+          category: "Helps AI target the right SEO keywords for your sector",
+          description: "Short description of your store and values (used by AI to personalize content)",
+        },
+        button: "Save Metadata",
+        toasts: {
+          saved: "Metadata saved successfully",
+          errorLoading: "Error loading metadata",
+          errorSaving: "Error saving",
+          noStore: "No active store found",
+          noStoreConnected: "No store connected. Connect a store to manage its metadata.",
+        },
+      },
+    },
     collections: {
       selectToImport: "Select the collections you want to import",
       noCollectionFound: "No collection found",
@@ -2977,10 +3143,6 @@ export const translations = {
       enterStoreName: "Please enter your store name",
       chooseMethod: "Choose your connection method",
       chooseConnectionMethod: "Choose your connection method:",
-    },
-    metadata: {
-      noActiveStore: "No active store found",
-      noStoreConnected: "No store connected. Connect a store to manage its metadata.",
     },
     connect: "Connect Store",
     disconnect: "Disconnect",
@@ -3023,6 +3185,19 @@ export const translations = {
       later: "Maybe Later",
       enabled: "Browser notifications enabled!",
       denied: "Notifications blocked. You can enable them in your browser settings.",
+    },
+  },
+
+  subscription: {
+    invalidTrial: {
+      title: "Action Required: Payment Validation",
+      description: "Your subscription is in an invalid state. This can happen if the initial payment was not completed correctly or if the Stripe webhook was not received. To continue using all features, you must finalize your subscription setup by clicking the button below. This will redirect you to a secure payment page to validate your subscription.",
+      button: "Validate My Payment",
+      processing: "Processing...",
+      toasts: {
+        redirecting: "Redirecting to payment...",
+        error: "Error generating payment session",
+      },
     },
   },
 

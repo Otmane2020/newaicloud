@@ -649,7 +649,11 @@ export const translations = {
     save: "Save"
   },
   common: {
+    error: "Erreur",
+    success: "Succès",
     loading: "Chargement...",
+    saving: "Enregistrement...",
+    saved: "Enregistré",
     save: "Enregistrer",
     cancel: "Annuler",
     delete: "Supprimer",
@@ -689,6 +693,12 @@ export const translations = {
     disconnect: "Déconnecter",
     publish: "Publier",
     preview: "Prévisualiser",
+    validate: "Valider",
+    create: "Créer",
+    add: "Ajouter",
+    export: "Exporter",
+    import: "Importer",
+    impossible: "Impossible",
   },
   
   navigation: {
@@ -1655,6 +1665,85 @@ export const translations = {
       success: {
         generated: "SEO généré avec succès",
         synced: "SEO synchronisé avec succès sur Shopify",
+      },
+      altGuide: {
+        title: "Guide : Modifier les ALT Texts Homepage",
+        description: "Instructions complètes pour mettre à jour manuellement les textes ALT de votre page d'accueil Shopify",
+        sections: {
+          limitation: {
+            title: "⚠️ Pourquoi cette limitation ?",
+            description: "Les images de votre homepage sont intégrées dans votre thème Shopify (banners, sliders, sections).",
+            note: "💡 L'API Shopify ne permet pas de modifier ces images via une app. Vous devez les modifier manuellement dans le Theme Editor.",
+          },
+          export: {
+            title: "1️⃣ Exporter les ALT texts générés",
+            step1: "Cliquez sur le bouton \"Export Homepage ALT\" ci-dessus",
+            step2: "Le fichier téléchargé contient :",
+            listItems: [
+              "L'URL de chaque image",
+              "Le texte ALT actuel",
+              "Le nouveau texte ALT optimisé par l'IA",
+            ],
+          },
+          modify: {
+            title: "2️⃣ Modifier dans Shopify Theme Editor",
+            step1: {
+              title: "Accéder au Theme Editor",
+              instructions: [
+                "Allez dans Shopify Admin → Boutique en ligne → Thèmes",
+                "Cliquez sur \"Personnaliser\" sur votre thème actif",
+              ],
+            },
+            step2: {
+              title: "Localiser vos images",
+              instructions: [
+                "Parcourez les sections de votre homepage (Hero, Banner, Gallery, etc.)",
+                "Identifiez les images listées dans le fichier CSV",
+              ],
+            },
+            step3: {
+              title: "Mettre à jour les ALT texts",
+              instructions: [
+                "Pour chaque image, cliquez dessus dans l'éditeur",
+                "Cherchez le champ \"Texte alternatif\" ou \"ALT text\"",
+                "Remplacez par le nouveau texte ALT du fichier CSV",
+                "Répétez pour toutes les images",
+              ],
+            },
+            step4: {
+              title: "Sauvegarder",
+              instructions: [
+                "Cliquez sur \"Enregistrer\" en haut à droite du Theme Editor",
+              ],
+            },
+          },
+          bestPractices: {
+            title: "✅ Bonnes Pratiques SEO",
+            doTitle: "✅ À FAIRE :",
+            doList: [
+              "Utilisez les ALT texts générés par l'IA (optimisés pour le SEO)",
+              "Soyez descriptif et précis (10-15 mots idéalement)",
+              "Incluez des mots-clés pertinents naturellement",
+              "Décrivez ce que montre l'image",
+            ],
+            dontTitle: "❌ À ÉVITER :",
+            dontList: [
+              "ALT texts génériques (\"image\", \"photo\", \"banner\")",
+              "Bourrage de mots-clés",
+              "Textes trop longs (>125 caractères)",
+              "Laisser les ALT texts vides",
+            ],
+          },
+          rescan: {
+            title: "3️⃣ Re-scanner après modification",
+            description: "Une fois vos modifications terminées dans Shopify :",
+            instructions: [
+              "Retournez sur cette page",
+              "Cliquez sur \"Re-scan Homepage\"",
+              "Vérifiez que votre score SEO s'améliore",
+            ],
+          },
+        },
       },
     },
     articleLanding: {
@@ -3035,6 +3124,48 @@ export const translations = {
       metadata: "Métadonnées",
     },
     sync: {
+      mode: {
+        title: "Mode de synchronisation",
+        description: "Choisissez comment gérer le contenu optimisé par l'IA",
+        smart: {
+          title: "Smart (Recommandé)",
+          description: "Protège le contenu optimisé par l'IA. Ne remplace QUE le contenu non-optimisé. Idéal pour préserver vos optimisations SEO tout en récupérant les nouvelles données.",
+        },
+        full: {
+          title: "Full",
+          description: "Écrase TOUT le contenu avec les données Shopify. ⚠️ Vous perdrez toutes les optimisations IA (titres, descriptions, ALT texts). Utilisez uniquement si vous voulez un reset complet.",
+        },
+      },
+      contentTypes: {
+        title: "Types de contenu à synchroniser",
+        products: "Produits",
+        collections: "Collections",
+        pages: "Pages",
+        articles: "Articles",
+        images: "Images",
+      },
+      schedule: {
+        title: "Horaire de synchronisation",
+        hour: "Heure de synchronisation (24h)",
+        day: "Jour de la semaine",
+        dayOfMonth: "Jour du mois (1-31)",
+        timezone: "Fuseau horaire",
+        nextSync: "Prochaine synchronisation",
+        planned: "Planifiée pour",
+      },
+      daysOfWeek: {
+        monday: "Lundi",
+        tuesday: "Mardi",
+        wednesday: "Mercredi",
+        thursday: "Jeudi",
+        friday: "Vendredi",
+        saturday: "Samedi",
+        sunday: "Dimanche",
+      },
+      history: {
+        title: "Historique de synchronisation",
+        noRecent: "Aucune synchronisation récente",
+      },
       progress: {
         title: "Synchronisation en cours...",
         importing: "Import de {{type}}",
@@ -3058,6 +3189,41 @@ export const translations = {
       chooseManagement: "Choisissez comment gérer le contenu optimisé par IA",
       noRecentSync: "Aucune synchronisation récente",
       selectContentType: "Sélectionnez au moins un type de contenu",
+    },
+    store: {
+      metadata: {
+        title: "Métadonnées de la Boutique",
+        description: "Ces informations améliorent la génération SEO par l'IA en fournissant un contexte précis sur votre activité.",
+        fields: {
+          label: "Nom Commercial",
+          category: "Secteur d'Activité",
+          phone: "Téléphone",
+          address: "Adresse",
+          hours: "Horaires d'Ouverture",
+          description: "Description de la boutique",
+        },
+        placeholders: {
+          label: "ex: Sweet Deco",
+          category: "ex: Décoration d'intérieur",
+          phone: "ex: +33 1 23 45 67 89",
+          hours: "ex: Lun-Ven 9h-18h, Sam 10h-17h",
+          address: "ex: 123 rue de Rivoli, 75001 Paris, France",
+          description: "Décrivez brièvement votre activité et votre positionnement...",
+        },
+        hints: {
+          label: "Nom affiché publiquement (utilisé pour le SEO et l'IA)",
+          category: "Aide l'IA à cibler les bons mots-clés SEO pour votre secteur",
+          description: "Description courte de votre boutique et de ses valeurs (utilisée par l'IA pour personnaliser les contenus)",
+        },
+        button: "Enregistrer les Métadonnées",
+        toasts: {
+          saved: "Métadonnées enregistrées avec succès",
+          errorLoading: "Erreur lors du chargement des métadonnées",
+          errorSaving: "Erreur lors de l'enregistrement",
+          noStore: "Aucune boutique active trouvée",
+          noStoreConnected: "Aucune boutique connectée. Connectez une boutique pour gérer ses métadonnées.",
+        },
+      },
     },
     collections: {
       selectToImport: "Sélectionnez les collections que vous souhaitez importer",
@@ -3116,6 +3282,19 @@ export const translations = {
       later: "Plus Tard",
       enabled: "Notifications du navigateur activées !",
       denied: "Notifications bloquées. Vous pouvez les activer dans les paramètres de votre navigateur.",
+    },
+  },
+
+  subscription: {
+    invalidTrial: {
+      title: "Action Requise : Validation de Paiement",
+      description: "Votre abonnement est dans un état invalide. Ceci peut arriver si le paiement initial n'a pas été finalisé correctement ou si le webhook Stripe n'a pas été reçu. Pour continuer à utiliser toutes les fonctionnalités, vous devez finaliser la configuration de votre abonnement en cliquant sur le bouton ci-dessous. Cela vous redirigera vers une page de paiement sécurisée pour valider votre souscription.",
+      button: "Valider Mon Paiement",
+      processing: "Traitement en cours...",
+      toasts: {
+        redirecting: "Redirection vers le paiement...",
+        error: "Erreur lors de la génération de la session de paiement",
+      },
     },
   },
 
