@@ -205,22 +205,32 @@ export function SubscriptionPlans() {
 
     try {
       if (pendingPlanChange.hasActiveSubscription) {
-        // Update existing subscription
-        const { data, error } = await supabase.functions.invoke('update-subscription', {
+        // Create upgrade invoice and get payment URL
+        const { data, error } = await supabase.functions.invoke('create-upgrade-invoice', {
           body: {
-            new_plan_id: pendingPlanChange.planId,
-            billing_period: billingPeriod
+            new_price_id: pendingPlanChange.priceId
           }
         });
         
         if (error) throw error;
         
-        toast({
-          title: t.account.subscription.activationSuccess,
-          description: 'Votre plan a été mis à jour avec succès!',
-        });
-        
-        setTimeout(() => window.location.reload(), 1500);
+        if (data.payment_required && data.payment_url) {
+          // Open Stripe payment page in new tab
+          window.open(data.payment_url, '_blank');
+          
+          toast({
+            title: "Redirection vers le paiement",
+            description: `Montant à payer: ${data.amount_due.toFixed(2)} ${data.currency.toUpperCase()}`,
+          });
+        } else {
+          // No payment required (downgrade or $0 proration)
+          toast({
+            title: t.account.subscription.activationSuccess,
+            description: 'Votre plan a été mis à jour avec succès!',
+          });
+          
+          setTimeout(() => window.location.reload(), 1500);
+        }
       }
     } catch (error: any) {
       console.error('Error confirming plan change:', error);
