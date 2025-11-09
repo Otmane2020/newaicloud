@@ -6,6 +6,7 @@ import { ShopifyConnectionWizard } from "./ShopifyConnectionWizard";
 import { SkeletonLoader } from "./SkeletonLoader";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ShopifyConnectionsList = lazy(() => import("@/components/dashboard/ShopifyConnectionsList"));
 
@@ -13,12 +14,26 @@ export function ShopifyIntegrationTabs() {
   const [showDialog, setShowDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [prefilledShop, setPrefilledShop] = useState<string | null>(null);
 
-  // Handle OAuth callback messages
+  // Handle OAuth callback messages and shop pre-fill
   useEffect(() => {
     const success = searchParams.get('success');
     const error = searchParams.get('error');
     const shop = searchParams.get('shop');
+
+    // Si un nom de boutique est passé en paramètre, le pré-remplir et ouvrir le dialog
+    if (shop && !success && !error) {
+      setPrefilledShop(shop);
+      setShowDialog(true);
+      toast.success("Bienvenue !", {
+        description: `Connectons votre boutique ${shop}`,
+      });
+      // Nettoyer le paramètre shop de l'URL
+      searchParams.delete("shop");
+      setSearchParams(searchParams);
+      return;
+    }
 
     if (success === 'true') {
       toast.success(`Store connected successfully! 🎉`, {
@@ -98,13 +113,37 @@ export function ShopifyIntegrationTabs() {
             </div>
           </div>
         </CardHeader>
+        <CardContent className="space-y-4">
+          {prefilledShop && (
+            <Alert>
+              <ShoppingBag className="h-4 w-4" />
+              <AlertDescription>
+                Prêt à connecter votre boutique <strong>{prefilledShop}</strong>. Cliquez sur "Connecter la boutique" dans le formulaire.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
       </Card>
 
       <Suspense fallback={<SkeletonLoader />}>
         <ShopifyConnectionsList key={refreshKey} />
       </Suspense>
 
-      <ShopifyConnectionWizard open={showDialog} onOpenChange={setShowDialog} />
+      <ShopifyConnectionWizard 
+        open={showDialog} 
+        onOpenChange={(open) => {
+          setShowDialog(open);
+          if (!open) {
+            setPrefilledShop(null);
+          }
+        }}
+        onSuccess={() => {
+          setShowDialog(false);
+          setPrefilledShop(null);
+          setRefreshKey(prev => prev + 1);
+        }}
+        initialShopDomain={prefilledShop || undefined}
+      />
     </div>
   );
 }

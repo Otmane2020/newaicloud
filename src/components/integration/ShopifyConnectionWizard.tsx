@@ -15,16 +15,18 @@ import { useTranslation } from "@/lib/language";
 interface ShopifyConnectionWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+  initialShopDomain?: string;
 }
 
-export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectionWizardProps) {
+export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess, initialShopDomain }: ShopifyConnectionWizardProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const { limits, refresh: refreshLimits } = useUsageLimits();
   const { t } = useTranslation();
 
   // Step 1 data
   const [commercialName, setCommercialName] = useState("");
-  const [shopifyCode, setShopifyCode] = useState("");
+  const [shopifyCode, setShopifyCode] = useState(initialShopDomain?.replace('.myshopify.com', '') || "");
 
   // Step 2 data (Manual)
   const [apiKey, setApiKey] = useState("");
@@ -189,12 +191,15 @@ export function ShopifyConnectionWizard({ open, onOpenChange }: ShopifyConnectio
       toast.success(t.wizards.shopify.storeConnectedSuccess);
       await refreshLimits();
 
-      onOpenChange(false);
-      resetForm();
-
-      localStorage.setItem("shopify_just_connected", "true");
-      localStorage.setItem("shopify_store_name", commercialName.trim());
-      setTimeout(() => window.location.reload(), 1000);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        onOpenChange(false);
+        resetForm();
+        localStorage.setItem("shopify_just_connected", "true");
+        localStorage.setItem("shopify_store_name", commercialName.trim());
+        setTimeout(() => window.location.reload(), 1000);
+      }
     } catch (error: any) {
       console.error("Manual connection error:", error);
       toast.error(error.message || t.wizards.shopify.manualConnectionError);

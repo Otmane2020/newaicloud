@@ -50,6 +50,7 @@ import SearchProducts from "./pages/SearchProducts";
 import ChatHistory from "./pages/ChatHistory";
 import ProductDetail from "./pages/ProductDetail";
 import ShopifyInstall from "./pages/ShopifyInstall";
+import ShopifyInstallGuide from "./pages/ShopifyInstallGuide";
 import ShopifySuccess from "./pages/ShopifySuccess";
 import NotFound from "./pages/NotFound";
 import ChatSettings from "./pages/ChatSettings";
@@ -92,8 +93,9 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
-            <Route path="/shopify/install" element={<ShopifyInstall />} />
-            <Route path="/shopify/success" element={<ShopifySuccess />} />
+          <Route path="/shopify/install" element={<ShopifyInstall />} />
+          <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
+          <Route path="/shopify/success" element={<ShopifySuccess />} />
             <Route
               path="/onboarding"
               element={
