@@ -32,6 +32,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/OptimizationConfigDialog";
 import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
+import { LandingTemplateGallery } from "@/components/seo/LandingTemplateGallery";
 import { AiBackgroundConfigDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundConfigDialog";
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
 // Removed useBackgroundRemoval - now using generate-white-background edge function
@@ -116,6 +117,7 @@ export default function ProductTitleDescription() {
   const [selectedLandingProduct, setSelectedLandingProduct] = useState<Product | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [optimizationConfig, setOptimizationConfig] = useState<OptimizationConfig | null>(null);
+  const [showLandingTemplateGallery, setShowLandingTemplateGallery] = useState(false);
   const [showLandingConfigDialog, setShowLandingConfigDialog] = useState(false);
   const [landingConfig, setLandingConfig] = useState<LandingConfig | null>(null);
   const [galleryImages, setGalleryImages] = useState<Map<string, ProductImage[]>>(new Map());
@@ -360,6 +362,12 @@ export default function ProductTitleDescription() {
   const handleConfigConfirm = (config: OptimizationConfig) => {
     setOptimizationConfig(config);
     setTimeout(() => handleOptimizeSelected(config), 100);
+  };
+
+  const handleTemplateSelect = (config: LandingConfig) => {
+    setLandingConfig(config);
+    setShowLandingTemplateGallery(false);
+    setTimeout(() => setShowLandingDialog(true), 100);
   };
 
   const handleLandingConfigConfirm = (config: LandingConfig) => {
@@ -1193,7 +1201,7 @@ export default function ProductTitleDescription() {
                                   return;
                                 }
                                 setSelectedLandingProduct(product);
-                                setShowLandingConfigDialog(true);
+                                setShowLandingTemplateGallery(true);
                               }}
                               className="hover:bg-primary/10"
                             >
@@ -1464,6 +1472,18 @@ export default function ProductTitleDescription() {
         onCancel={generating ? handleCancelGeneration : undefined}
         onSync={handleSyncToShopify}
         syncLoading={syncingToShopify}
+      />
+
+      {/* Landing Template Gallery */}
+      <LandingTemplateGallery
+        open={showLandingTemplateGallery}
+        onOpenChange={setShowLandingTemplateGallery}
+        onSelectTemplate={handleTemplateSelect}
+        onCustomize={() => {
+          setShowLandingTemplateGallery(false);
+          setTimeout(() => setShowLandingConfigDialog(true), 100);
+        }}
+        productTitle={selectedLandingProduct?.title}
       />
 
       {/* Landing Config Dialog */}
