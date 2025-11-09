@@ -107,10 +107,10 @@ export default function RegenerateLanding({
       setProgressMessage(t.landingGeneration.analyzing);
       setProgress(25);
 
-      const { data, error } = await supabase.functions.invoke("analyze-product-image", {
+      const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
         body: {
           imageUrl: imageUrl,
-          maxTokens: 500, // Limiter la longueur de la description
+          productContext: `${product.title} ${config.vendorSource === 'shopify' ? '' : ''}`,
         },
       });
 
@@ -120,7 +120,7 @@ export default function RegenerateLanding({
       }
 
       console.log("[Vision] Image analysis completed");
-      return data?.analysis || "";
+      return data?.attributes ? JSON.stringify(data.attributes) : "";
     } catch (err) {
       console.error("[Vision] Image analysis error:", err);
       return "";

@@ -101,29 +101,48 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
 
     // Fetch images + variants in parallel
+    console.log("📦 Fetching product data...");
     const [imagesRes, variantsRes] = await Promise.all([
       supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
       supabaseAdmin.from("product_variants").select("title, image_url").eq("product_id", product_id),
     ]);
     const images = imagesRes.data ?? [];
     const variants = variantsRes.data ?? [];
+    console.log(`✅ Product data fetched: ${images.length} images, ${variants.length} variants`);
 
-    // Vision AI
-    const visionData = imageUrl
-      ? await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-image-with-vision`, {
-          method: "POST",
-          headers: { Authorization: authHeader ?? "", "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageUrl,
-            productContext: `${productTitle} ${vendor || ""}`,
-            wantUseCases: true,
-            wantPalette: true,
-          }),
-        })
-          .then((r) => (r.ok ? r.json() : null))
-          .catch(() => null)
-      : null;
-    const visualAnalysis = buildVisionSummary(visionData?.attributes, language);
+    // Vision AI with timeout (15s) - Optional, won't block if it fails
+    let visualAnalysis = "";
+    if (imageUrl) {
+      try {
+        console.log("🔍 Starting Vision AI analysis...");
+        const visionController = new AbortController();
+        const visionTimeout = setTimeout(() => visionController.abort(), 15000);
+        
+        const { data: visionData, error: visionError } = await supabaseAdmin.functions.invoke(
+          "analyze-image-with-vision",
+          {
+            body: {
+              imageUrl,
+              productContext: `${productTitle} ${vendor || ""}`,
+            },
+            signal: visionController.signal,
+          }
+        );
+        
+        clearTimeout(visionTimeout);
+        
+        if (visionError) {
+          console.log("⚠️ Vision AI failed:", visionError.message);
+        } else if (visionData?.attributes) {
+          visualAnalysis = buildVisionSummary(visionData.attributes, language);
+          console.log("✅ Vision AI analysis completed");
+        }
+      } catch (err) {
+        console.log("⚠️ Vision AI timeout or error (continuing without it):", err.message);
+      }
+    } else {
+      console.log("⏭️ No image URL provided, skipping Vision AI");
+    }
 
     // --- Prompt bilingual ---
     const imgs = images.length
@@ -198,28 +217,41 @@ Contraintes :
 - Retourne uniquement le HTML
 `;
 
-    // --- AI call ---
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              language === "en"
-                ? "You generate modern responsive Shopify landing pages in Tailwind HTML."
-                : "Tu génères des landing pages Shopify modernes et responsives en HTML Tailwind.",
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 3400,
-      }),
-    });
+    // --- AI call with timeout (60s) ---
+    console.log("🤖 Starting AI generation...");
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 60000);
+    
+    let aiResponse;
+    try {
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                language === "en"
+                  ? "You generate modern responsive Shopify landing pages in Tailwind HTML."
+                  : "Tu génères des landing pages Shopify modernes et responsives en HTML Tailwind.",
+            },
+            { role: "user", content: prompt },
+          ],
+          max_tokens: 2500,
+          temperature: 0.7,
+        }),
+        signal: aiController.signal,
+      });
+    } finally {
+      clearTimeout(aiTimeout);
+    }
+    
+    console.log("✅ AI generation completed");
 
     if (!aiResponse.ok) {
       const text = await aiResponse.text();
@@ -240,12 +272,14 @@ Contraintes :
       );
 
     // Cache
+    console.log("💾 Caching generated HTML...");
     await supabaseAdmin.from("ai_cache").upsert({
       title: productTitle,
       html,
       created_at: new Date().toISOString(),
     });
 
+    console.log("✅ Landing page generation successful!");
     return new Response(JSON.stringify({ html }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
