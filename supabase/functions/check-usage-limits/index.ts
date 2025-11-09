@@ -34,8 +34,8 @@ function detectLanguage(req: Request): 'fr' | 'en' {
 // Retry utility for database queries with exponential backoff
 async function retryWithBackoff<T>(
   operation: () => Promise<T>,
-  maxRetries = 3,
-  baseDelay = 1000
+  maxRetries = 5,
+  baseDelay = 2000
 ): Promise<T> {
   let lastError: Error | undefined;
   
@@ -50,9 +50,9 @@ async function retryWithBackoff<T>(
         throw lastError;
       }
       
-      // Calculate delay with exponential backoff
-      const delay = baseDelay * Math.pow(2, attempt);
-      console.log(`[LIMITS] Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms delay...`);
+      // Calculate delay with exponential backoff + jitter
+      const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+      console.log(`[LIMITS] Retry attempt ${attempt + 1}/${maxRetries} after ${Math.round(delay)}ms delay...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -67,10 +67,22 @@ serve(async (req) => {
 
   try {
     const lang = detectLanguage(req);
+    
+    // Create Supabase client with extended timeout settings
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
+      { 
+        auth: { persistSession: false },
+        db: {
+          schema: 'public',
+        },
+        global: {
+          headers: {
+            'x-connection-timeout': '30000', // 30 second timeout
+          }
+        }
+      }
     );
 
     const authHeader = req.headers.get('Authorization');
@@ -80,10 +92,28 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
-    if (userError || !user) {
-      console.error('[LIMITS] Auth error:', userError);
+    // Get user with retry logic
+    let user;
+    try {
+      const userResult = await retryWithBackoff(async () => {
+        console.log('[LIMITS] Fetching user from auth...');
+        const result = await supabaseClient.auth.getUser(token);
+        
+        if (result.error) {
+          throw new Error(`Auth failed: ${result.error.message}`);
+        }
+        
+        if (!result.data?.user) {
+          throw new Error('No user data returned');
+        }
+        
+        return result.data.user;
+      }, 5, 2000); // 5 retries, 2 second base delay
+      
+      user = userResult;
+    } catch (userError) {
+      console.error('[LIMITS] Auth error after retries:', userError);
       throw new Error(TRANSLATIONS[lang].unauthorized);
     }
 
