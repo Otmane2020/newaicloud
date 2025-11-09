@@ -335,15 +335,18 @@ export function calculateDetailedSeoScore(
     weightedScore = Math.min(95, weightedScore + 15);
   }
 
+  // IMPORTANT: Produit importé non optimisé ne peut jamais dépasser 75%
+  const maxScore = (optimizationCount && optimizationCount > 0) ? 95 : 75;
+
   return {
-    score: Math.min(95, Math.max(0, weightedScore)), // Cap at 95 instead of 100
+    score: Math.min(maxScore, Math.max(0, weightedScore)),
     breakdown: {
       presence: Math.round((titleScore.breakdown.presence + descScore.breakdown.presence) / 2),
       length: Math.round((titleScore.breakdown.length + descScore.breakdown.length) / 2),
       keywords: Math.round((titleScore.breakdown.keywords + descScore.breakdown.keywords) / 2),
       readability: Math.round((titleScore.breakdown.readability + descScore.breakdown.readability) / 2),
     },
-    maxScore: 95
+    maxScore: maxScore
   };
 }
 
