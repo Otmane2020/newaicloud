@@ -58,7 +58,7 @@ serve(async (req) => {
       console.log('[sync-landing-to-shopify] Trying to fetch connection by store_id:', product.store_id);
       const { data, error: connectionError } = await supabase
         .from('shopify_connections')
-        .select('id, store_url, shop_domain, encrypted_access_token')
+        .select('id, store_url, encrypted_access_token')
         .eq('id', product.store_id)
         .maybeSingle();
 
@@ -89,7 +89,7 @@ serve(async (req) => {
       console.log('[sync-landing-to-shopify] Fetching user\'s most recent Shopify connection');
       const { data, error: fallbackError } = await supabase
         .from('shopify_connections')
-        .select('id, store_url, shop_domain, encrypted_access_token')
+        .select('id, store_url, encrypted_access_token')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -123,7 +123,7 @@ serve(async (req) => {
     }
 
     const accessToken = decryptData.token;
-    const storeUrl = (connection.store_url || connection.shop_domain || '').replace(/\/$/, '').replace(/^https?:\/\//, '');
+    const storeUrl = (connection.store_url || '').replace(/\/$/, '').replace(/^https?:\/\//, '');
     const fullStoreUrl = storeUrl.startsWith('http') ? storeUrl : `https://${storeUrl}`;
     
     console.log('[sync-landing-to-shopify] Using store URL:', fullStoreUrl);
