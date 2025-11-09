@@ -13,6 +13,16 @@ import { Sparkles, Check, Settings2 } from "lucide-react";
 import { LandingConfig } from "./LandingConfigDialog";
 import { useTranslation } from "@/lib/language";
 
+// Import template preview images
+import modernMinimalPreview from "@/assets/templates/modern-minimal.jpg";
+import professionalBluePreview from "@/assets/templates/professional-blue.jpg";
+import luxuryGoldPreview from "@/assets/templates/luxury-gold.jpg";
+import scandinavianFreshPreview from "@/assets/templates/scandinavian-fresh.jpg";
+import vibrantBoldPreview from "@/assets/templates/vibrant-bold.jpg";
+import earthyNaturalPreview from "@/assets/templates/earthy-natural.jpg";
+import techModernPreview from "@/assets/templates/tech-modern.jpg";
+import elegantNeutralPreview from "@/assets/templates/elegant-neutral.jpg";
+
 interface Template {
   id: string;
   name: string;
@@ -35,13 +45,13 @@ const TEMPLATES: Template[] = [
     id: 'modern-minimal',
     name: 'Modern Minimal',
     description: 'Clean and elegant design with minimalist aesthetics',
-    preview: '✨',
+    preview: modernMinimalPreview,
     category: 'Modern',
     config: {
       style: 'minimaliste',
       layout: '1 colonne',
       colorScheme: '#000000',
-      contentLength: 'courte (400 mots)',
+      contentLength: 'short',
       vendorSource: 'extract',
       customHighlights: '',
     }
@@ -50,13 +60,13 @@ const TEMPLATES: Template[] = [
     id: 'professional-blue',
     name: 'Professional Blue',
     description: 'Corporate style with professional blue tones',
-    preview: '💼',
+    preview: professionalBluePreview,
     category: 'Professional',
     config: {
       style: 'moderne',
       layout: '2 colonnes',
       colorScheme: '#0066CC',
-      contentLength: 'moyenne (800 mots)',
+      contentLength: 'medium',
       vendorSource: 'shopify',
       customHighlights: '',
     }
@@ -65,13 +75,13 @@ const TEMPLATES: Template[] = [
     id: 'luxury-gold',
     name: 'Luxury Gold',
     description: 'Premium design with elegant gold accents',
-    preview: '👑',
+    preview: luxuryGoldPreview,
     category: 'Luxury',
     config: {
       style: 'premium',
       layout: 'hero à gauche',
       colorScheme: '#DAA520',
-      contentLength: 'longue (1500 mots)',
+      contentLength: 'long',
       vendorSource: 'generate',
       customHighlights: 'Premium quality materials\nExclusive design\nHandcrafted with care',
     }
@@ -80,13 +90,13 @@ const TEMPLATES: Template[] = [
     id: 'scandinavian-fresh',
     name: 'Scandinavian Fresh',
     description: 'Nordic-inspired design with natural green tones',
-    preview: '🌲',
+    preview: scandinavianFreshPreview,
     category: 'Natural',
     config: {
       style: 'scandinave',
       layout: '2 colonnes',
       colorScheme: '#388E3C',
-      contentLength: 'moyenne (800 mots)',
+      contentLength: 'medium',
       vendorSource: 'extract',
       customHighlights: 'Eco-friendly materials\nSustainable production\nMinimal environmental impact',
     }
@@ -95,13 +105,13 @@ const TEMPLATES: Template[] = [
     id: 'vibrant-colorful',
     name: 'Vibrant & Bold',
     description: 'Eye-catching design with energetic colors',
-    preview: '🎨',
+    preview: vibrantBoldPreview,
     category: 'Creative',
     config: {
       style: 'coloré',
       layout: 'hero à droite',
       colorScheme: '#F44336',
-      contentLength: 'courte (400 mots)',
+      contentLength: 'short',
       vendorSource: 'extract',
       customHighlights: '',
     }
@@ -110,13 +120,13 @@ const TEMPLATES: Template[] = [
     id: 'earthy-natural',
     name: 'Earthy Natural',
     description: 'Warm and welcoming with natural brown tones',
-    preview: '🌾',
+    preview: earthyNaturalPreview,
     category: 'Natural',
     config: {
       style: 'neutre',
       layout: '2 colonnes',
       colorScheme: '#795548',
-      contentLength: 'moyenne (800 mots)',
+      contentLength: 'medium',
       vendorSource: 'shopify',
       customHighlights: 'Natural materials\nArtisan crafted\nTimeless design',
     }
@@ -125,13 +135,13 @@ const TEMPLATES: Template[] = [
     id: 'tech-modern',
     name: 'Tech Modern',
     description: 'Sleek and futuristic for tech products',
-    preview: '⚡',
+    preview: techModernPreview,
     category: 'Tech',
     config: {
       style: 'moderne',
       layout: 'hero à gauche',
       colorScheme: '#3399FF',
-      contentLength: 'longue (1500 mots)',
+      contentLength: 'long',
       vendorSource: 'generate',
       customHighlights: 'Latest technology\nHigh performance\nInnovative features',
     }
@@ -140,13 +150,13 @@ const TEMPLATES: Template[] = [
     id: 'elegant-neutral',
     name: 'Elegant Neutral',
     description: 'Sophisticated and versatile neutral palette',
-    preview: '⬜',
+    preview: elegantNeutralPreview,
     category: 'Timeless',
     config: {
       style: 'neutre',
       layout: '1 colonne',
       colorScheme: '#666666',
-      contentLength: 'courte (400 mots)',
+      contentLength: 'short',
       vendorSource: 'extract',
       customHighlights: '',
     }
@@ -234,14 +244,14 @@ export function LandingTemplateGallery({
                 onMouseEnter={() => setHoveredTemplate(template.id)}
                 onMouseLeave={() => setHoveredTemplate(null)}
               >
-                {/* Preview icon */}
-                <div 
-                  className="h-32 flex items-center justify-center text-6xl transition-transform duration-300 group-hover:scale-110"
-                  style={{
-                    background: `linear-gradient(135deg, ${template.config.colorScheme}20, ${template.config.colorScheme}10)`
-                  }}
-                >
-                  {template.preview}
+                {/* Preview image */}
+                <div className="relative h-48 overflow-hidden bg-muted">
+                  <img 
+                    src={template.preview} 
+                    alt={template.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
 
                 {/* Content */}

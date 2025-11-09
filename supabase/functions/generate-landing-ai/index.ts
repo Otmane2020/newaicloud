@@ -93,7 +93,20 @@ serve(async (req) => {
     
     const body = await req.json();
 
-    const { productTitle, imageUrl, description, vendor, style, mainColor, layout, length, customHighlights } = body ?? {};
+    const { 
+      productTitle, 
+      imageUrl, 
+      allImages = [], 
+      description, 
+      vendor, 
+      variants = null,
+      style, 
+      mainColor, 
+      layout, 
+      length, 
+      customHighlights,
+      imageAnalysis 
+    } = body ?? {};
 
     if (!productTitle) {
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
@@ -115,44 +128,45 @@ serve(async (req) => {
           ? "équilibré"
           : "détaillé et approfondi";
 
-    // 🔍 VISION AI ANALYSIS
-    let visualAnalysis = "";
+    // 🔍 Use provided image analysis or empty string
+    const visualAnalysis = imageAnalysis || "";
     
-    if (imageUrl && authHeader) {
-      console.log("[generate-landing-ai] 🔍 Analyzing image with Vision AI...");
+    // 🎨 Format variant information
+    let variantInfo = "";
+    if (variants && variants.length > 0) {
+      const variantList = variants.map((v: any, i: number) => {
+        let variantText = `${i + 1}. ${v.title}\n   - Prix: ${v.price || "N/A"}`;
+        if (v.compare_at_price) variantText += `\n   - Prix barré: ${v.compare_at_price}`;
+        if (v.image_url) variantText += `\n   - Image: ${v.image_url}`;
+        return variantText;
+      }).join("\n");
       
-      try {
-        const visionResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-image-with-vision`, {
-          method: "POST",
-          headers: {
-            Authorization: authHeader,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            imageUrl,
-            productContext: `${productTitle}${vendor ? ` by ${vendor}` : ""}`,
-          }),
-        });
+      variantInfo = `
+📦 VARIANTES DU PRODUIT (${variants.length} variantes disponibles) :
+${variantList}
 
-        if (visionResponse.ok) {
-          const visionData = await visionResponse.json();
-          if (visionData?.attributes) {
-            visualAnalysis = `
-ANALYSE VISUELLE DU PRODUIT (Vision AI) :
-- Couleur dominante: ${visionData.attributes.dominantColor || "non détectée"}
-- Style visuel: ${visionData.attributes.visualStyle || "non détecté"}
-- Matériaux visibles: ${visionData.attributes.materials?.join(", ") || "non détectés"}
-- Ambiance: ${visionData.attributes.mood || "non détectée"}
-- Qualité perçue: ${visionData.attributes.quality || "non détectée"}
-            `;
-            console.log("[generate-landing-ai] ✅ Vision analysis:", visionData.attributes);
-          }
-        } else {
-          console.warn("[generate-landing-ai] ⚠️ Vision AI call failed, continuing without visual analysis");
-        }
-      } catch (visionError) {
-        console.warn("[generate-landing-ai] ⚠️ Vision AI error, continuing without visual analysis:", visionError);
-      }
+⚠️ **CRITIQUE** : Tu DOIS mentionner ces variantes dans le contenu :
+- Créer une section "Options disponibles" avec les variantes
+- Afficher les images des variantes si disponibles
+- Mettre en avant la diversité des choix
+- Encourager l'utilisateur à explorer toutes les options
+`;
+    }
+
+    // 🖼️ Format gallery information
+    let galleryInfo = "";
+    if (allImages && allImages.length > 1) {
+      const imageList = allImages.map((url: string, i: number) => `${i + 1}. ${url}`).join("\n");
+      galleryInfo = `
+🖼️ GALERIE D'IMAGES (${allImages.length} images disponibles) :
+${imageList}
+
+⚠️ **CRITIQUE** : Tu DOIS utiliser ces images dans la landing page :
+- Créer une galerie photo élégante
+- Afficher plusieurs angles du produit
+- Utiliser un carousel ou une grille d'images
+- Permettre d'agrandir les images au clic
+`;
     }
 
     // 🎨 STYLE GUIDES
@@ -174,9 +188,12 @@ Tu es un designer UX/UI expert et copywriter e-commerce spécialisé dans les la
 📦 PRODUIT À METTRE EN VALEUR :
 - Titre : ${productTitle}
 ${vendor ? `- Marque : ${vendor}` : ""}
-${imageUrl ? `- Image produit : ${imageUrl}` : ""}
+${imageUrl ? `- Image principale : ${imageUrl}` : ""}
 ${description ? `- Description : ${description}` : ""}
 ${customHighlights ? `\n🌟 POINTS FORTS À METTRE EN AVANT (PRIORITAIRE) :\n${customHighlights.split('\n').map((h: string) => `- ${h.trim()}`).filter((h: string) => h.length > 2).join('\n')}` : ""}
+
+${galleryInfo}
+${variantInfo}
 
 ${visualAnalysis ? `
 🔍 VISION AI - RÈGLE ABSOLUE :
@@ -217,15 +234,17 @@ ${visualAnalysis}
    - Titres courts et percutants
    - Descriptions de 20-30 mots${visualAnalysis ? "\n   - **Intégrer les insights Vision AI** dans les avantages (couleurs, matériaux, style)" : ""}
 
-3. CARACTÉRISTIQUES TECHNIQUES
+${galleryInfo ? "3. GALERIE D'IMAGES (OBLIGATOIRE si plusieurs images disponibles)\n   - Carousel ou grille responsive d'images\n   - Affichage de TOUTES les images disponibles\n   - Permettre d'agrandir les images\n   - Navigation fluide entre images\n" : ""}
+${variantInfo ? (galleryInfo ? "4" : "3") + ". VARIANTES PRODUIT (OBLIGATOIRE si variantes disponibles)\n   - Section dédiée aux options/variantes\n   - Affichage de TOUTES les variantes avec images\n   - Prix clairement visibles\n   - Boutons de sélection interactifs (visuellement)\n" : ""}
+${galleryInfo || variantInfo ? (galleryInfo && variantInfo ? "5" : "4") : "3"}. CARACTÉRISTIQUES TECHNIQUES
    - Liste structurée avec badges/pills
    - Informations concrètes${visualAnalysis ? " (utilise les insights Vision AI)" : ""}
 
-4. CTA FINAL
+${galleryInfo || variantInfo ? (galleryInfo && variantInfo ? "6" : "5") : "4"}. CTA FINAL
    - Bouton principal avec couleur principale
    - Message d'urgence/garantie
 
-5. GARANTIES / LIVRAISON
+${galleryInfo || variantInfo ? (galleryInfo && variantInfo ? "7" : "6") : "5"}. GARANTIES / LIVRAISON
    - 3-4 éléments rassurants (livraison, retour, garantie, support)
 
 📱 RESPONSIVE MOBILE-FIRST (CRITIQUE - RÈGLE ABSOLUE) :

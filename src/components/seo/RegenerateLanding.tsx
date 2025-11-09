@@ -8,6 +8,20 @@ import { Progress } from "@/components/ui/progress";
 import { LandingConfig } from "./LandingConfigDialog";
 import { useTranslation } from "@/lib/language";
 
+interface ProductImage {
+  id: string;
+  image_url: string;
+  position?: number;
+}
+
+interface ProductVariant {
+  id: string;
+  title: string;
+  image_url?: string;
+  price?: string;
+  compare_at_price?: string;
+}
+
 interface RegenerateLandingProps {
   product: {
     id: string;
@@ -95,11 +109,38 @@ export default function RegenerateLanding({
   };
 
   /** ----------------------------
-   * 🖼️ Analyze Image with AI Vision
+   * 📸 Fetch All Product Images
    -----------------------------*/
-  const analyzeImageWithAI = async (imageUrl: string): Promise<string> => {
-    if (!imageUrl) {
-      console.log("[Vision] No image URL provided");
+  const fetchProductImages = async (): Promise<ProductImage[]> => {
+    try {
+      const { data, error } = await supabase
+        .from("product_images")
+        .select("id, src, position")
+        .eq("product_id", product.id)
+        .order("position", { ascending: true });
+
+      if (error) throw error;
+      return (data || []).map(img => ({ id: img.id, image_url: img.src, position: img.position }));
+    } catch (err) {
+      console.error("[Images] Failed to fetch product images:", err);
+      return [];
+    }
+  };
+
+  /** ----------------------------
+   * 🎨 Fetch Product Variants
+   -----------------------------*/
+  const fetchProductVariants = async (): Promise<ProductVariant[]> => {
+    // Temporairement désactivé - nécessite analyse de la structure DB
+    return [];
+  };
+
+  /** ----------------------------
+   * 🖼️ Analyze Multiple Images with AI Vision
+   -----------------------------*/
+  const analyzeImagesWithAI = async (imageUrls: string[]): Promise<string> => {
+    if (!imageUrls || imageUrls.length === 0) {
+      console.log("[Vision] No images to analyze");
       return "";
     }
 
@@ -107,20 +148,35 @@ export default function RegenerateLanding({
       setProgressMessage(t.landingGeneration.analyzing);
       setProgress(25);
 
-      const { data, error } = await supabase.functions.invoke("analyze-product-image", {
-        body: {
-          imageUrl: imageUrl,
-          maxTokens: 500, // Limiter la longueur de la description
-        },
-      });
+      // Analyze up to 5 images to avoid excessive API calls
+      const imagesToAnalyze = imageUrls.slice(0, 5);
+      const analyses: string[] = [];
 
-      if (error) {
-        console.error("[Vision] Image analysis failed:", error);
-        return "";
+      for (let i = 0; i < imagesToAnalyze.length; i++) {
+        try {
+          const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
+            body: {
+              imageUrl: imagesToAnalyze[i],
+              productContext: product.title,
+            },
+          });
+
+          if (!error && data?.attributes) {
+            analyses.push(`
+Image ${i + 1}:
+- Couleur: ${data.attributes.dominantColor || "N/A"}
+- Style: ${data.attributes.visualStyle || "N/A"}
+- Matériaux: ${data.attributes.materials?.join(", ") || "N/A"}
+- Ambiance: ${data.attributes.mood || "N/A"}
+          `);
+          }
+        } catch (err) {
+          console.warn(`[Vision] Failed to analyze image ${i + 1}:`, err);
+        }
       }
 
-      console.log("[Vision] Image analysis completed");
-      return data?.analysis || "";
+      console.log(`[Vision] Analyzed ${analyses.length} images`);
+      return analyses.length > 0 ? analyses.join("\n") : "";
     } catch (err) {
       console.error("[Vision] Image analysis error:", err);
       return "";
@@ -181,17 +237,32 @@ export default function RegenerateLanding({
       const resolvedVendor = await resolveVendor();
       console.log("[Landing] Resolved vendor:", resolvedVendor);
 
+      setProgress(15);
+
+      // ✅ ÉTAPE 2 : Récupérer toutes les images du produit
+      setProgressMessage("Récupération des images...");
+      const productImages = await fetchProductImages();
+      const allImageUrls = [
+        ...(product.image_url ? [product.image_url] : []),
+        ...productImages.map(img => img.image_url)
+      ].filter((url, index, arr) => arr.indexOf(url) === index); // Remove duplicates
+
+      console.log(`[Landing] Found ${allImageUrls.length} product images`);
       setProgress(20);
 
-      // ✅ ÉTAPE 2 : Analyser l'image avec vision IA
+      // ✅ ÉTAPE 3 : Récupérer les variantes du produit
+      setProgressMessage("Récupération des variantes...");
+      const variants = await fetchProductVariants();
+      console.log(`[Landing] Found ${variants.length} product variants`);
+      setProgress(22);
+
+      // ✅ ÉTAPE 4 : Analyser toutes les images avec Vision IA
       let imageAnalysis = "";
-      if (product.image_url) {
-        imageAnalysis = await analyzeImageWithAI(product.image_url);
-      } else {
-        setProgress(25); // Skip to same progress if no image
+      if (allImageUrls.length > 0) {
+        imageAnalysis = await analyzeImagesWithAI(allImageUrls);
       }
 
-      setProgress(30);
+      setProgress(35);
       setProgressMessage(t.landingGeneration.generating);
 
       // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
@@ -204,19 +275,21 @@ export default function RegenerateLanding({
         hasImageAnalysis: !!imageAnalysis,
       });
 
-      // ✅ ÉTAPE 4 : Générer le landing avec tous les paramètres
+      // ✅ ÉTAPE 5 : Générer le landing avec tous les paramètres
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
           productTitle: product.title,
           imageUrl: product.image_url,
+          allImages: allImageUrls, // 🆕 Toutes les images
           description: product.description,
           vendor: resolvedVendor,
+          variants: variants.length > 0 ? variants : null, // 🆕 Variantes produit
           style: config.style,
           mainColor: config.colorScheme,
           layout: config.layout,
           length: config.contentLength,
           customHighlights: config.customHighlights,
-          imageAnalysis: imageAnalysis, // 🆕 Analyse vision IA
+          imageAnalysis: imageAnalysis, // 🆕 Analyse vision IA de toutes les images
           contentLengthParams: contentParams, // 🆕 Paramètres de longueur
           mobileOptimized: true, // 🆕 Forcer l'optimisation mobile
         },
