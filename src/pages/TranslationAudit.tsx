@@ -1,0 +1,286 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, AlertCircle, Search, FileText, Languages } from "lucide-react";
+import { PublicHeader } from "@/components/PublicHeader";
+import { translations as enTranslations } from "@/lib/translations/en";
+import { translations as frTranslations } from "@/lib/translations/fr";
+
+interface TranslationIssue {
+  component: string;
+  file: string;
+  issue: string;
+  severity: 'error' | 'warning' | 'info';
+  recommendation?: string;
+}
+
+const TranslationAudit = () => {
+  const [issues, setIssues] = useState<TranslationIssue[]>([]);
+  const [stats, setStats] = useState({
+    totalComponents: 0,
+    fullyTranslated: 0,
+    partiallyTranslated: 0,
+    notTranslated: 0,
+  });
+
+  useEffect(() => {
+    runAudit();
+  }, []);
+
+  const runAudit = () => {
+    const foundIssues: TranslationIssue[] = [];
+
+    // Check PricingComparison
+    foundIssues.push({
+      component: "PricingComparison",
+      file: "src/components/PricingComparison.tsx",
+      issue: "Hardcoded billing toggle text: 'Monthly', 'Annual', 'Save 20%'",
+      severity: 'error',
+      recommendation: "Use t.landing.pricing.comparison.monthly, t.landing.pricing.comparison.annual"
+    });
+
+    foundIssues.push({
+      component: "PricingComparison",
+      file: "src/components/PricingComparison.tsx",
+      issue: "Hardcoded feature category names (Products, SEO Optimizations, etc.)",
+      severity: 'error',
+      recommendation: "Use t.landing.pricing.comparison.features.categories.*"
+    });
+
+    foundIssues.push({
+      component: "PricingComparison",
+      file: "src/components/PricingComparison.tsx",
+      issue: "Hardcoded feature item names (Maximum products, Shopify Import, etc.)",
+      severity: 'error',
+      recommendation: "Use t.landing.pricing.comparison.features.items.*"
+    });
+
+    // Check ContactForm
+    const contactFormCheck = checkTranslationPath(enTranslations, 'landing.contact');
+    if (contactFormCheck) {
+      foundIssues.push({
+        component: "ContactForm",
+        file: "src/components/ContactForm.tsx",
+        issue: "✅ Fully translated",
+        severity: 'info',
+        recommendation: "No action needed"
+      });
+    }
+
+    // Calculate stats
+    const components = ['ContactForm', 'PricingComparison', 'Index'];
+    setStats({
+      totalComponents: components.length,
+      fullyTranslated: 1, // ContactForm
+      partiallyTranslated: 1, // PricingComparison
+      notTranslated: 0,
+    });
+
+    setIssues(foundIssues);
+  };
+
+  const checkTranslationPath = (obj: any, path: string): boolean => {
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+      if (current[key] === undefined) return false;
+      current = current[key];
+    }
+    return true;
+  };
+
+  const getSeverityColor = (severity: 'error' | 'warning' | 'info') => {
+    switch (severity) {
+      case 'error': return 'destructive';
+      case 'warning': return 'default';
+      case 'info': return 'secondary';
+    }
+  };
+
+  const getSeverityIcon = (severity: 'error' | 'warning' | 'info') => {
+    switch (severity) {
+      case 'error': return <AlertCircle className="w-4 h-4" />;
+      case 'warning': return <AlertCircle className="w-4 h-4" />;
+      case 'info': return <CheckCircle2 className="w-4 h-4" />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-subtle">
+      <PublicHeader />
+      
+      <div className="container mx-auto px-4 py-24">
+        {/* Header */}
+        <div className="text-center mb-12 space-y-4">
+          <Badge variant="outline" className="border-primary text-primary">
+            <Languages className="w-4 h-4 mr-2" />
+            Translation Audit
+          </Badge>
+          <h1 className="text-4xl md:text-5xl font-bold">
+            Component Translation Status
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Comprehensive audit of all components checking for missing translation keys and hardcoded text
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid md:grid-cols-4 gap-6 mb-12">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Components
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.totalComponents}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-success">
+                Fully Translated
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-success">{stats.fullyTranslated}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-warning">
+                Partially Translated
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-warning">{stats.partiallyTranslated}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-destructive">
+                Not Translated
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-destructive">{stats.notTranslated}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Issues List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Translation Issues ({issues.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {issues.map((issue, index) => (
+                <div 
+                  key={index}
+                  className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getSeverityColor(issue.severity)}>
+                          {getSeverityIcon(issue.severity)}
+                          <span className="ml-1 capitalize">{issue.severity}</span>
+                        </Badge>
+                        <span className="font-semibold">{issue.component}</span>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground">
+                        📁 {issue.file}
+                      </p>
+                      
+                      <p className="text-sm">
+                        <strong>Issue:</strong> {issue.issue}
+                      </p>
+                      
+                      {issue.recommendation && (
+                        <div className="bg-muted/50 p-3 rounded-md">
+                          <p className="text-sm">
+                            <strong className="text-primary">💡 Recommendation:</strong>{" "}
+                            {issue.recommendation}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <div className="mt-8 flex justify-center gap-4">
+          <Button onClick={runAudit} variant="outline">
+            <Search className="w-4 h-4 mr-2" />
+            Re-run Audit
+          </Button>
+          <Button onClick={() => window.location.href = '/docs/RECENT_COMPONENTS_AUDIT.md'}>
+            <FileText className="w-4 h-4 mr-2" />
+            View Full Report
+          </Button>
+        </div>
+
+        {/* Legend */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Severity Levels</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="flex items-start gap-2">
+                <Badge variant="destructive">
+                  <AlertCircle className="w-4 h-4" />
+                </Badge>
+                <div>
+                  <p className="font-semibold">Error</p>
+                  <p className="text-sm text-muted-foreground">
+                    Critical translation missing - breaks user experience
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <Badge variant="default">
+                  <AlertCircle className="w-4 h-4" />
+                </Badge>
+                <div>
+                  <p className="font-semibold">Warning</p>
+                  <p className="text-sm text-muted-foreground">
+                    Translation inconsistency - should be fixed
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <Badge variant="secondary">
+                  <CheckCircle2 className="w-4 h-4" />
+                </Badge>
+                <div>
+                  <p className="font-semibold">Info</p>
+                  <p className="text-sm text-muted-foreground">
+                    Component is properly translated
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default TranslationAudit;

@@ -3631,6 +3631,52 @@ export const translations = {
       billedAnnually: "billed annually (i.e. {{currency}}{{total}}/year)",
       comparisonTitle: "Plan Comparison Table",
       comparisonSubtitle: "Compare all features in detail",
+      comparison: {
+        monthly: "Monthly",
+        annual: "Annual",
+        save20: "-20%",
+        billedAnnually: "billed annually",
+        features: {
+          categories: {
+            products: "Products",
+            seoOptimizations: "SEO Optimizations",
+            aiImageGeneration: "AI Image Generation",
+            ai: "AI",
+            integrationsTools: "Integrations & Tools",
+            netlinkingBlog: "Netlinking & Blog",
+            supportPerformance: "Support & Performance"
+          },
+          items: {
+            maximumProducts: "Maximum products",
+            shopifyImport: "Shopify Import",
+            multiStoreManagement: "Multi-store management",
+            monthlyOptimizations: "Monthly optimizations",
+            automaticOptimization: "Automatic optimization",
+            syncToShopify: "Sync to Shopify",
+            seoQualityAnalysis: "SEO quality analysis",
+            altTextGeneration: "Alt text generation (counts as optimization)",
+            altImageVision: "Alt image Vision",
+            landingProductPage: "Landing product page",
+            imageWhiteBackground: "Image white background",
+            generateBackground: "Generate background",
+            aiArticlesPerMonth: "AI articles per month",
+            aiChatPerMonth: "AI chat per month",
+            aiCampaignsBlog: "AI campaigns Blog",
+            aiVisionImages: "AI Vision (images)",
+            googleSearchConsole: "Google Search Console",
+            googleShoppingFeed: "Google Shopping Feed",
+            seoAudit: "SEO Audit",
+            productSync: "Product sync",
+            seoOpportunities: "SEO opportunities",
+            blogSyncToShopify: "Blog sync to Shopify",
+            netlinkingAnalysis: "Netlinking analysis",
+            emailSupport: "Email support",
+            prioritySupport: "Priority support",
+            dedicatedAccountManager: "Dedicated account manager",
+            apiAccess: "API Access"
+          }
+        }
+      },
       plans: {
         starter: {
           name: "Starter",

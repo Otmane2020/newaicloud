@@ -3728,6 +3728,52 @@ export const translations = {
       billedAnnually: "facturé annuellement (soit {{currency}}{{total}}/an)",
       comparisonTitle: "Tableau comparatif des plans",
       comparisonSubtitle: "Comparez toutes les fonctionnalités en détail",
+      comparison: {
+        monthly: "Mensuel",
+        annual: "Annuel",
+        save20: "-20%",
+        billedAnnually: "facturé annuellement",
+        features: {
+          categories: {
+            products: "Produits",
+            seoOptimizations: "Optimisations SEO",
+            aiImageGeneration: "Génération d'images IA",
+            ai: "IA",
+            integrationsTools: "Intégrations & Outils",
+            netlinkingBlog: "Netlinking & Blog",
+            supportPerformance: "Support & Performance"
+          },
+          items: {
+            maximumProducts: "Produits maximum",
+            shopifyImport: "Import Shopify",
+            multiStoreManagement: "Gestion multi-boutiques",
+            monthlyOptimizations: "Optimisations mensuelles",
+            automaticOptimization: "Optimisation automatique",
+            syncToShopify: "Synchronisation vers Shopify",
+            seoQualityAnalysis: "Analyse qualité SEO",
+            altTextGeneration: "Génération de texte ALT (compte comme optimisation)",
+            altImageVision: "Alt image Vision",
+            landingProductPage: "Page de destination produit",
+            imageWhiteBackground: "Image fond blanc",
+            generateBackground: "Générer un arrière-plan",
+            aiArticlesPerMonth: "Articles IA par mois",
+            aiChatPerMonth: "Chat IA par mois",
+            aiCampaignsBlog: "Campagnes IA Blog",
+            aiVisionImages: "IA Vision (images)",
+            googleSearchConsole: "Google Search Console",
+            googleShoppingFeed: "Flux Google Shopping",
+            seoAudit: "Audit SEO",
+            productSync: "Synchronisation produits",
+            seoOpportunities: "Opportunités SEO",
+            blogSyncToShopify: "Synchronisation blog vers Shopify",
+            netlinkingAnalysis: "Analyse de netlinking",
+            emailSupport: "Support par email",
+            prioritySupport: "Support prioritaire",
+            dedicatedAccountManager: "Gestionnaire de compte dédié",
+            apiAccess: "Accès API"
+          }
+        }
+      },
       plans: {
         starter: {
           name: "Starter",

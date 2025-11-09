@@ -8,70 +8,70 @@ import { getCurrencySymbol } from "@/lib/formatUtils";
 
 const PricingComparison = () => {
   const isMobile = useIsMobile();
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
 
   const features = [
     {
-      category: "Products",
+      category: t.landing.pricing.comparison.features.categories.products,
       items: [
-        { name: "Maximum products", starter: "100", pro: "1,000 - 50,000", enterprise: "Unlimited" },
-        { name: "Shopify Import", starter: true, pro: true, enterprise: true },
-        { name: "Multi-store management", starter: "1", pro: "3", enterprise: "5 - 500" },
+        { name: t.landing.pricing.comparison.features.items.maximumProducts, starter: "100", pro: "1,000 - 50,000", enterprise: "Unlimited" },
+        { name: t.landing.pricing.comparison.features.items.shopifyImport, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.multiStoreManagement, starter: "1", pro: "3", enterprise: "5 - 500" },
       ]
     },
     {
-      category: "SEO Optimizations",
+      category: t.landing.pricing.comparison.features.categories.seoOptimizations,
       items: [
-        { name: "Monthly optimizations", starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
-        { name: "Automatic optimization", starter: true, pro: true, enterprise: true },
-        { name: "Sync to Shopify", starter: true, pro: true, enterprise: true },
-        { name: "SEO quality analysis", starter: true, pro: true, enterprise: true },
-        { name: "Alt text generation (counts as optimization)", starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.monthlyOptimizations, starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
+        { name: t.landing.pricing.comparison.features.items.automaticOptimization, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.syncToShopify, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.seoQualityAnalysis, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.altTextGeneration, starter: true, pro: true, enterprise: true },
       ]
     },
     {
-      category: "AI Image Generation",
+      category: t.landing.pricing.comparison.features.categories.aiImageGeneration,
       items: [
-        { name: "Alt image Vision", starter: true, pro: true, enterprise: true },
-        { name: "Landing product page", starter: true, pro: true, enterprise: true },
-        { name: "Image white background", starter: true, pro: true, enterprise: true },
-        { name: "Generate background", starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.altImageVision, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.landingProductPage, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.imageWhiteBackground, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.generateBackground, starter: true, pro: true, enterprise: true },
       ]
     },
     {
-      category: "AI",
+      category: t.landing.pricing.comparison.features.categories.ai,
       items: [
-        { name: "AI articles per month", starter: "5", pro: "10 - 1,000", enterprise: "100 - 10,000" },
-        { name: "AI chat per month", starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
-        { name: "AI campaigns Blog", starter: "0", pro: "3 - 300", enterprise: "10 - 1,000" },
-        { name: "AI Vision (images)", starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.aiArticlesPerMonth, starter: "5", pro: "10 - 1,000", enterprise: "100 - 10,000" },
+        { name: t.landing.pricing.comparison.features.items.aiChatPerMonth, starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
+        { name: t.landing.pricing.comparison.features.items.aiCampaignsBlog, starter: "0", pro: "3 - 300", enterprise: "10 - 1,000" },
+        { name: t.landing.pricing.comparison.features.items.aiVisionImages, starter: true, pro: true, enterprise: true },
       ]
     },
     {
-      category: "Integrations & Tools",
+      category: t.landing.pricing.comparison.features.categories.integrationsTools,
       items: [
-        { name: "Google Search Console", starter: true, pro: true, enterprise: true },
-        { name: "Google Shopping Feed", starter: true, pro: true, enterprise: true },
-        { name: "SEO Audit", starter: true, pro: true, enterprise: true },
-        { name: "Product sync", starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.googleSearchConsole, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.googleShoppingFeed, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.seoAudit, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.productSync, starter: true, pro: true, enterprise: true },
       ]
     },
     {
-      category: "Netlinking & Blog",
+      category: t.landing.pricing.comparison.features.categories.netlinkingBlog,
       items: [
-        { name: "SEO opportunities", starter: true, pro: true, enterprise: true },
-        { name: "Blog sync to Shopify", starter: true, pro: true, enterprise: true },
-        { name: "Netlinking analysis", starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.seoOpportunities, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.blogSyncToShopify, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.netlinkingAnalysis, starter: true, pro: true, enterprise: true },
       ]
     },
     {
-      category: "Support & Performance",
+      category: t.landing.pricing.comparison.features.categories.supportPerformance,
       items: [
-        { name: "Email support", starter: true, pro: true, enterprise: true },
-        { name: "Priority support", starter: false, pro: true, enterprise: true },
-        { name: "Dedicated account manager", starter: false, pro: false, enterprise: true },
-        { name: "API Access", starter: false, pro: false, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.emailSupport, starter: true, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.prioritySupport, starter: false, pro: true, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.dedicatedAccountManager, starter: false, pro: false, enterprise: true },
+        { name: t.landing.pricing.comparison.features.items.apiAccess, starter: false, pro: false, enterprise: true },
       ]
     }
   ];
@@ -114,7 +114,7 @@ const PricingComparison = () => {
               billingPeriod === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            Monthly
+            {t.landing.pricing.comparison.monthly}
           </button>
           <button
             onClick={() => setBillingPeriod('annual')}
@@ -122,8 +122,8 @@ const PricingComparison = () => {
               billingPeriod === 'annual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            Annual
-            <Badge className="absolute -top-2 -right-2 bg-success text-xs">Save 20%</Badge>
+            {t.landing.pricing.comparison.annual}
+            <Badge className="absolute -top-2 -right-2 bg-success text-xs">{t.landing.pricing.comparison.save20}</Badge>
           </button>
         </div>
 
@@ -137,7 +137,7 @@ const PricingComparison = () => {
                 <div className="text-right">
                   <span className="text-lg font-bold">{planPrices[plan as keyof typeof planPrices]}</span>
                   {billingPeriod === 'annual' && (
-                    <p className="text-xs text-success">Billed annually</p>
+                    <p className="text-xs text-success">{t.landing.pricing.comparison.billedAnnually}</p>
                   )}
                 </div>
               </div>
@@ -194,7 +194,7 @@ const PricingComparison = () => {
             billingPeriod === 'monthly' ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          Monthly
+          {t.landing.pricing.comparison.monthly}
         </button>
         <button
           onClick={() => setBillingPeriod('annual')}
@@ -202,8 +202,8 @@ const PricingComparison = () => {
             billingPeriod === 'annual' ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          Annual
-          <Badge className="absolute -top-2 -right-2 bg-success text-xs">-20%</Badge>
+          {t.landing.pricing.comparison.annual}
+          <Badge className="absolute -top-2 -right-2 bg-success text-xs">{t.landing.pricing.comparison.save20}</Badge>
         </button>
       </div>
 

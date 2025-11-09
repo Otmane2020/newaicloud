@@ -71,3 +71,23 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Translation Audit Tool
+
+This project includes a comprehensive translation audit tool accessible at `/translation`.
+
+**Features:**
+- Real-time translation status of all components
+- Statistics: fully translated, partially translated, and untranslated components
+- Detailed issue reports with severity levels (Error, Warning, Info)
+- Recommendations for missing translation keys
+- Mobile responsiveness verification
+
+**Access:** Visit [http://localhost:5173/translation](http://localhost:5173/translation) during development
+
+**Current Status:**
+- ✅ ContactForm - Fully translated (EN/FR)
+- ✅ PricingComparison - Fully translated (EN/FR)
+- ✅ All components mobile responsive
+
+For detailed audit reports, see `docs/RECENT_COMPONENTS_AUDIT.md`

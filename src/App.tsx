@@ -15,6 +15,7 @@ import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
 import { SuperAdminLayout } from "./components/SuperAdminLayout";
 import Index from "./pages/Index";
+import TranslationAudit from "./pages/TranslationAudit";
 import Admin from "./pages/Admin";
 import SuperAdmin from "./pages/SuperAdmin";
 import AdminSuperLogin from "./pages/AdminSuperLogin";
@@ -79,6 +80,7 @@ const App = () => (
             <div className="overflow-x-hidden max-w-full">
               <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/translation" element={<TranslationAudit />} />
             <Route path="/blog-newai" element={<BlogNewAI />} />
             <Route path="/blog-newai/:slug" element={<BlogNewAI />} />
             <Route path="/privacy" element={<Privacy />} />
