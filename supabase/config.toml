@@ -243,3 +243,6 @@ verify_jwt = false
 [functions.admin-get-user-subscriptions]
 verify_jwt = true
 
+[functions.shopify-oauth]
+verify_jwt = false
+
