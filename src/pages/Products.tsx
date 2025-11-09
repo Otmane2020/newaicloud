@@ -160,8 +160,16 @@ export default function Products() {
       return;
     }
 
+    let syncToastId: string | number | undefined;
+
     try {
       setSyncingStoreId(store.id);
+      
+      // 🆕 Toast de démarrage
+      syncToastId = toast.loading(
+        `🔄 Synchronisation en cours pour ${store.store_name}...`
+      );
+      
       console.log('🔄 [MANUAL SYNC] Starting manual sync for store:', store.store_name);
 
       // Get store data with access token
@@ -371,14 +379,14 @@ export default function Products() {
       await refreshLimits();
 
       if (errorMessages.length === 0) {
-        toast.success(`✅ Synchronisation réussie: ${totalSynced} éléments`);
+        toast.success(`✅ Synchronisation réussie: ${totalSynced} éléments`, { id: syncToastId });
       } else {
-        toast.warning(`⚠️ Synchronisation partielle: ${totalSynced} éléments, ${errorMessages.length} erreurs`);
+        toast.warning(`⚠️ Synchronisation partielle: ${totalSynced} éléments, ${errorMessages.length} erreurs`, { id: syncToastId });
       }
 
     } catch (error: any) {
       console.error('❌ [SYNC ERROR]', error);
-      toast.error(`Erreur de synchronisation: ${error.message}`);
+      toast.error(`Erreur de synchronisation: ${error.message}`, { id: syncToastId || undefined });
     } finally {
       setSyncingStoreId(null);
     }
