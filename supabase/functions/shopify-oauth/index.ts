@@ -31,9 +31,10 @@ serve(async (req) => {
     if (code && shop) {
       console.log('[SHOPIFY-OAUTH] Handling OAuth callback');
 
+      // Pour une installation publique (pas de state en DB), on doit demander à l'utilisateur de se connecter
       if (!state) {
         const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
-        return Response.redirect(`${appUrl}/integration?error=missing_state`);
+        return Response.redirect(`${appUrl}/auth?shopify_install=true&shop=${encodeURIComponent(shop)}&code=${encodeURIComponent(code)}`);
       }
 
       const supabaseClient = createClient(
@@ -41,24 +42,21 @@ serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
       );
 
-      // Vérifier le state token
+      // Vérifier le state token (pour les connexions authentifiées)
       const { data: oauthState, error: stateError } = await supabaseClient
         .from("oauth_states")
         .select("*")
         .eq("state_token", state)
-        .single();
+        .maybeSingle();
 
-      if (stateError || !oauthState) {
-        console.error('[SHOPIFY-OAUTH] State validation failed:', {
-          stateError,
-          hasOauthState: !!oauthState,
-          state
-        });
+      // Si le state n'existe pas en DB, c'est peut-être une installation publique
+      if (!oauthState) {
+        console.log('[SHOPIFY-OAUTH] Public installation - redirecting to auth');
         const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";
-        return Response.redirect(`${appUrl}/integration?error=invalid_state&details=${encodeURIComponent(stateError?.message || 'State not found')}`);
+        return Response.redirect(`${appUrl}/auth?shopify_install=true&shop=${encodeURIComponent(shop)}&code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
       }
 
-      // Vérifier l'expiration
+      // Vérifier l'expiration pour les connexions authentifiées
       if (new Date(oauthState.expires_at) < new Date()) {
         await supabaseClient.from("oauth_states").delete().eq("state_token", state);
         const appUrl = Deno.env.get("APP_URL") || req.headers.get("origin") || "https://newai.sale";

@@ -787,11 +787,13 @@ export const translations = {
     // Chat Submenu
     chatSubmenu: {
       assistant: "Assistant",
+      robot: "AI Robot",
       orders: "Orders",
       learning: "Learning",
       history: "History",
       productSource: "Product Source",
       settings: "Chat Settings",
+      smartPricing: "Smart Pricing AI",
     },
     
     // Account Submenu
@@ -3129,6 +3131,10 @@ export const translations = {
         },
       },
     },
+    metadata: {
+      noActiveStore: "No active store found",
+      noStoreConnected: "No store connected. Connect a store to manage its metadata.",
+    },
     collections: {
       selectToImport: "Select the collections you want to import",
       noCollectionFound: "No collection found",
@@ -3182,6 +3188,18 @@ export const translations = {
       later: "Maybe Later",
       enabled: "Browser notifications enabled!",
       denied: "Notifications blocked. You can enable them in your browser settings.",
+    },
+  },
+
+  chatTabs: {
+    chat: "Smart AI Chat",
+    orders: "Orders",
+    learning: "Learning",
+    ordersManagement: {
+      title: "Orders Management",
+      description: "Manage customer orders via AI assistant",
+      comingSoon: "Coming Soon",
+      comingSoonDesc: "This feature will be available soon to help you manage customer orders directly via AI chat.",
     },
   },
 

@@ -122,34 +122,7 @@ serve(async (req) => {
     }
 
     // Créer un state token pour la session OAuth
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
     const stateToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Stocker le state (sans user_id car c'est une installation publique)
-    const { error: stateError } = await supabaseClient
-      .from("oauth_states")
-      .insert({
-        state_token: stateToken,
-        user_id: null, // Pas d'utilisateur à ce stade
-        shop_name: shop.replace('.myshopify.com', ''),
-        expires_at: expiresAt.toISOString(),
-      });
-
-    if (stateError) {
-      console.error('[SHOPIFY-INSTALL] Failed to create state:', stateError);
-      return new Response(
-        JSON.stringify({ error: "Failed to initialize OAuth" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
-        }
-      );
-    }
 
     // Construire l'URL OAuth avec tous les scopes requis
     const scopes = [
@@ -191,7 +164,8 @@ serve(async (req) => {
       `client_id=${apiKey}&` +
       `scope=${encodeURIComponent(scopes.join(','))}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `state=${stateToken}`;
+      `state=${stateToken}&` +
+      `grant_options[]=${encodeURIComponent('per-user')}`;
 
     console.log('[SHOPIFY-INSTALL] OAuth URL generated successfully');
 
