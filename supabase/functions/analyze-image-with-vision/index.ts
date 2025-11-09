@@ -99,67 +99,98 @@ Instructions :
 
 Sois précis et descriptif. N'invente pas, base-toi sur ce qui est visible.`;
 
-    // Call Gemini Vision API
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: visionPrompt },
+    // Call Gemini Vision API with retry logic
+    const maxRetries = 3;
+    let lastError;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Add delay between retries (exponential backoff)
+        if (attempt > 0) {
+          const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+          console.log(`Retry attempt ${attempt + 1}/${maxRetries} after ${delayMs}ms delay...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [
                 {
-                  inline_data: {
-                    mime_type: contentType,
-                    data: base64Image,
-                  },
+                  parts: [
+                    { text: visionPrompt },
+                    {
+                      inline_data: {
+                        mime_type: contentType,
+                        data: base64Image,
+                      },
+                    },
+                  ],
                 },
               ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 1024,
-          },
-        }),
+              generationConfig: {
+                temperature: 0.4,
+                maxOutputTokens: 1024,
+              },
+            }),
+          }
+        );
+
+        if (!geminiResponse.ok) {
+          const errorText = await geminiResponse.text();
+          console.error('Gemini API error:', errorText);
+          
+          // If rate limited (429), retry with backoff
+          if (geminiResponse.status === 429) {
+            lastError = new Error(`Rate limit exceeded. Retry in a moment.`);
+            continue; // Try again
+          }
+          
+          throw new Error(`Gemini API error: ${geminiResponse.status} ${errorText}`);
+        }
+
+        // Success - parse and return
+        const geminiData = await geminiResponse.json();
+        console.log('Gemini Vision response:', JSON.stringify(geminiData));
+
+        const generatedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!generatedText) {
+          throw new Error('No text generated from Gemini Vision');
+        }
+
+        // Parse JSON response
+        const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          console.error('Failed to parse JSON from response:', generatedText);
+          throw new Error('Failed to extract JSON from Vision response');
+        }
+
+        const visionResult: VisionResponse = JSON.parse(jsonMatch[0]);
+        console.log('Vision analysis completed:', visionResult);
+
+        return new Response(
+          JSON.stringify(visionResult),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } catch (error) {
+        lastError = error;
+        // Only retry on rate limit errors
+        if (error instanceof Error && !error.message.includes('Rate limit')) {
+          throw error;
+        }
       }
-    );
-
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status} ${errorText}`);
     }
+    
+    // All retries exhausted
+    throw lastError || new Error('Failed after multiple retries');
 
-    const geminiData = await geminiResponse.json();
-    console.log('Gemini Vision response:', JSON.stringify(geminiData));
-
-    const generatedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!generatedText) {
-      throw new Error('No text generated from Gemini Vision');
-    }
-
-    // Parse JSON response
-    const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('Failed to parse JSON from response:', generatedText);
-      throw new Error('Failed to extract JSON from Vision response');
-    }
-
-    const visionResult: VisionResponse = JSON.parse(jsonMatch[0]);
-
-    console.log('Vision analysis completed:', visionResult);
-
-    return new Response(
-      JSON.stringify(visionResult),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
   } catch (error) {
     console.error('Error in analyze-image-with-vision:', error);
     return new Response(

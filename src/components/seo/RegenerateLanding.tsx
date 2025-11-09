@@ -154,6 +154,7 @@ export default function RegenerateLanding({
       console.log(`📊 [Vision] Will analyze ${imagesToAnalyze.length} images (max 5)`);
       const analyses: string[] = [];
 
+      // Process images sequentially with delay to avoid rate limits
       for (let i = 0; i < imagesToAnalyze.length; i++) {
         try {
           console.log(`🔍 [Vision] Analyzing image ${i + 1}/${imagesToAnalyze.length}: ${imagesToAnalyze[i]}`);
@@ -167,6 +168,12 @@ export default function RegenerateLanding({
 
           if (error) {
             console.error(`❌ [Vision] Error for image ${i + 1}:`, error);
+            
+            // If rate limited, show user-friendly message and stop
+            if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
+              toast.error(t.landingGeneration.errors.rateLimit);
+              break;
+            }
           } else if (!data?.attributes) {
             console.warn(`⚠️ [Vision] No attributes returned for image ${i + 1}`);
           } else {
@@ -186,6 +193,12 @@ Image ${i + 1}:
         // Update progress per image
         const imageProgress = 25 + (i + 1) * (10 / imagesToAnalyze.length);
         setProgress(Math.round(imageProgress));
+        
+        // Add 2-second delay between requests to avoid rate limits (except for last image)
+        if (i < imagesToAnalyze.length - 1) {
+          console.log('⏳ [Vision] Waiting 2s before next image analysis...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
 
       console.log(`✅ [Vision] Analysis complete: ${analyses.length}/${imagesToAnalyze.length} images analyzed successfully`);
