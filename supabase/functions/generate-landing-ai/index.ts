@@ -153,6 +153,62 @@ serve(async (req) => {
       const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
       if (!authError && user) {
         userId = user.id;
+        
+        // 🛡️ VÉRIFICATION DES LIMITES AVANT GÉNÉRATION
+        const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
+        
+        const { data: usage } = await supabaseAdmin
+          .from('usage_tracking')
+          .select('optimizations_count')
+          .eq('seller_id', user.id)
+          .eq('month', currentMonth)
+          .maybeSingle();
+        
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('subscription_status, current_plan_id')
+          .eq('id', user.id)
+          .single();
+        
+        const { data: plan } = await supabaseAdmin
+          .from('subscription_plans')
+          .select('max_optimizations_monthly, trial_max_optimizations')
+          .eq('id', profile?.current_plan_id || 'trial')
+          .single();
+        
+        const currentUsage = usage?.optimizations_count || 0;
+        const maxOptimizations = profile?.subscription_status === 'trialing' 
+          ? (plan?.trial_max_optimizations || 50)
+          : (plan?.max_optimizations_monthly || 999999);
+        
+        console.log(`[generate-landing-ai] 🔍 Usage check: ${currentUsage}/${maxOptimizations}`);
+        
+        // ❌ BLOQUER si limite atteinte
+        if (currentUsage >= maxOptimizations) {
+          console.error(`[generate-landing-ai] ❌ LIMIT REACHED: ${currentUsage}/${maxOptimizations}`);
+          return new Response(
+            JSON.stringify({ 
+              error: 'LIMIT_REACHED',
+              message: 'Limite d\'optimisations atteinte. Passez à un plan supérieur.',
+              usage: currentUsage,
+              limit: maxOptimizations
+            }),
+            { 
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" } 
+            }
+          );
+        }
+        
+        // ✅ Incrémenter IMMÉDIATEMENT (avant génération)
+        const LANDING_PAGE_COST = 5;
+        await supabaseAdmin.rpc("increment_usage", {
+          p_seller_id: user.id,
+          p_field: "optimizations_count",
+          p_increment: LANDING_PAGE_COST
+        });
+        
+        console.log(`[generate-landing-ai] ✅ Usage incremented: +${LANDING_PAGE_COST}`);
       }
     }
 
@@ -300,196 +356,247 @@ serve(async (req) => {
       ? `https://${shopDomain}/products/${productHandle}` 
       : "#";
     
+    // 🎨 STYLE GUIDES
+    const styleGuides: Record<string, string> = {
+      'moderne': 'Gradients subtils, ombres douces, coins arrondis (rounded-2xl), espacements généreux, typographie sans-serif (font-sans), palette noir/blanc avec accents de couleur vive',
+      'minimaliste': 'Beaucoup d\'espace blanc, typographie épurée, pas de décorations superflues, 1-2 couleurs max, lignes fines (border), sans ombres ou ombres ultra-légères (shadow-sm)',
+      'scandinave': 'Tons naturels (beige, blanc cassé, gris clair), bois et textures organiques suggérées, simplicité fonctionnelle, typographie claire, ambiance chaleureuse et accueillante',
+      'premium': 'Or/noir/blanc, typographie serif (font-serif) pour titres, ombres prononcées (shadow-2xl), gradients métalliques, espacements larges, détails raffinés',
+      'neutre': 'Gris/blanc/noir uniquement, pas de couleurs vives, design sobre, typographie classique, structure équilibrée',
+      'coloré': 'Palette vibrante multi-couleurs, dégradés audacieux, énergie visuelle, contrastes forts, design dynamique'
+    };
+
+    const currentStyleGuide = styleGuides[style] || styleGuides['moderne'];
+    const tone = length === "courte (400 mots)" ? "concis" : length === "moyenne (800 mots)" ? "équilibré" : "détaillé et approfondi";
+    
     const prompt =
       language === "en"
         ? `
-You are a Shopify UX/UI expert and eCommerce copywriter specialized in high-converting landing pages.
-Generate a **complete, professional Tailwind HTML landing page** with real functionality.
+You are a professional eCommerce UX/UI designer and copywriter. Create a **conversion-optimized product landing page** that makes customers want to buy.
 
-CRITICAL REQUIREMENTS:
-1. **Technical Specifications Section**: ${enrichedSummary ? "MANDATORY - Create a comprehensive 'Technical Specifications' section with an elegant table/grid. Use ALL dimensions and attributes from ENRICHED DATA below." : "If Vision AI detected dimensions/measurements, create a detailed 'Technical Specifications' section"}
-2. **Materials & Finishes Section**: ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "MANDATORY - Create a 'Materials & Finishes' section highlighting quality and craftsmanship" : "Include if materials are detected"}
-3. **Functional Buttons**: 
-   - "View Product" button must link to: ${productUrl}
-   - "Add to Cart" buttons must have: onclick="window.open('${productUrl}', '_blank')" 
-   - All buttons must be clickable and functional
-4. **Quality Content**: Write persuasive, professional copy using the conversational description if available
-5. **Complete Sections**: Hero, Image Gallery, ${enrichedSummary ? "Enriched Attributes," : ""} Vision AI Insights, Key Benefits, Technical Specs, Materials & Finishes, Care Instructions, Sustainability, Social Proof, FAQ, Strong CTA
+🎯 OBJECTIVE: Generate a persuasive, beautiful landing page that highlights the product's value and drives purchases.
 
-Product Information:
+📦 PRODUCT:
 - Title: ${productTitle}
-- Brand: ${vendor}
-- Description: ${description}
-- Style: ${style || enrichedProduct.style || ""}
-- Main Color: ${mainColor}
-- Layout Preference: ${layout}
-- Content Length: ${length}
-- Product URL: ${productUrl}
+${vendor ? `- Brand: ${vendor}` : ""}
+${imageUrl ? `- Main Image: ${imageUrl}` : ""}
+${description ? `- Description: ${description}` : ""}
+${customHighlights ? `\n🌟 KEY SELLING POINTS:\n${customHighlights.split('\n').map((h: string) => `- ${h.trim()}`).filter((h: string) => h.length > 2).join('\n')}` : ""}
 
-${enrichedSummary ? `\n✨ ENRICHED PRODUCT ATTRIBUTES (AI-DETECTED - USE THIS DATA!):\n${enrichedSummary}\n` : ""}
-
-Images Available:
-${imgs}
-
-Variants Available:
-${vars}
-
+${enrichedSummary ? `\n💎 PRODUCT ATTRIBUTES (Use these to write compelling specs):\n${enrichedSummary}\n` : ""}
 ${visualAnalysis ? `${visualAnalysis}\n` : ""}
 
-Custom Highlights:
-${customHighlights}
+🎨 DESIGN:
+- Style: ${style} → ${currentStyleGuide}
+- Primary Color: ${mainColor} (use for CTA buttons, links, accents)
+- Layout: ${layout}
+- Tone: ${tone}
 
-DESIGN CONSTRAINTS:
-- Mobile-first responsive (sm:, md:, lg:, xl:)
-- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Responsive grids: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-- Primary color ${mainColor} for CTAs, headings, accents
-- Modern shadows: shadow-lg, shadow-xl
-- Smooth transitions: transition-all duration-300
-- Professional typography with proper hierarchy
-- No <script> or <style> tags
-- Return ONLY the HTML content (no markdown wrappers)
+🛒 FUNCTIONAL BUTTONS (MANDATORY):
+- "View Product" → <a href="${productUrl}" target="_blank">
+- "Add to Cart" → <button onclick="window.open('${productUrl}', '_blank')">
 
-TECHNICAL SPECS TABLE EXAMPLE (if dimensions available):
-<div class="bg-white rounded-xl shadow-lg p-8">
-  <h2 class="text-3xl font-bold mb-6">Technical Specifications</h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Dimensions</span><span>L x W x H cm</span></div>
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Weight</span><span>X kg</span></div>
-    <!-- Add all enriched dimensions here -->
-  </div>
-</div>
+📝 REQUIRED SECTIONS:
+1. HERO: Eye-catching title, compelling subtitle, hero image, primary CTA
+2. KEY BENEFITS: 3-5 cards with elegant icons (monochrome, simple), short titles, benefit descriptions
+3. TECHNICAL SPECS: If enriched data available, create elegant table/grid with dimensions, materials, finishes
+4. STRONG CTA: Multiple purchase buttons throughout, urgency messaging
 
-BUTTON STRUCTURE:
-<a href="${productUrl}" target="_blank" rel="noopener" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  View Full Details
-</a>
+🎨 DESIGN CONSTRAINTS:
+- Mobile-first responsive (container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8)
+- Use primary color ${mainColor} for CTAs and accents
+- Modern shadows (shadow-lg, shadow-xl), smooth transitions
+- NO <script> or <style> tags, NO markdown wrappers
+- Return ONLY clean HTML ready for dangerouslySetInnerHTML
 
-<button onclick="window.open('${productUrl}', '_blank')" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
+BUTTON EXAMPLE:
+<button onclick="window.open('${productUrl}', '_blank')" style="background-color: ${mainColor}" class="px-8 py-4 text-white font-semibold rounded-lg shadow-lg hover:opacity-90 transition-all">
   Add to Cart
 </button>
 `
         : `
-Tu es un expert UX/UI Shopify et copywriter e-commerce spécialisé dans les landing pages à haute conversion.
-Génère une **landing page HTML Tailwind complète et professionnelle** avec de vraies fonctionnalités.
+Tu es un designer UX/UI professionnel et copywriter e-commerce. Crée une **landing page produit optimisée** qui donne envie d'acheter.
 
-EXIGENCES CRITIQUES:
-1. **Section Caractéristiques Techniques**: ${enrichedSummary ? "OBLIGATOIRE - Crée une section complète 'Caractéristiques Techniques' avec un tableau/grille élégant. Utilise TOUTES les dimensions et attributs des DONNÉES ENRICHIES ci-dessous." : "Si la Vision AI a détecté des dimensions/mesures, crée une section 'Caractéristiques Techniques'"}
-2. **Section Matériaux & Finitions**: ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "OBLIGATOIRE - Crée une section 'Matériaux & Finitions' mettant en valeur la qualité et le savoir-faire" : "Inclure si des matériaux sont détectés"}
-3. **Boutons Fonctionnels**: 
-   - Le bouton "Voir le Produit" doit pointer vers: ${productUrl}
-   - Les boutons "Ajouter au Panier" doivent avoir: onclick="window.open('${productUrl}', '_blank')"
-   - Tous les boutons doivent être cliquables et fonctionnels
-4. **Contenu de Qualité**: Rédige un contenu persuasif en utilisant la description conversationnelle si disponible
-5. **Sections Complètes**: Hero, Galerie, ${enrichedSummary ? "Attributs Enrichis," : ""} Insights Vision AI, Points Forts, Specs Techniques, Matériaux & Finitions, Entretien, Durabilité, Preuves Sociales, FAQ, CTA Fort
+🎯 OBJECTIF: Générer une landing page persuasive et élégante qui met en valeur le produit et pousse à l'achat.
 
-Informations Produit:
+📦 PRODUIT:
 - Titre: ${productTitle}
-- Marque: ${vendor}
-- Description: ${description}
-- Style: ${style || enrichedProduct.style || ""}
-- Couleur Principale: ${mainColor}
-- Disposition: ${layout}
-- Longueur Contenu: ${length}
-- URL Produit: ${productUrl}
+${vendor ? `- Marque: ${vendor}` : ""}
+${imageUrl ? `- Image: ${imageUrl}` : ""}
+${description ? `- Description: ${description}` : ""}
+${customHighlights ? `\n🌟 ARGUMENTS DE VENTE:\n${customHighlights.split('\n').map((h: string) => `- ${h.trim()}`).filter((h: string) => h.length > 2).join('\n')}` : ""}
 
-${enrichedSummary ? `\n✨ ATTRIBUTS PRODUIT ENRICHIS (DÉTECTÉS PAR IA - UTILISE CES DONNÉES!):\n${enrichedSummary}\n` : ""}
-
-Images Disponibles:
-${imgs}
-
-Variantes Disponibles:
-${vars}
-
+${enrichedSummary ? `\n💎 ATTRIBUTS PRODUIT (Utilise-les pour rédiger des specs convaincantes):\n${enrichedSummary}\n` : ""}
 ${visualAnalysis ? `${visualAnalysis}\n` : ""}
 
-Points Forts Personnalisés:
-${customHighlights}
+🎨 DESIGN:
+- Style: ${style} → ${currentStyleGuide}
+- Couleur Principale: ${mainColor} (pour boutons CTA, liens, accents)
+- Layout: ${layout}
+- Ton: ${tone}
 
-CONTRAINTES DESIGN:
-- Responsive mobile-first (sm:, md:, lg:, xl:)
-- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Grilles responsives: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-- Couleur primaire ${mainColor} pour CTAs, titres, accents
-- Ombres modernes: shadow-lg, shadow-xl
-- Transitions fluides: transition-all duration-300
-- Typographie professionnelle avec hiérarchie claire
-- Aucun tag <script> ou <style>
-- Retourne UNIQUEMENT le contenu HTML (sans wrapper markdown)
+🛒 BOUTONS FONCTIONNELS (OBLIGATOIRE):
+- "Voir le Produit" → <a href="${productUrl}" target="_blank">
+- "Ajouter au Panier" → <button onclick="window.open('${productUrl}', '_blank')">
 
-EXEMPLE TABLEAU SPECS (si dimensions disponibles):
-<div class="bg-white rounded-xl shadow-lg p-8">
-  <h2 class="text-3xl font-bold mb-6">Caractéristiques Techniques</h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Dimensions</span><span>L x l x H cm</span></div>
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Poids</span><span>X kg</span></div>
-    <!-- Ajoute toutes les dimensions enrichies ici -->
-  </div>
-</div>
+📝 SECTIONS OBLIGATOIRES:
+1. HERO: Titre accrocheur, sous-titre convaincant, image hero, CTA principal
+2. AVANTAGES CLÉS: 3-5 cartes avec icônes élégantes (monochromes, simples), titres courts, descriptions bénéfices
+3. CARACTÉRISTIQUES TECHNIQUES: Si données enrichies disponibles, crée un tableau/grille élégant avec dimensions, matériaux, finitions
+4. CTA FORT: Plusieurs boutons d'achat, messages d'urgence
 
-STRUCTURE BOUTONS:
-<a href="${productUrl}" target="_blank" rel="noopener" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  Voir Tous les Détails
-</a>
+🎨 CONTRAINTES DESIGN:
+- Responsive mobile-first (container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8)
+- Utilise la couleur ${mainColor} pour les CTAs et accents
+- Ombres modernes (shadow-lg, shadow-xl), transitions fluides
+- PAS de balises <script> ou <style>, PAS de wrapper markdown
+- Retourne UNIQUEMENT du HTML propre prêt pour dangerouslySetInnerHTML
 
-<button onclick="window.open('${productUrl}', '_blank')" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
+EXEMPLE BOUTON:
+<button onclick="window.open('${productUrl}', '_blank')" style="background-color: ${mainColor}" class="px-8 py-4 text-white font-semibold rounded-lg shadow-lg hover:opacity-90 transition-all">
   Ajouter au Panier
 </button>
 `;
 
-    // --- AI call with timeout (60s) ---
-    console.log("🤖 Starting AI generation...");
-    const aiController = new AbortController();
-    const aiTimeout = setTimeout(() => aiController.abort(), 60000);
-    
-    let aiResponse;
-    try {
-      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content:
-                language === "en"
-                  ? "You are a professional Shopify landing page designer. You create beautiful, conversion-optimized HTML pages with real working buttons and links. You write persuasive copy and structure content for maximum engagement. Always include functional onclick handlers and href attributes for all buttons and links. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections."
-                  : "Tu es un designer professionnel de landing pages Shopify. Tu crées de belles pages HTML optimisées pour la conversion avec de vrais boutons et liens fonctionnels. Tu rédiges un contenu persuasif et structures l'information pour un engagement maximum. Inclus toujours des handlers onclick et attributs href fonctionnels pour tous les boutons et liens. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes.",
-            },
-            { role: "user", content: prompt },
-          ],
-          max_tokens: 5000,
-          temperature: 0.7,
-        }),
-        signal: aiController.signal,
-      });
-    } finally {
-      clearTimeout(aiTimeout);
+    // 🔄 RETRY LOGIC FOR AI GENERATION
+    console.log("🤖 Starting AI generation with retry logic...");
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 2000;
+    let lastError: Error | null = null;
+    let html = "";
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[generate-landing-ai] Attempt ${attempt}/${MAX_RETRIES}`);
+
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              {
+                role: "system",
+                content:
+                  language === "en"
+                    ? "You are a professional eCommerce landing page designer and copywriter. Create beautiful, conversion-optimized HTML pages with real working buttons and persuasive copy."
+                    : "Tu es un designer professionnel de landing pages e-commerce et copywriter. Crée de belles pages HTML optimisées pour la conversion avec de vrais boutons fonctionnels et un contenu persuasif.",
+              },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 3000,
+          }),
+        });
+
+        // Handle permanent errors - don't retry
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ 
+            error: "Rate limits exceeded. Please try again later." 
+          }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ 
+            error: "Payment required. Please add funds to your Lovable AI workspace." 
+          }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Temporary errors (503, 502, 504) - retry
+        if ([502, 503, 504].includes(response.status) && attempt < MAX_RETRIES) {
+          console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+          continue;
+        }
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`[generate-landing-ai] ❌ API error (attempt ${attempt}):`, response.status, errText);
+          
+          if (attempt < MAX_RETRIES) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue;
+          }
+
+          return new Response(JSON.stringify({ error: `Lovable AI API error: ${response.status}` }), {
+            status: response.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Success - parse and clean HTML
+        const data = await response.json().catch(() => null);
+        html = data?.choices?.[0]?.message?.content?.trim() || "";
+        
+        if (html) {
+          html = sanitizeHtmlUnsafe(html);
+          console.log("[generate-landing-ai] 🧹 HTML cleaned, final length:", html.length);
+        }
+
+        // Validate HTML
+        if (!html) {
+          console.warn("[generate-landing-ai] ⚠️ Empty HTML response from AI");
+          if (attempt < MAX_RETRIES) {
+            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to empty response...`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue;
+          }
+          return new Response(
+            JSON.stringify({ error: language === "en" ? "No content generated by AI." : "Aucun contenu généré par l'IA." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (html.length < 500) {
+          console.warn("[generate-landing-ai] ⚠️ Generated HTML too short:", html.length);
+          if (attempt < MAX_RETRIES) {
+            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to short content...`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue;
+          }
+          return new Response(
+            JSON.stringify({ error: language === "en" ? "Generated content too short." : "Le contenu généré est trop court." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Success!
+        console.log("[generate-landing-ai] ✅ HTML generated successfully, length:", html.length);
+        break;
+
+      } catch (networkError) {
+        lastError = networkError instanceof Error ? networkError : new Error(String(networkError));
+        console.error(`[generate-landing-ai] 💥 Network error (attempt ${attempt}):`, lastError);
+        
+        if (attempt < MAX_RETRIES) {
+          console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to network error...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+          continue;
+        }
+      }
     }
-    
-    console.log("✅ AI generation completed");
 
-    if (!aiResponse.ok) {
-      const text = await aiResponse.text();
-      return new Response(JSON.stringify({ error: `Lovable API ${aiResponse.status}`, detail: text }), {
-        status: aiResponse.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await aiResponse.json();
-    let html = data?.choices?.[0]?.message?.content?.trim() || "";
-    html = sanitizeHtmlUnsafe(html);
-
-    if (!html || html.length < 400)
+    // If we get here and html is empty, all retries failed
+    if (!html) {
+      console.error("[generate-landing-ai] ❌ All retry attempts failed");
       return new Response(
-        JSON.stringify({ error: language === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error: lastError?.message || (language === "en" ? "Service temporarily unavailable." : "Service temporairement indisponible."),
+        }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
+    }
 
     // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
     if (userId && product_id) {
