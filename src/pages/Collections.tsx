@@ -39,7 +39,7 @@ export default function Collections() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [importing, setImporting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 12;
+  const ITEMS_PER_PAGE = 50;
   const { t } = useTranslation();
 
   const fetchCollections = async () => {
