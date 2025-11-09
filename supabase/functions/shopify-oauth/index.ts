@@ -151,7 +151,8 @@ serve(async (req) => {
         console.log("✅ State token nettoyé");
       } catch (dbErr) {
         console.error("⚠️ Erreur Supabase save:", dbErr);
-        return new Response(JSON.stringify({ error: "Database error", details: String(dbErr) }), {
+        const errorMessage = dbErr instanceof Error ? dbErr.message : "Unknown database error";
+        return new Response(JSON.stringify({ error: "Database error", details: errorMessage }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -230,7 +231,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("💥 [SHOPIFY-OAUTH] Error:", error);
-    return new Response(JSON.stringify({ error: String(error) || "Internal server error" }), {
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
