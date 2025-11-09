@@ -338,14 +338,17 @@ export function CollectionOptimization() {
     }
   };
 
-  const handleOptimizeSelected = async () => {
+  const handleOptimizeSelected = async (collectionIds?: string[]) => {
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       toast.error(t.collections.optimization.messages.trialLimitReached);
       setShowUpgradeDialog(true);
       return;
     }
 
-    const collectionsToOptimize = collections.filter(c => selectedCollections.has(c.id));
+    // Use provided collectionIds or fall back to selectedCollections
+    const idsToUse = collectionIds ? new Set(collectionIds) : selectedCollections;
+
+    const collectionsToOptimize = collections.filter(c => idsToUse.has(c.id));
 
     if (collectionsToOptimize.length === 0) {
       toast.info(t.collections.optimization.messages.noneSelected);
@@ -1037,7 +1040,7 @@ export function CollectionOptimization() {
           
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
-              onClick={handleOptimizeSelected}
+              onClick={() => handleOptimizeSelected()}
               disabled={selectedCollections.size === 0 || optimizing}
               size="sm"
             >
@@ -1164,7 +1167,7 @@ export function CollectionOptimization() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={handleOptimizeSelected}
+                onClick={() => handleOptimizeSelected()}
                 disabled={optimizing || selectedCollections.size === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 border-0 text-primary-foreground font-semibold transition-all duration-300"
               >
@@ -1456,10 +1459,8 @@ export function CollectionOptimization() {
                                 setShowUpgradeDialog(true);
                                 return;
                               }
-                              // Sélectionner UNIQUEMENT cette collection
-                              setSelectedCollections(new Set([collection.id]));
-                              // Déclencher le processus "Optimiser sélection"
-                              setTimeout(() => handleOptimizeSelected(), 0);
+                              // Optimiser directement cette collection
+                              handleOptimizeSelected([collection.id]);
                             }}
                             disabled={optimizing}
                             title="Optimize"

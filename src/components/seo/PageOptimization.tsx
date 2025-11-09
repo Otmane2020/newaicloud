@@ -262,7 +262,7 @@ export function PageOptimization() {
     }
   };
 
-  const handleOptimizeSelected = async () => {
+  const handleOptimizeSelected = async (pageIds?: string[]) => {
     // Check limits BEFORE optimizing
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
@@ -274,22 +274,24 @@ export function PageOptimization() {
       return;
     }
     
-    if (selectedPages.size === 0) return;
+    // Use provided pageIds or fall back to selectedPages
+    const idsToUse = pageIds || Array.from(selectedPages);
+    
+    if (idsToUse.length === 0) return;
     
     setOptimizing(true);
-    const pageIds = Array.from(selectedPages);
     let successCount = 0;
     
-    for (let i = 0; i < pageIds.length; i++) {
+    for (let i = 0; i < idsToUse.length; i++) {
       try {
         const { error } = await supabase.functions.invoke('generate-page-seo', {
-          body: { pageId: pageIds[i], force: true }
+          body: { pageId: idsToUse[i], force: true }
         });
         
         if (error) throw error;
         
         successCount++;
-        toast.success(`Page ${i + 1}/${pageIds.length} optimized`);
+        toast.success(`Page ${i + 1}/${idsToUse.length} optimized`);
       } catch (error) {
         console.error('Error optimizing page:', error);
         toast.error(`Error for page ${i + 1}`);
@@ -301,10 +303,10 @@ export function PageOptimization() {
     await fetchPages();
     await refreshLimits();
     
-    if (successCount === pageIds.length) {
+    if (successCount === idsToUse.length) {
       toast.success('🎉 All pages optimized!');
     } else {
-      toast.warning(`${successCount}/${pageIds.length} pages optimized`);
+      toast.warning(`${successCount}/${idsToUse.length} pages optimized`);
     }
   };
 
@@ -713,7 +715,7 @@ export function PageOptimization() {
                 
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Button
-                    onClick={handleOptimizeSelected}
+                    onClick={() => handleOptimizeSelected()}
                     disabled={selectedPages.size === 0 || optimizing}
                     size="sm"
                   >
@@ -785,7 +787,7 @@ export function PageOptimization() {
                   )}
                 </Button>
                 <Button
-                  onClick={handleOptimizeSelected}
+                  onClick={() => handleOptimizeSelected()}
                   disabled={optimizing || selectedPages.size === 0}
                   size="sm"
                   className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 border-0 text-primary-foreground font-semibold transition-all duration-300"
@@ -980,10 +982,8 @@ export function PageOptimization() {
                                 setShowUpgradeDialog(true);
                                 return;
                               }
-                              // Sélectionner UNIQUEMENT cette page
-                              setSelectedPages(new Set([page.id]));
-                              // Déclencher le processus "Optimiser sélection"
-                              setTimeout(() => handleOptimizeSelected(), 0);
+                              // Optimiser directement cette page
+                              handleOptimizeSelected([page.id]);
                             }}
                             disabled={optimizing}
                             title={page.optimized ? "Re-optimize" : "Optimize"}

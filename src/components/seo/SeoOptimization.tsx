@@ -400,7 +400,7 @@ export function SeoOptimization() {
     setSelectedProducts(newSelected);
   };
 
-  const handleGenerateForSelected = async () => {
+  const handleGenerateForSelected = async (productIds?: string[]) => {
     // Check usage limits first (only check optimization-specific limits)
     if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
       toast.error(t.seo.optimization.trialLimitReached);
@@ -408,15 +408,18 @@ export function SeoOptimization() {
       return;
     }
 
+    // Use provided productIds or fall back to selectedProducts
+    const idsToUse = productIds ? new Set(productIds) : selectedProducts;
+
     // Check if products are selected
-    if (selectedProducts.size === 0) {
+    if (idsToUse.size === 0) {
       toast.error(t.seo.optimization.noProductsSelected);
       return;
     }
 
     // Filter eligible products
     const productsToGenerate = products.filter((p) => {
-      if (!selectedProducts.has(p.id)) return false;
+      if (!idsToUse.has(p.id)) return false;
 
       // If in trial, exclude already optimized products
       if (limits?.isTrialing && (p.optimization_count || 0) >= 1) {
@@ -428,7 +431,7 @@ export function SeoOptimization() {
     });
 
     // Check if all selected products are already optimized
-    const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
+    const selectedProductsList = products.filter((p) => idsToUse.has(p.id));
     const allAlreadyOptimized = selectedProductsList.every((p) => p.enrichment_status === "enriched");
 
     if (productsToGenerate.length === 0) {
@@ -869,7 +872,7 @@ export function SeoOptimization() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button onClick={handleGenerateForSelected} disabled={selectedProducts.size === 0 || generating} size="sm">
+            <Button onClick={() => handleGenerateForSelected()} disabled={selectedProducts.size === 0 || generating} size="sm">
               <Sparkles className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Optimiser</span>
             </Button>
@@ -1016,7 +1019,7 @@ export function SeoOptimization() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={handleGenerateForSelected}
+                onClick={() => handleGenerateForSelected()}
                 disabled={generating || selectedProducts.size === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
               >
@@ -1298,10 +1301,8 @@ export function SeoOptimization() {
                                 setShowUpgradeDialog(true);
                                 return;
                               }
-                              // Sélectionner UNIQUEMENT ce produit
-                              setSelectedProducts(new Set([product.id]));
-                              // Déclencher le processus "Optimiser sélection"
-                              setTimeout(() => handleGenerateForSelected(), 0);
+                              // Optimiser directement ce produit
+                              handleGenerateForSelected([product.id]);
                             }}
                             disabled={generating}
                             title={t.seo.optimization.optimize}

@@ -700,12 +700,7 @@ export default function ArticleManagement() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => {
-                                // Sélectionner UNIQUEMENT cet article
-                                setSelectedArticles([article.id]);
-                                // Déclencher le processus "Optimiser sélection"
-                                setTimeout(() => optimizeArticles([article.id]), 0);
-                              }}
+                              onClick={() => optimizeArticles([article.id])}
                               className="h-8 w-8 p-0"
                             >
                               <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
