@@ -12,6 +12,13 @@ const ShopifyInstall = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
+    console.log('[ShopifyInstall] ========== useEffect TRIGGERED ==========');
+    console.log('[ShopifyInstall] Current location:', {
+      href: window.location.href,
+      search: window.location.search,
+      pathname: window.location.pathname
+    });
+    
     const handleInstall = async () => {
       // Get parameters from Shopify install request
       const hmac = searchParams.get('hmac');
@@ -33,28 +40,39 @@ const ShopifyInstall = () => {
       }
 
       try {
-        console.log('[ShopifyInstall] Calling edge function with params:', {
+        console.log('[ShopifyInstall] 🚀 About to call edge function...');
+        console.log('[ShopifyInstall] Edge function params:', {
           hmac: hmac?.substring(0, 10) + '...',
           host,
           shop,
           timestamp
         });
 
-        // Call edge function to validate and initiate OAuth
-        const { data, error } = await supabase.functions.invoke('shopify-install', {
-          body: {
-            hmac,
-            host,
-            shop,
-            timestamp,
-            allParams: Object.fromEntries(searchParams.entries()),
-          },
-        }).catch((networkError) => {
-          console.error('[ShopifyInstall] Network error:', networkError);
-          throw new Error(`Erreur réseau: ${networkError.message || 'Impossible de contacter le serveur'}`);
-        });
+        let invokeResult;
+        try {
+          console.log('[ShopifyInstall] Invoking supabase.functions.invoke...');
+          invokeResult = await supabase.functions.invoke('shopify-install', {
+            body: {
+              hmac,
+              host,
+              shop,
+              timestamp,
+              allParams: Object.fromEntries(searchParams.entries()),
+            },
+          });
+          console.log('[ShopifyInstall] ✅ Edge function invoked successfully');
+        } catch (networkError) {
+          console.error('[ShopifyInstall] ❌ Network error during invoke:', networkError);
+          throw new Error(`Erreur réseau: ${networkError instanceof Error ? networkError.message : 'Erreur inconnue'}`);
+        }
 
-        console.log('[ShopifyInstall] Response:', { data, error });
+        const { data, error } = invokeResult;
+        console.log('[ShopifyInstall] Edge function response:', { 
+          hasData: !!data, 
+          hasError: !!error,
+          data,
+          error 
+        });
 
         if (error) {
           console.error('[ShopifyInstall] Error:', error);
