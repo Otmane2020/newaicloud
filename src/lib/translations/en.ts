@@ -2310,6 +2310,24 @@ export const translations = {
         loading: "Loading...",
         noLinks: "No links detected",
         autoDetect: "Links will be automatically detected when generating articles"
+      },
+      replaceLink: {
+        title: "Replace broken link",
+        description: "Replace the broken URL with a working one",
+        oldUrl: "Old URL (broken)",
+        anchorText: "Anchor text",
+        newUrl: "New URL",
+        verify: "Verify",
+        updateAll: "Update all identical links in all articles",
+        cancel: "Cancel",
+        replace: "Replace link",
+        toasts: {
+          enterUrl: "Please enter a URL",
+          verified: "URL verified successfully",
+          urlAccessible: "URL seems accessible",
+          replaced: "Link replaced successfully",
+          error: "Error replacing link"
+        }
       }
     }
   },
@@ -2826,144 +2844,6 @@ export const translations = {
     feed: "Shopping Feed",
     optimize: "Optimize for Google",
     syncAll: "Sync All Products",
-  },
-
-  onboardingTour: {
-    welcome: "Welcome to your SEO platform",
-    description: "Follow these steps to get your first results in less than 10 minutes",
-    progress: "Progress",
-    completed: "completed",
-    quickWins: "Quick Wins",
-    recommended: "Recommended",
-    quickWinsDescription: "Start with these actions for immediate results",
-    congratulations: "Congratulations! 🎉",
-    completionMessage: "You've completed the onboarding. Your store is ready to take off!",
-    startOptimization: "Start optimization",
-    dismissToast: {
-      title: "Onboarding completed",
-      description: "You can always access guides from settings"
-    },
-    steps: {
-      connectShopify: {
-        title: "Connect your Shopify store",
-        description: "Sync your products in 1 click",
-        action: "Connect"
-      },
-      optimizeFirstProduct: {
-        title: "Optimize your first product",
-        description: "Improve product SEO in 30 seconds",
-        action: "Optimize"
-      },
-      generateArticle: {
-        title: "Create your first blog article",
-        description: "Generate AI-optimized SEO content",
-        action: "Create"
-      },
-      setupAutomation: {
-        title: "Enable automatic optimizations",
-        description: "Let AI work for you",
-        action: "Enable"
-      },
-      viewAnalytics: {
-        title: "View your first statistics",
-        description: "Track the impact of your optimizations",
-        action: "View"
-      }
-    }
-  },
-
-  pricingTable: {
-    features: "Features",
-    priceMonthly: "Monthly price",
-    priceYearly: "Yearly price",
-    productsMax: "Max products",
-    optimizationsPerMonth: "Optimizations/month",
-    articlesPerMonth: "AI Articles/month",
-    chatResponsesPerMonth: "Chat responses/month",
-    shopifyStores: "Shopify stores",
-    editorialCampaigns: "Editorial campaigns",
-    support: "Support",
-    supportEmail: "Email",
-    supportPriority: "Priority",
-    supportDedicated: "Dedicated",
-    apiAccess: "API Access",
-    apiIncluded: "API Access included",
-    yes: "Yes",
-    no: "No",
-    products: "Products",
-    optimizations: "Optimizations",
-    articles: "Articles",
-    chat: "Chat",
-    scrollHint: "💡 Scroll horizontally to see all plans"
-  },
-
-  advancedAnalytics: {
-    title: "Advanced Analytics",
-    description: "Detailed insights and AI predictions",
-    periods: {
-      sevenDays: "7 days",
-      thirtyDays: "30 days",
-      ninetyDays: "90 days"
-    },
-    export: {
-      pdf: "PDF",
-      excel: "Excel"
-    },
-    kpis: {
-      seoScore: "SEO Score",
-      products: "Products",
-      optimizations: "Optimizations",
-      articles: "Articles"
-    },
-    comparison: {
-      vsPrevious: "vs previous period"
-    },
-    tabs: {
-      trends: "Trends",
-      heatmap: "SEO Heatmap",
-      predictions: "AI Predictions"
-    },
-    trends: {
-      title: "Metrics Evolution",
-      description: "Track your performance over {period}",
-      dailyActivity: "Daily Activity",
-      seoScore: "SEO Score",
-      optimizations: "Optimizations",
-      articles: "Articles"
-    },
-    heatmap: {
-      title: "SEO Heatmap by Category",
-      description: "Performance and trends of each section"
-    },
-    predictions: {
-      nextWeek: {
-        title: "Next Week Predictions",
-        description: "Estimates based on your current trends",
-        optimizations: "Estimated optimizations",
-        seoScore: "Predicted SEO score"
-      },
-      nextMonth: {
-        title: "Next Month Predictions",
-        description: "30-day projection",
-        optimizations: "Estimated optimizations",
-        seoScore: "Predicted SEO score"
-      }
-    },
-    loading: "Loading analytics...",
-    toasts: {
-      exportPdf: {
-        title: "Exporting",
-        description: "Generating PDF report..."
-      },
-      exportExcel: {
-        title: "Exporting",
-        description: "Generating Excel file..."
-      },
-      error: {
-        title: "Error",
-        description: "Unable to load analytics"
-      }
-    }
   },
 
   notificationSettings: {

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash2, Copy, Eye } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useTranslation } from '@/lib/language';
 
 interface EmailTemplate {
   id: string;
@@ -31,6 +32,7 @@ interface EmailTemplatesProps {
 }
 
 export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
+  const { t } = useTranslation();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
@@ -66,8 +68,8 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
     } catch (error) {
       console.error('Error loading templates:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les templates',
+        title: t.superAdmin.emailTemplates.toasts.loadError.split(' ')[0],
+        description: t.superAdmin.emailTemplates.toasts.loadError,
         variant: 'destructive'
       });
     } finally {
@@ -99,8 +101,8 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
   const saveTemplate = async () => {
     if (!name || !subject || !body) {
       toast({
-        title: 'Erreur',
-        description: 'Veuillez remplir tous les champs obligatoires',
+        title: t.common.error,
+        description: t.superAdmin.emailTemplates.toasts.fillRequired,
         variant: 'destructive'
       });
       return;
@@ -124,7 +126,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
           .eq('id', editingTemplate.id);
 
         if (error) throw error;
-        toast({ title: 'Succès', description: 'Template mis à jour' });
+        toast({ title: t.common.success, description: t.superAdmin.emailTemplates.toasts.updated });
       } else {
         // Create
         const { error } = await supabase
@@ -139,7 +141,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
           });
 
         if (error) throw error;
-        toast({ title: 'Succès', description: 'Template créé' });
+        toast({ title: t.common.success, description: t.superAdmin.emailTemplates.toasts.created });
       }
 
       setIsDialogOpen(false);
@@ -148,15 +150,15 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
     } catch (error: any) {
       console.error('Error saving template:', error);
       toast({
-        title: 'Erreur',
-        description: error.message || 'Impossible de sauvegarder le template',
+        title: t.common.error,
+        description: error.message || t.superAdmin.emailTemplates.toasts.saveError,
         variant: 'destructive'
       });
     }
   };
 
   const deleteTemplate = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce template ?')) return;
+    if (!confirm(t.superAdmin.emailTemplates.deleteConfirm)) return;
 
     try {
       const { error } = await supabase
@@ -166,13 +168,13 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
 
       if (error) throw error;
       
-      toast({ title: 'Succès', description: 'Template supprimé' });
+      toast({ title: t.common.success, description: t.superAdmin.emailTemplates.toasts.deleted });
       loadTemplates();
     } catch (error: any) {
       console.error('Error deleting template:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de supprimer le template',
+        title: t.common.error,
+        description: t.superAdmin.emailTemplates.toasts.deleteError,
         variant: 'destructive'
       });
     }
@@ -193,13 +195,13 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
 
       if (error) throw error;
       
-      toast({ title: 'Succès', description: 'Template dupliqué' });
+      toast({ title: t.common.success, description: t.superAdmin.emailTemplates.toasts.duplicated });
       loadTemplates();
     } catch (error: any) {
       console.error('Error duplicating template:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de dupliquer le template',
+        title: t.common.error,
+        description: t.superAdmin.emailTemplates.toasts.duplicateError,
         variant: 'destructive'
       });
     }
@@ -227,26 +229,26 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Templates d'Emails</h2>
-          <p className="text-muted-foreground">Gérez vos templates de réponses rapides</p>
+          <h2 className="text-2xl font-bold">{t.superAdmin.emailTemplates.title}</h2>
+          <p className="text-muted-foreground">{t.superAdmin.emailTemplates.description}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="w-4 h-4 mr-2" />
-              Nouveau Template
+              {t.superAdmin.emailTemplates.newTemplate}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingTemplate ? 'Modifier le Template' : 'Nouveau Template'}
+                {editingTemplate ? t.superAdmin.emailTemplates.editTemplate : t.superAdmin.emailTemplates.newTemplate}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Nom du template *</Label>
+                  <Label htmlFor="name">{t.superAdmin.emailTemplates.form.name} *</Label>
                   <Input
                     id="name"
                     value={name}
@@ -255,23 +257,23 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="category">Catégorie</Label>
+                  <Label htmlFor="category">{t.superAdmin.emailTemplates.form.category}</Label>
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="general">Général</SelectItem>
-                      <SelectItem value="onboarding">Onboarding</SelectItem>
-                      <SelectItem value="support">Support</SelectItem>
-                      <SelectItem value="sales">Ventes</SelectItem>
+                      <SelectItem value="general">{t.superAdmin.emailTemplates.categories.general}</SelectItem>
+                      <SelectItem value="onboarding">{t.superAdmin.emailTemplates.categories.onboarding}</SelectItem>
+                      <SelectItem value="support">{t.superAdmin.emailTemplates.categories.support}</SelectItem>
+                      <SelectItem value="sales">{t.superAdmin.emailTemplates.categories.sales}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="subject">Sujet *</Label>
+                <Label htmlFor="subject">{t.superAdmin.emailTemplates.form.subject} *</Label>
                 <Input
                   id="subject"
                   value={subject}
@@ -281,20 +283,20 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
               </div>
 
               <div>
-                <Label htmlFor="variables">Variables disponibles</Label>
+                <Label htmlFor="variables">{t.superAdmin.emailTemplates.form.variables}</Label>
                 <Input
                   id="variables"
                   value={variables}
                   onChange={(e) => setVariables(e.target.value)}
-                  placeholder="Séparées par des virgules: nom, email, plan, subject"
+                  placeholder={t.superAdmin.emailTemplates.form.variablesPlaceholder}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Utilisez {"{{variable}}"} dans le contenu pour les remplacer automatiquement
+                  {t.superAdmin.emailTemplates.form.variablesHelp}
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="body">Corps du message (texte) *</Label>
+                <Label htmlFor="body">{t.superAdmin.emailTemplates.form.bodyText} *</Label>
                 <Textarea
                   id="body"
                   value={body}
@@ -305,7 +307,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
               </div>
 
               <div>
-                <Label htmlFor="htmlBody">Corps du message (HTML optionnel)</Label>
+                <Label htmlFor="htmlBody">{t.superAdmin.emailTemplates.form.bodyHtml}</Label>
                 <Textarea
                   id="htmlBody"
                   value={htmlBody}
@@ -318,10 +320,10 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
 
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Annuler
+                  {t.superAdmin.emailTemplates.buttons.cancel}
                 </Button>
                 <Button onClick={saveTemplate}>
-                  {editingTemplate ? 'Mettre à jour' : 'Créer'}
+                  {editingTemplate ? t.superAdmin.emailTemplates.buttons.update : t.superAdmin.emailTemplates.buttons.create}
                 </Button>
               </div>
             </div>
@@ -354,7 +356,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
                 </div>
 
                 <div className="text-xs text-muted-foreground">
-                  Utilisé {template.usage_count} fois
+                  {t.superAdmin.emailTemplates.usageCount.replace('{count}', template.usage_count.toString())}
                 </div>
 
                 <div className="flex gap-2 pt-2">
@@ -365,7 +367,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
                       className="flex-1"
                       onClick={() => onSelectTemplate(template)}
                     >
-                      Utiliser
+                      {t.superAdmin.emailTemplates.buttons.use}
                     </Button>
                   )}
                   <Button
@@ -408,17 +410,17 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
         <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Aperçu: {previewTemplate.name}</DialogTitle>
+              <DialogTitle>{t.superAdmin.emailTemplates.preview.title}: {previewTemplate.name}</DialogTitle>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-4">
                 <div>
-                  <Label>Sujet</Label>
+                  <Label>{t.superAdmin.emailTemplates.preview.subject}</Label>
                   <p className="font-semibold">{previewTemplate.subject}</p>
                 </div>
                 {previewTemplate.html_body ? (
                   <div>
-                    <Label>Aperçu HTML</Label>
+                    <Label>{t.superAdmin.emailTemplates.preview.htmlPreview}</Label>
                     <div 
                       className="border rounded-lg p-4 mt-2"
                       dangerouslySetInnerHTML={{ __html: previewTemplate.html_body }}
@@ -426,7 +428,7 @@ export function EmailTemplates({ onSelectTemplate }: EmailTemplatesProps) {
                   </div>
                 ) : (
                   <div>
-                    <Label>Corps du message</Label>
+                    <Label>{t.superAdmin.emailTemplates.preview.body}</Label>
                     <p className="whitespace-pre-wrap border rounded-lg p-4 mt-2">
                       {previewTemplate.body}
                     </p>

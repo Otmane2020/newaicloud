@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 
 interface ReplaceLinkDialogProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface ReplaceLinkDialogProps {
 }
 
 export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLinkDialogProps) {
+  const { t } = useTranslation();
   const [newUrl, setNewUrl] = useState("");
   const [updateAll, setUpdateAll] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -30,7 +32,7 @@ export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLin
 
   const handleVerifyUrl = async () => {
     if (!newUrl) {
-      toast.error("Veuillez saisir une URL");
+      toast.error(t.blog.dialogs.replaceLink.toasts.enterUrl);
       return;
     }
 
@@ -44,13 +46,13 @@ export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLin
       });
 
       setVerificationStatus("success");
-      setVerificationMessage("L'URL semble valide");
-      toast.success("URL vérifiée avec succès");
+      setVerificationMessage(t.blog.dialogs.replaceLink.toasts.urlAccessible);
+      toast.success(t.blog.dialogs.replaceLink.toasts.verified);
     } catch (error) {
       // In no-cors mode, we can't access the response, so we'll just check if the fetch didn't throw
       setVerificationStatus("success");
-      setVerificationMessage("L'URL semble accessible");
-      toast.success("URL vérifiée");
+      setVerificationMessage(t.blog.dialogs.replaceLink.toasts.urlAccessible);
+      toast.success(t.blog.dialogs.replaceLink.toasts.verified);
     } finally {
       setIsVerifying(false);
     }
@@ -76,7 +78,7 @@ export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLin
         throw new Error(data.error || "Échec de la mise à jour");
       }
 
-      toast.success(data.message || "Lien remplacé avec succès");
+      toast.success(data.message || t.blog.dialogs.replaceLink.toasts.replaced);
       onSuccess();
       onClose();
       setNewUrl("");
@@ -84,7 +86,7 @@ export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLin
       setVerificationStatus("idle");
     } catch (error: any) {
       console.error("Error replacing link:", error);
-      toast.error(error.message || "Erreur lors du remplacement du lien");
+      toast.error(error.message || t.blog.dialogs.replaceLink.toasts.error);
     } finally {
       setIsReplacing(false);
     }
@@ -96,16 +98,16 @@ export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLin
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Remplacer le lien brisé</DialogTitle>
+          <DialogTitle>{t.blog.dialogs.replaceLink.title}</DialogTitle>
           <DialogDescription>
-            Remplacez l'URL cassée par une nouvelle URL fonctionnelle
+            {t.blog.dialogs.replaceLink.description}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Old URL */}
           <div className="space-y-2">
-            <Label className="text-destructive">Ancienne URL (brisée)</Label>
+            <Label className="text-destructive">{t.blog.dialogs.replaceLink.oldUrl}</Label>
             <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-md">
               <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
               <span className="text-sm break-all">{link.target_url}</span>
@@ -117,7 +119,7 @@ export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLin
 
           {/* Anchor Text */}
           <div className="space-y-2">
-            <Label>Texte d'ancrage</Label>
+            <Label>{t.blog.dialogs.replaceLink.anchorText}</Label>
             <div className="p-3 bg-muted rounded-md">
               <span className="text-sm">{link.anchor_text}</span>
             </div>
@@ -125,7 +127,7 @@ export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLin
 
           {/* New URL */}
           <div className="space-y-2">
-            <Label htmlFor="new-url">Nouvelle URL</Label>
+            <Label htmlFor="new-url">{t.blog.dialogs.replaceLink.newUrl}</Label>
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <Input
@@ -153,7 +155,7 @@ export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLin
                 ) : (
                   <ExternalLink className="w-4 h-4" />
                 )}
-                <span className="ml-2">Vérifier</span>
+                <span className="ml-2">{t.blog.dialogs.replaceLink.verify}</span>
               </Button>
             </div>
             {verificationStatus === "success" && (
@@ -176,21 +178,21 @@ export function ReplaceLinkDialog({ open, onClose, link, onSuccess }: ReplaceLin
               htmlFor="update-all"
               className="text-sm font-normal cursor-pointer"
             >
-              Mettre à jour tous les liens identiques dans tous les articles
+              {t.blog.dialogs.replaceLink.updateAll}
             </Label>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isReplacing}>
-            Annuler
+            {t.blog.dialogs.replaceLink.cancel}
           </Button>
           <Button
             onClick={handleReplace}
             disabled={!newUrl || isReplacing}
           >
             {isReplacing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Remplacer le lien
+            {t.blog.dialogs.replaceLink.replace}
           </Button>
         </DialogFooter>
       </DialogContent>

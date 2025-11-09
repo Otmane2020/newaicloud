@@ -257,9 +257,24 @@ export function OnboardingTour() {
         )}
 
         {steps.map((step, index) => {
-          const Icon = step.icon;
-          return (
-            <div
+      <div className="flex items-center gap-2">
+        <span className="text-2xl">🇬🇧</span>
+        <span className="font-semibold">{t.account.language.english}</span>
+        {language === 'en' && <Check className="w-5 h-5 ml-2" />}
+      </div>
+    </Button>
+
+    <Button
+      variant={language === 'fr' ? 'default' : 'outline'}
+      className="flex-1 h-16 relative"
+      onClick={() => handleLanguageChange('fr')}
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">🇫🇷</span>
+        <span className="font-semibold">{t.account.language.french}</span>
+        {language === 'fr' && <Check className="w-5 h-5 ml-2" />}
+      </div>
+    </Button>
               key={step.id}
               className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
                 step.completed

@@ -341,7 +341,7 @@ export function AdvancedAnalytics() {
   };
 
   if (loading || !data) {
-    return <Card><CardContent className="p-8 text-center">Chargement des analytics...</CardContent></Card>;
+    return <Card><CardContent className="p-8 text-center">{t.advancedAnalytics.loading}</CardContent></Card>;
   }
 
   const { trends, comparison, predictions, heatmap } = data;
@@ -351,15 +351,15 @@ export function AdvancedAnalytics() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Analytics Avancés</h2>
-          <p className="text-muted-foreground">Insights détaillés et prédictions IA</p>
+          <h2 className="text-2xl font-bold">{t.advancedAnalytics.title}</h2>
+          <p className="text-muted-foreground">{t.advancedAnalytics.description}</p>
         </div>
         <div className="flex items-center gap-2">
           <Tabs value={period} onValueChange={(v) => setPeriod(v as any)}>
             <TabsList>
-              <TabsTrigger value="7d">7 jours</TabsTrigger>
-              <TabsTrigger value="30d">30 jours</TabsTrigger>
-              <TabsTrigger value="90d">90 jours</TabsTrigger>
+              <TabsTrigger value="7d">{t.advancedAnalytics.periods.sevenDays}</TabsTrigger>
+              <TabsTrigger value="30d">{t.advancedAnalytics.periods.thirtyDays}</TabsTrigger>
+              <TabsTrigger value="90d">{t.advancedAnalytics.periods.ninetyDays}</TabsTrigger>
             </TabsList>
           </Tabs>
           <Button variant="outline" size="sm" onClick={handleExportPDF}>

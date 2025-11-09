@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/language";
 
 interface SuperAdminNavigationProps {
   activeTab: string;
@@ -12,20 +13,21 @@ interface SuperAdminNavigationProps {
 export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavigationProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
       toast({
-        title: "Déconnexion réussie",
-        description: "À bientôt !",
+        title: t.superAdmin.toasts.logoutSuccess.title,
+        description: t.superAdmin.toasts.logoutSuccess.description,
       });
       navigate("/auth");
     } catch (error) {
       console.error("Error logging out:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de se déconnecter",
+        title: t.superAdmin.toasts.logoutError.title,
+        description: t.superAdmin.toasts.logoutError.description,
         variant: "destructive",
       });
     }
@@ -34,32 +36,32 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
   const navItems = [
     {
       icon: Home,
-      label: "Dashboard",
+      label: t.superAdmin.navigation.dashboard,
       id: "dashboard"
     },
     {
       icon: Users,
-      label: "Utilisateurs",
+      label: t.superAdmin.navigation.users,
       id: "users"
     },
     {
       icon: Mail,
-      label: "Emails",
+      label: t.superAdmin.navigation.emails,
       id: "emails"
     },
     {
       icon: FileText,
-      label: "Templates",
+      label: t.superAdmin.navigation.templates,
       id: "templates"
     },
     {
       icon: TrendingUp,
-      label: "Stats Emails",
+      label: t.superAdmin.navigation.emailStats,
       id: "email-stats"
     },
     {
       icon: BarChart3,
-      label: "Analytics",
+      label: t.superAdmin.navigation.analytics,
       id: "analytics"
     },
   ];
@@ -71,7 +73,7 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
         <div className="flex items-center justify-center md:justify-start gap-3 p-4 border-b">
           <Shield className="w-8 h-8 text-orange-600 flex-shrink-0" />
           <span className="hidden md:block text-xl font-bold text-orange-600">
-            Super Admin
+            {t.superAdmin.navigation.title}
           </span>
         </div>
 
@@ -111,7 +113,7 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
             )}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            <span className="hidden md:block">Déconnexion</span>
+            <span className="hidden md:block">{t.superAdmin.navigation.logout}</span>
           </button>
         </div>
       </div>

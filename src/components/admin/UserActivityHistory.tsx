@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, Clock, Activity, User, Store } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
+import { useTranslation } from "@/lib/language";
 
 interface UserActivity {
   id: string;
@@ -37,6 +38,7 @@ interface ActivityStats {
 }
 
 export function UserActivityHistory() {
+  const { t, language } = useTranslation();
   const [activities, setActivities] = useState<UserActivity[]>([]);
   const [stats, setStats] = useState<ActivityStats>({
     total: 0,
@@ -192,45 +194,45 @@ export function UserActivityHistory() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.superAdmin.userActivity.stats.total}</CardTitle>
             <Activity className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">Activités totales</p>
+            <p className="text-xs text-muted-foreground">{t.superAdmin.userActivity.stats.totalActivities}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Aujourd'hui</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.superAdmin.userActivity.stats.today}</CardTitle>
             <Clock className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">{stats.today}</div>
-            <p className="text-xs text-muted-foreground">Activités du jour</p>
+            <p className="text-xs text-muted-foreground">{t.superAdmin.userActivity.stats.todayActivities}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Cette semaine</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.superAdmin.userActivity.stats.thisWeek}</CardTitle>
             <Calendar className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-500">{stats.thisWeek}</div>
-            <p className="text-xs text-muted-foreground">7 derniers jours</p>
+            <p className="text-xs text-muted-foreground">{t.superAdmin.userActivity.stats.last7Days}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Ce mois</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.superAdmin.userActivity.stats.thisMonth}</CardTitle>
             <User className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-500">{stats.thisMonth}</div>
-            <p className="text-xs text-muted-foreground">30 derniers jours</p>
+            <p className="text-xs text-muted-foreground">{t.superAdmin.userActivity.stats.last30Days}</p>
           </CardContent>
         </Card>
       </div>
@@ -238,19 +240,19 @@ export function UserActivityHistory() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Historique des activités</CardTitle>
-          <CardDescription>Suivi détaillé des actions des utilisateurs</CardDescription>
+          <CardTitle>{t.superAdmin.userActivity.title}</CardTitle>
+          <CardDescription>{t.superAdmin.userActivity.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4 flex-wrap">
             <div className="flex-1 min-w-[180px]">
-              <label className="text-sm font-medium mb-2 block">Utilisateur</label>
+              <label className="text-sm font-medium mb-2 block">{t.superAdmin.userActivity.filters.user}</label>
               <Select value={selectedUser} onValueChange={setSelectedUser}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous les utilisateurs</SelectItem>
+                  <SelectItem value="all">{t.superAdmin.userActivity.filters.allUsers}</SelectItem>
                   {users.map(user => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.email}
@@ -261,7 +263,7 @@ export function UserActivityHistory() {
             </div>
 
             <div className="flex-1 min-w-[180px]">
-              <label className="text-sm font-medium mb-2 block">Boutique</label>
+              <label className="text-sm font-medium mb-2 block">{t.superAdmin.userActivity.filters.store}</label>
               <Select value={selectedStore} onValueChange={setSelectedStore}>
                 <SelectTrigger>
                   <SelectValue />
@@ -270,7 +272,7 @@ export function UserActivityHistory() {
                   <SelectItem value="all">
                     <div className="flex items-center gap-2">
                       <Store className="w-4 h-4" />
-                      Toutes les boutiques
+                      {t.superAdmin.userActivity.filters.allStores}
                     </div>
                   </SelectItem>
                   {stores.map(store => (
@@ -286,13 +288,13 @@ export function UserActivityHistory() {
             </div>
 
             <div className="flex-1 min-w-[180px]">
-              <label className="text-sm font-medium mb-2 block">Page</label>
+              <label className="text-sm font-medium mb-2 block">{t.superAdmin.userActivity.filters.page}</label>
               <Select value={selectedPage} onValueChange={setSelectedPage}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes les pages</SelectItem>
+                  <SelectItem value="all">{t.superAdmin.userActivity.filters.allPages}</SelectItem>
                   {pages.map(page => (
                     <SelectItem key={page} value={page}>
                       {page}
@@ -316,7 +318,7 @@ export function UserActivityHistory() {
                       <span className="text-sm font-medium truncate">{activity.page}</span>
                     </div>
                     <div className="text-sm text-muted-foreground space-y-1">
-                      <div>{activity.user_email} • {format(new Date(activity.created_at), 'PPp', { locale: fr })}</div>
+                      <div>{activity.user_email} • {format(new Date(activity.created_at), 'PPp', { locale: language === 'fr' ? fr : enUS })}</div>
                       {activity.store_name && (
                         <div className="flex items-center gap-1 text-xs">
                           <Store className="w-3 h-3" />
@@ -335,7 +337,7 @@ export function UserActivityHistory() {
 
               {activities.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
-                  Aucune activité trouvée
+                  {t.superAdmin.userActivity.noActivities}
                 </div>
               )}
             </div>
@@ -347,7 +349,7 @@ export function UserActivityHistory() {
       <div className="grid md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Pages les plus visitées</CardTitle>
+            <CardTitle className="text-sm">{t.superAdmin.userActivity.stats.topPages}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -366,7 +368,7 @@ export function UserActivityHistory() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Actions les plus fréquentes</CardTitle>
+            <CardTitle className="text-sm">{t.superAdmin.userActivity.stats.topActions}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

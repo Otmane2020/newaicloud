@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Download, Mail, TrendingUp, Clock, Users } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
+import { useTranslation } from '@/lib/language';
 
 interface EmailStats {
   total: number;
@@ -31,6 +32,7 @@ interface SenderStats {
 }
 
 export function EmailStatsDashboard() {
+  const { t, language } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('7');
   const [stats, setStats] = useState<EmailStats>({
@@ -104,7 +106,7 @@ export function EmailStatsDashboard() {
 
       const dailyArray: DailyStats[] = Array.from(dailyMap.entries())
         .map(([date, stats]) => ({
-          date: format(new Date(date), 'dd MMM', { locale: fr }),
+          date: format(new Date(date), 'dd MMM', { locale: language === 'fr' ? fr : enUS }),
           ...stats
         }))
         .reverse();
@@ -149,22 +151,22 @@ export function EmailStatsDashboard() {
 
   const exportToCSV = () => {
     const csvData = [
-      ['Statistiques Emails', ''],
-      ['Période', `${timeRange} derniers jours`],
+      [t.superAdmin.emailStats.csv.title, ''],
+      [t.superAdmin.emailStats.csv.period, `${timeRange} ${t.superAdmin.emailStats.csv.lastDays}`],
       ['', ''],
-      ['Métrique', 'Valeur'],
-      ['Total emails', stats.total.toString()],
-      ['Emails envoyés', stats.sent.toString()],
-      ['Emails reçus', stats.received.toString()],
-      ['Emails avec réponse', stats.replied.toString()],
-      ['Temps de réponse moyen (h)', stats.avgResponseTime.toString()],
+      [t.superAdmin.emailStats.csv.metric, t.superAdmin.emailStats.csv.value],
+      [t.superAdmin.emailStats.csv.totalEmails, stats.total.toString()],
+      [t.superAdmin.emailStats.csv.emailsSent, stats.sent.toString()],
+      [t.superAdmin.emailStats.csv.emailsReceived, stats.received.toString()],
+      [t.superAdmin.emailStats.csv.emailsWithReply, stats.replied.toString()],
+      [t.superAdmin.emailStats.csv.avgResponseTime, stats.avgResponseTime.toString()],
       ['', ''],
-      ['Statistiques par jour', ''],
-      ['Date', 'Envoyés', 'Reçus', 'Répondus'],
+      [t.superAdmin.emailStats.csv.dailyStats, ''],
+      [t.superAdmin.emailStats.csv.date, t.superAdmin.emailStats.csv.sent, t.superAdmin.emailStats.csv.received, t.superAdmin.emailStats.csv.replied],
       ...dailyStats.map(d => [d.date, d.sent.toString(), d.received.toString(), d.replied.toString()]),
       ['', ''],
-      ['Top expéditeurs', ''],
-      ['Email', 'Nombre', 'Réponses', 'Temps moyen (h)'],
+      [t.superAdmin.emailStats.csv.topSenders, ''],
+      ['Email', t.superAdmin.emailStats.csv.number, t.superAdmin.emailStats.csv.responses, t.superAdmin.emailStats.table.avgTime],
       ...senderStats.map(s => [s.email, s.count.toString(), s.replied.toString(), s.avgResponseTime.toString()])
     ];
 
@@ -191,8 +193,8 @@ export function EmailStatsDashboard() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Statistiques Emails</h2>
-          <p className="text-muted-foreground">Analyse détaillée de vos communications</p>
+          <h2 className="text-2xl font-bold">{t.superAdmin.emailStats.title}</h2>
+          <p className="text-muted-foreground">{t.superAdmin.emailStats.description}</p>
         </div>
         <div className="flex gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -200,15 +202,15 @@ export function EmailStatsDashboard() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7">7 derniers jours</SelectItem>
-              <SelectItem value="14">14 derniers jours</SelectItem>
-              <SelectItem value="30">30 derniers jours</SelectItem>
-              <SelectItem value="90">90 derniers jours</SelectItem>
+              <SelectItem value="7">{t.superAdmin.emailStats.timeRange.last7}</SelectItem>
+              <SelectItem value="14">{t.superAdmin.emailStats.timeRange.last14}</SelectItem>
+              <SelectItem value="30">{t.superAdmin.emailStats.timeRange.last30}</SelectItem>
+              <SelectItem value="90">{t.superAdmin.emailStats.timeRange.last90}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={exportToCSV}>
             <Download className="w-4 h-4 mr-2" />
-            Export CSV
+            {t.superAdmin.emailStats.exportButton}
           </Button>
         </div>
       </div>
@@ -217,7 +219,7 @@ export function EmailStatsDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Emails</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.superAdmin.emailStats.cards.total}</CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -227,33 +229,33 @@ export function EmailStatsDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Envoyés</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.superAdmin.emailStats.cards.sent}</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.sent}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? Math.round(stats.sent / stats.total * 100) : 0}% du total
+              {stats.total > 0 ? Math.round(stats.sent / stats.total * 100) : 0}% {t.superAdmin.emailStats.cards.ofTotal}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Reçus</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.superAdmin.emailStats.cards.received}</CardTitle>
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.received}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? Math.round(stats.received / stats.total * 100) : 0}% du total
+              {stats.total > 0 ? Math.round(stats.received / stats.total * 100) : 0}% {t.superAdmin.emailStats.cards.ofTotal}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taux réponse</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.superAdmin.emailStats.cards.responseRate}</CardTitle>
             <TrendingUp className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
@@ -261,19 +263,19 @@ export function EmailStatsDashboard() {
               {stats.received > 0 ? Math.round(stats.replied / stats.received * 100) : 0}%
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.replied} / {stats.received} répondus
+              {stats.replied} / {stats.received} {t.superAdmin.emailStats.cards.replied}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Temps réponse</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.superAdmin.emailStats.cards.responseTime}</CardTitle>
             <Clock className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.avgResponseTime}h</div>
-            <p className="text-xs text-muted-foreground">Moyenne</p>
+            <p className="text-xs text-muted-foreground">{t.superAdmin.emailStats.cards.average}</p>
           </CardContent>
         </Card>
       </div>
@@ -283,7 +285,7 @@ export function EmailStatsDashboard() {
         {/* Daily Volume Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Volume quotidien</CardTitle>
+            <CardTitle>{t.superAdmin.emailStats.charts.dailyVolume}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -293,8 +295,8 @@ export function EmailStatsDashboard() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="sent" fill="#10b981" name="Envoyés" />
-                <Bar dataKey="received" fill="#3b82f6" name="Reçus" />
+                <Bar dataKey="sent" fill="#10b981" name={t.superAdmin.emailStats.charts.sent} />
+                <Bar dataKey="received" fill="#3b82f6" name={t.superAdmin.emailStats.charts.received} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -303,7 +305,7 @@ export function EmailStatsDashboard() {
         {/* Response Rate Trend */}
         <Card>
           <CardHeader>
-            <CardTitle>Évolution des réponses</CardTitle>
+            <CardTitle>{t.superAdmin.emailStats.charts.responseEvolution}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -313,7 +315,7 @@ export function EmailStatsDashboard() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="replied" stroke="#8b5cf6" name="Répondus" strokeWidth={2} />
+                <Line type="monotone" dataKey="replied" stroke="#8b5cf6" name={t.superAdmin.emailStats.charts.replied} strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -323,18 +325,18 @@ export function EmailStatsDashboard() {
       {/* Top Senders Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Top 10 Expéditeurs</CardTitle>
+          <CardTitle>{t.superAdmin.emailStats.charts.topSenders}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2">Email</th>
-                  <th className="text-right py-2">Nombre</th>
-                  <th className="text-right py-2">Réponses</th>
-                  <th className="text-right py-2">Taux</th>
-                  <th className="text-right py-2">Temps moy (h)</th>
+                  <th className="text-left py-2">{t.superAdmin.emailStats.table.email}</th>
+                  <th className="text-right py-2">{t.superAdmin.emailStats.table.count}</th>
+                  <th className="text-right py-2">{t.superAdmin.emailStats.table.replies}</th>
+                  <th className="text-right py-2">{t.superAdmin.emailStats.table.rate}</th>
+                  <th className="text-right py-2">{t.superAdmin.emailStats.table.avgTime}</th>
                 </tr>
               </thead>
               <tbody>

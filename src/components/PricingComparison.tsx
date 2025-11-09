@@ -108,7 +108,7 @@ const PricingComparison = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="p-3 text-left font-semibold sticky left-0 bg-muted/50 z-10 min-w-[180px]">Fonctionnalités</th>
+              <th className="p-3 text-left font-semibold sticky left-0 bg-muted/50 z-10 min-w-[180px]">{t.pricingTable.features}</th>
               {allPlans.map((plan) => {
                 const isEnterprise = plan.id.startsWith('enterprise');
                 const isPro = plan.id.startsWith('pro');
@@ -159,7 +159,7 @@ const PricingComparison = () => {
         </table>
       </div>
       <div className="p-4 bg-muted/30 text-xs text-muted-foreground text-center">
-        💡 Tableau scrollable horizontalement pour voir tous les plans
+        {t.pricingTable.scrollHint}
       </div>
     </Card>
   );
