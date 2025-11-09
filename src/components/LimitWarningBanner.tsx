@@ -16,22 +16,27 @@ export function LimitWarningBanner() {
 
   if (loading || !limits) return null;
 
-  // Show banner if trial is active and approaching optimizations or chat limits (>80%)
-  const shouldShowWarning =
-    limits.isTrialing &&
-    (limits.usage.optimizations_count / limits.limits.max_optimizations > 0.8 ||
-      limits.usage.chat_responses_count / limits.limits.max_chat_responses > 0.8);
-
-  // Show critical banner if optimizations or chat limit is reached (ALSO FOR PAID USERS)
+  // Show critical banner if optimizations or chat limit is reached
   const limitReached =
     limits.limitReached.optimizations ||
     limits.limitReached.chat;
 
-  // Show warning for trial users approaching limits
-  if (!shouldShowWarning && !limitReached) return null;
+  // For PAID users: ONLY show if limit is actually reached (100%)
+  if (limits.isPaid) {
+    if (!limitReached) return null;
+  }
 
-  // Don't show warning for paid users unless limit is reached
-  if (limits.isPaid && !limitReached) return null;
+  // For TRIAL users: show if approaching limit (>80%) OR if limit reached
+  if (limits.isTrialing) {
+    const shouldShowWarning =
+      limits.usage.optimizations_count / limits.limits.max_optimizations > 0.8 ||
+      limits.usage.chat_responses_count / limits.limits.max_chat_responses > 0.8;
+    
+    if (!shouldShowWarning && !limitReached) return null;
+  }
+
+  // If not trial and not paid, don't show
+  if (!limits.isTrialing && !limits.isPaid) return null;
 
   const handleUpgrade = async () => {
     try {
