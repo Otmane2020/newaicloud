@@ -43,7 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, referralCode?: string) => {
-    const redirectUrl = `${window.location.origin}/onboarding`;
+    // Préserver les paramètres URL actuels (comme shopify_pending)
+    const currentParams = new URLSearchParams(window.location.search);
+    const redirectParams = new URLSearchParams();
+    
+    // Copier shopify_pending et shop si présents
+    if (currentParams.has('shopify_pending')) {
+      redirectParams.set('shopify_pending', currentParams.get('shopify_pending')!);
+    }
+    if (currentParams.has('shop')) {
+      redirectParams.set('shop', currentParams.get('shop')!);
+    }
+    
+    const redirectUrl = `${window.location.origin}/onboarding${redirectParams.toString() ? '?' + redirectParams.toString() : ''}`;
     
     const { error } = await supabase.auth.signUp({
       email,

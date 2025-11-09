@@ -71,6 +71,39 @@ export default function Onboarding() {
       return;
     }
     
+    // Check if there's a Shopify pending connection to claim
+    const shopifyPending = searchParams.get('shopify_pending');
+    if (shopifyPending) {
+      console.log('🔗 Claiming Shopify connection with pending token');
+      
+      const claimConnection = async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('claim-shopify-connection', {
+            body: { pendingToken: shopifyPending }
+          });
+
+          if (error) throw error;
+
+          if (data?.success) {
+            toast.success("Shopify store connected successfully!");
+            // Remove the pending param from URL
+            const newSearchParams = new URLSearchParams(searchParams);
+            newSearchParams.delete('shopify_pending');
+            newSearchParams.delete('shop');
+            navigate(`/onboarding${newSearchParams.toString() ? '?' + newSearchParams.toString() : ''}`, { replace: true });
+          } else {
+            throw new Error('Failed to claim connection');
+          }
+        } catch (error) {
+          console.error('Failed to claim Shopify connection:', error);
+          toast.error("Failed to connect Shopify store. Please try again from the integration page.");
+        }
+      };
+
+      claimConnection();
+      return; // Don't proceed with other checks while claiming
+    }
+    
     // Check if user already has active subscription
     checkExistingSubscription();
     loadPlans();
@@ -79,7 +112,7 @@ export default function Onboarding() {
     if (searchParams.get('checkout') === 'success') {
       handleCheckSubscription();
     }
-  }, [user, navigate]);
+  }, [user, navigate, searchParams]);
 
   const checkExistingSubscription = async () => {
     try {
@@ -433,6 +466,25 @@ export default function Onboarding() {
           {t.onboarding.subtitle}
         </p>
       </div>
+
+      {/* Shopify pending connection alert */}
+      {searchParams.get('shopify_pending') && (
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <ShoppingBag className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  Connexion Shopify en attente
+                </p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Votre boutique {searchParams.get('shop')} sera automatiquement connectée une fois votre plan sélectionné.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
         {/* Billing Toggle */}
         <div className="flex justify-center mb-12">
