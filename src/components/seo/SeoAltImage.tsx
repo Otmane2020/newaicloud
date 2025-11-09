@@ -852,7 +852,7 @@ export function SeoAltImage() {
           
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
-              onClick={() => handleGenerateForSelected(true)}
+              onClick={() => handleGenerateForSelected(false)}
               disabled={selectedImages.size === 0 || generating}
               size="sm"
             >
