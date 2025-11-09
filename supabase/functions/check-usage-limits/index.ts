@@ -70,17 +70,21 @@ serve(async (req) => {
     // Determine if user is in trial or paid subscription
     // A user is in trial if:
     // 1. subscription_status === 'trialing', OR
-    // 2. subscription_status === 'cancelled' or 'inactive' (apply trial limits), OR
-    // 3. subscription_status === 'active' BUT trial_ends_at is in the future
-    const now = new Date();
-    const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+    // 2. current_plan_id is NULL or 'trial', OR
+    // 3. subscription_status is 'cancelled' or 'inactive'
     const isTrialing = profile.subscription_status === 'trialing' || 
+                       !profile.current_plan_id ||
+                       profile.current_plan_id === 'trial' ||
                        profile.subscription_status === 'cancelled' ||
-                       profile.subscription_status === 'inactive' ||
-                       (profile.subscription_status === 'active' && trialEndsAt && trialEndsAt > now);
-    const isPaid = profile.subscription_status === 'active' && (!trialEndsAt || trialEndsAt <= now);
+                       profile.subscription_status === 'inactive';
     
-    console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, trialEndsAt: ${profile.trial_ends_at}, now: ${now.toISOString()}`);
+    // A user is paid if:
+    // - subscription_status === 'active' AND has a paid plan (not trial)
+    const isPaid = profile.subscription_status === 'active' && 
+                   profile.current_plan_id && 
+                   profile.current_plan_id !== 'trial';
+    
+    console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
     // Get plan limits
     let plan;
@@ -242,13 +246,6 @@ serve(async (req) => {
         shouldForcePayment = true;
         forcePaymentReason = 'trial_expired';
         // Bloquer TOUTES les actions après expiration du trial
-        const canUseOptimizations = false;
-        const canUseArticles = false;
-        const canUseChat = false;
-        const canUseShopifySearch = false;
-        const canAddProducts = false;
-        const canAddShopifyStore = false;
-        const canAddCampaign = false;
         
         return new Response(
           JSON.stringify({
