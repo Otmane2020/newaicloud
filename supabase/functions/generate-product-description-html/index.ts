@@ -52,22 +52,29 @@ function generateDesignTokens(colorScheme: any) {
   const surface = colorScheme.surface || "#F5F5F5";
   const text = colorScheme.text || "#000000";
   const textMuted = colorScheme.textMuted || "#666666";
+
+  // VALIDATION: Forcer background clair et text foncé pour WCAG AA
+  const validatedBackground = getLuminance(background) > 0.5 ? background : "#FFFFFF";
+  const validatedSurface = getLuminance(surface) > 0.5 ? surface : "#F5F5F5";
+  const validatedText = getLuminance(text) < 0.5 ? text : "#000000";
+  const validatedTextMuted = getLuminance(textMuted) < 0.5 ? textMuted : "#666666";
   
   // Ensure CTAs have accessible text color
   const ctaTextColor = ensureAccessibleText(primary);
   const contrast = calculateContrast(primary, ctaTextColor);
   
-  console.log(`🎨 Design Tokens Generated:`);
+  console.log(`🎨 Design Tokens Generated (Validated):`);
   console.log(`  Primary: ${primary} | CTA Text: ${ctaTextColor} | Contrast: ${contrast.toFixed(2)}:1`);
-  console.log(`  Background: ${background} | Text: ${text}`);
+  console.log(`  Background: ${validatedBackground} (luminance: ${getLuminance(validatedBackground).toFixed(2)})`);
+  console.log(`  Text: ${validatedText} (luminance: ${getLuminance(validatedText).toFixed(2)})`);
   
   return {
     primary,
     secondary,
-    background,
-    surface,
-    text,
-    textMuted,
+    background: validatedBackground,
+    surface: validatedSurface,
+    text: validatedText,
+    textMuted: validatedTextMuted,
     ctaText: ctaTextColor,
     contrastRatio: contrast,
   };
@@ -126,7 +133,7 @@ INPUT DATA
 ==============================
 Title: ${title}
 ${existingDescription ? `Existing Description: ${existingDescription}` : ""}
-${visionAnalysis ? `Visual Analysis: ${JSON.stringify(visionAnalysis)}` : ""}
+${visionAnalysis ? `Internal Visual Analysis (DO NOT DISPLAY TO CUSTOMER - USE ONLY FOR CONTENT ENRICHMENT): ${JSON.stringify(visionAnalysis)}` : ""}
 ${dimensions ? `Dimensions: ${JSON.stringify(dimensions)}` : ""}
 ${images?.length ? `Product Images:\n${images.map((img: any, i: number) => `  ${i + 1}. ${img.src || img}`).join("\n")}` : "No images"}
 
@@ -141,29 +148,42 @@ Main Text: ${designTokens.text} (dark with high contrast)
 Secondary Text: ${designTokens.textMuted} (medium gray)
 CTA Text on Primary: ${designTokens.ctaText} (contrast ratio: ${designTokens.contrastRatio.toFixed(1)}:1)
 
-MANDATORY WCAG AA CONTRAST RULES:
-1. ❌ NEVER use text-white on light backgrounds (bg-white, bg-gray-100, bg-gray-50)
-2. ❌ NEVER use text-gray-300 or text-gray-400 on bg-white (insufficient contrast)
-3. ✅ ALWAYS use text-gray-900, text-gray-800, or text-black on light backgrounds
-4. ✅ ALWAYS use text-white ONLY on dark backgrounds (bg-gray-800, bg-black, bg-[${designTokens.primary}])
-5. ✅ For CTA buttons with bg-[${designTokens.primary}], use text-[${designTokens.ctaText}]
+MANDATORY COLOR RULES (ZERO TOLERANCE - WCAG AA):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ ABSOLUTELY FORBIDDEN COLOR COMBINATIONS:
+  1. text-white + bg-white → NEVER
+  2. text-white + bg-gray-50 → NEVER
+  3. text-white + bg-gray-100 → NEVER
+  4. text-gray-300 + bg-white → NEVER (contrast too low)
+  5. text-gray-400 + bg-gray-100 → NEVER (contrast too low)
 
-ALLOWED TEXT CLASSES BY BACKGROUND:
-• On bg-white, bg-gray-50, bg-gray-100: text-gray-900, text-gray-800, text-black
-• On bg-gray-800, bg-gray-900, bg-black: text-white, text-gray-100
-• On bg-[${designTokens.primary}]: text-[${designTokens.ctaText}]
+✅ ONLY ALLOWED TEXT CLASSES:
+  • On white/light backgrounds (bg-white, bg-gray-50, bg-[${designTokens.surface}]):
+    → text-gray-900, text-gray-800, text-black, text-[${designTokens.text}]
+  
+  • On dark backgrounds (bg-gray-800, bg-gray-900, bg-black):
+    → text-white, text-gray-100
 
-EXAMPLE OF WCAG-COMPLIANT SECTIONS:
-<section class="bg-white py-16">
-  <h2 class="text-3xl font-bold text-gray-900">Section Title</h2>
-  <p class="text-gray-700">Description text with good contrast.</p>
-  <button class="bg-[${designTokens.primary}] text-[${designTokens.ctaText}] px-6 py-3 rounded-lg">CTA Button</button>
+🔍 VALIDATION CHECKLIST (YOU MUST FOLLOW):
+  □ Every <h1>, <h2>, <h3> on light bg uses text-gray-900 or text-black
+  □ Every <p> on light bg uses text-gray-700 or text-gray-800
+  □ No text-white exists on any light background
+  □ No text-gray-300 or text-gray-400 on white/light backgrounds
+
+📋 CORRECT COLOR EXAMPLES:
+<section class="bg-white py-12">
+  <h2 class="text-3xl font-bold text-gray-900">Perfect Contrast</h2>
+  <p class="text-gray-700">This has excellent readability.</p>
 </section>
 
-<section class="bg-[${designTokens.surface}] py-16">
-  <h2 class="text-3xl font-bold text-gray-900">Another Section</h2>
-  <p class="text-gray-700">Always dark text on light backgrounds.</p>
+<section class="bg-[${designTokens.surface}] py-12">
+  <h2 class="text-3xl font-bold text-[${designTokens.text}]">Using Tokens</h2>
+  <p class="text-[${designTokens.textMuted}]">Also perfect.</p>
 </section>
+
+⚠️ CRITICAL: Internal Visual Analysis is for your reference ONLY.
+   NEVER display this raw data to the customer in the landing page.
+   Use it to inform your writing but keep it invisible.
 
 ==============================
 TEMPLATE STYLE (${template.toUpperCase()})
@@ -173,29 +193,45 @@ Structure: ${selectedTemplate.structure}
 Language: ${selectedTemplate.language}
 
 ==============================
-PAGE STRUCTURE REQUIREMENTS
+PAGE STRUCTURE REQUIREMENTS (NO BUTTONS)
 ==============================
-- <div> wrapper with Tailwind classes
-- HERO SECTION:
-  • Full-width hero image (first image)
-  • Bold headline with text-gray-900 (NOT text-white unless bg is dark)
-  • 1–2 sentence benefit statement
-  • CTA button with proper contrast
-- FEATURE SECTIONS:
-  • 4–6 cards with icons/images
-  • Each card: bg-white or bg-[${designTokens.surface}] with text-gray-900
-- PRODUCT GALLERY:
-  • Responsive grid with all images
-  • Descriptive alt texts
-- SPECIFICATIONS TABLE:
-  • Technical details with good contrast
-  • Include dimensions if provided
-- CUSTOMER EXPERIENCE:
-  • Storytelling tone
-  • Benefits and use cases
-- FINAL CTA:
-  • Trust signals ("Free Shipping", "30-Day Guarantee")
-  • High-contrast button
+⚠️ CRITICAL: This is a PURE INFORMATIONAL landing page. DO NOT include:
+  • CTA buttons ("Buy Now", "Add to Cart", "Shop Now", etc.)
+  • Call-to-action elements or purchase buttons
+  • Trust signals requiring action
+  • Any interactive elements that suggest purchase
+
+MANDATORY SECTIONS:
+  • HERO SECTION:
+    - Full-width hero image (first image)
+    - Bold headline (H1) with text-gray-900 (NEVER text-white on light bg)
+    - 1–2 sentence benefit statement
+  
+  • FEATURE SECTIONS:
+    - 4–6 cards with icons/images
+    - Each card: bg-white or bg-[${designTokens.surface}] with text-gray-900
+    - Grid layout: grid grid-cols-2 md:grid-cols-3 gap-6
+  
+  • PRODUCT GALLERY:
+    - Responsive grid with all images
+    - 2×2 or 3×3 grid layout
+    - Descriptive alt texts on every image
+  
+  • SPECIFICATIONS TABLE:
+    - Technical details with clear typography
+    - Include dimensions, materials, features
+    - High contrast: text-gray-900 on bg-white
+  
+  • STORYTELLING SECTION:
+    - Customer experience narrative
+    - Use cases and scenarios
+    - Benefits-focused content
+
+REQUIRED HTML STRUCTURE:
+  • Tailwind classes ONLY (NO custom CSS)
+  • Semantic HTML5 tags (<header>, <main>, <section>, <article>)
+  • Mobile-first responsive design
+  • Proper alt attributes on ALL images
 
 ==============================
 MEDIA INTEGRATION
@@ -278,29 +314,48 @@ Do NOT wrap output in code blocks or markdown.
     const mediaCount = images?.length || 0;
     const wordCount = htmlLandingPage.split(/\s+/).length;
     
-    // Validate contrast issues (log warnings)
-    const warnings: string[] = [];
-    if (htmlLandingPage.includes('text-white') && htmlLandingPage.includes('bg-white')) {
-      warnings.push("⚠️ Detected text-white on bg-white");
-    }
-    if (htmlLandingPage.includes('text-gray-300') && (htmlLandingPage.includes('bg-white') || htmlLandingPage.includes('bg-gray-100'))) {
-      warnings.push("⚠️ Low contrast: text-gray-300 on light background");
-    }
-    
-    if (warnings.length > 0) {
-      console.warn("Accessibility warnings:", warnings);
+    // 🔹 VALIDATION STRICTE des couleurs (post-génération)
+    console.log("[VALIDATION] Checking color accessibility...");
+    const colorValidation = {
+      forbiddenCombos: [
+        { pattern: /text-white[^"]*bg-white|bg-white[^"]*text-white/g, issue: "text-white on bg-white" },
+        { pattern: /text-white[^"]*bg-gray-50|bg-gray-50[^"]*text-white/g, issue: "text-white on bg-gray-50" },
+        { pattern: /text-white[^"]*bg-gray-100|bg-gray-100[^"]*text-white/g, issue: "text-white on bg-gray-100" },
+        { pattern: /text-gray-300[^"]*bg-white|bg-white[^"]*text-gray-300/g, issue: "text-gray-300 on bg-white (low contrast)" },
+        { pattern: /text-gray-400[^"]*bg-gray-100|bg-gray-100[^"]*text-gray-400/g, issue: "text-gray-400 on bg-gray-100 (low contrast)" },
+      ],
+      violations: [] as string[],
+    };
+
+    // Scanner le HTML pour détecter les violations
+    colorValidation.forbiddenCombos.forEach(({ pattern, issue }) => {
+      if (pattern.test(htmlLandingPage)) {
+        colorValidation.violations.push(issue);
+        console.error(`❌ COLOR VIOLATION: ${issue}`);
+      }
+    });
+
+    // Si violations critiques, rejeter la génération
+    if (colorValidation.violations.length > 0) {
+      console.error("❌ Landing page failed color validation:", colorValidation.violations);
+      throw new Error(`Color accessibility violations detected: ${colorValidation.violations.join(", ")}`);
     }
 
+    console.log("✅ Color validation passed");
     console.log("✅ Landing page generated successfully");
 
     return new Response(
       JSON.stringify({
         success: true,
         optimizedTitle,
-        htmlLandingPage,
+        html: htmlLandingPage, // Changed from htmlLandingPage to html for consistency
         mediaCount,
         mobileOptimized: true,
         wordCount,
+        colorValidation: {
+          passed: true,
+          violations: [],
+        },
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -301,12 +301,28 @@ export default function RegenerateLanding({
         const wordCount = data.html.split(/\s+/).length;
         console.log(`[Landing] Generated content: ${wordCount} words`);
 
-        setHtmlContent(data.html);
+        // 🆕 Post-traiter le HTML pour mobile-responsive
+        setProgressMessage("Optimisation mobile en cours...");
+        setProgress(92);
+        
+        const { data: mobileData, error: mobileError } = await supabase.functions.invoke(
+          "convert-landing-to-mobile",
+          { body: { htmlContent: data.html } }
+        );
+
+        if (mobileError || !mobileData?.success) {
+          console.warn("⚠️ Mobile conversion failed, using original HTML:", mobileError);
+          setHtmlContent(data.html);
+        } else {
+          console.log("✅ Mobile conversion successful:", mobileData.optimizations);
+          setHtmlContent(mobileData.mobileHtml);
+        }
+
         setProgress(100);
         setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
 
         toast.success(t.landingGeneration.success.generated);
-        onGenerated?.(data.html);
+        onGenerated?.(mobileData?.mobileHtml || data.html);
 
         // Recharger les données pour mettre à jour le badge
         const { data: updatedLanding } = await supabase
