@@ -130,7 +130,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       // Fetch collections
       const { data: collectionsData, error: collError } = await supabase
         .from("shopify_collections")
-        .select("id, title")
+        .select("id, title, store_id")
         .eq("user_id", user.id)
         .order("title", { ascending: true });
 
@@ -140,6 +140,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       }
 
       console.log(`📦 ${collectionsData?.length || 0} collections trouvées`);
+
+      if (!collectionsData || collectionsData.length === 0) {
+        console.log("⚠️ Aucune collection trouvée - l'utilisateur doit d'abord importer depuis Shopify");
+        setCollections([]);
+        toast.info("Aucune collection trouvée. Importez d'abord vos collections depuis Shopify.");
+        return;
+      }
 
       // Fetch all products once to count by collection
       const { data: productsData, error: prodError } = await supabase
@@ -174,7 +181,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       setCollections(collectionsWithProducts as any);
       
       if (collectionsWithProducts.length === 0) {
-        toast.info("Aucune collection avec produits trouvée");
+        toast.info("Aucune collection avec produits trouvée. Assurez-vous d'avoir des produits assignés à vos collections.");
       }
     } catch (err) {
       console.error("Error fetching collections:", err);
@@ -186,14 +193,27 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     if (!user?.id) return;
 
     try {
+      console.log("🔍 Chargement des produits pour user:", user.id);
+      
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, description, category, image_url, price, product_type, collection_ids")
+        .select("id, title, description, category, image_url, price, product_type, collection_ids, store_id")
         .eq("seller_id", user.id)
         .order("created_at", { ascending: false })
         .limit(200);
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erreur fetch produits:", error);
+        throw error;
+      }
+      
+      console.log(`📦 ${data?.length || 0} produits trouvés`);
+      
+      if (!data || data.length === 0) {
+        console.log("⚠️ Aucun produit trouvé - l'utilisateur doit d'abord importer depuis Shopify");
+        toast.info("Aucun produit trouvé. Importez d'abord vos produits depuis Shopify.");
+      }
+      
       setProducts(data || []);
     } catch (err) {
       console.error("Error fetching products:", err);
@@ -476,7 +496,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
                   {/* Collections list with checkboxes */}
                   <div className="border rounded-lg max-h-[300px] overflow-auto">
-                    {filteredCollections.length === 0 ? (
+                  {collections.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        {collectionSearchTerm 
+                          ? t.wizards.blog.noCollectionFound 
+                          : "Aucune collection trouvée. Importez d'abord vos collections depuis Shopify dans l'onglet Intégration."}
+                      </div>
+                    ) : filteredCollections.length === 0 ? (
                       <div className="p-4 text-center text-sm text-muted-foreground">
                         {t.wizards.blog.noCollectionFound}
                       </div>
