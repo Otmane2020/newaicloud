@@ -322,38 +322,47 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       console.log("Aucun produit trouvé, génération d'un article générique");
     }
 
-    // Génération de l'image featured avec OpenAI
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    // ✅ Génération de l'image featured avec Lovable AI (Nano banana)
+    console.log("🎨 Génération image featured avec Lovable AI...");
     let featuredImage = "";
 
-    if (openaiKey) {
-      try {
-        console.log("Génération image featured...");
-        const imagePrompt = `Professional e-commerce hero image for an article about ${category}, modern minimalist design, clean background, high quality product photography, blog featured image style, 16:9 ratio`;
+    try {
+      const imagePrompt = `Professional high-quality e-commerce hero banner image for a blog article about "${mainKeyword}". 
+Modern, clean, minimalist design with premium product photography aesthetic. 
+Bright, well-lit scene with soft shadows. Elegant and luxurious feel. 
+Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, professional commercial photography style.`;
 
-        const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openaiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: imagePrompt,
-            n: 1,
-            size: "1792x1024",
-            quality: "standard",
-          }),
-        });
+      const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image",
+          messages: [
+            {
+              role: "user",
+              content: imagePrompt,
+            },
+          ],
+          modalities: ["image", "text"],
+        }),
+      });
 
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json();
-          featuredImage = imageData.data[0].url;
-          console.log("Image featured générée avec succès");
+      if (imageResponse.ok) {
+        const imageData = await imageResponse.json();
+        const base64Image = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        
+        if (base64Image) {
+          featuredImage = base64Image;
+          console.log("✅ Image featured générée avec succès via Lovable AI");
         }
-      } catch (imgErr) {
-        console.error("Erreur génération image:", imgErr);
+      } else {
+        console.error("❌ Erreur génération image:", await imageResponse.text());
       }
+    } catch (imgErr) {
+      console.error("❌ Erreur génération image:", imgErr);
     }
 
     // Génération du titre optimisé SEO

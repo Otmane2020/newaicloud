@@ -4,10 +4,11 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { useState, useEffect } from 'react';
+import { ArticlePreviewDialog } from '../blog/ArticlePreviewDialog';
 
 // ============= TYPES =============
 export interface WorkflowItem {
@@ -20,6 +21,8 @@ export interface WorkflowItem {
   alt_text?: string;
   tags?: string;
   shopify_image_id?: number | null;
+  content?: string; // For blog articles
+  featured_image?: string; // For blog articles
 }
 
 export type WorkflowType = 'seo' | 'tags' | 'alt';
@@ -169,6 +172,9 @@ export function ResultsDialog({
   onSyncClick,
   onClose,
 }: ResultsDialogProps) {
+  const [showPreview, setShowPreview] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<WorkflowItem | null>(null);
+
   const getTitle = () => {
     switch (type) {
       case 'seo': return '✅ Optimisation SEO terminée';
@@ -184,6 +190,11 @@ export function ResultsDialog({
       case 'tags': return `${count} produit${count > 1 ? 's' : ''} avec tags pertinents générés`;
       case 'alt': return `${count} image${count > 1 ? 's optimisées' : ' optimisée'} avec textes ALT descriptifs`;
     }
+  };
+
+  const handlePreview = (item: WorkflowItem) => {
+    setSelectedArticle(item);
+    setShowPreview(true);
   };
 
   return (
@@ -242,6 +253,17 @@ export function ResultsDialog({
                                 <div className="text-sm line-clamp-3" dangerouslySetInnerHTML={{ __html: item.body_html }} />
                               </div>
                             )}
+                            {item.content && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handlePreview(item)}
+                                className="w-full mt-2"
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                Prévisualiser l'article
+                              </Button>
+                            )}
                           </div>
                         )}
 
@@ -289,6 +311,18 @@ export function ResultsDialog({
             Fermer
           </Button>
         </div>
+        
+        {selectedArticle && (
+          <ArticlePreviewDialog
+            open={showPreview}
+            onOpenChange={setShowPreview}
+            article={{
+              title: selectedArticle.title,
+              content: selectedArticle.content || '',
+              featured_image: selectedArticle.featured_image
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

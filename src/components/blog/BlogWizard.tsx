@@ -298,6 +298,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           seo_title: response.data.article.seo_title,
           seo_description: response.data.article.seo_description,
           content: response.data.article.content,
+          featured_image: response.data.article.featured_image,
         });
         setGeneratedArticleId(response.data.article.id);
         setGenerating(false);
@@ -752,6 +753,8 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   title: generatedArticle.title,
                   seo_title: generatedArticle.seo_title,
                   seo_description: generatedArticle.seo_description,
+                  content: generatedArticle.content,
+                  featured_image: generatedArticle.featured_image,
                 },
               ]
             : []
