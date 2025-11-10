@@ -41,35 +41,46 @@ serve(async (req) => {
     
     // Validate environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
       console.error('[LIMITS] Missing environment variables');
       return new Response(
         JSON.stringify({ error: 'Server configuration error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
-    const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseKey,
-      { auth: { persistSession: false } }
-    );
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('[LIMITS] No authorization header');
       throw new Error(TRANSLATIONS[lang].noAuthHeader);
     }
+    
+    // Create client with ANON key and authorization header to validate user token
+    const supabaseClient = createClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      { 
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false } 
+      }
+    );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
     if (userError || !user) {
       console.error('[LIMITS] Auth error:', userError);
       throw new Error(TRANSLATIONS[lang].unauthorized);
     }
+
+    // Create admin client for privileged operations
+    const supabaseAdmin = createClient(
+      supabaseUrl,
+      supabaseServiceKey,
+      { auth: { persistSession: false } }
+    );
 
     // ⚡ PARALLELIZE: Fetch profile, usage, and product count simultaneously
     const currentMonth = new Date();
@@ -78,16 +89,16 @@ serve(async (req) => {
     const monthKey = currentMonth.toISOString().split('T')[0];
 
     const [profileRes, usageRes, productCountRes] = await Promise.all([
-      supabaseClient.from('profiles')
+      supabaseAdmin.from('profiles')
         .select('subscription_status, current_plan_id, trial_ends_at')
         .eq('id', user.id)
         .single(),
-      supabaseClient.from('usage_tracking')
+      supabaseAdmin.from('usage_tracking')
         .select('*')
         .eq('seller_id', user.id)
         .eq('month', monthKey)
         .maybeSingle(),
-      supabaseClient.from('shopify_products')
+      supabaseAdmin.from('shopify_products')
         .select('*', { count: 'exact', head: true })
         .eq('seller_id', user.id)
     ]);
@@ -116,7 +127,7 @@ serve(async (req) => {
     
     // ⚡ Fetch plan (trial or paid)
     const planId = (!isTrialing && profile.current_plan_id) ? profile.current_plan_id : 'trial';
-    const { data: plan, error: planError } = await supabaseClient
+    const { data: plan, error: planError } = await supabaseAdmin
       .from('subscription_plans')
       .select('*')
       .eq('id', planId)
@@ -133,7 +144,7 @@ serve(async (req) => {
     let currentUsage = usageRes.data;
     if (!currentUsage) {
       console.log('[LIMITS] Creating usage_tracking entry');
-      const { data: newUsage } = await supabaseClient
+      const { data: newUsage } = await supabaseAdmin
         .from('usage_tracking')
         .insert({
           seller_id: user.id,
@@ -166,7 +177,7 @@ serve(async (req) => {
     const realProductCount = productCountRes.count || 0;
     if (currentUsage.products_count !== realProductCount) {
       console.warn(`[LIMITS] ⚠️ Correcting products_count: ${currentUsage.products_count} → ${realProductCount}`);
-      await supabaseClient
+      await supabaseAdmin
         .from('usage_tracking')
         .update({ products_count: realProductCount, updated_at: new Date().toISOString() })
         .eq('seller_id', user.id)
