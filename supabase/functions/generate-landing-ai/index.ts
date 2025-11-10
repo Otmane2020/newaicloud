@@ -463,6 +463,32 @@ CRITICAL RULES - FOLLOW EXACTLY:
      <meta name="viewport" content="width=device-width, initial-scale=1.0">
      <title>${productTitle}</title>
      <script src="https://cdn.tailwindcss.com"></script>
+     <style>
+       :root {
+         --brand-primary-h: ${designTokens.primary.split(' ')[0]};
+         --brand-primary-s: ${designTokens.primary.split(' ')[1]};
+         --brand-primary-l: ${designTokens.primary.split(' ')[2]};
+         --brand-secondary-h: ${designTokens.secondary.split(' ')[0]};
+         --brand-secondary-s: ${designTokens.secondary.split(' ')[1]};
+         --brand-secondary-l: ${designTokens.secondary.split(' ')[2]};
+         --brand-accent-h: ${designTokens.accent.split(' ')[0]};
+         --brand-accent-s: ${designTokens.accent.split(' ')[1]};
+         --brand-accent-l: ${designTokens.accent.split(' ')[2]};
+         --brand-surface-h: ${designTokens.surface.split(' ')[0]};
+         --brand-surface-s: ${designTokens.surface.split(' ')[1]};
+         --brand-surface-l: ${designTokens.surface.split(' ')[2]};
+       }
+       .bg-brand-primary { background-color: hsl(${designTokens.primary}) !important; }
+       .bg-brand-secondary { background-color: hsl(${designTokens.secondary}) !important; }
+       .bg-brand-accent { background-color: hsl(${designTokens.accent}) !important; }
+       .bg-brand-surface { background-color: hsl(${designTokens.surface}) !important; }
+       .text-brand-primary { color: hsl(${designTokens.primary}) !important; }
+       .border-brand-primary { border-color: hsl(${designTokens.primary}) !important; }
+       .border-brand-accent { border-color: hsl(${designTokens.accent}) !important; }
+       .hover\\:bg-brand-surface:hover { background-color: hsl(${designTokens.surface}) !important; }
+       .from-brand-primary { --tw-gradient-from: hsl(${designTokens.primary}) !important; }
+       .to-brand-accent { --tw-gradient-to: hsl(${designTokens.accent}) !important; }
+     </style>
      <script>
        tailwind.config = {
          theme: {
@@ -582,6 +608,32 @@ RÈGLES CRITIQUES - SUIVRE EXACTEMENT:
      <meta name="viewport" content="width=device-width, initial-scale=1.0">
      <title>${productTitle}</title>
      <script src="https://cdn.tailwindcss.com"></script>
+     <style>
+       :root {
+         --brand-primary-h: ${designTokens.primary.split(' ')[0]};
+         --brand-primary-s: ${designTokens.primary.split(' ')[1]};
+         --brand-primary-l: ${designTokens.primary.split(' ')[2]};
+         --brand-secondary-h: ${designTokens.secondary.split(' ')[0]};
+         --brand-secondary-s: ${designTokens.secondary.split(' ')[1]};
+         --brand-secondary-l: ${designTokens.secondary.split(' ')[2]};
+         --brand-accent-h: ${designTokens.accent.split(' ')[0]};
+         --brand-accent-s: ${designTokens.accent.split(' ')[1]};
+         --brand-accent-l: ${designTokens.accent.split(' ')[2]};
+         --brand-surface-h: ${designTokens.surface.split(' ')[0]};
+         --brand-surface-s: ${designTokens.surface.split(' ')[1]};
+         --brand-surface-l: ${designTokens.surface.split(' ')[2]};
+       }
+       .bg-brand-primary { background-color: hsl(${designTokens.primary}) !important; }
+       .bg-brand-secondary { background-color: hsl(${designTokens.secondary}) !important; }
+       .bg-brand-accent { background-color: hsl(${designTokens.accent}) !important; }
+       .bg-brand-surface { background-color: hsl(${designTokens.surface}) !important; }
+       .text-brand-primary { color: hsl(${designTokens.primary}) !important; }
+       .border-brand-primary { border-color: hsl(${designTokens.primary}) !important; }
+       .border-brand-accent { border-color: hsl(${designTokens.accent}) !important; }
+       .hover\\:bg-brand-surface:hover { background-color: hsl(${designTokens.surface}) !important; }
+       .from-brand-primary { --tw-gradient-from: hsl(${designTokens.primary}) !important; }
+       .to-brand-accent { --tw-gradient-to: hsl(${designTokens.accent}) !important; }
+     </style>
      <script>
        tailwind.config = {
          theme: {
