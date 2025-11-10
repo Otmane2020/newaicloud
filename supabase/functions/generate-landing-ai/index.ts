@@ -73,6 +73,61 @@ function ensureAccessibleText(bgColor: string): string {
   return bgLum > 0.5 ? "#000000" : "#FFFFFF";
 }
 
+function adjustSaturation(hex: string, factor: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  
+  // Adjust saturation
+  s = Math.min(1, s * factor);
+  
+  // Convert back to RGB
+  let r2, g2, b2;
+  if (s === 0) {
+    r2 = g2 = b2 = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r2 = hue2rgb(p, q, h + 1/3);
+    g2 = hue2rgb(p, q, h);
+    b2 = hue2rgb(p, q, h - 1/3);
+  }
+  
+  const toHex = (c: number) => {
+    const hex = Math.round(c * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  
+  return `#${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
+}
+
 function generateDesignTokens(colorScheme: any) {
   const primaryHex = colorScheme.primary || "#000000";
   const secondaryHex = colorScheme.secondary || "#333333";
@@ -88,10 +143,14 @@ function generateDesignTokens(colorScheme: any) {
   const validatedBackgroundHex = getLuminance(backgroundHex) > 0.5 ? backgroundHex : "#FFFFFF";
   const validatedTextHex = getLuminance(textHex) < 0.5 ? textHex : "#000000";
 
+  // Create a more vibrant accent color by increasing saturation
+  const accentHex = adjustSaturation(primaryHex, 1.3);
+
   // Convert all colors to HSL format
   return {
     primary: hexToHsl(primaryHex),
     secondary: hexToHsl(secondaryHex),
+    accent: hexToHsl(accentHex),
     background: hexToHsl(validatedBackgroundHex),
     surface: hexToHsl(surfaceHex),
     text: hexToHsl(validatedTextHex),
@@ -394,8 +453,8 @@ ${customHighlights ? `HIGHLIGHTS: ${customHighlights}` : ""}
 
 CRITICAL RULES - FOLLOW EXACTLY:
 
-1. HTML STRUCTURE (ABSOLUTELY MANDATORY - YOUR OUTPUT WILL FAIL WITHOUT THIS):
-   Your response MUST be a COMPLETE valid HTML5 document starting with these exact lines:
+1. HTML STRUCTURE (ABSOLUTELY MANDATORY):
+   Your response MUST be a COMPLETE valid HTML5 document:
    
    <!DOCTYPE html>
    <html lang="en">
@@ -404,49 +463,77 @@ CRITICAL RULES - FOLLOW EXACTLY:
      <meta name="viewport" content="width=device-width, initial-scale=1.0">
      <title>${productTitle}</title>
      <script src="https://cdn.tailwindcss.com"></script>
+     <script>
+       tailwind.config = {
+         theme: {
+           extend: {
+             colors: {
+               'brand-primary': 'hsl(${designTokens.primary})',
+               'brand-secondary': 'hsl(${designTokens.secondary})',
+               'brand-accent': 'hsl(${designTokens.accent})',
+               'brand-surface': 'hsl(${designTokens.surface})',
+             }
+           }
+         }
+       }
+     </script>
    </head>
    <body>
    
-   Then your content sections...
+   Your content sections...
    
-   And MUST end with these exact closing tags:
    </body>
    </html>
-   
-   DO NOT OUTPUT INCOMPLETE HTML. The document MUST have ALL opening and closing tags.
 
-2. COLORS (ABSOLUTELY NO EXCEPTIONS):
-   - Backgrounds: bg-white, bg-gray-50, bg-gray-100, bg-gray-800
-   - Text: text-gray-900, text-gray-800, text-gray-700, text-white (only on dark bg)
-   - For brand accent: ONLY inline style="background-color: hsl(${designTokens.primary})"
-   - FORBIDDEN: :root, --primary-color, .text-primary, .bg-primary, #XXXXXX colors
+2. COLORS - USE THE FULL BRAND PALETTE:
+   - Hero/Header: bg-brand-primary or bg-brand-accent with text-white
+   - Alternating sections: bg-white and bg-brand-surface
+   - Cards: bg-white with border-brand-primary or hover:bg-brand-surface
+   - Accents/highlights: bg-brand-primary text-white or border-brand-accent
+   - Text: text-gray-900 (primary), text-gray-700 (secondary)
+   - FORBIDDEN: :root, --primary-color as global CSS variables
+   
+   EXAMPLE HERO:
+   <div class="bg-brand-primary text-white py-16 sm:py-24">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold">${productTitle}</h1>
+     </div>
+   </div>
+   
+   EXAMPLE BENEFIT CARD:
+   <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors">
+     <h3 class="text-xl font-semibold text-gray-900">Benefit Title</h3>
+     <p class="text-gray-700">Description...</p>
+   </div>
    
 3. RESPONSIVE (NO DUPLICATE CLASSES):
    - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-   - Typography: text-2xl sm:text-3xl md:text-4xl (NO duplicates like "text-xl sm:text-2xl md:text-3xl sm:text-2xl")
+   - Typography: text-2xl sm:text-3xl md:text-4xl
    - Images: w-full h-auto object-cover
    - Grids: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
-   - Padding: py-8 sm:py-12 md:py-16 (NO "py-12 sm:py-8 sm:py-16")
+   - Padding: py-8 sm:py-12 md:py-16
    
-4. NO FOOTER - Just end with closing </body></html>
+4. NO FOOTER - End with </body></html>
 
-5. NO CTA BUTTONS - Informational landing page only
+5. NO CTA BUTTONS - Informational only
 
-SECTIONS TO INCLUDE:
-1. Hero with product image and title
-2. Key Benefits (3-4 cards)
-3. Technical Specifications ${enrichedSummary ? "(MANDATORY - use enriched data)" : "(if dimensions available)"}
-4. Materials & Finishes ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "(MANDATORY)" : "(if detected)"}
-5. Image Gallery
+SECTIONS:
+1. Hero (bg-brand-primary)
+2. Key Benefits (3-4 cards with border-brand-primary)
+3. Technical Specifications ${enrichedSummary ? "(MANDATORY)" : ""}
+4. Materials & Finishes ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "(MANDATORY)" : ""}
+5. Image Gallery (bg-brand-surface)
 6. Care Instructions
-7. FAQ (3-5 questions)
+7. FAQ (bg-white/bg-brand-surface alternating)
 
 DESIGN:
-- Mobile-first responsive: sm:, md:, lg:, xl:
-- Modern shadows and rounded corners
-- Professional typography
-- NO CTA buttons (informational only)
-- Clean, elegant layout
+- Alternate bg-white and bg-brand-surface for visual rhythm
+- Use border-brand-primary for cards and dividers
+- Colored section headers with bg-brand-primary
+- Modern shadows: shadow-lg shadow-brand-primary/10
+- Gradients: from-brand-primary to-brand-accent
+- Professional typography with clear hierarchy
+- NO CTA buttons
 
 Return ONLY the HTML content.`
         : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
@@ -468,8 +555,8 @@ ${customHighlights ? `POINTS FORTS: ${customHighlights}` : ""}
 
 RÈGLES CRITIQUES - SUIVRE EXACTEMENT:
 
-1. STRUCTURE HTML (ABSOLUMENT OBLIGATOIRE - TON CODE ÉCHOUERA SANS CELA):
-   Ta réponse DOIT être un document HTML5 COMPLET commençant par ces lignes exactes:
+1. STRUCTURE HTML (ABSOLUMENT OBLIGATOIRE):
+   Ta réponse DOIT être un document HTML5 COMPLET:
    
    <!DOCTYPE html>
    <html lang="fr">
@@ -478,49 +565,77 @@ RÈGLES CRITIQUES - SUIVRE EXACTEMENT:
      <meta name="viewport" content="width=device-width, initial-scale=1.0">
      <title>${productTitle}</title>
      <script src="https://cdn.tailwindcss.com"></script>
+     <script>
+       tailwind.config = {
+         theme: {
+           extend: {
+             colors: {
+               'brand-primary': 'hsl(${designTokens.primary})',
+               'brand-secondary': 'hsl(${designTokens.secondary})',
+               'brand-accent': 'hsl(${designTokens.accent})',
+               'brand-surface': 'hsl(${designTokens.surface})',
+             }
+           }
+         }
+       }
+     </script>
    </head>
    <body>
    
-   Puis tes sections de contenu...
+   Tes sections de contenu...
    
-   Et DOIT se terminer par ces balises de fermeture exactes:
    </body>
    </html>
-   
-   NE GÉNÈRE PAS DE HTML INCOMPLET. Le document DOIT avoir TOUTES les balises ouvrantes et fermantes.
 
-2. COULEURS (AUCUNE EXCEPTION):
-   - Fonds: bg-white, bg-gray-50, bg-gray-100, bg-gray-800
-   - Texte: text-gray-900, text-gray-800, text-gray-700, text-white (uniquement sur fond sombre)
-   - Pour accent marque: SEULEMENT style="background-color: hsl(${designTokens.primary})"
-   - INTERDIT: :root, --primary-color, .text-primary, .bg-primary, couleurs #XXXXXX
+2. COULEURS - UTILISE LA PALETTE COMPLÈTE:
+   - Hero/Header: bg-brand-primary ou bg-brand-accent avec text-white
+   - Sections alternées: bg-white et bg-brand-surface
+   - Cartes: bg-white avec border-brand-primary ou hover:bg-brand-surface
+   - Accents: bg-brand-primary text-white ou border-brand-accent
+   - Texte: text-gray-900 (principal), text-gray-700 (secondaire)
+   - INTERDIT: :root, --primary-color comme variables CSS globales
+   
+   EXEMPLE HERO:
+   <div class="bg-brand-primary text-white py-16 sm:py-24">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold">${productTitle}</h1>
+     </div>
+   </div>
+   
+   EXEMPLE CARTE BÉNÉFICE:
+   <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors">
+     <h3 class="text-xl font-semibold text-gray-900">Titre Bénéfice</h3>
+     <p class="text-gray-700">Description...</p>
+   </div>
    
 3. RESPONSIVE (PAS DE CLASSES DUPLIQUÉES):
    - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-   - Typographie: text-2xl sm:text-3xl md:text-4xl (PAS de doublons comme "text-xl sm:text-2xl md:text-3xl sm:text-2xl")
+   - Typographie: text-2xl sm:text-3xl md:text-4xl
    - Images: w-full h-auto object-cover
    - Grilles: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
-   - Padding: py-8 sm:py-12 md:py-16 (PAS de "py-12 sm:py-8 sm:py-16")
+   - Padding: py-8 sm:py-12 md:py-16
    
-4. PAS DE FOOTER - Terminer simplement avec </body></html>
+4. PAS DE FOOTER - Terminer avec </body></html>
 
-5. PAS DE BOUTONS CTA - Landing page informative uniquement
+5. PAS DE BOUTONS CTA - Informatif uniquement
 
-SECTIONS À INCLURE:
-1. Hero avec image et titre produit
-2. Points Forts (3-4 cartes)
-3. Caractéristiques Techniques ${enrichedSummary ? "(OBLIGATOIRE - utilise les données enrichies)" : "(si dimensions disponibles)"}
-4. Matériaux & Finitions ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "(OBLIGATOIRE)" : "(si détecté)"}
-5. Galerie d'Images
+SECTIONS:
+1. Hero (bg-brand-primary)
+2. Points Forts (3-4 cartes avec border-brand-primary)
+3. Caractéristiques Techniques ${enrichedSummary ? "(OBLIGATOIRE)" : ""}
+4. Matériaux & Finitions ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "(OBLIGATOIRE)" : ""}
+5. Galerie d'Images (bg-brand-surface)
 6. Conseils d'Entretien
-7. FAQ (3-5 questions)
+7. FAQ (bg-white/bg-brand-surface alternées)
 
 DESIGN:
-- Responsive mobile-first: sm:, md:, lg:, xl:
-- Ombres modernes et coins arrondis
-- Typographie professionnelle
-- AUCUN bouton CTA (informatif uniquement)
-- Mise en page épurée et élégante
+- Alterne bg-white et bg-brand-surface pour rythme visuel
+- Utilise border-brand-primary pour cartes et séparateurs
+- En-têtes de section colorés avec bg-brand-primary
+- Ombres modernes: shadow-lg shadow-brand-primary/10
+- Dégradés: from-brand-primary to-brand-accent
+- Typographie professionnelle avec hiérarchie claire
+- AUCUN bouton CTA
 
 Retourne UNIQUEMENT le contenu HTML.`;
 
