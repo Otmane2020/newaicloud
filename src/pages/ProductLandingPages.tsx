@@ -231,6 +231,7 @@ export default function ProductLandingPages() {
           // Enrichissement du produit
           supabase.functions.invoke("enrich-product", {
             body: {
+              productId: product.id,
               title: product.title,
               description: product.description,
               imageUrl: product.image_url,
