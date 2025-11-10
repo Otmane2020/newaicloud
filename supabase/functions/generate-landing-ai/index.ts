@@ -303,211 +303,94 @@ serve(async (req) => {
       console.log("⏭️ No image URL provided, skipping Vision AI");
     }
 
-    // --- Prompt bilingual ---
-    const imgs = images.length
-      ? images.map((i) => `- ${i.src}`).join("\n")
-      : language === "en"
-        ? "No additional image"
-        : "Aucune image supplémentaire";
-    const vars = variants.length
-      ? variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")
-      : language === "en"
-        ? "No variant"
-        : "Aucune variante";
-
-    // Build product URLs
+    // 🎯 Step 4: Préparer les données pour generate-product-description-html
+    console.log("🎨 Preparing payload for HTML generation...");
+    
     const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
-
-    const prompt =
-      language === "en"
-        ? `
-You are a Shopify UX/UI expert and eCommerce copywriter specialized in high-converting landing pages.
-Generate a **complete, professional Tailwind HTML landing page** with real functionality.
-
-CRITICAL REQUIREMENTS:
-1. **Technical Specifications Section**: ${enrichedSummary ? "MANDATORY - Create a comprehensive 'Technical Specifications' section with an elegant table/grid. Use ALL dimensions and attributes from ENRICHED DATA below." : "If Vision AI detected dimensions/measurements, create a detailed 'Technical Specifications' section"}
-2. **Materials & Finishes Section**: ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "MANDATORY - Create a 'Materials & Finishes' section highlighting quality and craftsmanship" : "Include if materials are detected"}
-3. **Functional Buttons**: 
-   - "View Product" button must link to: ${productUrl}
-   - "Add to Cart" buttons must have: onclick="window.open('${productUrl}', '_blank')" 
-   - All buttons must be clickable and functional
-4. **Quality Content**: Write persuasive, professional copy using the conversational description if available
-5. **Complete Sections**: Hero, Image Gallery, ${enrichedSummary ? "Enriched Attributes," : ""} Vision AI Insights, Key Benefits, Technical Specs, Materials & Finishes, Care Instructions, Sustainability, Social Proof, FAQ, Strong CTA
-
-Product Information:
-- Title: ${productTitle}
-- Brand: ${vendor}
-- Description: ${description}
-- Style: ${style || enrichedProduct.style || ""}
-- Main Color: ${mainColor}
-- Layout Preference: ${layout}
-- Content Length: ${length}
-- Product URL: ${productUrl}
-
-${enrichedSummary ? `\n✨ ENRICHED PRODUCT ATTRIBUTES (AI-DETECTED - USE THIS DATA!):\n${enrichedSummary}\n` : ""}
-
-Images Available:
-${imgs}
-
-Variants Available:
-${vars}
-
-${visualAnalysis ? `${visualAnalysis}\n` : ""}
-
-Custom Highlights:
-${customHighlights}
-
-DESIGN CONSTRAINTS:
-- Mobile-first responsive (sm:, md:, lg:, xl:)
-- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Responsive grids: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-- Primary color ${mainColor} for CTAs, headings, accents
-- Modern shadows: shadow-lg, shadow-xl
-- Smooth transitions: transition-all duration-300
-- Professional typography with proper hierarchy
-- No <script> or <style> tags
-- Return ONLY the HTML content (no markdown wrappers)
-
-TECHNICAL SPECS TABLE EXAMPLE (if dimensions available):
-<div class="bg-white rounded-xl shadow-lg p-8">
-  <h2 class="text-3xl font-bold mb-6">Technical Specifications</h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Dimensions</span><span>L x W x H cm</span></div>
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Weight</span><span>X kg</span></div>
-    <!-- Add all enriched dimensions here -->
-  </div>
-</div>
-
-BUTTON STRUCTURE:
-<a href="${productUrl}" target="_blank" rel="noopener" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  View Full Details
-</a>
-
-<button onclick="window.open('${productUrl}', '_blank')" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  Add to Cart
-</button>
-`
-        : `
-Tu es un expert UX/UI Shopify et copywriter e-commerce spécialisé dans les landing pages à haute conversion.
-Génère une **landing page HTML Tailwind complète et professionnelle** avec de vraies fonctionnalités.
-
-EXIGENCES CRITIQUES:
-1. **Section Caractéristiques Techniques**: ${enrichedSummary ? "OBLIGATOIRE - Crée une section complète 'Caractéristiques Techniques' avec un tableau/grille élégant. Utilise TOUTES les dimensions et attributs des DONNÉES ENRICHIES ci-dessous." : "Si la Vision AI a détecté des dimensions/mesures, crée une section 'Caractéristiques Techniques'"}
-2. **Section Matériaux & Finitions**: ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "OBLIGATOIRE - Crée une section 'Matériaux & Finitions' mettant en valeur la qualité et le savoir-faire" : "Inclure si des matériaux sont détectés"}
-3. **Boutons Fonctionnels**: 
-   - Le bouton "Voir le Produit" doit pointer vers: ${productUrl}
-   - Les boutons "Ajouter au Panier" doivent avoir: onclick="window.open('${productUrl}', '_blank')"
-   - Tous les boutons doivent être cliquables et fonctionnels
-4. **Contenu de Qualité**: Rédige un contenu persuasif en utilisant la description conversationnelle si disponible
-5. **Sections Complètes**: Hero, Galerie, ${enrichedSummary ? "Attributs Enrichis," : ""} Insights Vision AI, Points Forts, Specs Techniques, Matériaux & Finitions, Entretien, Durabilité, Preuves Sociales, FAQ, CTA Fort
-
-Informations Produit:
-- Titre: ${productTitle}
-- Marque: ${vendor}
-- Description: ${description}
-- Style: ${style || enrichedProduct.style || ""}
-- Couleur Principale: ${mainColor}
-- Disposition: ${layout}
-- Longueur Contenu: ${length}
-- URL Produit: ${productUrl}
-
-${enrichedSummary ? `\n✨ ATTRIBUTS PRODUIT ENRICHIS (DÉTECTÉS PAR IA - UTILISE CES DONNÉES!):\n${enrichedSummary}\n` : ""}
-
-Images Disponibles:
-${imgs}
-
-Variantes Disponibles:
-${vars}
-
-${visualAnalysis ? `${visualAnalysis}\n` : ""}
-
-Points Forts Personnalisés:
-${customHighlights}
-
-CONTRAINTES DESIGN:
-- Responsive mobile-first (sm:, md:, lg:, xl:)
-- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Grilles responsives: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-- Couleur primaire ${mainColor} pour CTAs, titres, accents
-- Ombres modernes: shadow-lg, shadow-xl
-- Transitions fluides: transition-all duration-300
-- Typographie professionnelle avec hiérarchie claire
-- Aucun tag <script> ou <style>
-- Retourne UNIQUEMENT le contenu HTML (sans wrapper markdown)
-
-EXEMPLE TABLEAU SPECS (si dimensions disponibles):
-<div class="bg-white rounded-xl shadow-lg p-8">
-  <h2 class="text-3xl font-bold mb-6">Caractéristiques Techniques</h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Dimensions</span><span>L x l x H cm</span></div>
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Poids</span><span>X kg</span></div>
-    <!-- Ajoute toutes les dimensions enrichies ici -->
-  </div>
-</div>
-
-STRUCTURE BOUTONS:
-<a href="${productUrl}" target="_blank" rel="noopener" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  Voir Tous les Détails
-</a>
-
-<button onclick="window.open('${productUrl}', '_blank')" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  Ajouter au Panier
-</button>
-`;
-
-    // --- AI call with timeout (60s) ---
-    console.log("🤖 Starting AI generation...");
-    const aiController = new AbortController();
-    const aiTimeout = setTimeout(() => aiController.abort(), 60000);
-
-    let aiResponse;
-    try {
-      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+    
+    const payload = {
+      title: productTitle,
+      existingDescription: description || enrichedProduct.description || "",
+      images: images.map((img) => ({
+        src: img.src,
+        alt: img.alt_text || productTitle,
+      })),
+      visionAnalysis: visualAnalysis ? { summary: visualAnalysis } : null,
+      dimensions: {
+        length: enrichedProduct.smart_length || length,
+        width: enrichedProduct.smart_width,
+        height: enrichedProduct.smart_height,
+        weight: enrichedProduct.smart_weight,
+      },
+      enrichedAttributes: {
+        visual: {
+          color: enrichedProduct.ai_color,
+          material: enrichedProduct.ai_material,
+          shape: enrichedProduct.ai_shape,
+          texture: enrichedProduct.ai_texture,
+          pattern: enrichedProduct.ai_pattern,
+          finish: enrichedProduct.ai_finish,
         },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content:
-                language === "en"
-                  ? "You are a professional Shopify landing page designer. You create beautiful, conversion-optimized HTML pages with real working buttons and links. You write persuasive copy and structure content for maximum engagement. Always include functional onclick handlers and href attributes for all buttons and links. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections."
-                  : "Tu es un designer professionnel de landing pages Shopify. Tu crées de belles pages HTML optimisées pour la conversion avec de vrais boutons et liens fonctionnels. Tu rédiges un contenu persuasif et structures l'information pour un engagement maximum. Inclus toujours des handlers onclick et attributs href fonctionnels pour tous les boutons et liens. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes.",
-            },
-            { role: "user", content: prompt },
-          ],
-          max_tokens: 5000,
-          temperature: 0.7,
+        categorization: {
+          category: enrichedProduct.category,
+          sub_category: enrichedProduct.sub_category,
+          style: enrichedProduct.style || style,
+          room: enrichedProduct.room,
+          functionality: enrichedProduct.functionality,
+        },
+      },
+      variants: variants.map((v) => ({
+        title: v.title,
+        image_url: v.image_url,
+      })),
+      vendor: vendor || enrichedProduct.vendor,
+      productUrl: productUrl,
+      mainColor: mainColor,
+      customHighlights: customHighlights || "",
+      template: layout || "ecommerce",
+      language: language,
+      provider: "lovable", // Utiliser Lovable AI
+    };
+
+    console.log("📊 Payload prepared:", {
+      images: payload.images.length,
+      variants: payload.variants.length,
+      hasEnriched: !!enrichedSummary,
+      hasVision: !!visualAnalysis,
+    });
+
+    // 🤖 Step 5: Appeler generate-product-description-html
+    console.log("🚀 Calling generate-product-description-html...");
+    const { data: htmlData, error: htmlError } = await supabaseAdmin.functions.invoke(
+      "generate-product-description-html",
+      { body: payload }
+    );
+
+    if (htmlError || !htmlData?.success) {
+      console.error("❌ HTML generation failed:", htmlError);
+      return new Response(
+        JSON.stringify({ 
+          error: htmlData?.error || htmlError?.message || "Failed to generate landing page",
+          details: htmlError 
         }),
-        signal: aiController.signal,
-      });
-    } finally {
-      clearTimeout(aiTimeout);
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    console.log("✅ AI generation completed");
+    let html = htmlData.htmlLandingPage;
+    console.log("✅ HTML generated successfully:", {
+      optimizedTitle: htmlData.optimizedTitle,
+      wordCount: htmlData.wordCount,
+      mediaCount: htmlData.mediaCount,
+      length: html.length,
+    });
 
-    if (!aiResponse.ok) {
-      const text = await aiResponse.text();
-      return new Response(JSON.stringify({ error: `Lovable API ${aiResponse.status}`, detail: text }), {
-        status: aiResponse.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await aiResponse.json();
-    let html = data?.choices?.[0]?.message?.content?.trim() || "";
-    html = sanitizeHtmlUnsafe(html);
-
-    if (!html || html.length < 400)
+    if (!html || html.length < 400) {
       return new Response(
         JSON.stringify({ error: language === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
 
     // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
     if (userId && product_id) {
