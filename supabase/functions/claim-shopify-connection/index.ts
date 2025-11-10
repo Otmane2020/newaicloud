@@ -102,31 +102,6 @@ serve(async (req) => {
 
     console.log("[CLAIM-SHOPIFY] Connection successfully claimed for", pending.shop_url);
 
-    // 🆕 Déclencher l'import automatique des 10 premiers produits
-    try {
-      console.log("[CLAIM-SHOPIFY] Starting auto-import of first 10 products...");
-      
-      // Utiliser le service role key pour appeler la fonction
-      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-      
-      const { data: importData, error: importError } = await supabaseAdmin.functions.invoke('import-products', {
-        body: {
-          shopName: pending.shop_url,
-          apiSecret: pending.access_token,
-          autoImportLimit: 10,
-          skipNotification: false
-        }
-      });
-
-      if (importError) {
-        console.error("[CLAIM-SHOPIFY] Auto-import failed:", importError);
-      } else {
-        console.log("[CLAIM-SHOPIFY] Auto-import completed:", importData);
-      }
-    } catch (importError) {
-      console.error("[CLAIM-SHOPIFY] Auto-import exception:", importError);
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
