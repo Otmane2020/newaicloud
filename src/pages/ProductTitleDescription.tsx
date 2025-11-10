@@ -115,6 +115,8 @@ export default function ProductTitleDescription() {
   const [showAiConfigDialog, setShowAiConfigDialog] = useState(false);
   const [showLandingPreviewDialog, setShowLandingPreviewDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
+  const [generatedHtmlCache, setGeneratedHtmlCache] = useState<Map<string, string>>(new Map());
+  const [replacingDescription, setReplacingDescription] = useState(false);
   const [syncingToShopify, setSyncingToShopify] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedImageType, setSelectedImageType] = useState<"primary" | "secondary">("primary");
@@ -324,13 +326,10 @@ export default function ProductTitleDescription() {
               if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
                 console.log("✅ HTML landing page généré (10 optimisations consommées)");
                 
-                // Save HTML to shopify_products.description
-                await supabase
-                  .from("shopify_products")
-                  .update({ description: htmlData.htmlLandingPage })
-                  .eq("id", productId);
+                // Store HTML in cache instead of saving immediately
+                setGeneratedHtmlCache(prev => new Map(prev).set(productId, htmlData.htmlLandingPage));
                 
-                // Update local product with HTML
+                // Update local product with HTML in memory only
                 updatedProduct.description = htmlData.htmlLandingPage;
               } else {
                 console.warn("⚠️ Génération HTML échouée:", htmlError || htmlData?.error);
@@ -418,6 +417,47 @@ export default function ProductTitleDescription() {
     if (abortController) {
       abortController.abort();
       toast.info("Annulation en cours...");
+    }
+  };
+
+  const handleReplaceDescription = async () => {
+    if (optimizedProducts.length === 0) {
+      toast.error("Aucun produit à mettre à jour");
+      return;
+    }
+
+    setReplacingDescription(true);
+    const toastId = toast.loading("Remplacement des descriptions en cours...");
+
+    try {
+      let updatedCount = 0;
+      
+      for (const product of optimizedProducts) {
+        const htmlContent = generatedHtmlCache.get(product.id);
+        if (htmlContent) {
+          const { error } = await supabase
+            .from("shopify_products")
+            .update({ description: htmlContent })
+            .eq("id", product.id);
+          
+          if (!error) {
+            updatedCount++;
+          }
+        }
+      }
+
+      toast.success(`${updatedCount} description(s) remplacée(s)`, { id: toastId });
+      
+      // Clear cache after successful replacement
+      setGeneratedHtmlCache(new Map());
+      
+      // Refresh products to show updated descriptions
+      await fetchProducts();
+    } catch (error) {
+      console.error("Error replacing descriptions:", error);
+      toast.error("Erreur lors du remplacement des descriptions", { id: toastId });
+    } finally {
+      setReplacingDescription(false);
     }
   };
 
@@ -1594,7 +1634,9 @@ export default function ProductTitleDescription() {
         isGenerating={isOptimizing}
         currentProcessing={currentProcessing}
         onCancel={generating ? handleCancelGeneration : undefined}
+        onReplaceDescription={handleReplaceDescription}
         onSync={handleSyncToShopify}
+        replaceLoading={replacingDescription}
         syncLoading={syncingToShopify}
       />
 

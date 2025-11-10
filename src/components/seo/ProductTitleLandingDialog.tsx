@@ -30,7 +30,9 @@ interface ProductTitleLandingDialogProps {
   isGenerating: boolean;
   currentProcessing?: { index: number; total: number; title: string } | null;
   onCancel?: () => void;
+  onReplaceDescription: () => void;
   onSync: () => void;
+  replaceLoading?: boolean;
   syncLoading?: boolean;
 }
 
@@ -136,7 +138,9 @@ export function ProductTitleLandingDialog({
   isGenerating,
   currentProcessing,
   onCancel,
+  onReplaceDescription,
   onSync,
+  replaceLoading = false,
   syncLoading = false,
 }: ProductTitleLandingDialogProps) {
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "360">("desktop");
@@ -409,14 +413,23 @@ export function ProductTitleLandingDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isGenerating || syncLoading}
+            disabled={isGenerating || replaceLoading || syncLoading}
             className="w-full sm:w-auto"
           >
             Annuler
           </Button>
           <Button
+            variant="secondary"
+            onClick={onReplaceDescription}
+            disabled={isGenerating || replaceLoading || syncLoading || products.length === 0}
+            className="w-full sm:w-auto"
+          >
+            {replaceLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Remplacer la description ({products.length})
+          </Button>
+          <Button
             onClick={onSync}
-            disabled={isGenerating || syncLoading || products.length === 0}
+            disabled={isGenerating || replaceLoading || syncLoading || products.length === 0}
             className="w-full sm:w-auto"
           >
             {syncLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
