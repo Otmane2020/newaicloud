@@ -54,10 +54,25 @@ export default function RegenerateLanding({
   const [htmlContent, setHtmlContent] = useState("");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [progress, setProgress] = useState(0);
+  const [targetProgress, setTargetProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [existingLanding, setExistingLanding] = useState<any>(null);
   const [loadingExisting, setLoadingExisting] = useState(true);
+
+  // 🎬 Smooth progress animation
+  useEffect(() => {
+    if (progress >= targetProgress) return;
+    
+    const increment = targetProgress > progress ? 1 : 0;
+    if (increment === 0) return;
+
+    const timer = setTimeout(() => {
+      setProgress((prev) => Math.min(prev + increment, targetProgress));
+    }, 50); // Update every 50ms for smooth animation
+
+    return () => clearTimeout(timer);
+  }, [progress, targetProgress]);
 
   // Charger la landing page existante
   useEffect(() => {
@@ -223,28 +238,29 @@ export default function RegenerateLanding({
       setLoading(true);
       setError(null);
       setProgress(0);
-      setProgressMessage(t.landingGeneration.preparing);
+      setTargetProgress(0);
+      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
 
       await new Promise((resolve) => setTimeout(resolve, 300));
-      setProgress(10);
+      setTargetProgress(10);
 
       // ✅ ÉTAPE 1 : Résoudre le vendor
-      setProgressMessage(t.landingGeneration.resolving);
+      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
       const resolvedVendor = await resolveVendor();
       console.log("[Landing] Resolved vendor:", resolvedVendor);
 
-      setProgress(20);
+      setTargetProgress(20);
 
       // ✅ ÉTAPE 2 : Analyser l'image avec vision IA
       let imageAnalysis = "";
       if (product.image_url) {
         imageAnalysis = await analyzeImageWithAI(product.image_url);
       } else {
-        setProgress(25); // Skip to same progress if no image
+        setTargetProgress(25); // Skip to same progress if no image
       }
 
-      setProgress(30);
-      setProgressMessage(t.landingGeneration.generating);
+      setTargetProgress(40);
+      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
 
       // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
       const contentParams = getContentLengthParams();
@@ -276,8 +292,8 @@ export default function RegenerateLanding({
         },
       });
 
-      setProgress(60);
-      setProgressMessage(t.landingGeneration.processing);
+      setTargetProgress(70);
+      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
 
       if (error) throw error;
       if (data?.error) {
@@ -294,15 +310,15 @@ export default function RegenerateLanding({
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
-      setProgress(90);
-      setProgressMessage(t.landingGeneration.finalizing);
+      setTargetProgress(90);
+      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
 
       if (data?.html?.trim()) {
         const wordCount = data.html.split(/\s+/).length;
         console.log(`[Landing] Generated content: ${wordCount} words (mobile-optimized by backend)`);
         
         setHtmlContent(data.html);
-        setProgress(100);
+        setTargetProgress(100);
         setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
 
         toast.success(t.landingGeneration.success.generated);
