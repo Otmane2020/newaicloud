@@ -435,316 +435,67 @@ serve(async (req) => {
     const prompt =
       language === "en"
         ? `You are a Shopify UX/UI expert specialized in product landing pages.
-Generate a professional, informational Tailwind HTML landing page.
+Generate a complete, professional Tailwind HTML landing page.
 
 PRODUCT:
 - Title: ${productTitle}
 - Brand: ${vendor}
 - Description: ${description}
 - Style: ${style || enrichedProduct.style || ""}
-- Main Color: ${mainColor}
+- Main color: hsl(${designTokens.primary})
 - Product URL: ${productUrl}
 
 ${enrichedSummary ? `ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
 
-IMAGES: ${imgs}
-VARIANTS: ${vars}
-${customHighlights ? `HIGHLIGHTS: ${customHighlights}` : ""}
+IMAGES:
+${imgs}
+VARIANTS:
+${vars}
+${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
 
-CRITICAL RULES - FOLLOW EXACTLY:
+REQUIREMENTS:
+- Complete HTML5 document with <!DOCTYPE html>, <html>, <head>, <body>
+- Include <script src="https://cdn.tailwindcss.com"></script> in <head>
+- Mobile-first responsive (sm:, md:, lg: breakpoints)
+- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Responsive grids: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+- Use inline styles with HSL colors for main sections and CTAs: style="background-color: hsl(${designTokens.primary})"
+- NEVER use HEX colors (#FFFFFF, etc.)
+- No <footer>, no CTA buttons
+- Return ONLY the complete HTML
 
-1. HTML STRUCTURE (ABSOLUTELY MANDATORY):
-   Your response MUST be a COMPLETE valid HTML5 document:
-   
-   <!DOCTYPE html>
-   <html lang="en">
-   <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>${productTitle}</title>
-     <script src="https://cdn.tailwindcss.com"></script>
-     <style>
-       :root {
-         --brand-primary-h: ${designTokens.primary.split(' ')[0]};
-         --brand-primary-s: ${designTokens.primary.split(' ')[1]};
-         --brand-primary-l: ${designTokens.primary.split(' ')[2]};
-         --brand-secondary-h: ${designTokens.secondary.split(' ')[0]};
-         --brand-secondary-s: ${designTokens.secondary.split(' ')[1]};
-         --brand-secondary-l: ${designTokens.secondary.split(' ')[2]};
-         --brand-accent-h: ${designTokens.accent.split(' ')[0]};
-         --brand-accent-s: ${designTokens.accent.split(' ')[1]};
-         --brand-accent-l: ${designTokens.accent.split(' ')[2]};
-         --brand-surface-h: ${designTokens.surface.split(' ')[0]};
-         --brand-surface-s: ${designTokens.surface.split(' ')[1]};
-         --brand-surface-l: ${designTokens.surface.split(' ')[2]};
-       }
-       .bg-brand-primary { background-color: hsl(${designTokens.primary}) !important; }
-       .bg-brand-secondary { background-color: hsl(${designTokens.secondary}) !important; }
-       .bg-brand-accent { background-color: hsl(${designTokens.accent}) !important; }
-       .bg-brand-surface { background-color: hsl(${designTokens.surface}) !important; }
-       .text-brand-primary { color: hsl(${designTokens.primary}) !important; }
-       .border-brand-primary { border-color: hsl(${designTokens.primary}) !important; }
-       .border-brand-accent { border-color: hsl(${designTokens.accent}) !important; }
-       .hover\\:bg-brand-surface:hover { background-color: hsl(${designTokens.surface}) !important; }
-       .from-brand-primary { --tw-gradient-from: hsl(${designTokens.primary}) !important; }
-       .to-brand-accent { --tw-gradient-to: hsl(${designTokens.accent}) !important; }
-     </style>
-     <script>
-       tailwind.config = {
-         theme: {
-           extend: {
-             colors: {
-               'brand-primary': 'hsl(${designTokens.primary})',
-               'brand-secondary': 'hsl(${designTokens.secondary})',
-               'brand-accent': 'hsl(${designTokens.accent})',
-               'brand-surface': 'hsl(${designTokens.surface})',
-             }
-           }
-         }
-       }
-     </script>
-   </head>
-   <body>
-   
-   Your content sections...
-   
-   </body>
-   </html>
-
-2. COLORS - USE THE FULL BRAND PALETTE:
-   - Hero/Header: bg-brand-primary or bg-brand-accent with text-white
-   - Alternating sections: bg-white and bg-brand-surface
-   - Cards: bg-white with border-brand-primary or hover:bg-brand-surface
-   - Accents/highlights: bg-brand-primary text-white or border-brand-accent
-   - Text: text-gray-900 (primary), text-gray-700 (secondary)
-   - FORBIDDEN: :root, --primary-color as global CSS variables
-   - FORBIDDEN: HEX colors (#FFFFFF, #000000, etc.) - NEVER USE HEX ANYWHERE
-   - MANDATORY: Use inline style="background-color: hsl(...)" on hero, main sections, and accent elements
-   - MANDATORY: Use inline style="color: hsl(...)" for colored text (not gray/white/black)
-   - Example: style="background-color: hsl(${designTokens.primary})"
-   - Example: style="color: hsl(${designTokens.primary})"
-   
-3. RESPONSIVE LAYOUT (CRITICAL - FOLLOW EXAMPLES EXACTLY):
-   
-   HERO SECTION WITH PRODUCT (MANDATORY STRUCTURE):
-   <div style="background-color: hsl(${designTokens.primary})" class="bg-brand-primary text-white">
-     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
-       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-         <div>
-           <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6">${productTitle}</h1>
-           <p class="text-lg sm:text-xl text-white/90 mb-8">Brief compelling description here...</p>
-         </div>
-         <div class="flex justify-center lg:justify-end">
-           <img src="${imageUrl}" alt="${productTitle}" class="w-full max-w-md lg:max-w-lg h-auto object-cover rounded-lg shadow-2xl" />
-         </div>
-       </div>
-     </div>
-   </div>
-   
-   BENEFIT CARDS GRID:
-   <div class="bg-white py-16 sm:py-20">
-     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-       <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-12 text-center">Key Benefits</h2>
-       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-         <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors" style="border-color: hsl(${designTokens.primary})">
-           <h3 class="text-xl font-semibold text-gray-900 mb-3">Benefit Title</h3>
-           <p class="text-gray-700">Description text here...</p>
-         </div>
-       </div>
-     </div>
-   </div>
-   
-   ACCENT SECTION EXAMPLE:
-   <div style="background-color: hsl(${designTokens.accent})" class="bg-brand-accent py-16 sm:py-20">
-     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-       <h2 class="text-3xl font-bold text-white mb-8">Section Title</h2>
-       <p class="text-white/90 text-lg">Content here...</p>
-     </div>
-   </div>
-   
-   SURFACE SECTION EXAMPLE:
-   <div style="background-color: hsl(${designTokens.surface})" class="bg-brand-surface py-16 sm:py-20">
-     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-       <h2 class="text-3xl font-bold text-gray-900 mb-8">Section Title</h2>
-       <p class="text-gray-700 text-lg">Content here...</p>
-     </div>
-   </div>
-   
-   CRITICAL RESPONSIVE RULES:
-   - Always use max-w-7xl mx-auto for main containers
-   - Always add px-4 sm:px-6 lg:px-8 for responsive padding
-   - Images: w-full h-auto object-cover (NEVER fixed small sizes like w-20)
-   - Text: MUST have responsive breakpoints (text-2xl sm:text-3xl md:text-4xl)
-   - Grids: MUST start mobile-first (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
-   
-4. NO FOOTER - End with </body></html>
-
-5. NO CTA BUTTONS - Informational only
-
-SECTIONS:
-1. Hero (bg-brand-primary)
-2. Key Benefits (3-4 cards with border-brand-primary)
-3. Technical Specifications ${enrichedSummary ? "(MANDATORY)" : ""}
-4. Materials & Finishes ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "(MANDATORY)" : ""}
-5. Image Gallery (bg-brand-surface)
-6. Care Instructions
-7. FAQ (bg-white/bg-brand-surface alternating)
-
-DESIGN:
-- Alternate bg-white and bg-brand-surface for visual rhythm
-- Use border-brand-primary for cards and dividers
-- Colored section headers with bg-brand-primary
-- Modern shadows: shadow-lg shadow-brand-primary/10
-- Gradients: from-brand-primary to-brand-accent
-- Professional typography with clear hierarchy
-- NO CTA buttons
-
-Return ONLY the HTML content.`
+Sections: Hero with product image, Key Benefits (3-4 cards), Specifications, Materials, Image Gallery, Care Instructions, FAQ.`
         : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
-Génère une landing page HTML Tailwind professionnelle et informationnelle.
+Génère une landing page Tailwind HTML complète et professionnelle.
 
-PRODUIT:
-- Titre: ${productTitle}
-- Marque: ${vendor}
-- Description: ${description}
-- Style: ${style || enrichedProduct.style || ""}
-- Couleur Principale: ${mainColor}
-- URL Produit: ${productUrl}
+PRODUIT :
+- Titre : ${productTitle}
+- Marque : ${vendor}
+- Description : ${description}
+- Style : ${style || enrichedProduct.style || ""}
+- Couleur principale : hsl(${designTokens.primary})
+- URL produit : ${productUrl}
 
-${enrichedSummary ? `ATTRIBUTS ENRICHIS:\n${enrichedSummary}\n` : ""}
+${enrichedSummary ? `ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
 
-IMAGES: ${imgs}
-VARIANTES: ${vars}
-${customHighlights ? `POINTS FORTS: ${customHighlights}` : ""}
+IMAGES :
+${imgs}
+VARIANTES :
+${vars}
+${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
 
-RÈGLES CRITIQUES - SUIVRE EXACTEMENT:
+EXIGENCES :
+- Document HTML5 complet avec <!DOCTYPE html>, <html>, <head>, <body>
+- Inclure <script src="https://cdn.tailwindcss.com"></script> dans <head>
+- Responsive mobile-first (sm:, md:, lg:)
+- Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Grilles responsives : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+- Utiliser styles inline HSL pour sections principales et CTAs : style="background-color: hsl(${designTokens.primary})"
+- JAMAIS de couleurs HEX (#FFFFFF, etc.)
+- Pas de <footer>, pas de boutons CTA
+- Retourne UNIQUEMENT le HTML complet
 
-1. STRUCTURE HTML (ABSOLUMENT OBLIGATOIRE):
-   Ta réponse DOIT être un document HTML5 COMPLET:
-   
-   <!DOCTYPE html>
-   <html lang="fr">
-   <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>${productTitle}</title>
-     <script src="https://cdn.tailwindcss.com"></script>
-     <style>
-       :root {
-         --brand-primary-h: ${designTokens.primary.split(' ')[0]};
-         --brand-primary-s: ${designTokens.primary.split(' ')[1]};
-         --brand-primary-l: ${designTokens.primary.split(' ')[2]};
-         --brand-secondary-h: ${designTokens.secondary.split(' ')[0]};
-         --brand-secondary-s: ${designTokens.secondary.split(' ')[1]};
-         --brand-secondary-l: ${designTokens.secondary.split(' ')[2]};
-         --brand-accent-h: ${designTokens.accent.split(' ')[0]};
-         --brand-accent-s: ${designTokens.accent.split(' ')[1]};
-         --brand-accent-l: ${designTokens.accent.split(' ')[2]};
-         --brand-surface-h: ${designTokens.surface.split(' ')[0]};
-         --brand-surface-s: ${designTokens.surface.split(' ')[1]};
-         --brand-surface-l: ${designTokens.surface.split(' ')[2]};
-       }
-       .bg-brand-primary { background-color: hsl(${designTokens.primary}) !important; }
-       .bg-brand-secondary { background-color: hsl(${designTokens.secondary}) !important; }
-       .bg-brand-accent { background-color: hsl(${designTokens.accent}) !important; }
-       .bg-brand-surface { background-color: hsl(${designTokens.surface}) !important; }
-       .text-brand-primary { color: hsl(${designTokens.primary}) !important; }
-       .border-brand-primary { border-color: hsl(${designTokens.primary}) !important; }
-       .border-brand-accent { border-color: hsl(${designTokens.accent}) !important; }
-       .hover\\:bg-brand-surface:hover { background-color: hsl(${designTokens.surface}) !important; }
-       .from-brand-primary { --tw-gradient-from: hsl(${designTokens.primary}) !important; }
-       .to-brand-accent { --tw-gradient-to: hsl(${designTokens.accent}) !important; }
-     </style>
-     <script>
-       tailwind.config = {
-         theme: {
-           extend: {
-             colors: {
-               'brand-primary': 'hsl(${designTokens.primary})',
-               'brand-secondary': 'hsl(${designTokens.secondary})',
-               'brand-accent': 'hsl(${designTokens.accent})',
-               'brand-surface': 'hsl(${designTokens.surface})',
-             }
-           }
-         }
-       }
-     </script>
-   </head>
-   <body>
-   
-   Tes sections de contenu...
-   
-   </body>
-   </html>
-
-2. COULEURS - UTILISE LA PALETTE COMPLÈTE:
-   - Hero/Header: bg-brand-primary ou bg-brand-accent avec text-white
-   - Sections alternées: bg-white et bg-brand-surface
-   - Cartes: bg-white avec border-brand-primary ou hover:bg-brand-surface
-   - Accents: bg-brand-primary text-white ou border-brand-accent
-   - Texte: text-gray-900 (principal), text-gray-700 (secondaire)
-   - INTERDIT: :root, --primary-color comme variables CSS globales
-   
-3. LAYOUT RESPONSIVE (CRITIQUE - SUIVRE EXEMPLES EXACTEMENT):
-   
-   SECTION HERO AVEC PRODUIT (STRUCTURE OBLIGATOIRE):
-   <div class="bg-brand-primary text-white">
-     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
-       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-         <div>
-           <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6">${productTitle}</h1>
-           <p class="text-lg sm:text-xl text-white/90 mb-8">Brève description convaincante...</p>
-         </div>
-         <div class="flex justify-center lg:justify-end">
-           <img src="${imageUrl}" alt="${productTitle}" class="w-full max-w-md lg:max-w-lg h-auto object-cover rounded-lg shadow-2xl" />
-         </div>
-       </div>
-     </div>
-   </div>
-   
-   GRILLE DE CARTES BÉNÉFICES:
-   <div class="bg-white py-16 sm:py-20">
-     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-       <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-12 text-center">Points Forts</h2>
-       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-         <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors">
-           <h3 class="text-xl font-semibold text-gray-900 mb-3">Titre Bénéfice</h3>
-           <p class="text-gray-700">Texte descriptif...</p>
-         </div>
-       </div>
-     </div>
-   </div>
-   
-   RÈGLES RESPONSIVE CRITIQUES:
-   - Toujours utiliser max-w-7xl mx-auto pour conteneurs principaux
-   - Toujours ajouter px-4 sm:px-6 lg:px-8 pour padding responsive
-   - Images: w-full h-auto object-cover (JAMAIS tailles fixes comme w-20)
-   - Texte: DOIT avoir breakpoints responsive (text-2xl sm:text-3xl md:text-4xl)
-   - Grilles: DOIT commencer mobile-first (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
-   
-4. PAS DE FOOTER - Terminer avec </body></html>
-
-5. PAS DE BOUTONS CTA - Informatif uniquement
-
-SECTIONS:
-1. Hero (bg-brand-primary)
-2. Points Forts (3-4 cartes avec border-brand-primary)
-3. Caractéristiques Techniques ${enrichedSummary ? "(OBLIGATOIRE)" : ""}
-4. Matériaux & Finitions ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "(OBLIGATOIRE)" : ""}
-5. Galerie d'Images (bg-brand-surface)
-6. Conseils d'Entretien
-7. FAQ (bg-white/bg-brand-surface alternées)
-
-DESIGN:
-- Alterne bg-white et bg-brand-surface pour rythme visuel
-- Utilise border-brand-primary pour cartes et séparateurs
-- En-têtes de section colorés avec bg-brand-primary
-- Ombres modernes: shadow-lg shadow-brand-primary/10
-- Dégradés: from-brand-primary to-brand-accent
-- Typographie professionnelle avec hiérarchie claire
-- AUCUN bouton CTA
-
-Retourne UNIQUEMENT le contenu HTML.`;
+Rubriques : Hero avec image produit, Points forts (3-4 cartes), Caractéristiques, Matériaux, Galerie d'images, Entretien, FAQ.`;
 
     // --- AI call with timeout (60s) ---
     console.log("🤖 Starting AI generation...");
