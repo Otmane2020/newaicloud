@@ -6,8 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-
 function sanitizeHtmlUnsafe(html: string): string {
   if (!html) return "";
   let out = html
@@ -309,292 +307,224 @@ serve(async (req) => {
     const prompt =
       language === "en"
         ? `
-You are an elite Shopify UX/UI designer creating luxury, high-converting landing pages.
-Generate a **complete, premium HTML landing page** with Tailwind CSS and professional structure.
+You are an elite Shopify UX/UI designer creating premium HTML product descriptions.
+Generate a **clean, professional HTML product description** with Tailwind CSS that will be inserted into Shopify product description field.
 
-🎯 MANDATORY PAGE STRUCTURE (in this exact order):
+🎯 IMPORTANT: This is a PRODUCT DESCRIPTION, not a full landing page. No prices, no "Add to Cart" buttons, no checkout functionality.
 
-1. **HERO SECTION** (py-16 md:py-24 bg-gradient-to-br from-gray-50 to-white)
-   - Full-width hero with product image on left (50%) and content on right (50%) on desktop
-   - Mobile: Stack vertically (image top, content below)
-   - H1: text-4xl md:text-5xl lg:text-6xl font-bold
-   - Tagline: text-xl md:text-2xl text-gray-600
-   - Primary CTA: Large button with shadow-2xl hover:shadow-3xl
+📱 RESPONSIVE DESIGN REQUIREMENTS:
+- Use simple, clean Tailwind classes
+- Focus on readability and content presentation
+- Avoid complex layouts that might break in Shopify
+- Use standard container: max-w-4xl mx-auto px-4
 
-2. **IMAGE GALLERY GRID** (py-16 bg-white)
-   - Grid: grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4
-   - Each image: aspect-ratio-square, rounded-xl, shadow-lg hover:scale-105 transition-transform duration-500
-   - Use ALL ${images.length} images provided
+📦 MANDATORY CONTENT SECTIONS (in this order):
 
-3. **VISUAL ATTRIBUTES CARDS** (py-20 bg-gradient-to-b from-white to-gray-50)
-   ${enrichedProduct.ai_color || enrichedProduct.ai_material || enrichedProduct.ai_shape ? `
-   - MANDATORY section: "Visual Identity"
-   - Grid of icon cards: grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6
-   - Each card: bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300
-   - Include detected: Color (${enrichedProduct.ai_color}), Material (${enrichedProduct.ai_material}), Shape (${enrichedProduct.ai_shape}), Texture (${enrichedProduct.ai_texture}), Pattern (${enrichedProduct.ai_pattern}), Finish (${enrichedProduct.ai_finish})
-   ` : "- Create cards for any visual attributes mentioned in description"}
+1. **PRODUCT INTRODUCTION**
+   - Clean heading with product name
+   - Brief compelling description
+   - Focus on main benefits
 
-4. **TECHNICAL SPECIFICATIONS TABLE** (py-16 bg-white)
-   ${enrichedSummary ? `
-   - MANDATORY: Create comprehensive "Technical Specifications" section
-   - Elegant table with: bg-gray-50 rounded-2xl p-8 shadow-inner
-   - Grid: grid-cols-1 md:grid-cols-2 gap-6
-   - Each row: flex justify-between items-center border-b border-gray-200 py-4
-   - Include ALL dimensions from enriched data
-   ` : "- Include if dimensions detected by Vision AI"}
-
-5. **MATERIALS & FINISHES** (py-20 bg-gradient-to-br from-gray-100 to-gray-50)
-   ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? `
-   - MANDATORY: "Materials & Craftsmanship" section
-   - 2-column layout with image + detailed text
-   - Highlight quality, durability, craftsmanship
-   - Use Vision AI data: ${enrichedProduct.ai_material}, ${enrichedProduct.ai_finish}
+2. **VISUAL ATTRIBUTES**
+   ${enrichedProduct.ai_color || enrichedProduct.ai_material ? `
+   - Highlight key visual features
+   - Use simple badge-style elements
+   - Color: ${enrichedProduct.ai_color}
+   - Material: ${enrichedProduct.ai_material}
    ` : ""}
 
-6. **USE CASES / LIFESTYLE** (py-16 bg-white)
-   - "Perfect For" section with icon cards
-   - Grid: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-   - Based on Vision AI mood/style: ${visualAnalysis ? "detected" : "infer from product"}
+3. **IMAGE GALLERY**
+   - Display ${images.length} product images
+   - Simple grid: grid-cols-2 md:grid-cols-3 gap-4
+   - Clean, professional presentation
 
-7. **KEY BENEFITS** (py-20 bg-gradient-to-b from-white to-gray-100)
-   - 3-4 benefit cards with icons
-   - Cards: bg-white rounded-xl shadow-lg p-6 hover:shadow-xl
+4. **TECHNICAL SPECIFICATIONS**
+   ${enrichedSummary ? `
+   - Create clean specifications table
+   - Use all enriched dimensions and attributes
+   - Simple two-column layout
+   ` : "- Include basic product details"}
 
-8. **FAQ SECTION** (py-16 bg-white)
-   - Accordion-style (use details/summary HTML)
-   - 5-6 relevant questions with detailed answers
+5. **MATERIALS & CRAFTSMANSHIP**
+   ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? `
+   - Detail materials and construction
+   - Focus on quality and durability
+   ` : ""}
 
-9. **FINAL CTA HERO** (py-24 bg-gradient-to-r from-gray-900 to-gray-800 text-white)
-   - Full-width CTA with strong call to action
-   - Multiple buttons: "View Product" + "Add to Cart"
-   - Trust badges: "Free Shipping", "30-Day Returns", etc.
+6. **USE CASES & BENEFITS**
+   - Practical applications
+   - Key customer benefits
+   - Simple bullet points
 
-📦 PRODUCT DATA:
+7. **CARE & MAINTENANCE**
+   - Basic care instructions
+   - Maintenance tips
+
+📊 PRODUCT DATA:
 - Title: ${productTitle}
-- Brand: ${vendor || "Premium Brand"}
+- Brand: ${vendor || ""}
 - Description: ${description}
-- Style: ${style || enrichedProduct.style || "Contemporary"}
-- Primary Color: ${mainColor}
-- Product URL: ${productUrl}
+- Style: ${style || enrichedProduct.style || ""}
 
-${enrichedSummary ? `\n✨ ENRICHED ATTRIBUTES (MUST USE ALL):\n${enrichedSummary}\n` : ""}
+${enrichedSummary ? `\n📐 ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
 
-🖼️ IMAGES (${images.length} total - use ALL):
+🖼️ IMAGES (${images.length} total):
 ${images.map((i, idx) => `${idx + 1}. ${i.src}${i.alt_text ? ` (alt: ${i.alt_text})` : ""}`).join("\n")}
 
-🎨 VARIANTS (${variants.length} total):
-${variants.map((v) => `- ${v.title}${v.image_url ? ` → ${v.image_url}` : ""}`).join("\n")}
-
-${visualAnalysis ? `\n🔍 VISION AI ANALYSIS:\n${visualAnalysis}\n` : ""}
+${visualAnalysis ? `\n🔍 VISION AI INSIGHTS:\n${visualAnalysis}\n` : ""}
 
 ${customHighlights ? `\n💡 CUSTOM HIGHLIGHTS:\n${customHighlights}\n` : ""}
 
-🎨 PREMIUM TAILWIND CLASSES (MUST USE):
-- Backgrounds: bg-gradient-to-br from-gray-50 to-gray-100, bg-gradient-to-r from-blue-500 to-purple-600
-- Shadows: shadow-2xl, shadow-3xl, hover:shadow-4xl, shadow-[0_20px_50px_rgba(0,0,0,0.15)]
-- Blur effects: backdrop-blur-sm bg-white/90
-- Rings: ring-2 ring-offset-4 ring-[${mainColor}]
-- Transitions: transition-all duration-500 ease-out
-- Hover effects: hover:scale-105 hover:-translate-y-2
-- Grid gaps: gap-8 md:gap-12 lg:gap-16
+🎨 DESIGN GUIDELINES:
+- Clean, professional appearance
+- Readable typography hierarchy
+- Subtle color accents using ${mainColor}
+- Adequate white space
+- Mobile-friendly simple layouts
+- No complex animations or interactions
+- Focus on content clarity
 
-📱 MOBILE-FIRST RESPONSIVE (CRITICAL):
-- Base mobile: px-4 py-8 text-base
-- Tablet (sm:640px): sm:px-6 sm:py-12 sm:text-lg
-- Desktop (md:768px): md:px-8 md:py-16 md:text-xl
-- Large (lg:1024px): lg:px-12 lg:py-20 lg:text-2xl
-- XL (xl:1280px): xl:px-16 xl:py-24
+🚫 STRICTLY PROHIBITED:
+- NO "Add to Cart" buttons
+- NO pricing information
+- NO checkout functionality
+- NO complex JavaScript
+- NO external stylesheets
+- NO iframes or embedded content
+- NO complex grid layouts that break in Shopify
 
-- Typography scale:
-  * H1: text-3xl md:text-5xl lg:text-6xl xl:text-7xl
-  * H2: text-2xl md:text-4xl lg:text-5xl
-  * H3: text-xl md:text-3xl lg:text-4xl
-  * Body: text-base md:text-lg lg:text-xl
-  * Small: text-sm md:text-base
+✅ REQUIRED OUTPUT:
+- Pure HTML with Tailwind classes only
+- Clean, semantic structure
+- Mobile-responsive simple design
+- Professional product presentation
+- All images from provided list
+- Comprehensive product information
 
-- Grid responsive:
-  * 1 col mobile → 2 col tablet → 3-4 col desktop
-  * Example: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
+Example simple image grid:
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-8">
+  <img src="${images[0]?.src || ''}" alt="${images[0]?.alt_text || productTitle}" class="w-full h-auto rounded-lg">
+  <!-- more images -->
+</div>
 
-🔗 FUNCTIONAL BUTTONS (MANDATORY):
-
-View Product Button:
-<a href="${productUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-[${mainColor}] rounded-xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300">
-  View Full Details →
-</a>
-
-Add to Cart Button:
-<button onclick="window.open('${productUrl}', '_blank')" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300">
-  🛒 Add to Cart
-</button>
-
-⚠️ CRITICAL RULES:
-- NO <script>, <style>, <html>, <head>, <body> tags
-- Return ONLY the page content (divs, sections)
-- Use inline Tailwind classes ONLY
-- All images must use provided URLs
-- All buttons must be functional with correct href/onclick
-- Write persuasive, professional copy
-- Use ${language === "en" ? "English" : "French"} language
-- Minimum 8 distinct sections with clear visual separation
+Example specifications table:
+<div class="bg-gray-50 rounded-lg p-6 my-8">
+  <h3 class="text-xl font-semibold mb-4">Technical Specifications</h3>
+  <div class="space-y-2">
+    <div class="flex justify-between"><span>Material</span><span>${enrichedProduct.ai_material || 'High-quality materials'}</span></div>
+    <!-- more specs -->
+  </div>
+</div>
 `
         : `
-Tu es un designer UX/UI Shopify créant des landing pages premium et haute conversion.
-Génère une **landing page HTML complète et professionnelle** avec Tailwind CSS et structure élégante.
+Tu es un designer UX/UI Shopify créant des descriptions de produit HTML premium.
+Génère une **description de produit HTML propre et professionnelle** avec Tailwind CSS qui sera insérée dans le champ description de Shopify.
 
-🎯 STRUCTURE OBLIGATOIRE (dans cet ordre exact):
+🎯 IMPORTANT: Ceci est une DESCRIPTION DE PRODUIT, pas une landing page complète. Pas de prix, pas de boutons "Ajouter au Panier", pas de fonctionnalité de checkout.
 
-1. **SECTION HERO** (py-16 md:py-24 bg-gradient-to-br from-gray-50 to-white)
-   - Hero pleine largeur avec image produit à gauche (50%) et contenu à droite (50%) sur desktop
-   - Mobile: Empiler verticalement (image en haut, contenu en bas)
-   - H1: text-4xl md:text-5xl lg:text-6xl font-bold
-   - Accroche: text-xl md:text-2xl text-gray-600
-   - CTA primaire: Gros bouton avec shadow-2xl hover:shadow-3xl
+📱 EXIGENCES DESIGN RESPONSIVE:
+- Utilise des classes Tailwind simples et propres
+- Concentre-toi sur la lisibilité et la présentation du contenu
+- Évite les layouts complexes qui pourraient casser dans Shopify
+- Utilise un container standard: max-w-4xl mx-auto px-4
 
-2. **GALERIE IMAGES GRID** (py-16 bg-white)
-   - Grille: grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4
-   - Chaque image: aspect-ratio-square, rounded-xl, shadow-lg hover:scale-105 transition-transform duration-500
-   - Utilise TOUTES les ${images.length} images fournies
+📦 SECTIONS DE CONTENU OBLIGATOIRES (dans cet ordre):
 
-3. **CARTES ATTRIBUTS VISUELS** (py-20 bg-gradient-to-b from-white to-gray-50)
-   ${enrichedProduct.ai_color || enrichedProduct.ai_material || enrichedProduct.ai_shape ? `
-   - Section OBLIGATOIRE: "Identité Visuelle"
-   - Grille de cartes avec icônes: grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6
-   - Chaque carte: bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300
-   - Inclure détectés: Couleur (${enrichedProduct.ai_color}), Matériau (${enrichedProduct.ai_material}), Forme (${enrichedProduct.ai_shape}), Texture (${enrichedProduct.ai_texture}), Motif (${enrichedProduct.ai_pattern}), Finition (${enrichedProduct.ai_finish})
-   ` : "- Créer cartes pour attributs visuels mentionnés"}
+1. **INTRODUCTION PRODUIT**
+   - Titre propre avec nom du produit
+   - Description brève et convaincante
+   - Focus sur les bénéfices principaux
 
-4. **TABLEAU CARACTÉRISTIQUES TECHNIQUES** (py-16 bg-white)
-   ${enrichedSummary ? `
-   - OBLIGATOIRE: Section "Caractéristiques Techniques" complète
-   - Tableau élégant: bg-gray-50 rounded-2xl p-8 shadow-inner
-   - Grille: grid-cols-1 md:grid-cols-2 gap-6
-   - Chaque ligne: flex justify-between items-center border-b border-gray-200 py-4
-   - Inclure TOUTES les dimensions des données enrichies
-   ` : "- Inclure si dimensions détectées par Vision AI"}
-
-5. **MATÉRIAUX & FINITIONS** (py-20 bg-gradient-to-br from-gray-100 to-gray-50)
-   ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? `
-   - OBLIGATOIRE: Section "Matériaux & Savoir-Faire"
-   - Layout 2 colonnes avec image + texte détaillé
-   - Mettre en avant qualité, durabilité, artisanat
-   - Utiliser données Vision AI: ${enrichedProduct.ai_material}, ${enrichedProduct.ai_finish}
+2. **ATTRIBUTS VISUELS**
+   ${enrichedProduct.ai_color || enrichedProduct.ai_material ? `
+   - Met en avant les caractéristiques visuelles clés
+   - Utilise des éléments style badges simples
+   - Couleur: ${enrichedProduct.ai_color}
+   - Matériau: ${enrichedProduct.ai_material}
    ` : ""}
 
-6. **CAS D'USAGE / LIFESTYLE** (py-16 bg-white)
-   - Section "Parfait Pour" avec cartes icônes
-   - Grille: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-   - Basé sur ambiance/style Vision AI: ${visualAnalysis ? "détecté" : "inférer du produit"}
+3. **GALERIE IMAGES**
+   - Affiche les ${images.length} images produit
+   - Grille simple: grid-cols-2 md:grid-cols-3 gap-4
+   - Présentation propre et professionnelle
 
-7. **POINTS FORTS CLÉS** (py-20 bg-gradient-to-b from-white to-gray-100)
-   - 3-4 cartes bénéfices avec icônes
-   - Cartes: bg-white rounded-xl shadow-lg p-6 hover:shadow-xl
+4. **CARACTÉRISTIQUES TECHNIQUES**
+   ${enrichedSummary ? `
+   - Crée un tableau de spécifications propre
+   - Utilise toutes les dimensions et attributs enrichis
+   - Layout deux colonnes simple
+   ` : "- Inclure détails produit de base"}
 
-8. **SECTION FAQ** (py-16 bg-white)
-   - Style accordéon (utiliser details/summary HTML)
-   - 5-6 questions pertinentes avec réponses détaillées
+5. **MATÉRIAUX & SAVOIR-FAIRE**
+   ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? `
+   - Détaille les matériaux et la construction
+   - Focus sur la qualité et la durabilité
+   ` : ""}
 
-9. **CTA HERO FINAL** (py-24 bg-gradient-to-r from-gray-900 to-gray-800 text-white)
-   - CTA pleine largeur avec appel fort à l'action
-   - Plusieurs boutons: "Voir Produit" + "Ajouter Panier"
-   - Badges confiance: "Livraison Gratuite", "Retours 30j", etc.
+6. **CAS D'USAGE & AVANTAGES**
+   - Applications pratiques
+   - Bénéfices clients clés
+   - Points simples sous forme de liste
 
-📦 DONNÉES PRODUIT:
+7. **ENTRETIEN & MAINTENANCE**
+   - Instructions d'entretien de base
+   - Conseils de maintenance
+
+📊 DONNÉES PRODUIT:
 - Titre: ${productTitle}
-- Marque: ${vendor || "Marque Premium"}
+- Marque: ${vendor || ""}
 - Description: ${description}
-- Style: ${style || enrichedProduct.style || "Contemporain"}
-- Couleur Principale: ${mainColor}
-- URL Produit: ${productUrl}
+- Style: ${style || enrichedProduct.style || ""}
 
-${enrichedSummary ? `\n✨ ATTRIBUTS ENRICHIS (UTILISER TOUS):\n${enrichedSummary}\n` : ""}
+${enrichedSummary ? `\n📐 ATTRIBUTS ENRICHIS:\n${enrichedSummary}\n` : ""}
 
-🖼️ IMAGES (${images.length} total - utiliser TOUTES):
+🖼️ IMAGES (${images.length} total):
 ${images.map((i, idx) => `${idx + 1}. ${i.src}${i.alt_text ? ` (alt: ${i.alt_text})` : ""}`).join("\n")}
 
-🎨 VARIANTES (${variants.length} total):
-${variants.map((v) => `- ${v.title}${v.image_url ? ` → ${v.image_url}` : ""}`).join("\n")}
-
-${visualAnalysis ? `\n🔍 ANALYSE VISION AI:\n${visualAnalysis}\n` : ""}
+${visualAnalysis ? `\n🔍 INSIGHTS VISION AI:\n${visualAnalysis}\n` : ""}
 
 ${customHighlights ? `\n💡 POINTS FORTS PERSONNALISÉS:\n${customHighlights}\n` : ""}
 
-🎨 CLASSES TAILWIND PREMIUM (UTILISER):
-- Arrière-plans: bg-gradient-to-br from-gray-50 to-gray-100, bg-gradient-to-r from-blue-500 to-purple-600
-- Ombres: shadow-2xl, shadow-3xl, hover:shadow-4xl, shadow-[0_20px_50px_rgba(0,0,0,0.15)]
-- Effets blur: backdrop-blur-sm bg-white/90
-- Anneaux: ring-2 ring-offset-4 ring-[${mainColor}]
-- Transitions: transition-all duration-500 ease-out
-- Effets hover: hover:scale-105 hover:-translate-y-2
-- Espaces grille: gap-8 md:gap-12 lg:gap-16
+🎨 DIRECTIVES DESIGN:
+- Apparence propre et professionnelle
+- Hiérarchie typographique lisible
+- Accents de couleur subtils avec ${mainColor}
+- Espace blanc adéquat
+- Layouts simples mobile-friendly
+- Pas d'animations ou interactions complexes
+- Focus sur la clarté du contenu
 
-📱 RESPONSIVE MOBILE-FIRST (CRITIQUE):
-- Base mobile: px-4 py-8 text-base
-- Tablette (sm:640px): sm:px-6 sm:py-12 sm:text-lg
-- Desktop (md:768px): md:px-8 md:py-16 md:text-xl
-- Large (lg:1024px): lg:px-12 lg:py-20 lg:text-2xl
-- XL (xl:1280px): xl:px-16 xl:py-24
+🚫 STRICTEMENT INTERDIT:
+- PAS de boutons "Ajouter au Panier"
+- PAS d'informations de prix
+- PAS de fonctionnalité de checkout
+- PAS de JavaScript complexe
+- PAS de feuilles de style externes
+- PAS d'iframes ou contenu embarqué
+- PAS de grilles complexes qui cassent dans Shopify
 
-- Échelle typo:
-  * H1: text-3xl md:text-5xl lg:text-6xl xl:text-7xl
-  * H2: text-2xl md:text-4xl lg:text-5xl
-  * H3: text-xl md:text-3xl lg:text-4xl
-  * Corps: text-base md:text-lg lg:text-xl
-  * Petit: text-sm md:text-base
+✅ SORTIE REQUISE:
+- HTML pur avec classes Tailwind uniquement
+- Structure sémantique propre
+- Design simple et responsive mobile
+- Présentation produit professionnelle
+- Toutes les images de la liste fournie
+- Informations produit complètes
 
-- Grille responsive:
-  * 1 col mobile → 2 col tablette → 3-4 col desktop
-  * Exemple: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
-
-🔗 BOUTONS FONCTIONNELS (OBLIGATOIRE):
-
-Bouton Voir Produit:
-<a href="${productUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-[${mainColor}] rounded-xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300">
-  Voir Tous les Détails →
-</a>
-
-Bouton Ajouter Panier:
-<button onclick="window.open('${productUrl}', '_blank')" class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300">
-  🛒 Ajouter au Panier
-</button>
-
-⚠️ RÈGLES CRITIQUES:
-- PAS de balises <script>, <style>, <html>, <head>, <body>
-- Retourne UNIQUEMENT le contenu page (divs, sections)
-- Utilise classes Tailwind inline SEULEMENT
-- Toutes images doivent utiliser URLs fournies
-- Tous boutons doivent être fonctionnels avec href/onclick corrects
-- Rédige contenu persuasif et professionnel
-- Utilise la langue ${language === "en" ? "anglaise" : "française"}
-- Minimum 8 sections distinctes avec séparation visuelle claire
-- Responsive mobile-first (sm:, md:, lg:, xl:)
-- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Grilles responsives: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-- Couleur primaire ${mainColor} pour CTAs, titres, accents
-- Ombres modernes: shadow-lg, shadow-xl
-- Transitions fluides: transition-all duration-300
-- Typographie professionnelle avec hiérarchie claire
-- Aucun tag <script> ou <style>
-- Retourne UNIQUEMENT le contenu HTML (sans wrapper markdown)
-
-EXEMPLE TABLEAU SPECS (si dimensions disponibles):
-<div class="bg-white rounded-xl shadow-lg p-8">
-  <h2 class="text-3xl font-bold mb-6">Caractéristiques Techniques</h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Dimensions</span><span>L x l x H cm</span></div>
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Poids</span><span>X kg</span></div>
-    <!-- Ajoute toutes les dimensions enrichies ici -->
-  </div>
+Exemple grille images simple:
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-8">
+  <img src="${images[0]?.src || ''}" alt="${images[0]?.alt_text || productTitle}" class="w-full h-auto rounded-lg">
+  <!-- plus d'images -->
 </div>
 
-STRUCTURE BOUTONS:
-<a href="${productUrl}" target="_blank" rel="noopener" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  Voir Tous les Détails
-</a>
-
-<button onclick="window.open('${productUrl}', '_blank')" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  Ajouter au Panier
-</button>
+Exemple tableau spécifications:
+<div class="bg-gray-50 rounded-lg p-6 my-8">
+  <h3 class="text-xl font-semibold mb-4">Caractéristiques Techniques</h3>
+  <div class="space-y-2">
+    <div class="flex justify-between"><span>Matériau</span><span>${enrichedProduct.ai_material || 'Matériaux de qualité'}</span></div>
+    <!-- plus de specs -->
+  </div>
+</div>
 `;
 
     // --- AI call with timeout (60s) ---
@@ -611,18 +541,19 @@ STRUCTURE BOUTONS:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "gpt-4", // ✅ Using GPT-4 instead of Gemini
           messages: [
             {
               role: "system",
               content:
                 language === "en"
-                  ? "You are an elite Shopify landing page designer creating luxury, high-converting pages. You craft beautiful HTML with premium Tailwind design, persuasive copy, and functional buttons. You MUST create comprehensive sections with proper structure, responsive design, and professional visual hierarchy. When enriched product attributes are provided, you create detailed Technical Specifications and Materials sections with elegant tables and cards."
-                  : "Tu es un designer Shopify élite créant des landing pages luxueuses et hautement converties. Tu crées du HTML magnifique avec design Tailwind premium, copywriting persuasif et boutons fonctionnels. Tu DOIS créer des sections complètes avec structure appropriée, design responsive et hiérarchie visuelle professionnelle. Quand des attributs produit enrichis sont fournis, tu crées des sections Caractéristiques Techniques et Matériaux détaillées avec tableaux et cartes élégants.",
+                  ? "You are a professional Shopify product description writer. You create clean, responsive HTML product descriptions using Tailwind CSS. You focus on presenting product information clearly without any e-commerce functionality. No prices, no add to cart buttons, just beautiful product presentation that works well in Shopify's description field."
+                  : "Tu es un rédacteur professionnel de descriptions de produit Shopify. Tu crées des descriptions de produit HTML propres et responsives avec Tailwind CSS. Tu te concentres sur la présentation claire des informations produit sans aucune fonctionnalité e-commerce. Pas de prix, pas de boutons ajouter au panier, juste une belle présentation produit qui fonctionne bien dans le champ description de Shopify.",
             },
             { role: "user", content: prompt },
           ],
-          max_completion_tokens: 8000,
+          max_tokens: 4000,
+          temperature: 0.7,
         }),
         signal: aiController.signal,
       });
@@ -651,7 +582,7 @@ STRUCTURE BOUTONS:
     let html = data?.choices?.[0]?.message?.content?.trim() || "";
     html = sanitizeHtmlUnsafe(html);
 
-    if (!html || html.length < 400)
+    if (!html || html.length < 300)
       return new Response(
         JSON.stringify({
           error: language === "en" ? "Generated HTML too short or empty." : "HTML généré trop court ou vide.",
@@ -664,7 +595,7 @@ STRUCTURE BOUTONS:
 
     // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
     if (userId && product_id) {
-      console.log("💾 Saving landing page to database...");
+      console.log("💾 Saving product description to database...");
 
       try {
         // Désactiver les anciennes versions
@@ -709,7 +640,7 @@ STRUCTURE BOUTONS:
         if (saveError) {
           console.error("❌ Save error:", saveError);
         } else {
-          console.log(`✅ Landing page v${newVersion} saved successfully`);
+          console.log(`✅ Product description v${newVersion} saved successfully`);
         }
       } catch (saveError) {
         console.error("❌ Database save error:", saveError);
@@ -718,7 +649,7 @@ STRUCTURE BOUTONS:
       console.log("⚠️ Skipping save: userId or product_id not available");
     }
 
-    console.log("✅ Landing page generation successful!");
+    console.log("✅ Product description generation successful!");
     return new Response(
       JSON.stringify({
         html,
