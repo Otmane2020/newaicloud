@@ -962,7 +962,7 @@ export default function ProductTitleDescription() {
               <div>
                 <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.optimized}</p>
                 <p className="text-2xl font-bold">
-                  {products.filter((p) => p.seo_title || p.seo_description).length}
+                  {products.filter((p) => hasRichHtmlDescription(p)).length}
                 </p>
               </div>
             </div>
