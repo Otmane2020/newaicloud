@@ -11,8 +11,6 @@ import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProgressDialog, ResultsDialog, SuccessDialog } from "@/components/seo/SeoWorkflowDialogs";
 import { ArticleSyncDialog } from "./ArticleSyncDialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { useTranslation } from "@/lib/language";
 import {
   ChevronRight,
@@ -28,7 +26,6 @@ import {
   Package,
   X,
   Check,
-  ChevronsUpDown,
   Layers,
   Palette,
 } from "lucide-react";
@@ -85,13 +82,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [generatedArticleId, setGeneratedArticleId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    collection_id: "",
-    collectionTitle: "",
+    collection_ids: [] as string[],
+    collectionTitles: [] as string[],
     keywords: "",
     productCount: 3,
     articleLength: "700" as "700" | "2000" | "4000",
   });
-  const [collectionSearchOpen, setCollectionSearchOpen] = useState(false);
+  const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
 
   // Article configuration for visual design
   const [articleConfig, setArticleConfig] = useState<ArticleConfig>({
@@ -205,22 +202,40 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   };
 
   const filteredProducts = products.filter((product) => {
-    const matchesCollection = !formData.collection_id || product.collection_ids?.includes(formData.collection_id);
+    const matchesCollection = formData.collection_ids.length === 0 || 
+      formData.collection_ids.some(colId => product.collection_ids?.includes(colId));
 
     const matchesSearch = !searchTerm || product.title?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesCollection && matchesSearch;
   });
 
-  const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
   const filteredCollections = collections.filter((col) => 
     col.title.toLowerCase().includes(collectionSearchTerm.toLowerCase())
   );
 
-  const selectedCollectionData = collections.find((c) => c.id === formData.collection_id);
-  const productsInCollection = formData.collection_id
-    ? products.filter((p) => p.collection_ids?.includes(formData.collection_id)).length
+  const productsInCollection = formData.collection_ids.length > 0
+    ? products.filter((p) => formData.collection_ids.some(colId => p.collection_ids?.includes(colId))).length
     : products.length;
+
+  const toggleCollection = (collectionId: string, collectionTitle: string) => {
+    setFormData(prev => {
+      const isSelected = prev.collection_ids.includes(collectionId);
+      if (isSelected) {
+        return {
+          ...prev,
+          collection_ids: prev.collection_ids.filter(id => id !== collectionId),
+          collectionTitles: prev.collectionTitles.filter((_, idx) => prev.collection_ids[idx] !== collectionId)
+        };
+      } else {
+        return {
+          ...prev,
+          collection_ids: [...prev.collection_ids, collectionId],
+          collectionTitles: [...prev.collectionTitles, collectionTitle]
+        };
+      }
+    });
+  };
 
   const addKeyword = () => {
     const newKeyword = keywordInput.trim();
@@ -277,8 +292,8 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       const response = await supabase.functions.invoke("generate-blog-article", {
         body: {
           user_id: user.id,
-          collection_id: formData.collection_id,
-          collectionTitle: formData.collectionTitle,
+          collection_ids: formData.collection_ids,
+          collectionTitles: formData.collectionTitles,
           keywords: finalKeywords,
           productIds: selectedProducts.map((p) => p.id),
           articleLength: formData.articleLength,
@@ -426,81 +441,80 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">{t.wizards.blog.collection}</label>
-                  <Popover open={collectionSearchOpen} onOpenChange={setCollectionSearchOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={collectionSearchOpen}
-                        className="w-full justify-between"
-                      >
-                        {formData.collection_id ? (
-                          <span className="flex items-center gap-2">
-                            <Layers className="h-4 w-4" />
-                            {selectedCollectionData?.title}
-                            <Badge variant="secondary" className="ml-auto">
-                              {productsInCollection} {t.wizards.blog.products}
-                            </Badge>
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">{t.wizards.blog.selectCollection}</span>
-                        )}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <Command>
-                        <CommandInput 
-                          placeholder={t.wizards.blog.searchPlaceholder}
-                          value={collectionSearchTerm}
-                          onValueChange={setCollectionSearchTerm}
-                        />
-                        <CommandEmpty>{t.wizards.blog.noCollectionFound}</CommandEmpty>
-                        <CommandGroup className="max-h-[300px] overflow-auto">
-                          <CommandItem
-                            value=""
-                            onSelect={() => {
-                              setFormData({ ...formData, collection_id: "", collectionTitle: "" });
-                              setCollectionSearchOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={`mr-2 h-4 w-4 ${!formData.collection_id ? "opacity-100" : "opacity-0"}`}
-                            />
-                            <span>{t.wizards.blog.allCollections}</span>
-                          </CommandItem>
-                          {filteredCollections.map((collection) => {
-                            const productCount = collection.productCount || 0;
+                  
+                  {/* Selected collections display */}
+                  {formData.collection_ids.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {formData.collection_ids.map((colId, idx) => {
+                        const collection = collections.find(c => c.id === colId);
+                        return (
+                          <Badge key={colId} variant="secondary" className="flex items-center gap-1">
+                            <Layers className="h-3 w-3" />
+                            {collection?.title || formData.collectionTitles[idx]}
+                            <button
+                              onClick={() => toggleCollection(colId, formData.collectionTitles[idx])}
+                              className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
 
-                            return (
-                              <CommandItem
-                                key={collection.id}
-                                value={collection.title}
-                                onSelect={() => {
-                                  setFormData({
-                                    ...formData,
-                                    collection_id: collection.id,
-                                    collectionTitle: collection.title,
-                                  });
-                                  setCollectionSearchOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={`mr-2 h-4 w-4 ${
-                                    formData.collection_id === collection.id ? "opacity-100" : "opacity-0"
-                                  }`}
-                                />
-                                <span className="flex-1">{collection.title}</span>
-                                <Badge variant="outline" className="ml-2">
-                                  {productCount} produit(s)
-                                </Badge>
-                              </CommandItem>
-                            );
-                          })}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  {/* Search input */}
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder={t.wizards.blog.searchPlaceholder}
+                      value={collectionSearchTerm}
+                      onChange={(e) => setCollectionSearchTerm(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+
+                  {/* Collections list with checkboxes */}
+                  <div className="border rounded-lg max-h-[300px] overflow-auto">
+                    {filteredCollections.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        {t.wizards.blog.noCollectionFound}
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {filteredCollections.map((collection) => {
+                          const isSelected = formData.collection_ids.includes(collection.id);
+                          const productCount = collection.productCount || 0;
+
+                          return (
+                            <div
+                              key={collection.id}
+                              onClick={() => toggleCollection(collection.id, collection.title)}
+                              className={`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-accent ${
+                                isSelected ? 'bg-accent/50' : ''
+                              }`}
+                            >
+                              <div className={`flex-shrink-0 w-5 h-5 border-2 rounded flex items-center justify-center ${
+                                isSelected ? 'bg-primary border-primary' : 'border-input'
+                              }`}>
+                                {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
+                              </div>
+                              <span className="flex-1 text-sm">{collection.title}</span>
+                              <Badge variant="outline" className="ml-auto">
+                                {productCount} produit(s)
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {formData.collection_ids.length > 0 && (
+                    <div className="mt-3 text-sm text-muted-foreground">
+                      {productsInCollection} produit(s) dans les collections sélectionnées
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -549,12 +563,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
             {currentStep === 2 && (
               <div className="space-y-4">
-                {formData.collection_id && selectedCollectionData && (
+                {formData.collection_ids.length > 0 && (
                   <Alert className="bg-purple-50 border-purple-200">
                     <Layers className="w-4 h-4 text-purple-600" />
                     <AlertDescription>
                       <span className="font-medium">{t.wizards.blog.collection}:</span>{" "}
-                      <strong>{selectedCollectionData.title}</strong>
+                      <strong>{formData.collectionTitles.join(", ")}</strong>
                     </AlertDescription>
                   </Alert>
                 )}
@@ -679,7 +693,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   <div className="space-y-2 text-sm">
                     <p>
                       <strong>{t.wizards.blog.collection}:</strong>{" "}
-                      {collections.find((c) => c.id === formData.collection_id)?.title || t.common.none}
+                      {formData.collectionTitles.length > 0 ? formData.collectionTitles.join(", ") : t.common.none}
                     </p>
                     <p>
                       <strong>{t.wizards.blog.articleLength}:</strong>{" "}
