@@ -391,14 +391,25 @@ IMAGES: ${imgs}
 VARIANTS: ${vars}
 ${customHighlights ? `HIGHLIGHTS: ${customHighlights}` : ""}
 
-COLOR RULES (CRITICAL):
-- ALL colors MUST use HSL format: hsl(H S% L%)
+COLOR RULES (CRITICAL - MUST FOLLOW):
 - Backgrounds: bg-white, bg-gray-50, bg-gray-100
 - Text: text-gray-900, text-gray-800, text-gray-700 (dark on light)
-- Primary accent color (HSL): ${designTokens.primary}
-- Use as: style="background-color: hsl(${designTokens.primary})"
-- NEVER use HEX colors (#XXXXXX)
+- Primary color accent (HSL): ${designTokens.primary}
+  → MUST use INLINE STYLES: style="background-color: hsl(${designTokens.primary})"
+  → Example: <button style="background-color: hsl(${designTokens.primary})" class="text-white px-6 py-3 rounded-lg">
+- NEVER create :root { --primary-color: ... } CSS variables
+- NEVER create custom classes like .text-primary, .bg-primary, .border-primary
+- NEVER use HEX colors (#XXXXXX) anywhere
 - NEVER use text-white on light backgrounds
+
+RESPONSIVE MOBILE-FIRST (CRITICAL - MUST FOLLOW):
+- Container: <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+- Typography: text-xl sm:text-2xl md:text-3xl lg:text-4xl
+- Images: w-full h-auto object-cover
+- Grids: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
+- Padding: py-8 sm:py-12 md:py-16 lg:py-20
+- Modern shadows (shadow-md, shadow-lg) and rounded corners (rounded-lg)
+- NO CTA buttons (informational only)
 
 SECTIONS TO INCLUDE:
 1. Hero with product image and title
@@ -434,14 +445,25 @@ IMAGES: ${imgs}
 VARIANTES: ${vars}
 ${customHighlights ? `POINTS FORTS: ${customHighlights}` : ""}
 
-RÈGLES DE COULEURS (CRITIQUE):
-- TOUTES les couleurs DOIVENT utiliser le format HSL: hsl(H S% L%)
+RÈGLES DE COULEURS (CRITIQUE - OBLIGATOIRE):
 - Fonds: bg-white, bg-gray-50, bg-gray-100
 - Texte: text-gray-900, text-gray-800, text-gray-700 (foncé sur clair)
 - Couleur d'accent primaire (HSL): ${designTokens.primary}
-- Utiliser comme: style="background-color: hsl(${designTokens.primary})"
-- JAMAIS de couleurs HEX (#XXXXXX)
+  → OBLIGATOIRE: utiliser des STYLES INLINE: style="background-color: hsl(${designTokens.primary})"
+  → Exemple: <button style="background-color: hsl(${designTokens.primary})" class="text-white px-6 py-3 rounded-lg">
+- JAMAIS créer :root { --primary-color: ... } variables CSS
+- JAMAIS créer classes custom comme .text-primary, .bg-primary, .border-primary
+- JAMAIS utiliser couleurs HEX (#XXXXXX) n'importe où
 - JAMAIS text-white sur fonds clairs
+
+RESPONSIVE MOBILE-FIRST (CRITIQUE - OBLIGATOIRE):
+- Container: <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+- Typographie: text-xl sm:text-2xl md:text-3xl lg:text-4xl
+- Images: w-full h-auto object-cover
+- Grilles: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
+- Padding: py-8 sm:py-12 md:py-16 lg:py-20
+- Ombres modernes (shadow-md, shadow-lg) et coins arrondis (rounded-lg)
+- PAS de boutons CTA (informatif seulement)
 
 SECTIONS À INCLURE:
 1. Hero avec image et titre produit
@@ -515,41 +537,7 @@ Retourne UNIQUEMENT le contenu HTML.`;
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
 
-    // 📱 Conversion mobile-responsive
-    console.log("[Mobile] Converting to mobile-responsive...");
-    console.log("[Mobile] HTML before conversion (first 500 chars):", html.substring(0, 500));
-    
-    try {
-      const mobileResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/convert-landing-to-mobile`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ htmlContent: html }),
-      });
-
-      if (mobileResponse.ok) {
-        const mobileData = await mobileResponse.json();
-        if (mobileData?.success && mobileData?.mobileHtml) {
-          html = mobileData.mobileHtml;
-          console.log("✅ Mobile conversion successful:", mobileData.optimizations);
-          console.log("[Mobile] HTML after conversion (first 500 chars):", html.substring(0, 500));
-          
-          // Verify responsive classes are present
-          const hasResponsiveClasses = /sm:|md:|lg:/.test(html);
-          console.log(`[Mobile] Responsive classes detected: ${hasResponsiveClasses ? "✅ YES" : "❌ NO"}`);
-        } else {
-          console.warn("⚠️ Mobile conversion returned no data, using original HTML");
-        }
-      } else {
-        const errorText = await mobileResponse.text();
-        console.warn("⚠️ Mobile conversion failed:", errorText);
-        console.warn("Using original HTML");
-      }
-    } catch (mobileError) {
-      console.error("❌ Mobile conversion error (using original HTML):", mobileError);
-    }
+    console.log("✅ HTML generated successfully (length:", html.length, "chars)");
 
     // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
     if (userId && product_id) {
