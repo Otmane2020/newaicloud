@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
+import { OptimizationConfirmDialog } from './OptimizationConfirmDialog';
 import {
   Search,
   RefreshCw,
@@ -47,6 +48,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface ShopifyPage {
   id: string;
@@ -79,6 +89,9 @@ export function PageOptimization() {
     (searchParams.get("filter") as QualityFilter) || "all"
   );
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showOptimizeAllConfirmDialog, setShowOptimizeAllConfirmDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
 
@@ -122,8 +135,9 @@ export function PageOptimization() {
         body_html: page.body_html || '',
         seo_title: page.seo_title,
         seo_description: page.seo_description,
-        optimized: !!(page.seo_title && page.seo_description),
-        last_synced_at: page.last_synced_at
+        optimized: (page.optimization_count || 0) > 0, // Based on AI optimization, not just data presence
+        last_synced_at: page.last_synced_at,
+        optimization_count: page.optimization_count || 0
       }));
       
       setPages(mappedPages);
@@ -162,6 +176,18 @@ export function PageOptimization() {
     const term = searchTerm.toLowerCase();
     return page.title.toLowerCase().includes(term);
   });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredPages.length / ITEMS_PER_PAGE);
+  const paginatedPages = filteredPages.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   const handleSelectAll = () => {
     if (selectedPages.size === filteredPages.length) {
@@ -239,7 +265,7 @@ export function PageOptimization() {
     }
   };
 
-  const handleOptimizeSelected = async () => {
+  const handleOptimizeSelected = async (pageIds?: string[]) => {
     // Check limits BEFORE optimizing
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
@@ -251,22 +277,24 @@ export function PageOptimization() {
       return;
     }
     
-    if (selectedPages.size === 0) return;
+    // Use provided pageIds or fall back to selectedPages
+    const idsToUse = pageIds || Array.from(selectedPages);
+    
+    if (idsToUse.length === 0) return;
     
     setOptimizing(true);
-    const pageIds = Array.from(selectedPages);
     let successCount = 0;
     
-    for (let i = 0; i < pageIds.length; i++) {
+    for (let i = 0; i < idsToUse.length; i++) {
       try {
         const { error } = await supabase.functions.invoke('generate-page-seo', {
-          body: { pageId: pageIds[i], force: true }
+          body: { pageId: idsToUse[i], force: true }
         });
         
         if (error) throw error;
         
         successCount++;
-        toast.success(`Page ${i + 1}/${pageIds.length} optimized`);
+        toast.success(`Page ${i + 1}/${idsToUse.length} optimized`);
       } catch (error) {
         console.error('Error optimizing page:', error);
         toast.error(`Error for page ${i + 1}`);
@@ -278,15 +306,15 @@ export function PageOptimization() {
     await fetchPages();
     await refreshLimits();
     
-    if (successCount === pageIds.length) {
+    if (successCount === idsToUse.length) {
       toast.success('🎉 All pages optimized!');
     } else {
-      toast.warning(`${successCount}/${pageIds.length} pages optimized`);
+      toast.warning(`${successCount}/${idsToUse.length} pages optimized`);
     }
   };
 
   const handleOptimizeAll = async () => {
-    // Check limits BEFORE optimizing
+    // Check limits BEFORE showing confirmation dialog
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
         toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
@@ -302,6 +330,13 @@ export function PageOptimization() {
       toast.info('All pages are already optimized');
       return;
     }
+    
+    // Show confirmation dialog
+    setShowOptimizeAllConfirmDialog(true);
+  };
+
+  const handleConfirmOptimizeAll = async () => {
+    const pagesToOptimize = pages.filter(p => !p.optimized);
     
     setOptimizing(true);
     let successCount = 0;
@@ -690,7 +725,7 @@ export function PageOptimization() {
                 
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Button
-                    onClick={handleOptimizeSelected}
+                    onClick={() => handleOptimizeSelected()}
                     disabled={selectedPages.size === 0 || optimizing}
                     size="sm"
                   >
@@ -762,7 +797,7 @@ export function PageOptimization() {
                   )}
                 </Button>
                 <Button
-                  onClick={handleOptimizeSelected}
+                  onClick={() => handleOptimizeSelected()}
                   disabled={optimizing || selectedPages.size === 0}
                   size="sm"
                   className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 border-0 text-primary-foreground font-semibold transition-all duration-300"
@@ -850,7 +885,7 @@ export function PageOptimization() {
               </TableRow>
             </TableHeader>
               <TableBody>
-                {filteredPages.map((page) => {
+                {paginatedPages.map((page) => {
                   const seoScore = calculateDetailedSeoScore(
                     page.seo_title,
                     page.seo_description,
@@ -957,7 +992,8 @@ export function PageOptimization() {
                                 setShowUpgradeDialog(true);
                                 return;
                               }
-                              handleOptimizePage(page.id, page.optimized);
+                              // Optimiser directement cette page
+                              handleOptimizeSelected([page.id]);
                             }}
                             disabled={optimizing}
                             title={page.optimized ? "Re-optimize" : "Optimize"}
@@ -985,9 +1021,70 @@ export function PageOptimization() {
               </TableBody>
             </Table>
           </div>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center py-4 border-t">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    } else if (page === currentPage - 2 || page === currentPage + 2) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </Card>
       )}
       
+      {/* Optimize All Confirmation Dialog */}
+      <OptimizationConfirmDialog
+        open={showOptimizeAllConfirmDialog}
+        onOpenChange={setShowOptimizeAllConfirmDialog}
+        onConfirm={handleConfirmOptimizeAll}
+        selectedCount={pages.filter(p => !p.optimized).length}
+        currentUsage={limits?.usage.optimizations_count || 0}
+        maxOptimizations={limits?.limits.max_optimizations || 0}
+        isTrialing={limits?.isTrialing || false}
+      />
+
       {/* Upgrade Dialog */}
       <UpgradeDialog
         open={showUpgradeDialog}

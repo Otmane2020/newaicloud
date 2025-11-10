@@ -45,6 +45,11 @@ export default function Blog() {
     }
   }, [searchParams]);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   useEffect(() => {
     if (user) {
       loadData();

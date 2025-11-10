@@ -25,6 +25,15 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
 import { ProductTitleLandingDialog } from "@/components/seo/ProductTitleLandingDialog";
 import RegenerateLanding from "@/components/seo/RegenerateLanding";
@@ -93,6 +102,8 @@ export default function ProductTitleDescription() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
   const [generatingWhiteBg, setGeneratingWhiteBg] = useState(false);
   const [generatingAiBg, setGeneratingAiBg] = useState(false);
   const [showWhiteBgDialog, setShowWhiteBgDialog] = useState(false);
@@ -163,6 +174,18 @@ export default function ProductTitleDescription() {
     product.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   const handleSelectAll = () => {
     if (selectedProducts.size === filteredProducts.length) {
       setSelectedProducts(new Set());
@@ -221,7 +244,7 @@ export default function ProductTitleDescription() {
           title: product.title
         });
         
-        toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}...`, { id: toastId });
+        toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}... (SEO + HTML)`, { id: toastId });
 
         // Timeout réduit à 45 secondes
         const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
@@ -275,12 +298,63 @@ export default function ProductTitleDescription() {
           .single();
 
         if (updatedProduct) {
+          // Check if description already has HTML (skip regeneration if present)
+          const hasExistingHtml = updatedProduct.description && 
+            (updatedProduct.description.includes('<div') || updatedProduct.description.includes('<section'));
+
+          if (!hasExistingHtml) {
+            // Generate HTML landing page
+            try {
+              console.log("🎨 Génération du HTML de landing page pour:", updatedProduct.title);
+              
+              const { data: htmlData, error: htmlError } = await supabase.functions.invoke(
+                'generate-product-description-html',
+                {
+                  body: {
+                    title: updatedProduct.seo_title || updatedProduct.title,
+                    existingDescription: updatedProduct.seo_description,
+                    images: [updatedProduct.image_url].filter(Boolean),
+                    visionAnalysis: null,
+                    template: 'ecommerce',
+                    productId: productId
+                  }
+                }
+              );
+
+              if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
+                console.log("✅ HTML landing page généré (10 optimisations consommées)");
+                
+                // Save HTML to shopify_products.description
+                await supabase
+                  .from("shopify_products")
+                  .update({ description: htmlData.htmlLandingPage })
+                  .eq("id", productId);
+                
+                // Update local product with HTML
+                updatedProduct.description = htmlData.htmlLandingPage;
+              } else {
+                console.warn("⚠️ Génération HTML échouée:", htmlError || htmlData?.error);
+                // Don't block the process, continue with SEO only
+              }
+            } catch (htmlErr) {
+              console.error("❌ Erreur génération HTML:", htmlErr);
+              // Don't block the process, continue with SEO only
+            }
+          } else {
+            console.log("✅ HTML déjà présent, pas de régénération");
+          }
+
           // Update optimizedProducts progressively
           setOptimizedProducts((prev) => [...prev, updatedProduct]);
           setProducts((prev) =>
             prev.map((p) =>
               p.id === productId
-                ? { ...p, seo_title: updatedProduct.seo_title, seo_description: updatedProduct.seo_description }
+                ? { 
+                    ...p, 
+                    seo_title: updatedProduct.seo_title, 
+                    seo_description: updatedProduct.seo_description,
+                    description: updatedProduct.description
+                  }
                 : p
             )
           );
@@ -1017,7 +1091,7 @@ export default function ProductTitleDescription() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.map((product) => (
+                {paginatedProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <Checkbox
@@ -1040,7 +1114,15 @@ export default function ProductTitleDescription() {
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <p className="font-medium">{product.seo_title || product.title}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{product.seo_title || product.title}</p>
+                          {product.description && product.description.includes('<!DOCTYPE html>') && (
+                            <Badge variant="default" className="gap-1 text-xs">
+                              <FileText className="h-3 w-3" />
+                              Landing
+                            </Badge>
+                          )}
+                        </div>
                          {product.seo_title && product.title !== product.seo_title && (
                            <p className="text-xs text-muted-foreground line-clamp-1">
                              {t.contentOptimization.table.original}: {product.title}
@@ -1252,6 +1334,56 @@ export default function ProductTitleDescription() {
               </div>
             )}
           </ScrollArea>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center py-4 border-t">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    } else if (page === currentPage - 2 || page === currentPage + 2) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </Card>
       </div>
 

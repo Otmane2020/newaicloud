@@ -310,6 +310,11 @@ export function SeoAltImage() {
   const startIndex = (currentPage - 1) * IMAGES_PER_PAGE;
   const paginatedImages = sortedImages.slice(startIndex, startIndex + IMAGES_PER_PAGE);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   const handleSelectAll = () => {
     if (selectedImages.size === sortedImages.length) {
       setSelectedImages(new Set());

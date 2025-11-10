@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { useShopifySync } from "@/hooks/useShopifySync";
+import { useStore } from "@/contexts/StoreContext";
+import { SimpleSyncProgress } from "@/components/integration/SyncProgressDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +23,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useShopifySync } from "@/hooks/useShopifySync";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Product {
   id: string;
@@ -41,6 +49,8 @@ export default function Products() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { limits, refresh: refreshLimits } = useUsageLimits();
+  const { selectedStore } = useStore();
+  const { isSyncing, currentSyncType, syncShopifyStore } = useShopifySync();
   const { t, tf } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -52,6 +62,11 @@ export default function Products() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const ITEMS_PER_PAGE = 20;
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   const loadProducts = async () => {
     try {
@@ -85,7 +100,7 @@ export default function Products() {
     }
   };
 
-  const { isSyncing, currentSyncType, syncShopifyStore } = useShopifySync();
+  
 
   useEffect(() => {
     if (user) {
@@ -145,6 +160,248 @@ export default function Products() {
     return Math.round(((comparePrice - price) / comparePrice) * 100);
   };
 
+  const [syncingStoreId, setSyncingStoreId] = useState<string | null>(null);
+  const [showSyncResultDialog, setShowSyncResultDialog] = useState(false);
+  const [syncResults, setSyncResults] = useState<any>(null);
+
+  const handleManualSync = async (store: any) => {
+    if (!user) {
+      toast.error('Utilisateur non authentifié');
+      return;
+    }
+
+    let syncToastId: string | number | undefined;
+
+    try {
+      setSyncingStoreId(store.id);
+      
+      // 🆕 Toast de démarrage
+      syncToastId = toast.loading(
+        `🔄 Synchronisation en cours pour ${store.store_name}...`
+      );
+      
+      console.log('🔄 [MANUAL SYNC] Starting manual sync for store:', store.store_name);
+
+      // Get store data with access token
+      const { data: storeData, error: storeError } = await supabase
+        .from('shopify_connections')
+        .select('access_token, store_url')
+        .eq('id', store.id)
+        .single();
+
+      if (storeError || !storeData) {
+        console.error('❌ [SYNC ERROR] Store not found:', storeError);
+        toast.error('Boutique introuvable');
+        setSyncingStoreId(null);
+        return;
+      }
+
+      // Extract shop name from store URL
+      const shopName = storeData.store_url
+        .replace(/^https?:\/\//, '')
+        .replace(/\.myshopify\.com.*$/, '');
+
+      console.log('🏪 [SYNC] Shop name:', shopName);
+
+      let historyId: string | null = null;
+
+      // Create sync history entry
+      try {
+        const { data: entry, error: historyError } = await supabase
+          .from('sync_history')
+          .insert({
+            user_id: user.id,
+            sync_type: 'manual',
+            content_types: ['products', 'collections', 'pages', 'articles', 'images'],
+            status: 'running',
+            started_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (historyError) {
+          console.error('❌ [SYNC HISTORY ERROR]', historyError);
+        } else if (entry) {
+          historyId = entry.id;
+          console.log('✅ [SYNC HISTORY] Created:', historyId);
+        }
+      } catch (historyCreateError) {
+        console.error('❌ [SYNC HISTORY EXCEPTION]', historyCreateError);
+      }
+
+      // Get counts before import
+      const { count: productsBefore } = await supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', store.id);
+
+      // Import all content types
+      const types = ['products', 'collections', 'pages', 'articles', 'images'];
+      const importResults: Record<string, number> = {};
+      const errorMessages: string[] = [];
+      
+      for (const type of types) {
+        console.log(`📦 [SYNC ${type.toUpperCase()}] Starting import...`);
+        
+        try {
+          let result;
+          const timeoutMs = 30000;
+          
+          const executeWithTimeout = async (promise: Promise<any>) => {
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout after 30s')), timeoutMs)
+            );
+            return Promise.race([promise, timeoutPromise]);
+          };
+
+          switch (type) {
+            case 'products':
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-products', {
+                  body: { 
+                    shopName, 
+                    apiSecret: storeData.access_token, 
+                    storeId: store.id,
+                    syncMode: 'smart'
+                  }
+                })
+              );
+              break;
+            case 'collections':
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-shopify-collections', {
+                  body: { 
+                    shopName, 
+                    apiSecret: storeData.access_token, 
+                    storeId: store.id 
+                  }
+                })
+              );
+              break;
+            case 'pages':
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-shopify-pages', {
+                  body: { 
+                    shopName, 
+                    apiSecret: storeData.access_token, 
+                    storeId: store.id 
+                  }
+                })
+              );
+              break;
+            case 'articles':
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-shopify-articles', {
+                  body: { 
+                    shopName, 
+                    authToken: storeData.access_token, 
+                    storeId: store.id 
+                  }
+                })
+              );
+              break;
+            case 'images':
+              result = await executeWithTimeout(
+                supabase.functions.invoke('import-content-images', {
+                  body: { 
+                    storeId: store.id,
+                    types: ['collections', 'pages', 'articles', 'homepage'] 
+                  }
+                })
+              );
+              break;
+          }
+
+          if (result?.error) {
+            console.error(`❌ [SYNC ${type.toUpperCase()} ERROR]`, result.error);
+            errorMessages.push(`${type}: ${result.error.message || 'Unknown error'}`);
+            importResults[type] = 0;
+          } else {
+            const imported = result?.data?.totalImported || result?.data?.count || result?.data?.imported || 0;
+            importResults[type] = imported;
+            console.log(`✅ [SYNC ${type.toUpperCase()}] Imported:`, imported);
+          }
+        } catch (error: any) {
+          console.error(`❌ [SYNC ${type.toUpperCase()} EXCEPTION]`, error);
+          errorMessages.push(`${type}: ${error.message}`);
+          importResults[type] = 0;
+        }
+      }
+
+      // Get counts after import
+      const { count: productsAfter } = await supabase
+        .from('shopify_products')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', store.id);
+
+      // Calculate stats
+      const stats = {
+        products: {
+          before: productsBefore || 0,
+          after: productsAfter || 0,
+          imported: importResults.products || 0,
+        },
+        collections: {
+          imported: importResults.collections || 0,
+        },
+        pages: {
+          imported: importResults.pages || 0,
+        },
+        articles: {
+          imported: importResults.articles || 0,
+        },
+        images: {
+          imported: importResults.images || 0,
+        },
+      };
+
+      const duration = Date.now();
+      const totalSynced = Object.values(importResults).reduce((sum, val) => sum + val, 0);
+
+      // Update sync history
+      if (historyId) {
+        await supabase
+          .from('sync_history')
+          .update({
+            status: errorMessages.length > 0 ? 'partial' : 'success',
+            items_synced: totalSynced,
+            duration_ms: duration,
+            error_message: errorMessages.length > 0 ? errorMessages.join('; ') : null,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', historyId);
+      }
+
+      // Update last_sync_at
+      await supabase
+        .from('shopify_connections')
+        .update({ last_sync_at: new Date().toISOString() })
+        .eq('id', store.id);
+
+      console.log('✅ [SYNC COMPLETE] Stats:', stats);
+
+      // Show results
+      setSyncResults(stats);
+      setShowSyncResultDialog(true);
+
+      // Refresh data
+      await loadProducts();
+      await refreshLimits();
+
+      if (errorMessages.length === 0) {
+        toast.success(`✅ Synchronisation réussie: ${totalSynced} éléments`, { id: syncToastId });
+      } else {
+        toast.warning(`⚠️ Synchronisation partielle: ${totalSynced} éléments, ${errorMessages.length} erreurs`, { id: syncToastId });
+      }
+
+    } catch (error: any) {
+      console.error('❌ [SYNC ERROR]', error);
+      toast.error(`Erreur de synchronisation: ${error.message}`, { id: syncToastId || undefined });
+    } finally {
+      setSyncingStoreId(null);
+    }
+  };
+
   const handleSync = async () => {
     if (!user?.id) {
       toast.error("Utilisateur non authentifié");
@@ -167,9 +424,7 @@ export default function Products() {
         return;
       }
       
-      await syncShopifyStore(store as any);
-      await loadProducts();
-      await refreshLimits();
+      await handleManualSync(store);
     } catch (err) {
       console.error('Sync error:', err);
     }
@@ -207,6 +462,8 @@ export default function Products() {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <SimpleSyncProgress open={isSyncing} currentType={currentSyncType} />
+      
       {/* Sticky header for mobile */}
       <div className="sticky top-0 bg-background border-b z-10 p-4">
         <div className="flex items-center justify-between mb-3">
@@ -227,36 +484,23 @@ export default function Products() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
+            <Button 
+              size="sm" 
               onClick={async () => {
-                refreshLimits();
+                if (!selectedStore) {
+                  toast.error("Aucune boutique sélectionnée");
+                  return;
+                }
+                await syncShopifyStore(selectedStore);
                 await loadProducts();
-                toast.success(t.common.dataRefreshed);
-              }}
-              className="h-9 w-9 flex-shrink-0"
+                await refreshLimits();
+              }} 
+              variant="outline" 
+              className="h-9 px-3"
+              disabled={isSyncing || !selectedStore}
             >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSync}
-              disabled={isSyncing}
-              className="h-9 px-3 gap-2"
-            >
-              {isSyncing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  {currentSyncType ? `Sync ${currentSyncType}...` : 'Synchronisation...'}
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4" />
-                  Synchroniser maintenant
-                </>
-              )}
+              <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+              Synchroniser
             </Button>
             <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
               <Plus className="w-4 h-4 mr-2" />
@@ -533,6 +777,59 @@ export default function Products() {
           </>
         )}
       </div>
+
+      {/* Sync Results Dialog */}
+      <Dialog open={showSyncResultDialog} onOpenChange={setShowSyncResultDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Résultats de synchronisation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {syncResults && (
+              <>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <span className="font-medium">Produits</span>
+                    <span className="text-sm text-muted-foreground">
+                      {syncResults.products.imported} importés
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <span className="font-medium">Collections</span>
+                    <span className="text-sm text-muted-foreground">
+                      {syncResults.collections.imported} importées
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <span className="font-medium">Pages</span>
+                    <span className="text-sm text-muted-foreground">
+                      {syncResults.pages.imported} importées
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <span className="font-medium">Articles</span>
+                    <span className="text-sm text-muted-foreground">
+                      {syncResults.articles.imported} importés
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <span className="font-medium">Images</span>
+                    <span className="text-sm text-muted-foreground">
+                      {syncResults.images.imported} importées
+                    </span>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => setShowSyncResultDialog(false)}
+                  className="w-full"
+                >
+                  Fermer
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

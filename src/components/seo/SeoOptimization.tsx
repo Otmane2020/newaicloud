@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { usePaginatedSeo } from "@/hooks/usePaginatedSeo";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -19,6 +20,7 @@ import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { TrialLimitDialog } from "@/components/TrialLimitDialog";
 import { TrialLimitBanner } from "@/components/TrialLimitBanner";
+import { OptimizationConfirmDialog } from "./OptimizationConfirmDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SeoConfidenceBadge } from "./SeoConfidenceBadge";
 import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from "@/lib/seoQuality";
@@ -47,6 +49,15 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 import { ShopifySyncSuccessDialog } from "./ShopifySyncSuccessDialog";
 import { VisionAIBanner } from "./VisionAIBanner";
@@ -106,6 +117,7 @@ export function SeoOptimization() {
   const [syncedItems, setSyncedItems] = useState<
     Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }>
   >([]);
+  const [showBulkOptimizeConfirmDialog, setShowBulkOptimizeConfirmDialog] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -311,6 +323,22 @@ export function SeoOptimization() {
     });
   }
 
+  // Pagination with cache and scroll
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedProducts,
+    goToPage,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePaginatedSeo({
+    items: sortedProducts,
+    itemsPerPage: 50,
+    cacheKey: 'seo-products',
+  });
+
   const tabs = [
     { id: "all" as QuickFilterTab, label: t.seo.optimization.allProducts, count: products.length },
     { id: "not-enriched" as QuickFilterTab, label: t.seo.optimization.toOptimize, count: notEnrichedCount },
@@ -340,17 +368,23 @@ export function SeoOptimization() {
       toast.info(t.seo.optimization.allProductsOptimized);
       return;
     }
-    setActiveTab("not-enriched");
-    setTimeout(() => {
-      handleGenerateAllSeo();
-    }, 100);
+    
+    // Check usage limits first
+    if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
+      toast.error(t.seo.optimization.trialLimitReached);
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
+    // Show confirmation dialog
+    setShowBulkOptimizeConfirmDialog(true);
   };
 
   const handleSelectAll = () => {
-    if (selectedProducts.size === sortedProducts.length) {
+    if (selectedProducts.size === paginatedProducts.length) {
       setSelectedProducts(new Set());
     } else {
-      setSelectedProducts(new Set(sortedProducts.map((p) => p.id)));
+      setSelectedProducts(new Set(paginatedProducts.map((p) => p.id)));
     }
   };
 
@@ -374,7 +408,7 @@ export function SeoOptimization() {
     setSelectedProducts(newSelected);
   };
 
-  const handleGenerateForSelected = async () => {
+  const handleGenerateForSelected = async (productIds?: string[]) => {
     // Check usage limits first (only check optimization-specific limits)
     if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
       toast.error(t.seo.optimization.trialLimitReached);
@@ -382,36 +416,37 @@ export function SeoOptimization() {
       return;
     }
 
+    // Use provided productIds or fall back to selectedProducts
+    const idsToUse = productIds ? new Set(productIds) : selectedProducts;
+
     // Check if products are selected
-    if (selectedProducts.size === 0) {
+    if (idsToUse.size === 0) {
       toast.error(t.seo.optimization.noProductsSelected);
       return;
     }
 
     // Filter eligible products
     const productsToGenerate = products.filter((p) => {
-      if (!selectedProducts.has(p.id)) return false;
+      if (!idsToUse.has(p.id)) return false;
 
       // If in trial, exclude already optimized products
       if (limits?.isTrialing && (p.optimization_count || 0) >= 1) {
         return false;
       }
 
-      // Otherwise, only products not yet enriched
-      return p.enrichment_status !== "enriched";
+      // For paid users, allow re-optimization
+      return true;
     });
 
-    // Check if all selected products are already optimized
-    const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
-    const allAlreadyOptimized = selectedProductsList.every((p) => p.enrichment_status === "enriched");
-
+    // Check if products can be optimized based on user status
+    const selectedProductsList = products.filter((p) => idsToUse.has(p.id));
+    
     if (productsToGenerate.length === 0) {
-      if (allAlreadyOptimized) {
-        toast.warning(t.seo.optimization.alreadyOptimized);
-      } else if (limits?.isTrialing) {
-        // Show upgrade dialog instead of toast for better UX
+      if (limits?.isTrialing) {
+        // In trial, all selected products have already been optimized once
         setShowUpgradeDialog(true);
       } else {
+        // This shouldn't happen for paid users since we allow re-optimization
         toast.info(t.seo.optimization.noProductsSelected);
       }
       return;
@@ -830,7 +865,7 @@ export function SeoOptimization() {
         <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Checkbox
-              checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
+              checked={selectedProducts.size === paginatedProducts.length && paginatedProducts.length > 0}
               onCheckedChange={handleSelectAll}
             />
             <span className="text-sm font-medium">
@@ -843,12 +878,21 @@ export function SeoOptimization() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button onClick={handleGenerateForSelected} disabled={selectedProducts.size === 0 || generating} size="sm">
+            <Button onClick={() => handleGenerateForSelected()} disabled={selectedProducts.size === 0 || generating} size="sm">
               <Sparkles className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Optimiser</span>
             </Button>
             <Button
-              onClick={handleGenerateAllSeo}
+              onClick={() => {
+                // Check usage limits first
+                if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
+                  toast.error(t.seo.optimization.trialLimitReached);
+                  setShowUpgradeDialog(true);
+                  return;
+                }
+                // Show confirmation dialog
+                setShowBulkOptimizeConfirmDialog(true);
+              }}
               disabled={generating || notEnrichedCount === 0}
               variant="outline"
               size="sm"
@@ -990,7 +1034,7 @@ export function SeoOptimization() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={handleGenerateForSelected}
+                onClick={() => handleGenerateForSelected()}
                 disabled={generating || selectedProducts.size === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
               >
@@ -1125,7 +1169,7 @@ export function SeoOptimization() {
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
+                      checked={selectedProducts.size === paginatedProducts.length && paginatedProducts.length > 0}
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
@@ -1150,7 +1194,7 @@ export function SeoOptimization() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedProducts.map((product) => {
+                {paginatedProducts.map((product) => {
                   const seoScore = calculateDetailedSeoScore(
                     product.seo_title,
                     product.seo_description,
@@ -1264,7 +1308,7 @@ export function SeoOptimization() {
                           <Button
                             variant="default"
                             size="sm"
-                            onClick={async () => {
+                            onClick={() => {
                               if (!canDoAction('optimizations')) {
                                 toast.error("Limite atteinte", {
                                   description: `Vous avez atteint votre limite mensuelle de ${limits.limits.max_optimizations} optimisations.`,
@@ -1272,20 +1316,8 @@ export function SeoOptimization() {
                                 setShowUpgradeDialog(true);
                                 return;
                               }
-                              setGenerating(true);
-                              try {
-                                const { error } = await supabase.functions.invoke("generate-seo-with-deepseek", {
-                                  body: { productId: product.id },
-                                });
-                                if (error) throw error;
-                                toast.success(t.seo.optimization.productOptimized);
-                                await fetchProducts();
-                                await refreshLimits();
-                              } catch (error: any) {
-                                toast.error(error.message || t.seo.optimization.optimizationError);
-                              } finally {
-                                setGenerating(false);
-                              }
+                              // Optimiser directement ce produit
+                              handleGenerateForSelected([product.id]);
                             }}
                             disabled={generating}
                             title={t.seo.optimization.optimize}
@@ -1318,7 +1350,7 @@ export function SeoOptimization() {
       ) : (
         // Grid View
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProducts.map((product) => {
+          {paginatedProducts.map((product) => {
             const seoScore = calculateDetailedSeoScore(
               product.seo_title,
               product.seo_description,
@@ -1432,6 +1464,54 @@ export function SeoOptimization() {
         </div>
       )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={previousPage}
+                  className={!hasPreviousPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              
+              {[...Array(totalPages)].map((_, index) => {
+                const page = index + 1;
+                // Show first page, last page, current page, and pages around current
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => goToPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                  return <PaginationEllipsis key={page} />;
+                }
+                return null;
+              })}
+              
+              <PaginationItem>
+                <PaginationNext
+                  onClick={nextPage}
+                  className={!hasNextPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+
       {/* Dialogs */}
       <ProgressDialog
         open={showProgressDialog}
@@ -1477,6 +1557,22 @@ export function SeoOptimization() {
 
       {/* Shopify Sync Success Dialog */}
       <ShopifySyncSuccessDialog items={syncedItems} onClose={() => setSyncedItems([])} />
+
+      {/* Bulk Optimization Confirmation Dialog */}
+      <OptimizationConfirmDialog
+        open={showBulkOptimizeConfirmDialog}
+        onOpenChange={setShowBulkOptimizeConfirmDialog}
+        onConfirm={() => {
+          setActiveTab("not-enriched");
+          setTimeout(() => {
+            handleGenerateAllSeo();
+          }, 100);
+        }}
+        selectedCount={notEnrichedCount}
+        currentUsage={limits?.usage.optimizations_count || 0}
+        maxOptimizations={limits?.limits.max_optimizations || 0}
+        isTrialing={limits?.isTrialing || false}
+      />
 
       {limits?.shouldForcePayment ? (
         <TrialLimitDialog

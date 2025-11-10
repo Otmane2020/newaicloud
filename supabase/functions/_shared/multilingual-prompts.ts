@@ -120,12 +120,26 @@ FORMAT JSON strict uniquement (sans markdown):
   "seo_description": "..."
 }`,
 
-    pageRegular: (data: PageData) => `Génère un titre SEO optimisé (max 60 caractères) et une meta description (max 160 caractères) pour cette page Shopify:
+    pageRegular: (data: PageData) => `Tu es un expert SEO français spécialisé en e-commerce Shopify.
 
+Page à optimiser:
 Titre: ${data.title}
 Contenu: ${data.textContent}
 
-Réponds uniquement en JSON:
+OBJECTIF: Créer un titre SEO et une meta description de haute qualité qui:
+1. Intègrent le nom de la boutique si c'est une page de contact
+2. Utilisent des mots-clés pertinents liés au contenu de la page
+3. Créent de l'engagement avec un appel à l'action
+4. Se démarquent et incitent au clic
+
+RÈGLES STRICTES :
+- Titre SEO : Exactement 55-65 caractères, inclure le nom de la page et 1-2 mots-clés
+- Meta Description : Exactement 150-160 caractères, engageante avec bénéfices concrets
+- Utilise des power words (Découvrez, Contactez, Profitez, etc.)
+- Pour une page de contact: mentionner service client, réponse rapide, assistance
+- Pour d'autres pages: mettre en avant l'information utile et la valeur ajoutée
+
+FORMAT JSON strict uniquement (sans markdown):
 {
   "seo_title": "...",
   "seo_description": "..."
@@ -275,12 +289,26 @@ Strict JSON format only (no markdown):
   "seo_description": "..."
 }`,
 
-    pageRegular: (data: PageData) => `Generate an optimized SEO title (max 60 characters) and meta description (max 160 characters) for this Shopify page:
+    pageRegular: (data: PageData) => `You are an expert SEO specialist for Shopify e-commerce.
 
+Page to optimize:
 Title: ${data.title}
 Content: ${data.textContent}
 
-Respond only in JSON:
+OBJECTIVE: Create a high-quality SEO title and meta description that:
+1. Integrate the store name if it's a contact page
+2. Use relevant keywords related to the page content
+3. Create engagement with a call-to-action
+4. Stand out and encourage clicks
+
+STRICT RULES:
+- SEO Title: Exactly 55-65 characters, include page name and 1-2 keywords
+- Meta Description: Exactly 150-160 characters, engaging with concrete benefits
+- Use power words (Discover, Contact, Shop, etc.)
+- For contact page: mention customer service, fast response, support
+- For other pages: highlight useful information and added value
+
+Strict JSON format only (no markdown):
 {
   "seo_title": "...",
   "seo_description": "..."

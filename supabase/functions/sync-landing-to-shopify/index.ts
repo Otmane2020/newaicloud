@@ -50,43 +50,63 @@ serve(async (req) => {
 
     console.log('[sync-landing-to-shopify] Product store_id:', product.store_id);
 
-    // Get Shopify credentials
-    // If product doesn't have a store_id, try to get the first active connection
+    // Get Shopify credentials - try multiple strategies
     let connection;
+    
+    // Strategy 1: Use product's store_id if available
     if (product.store_id) {
+      console.log('[sync-landing-to-shopify] Trying to fetch connection by store_id:', product.store_id);
       const { data, error: connectionError } = await supabase
         .from('shopify_connections')
-        .select('store_url, encrypted_access_token')
+        .select('id, store_url, encrypted_access_token')
         .eq('id', product.store_id)
-        .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (connectionError || !data) {
-        console.error('[sync-landing-to-shopify] Connection not found for store_id:', product.store_id, connectionError);
+      if (connectionError) {
+        console.error('[sync-landing-to-shopify] Error fetching connection by store_id:', connectionError);
+      } else if (!data) {
+        console.warn('[sync-landing-to-shopify] No connection found for store_id:', product.store_id);
       } else {
-        connection = data;
+        // Verify this connection belongs to the user
+        const { data: verifyData } = await supabase
+          .from('shopify_connections')
+          .select('id')
+          .eq('id', product.store_id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (verifyData) {
+          connection = data;
+          console.log('[sync-landing-to-shopify] Using product store_id connection');
+        } else {
+          console.warn('[sync-landing-to-shopify] Connection belongs to different user');
+        }
       }
     }
 
-    // Fallback: if no connection found, try to get the first active connection for the user
+    // Strategy 2: If no connection yet, get user's most recent connection
     if (!connection) {
-      console.log('[sync-landing-to-shopify] No store_id or connection not found, fetching first active connection');
+      console.log('[sync-landing-to-shopify] Fetching user\'s most recent Shopify connection');
       const { data, error: fallbackError } = await supabase
         .from('shopify_connections')
-        .select('store_url, encrypted_access_token')
+        .select('id, store_url, encrypted_access_token')
         .eq('user_id', user.id)
-        .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (fallbackError || !data) {
-        console.error('[sync-landing-to-shopify] No active Shopify connection found for user:', user.id, fallbackError);
-        throw new Error('No active Shopify connection found. Please connect your Shopify store first.');
+      if (fallbackError) {
+        console.error('[sync-landing-to-shopify] Error fetching user connections:', fallbackError);
+        throw new Error(`Database error: ${fallbackError.message}`);
+      }
+      
+      if (!data) {
+        console.error('[sync-landing-to-shopify] No Shopify connection found for user:', user.id);
+        throw new Error('No Shopify connection found. Please connect your Shopify store first.');
       }
 
       connection = data;
-      console.log('[sync-landing-to-shopify] Using fallback connection');
+      console.log('[sync-landing-to-shopify] Using most recent connection:', connection.id);
     }
 
     // Decrypt access token
@@ -103,7 +123,10 @@ serve(async (req) => {
     }
 
     const accessToken = decryptData.token;
-    const storeUrl = connection.store_url.replace(/\/$/, '');
+    const storeUrl = (connection.store_url || '').replace(/\/$/, '').replace(/^https?:\/\//, '');
+    const fullStoreUrl = storeUrl.startsWith('http') ? storeUrl : `https://${storeUrl}`;
+    
+    console.log('[sync-landing-to-shopify] Using store URL:', fullStoreUrl);
 
     // Create page handle from product handle
     const pageHandle = `landing-${productHandle}`;
@@ -126,7 +149,7 @@ serve(async (req) => {
     // Check if page already exists
     console.log('[sync-landing-to-shopify] Checking if page exists:', pageHandle);
     
-    const checkResponse = await fetch(`${storeUrl}/admin/api/2025-01/pages.json?handle=${pageHandle}`, {
+    const checkResponse = await fetch(`${fullStoreUrl}/admin/api/2025-01/pages.json?handle=${pageHandle}`, {
       method: 'GET',
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -151,7 +174,7 @@ serve(async (req) => {
       console.log('[sync-landing-to-shopify] Updating existing page:', existingPage.id);
       operation = 'updated';
       
-      const updateResponse = await fetch(`${storeUrl}/admin/api/2025-01/pages/${existingPage.id}.json`, {
+      const updateResponse = await fetch(`${fullStoreUrl}/admin/api/2025-01/pages/${existingPage.id}.json`, {
         method: 'PUT',
         headers: {
           'X-Shopify-Access-Token': accessToken,
@@ -181,7 +204,7 @@ serve(async (req) => {
       console.log('[sync-landing-to-shopify] Creating new page');
       operation = 'created';
       
-      const createResponse = await fetch(`${storeUrl}/admin/api/2025-01/pages.json`, {
+      const createResponse = await fetch(`${fullStoreUrl}/admin/api/2025-01/pages.json`, {
         method: 'POST',
         headers: {
           'X-Shopify-Access-Token': accessToken,
@@ -207,9 +230,49 @@ serve(async (req) => {
       pageId = createResult.page.id;
     }
 
-    const pageUrl = `${storeUrl}/pages/${pageHandle}`;
+    const pageUrl = `${fullStoreUrl}/pages/${pageHandle}`;
 
     console.log(`[sync-landing-to-shopify] Page ${operation}:`, pageUrl);
+
+    // 🆕 SYNCHRONISER LA DESCRIPTION DU PRODUIT SHOPIFY
+    console.log('📝 Updating Shopify product description...');
+    
+    // Récupérer le shopify_product_id
+    const { data: productData, error: productFetchError } = await supabase
+      .from('shopify_products')
+      .select('shopify_product_id')
+      .eq('id', productId)
+      .single();
+    
+    if (productFetchError || !productData?.shopify_product_id) {
+      console.error('❌ Could not fetch shopify_product_id:', productFetchError);
+    } else {
+      const shopifyProductId = productData.shopify_product_id;
+      
+      const updateProductResponse = await fetch(
+        `${fullStoreUrl}/admin/api/2025-01/products/${shopifyProductId}.json`,
+        {
+          method: 'PUT',
+          headers: {
+            'X-Shopify-Access-Token': accessToken,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            product: {
+              id: shopifyProductId,
+              body_html: htmlContent
+            }
+          })
+        }
+      );
+
+      if (!updateProductResponse.ok) {
+        const errorText = await updateProductResponse.text();
+        console.error('❌ Failed to update product description in Shopify:', errorText);
+      } else {
+        console.log('✅ Product description synced to Shopify');
+      }
+    }
 
     // Mettre à jour product_landing_pages avec les infos de sync
     const { error: updateError } = await supabase
