@@ -66,6 +66,7 @@ interface Product {
   id: string;
   title: string;
   description: string | null;
+  landing_page: string | null;
   seo_title: string | null;
   seo_description: string | null;
   image_url: string | null;
@@ -80,9 +81,10 @@ interface ProductImage {
   position: number | null;
 }
 
-// Check if product has rich HTML description
+// Check if product has rich HTML description or landing page
 const hasRichHtmlDescription = (product: Product): boolean => {
-  return !!(product.description && product.description.includes('<h1'));
+  return !!((product.landing_page && product.landing_page.includes('<h1')) || 
+            (product.description && product.description.includes('<h1')));
 };
 
 interface PreviewImage {
@@ -157,7 +159,7 @@ export default function ProductTitleDescription() {
 
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, description, seo_title, seo_description, image_url, shopify_id, vendor")
+        .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor")
         .eq("seller_id", user.id)
         .order("imported_at", { ascending: false });
 
@@ -295,14 +297,16 @@ export default function ProductTitleDescription() {
         // Update local state
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
-          .select("id, title, description, seo_title, seo_description, image_url, shopify_id, vendor")
+          .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor")
           .eq("id", productId)
           .single();
 
         if (updatedProduct) {
-          // Check if description already has HTML (skip regeneration if present)
-          const hasExistingHtml = updatedProduct.description && 
-            (updatedProduct.description.includes('<div') || updatedProduct.description.includes('<section'));
+          // Check if landing_page or description already has HTML (skip regeneration if present)
+          const hasExistingHtml = (updatedProduct.landing_page && 
+            (updatedProduct.landing_page.includes('<div') || updatedProduct.landing_page.includes('<section'))) ||
+            (updatedProduct.description && 
+            (updatedProduct.description.includes('<div') || updatedProduct.description.includes('<section')));
 
           if (!hasExistingHtml) {
             // Generate HTML landing page
@@ -326,14 +330,14 @@ export default function ProductTitleDescription() {
               if (!htmlError && htmlData?.success && htmlData?.htmlLandingPage) {
                 console.log("✅ HTML landing page généré (10 optimisations consommées)");
                 
-                // Save HTML to shopify_products.description
+                // Save HTML to shopify_products.landing_page instead of description
                 await supabase
                   .from("shopify_products")
-                  .update({ description: htmlData.htmlLandingPage })
+                  .update({ landing_page: htmlData.htmlLandingPage })
                   .eq("id", productId);
                 
-                // Update local product with HTML
-                updatedProduct.description = htmlData.htmlLandingPage;
+                // Update local product with HTML in landing_page
+                updatedProduct.landing_page = htmlData.htmlLandingPage;
               } else {
                 console.warn("⚠️ Génération HTML échouée:", htmlError || htmlData?.error);
                 // Don't block the process, continue with SEO only
@@ -355,7 +359,8 @@ export default function ProductTitleDescription() {
                     ...p, 
                     seo_title: updatedProduct.seo_title, 
                     seo_description: updatedProduct.seo_description,
-                    description: updatedProduct.description
+                    description: updatedProduct.description,
+                    landing_page: updatedProduct.landing_page
                   }
                 : p
             )

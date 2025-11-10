@@ -134,10 +134,10 @@ serve(async (req) => {
     // 🆕 SYNCHRONISER LA DESCRIPTION DU PRODUIT SHOPIFY EN PREMIER
     console.log("📝 Updating Shopify product description...");
 
-    // Récupérer le shopify_product_id
+    // Récupérer le shopify_product_id et landing_page
     const { data: productData, error: productFetchError } = await supabase
       .from("shopify_products")
-      .select("shopify_product_id")
+      .select("shopify_product_id, landing_page, description")
       .eq("id", productId)
       .single();
 
@@ -147,6 +147,10 @@ serve(async (req) => {
     }
 
     const shopifyProductId = productData.shopify_product_id;
+    
+    // 🆕 Use landing_page if available, otherwise use description, otherwise use htmlContent parameter
+    const contentToSync = productData.landing_page || productData.description || htmlContent;
+    console.log(`📝 Using ${productData.landing_page ? 'landing_page' : productData.description ? 'description' : 'htmlContent parameter'} for sync`);
 
     // Mettre à jour la description du produit dans Shopify
     const updateProductResponse = await fetch(`${fullStoreUrl}/admin/api/2025-01/products/${shopifyProductId}.json`, {
@@ -158,7 +162,7 @@ serve(async (req) => {
       body: JSON.stringify({
         product: {
           id: shopifyProductId,
-          body_html: htmlContent, // Remplace la description existante
+          body_html: contentToSync, // Use landing_page > description > htmlContent parameter
         },
       }),
     });

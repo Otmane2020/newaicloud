@@ -19,6 +19,7 @@ interface Product {
   id: string;
   title: string;
   description?: string | null;
+  landing_page?: string | null;
   seo_title?: string;
   seo_description?: string;
   image_url?: string;
@@ -101,11 +102,12 @@ const getShopifyProductUrl = async (product: Product): Promise<string | null> =>
   }
 };
 
-// Generate rich HTML preview from product description or fallback to simple version
+// Generate rich HTML preview from product landing_page or description
 const generateHtmlPreview = (product: Product, shopifyUrl?: string | null): string => {
   const title = product.seo_title || product.title;
   const description = product.seo_description || "";
-  let htmlDescription = product.description || "";
+  // 🆕 Use landing_page first, then fallback to description
+  let htmlDescription = product.landing_page || product.description || "";
   const imageUrl = product.image_url || "";
 
   // Remove any existing "Voir sur Shopify" buttons from the HTML to avoid duplicates
