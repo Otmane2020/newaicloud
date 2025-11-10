@@ -684,7 +684,7 @@ EXEMPLE TABLEAU SPECS (si dimensions disponibles):
             },
             { role: "user", content: prompt },
           ],
-          max_tokens: 5000,
+          max_tokens: 12000,
           temperature: 0.7,
         }),
         signal: aiController.signal,
