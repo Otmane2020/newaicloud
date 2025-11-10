@@ -110,15 +110,26 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
 
-    // Fetch images + variants in parallel
+    // Fetch images + variants + enriched product data in parallel
     console.log("📦 Fetching product data...");
-    const [imagesRes, variantsRes] = await Promise.all([
+    const [imagesRes, variantsRes, productDataRes] = await Promise.all([
       supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
       supabaseAdmin.from("product_variants").select("title, image_url").eq("product_id", product_id),
+      supabaseAdmin.from("shopify_products").select(`
+        ai_color, ai_material, ai_shape, ai_texture, ai_pattern, ai_finish, ai_design_elements,
+        ai_vision_analysis, ai_presentation_quality, ai_craftsmanship_level, 
+        ai_lighting_type, ai_background_style, ai_condition_notes,
+        smart_length, smart_length_unit, smart_width, smart_width_unit,
+        smart_height, smart_height_unit, smart_diameter, smart_diameter_unit,
+        smart_depth, smart_depth_unit, smart_weight, smart_weight_unit,
+        smart_seat_height, smart_seat_height_unit,
+        category, sub_category, style, room, functionality, characteristics
+      `).eq("id", product_id).single()
     ]);
     const images = imagesRes.data ?? [];
     const variants = variantsRes.data ?? [];
-    console.log(`✅ Product data fetched: ${images.length} images, ${variants.length} variants`);
+    const productData = productDataRes.data;
+    console.log(`✅ Product data fetched: ${images.length} images, ${variants.length} variants, enriched: ${!!productData}`);
 
     // Vision AI with timeout (15s) - Optional, won't block if it fails
     let visualAnalysis = "";
@@ -188,6 +199,8 @@ Vision AI:
 ${visualAnalysis}
 Highlights:
 ${customHighlights}
+Enriched Attributes:
+${buildEnrichedAttributes(productData, language)}
 
 Constraints:
 - Mobile-first (sm:, md:, lg:)
@@ -217,6 +230,8 @@ Vision AI :
 ${visualAnalysis}
 Points forts :
 ${customHighlights}
+Attributs enrichis :
+${buildEnrichedAttributes(productData, language)}
 
 Contraintes :
 - Mobile-first (sm:, md:, lg:)

@@ -23,6 +23,13 @@ interface VisualAttributes {
   room?: string;
   mood: string;
   technicalDetails: string[];
+  finish?: string;
+  pattern?: string;
+  shape?: string;
+  texture?: string;
+  craftsmanshipLevel?: string;
+  presentationQuality?: number;
+  useCases?: string[];
 }
 
 interface VisionResponse {
@@ -82,7 +89,14 @@ Réponds UNIQUEMENT avec un objet JSON valide contenant :
     "style": "style/design (moderne, scandinave, industriel, vintage, classique, etc.)",
     "room": "contexte/pièce si visible (salon, chambre, cuisine, bureau, etc.)",
     "mood": "ambiance/atmosphère (chaleureux, élégant, minimaliste, cosy, contemporain, etc.)",
-    "technicalDetails": ["détail technique 1", "détail technique 2"]
+    "technicalDetails": ["détail technique 1", "détail technique 2"],
+    "finish": "finition (mat, brillant, vernis, satiné, etc.)",
+    "pattern": "motif si visible (uni, rayé, fleuri, géométrique, etc.)",
+    "shape": "forme globale (rectangulaire, rond, carré, ovale, asymétrique, etc.)",
+    "texture": "texture apparente (lisse, rugueux, tissé, granuleux, etc.)",
+    "craftsmanshipLevel": "niveau artisanat (standard, premium, luxe)",
+    "presentationQuality": 8.5,
+    "useCases": ["cas d'usage 1", "cas d'usage 2"]
   },
   "confidence": 0.95
 }
@@ -95,6 +109,13 @@ Instructions :
 - room : pièce/contexte si identifiable
 - mood : ambiance/feeling général
 - technicalDetails : détails visibles (pieds en bois, coussins amovibles, finition mate, etc.)
+- finish : type de finition visible
+- pattern : motif décoratif si présent
+- shape : forme générale du produit
+- texture : texture de surface apparente
+- craftsmanshipLevel : évaluation du niveau de qualité
+- presentationQuality : note de 1 à 10 sur la qualité de présentation
+- useCases : 2-3 cas d'usage suggérés
 - confidence : score de confiance entre 0 et 1
 
 Sois précis et descriptif. N'invente pas, base-toi sur ce qui est visible.`;
