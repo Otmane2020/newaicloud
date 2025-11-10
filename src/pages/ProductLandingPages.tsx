@@ -285,7 +285,10 @@ export default function ProductLandingPages() {
           setGenerationStep(`Sauvegarde (${i + 1}/${productsArray.length})`);
           setGenerationProgress(baseProgress + 25);
           
-          await supabase
+          console.log("Saving landing page for product:", product.id);
+          console.log("HTML length:", landingData.generatedCode.length);
+          
+          const { error: updateError } = await supabase
             .from("shopify_products")
             .update({
               landing_page_html: landingData.generatedCode,
@@ -294,7 +297,15 @@ export default function ProductLandingPages() {
             })
             .eq("id", productId);
 
+          if (updateError) {
+            console.error("Error saving landing page:", updateError);
+            throw updateError;
+          }
+          
+          console.log("Landing page saved successfully");
           successCount++;
+        } else {
+          console.log("No generated code returned for product:", product.id);
         }
       }
 
@@ -319,6 +330,15 @@ export default function ProductLandingPages() {
   };
 
   const handlePreview = (product: Product) => {
+    console.log("Preview clicked for product:", product.id);
+    console.log("Landing page HTML exists:", !!product.landing_page_html);
+    console.log("HTML length:", product.landing_page_html?.length || 0);
+    
+    if (!product.landing_page_html) {
+      toast.error("Aucune landing page générée pour ce produit");
+      return;
+    }
+    
     setPreviewProduct(product);
     setShowPreviewDialog(true);
   };
@@ -773,10 +793,16 @@ export default function ProductLandingPages() {
                   className="w-full border-0"
                   style={{ height: "600px" }}
                   title="Landing page preview"
+                  sandbox="allow-same-origin allow-scripts"
+                  onLoad={() => console.log("Iframe loaded successfully")}
+                  onError={(e) => console.error("Iframe error:", e)}
                 />
               ) : (
                 <div className="flex items-center justify-center h-[600px] text-muted-foreground">
-                  Aucun aperçu disponible
+                  <div className="text-center space-y-2">
+                    <p className="text-lg">Aucun aperçu disponible</p>
+                    <p className="text-sm">Générez d'abord une landing page pour ce produit</p>
+                  </div>
                 </div>
               )}
             </div>
