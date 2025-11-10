@@ -340,7 +340,10 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('[LIMITS] Unexpected error in check-usage-limits:', error);
+    console.error('[LIMITS] ❌ CRITICAL ERROR in check-usage-limits');
+    console.error('[LIMITS] Error type:', typeof error);
+    console.error('[LIMITS] Error object:', error);
+    console.error('[LIMITS] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     // Try to detect language, fallback to 'en' if it fails
     let lang: 'fr' | 'en' = 'en';
@@ -350,13 +353,14 @@ serve(async (req) => {
       console.error('[LIMITS] Could not detect language:', e);
     }
     
-    const errorMessage = error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError;
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`[LIMITS] ${TRANSLATIONS[lang].errorCheckingLimits}: ${errorMessage}`);
     
     return new Response(
       JSON.stringify({ 
-        error: errorMessage,
-        details: error instanceof Error ? error.stack : undefined
+        error: TRANSLATIONS[lang].errorCheckingLimits,
+        message: errorMessage,
+        details: error instanceof Error ? error.stack : String(error)
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
