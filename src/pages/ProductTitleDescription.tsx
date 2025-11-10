@@ -774,26 +774,68 @@ export default function ProductTitleDescription() {
     const toastId = toast.loading("Synchronisation avec Shopify...");
 
     try {
+      let successCount = 0;
+      let errorCount = 0;
+
       for (const product of optimizedProducts) {
-        if (!product.shopify_id) continue;
+        if (!product.shopify_id) {
+          console.warn(`Product ${product.id} has no shopify_id, skipping`);
+          errorCount++;
+          continue;
+        }
 
-        const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: {
-            productId: product.id,
-            shopifyId: product.shopify_id,
-            seoTitle: product.seo_title,
-            seoDescription: product.seo_description,
+        // Get product handle from database
+        const { data: productData } = await supabase
+          .from('shopify_products')
+          .select('handle')
+          .eq('id', product.id)
+          .single();
+
+        if (!productData?.handle) {
+          console.error(`Product ${product.id} has no handle, skipping`);
+          errorCount++;
+          continue;
+        }
+
+        try {
+          // Use sync-landing-to-shopify to sync both product description and landing page
+          const { data, error } = await supabase.functions.invoke('sync-landing-to-shopify', {
+            body: {
+              productId: product.id,
+              productTitle: product.title,
+              productHandle: productData.handle,
+              htmlContent: product.description || '', // The HTML landing page content
+            }
+          });
+
+          if (error) {
+            console.error(`Error syncing product ${product.id}:`, error);
+            errorCount++;
+          } else if (data?.success) {
+            console.log(`✅ Product ${product.id} synced:`, data.operation);
+            successCount++;
+          } else {
+            console.error(`Failed to sync product ${product.id}:`, data?.error);
+            errorCount++;
           }
-        });
-
-        if (error) {
-          console.error(`Error syncing product ${product.id}:`, error);
+        } catch (err) {
+          console.error(`Exception syncing product ${product.id}:`, err);
+          errorCount++;
         }
       }
 
-      toast.success(`${optimizedProducts.length} produit(s) synchronisé(s) avec Shopify`, { id: toastId });
-      setShowLandingPreviewDialog(false);
-      setOptimizedProducts([]);
+      if (successCount > 0) {
+        toast.success(`${successCount} produit(s) synchronisé(s) avec Shopify`, { id: toastId });
+      }
+      
+      if (errorCount > 0) {
+        toast.error(`${errorCount} produit(s) n'ont pas pu être synchronisés`, { duration: 5000 });
+      }
+
+      if (successCount === optimizedProducts.length) {
+        setShowLandingPreviewDialog(false);
+        setOptimizedProducts([]);
+      }
     } catch (error) {
       console.error("Error syncing to Shopify:", error);
       toast.error("Erreur lors de la synchronisation", { id: toastId });

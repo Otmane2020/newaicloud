@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
@@ -72,19 +73,56 @@ const calculateQualityScore = (title: string, description: string): number => {
   return Math.min(100, score);
 };
 
+// Get Shopify product URL
+const getShopifyProductUrl = async (product: Product): Promise<string | null> => {
+  try {
+    const { data: connection } = await supabase
+      .from('shopify_connections')
+      .select('store_url')
+      .eq('is_active', true)
+      .single();
+    
+    if (!connection?.store_url) return null;
+    
+    const { data: shopifyProduct } = await supabase
+      .from('shopify_products')
+      .select('handle')
+      .eq('id', product.id)
+      .single();
+    
+    if (!shopifyProduct?.handle) return null;
+    
+    const storeUrl = connection.store_url.replace(/\/$/, '');
+    return `${storeUrl}/products/${shopifyProduct.handle}`;
+  } catch (error) {
+    console.error('Error getting Shopify URL:', error);
+    return null;
+  }
+};
+
 // Generate rich HTML preview from product description or fallback to simple version
-const generateHtmlPreview = (product: Product): string => {
+const generateHtmlPreview = (product: Product, shopifyUrl?: string | null): string => {
   const title = product.seo_title || product.title;
   const description = product.seo_description || "";
   const htmlDescription = product.description || "";
   const imageUrl = product.image_url || "";
 
   // If we have a rich HTML description in the description field, use it directly
-  if (htmlDescription && (htmlDescription.includes("<div") || htmlDescription.includes("<section"))) {
-    // Wrap in a container for consistent styling
+  if (htmlDescription && (htmlDescription.includes("<div") || htmlDescription.includes("<section") || htmlDescription.includes("<h1"))) {
+    // Wrap in a container for consistent styling and add Shopify button if URL exists
     return `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         ${htmlDescription}
+        ${shopifyUrl ? `
+          <div style="text-align: center; margin-top: 3rem;">
+            <a href="${shopifyUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; text-decoration: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+              <span>Voir sur Shopify</span>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 3L14 10L7 17" />
+              </svg>
+            </a>
+          </div>
+        ` : ''}
       </div>
     `;
   }
@@ -123,12 +161,16 @@ const generateHtmlPreview = (product: Product): string => {
           : ""
       }
       
-      <div style="display: inline-flex; gap: 1rem; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); margin-top: 2rem;">
-        <span>Voir sur Shopify</span>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M7 3L14 10L7 17" />
-        </svg>
-      </div>
+      ${shopifyUrl ? `
+        <div style="text-align: center; margin-top: 2rem;">
+          <a href="${shopifyUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; text-decoration: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+            <span>Voir sur Shopify</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M7 3L14 10L7 17" />
+            </svg>
+          </a>
+        </div>
+      ` : ''}
     </div>
   `;
 };
@@ -146,6 +188,25 @@ export function ProductTitleLandingDialog({
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "360">("desktop");
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [shopifyUrls, setShopifyUrls] = useState<Map<string, string>>(new Map());
+
+  // Load Shopify URLs for products
+  useEffect(() => {
+    const loadShopifyUrls = async () => {
+      const urlMap = new Map<string, string>();
+      for (const product of products) {
+        const url = await getShopifyProductUrl(product);
+        if (url) {
+          urlMap.set(product.id, url);
+        }
+      }
+      setShopifyUrls(urlMap);
+    };
+
+    if (products.length > 0 && !isGenerating) {
+      loadShopifyUrls();
+    }
+  }, [products, isGenerating]);
 
   // Smooth progress animation based on currentProcessing
   useEffect(() => {
@@ -171,7 +232,8 @@ export function ProductTitleLandingDialog({
       ? calculateQualityScore(selectedProduct.seo_title, selectedProduct.seo_description)
       : 0;
 
-  const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct) : "";
+  const shopifyUrl = selectedProduct ? shopifyUrls.get(selectedProduct.id) : null;
+  const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct, shopifyUrl) : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
