@@ -17,6 +17,9 @@ import {
   Palette,
   Layout,
   Type,
+  Upload,
+  Monitor,
+  Smartphone,
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -90,6 +93,7 @@ export default function ProductLandingPages() {
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [syncingToShopify, setSyncingToShopify] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
 
@@ -318,6 +322,37 @@ export default function ProductLandingPages() {
     setShowPreviewDialog(true);
   };
 
+  const handleSyncToShopify = async (product: Product) => {
+    if (!product.landing_page_html) {
+      toast.error("Aucune landing page à synchroniser");
+      return;
+    }
+
+    setSyncingToShopify(true);
+    const toastId = toast.loading("Synchronisation vers Shopify...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
+        body: {
+          productId: product.id,
+          shopifyProductId: product.shopify_id,
+          landingPageHtml: product.landing_page_html,
+          title: product.seo_title || product.title,
+          description: product.seo_description || product.description,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("Landing page synchronisée avec Shopify !", { id: toastId });
+    } catch (error: any) {
+      console.error("Error syncing to Shopify:", error);
+      toast.error(error.message || "Erreur lors de la synchronisation", { id: toastId });
+    } finally {
+      setSyncingToShopify(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -489,9 +524,25 @@ export default function ProductLandingPages() {
                     <TableCell>
                       <div className="flex gap-1">
                         {product.landing_page_html && (
-                          <Button variant="ghost" size="icon" onClick={() => handlePreview(product)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handlePreview(product)}
+                              title="Aperçu"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleSyncToShopify(product)}
+                              disabled={syncingToShopify}
+                              title="Synchroniser avec Shopify"
+                            >
+                              <Upload className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                         <Button
                           variant="ghost"
@@ -501,6 +552,7 @@ export default function ProductLandingPages() {
                             setShowConfigDialog(true);
                           }}
                           disabled={generating}
+                          title="Générer landing page"
                         >
                           <Sparkles className="h-4 w-4" />
                         </Button>
@@ -729,10 +781,29 @@ export default function ProductLandingPages() {
             </div>
           </div>
 
-          <DialogFooter className="p-6 pt-0">
+          <DialogFooter className="p-6 pt-0 gap-2">
             <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
               Fermer
             </Button>
+            {previewProduct?.landing_page_html && (
+              <Button 
+                onClick={() => previewProduct && handleSyncToShopify(previewProduct)}
+                disabled={syncingToShopify}
+                className="gap-2"
+              >
+                {syncingToShopify ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Synchronisation...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Synchroniser vers Shopify
+                  </>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
