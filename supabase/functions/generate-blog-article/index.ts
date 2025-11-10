@@ -261,6 +261,24 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     console.log(`Génération article : ${articleTitle} pour user ${user_id}`);
 
+    // Récupération de l'URL du store pour les liens produits
+    let storeUrl = "";
+    try {
+      const { data: storeData } = await supabaseClient
+        .from("shopify_connections")
+        .select("store_url")
+        .eq("user_id", user_id)
+        .single();
+      
+      if (storeData?.store_url) {
+        storeUrl = storeData.store_url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+        storeUrl = `https://${storeUrl}`;
+        console.log(`✅ Store URL: ${storeUrl}`);
+      }
+    } catch (err) {
+      console.log("⚠️ Erreur récupération store URL:", err);
+    }
+
     // Recherche des produits
     let products: any[] = [];
 
@@ -314,6 +332,22 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       if (data) {
         products = data;
       }
+    }
+
+    // Enrichir les produits avec les URLs complètes
+    if (storeUrl && products.length > 0) {
+      products = products.map(p => {
+        const imageUrl = p.image_url || (p.images && p.images.length > 0 ? 
+          (typeof p.images === 'string' ? JSON.parse(p.images)[0] : p.images[0]) : 
+          '');
+        
+        return {
+          ...p,
+          product_url: `${storeUrl}/products/${p.handle}`,
+          full_image_url: imageUrl,
+        };
+      });
+      console.log(`✅ ${products.length} produits enrichis avec URLs`);
     }
 
     const hasProducts = products && products.length > 0;
@@ -379,11 +413,11 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
         messages: [
           {
             role: "system",
-            content: "Expert SEO spécialisé dans la création de titres percutants et optimisés.",
+            content: `Expert SEO spécialisé dans la création de titres percutants et optimisés. Tu dois écrire en ${lang.name}.`,
           },
           {
             role: "user",
-            content: `Crée un titre d'article SEO engageant contenant "${mainKeyword}". 50-70 caractères, accrocheur. Retourne uniquement le titre.`,
+            content: `LANGUE OBLIGATOIRE: ${lang.name.toUpperCase()}\n\nCrée un titre d'article SEO engageant EN ${lang.name.toUpperCase()} contenant "${mainKeyword}". 50-70 caractères, accrocheur. Retourne uniquement le titre EN ${lang.name.toUpperCase()}.`,
           },
         ],
       }),
@@ -394,40 +428,41 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
 
     console.log(`Titre optimisé: ${optimizedTitle}`);
 
-    // Récupération de l'URL du store
-    let storeUrl = "";
-    if (hasProducts && products[0]?.store_id) {
-      const { data: storeData } = await supabaseClient
-        .from("shopify_connections")
-        .select("store_url")
-        .eq("id", products[0].store_id)
-        .single();
-
-      if (storeData?.store_url) {
-        storeUrl = storeData.store_url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-        storeUrl = `https://${storeUrl}`;
-      }
-    }
-
-    // Récupération des pages Shopify réelles pour netlinking
+    // Récupération des pages Shopify pour netlinking
     let shopifyPages: any[] = [];
     if (user_id) {
       const { data: pagesData } = await supabaseClient
         .from("shopify_pages")
-        .select("title, handle, body_html")
+        .select("title, handle")
         .eq("user_id", user_id)
         .limit(10);
 
       if (pagesData && pagesData.length > 0) {
         shopifyPages = pagesData;
-        console.log(`${shopifyPages.length} pages Shopify trouvées pour netlinking`);
+        console.log(`✅ ${shopifyPages.length} pages Shopify trouvées pour netlinking`);
       }
     }
 
-    const pagesContext =
-      shopifyPages.length > 0
-        ? `\n\nPAGES SHOPIFY DISPONIBLES POUR NETLINKING:\n${shopifyPages.map((p) => `- ${p.title} (handle: ${p.handle})`).join("\n")}\n**IMPORTANT: Intègre des liens vers ces pages dans l'article pour améliorer le maillage interne.**`
-        : "";
+    // Récupération des collections Shopify pour netlinking
+    let shopifyCollections: any[] = [];
+    if (user_id) {
+      const { data: collData } = await supabaseClient
+        .from("shopify_collections")
+        .select("title, handle")
+        .eq("user_id", user_id)
+        .limit(10);
+      
+      if (collData && collData.length > 0) {
+        shopifyCollections = collData;
+        console.log(`✅ ${shopifyCollections.length} collections Shopify trouvées pour netlinking`);
+      }
+    }
+
+    const netlinkingContext = [
+      shopifyPages.length > 0 ? `\n📄 PAGES SHOPIFY POUR NETLINKING:\n${shopifyPages.map((p) => `- ${p.title}: ${storeUrl}/pages/${p.handle}`).join("\n")}` : '',
+      shopifyCollections.length > 0 ? `\n🏷️ COLLECTIONS SHOPIFY POUR NETLINKING:\n${shopifyCollections.map((c) => `- ${c.title}: ${storeUrl}/collections/${c.handle}`).join("\n")}` : '',
+      (shopifyPages.length > 0 || shopifyCollections.length > 0) ? '\n**🔗 IMPORTANT: Intègre ces liens naturellement dans l\'article pour créer du maillage interne SEO.**' : ''
+    ].filter(Boolean).join('\n');
 
     // Style guides based on config
     const styleGuides: Record<string, string> = {
@@ -529,10 +564,13 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
 
     const prompt = `Tu es un designer UX/UI expert et rédacteur web spécialisé dans les articles e-commerce de style magazine.
 
+🌍 LANGUE OBLIGATOIRE : ${lang.name.toUpperCase()}
+⚠️ CRITIQUE : Tout le contenu (titre, texte, boutons, liens) DOIT être rédigé en ${lang.name}. AUCUN mélange de langues n'est accepté.
+
 📰 ARTICLE À CRÉER :
 - Sujet : ${topicInfo}
 - Mots-clés : ${targetKeywords.join(", ")}
-- Langue : ${lang.name}
+- Langue cible : ${lang.name}
 
 🎨 DESIGN & STYLE :
 - Style visuel : ${config.style}
@@ -594,16 +632,34 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
 ❌ Pas de <html>, <head>, <body>
 ❌ Pas de JavaScript
 
-SUJET : ${topicInfo}
-MOTS-CLÉS : ${targetKeywords.join(", ")}
+🛍️ CONTRAINTE PRODUITS (OBLIGATOIRE) :
 ${
   hasProducts
-    ? `PRODUITS SÉLECTIONNÉS (${products.length}) :
-${products.map((p: any) => `- ${p.title} (${p.price}€)${p.category ? ` - Catégorie: ${p.category}` : ""} : ${p.description?.substring(0, 100) || "Description non disponible"}`).join("\n")}`
-    : `Article informatif générique sur ${topicInfo}`
-}${pagesContext}
+    ? `Tu DOIS intégrer les ${products.length} produits ci-dessous dans l'article.
+Chaque produit DOIT être présenté avec:
+  ✅ Image produit réelle : <img src="[full_image_url]" alt="[title]" class="w-full h-48 object-cover rounded-lg" />
+  ✅ Titre cliquable : <a href="[product_url]" class="text-xl font-bold hover:text-primary" style="color: ${config.colorScheme}">[title]</a>
+  ✅ Prix : <span class="text-lg font-semibold">[price]€</span>
+  ✅ Description courte
+  ✅ Bouton "Voir le produit" : <a href="[product_url]" class="px-6 py-3 rounded-lg text-white" style="background-color: ${config.colorScheme}">Voir le produit</a>
 
-RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications) avec environ ${wordCountTarget} mots.
+📦 LISTE DES PRODUITS À INTÉGRER :
+${products.map((p: any, i: number) => `
+## Produit ${i + 1}: ${p.title}
+- Prix : ${p.price}€
+- Catégorie : ${p.category || 'N/A'}
+- Description : ${p.description?.substring(0, 200) || 'N/A'}
+- Image URL : ${p.full_image_url || 'N/A'}
+- Lien produit : ${p.product_url}
+**⚠️ ACTION REQUISE : Intègre ce produit avec son IMAGE et son LIEN cliquable dans la section showcase**
+`).join('\n')}
+
+⚠️ NE PAS utiliser d'images Unsplash pour les produits ! Utilise UNIQUEMENT les images fournies ci-dessus.`
+    : `Article informatif générique sur ${topicInfo} (sans produits)`
+}
+${netlinkingContext}
+
+RETOURNE UNIQUEMENT LE HTML (sans markdown, sans explications, sans balises \`\`\`) avec environ ${wordCountTarget} mots EN ${lang.name.toUpperCase()}.
 `;
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

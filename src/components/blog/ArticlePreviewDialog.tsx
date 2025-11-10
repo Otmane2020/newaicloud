@@ -49,7 +49,7 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
             <h1 className="text-4xl font-bold mb-6">{article.title}</h1>
             
             <div 
-              className="article-content"
+              className="article-content prose-a:text-primary prose-a:underline hover:prose-a:text-primary/80"
               dangerouslySetInnerHTML={{ __html: article.content }} 
             />
           </article>
