@@ -111,9 +111,8 @@ serve(async (req) => {
       
       const { data: importData, error: importError } = await supabaseAdmin.functions.invoke('import-products', {
         body: {
-          shop: pending.shop_url,
-          accessToken: pending.access_token,
-          userId: user.id,
+          shopName: pending.shop_url,
+          apiSecret: pending.access_token,
           autoImportLimit: 10,
           skipNotification: false
         }
