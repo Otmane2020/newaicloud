@@ -1,152 +1,41 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+// ✅ CORS Headers — sécurisé et compatible front
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-
-function sanitizeHtmlUnsafe(html: string): string {
-  if (!html) return "";
-  let out = html
-    .replace(/^\s*```(?:html)?/gi, "")
-    .replace(/```\s*$/g, "")
-    .replace(/<\/?(script|iframe|object|embed)[^>]*>/gi, ""); // Removed style from strip list
-    // Keep onclick, style, and href attributes - they're needed for functionality
-
-  return out.trim();
-}
-
-function buildVisionSummary(v: any, language = "fr") {
-  if (!v) return "";
-  const materials = Array.isArray(v.materials) ? v.materials.join(", ") : v.materials || (language === "en" ? "not detected" : "non détectés");
-  const palette = Array.isArray(v.palette) ? v.palette.join(", ") : v.palette || v.dominantColor || (language === "en" ? "not detected" : "non détectée");
-  const styles = Array.isArray(v.visualStyles) ? v.visualStyles.join(", ") : v.visualStyle || (language === "en" ? "not detected" : "non détecté");
-  const moods = Array.isArray(v.moods) ? v.moods.join(", ") : v.mood || (language === "en" ? "not detected" : "non détectée");
-  const quality = v.quality || (language === "en" ? "not detected" : "non détectée");
-  const finishes = Array.isArray(v.finishes) ? v.finishes.join(", ") : v.finish || "—";
-  const usecases = Array.isArray(v.useCases) ? v.useCases.join(", ") : v.useCases || "—";
-  const dimensions = v.dimensions || v.measurements || v.sizes || "";
-  const specs = v.specifications || "";
-
-  return language === "en"
-    ? `VISION ANALYSIS (AI)
-- Dominant palette: ${palette}
-- Style: ${styles}
-- Mood: ${moods}
-- Materials: ${materials}
-- Finishes: ${finishes}
-- Quality: ${quality}
-- Use cases: ${usecases}
-${dimensions ? `- Dimensions: ${dimensions}` : ""}
-${specs ? `- Specifications: ${specs}` : ""}`
-    : `ANALYSE VISUELLE (Vision AI)
-- Palette dominante : ${palette}
-- Style : ${styles}
-- Ambiance : ${moods}
-- Matériaux : ${materials}
-- Finitions : ${finishes}
-- Qualité : ${quality}
-- Cas d'usage : ${usecases}
-${dimensions ? `- Dimensions : ${dimensions}` : ""}
-${specs ? `- Spécifications : ${specs}` : ""}`;
-}
-
-function buildEnrichedProductSummary(enriched: any, language = "fr") {
-  if (!enriched) return "";
-  const sections = [];
-
-  // Visual Attributes
-  const visualAttrs = [];
-  if (enriched.ai_color) visualAttrs.push(`Couleur: ${enriched.ai_color}`);
-  if (enriched.ai_material) visualAttrs.push(`Matériau: ${enriched.ai_material}`);
-  if (enriched.ai_shape) visualAttrs.push(`Forme: ${enriched.ai_shape}`);
-  if (enriched.ai_texture) visualAttrs.push(`Texture: ${enriched.ai_texture}`);
-  if (enriched.ai_pattern) visualAttrs.push(`Motif: ${enriched.ai_pattern}`);
-  if (enriched.ai_finish) visualAttrs.push(`Finition: ${enriched.ai_finish}`);
-  if (enriched.ai_design_elements) visualAttrs.push(`Éléments Design: ${enriched.ai_design_elements}`);
-  if (visualAttrs.length > 0) {
-    sections.push(language === "en" ? "VISUAL ATTRIBUTES:" : "ATTRIBUTS VISUELS:");
-    sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
-  }
-
-  // Dimensions
-  const dims = [];
-  if (enriched.smart_length) dims.push(`L ${enriched.smart_length}${enriched.smart_length_unit || ""}`);
-  if (enriched.smart_width) dims.push(`l ${enriched.smart_width}${enriched.smart_width_unit || ""}`);
-  if (enriched.smart_height) dims.push(`H ${enriched.smart_height}${enriched.smart_height_unit || ""}`);
-  if (enriched.smart_weight) dims.push(`Poids ${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
-  if (enriched.smart_diameter) dims.push(`Ø ${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
-  if (enriched.smart_depth) dims.push(`P ${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
-  if (enriched.smart_seat_height) dims.push(`Hauteur d'assise ${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
-  if (dims.length > 0) {
-    sections.push(language === "en" ? "\nDIMENSIONS:" : "\nDIMENSIONS:");
-    sections.push(`- ${dims.join(" × ")}`);
-  }
-
-  // Categorization
-  const cats = [];
-  if (enriched.category) cats.push(`Catégorie: ${enriched.category}`);
-  if (enriched.sub_category) cats.push(`Sous-catégorie: ${enriched.sub_category}`);
-  if (enriched.style) cats.push(`Style: ${enriched.style}`);
-  if (enriched.room) cats.push(`Pièce: ${enriched.room}`);
-  if (enriched.functionality) cats.push(`Fonctionnalité: ${enriched.functionality}`);
-  if (cats.length > 0) {
-    sections.push(language === "en" ? "\nCATEGORIZATION:" : "\nCATÉGORISATION:");
-    sections.push(cats.map((c: string) => `- ${c}`).join("\n"));
-  }
-
-  // Quality & Analysis
-  const quality = [];
-  if (enriched.ai_vision_analysis) quality.push(`Analyse: ${enriched.ai_vision_analysis}`);
-  if (enriched.ai_presentation_quality) quality.push(`Qualité Présentation: ${enriched.ai_presentation_quality}`);
-  if (enriched.ai_craftsmanship_level) quality.push(`Niveau Artisanat: ${enriched.ai_craftsmanship_level}`);
-  if (quality.length > 0) {
-    sections.push(language === "en" ? "\nQUALITY ANALYSIS:" : "\nANALYSE QUALITÉ:");
-    sections.push(quality.map((q: string) => `- ${q}`).join("\n"));
-  }
-
-  // Conversational Text
-  if (enriched.chat_text) {
-    sections.push(language === "en" ? "\nCONVERSATIONAL DESCRIPTION:" : "\nDESCRIPTION CONVERSATIONNELLE:");
-    sections.push(enriched.chat_text);
-  }
-
-  return sections.join("\n");
-}
-
-function ensureResponsiveWrapper(html: string): string {
-  // Keep HTML as-is - the AI already generates responsive HTML with proper Tailwind classes
-  return html;
-}
-
+/** ----------------------------------------------------------------
+ * 🧠 Function: Generate landing page HTML via Lovable AI Gateway
+ * ----------------------------------------------------------------*/
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  // ✅ Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
   try {
+    // 🛡️ VÉRIFICATION DES LIMITES AVANT GÉNÉRATION
     const authHeader = req.headers.get("Authorization");
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
 
-    // Get authenticated user
-    let userId = null;
     if (authHeader) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      );
+
       const token = authHeader.replace("Bearer ", "");
       const {
         data: { user },
-        error: authError,
       } = await supabaseAdmin.auth.getUser(token);
 
-      if (!authError && user) {
-        userId = user.id;
-
-        // 🛡️ VÉRIFICATION DES LIMITES AVANT GÉNÉRATION
+      if (user) {
         const currentMonth = new Date().toISOString().substring(0, 7) + "-01";
+
+        // Récupérer usage actuel
         const { data: usage } = await supabaseAdmin
           .from("usage_tracking")
           .select("optimizations_count")
@@ -154,6 +43,7 @@ serve(async (req) => {
           .eq("month", currentMonth)
           .maybeSingle();
 
+        // Récupérer profil et plan
         const { data: profile } = await supabaseAdmin
           .from("profiles")
           .select("subscription_status, current_plan_id")
@@ -191,315 +81,211 @@ serve(async (req) => {
           );
         }
 
-        // ✅ Incrémenter IMMÉDIATEMENT (avant génération)
-        const LANDING_PAGE_COST = 5;
+        // ✅ Incrémenter IMMÉDIATEMENT (avant génération pour éviter les abus)
+        const LANDING_PAGE_COST = 5; // 1 landing page = 5 optimisations (valeur augmentée car contenu riche + Vision AI + design personnalisé)
+
         await supabaseAdmin.rpc("increment_usage", {
           p_seller_id: user.id,
           p_field: "optimizations_count",
           p_increment: LANDING_PAGE_COST,
         });
-        console.log(`[generate-landing-ai] ✅ Usage incremented: +${LANDING_PAGE_COST}`);
+
+        console.log(
+          `[generate-landing-ai] ✅ Usage incremented: +${LANDING_PAGE_COST} (now ${currentUsage + LANDING_PAGE_COST}/${maxOptimizations})`,
+        );
       }
     }
 
     const body = await req.json();
-    const {
-      product_id,
-      productTitle,
-      imageUrl,
-      description,
-      vendor,
-      style,
-      mainColor = "#3B82F6",
-      layout,
-      length,
-      customHighlights,
-      language = "fr",
-    } = body ?? {};
 
-    if (!productTitle)
+    const { productTitle, imageUrl, description, vendor, style, mainColor, layout, length, customHighlights } =
+      body ?? {};
+
+    if (!productTitle) {
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-
-    if (!product_id)
-      return new Response(JSON.stringify({ error: "Missing required field: product_id" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
-
-    // 🔧 STEP 1: Product Enrichment (background task - non-blocking)
-    console.log("🔧 Starting product enrichment in background...");
-    let enrichmentStatus = "in_progress";
-    let attributesCount = 0;
-
-    // Start enrichment in background without waiting
-    const enrichmentPromise = supabaseAdmin.functions.invoke("enrich-product", {
-      body: { productId: product_id },
-    }).then(({ error }) => {
-      if (error) {
-        console.log("⚠️ Background enrichment failed:", error.message);
-      } else {
-        console.log("✅ Background enrichment completed");
-      }
-    }).catch(err => {
-      console.log("⚠️ Background enrichment error:", err.message);
-    });
-
-    // Don't wait for enrichment - continue immediately
-    console.log("⏭️ Continuing without waiting for enrichment");
-
-    // Fetch product data including handle, store domain, AND enriched attributes
-    console.log("📦 Fetching product data with enriched attributes...");
-    const [productRes, imagesRes, variantsRes, storeRes] = await Promise.all([
-      supabaseAdmin.from("shopify_products").select("*").eq("id", product_id).maybeSingle(),
-      supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
-      supabaseAdmin
-        .from("product_variants")
-        .select("title, image_url, shopify_variant_id")
-        .eq("product_id", product_id),
-      userId
-        ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
-    ]);
-
-    const productHandle = productRes.data?.handle || "";
-    const shopifyProductId = productRes.data?.shopify_product_id || "";
-    const shopDomain = storeRes.data?.shop_domain || "";
-    const images = imagesRes.data ?? [];
-    const variants = variantsRes.data ?? [];
-    const enrichedProduct = productRes.data || {};
-
-    // Count enriched attributes
-    const enrichedFields = [
-      "ai_color",
-      "ai_material",
-      "ai_shape",
-      "ai_texture",
-      "ai_pattern",
-      "ai_finish",
-      "smart_length",
-      "smart_width",
-      "smart_height",
-      "smart_weight",
-      "category",
-      "sub_category",
-      "style",
-      "room",
-      "functionality",
-    ];
-    attributesCount = enrichedFields.filter((f) => enrichedProduct[f]).length;
-
-    console.log(
-      `✅ Product data fetched: ${images.length} images, ${variants.length} variants, ${attributesCount} enriched attributes`,
-    );
-
-    // Build enriched summary
-    const enrichedSummary = buildEnrichedProductSummary(enrichedProduct, language);
-    if (enrichedSummary) {
-      console.log("📊 Using enriched attributes in landing page generation");
     }
 
-    // Vision AI - Skip for speed (enrichment provides enough data)
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("Missing LOVABLE_API_KEY in environment variables");
+    }
+
+    // 🧩 Dynamic tone based on length
+    const tone =
+      length === "courte (400 mots)"
+        ? "concis"
+        : length === "moyenne (800 mots)"
+          ? "équilibré"
+          : "détaillé et approfondi";
+
+    // 🔍 VISION AI ANALYSIS
     let visualAnalysis = "";
-    console.log("⏭️ Skipping Vision AI for faster generation");
 
-    // Build product URLs
-    const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
+    if (imageUrl && authHeader) {
+      console.log("[generate-landing-ai] 🔍 Analyzing image with Vision AI...");
 
-    // 🎨 STYLE GUIDES PREMIUM
+      try {
+        const visionResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-image-with-vision`, {
+          method: "POST",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            imageUrl,
+            productContext: `${productTitle}${vendor ? ` by ${vendor}` : ""}`,
+          }),
+        });
+
+        if (visionResponse.ok) {
+          const visionData = await visionResponse.json();
+          if (visionData?.attributes) {
+            visualAnalysis = `
+ANALYSE VISUELLE DU PRODUIT (Vision AI) :
+- Couleur dominante: ${visionData.attributes.dominantColor || "non détectée"}
+- Style visuel: ${visionData.attributes.visualStyle || "non détecté"}
+- Matériaux visibles: ${visionData.attributes.materials?.join(", ") || "non détectés"}
+- Ambiance: ${visionData.attributes.mood || "non détectée"}
+- Qualité perçue: ${visionData.attributes.quality || "non détectée"}
+            `;
+            console.log("[generate-landing-ai] ✅ Vision analysis:", visionData.attributes);
+          }
+        } else {
+          console.warn("[generate-landing-ai] ⚠️ Vision AI call failed, continuing without visual analysis");
+        }
+      } catch (visionError) {
+        console.warn("[generate-landing-ai] ⚠️ Vision AI error, continuing without visual analysis:", visionError);
+      }
+    }
+
+    // 🎨 STYLE GUIDES
     const styleGuides: Record<string, string> = {
       moderne:
-        "Gradients subtils, ombres douces, coins arrondis (rounded-xl), espacements généreux, typographie sans-serif, design épuré avec accents de couleur",
+        "Gradients subtils, ombres douces, coins arrondis (rounded-2xl), espacements généreux, typographie sans-serif (font-sans), palette noir/blanc avec accents de couleur vive",
       minimaliste:
-        "Espace blanc abondant, typographie épurée, lignes nettes, palette limitée à 1-2 couleurs, design fonctionnel et élégant",
+        "Beaucoup d'espace blanc, typographie épurée, pas de décorations superflues, 1-2 couleurs max, lignes fines (border), sans ombres ou ombres ultra-légères (shadow-sm)",
       scandinave:
-        "Tons naturels et neutres, textures organiques, simplicité fonctionnelle, ambiance chaleureuse et lumineuse",
+        "Tons naturels (beige, blanc cassé, gris clair), bois et textures organiques suggérées, simplicité fonctionnelle, typographie claire, ambiance chaleureuse et accueillante",
       premium:
-        "Contrastes élégants, typographie serif pour titres, ombres profondes, espacements luxueux, détails raffinés",
-      industriel: "Textures brutes, tons neutres et sombres, typographie bold, éléments métalliques suggérés",
-      nature: "Tons verts et terreux, textures organiques, design fluide et apaisant",
+        "Or/noir/blanc, typographie serif (font-serif) pour titres, ombres prononcées (shadow-2xl), gradients métalliques, espacements larges, détails raffinés",
+      neutre:
+        "Gris/blanc/noir uniquement, pas de couleurs vives, design sobre, typographie classique, structure équilibrée",
+      coloré:
+        "Palette vibrante multi-couleurs, dégradés audacieux, énergie visuelle, contrastes forts, design dynamique",
     };
 
     const currentStyleGuide = styleGuides[style] || styleGuides["moderne"];
-    const tone =
-      length === "courte (400 mots)"
-        ? "concis et percutant"
-        : length === "moyenne (800 mots)"
-          ? "équilibré et informatif"
-          : "complet et détaillé";
 
-    // 🎯 PROMPT PREMIUM POUR SHOPIFY
-    const prompt =
-      language === "en"
-        ? `You are a professional Shopify eCommerce designer. Create a HIGH-CONVERTING product landing page with premium design.
+    // 🪄 ENHANCED AI PROMPT
+    const prompt = `
+Tu es un designer UX/UI expert et copywriter e-commerce spécialisé dans les landing pages à forte conversion.
 
-🎯 OBJECTIVE: Generate a persuasive, mobile-first landing page that drives conversions.
-
-📦 PRODUCT:
-- Title: ${productTitle}
-${vendor ? `- Brand: ${vendor}` : ""}
-${imageUrl ? `- Main Image: ${imageUrl}` : ""}
-${description ? `- Description: ${description}` : ""}
+📦 PRODUIT À METTRE EN VALEUR :
+- Titre : ${productTitle}
+${vendor ? `- Marque : ${vendor}` : ""}
+${imageUrl ? `- Image produit : ${imageUrl}` : ""}
+${description ? `- Description : ${description}` : ""}
 ${
   customHighlights
-    ? `\n🌟 KEY SELLING POINTS:\n${customHighlights
+    ? `\n🌟 POINTS FORTS À METTRE EN AVANT (PRIORITAIRE) :\n${customHighlights
         .split("\n")
         .map((h: string) => `- ${h.trim()}`)
         .filter((h: string) => h.length > 2)
         .join("\n")}`
     : ""
 }
-${enrichedSummary ? `\n💎 PRODUCT ATTRIBUTES:\n${enrichedSummary}\n` : ""}
-${visualAnalysis ? `${visualAnalysis}\n` : ""}
 
-🎨 PREMIUM DESIGN:
-- Style: ${style} → ${currentStyleGuide}
-- Primary Color: ${mainColor} (use for buttons, accents, highlights)
-- Layout: ${layout}
-- Tone: ${tone}
+${visualAnalysis ? `${visualAnalysis}` : ""}
 
-🛒 SHOPIFY INTEGRATION:
-- "Add to Cart" → <button onclick="window.open('${productUrl}', '_blank')">
-- "View Product" → <a href="${productUrl}" target="_blank">
+🎨 DESIGN & STYLE :
+- Style visuel : ${style}
+  → Guide : ${currentStyleGuide}
+- Couleur principale (HEX) : ${mainColor}
+  → **CRITIQUE** : Applique cette couleur aux boutons CTA, liens, bordures d'accent, titres importants
+  → Utilise Tailwind avec style="color: ${mainColor}" ou style="background-color: ${mainColor}" ou style="border-color: ${mainColor}"
+- Layout : ${layout}
+- Longueur : ${length} (ton ${tone})
+- **DESIGN ÉLÉGANT** : Évite les icônes colorées enfantines, privilégie des icônes monochromes (text-gray-600), des formes simples et épurées, un design sophistiqué et professionnel
 
-📱 MOBILE-FIRST STRUCTURE (CRITICAL):
-
+🧱 STRUCTURE OBLIGATOIRE :
 1. HERO SECTION
-   - Eye-catching headline with ${mainColor} accent
-   - Compelling subheadline
-   - High-quality product image
-   - Primary CTA button
+   - Titre H1 avec la couleur principale (style="color: ${mainColor}")
+   - Sous-titre accrocheur${vendor ? ` mentionnant "${vendor}"` : ""}
+   - Image produit (si disponible) avec rounded-2xl et shadow-xl
+   - CTA principal avec background de la couleur principale (style="background-color: ${mainColor}")
 
-2. BENEFITS GRID (3-4 features)
-   - Elegant SVG icons (monochrome)
-   - Short benefit titles
-   - Clear descriptions
+2. AVANTAGES (3-5 cartes)
+   - **Icônes élégantes** : SVG monochromes simples (text-gray-600 ou text-gray-700), PAS de couleurs vives ou enfantines
+   - Design épuré et sophistiqué
+   - Titres courts et percutants
+   - Descriptions de 20-30 mots
 
-3. PRODUCT SHOWCASE
-   - Multiple image display if available
-   - Visual storytelling
+3. CARACTÉRISTIQUES TECHNIQUES
+   - Liste structurée avec badges/pills
+   - Informations concrètes${visualAnalysis ? " (utilise les insights Vision AI)" : ""}
 
-4. TECHNICAL SPECS
-   - Clean table/grid layout
-   - Organized information
+4. CTA FINAL
+   - Bouton principal avec couleur principale
+   - Message d'urgence/garantie
 
-5. TRUST SIGNALS
-   - Shipping, returns, guarantee badges
-   - Social proof elements
+5. GARANTIES / LIVRAISON
+   - 3-4 éléments rassurants (livraison, retour, garantie, support)
 
-6. FINAL CTA
-   - Strong purchase encouragement
+📱 RESPONSIVE MOBILE-FIRST (CRITIQUE) :
+- **MOBILE D'ABORD** : Le design DOIT être parfait sur mobile (320px-768px) avant desktop
+- Structure : <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+- Hero : <div class="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 items-center">
+- Grid avantages : <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+- Images : <img class="w-full h-auto object-cover rounded-xl" />
+- Texte lisible mobile : text-sm sm:text-base lg:text-lg
+- Titres adaptatifs : text-xl sm:text-2xl lg:text-3xl xl:text-4xl
+- Padding mobile : p-3 sm:p-4 md:p-6 lg:p-8
+- Gap progressif : gap-3 sm:gap-4 md:gap-6 lg:gap-8
+- Boutons pleine largeur mobile : w-full sm:w-auto
+- Pas de scroll horizontal : overflow-x-hidden sur tous les conteneurs
 
-🎨 DESIGN RULES:
-• MOBILE-FIRST: Start with mobile layout (320px)
-• Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-• Responsive grid: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-• Typography: text-base sm:text-lg lg:text-xl
-• Buttons: w-full sm:w-auto for mobile/desktop
-• Images: w-full h-auto object-cover
-• Use Tailwind CSS only
-• No <script> or <style> tags
-• Clean HTML ready for Shopify
+🛠️ CONTRAINTES TECHNIQUES :
+✅ Tailwind CSS uniquement (CDN déjà chargé)
+✅ Classes responsive : sm:, md:, lg:, xl:
+✅ Couleur principale via style="color: ${mainColor}" ou style="background-color: ${mainColor}"
+✅ Pas de <html>, <head>, <body>
+✅ Pas de <style> inline (sauf pour appliquer mainColor)
+✅ HTML prêt à injecter dans React dangerouslySetInnerHTML
+❌ Pas de JavaScript
+❌ Pas de balises <script>
+❌ NE PAS UTILISER de marqueurs markdown comme \`\`\`html ou \`\`\`
 
-EXAMPLE BUTTON:
-<button onclick="window.open('${productUrl}', '_blank')" style="background-color: ${mainColor}" class="w-full sm:w-auto px-8 py-4 text-white font-semibold rounded-lg shadow-lg hover:opacity-90 transition-all duration-300">
-  Add to Cart - ${productTitle}
-</button>
+💡 COPYWRITING :
+- Ton ${tone}, ${vendor ? `mettant en valeur la marque "${vendor}"` : "naturel et convaincant"}
+- Bénéfices avant caractéristiques
+- Preuve sociale (si pertinent)
+- Appels à l'action clairs et directs
 
-Return ONLY clean HTML without markdown.`
-        : `Tu es un designer Shopify expert. Crée une LANDING PAGE PREMIUM qui convertit.
+🎯 RETOURNE UNIQUEMENT LE HTML (sans balises markdown, sans explications, sans balises <html>/<head>/<body>)
+`;
 
-🎯 OBJECTIF: Générer une page produit mobile-first et persuasive.
+    console.log("[generate-landing-ai] 🧠 Sending prompt to Lovable Gateway...");
+    console.log("[generate-landing-ai] Request details:", {
+      productTitle,
+      style,
+      layout,
+      length,
+      hasImage: !!imageUrl,
+    });
 
-📦 PRODUIT:
-- Titre: ${productTitle}
-${vendor ? `- Marque: ${vendor}` : ""}
-${imageUrl ? `- Image: ${imageUrl}` : ""}
-${description ? `- Description: ${description}` : ""}
-${
-  customHighlights
-    ? `\n🌟 ARGUMENTS CLÉS:\n${customHighlights
-        .split("\n")
-        .map((h: string) => `- ${h.trim()}`)
-        .filter((h: string) => h.length > 2)
-        .join("\n")}`
-    : ""
-}
-${enrichedSummary ? `\n💎 ATTRIBUTS PRODUIT:\n${enrichedSummary}\n` : ""}
-${visualAnalysis ? `${visualAnalysis}\n` : ""}
-
-🎨 DESIGN PREMIUM:
-- Style: ${style} → ${currentStyleGuide}
-- Couleur: ${mainColor} (boutons, accents, surbrillance)
-- Layout: ${layout}
-- Ton: ${tone}
-
-🛒 INTÉGRATION SHOPIFY:
-- "Ajouter au Panier" → <button onclick="window.open('${productUrl}', '_blank')">
-- "Voir le Produit" → <a href="${productUrl}" target="_blank">
-
-📱 STRUCTURE MOBILE-FIRST (CRITIQUE):
-
-1. SECTION HERO
-   - Titre accrocheur avec couleur ${mainColor}
-   - Sous-titre persuasif
-   - Image produit qualité
-   - CTA principal
-
-2. GRID AVANTAGES (3-4 points)
-   - Icônes SVG élégantes (monochrome)
-   - Titres courts percutants
-   - Descriptions claires
-
-3. PRÉSENTATION PRODUIT
-   - Affichage multiple images si disponibles
-   - Storytelling visuel
-
-4. CARACTÉRISTIQUES TECHNIQUES
-   - Layout table/grille épuré
-   - Informations organisées
-
-5. SIGNES DE CONFIANCE
-   - Badges livraison, retour, garantie
-   - Éléments preuve sociale
-
-6. CTA FINAL
-   - Encouragement à l'achat fort
-
-🎨 RÈGLES DESIGN:
-• MOBILE-FIRST: Commencer layout mobile (320px)
-• Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-• Grid responsive: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-• Typographie: text-base sm:text-lg lg:text-xl
-• Boutons: w-full sm:w-auto mobile/desktop
-• Images: w-full h-auto object-cover
-• Utiliser Tailwind CSS uniquement
-• Pas de balises <script> ou <style>
-• HTML propre pour Shopify
-
-EXEMPLE BOUTON:
-<button onclick="window.open('${productUrl}', '_blank')" style="background-color: ${mainColor}" class="w-full sm:w-auto px-8 py-4 text-white font-semibold rounded-lg shadow-lg hover:opacity-90 transition-all duration-300">
-  Ajouter au Panier - ${productTitle}
-</button>
-
-Retourne UNIQUEMENT du HTML propre sans markdown.`;
-
-    // 🔄 RETRY LOGIC FOR AI GENERATION
-    console.log("🤖 Starting AI generation with retry logic...");
+    // 🔄 Retry logic for temporary failures
     const MAX_RETRIES = 3;
-    const RETRY_DELAY_MS = 2000;
+    const RETRY_DELAY_MS = 2000; // 2 seconds
     let lastError: Error | null = null;
-    let html = "";
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         console.log(`[generate-landing-ai] Attempt ${attempt}/${MAX_RETRIES}`);
 
+        // 🧠 Call Lovable AI Gateway (Gemini or GPT-based)
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -512,109 +298,135 @@ Retourne UNIQUEMENT du HTML propre sans markdown.`;
               {
                 role: "system",
                 content:
-                  language === "en"
-                    ? "You are a professional Shopify landing page designer. Create beautiful, mobile-first HTML pages with conversion-optimized design and real Shopify buttons."
-                    : "Tu es un designer expert de landing pages Shopify. Crée des pages HTML mobile-first avec un design optimisé pour la conversion et de vrais boutons Shopify.",
+                  "Tu es un expert UX/UI designer et copywriter e-commerce. Génère des landing pages Tailwind modernes et efficaces pour Shopify.",
               },
               { role: "user", content: prompt },
             ],
-            max_tokens: 4000,
+            max_tokens: 3000,
           }),
         });
 
-        // Handle permanent errors - don't retry
-        if (response.status === 429) {
-          return new Response(
-            JSON.stringify({
-              error: "Rate limits exceeded. Please try again later.",
-            }),
-            {
-              status: 429,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
-          );
-        }
-
-        if (response.status === 402) {
-          return new Response(
-            JSON.stringify({
-              error: "Payment required. Please add funds to your Lovable AI workspace.",
-            }),
-            {
-              status: 402,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
-          );
-        }
-
-        // Temporary errors (503, 502, 504) - retry
-        if ([502, 503, 504].includes(response.status) && attempt < MAX_RETRIES) {
-          console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
-          continue;
-        }
-
+        // 🧱 Handle API errors - retry on 503/502/504
         if (!response.ok) {
           const errText = await response.text();
           console.error(`[generate-landing-ai] ❌ API error (attempt ${attempt}):`, response.status, errText);
-          if (attempt < MAX_RETRIES) {
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
-            continue;
+
+          // Permanent errors - don't retry
+          if (response.status === 429) {
+            return new Response(
+              JSON.stringify({
+                error: "Rate limits exceeded. Please try again later.",
+              }),
+              {
+                status: 429,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              },
+            );
           }
-          return new Response(JSON.stringify({ error: `Lovable AI API error: ${response.status}` }), {
+
+          if (response.status === 402) {
+            return new Response(
+              JSON.stringify({
+                error: "Payment required. Please add funds to your Lovable AI workspace.",
+              }),
+              {
+                status: 402,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              },
+            );
+          }
+
+          // Temporary errors (503, 502, 504) - retry
+          if ([502, 503, 504].includes(response.status) && attempt < MAX_RETRIES) {
+            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms...`);
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            continue; // Try again
+          }
+
+          // Other errors or last attempt
+          const errorMessage = `Lovable AI API error: ${response.status}`;
+          return new Response(JSON.stringify({ error: errorMessage }), {
             status: response.status,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
-        // Success - parse and clean HTML
+        // ✅ Success - parse response and exit retry loop
         const data = await response.json().catch(() => null);
-        html = data?.choices?.[0]?.message?.content?.trim() || "";
+        let html = data?.choices?.[0]?.message?.content?.trim() || "";
 
+        // 🧹 CLEAN HTML - Remove markdown code blocks
         if (html) {
-          html = sanitizeHtmlUnsafe(html);
-          html = ensureResponsiveWrapper(html);
-          console.log("[generate-landing-ai] 🧹 HTML cleaned and wrapped, final length:", html.length);
+          html = html
+            .replace(/^```html\s*/i, "") // Remove ```html at start
+            .replace(/^```\s*/m, "") // Remove ``` at start
+            .replace(/\s*```$/m, "") // Remove ``` at end
+            .trim();
+
+          console.log("[generate-landing-ai] 🧹 HTML cleaned, final length:", html.length);
         }
 
-        // Validate HTML
+        console.log("[generate-landing-ai] Response status:", response.status);
+        console.log("[generate-landing-ai] AI response parsed, HTML length:", html.length);
+
         if (!html) {
           console.warn("[generate-landing-ai] ⚠️ Empty HTML response from AI");
+
+          // If we have retries left, try again
           if (attempt < MAX_RETRIES) {
             console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to empty response...`);
             await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
             continue;
           }
+
           return new Response(
             JSON.stringify({
-              error: language === "en" ? "No content generated by AI." : "Aucun contenu généré par l'IA.",
+              error: "Aucune réponse générée par l'IA. Essayez avec un prompt plus simple ou un style différent.",
             }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         }
 
-        if (html.length < 800) {
+        // Validation du HTML généré
+        if (html.includes("<html") || html.includes("<head") || html.includes("<body")) {
+          console.warn("[generate-landing-ai] ⚠️ HTML contains forbidden tags (html/head/body)");
+          return new Response(
+            JSON.stringify({
+              error: "Le HTML généré contient des balises interdites. Réessayez.",
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        if (html.length < 500) {
           console.warn("[generate-landing-ai] ⚠️ Generated HTML too short:", html.length);
+
+          // If we have retries left, try again
           if (attempt < MAX_RETRIES) {
             console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to short content...`);
             await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
             continue;
           }
+
           return new Response(
             JSON.stringify({
-              error: language === "en" ? "Generated content too short." : "Le contenu généré est trop court.",
+              error: "Le contenu généré est trop court. Réessayez avec plus de détails.",
             }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         }
 
-        // Success!
-        console.log("[generate-landing-ai] ✅ HTML generated successfully, length:", html.length);
-        break;
+        console.log("[generate-landing-ai] ✅ Generated HTML length:", html.length, "chars");
+
+        // ✅ Success
+        return new Response(JSON.stringify({ html }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       } catch (networkError) {
         lastError = networkError instanceof Error ? networkError : new Error(String(networkError));
         console.error(`[generate-landing-ai] 💥 Network error (attempt ${attempt}):`, lastError);
 
+        // Retry on network errors if we have attempts left
         if (attempt < MAX_RETRIES) {
           console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to network error...`);
           await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
@@ -623,152 +435,27 @@ Retourne UNIQUEMENT du HTML propre sans markdown.`;
       }
     }
 
-    // If we get here and html is empty, all retries failed
-    if (!html) {
-      console.error("[generate-landing-ai] ❌ All retry attempts failed");
-      return new Response(
-        JSON.stringify({
-          error:
-            lastError?.message ||
-            (language === "en" ? "Service temporarily unavailable." : "Service temporairement indisponible."),
-        }),
-        {
-          status: 503,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // 💾 CRÉATION/MISE À JOUR DANS SHOPIFY_PRODUCTS
-    if (userId && product_id) {
-      console.log("💾 Saving to shopify_products...");
-
-      // Vérifier d'abord si le produit existe déjà
-      const { data: existingProduct, error: checkError } = await supabaseAdmin
-        .from("shopify_products")
-        .select("id, shopify_id, title")
-        .eq("id", product_id)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error("❌ Error checking existing product:", checkError);
-      }
-
-      if (existingProduct) {
-        // 🆕 MISE À JOUR du produit existant
-        console.log("📝 Updating existing shopify_products...");
-        const { error: updateError } = await supabaseAdmin
-          .from("shopify_products")
-          .update({
-            description: html, // ✅ HTML dans le champ description
-            title: productTitle, // Mettre à jour le titre aussi
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", product_id);
-
-        if (updateError) {
-          console.error("❌ Shopify products update error:", updateError);
-        } else {
-          console.log("✅ Shopify products updated successfully");
-        }
-      } else {
-        // 🆕 CRÉATION d'un nouveau produit
-        console.log("📝 Creating new shopify_products row...");
-
-        // Récupérer le store_id de l'utilisateur
-        const { data: storeData } = await supabaseAdmin
-          .from("shopify_connections")
-          .select("id")
-          .eq("seller_id", userId)
-          .single();
-
-        const { error: insertError } = await supabaseAdmin.from("shopify_products").insert({
-          id: product_id,
-          seller_id: userId,
-          store_id: storeData?.id || userId, // Fallback si pas de store_id
-          shopify_id: 0, // Valeur par défaut
-          title: productTitle,
-          description: html, // ✅ HTML dans description
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-
-        if (insertError) {
-          console.error("❌ Shopify products creation error:", insertError);
-        } else {
-          console.log("✅ New shopify_products row created successfully");
-        }
-      }
-
-      // 💾 Sauvegarde dans product_landing_pages (historique)
-      console.log("💾 Saving to product_landing_pages...");
-
-      // Désactiver les anciennes versions
-      await supabaseAdmin
-        .from("product_landing_pages")
-        .update({ is_active: false })
-        .eq("product_id", product_id)
-        .eq("seller_id", userId);
-
-      // Récupérer le numéro de version
-      const { data: existingPages } = await supabaseAdmin
-        .from("product_landing_pages")
-        .select("version")
-        .eq("product_id", product_id)
-        .order("version", { ascending: false })
-        .limit(1);
-
-      const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
-
-      // Créer la nouvelle version
-      const { error: saveError } = await supabaseAdmin.from("product_landing_pages").insert({
-        product_id: product_id,
-        seller_id: userId,
-        html_content: html,
-        config: {
-          language,
-          vendor,
-          image_url: imageUrl,
-          description,
-          content_length: length,
-          style,
-          layout,
-          mainColor,
-          customHighlights,
-          enrichment_status: enrichmentStatus,
-          attributes_count: attributesCount,
-        },
-        version: newVersion,
-        is_active: true,
-      });
-
-      if (saveError) {
-        console.error("❌ Landing pages save error:", saveError);
-      } else {
-        console.log(`✅ Landing page v${newVersion} saved successfully`);
-      }
-    } else {
-      console.log("⚠️ Skipping save: userId or product_id not available");
-    }
-
-    console.log("✅ Landing page generation successful!");
-
+    // If we get here, all retries failed
+    console.error("[generate-landing-ai] ❌ All retry attempts failed");
     return new Response(
       JSON.stringify({
-        html,
-        enrichment_status: enrichmentStatus,
-        attributes_count: attributesCount,
-        saved_to_shopify: !!(userId && product_id),
+        error: lastError?.message || "Service temporairement indisponible. Veuillez réessayer dans quelques instants.",
       }),
       {
+        status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
   } catch (err) {
-    console.error("💥 ERROR:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("[generate-landing-ai] 💥 Error:", err);
+    return new Response(
+      JSON.stringify({
+        error: err instanceof Error ? err.message : "Unexpected error",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
