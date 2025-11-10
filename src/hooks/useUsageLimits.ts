@@ -53,6 +53,15 @@ export const useUsageLimits = () => {
     try {
       setLoading(true);
       
+      // Refresh session to ensure token is valid
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.log('[useUsageLimits] No valid session, skipping limits check');
+        setLoading(false);
+        return;
+      }
+      
       // Vérifier que l'utilisateur est authentifié
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -64,7 +73,10 @@ export const useUsageLimits = () => {
       
       const { data, error } = await supabase.functions.invoke('check-usage-limits');
       
-      if (error) throw error;
+      if (error) {
+        console.error('[useUsageLimits] Error calling check-usage-limits:', error);
+        throw error;
+      }
       
       // Récupérer les infos du profil pour le trial
       const { data: profileData } = await supabase
