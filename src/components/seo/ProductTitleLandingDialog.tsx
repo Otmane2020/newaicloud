@@ -81,12 +81,8 @@ const generateHtmlPreview = (product: Product): string => {
 
   // If we have a rich HTML description in the description field, use it directly
   if (htmlDescription && (htmlDescription.includes("<div") || htmlDescription.includes("<section"))) {
-    // Wrap in a container for consistent styling
-    return `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-        ${htmlDescription}
-      </div>
-    `;
+    // Return raw HTML without additional wrapper to avoid nesting issues
+    return htmlDescription;
   }
 
   // Otherwise, generate a preview from available data
@@ -305,9 +301,12 @@ export function ProductTitleLandingDialog({
               </TabsList>
 
               <TabsContent value="desktop" className="space-y-4">
-                <div className="border rounded-lg p-6 bg-white min-h-[400px]">
+                <div className="border rounded-lg bg-white min-h-[400px] overflow-auto">
                   {selectedProduct && htmlPreview ? (
-                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+                    <div 
+                      className="prose prose-lg max-w-none"
+                      dangerouslySetInnerHTML={{ __html: htmlPreview }} 
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full text-center py-12">
                       <div className="space-y-3">
@@ -323,9 +322,12 @@ export function ProductTitleLandingDialog({
               </TabsContent>
 
               <TabsContent value="mobile" className="space-y-4">
-                <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
+                <div className="max-w-md mx-auto border rounded-lg bg-white min-h-[400px] overflow-auto">
                   {selectedProduct && htmlPreview ? (
-                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+                    <div 
+                      className="prose max-w-none"
+                      dangerouslySetInnerHTML={{ __html: htmlPreview }} 
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full text-center py-12">
                       <div className="space-y-3">

@@ -13,19 +13,8 @@ function sanitizeHtmlUnsafe(html: string): string {
   let out = html
     .replace(/^\s*```(?:html)?/gi, "")
     .replace(/```\s*$/g, "")
-    .replace(/<\/?(script|style|iframe|object|embed)[^>]*>/gi, "")
-    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
-    .replace(/\shref\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, ' href="#"')
-    .replace(/<\/?(html|head|body)[^>]*>/gi, "");
-
-  out = out.replace(/\sstyle\s*=\s*(['"])(.*?)\1/gi, (_m, q, css) => {
-    const kept = css
-      .split(";")
-      .map((r: string) => r.trim())
-      .filter((r: string) => /^(color|background-color|border-color)\s*:/i.test(r))
-      .join("; ");
-    return kept ? `style=${q}${kept}${q}` : "";
-  });
+    .replace(/<\/?(script|iframe|object|embed)[^>]*>/gi, ""); // Removed style from strip list
+    // Keep onclick, style, and href attributes - they're needed for functionality
 
   return out.trim();
 }
@@ -129,16 +118,7 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
 }
 
 function ensureResponsiveWrapper(html: string): string {
-  // S'assurer que le viewport meta est présent
-  if (!html.includes("viewport")) {
-    html = `<meta name="viewport" content="width=device-width, initial-scale=1.0">${html}`;
-  }
-
-  // S'assurer qu'il y a un container principal responsive
-  if (!html.includes("max-w-") && !html.includes("mx-auto")) {
-    html = `<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">${html}</div>`;
-  }
-
+  // Keep HTML as-is - the AI already generates responsive HTML with proper Tailwind classes
   return html;
 }
 
