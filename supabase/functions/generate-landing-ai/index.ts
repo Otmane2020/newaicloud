@@ -312,22 +312,33 @@ Generate a **clean, professional HTML product description** with Tailwind CSS th
 
 🎯 IMPORTANT: This is a PRODUCT DESCRIPTION, not a full landing page. No prices, no "Add to Cart" buttons, no checkout functionality.
 
-📱 RESPONSIVE DESIGN REQUIREMENTS:
-- Use simple, clean Tailwind classes
-- Focus on readability and content presentation
+📱 MOBILE-FIRST RESPONSIVE DESIGN:
+- **MOBILE-FIRST APPROACH**: Design for mobile devices first, then adapt for desktop
+- Use simple, clean Tailwind classes with mobile-first breakpoints
+- Focus on readability and content presentation on small screens
+- Single column layout for mobile, multi-column only on larger screens
 - Avoid complex layouts that might break in Shopify
 - Use standard container: max-w-4xl mx-auto px-4
+- Ensure touch-friendly element sizes on mobile
+
+🎨 MODERN ICONS SYSTEM:
+- Use **modern, professional SVG icons** - no childish or cartoonish icons
+- All icons should be **relative to the selected theme color** (${mainColor})
+- Use stroke-current and fill-current classes for color consistency
+- Icons should be simple, elegant and minimalist
+- Use appropriate icons for each section (materials, dimensions, features, etc.)
+- Ensure icons are properly sized for mobile and desktop
 
 📦 MANDATORY CONTENT SECTIONS (in this order):
 
 1. **PRODUCT INTRODUCTION**
-   - Clean heading with product name
+   - Clean H1 heading with product name
    - Brief compelling description
    - Focus on main benefits
 
 2. **VISUAL ATTRIBUTES**
    ${enrichedProduct.ai_color || enrichedProduct.ai_material ? `
-   - Highlight key visual features
+   - Highlight key visual features with modern icons
    - Use simple badge-style elements
    - Color: ${enrichedProduct.ai_color}
    - Material: ${enrichedProduct.ai_material}
@@ -335,29 +346,29 @@ Generate a **clean, professional HTML product description** with Tailwind CSS th
 
 3. **IMAGE GALLERY**
    - Display ${images.length} product images
-   - Simple grid: grid-cols-2 md:grid-cols-3 gap-4
+   - Mobile: grid-cols-1, Tablet: grid-cols-2, Desktop: grid-cols-3
    - Clean, professional presentation
 
 4. **TECHNICAL SPECIFICATIONS**
    ${enrichedSummary ? `
-   - Create clean specifications table
+   - Create clean specifications table with modern icons
    - Use all enriched dimensions and attributes
-   - Simple two-column layout
+   - Mobile: stack vertically, Desktop: two-column layout
    ` : "- Include basic product details"}
 
 5. **MATERIALS & CRAFTSMANSHIP**
    ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? `
-   - Detail materials and construction
+   - Detail materials and construction with relevant icons
    - Focus on quality and durability
    ` : ""}
 
 6. **USE CASES & BENEFITS**
-   - Practical applications
+   - Practical applications with feature icons
    - Key customer benefits
    - Simple bullet points
 
 7. **CARE & MAINTENANCE**
-   - Basic care instructions
+   - Basic care instructions with maintenance icons
    - Maintenance tips
 
 📊 PRODUCT DATA:
@@ -376,13 +387,15 @@ ${visualAnalysis ? `\n🔍 VISION AI INSIGHTS:\n${visualAnalysis}\n` : ""}
 ${customHighlights ? `\n💡 CUSTOM HIGHLIGHTS:\n${customHighlights}\n` : ""}
 
 🎨 DESIGN GUIDELINES:
+- **Mobile-first approach**: Design for 320px+ screens first
 - Clean, professional appearance
-- Readable typography hierarchy
-- Subtle color accents using ${mainColor}
-- Adequate white space
-- Mobile-friendly simple layouts
+- Readable typography hierarchy with proper heading structure (H1, H2, H3, H4)
+- Use theme color ${mainColor} for icons, accents and highlights
+- All icons should use currentColor or theme-based coloring
+- Adequate white space and padding for touch devices
+- Single column layout for mobile, responsive grids for larger screens
 - No complex animations or interactions
-- Focus on content clarity
+- Focus on content clarity and fast loading
 
 🚫 STRICTLY PROHIBITED:
 - NO "Add to Cart" buttons
@@ -391,27 +404,47 @@ ${customHighlights ? `\n💡 CUSTOM HIGHLIGHTS:\n${customHighlights}\n` : ""}
 - NO complex JavaScript
 - NO external stylesheets
 - NO iframes or embedded content
-- NO complex grid layouts that break in Shopify
+- NO complex grid layouts that break on mobile
+- NO childish or cartoonish icons
 
 ✅ REQUIRED OUTPUT:
 - Pure HTML with Tailwind classes only
-- Clean, semantic structure
-- Mobile-responsive simple design
+- Clean, semantic structure with proper heading hierarchy (H1, H2, H3, H4)
+- Mobile-first responsive design
+- Modern SVG icons using theme color ${mainColor}
 - Professional product presentation
 - All images from provided list
 - Comprehensive product information
 
-Example simple image grid:
-<div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-8">
+Example modern icon usage:
+<svg class="w-6 h-6" style="color: ${mainColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+</svg>
+
+Example mobile-first image grid:
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-8">
   <img src="${images[0]?.src || ''}" alt="${images[0]?.alt_text || productTitle}" class="w-full h-auto rounded-lg">
   <!-- more images -->
 </div>
 
-Example specifications table:
-<div class="bg-gray-50 rounded-lg p-6 my-8">
-  <h3 class="text-xl font-semibold mb-4">Technical Specifications</h3>
-  <div class="space-y-2">
-    <div class="flex justify-between"><span>Material</span><span>${enrichedProduct.ai_material || 'High-quality materials'}</span></div>
+Example mobile-friendly specifications with icons:
+<div class="bg-gray-50 rounded-lg p-4 sm:p-6 my-8">
+  <h3 class="text-lg sm:text-xl font-semibold mb-4 flex items-center">
+    <svg class="w-5 h-5 mr-2" style="color: ${mainColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+    </svg>
+    Technical Specifications
+  </h3>
+  <div class="space-y-3 text-sm sm:text-base">
+    <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
+      <span class="font-medium flex items-center">
+        <svg class="w-4 h-4 mr-2" style="color: ${mainColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4z"></path>
+        </svg>
+        Material
+      </span>
+      <span>${enrichedProduct.ai_material || 'High-quality materials'}</span>
+    </div>
     <!-- more specs -->
   </div>
 </div>
@@ -422,22 +455,33 @@ Génère une **description de produit HTML propre et professionnelle** avec Tail
 
 🎯 IMPORTANT: Ceci est une DESCRIPTION DE PRODUIT, pas une landing page complète. Pas de prix, pas de boutons "Ajouter au Panier", pas de fonctionnalité de checkout.
 
-📱 EXIGENCES DESIGN RESPONSIVE:
-- Utilise des classes Tailwind simples et propres
-- Concentre-toi sur la lisibilité et la présentation du contenu
+📱 DESIGN RESPONSIVE MOBILE-FIRST:
+- **APPROCHE MOBILE-FIRST**: Conçois d'abord pour mobile, puis adapte pour desktop
+- Utilise des classes Tailwind simples avec breakpoints mobile-first
+- Concentre-toi sur la lisibilité et présentation sur petits écrans
+- Layout single colonne pour mobile, multi-colonnes seulement sur grands écrans
 - Évite les layouts complexes qui pourraient casser dans Shopify
 - Utilise un container standard: max-w-4xl mx-auto px-4
+- Taille des éléments adaptée au touch sur mobile
+
+🎨 SYSTÈME D'ICÔNES MODERNES:
+- Utilise des **icônes SVG modernes et professionnelles** - pas d'icônes enfantines ou cartoon
+- Toutes les icônes doivent être **relatives à la couleur du thème sélectionné** (${mainColor})
+- Utilise les classes stroke-current et fill-current pour la cohérence des couleurs
+- Les icônes doivent être simples, élégantes et minimalistes
+- Utilise des icônes appropriées pour chaque section (matériaux, dimensions, caractéristiques, etc.)
+- Assure que les icônes sont correctement dimensionnées pour mobile et desktop
 
 📦 SECTIONS DE CONTENU OBLIGATOIRES (dans cet ordre):
 
 1. **INTRODUCTION PRODUIT**
-   - Titre propre avec nom du produit
+   - Titre H1 propre avec nom du produit
    - Description brève et convaincante
    - Focus sur les bénéfices principaux
 
 2. **ATTRIBUTS VISUELS**
    ${enrichedProduct.ai_color || enrichedProduct.ai_material ? `
-   - Met en avant les caractéristiques visuelles clés
+   - Met en avant les caractéristiques visuelles clés avec des icônes modernes
    - Utilise des éléments style badges simples
    - Couleur: ${enrichedProduct.ai_color}
    - Matériau: ${enrichedProduct.ai_material}
@@ -445,29 +489,29 @@ Génère une **description de produit HTML propre et professionnelle** avec Tail
 
 3. **GALERIE IMAGES**
    - Affiche les ${images.length} images produit
-   - Grille simple: grid-cols-2 md:grid-cols-3 gap-4
+   - Mobile: grid-cols-1, Tablet: grid-cols-2, Desktop: grid-cols-3
    - Présentation propre et professionnelle
 
 4. **CARACTÉRISTIQUES TECHNIQUES**
    ${enrichedSummary ? `
-   - Crée un tableau de spécifications propre
+   - Crée un tableau de spécifications propre avec des icônes modernes
    - Utilise toutes les dimensions et attributs enrichis
-   - Layout deux colonnes simple
+   - Mobile: disposition verticale, Desktop: layout deux colonnes
    ` : "- Inclure détails produit de base"}
 
 5. **MATÉRIAUX & SAVOIR-FAIRE**
    ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? `
-   - Détaille les matériaux et la construction
+   - Détaille les matériaux et la construction avec des icônes pertinentes
    - Focus sur la qualité et la durabilité
    ` : ""}
 
 6. **CAS D'USAGE & AVANTAGES**
-   - Applications pratiques
+   - Applications pratiques avec icônes de fonctionnalités
    - Bénéfices clients clés
    - Points simples sous forme de liste
 
 7. **ENTRETIEN & MAINTENANCE**
-   - Instructions d'entretien de base
+   - Instructions d'entretien de base avec icônes de maintenance
    - Conseils de maintenance
 
 📊 DONNÉES PRODUIT:
@@ -486,13 +530,15 @@ ${visualAnalysis ? `\n🔍 INSIGHTS VISION AI:\n${visualAnalysis}\n` : ""}
 ${customHighlights ? `\n💡 POINTS FORTS PERSONNALISÉS:\n${customHighlights}\n` : ""}
 
 🎨 DIRECTIVES DESIGN:
+- **Approche mobile-first**: Conçois pour écrans 320px+ d'abord
 - Apparence propre et professionnelle
-- Hiérarchie typographique lisible
-- Accents de couleur subtils avec ${mainColor}
-- Espace blanc adéquat
-- Layouts simples mobile-friendly
+- Hiérarchie typographique lisible avec structure de titres appropriée (H1, H2, H3, H4)
+- Utilise la couleur de thème ${mainColor} pour les icônes, accents et surbrillances
+- Toutes les icônes doivent utiliser currentColor ou un coloriage basé sur le thème
+- Espace blanc et padding adaptés aux devices tactiles
+- Layout single colonne pour mobile, grilles responsives pour grands écrans
 - Pas d'animations ou interactions complexes
-- Focus sur la clarté du contenu
+- Focus sur la clarté du contenu et chargement rapide
 
 🚫 STRICTEMENT INTERDIT:
 - PAS de boutons "Ajouter au Panier"
@@ -501,27 +547,47 @@ ${customHighlights ? `\n💡 POINTS FORTS PERSONNALISÉS:\n${customHighlights}\n
 - PAS de JavaScript complexe
 - PAS de feuilles de style externes
 - PAS d'iframes ou contenu embarqué
-- PAS de grilles complexes qui cassent dans Shopify
+- PAS de grilles complexes qui cassent sur mobile
+- PAS d'icônes enfantines ou cartoon
 
 ✅ SORTIE REQUISE:
 - HTML pur avec classes Tailwind uniquement
-- Structure sémantique propre
-- Design simple et responsive mobile
+- Structure sémantique propre avec hiérarchie de titres appropriée (H1, H2, H3, H4)
+- Design responsive mobile-first
+- Icônes SVG modernes utilisant la couleur de thème ${mainColor}
 - Présentation produit professionnelle
 - Toutes les images de la liste fournie
 - Informations produit complètes
 
-Exemple grille images simple:
-<div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-8">
+Exemple d'utilisation d'icônes modernes:
+<svg class="w-6 h-6" style="color: ${mainColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+</svg>
+
+Exemple grille images mobile-first:
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-8">
   <img src="${images[0]?.src || ''}" alt="${images[0]?.alt_text || productTitle}" class="w-full h-auto rounded-lg">
   <!-- plus d'images -->
 </div>
 
-Exemple tableau spécifications:
-<div class="bg-gray-50 rounded-lg p-6 my-8">
-  <h3 class="text-xl font-semibold mb-4">Caractéristiques Techniques</h3>
-  <div class="space-y-2">
-    <div class="flex justify-between"><span>Matériau</span><span>${enrichedProduct.ai_material || 'Matériaux de qualité'}</span></div>
+Exemple spécifications mobile avec icônes:
+<div class="bg-gray-50 rounded-lg p-4 sm:p-6 my-8">
+  <h3 class="text-lg sm:text-xl font-semibold mb-4 flex items-center">
+    <svg class="w-5 h-5 mr-2" style="color: ${mainColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+    </svg>
+    Caractéristiques Techniques
+  </h3>
+  <div class="space-y-3 text-sm sm:text-base">
+    <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
+      <span class="font-medium flex items-center">
+        <svg class="w-4 h-4 mr-2" style="color: ${mainColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4z"></path>
+        </svg>
+        Matériau
+      </span>
+      <span>${enrichedProduct.ai_material || 'Matériaux de qualité'}</span>
+    </div>
     <!-- plus de specs -->
   </div>
 </div>
@@ -541,14 +607,14 @@ Exemple tableau spécifications:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4", // ✅ Using GPT-4 instead of Gemini
+          model: "gpt-4",
           messages: [
             {
               role: "system",
               content:
                 language === "en"
-                  ? "You are a professional Shopify product description writer. You create clean, responsive HTML product descriptions using Tailwind CSS. You focus on presenting product information clearly without any e-commerce functionality. No prices, no add to cart buttons, just beautiful product presentation that works well in Shopify's description field."
-                  : "Tu es un rédacteur professionnel de descriptions de produit Shopify. Tu crées des descriptions de produit HTML propres et responsives avec Tailwind CSS. Tu te concentres sur la présentation claire des informations produit sans aucune fonctionnalité e-commerce. Pas de prix, pas de boutons ajouter au panier, juste une belle présentation produit qui fonctionne bien dans le champ description de Shopify.",
+                  ? "You are a professional Shopify product description writer. You create clean, responsive HTML product descriptions using Tailwind CSS. You focus on presenting product information clearly without any e-commerce functionality. No prices, no add to cart buttons, just beautiful product presentation that works well in Shopify's description field. Use modern SVG icons and mobile-first design."
+                  : "Tu es un rédacteur professionnel de descriptions de produit Shopify. Tu crées des descriptions de produit HTML propres et responsives avec Tailwind CSS. Tu te concentres sur la présentation claire des informations produit sans aucune fonctionnalité e-commerce. Pas de prix, pas de boutons ajouter au panier, juste une belle présentation produit qui fonctionne bien dans le champ description de Shopify. Utilise des icônes SVG modernes et un design mobile-first.",
             },
             { role: "user", content: prompt },
           ],
