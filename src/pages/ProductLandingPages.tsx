@@ -18,6 +18,7 @@ import {
   Layout,
   Type,
 } from "lucide-react";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -82,6 +83,10 @@ export default function ProductLandingPages() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationStep, setGenerationStep] = useState("");
+  const [currentProductIndex, setCurrentProductIndex] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -187,16 +192,27 @@ export default function ProductLandingPages() {
     setGenerating(true);
     setShowConfigDialog(false);
     const toastId = toast.loading("Génération des landing pages...");
+    
+    const productsArray = Array.from(selectedProducts);
+    setTotalProducts(productsArray.length);
+    setCurrentProductIndex(0);
+    setGenerationProgress(0);
 
     try {
       let successCount = 0;
-      const productsArray = Array.from(selectedProducts);
 
-      for (const productId of productsArray) {
+      for (let i = 0; i < productsArray.length; i++) {
+        const productId = productsArray[i];
         const product = products.find((p) => p.id === productId);
         if (!product) continue;
 
+        setCurrentProductIndex(i + 1);
+        const baseProgress = (i / productsArray.length) * 100;
+
         // 1. Enrichir le produit avec Vision AI
+        setGenerationStep(`Analyse de l'image (${i + 1}/${productsArray.length})`);
+        setGenerationProgress(baseProgress + 5);
+        
         let enrichedContent = "";
         if (product.image_url) {
           try {
@@ -212,6 +228,9 @@ export default function ProductLandingPages() {
         }
 
         // 2. Générer le titre et description optimisés
+        setGenerationStep(`Optimisation SEO (${i + 1}/${productsArray.length})`);
+        setGenerationProgress(baseProgress + 15);
+        
         const { data: titleData } = await supabase.functions.invoke("generate-title-description", {
           body: {
             currentTitle: product.title,
@@ -226,6 +245,9 @@ export default function ProductLandingPages() {
         });
 
         // 3. Générer le HTML de la landing page
+        setGenerationStep(`Génération de la landing page (${i + 1}/${productsArray.length})`);
+        setGenerationProgress(baseProgress + 30);
+        
         const selectedTheme = COLOR_THEMES.find((t) => t.id === config.colorTheme);
         const { data: landingData } = await supabase.functions.invoke("generate-landing-ai", {
           body: {
@@ -243,6 +265,9 @@ export default function ProductLandingPages() {
 
         if (landingData?.generatedCode) {
           // Sauvegarder la landing page
+          setGenerationStep(`Sauvegarde (${i + 1}/${productsArray.length})`);
+          setGenerationProgress(baseProgress + 20);
+          
           await supabase
             .from("shopify_products")
             .update({
@@ -256,6 +281,9 @@ export default function ProductLandingPages() {
         }
       }
 
+      setGenerationProgress(100);
+      setGenerationStep("Terminé !");
+      
       toast.success(`${successCount} landing page(s) générée(s)`, { id: toastId });
       await fetchProducts();
       await refreshLimits();
@@ -264,7 +292,13 @@ export default function ProductLandingPages() {
       console.error("Error generating:", error);
       toast.error("Erreur lors de la génération", { id: toastId });
     } finally {
-      setGenerating(false);
+      setTimeout(() => {
+        setGenerating(false);
+        setGenerationProgress(0);
+        setGenerationStep("");
+        setCurrentProductIndex(0);
+        setTotalProducts(0);
+      }, 1000);
     }
   };
 
@@ -472,6 +506,30 @@ export default function ProductLandingPages() {
           </ScrollArea>
         </Card>
       </div>
+
+      {/* Loading Dialog */}
+      <Dialog open={generating && generationProgress > 0} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Génération en cours</DialogTitle>
+            <DialogDescription>
+              {currentProductIndex > 0 && `Produit ${currentProductIndex} sur ${totalProducts}`}
+            </DialogDescription>
+          </DialogHeader>
+          <LoadingState
+            message={generationStep}
+            progress={generationProgress}
+            estimatedTime={
+              generationProgress < 30 
+                ? "45-60 sec" 
+                : generationProgress < 70 
+                ? "20-30 sec" 
+                : "5-10 sec"
+            }
+            details="L'IA analyse vos produits avec Vision AI et génère des landing pages optimisées"
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Configuration Dialog */}
       <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
