@@ -160,7 +160,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // Get authenticated user
+    // Get authenticated user and check limits
     let userId = null;
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
@@ -168,44 +168,18 @@ serve(async (req) => {
       if (!authError && user) {
         userId = user.id;
         
-        // 🛡️ VÉRIFICATION DES LIMITES AVANT GÉNÉRATION
-        const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
+        // ✅ Use check-usage-limits function instead of duplicating logic
+        const { data: limitsCheck, error: limitsError } = await supabaseAdmin.functions.invoke(
+          'check-usage-limits',
+          { headers: { Authorization: authHeader } }
+        );
         
-        const { data: usage } = await supabaseAdmin
-          .from('usage_tracking')
-          .select('optimizations_count')
-          .eq('seller_id', user.id)
-          .eq('month', currentMonth)
-          .maybeSingle();
-        
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('subscription_status, current_plan_id')
-          .eq('id', user.id)
-          .single();
-        
-        const { data: plan } = await supabaseAdmin
-          .from('subscription_plans')
-          .select('max_optimizations_monthly, trial_max_optimizations')
-          .eq('id', profile?.current_plan_id || 'trial')
-          .single();
-        
-        const currentUsage = usage?.optimizations_count || 0;
-        const maxOptimizations = profile?.subscription_status === 'trialing' 
-          ? (plan?.trial_max_optimizations || 50)
-          : (plan?.max_optimizations_monthly || 999999);
-        
-        console.log(`[generate-landing-ai] 🔍 Usage check: ${currentUsage}/${maxOptimizations}`);
-        
-        // ❌ BLOQUER si limite atteinte
-        if (currentUsage >= maxOptimizations) {
-          console.error(`[generate-landing-ai] ❌ LIMIT REACHED: ${currentUsage}/${maxOptimizations}`);
+        if (limitsError || !limitsCheck?.canUseOptimizations) {
+          console.error(`[generate-landing-ai] ❌ LIMIT REACHED`);
           return new Response(
             JSON.stringify({ 
               error: 'LIMIT_REACHED',
               message: 'Limite d\'optimisations atteinte. Passez à un plan supérieur.',
-              usage: currentUsage,
-              limit: maxOptimizations
             }),
             { 
               status: 429,
@@ -214,7 +188,7 @@ serve(async (req) => {
           );
         }
         
-        // ✅ Incrémenter IMMÉDIATEMENT (avant génération)
+        // ✅ Increment usage
         const LANDING_PAGE_COST = 5;
         await supabaseAdmin.rpc("increment_usage", {
           p_seller_id: user.id,
