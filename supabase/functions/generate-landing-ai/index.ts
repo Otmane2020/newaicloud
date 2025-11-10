@@ -69,6 +69,67 @@ function generateDesignTokens(colorScheme: any) {
   };
 }
 
+// Tailwind color to hex conversion (for validation)
+function tailwindToHex(tailwindClass: string): string {
+  const colorMap: Record<string, string> = {
+    "white": "FFFFFF",
+    "black": "000000",
+    "gray-50": "F9FAFB",
+    "gray-100": "F3F4F6",
+    "gray-200": "E5E7EB",
+    "gray-300": "D1D5DB",
+    "gray-400": "9CA3AF",
+    "gray-500": "6B7280",
+    "gray-600": "4B5563",
+    "gray-700": "374151",
+    "gray-800": "1F2937",
+    "gray-900": "111827",
+  };
+  return colorMap[tailwindClass] || "FFFFFF";
+}
+
+// Advanced color contrast validation (detects custom colors)
+function validateColorContrast(html: string): { valid: boolean; violations: string[] } {
+  const violations: string[] = [];
+  
+  // Regex to extract BOTH Tailwind classes AND custom hex colors
+  const elementRegex = /<(\w+)[^>]*class="([^"]*)"/g;
+  
+  let match;
+  while ((match = elementRegex.exec(html)) !== null) {
+    const [, tag, classString] = match;
+    
+    // Extract background color (Tailwind or custom)
+    const bgTailwindMatch = classString.match(/bg-(white|black|gray-(?:50|100|200|300|400|500|600|700|800|900))/);
+    const bgCustomMatch = classString.match(/bg-\[#([A-Fa-f0-9]{6})\]/);
+    
+    // Extract text color (Tailwind or custom)
+    const textTailwindMatch = classString.match(/text-(white|black|gray-(?:50|100|200|300|400|500|600|700|800|900))/);
+    const textCustomMatch = classString.match(/text-\[#([A-Fa-f0-9]{6})\]/);
+    
+    if ((bgTailwindMatch || bgCustomMatch) && (textTailwindMatch || textCustomMatch)) {
+      const bgColor = bgCustomMatch 
+        ? bgCustomMatch[1] 
+        : tailwindToHex(bgTailwindMatch![1]);
+      
+      const textColor = textCustomMatch 
+        ? textCustomMatch[1] 
+        : tailwindToHex(textTailwindMatch![1]);
+      
+      const contrast = calculateContrast(bgColor, textColor);
+      
+      // WCAG AA requires 4.5:1 for normal text
+      if (contrast < 4.5) {
+        const violation = `<${tag}>: text #${textColor} on bg #${bgColor} (contrast: ${contrast.toFixed(2)}:1)`;
+        violations.push(violation);
+        console.error(`❌ COLOR VIOLATION: ${violation}`);
+      }
+    }
+  }
+  
+  return { valid: violations.length === 0, violations };
+}
+
 function sanitizeHtmlUnsafe(html: string): string {
   if (!html) return "";
   let out = html
@@ -417,8 +478,6 @@ ${imgs}
 Variants Available:
 ${vars}
 
-${visualAnalysis ? `\n⚠️ INTERNAL ANALYSIS (DO NOT DISPLAY TO CUSTOMER - USE ONLY FOR CONTENT ENRICHMENT):\n${visualAnalysis}\n` : ""}
-
 Custom Highlights:
 ${customHighlights}
 
@@ -431,6 +490,11 @@ MANDATORY COLOR RULES (ZERO TOLERANCE - WCAG AA):
   • Text (main): ${designTokens.text} ← DARK (contrast: 7:1)
   • Text (muted): ${designTokens.textMuted} ← MEDIUM GRAY (contrast: 4.5:1)
 
+🚫 STRICT PROHIBITIONS:
+  1. NEVER use bg-[#...] for sections (except primary color)
+  2. NEVER use text-[#...] for main text
+  3. ALWAYS use predefined Tailwind classes
+
 ❌ ABSOLUTELY FORBIDDEN COLOR COMBINATIONS:
   1. text-white + bg-white → NEVER
   2. text-white + bg-gray-50 → NEVER
@@ -438,18 +502,25 @@ MANDATORY COLOR RULES (ZERO TOLERANCE - WCAG AA):
   4. text-gray-300 + bg-white → NEVER (contrast too low)
   5. text-gray-400 + bg-gray-100 → NEVER (contrast too low)
 
-✅ ONLY ALLOWED TEXT CLASSES:
-  • On white/light backgrounds (bg-white, bg-gray-50, bg-[${designTokens.surface}]):
-    → text-gray-900, text-gray-800, text-black, text-[${designTokens.text}]
-  
-  • On dark backgrounds (bg-gray-800, bg-gray-900, bg-black):
-    → text-white, text-gray-100
+✅ ONLY USE THESE CLASSES:
+  • Backgrounds: bg-white, bg-gray-50, bg-gray-100, bg-[${designTokens.primary}]
+  • Text: text-gray-900, text-gray-800, text-gray-700, text-black
+
+❌ FORBIDDEN EXAMPLES:
+<section class="bg-[#FFD700]"> <!-- NEVER -->
+<h1 class="text-[#1A1A1A]">     <!-- NEVER -->
+
+✅ CORRECT EXAMPLES:
+<section class="bg-white">
+<h1 class="text-gray-900">
 
 🔍 VALIDATION CHECKLIST (YOU MUST FOLLOW):
   □ Every <h1>, <h2>, <h3> on light bg uses text-gray-900 or text-black
   □ Every <p> on light bg uses text-gray-700 or text-gray-800
   □ No text-white exists on any light background
   □ No text-gray-300 or text-gray-400 on white/light backgrounds
+  □ No bg-[#...] except for primary color
+  □ No text-[#...] for main text
 
 📋 CORRECT COLOR EXAMPLE:
 <section class="bg-white py-12">
@@ -509,8 +580,6 @@ ${imgs}
 Variantes Disponibles:
 ${vars}
 
-${visualAnalysis ? `\n⚠️ ANALYSE INTERNE (NE PAS AFFICHER AU CLIENT - UTILISER UNIQUEMENT POUR ENRICHIR LE CONTENU):\n${visualAnalysis}\n` : ""}
-
 Points Forts Personnalisés:
 ${customHighlights}
 
@@ -523,6 +592,11 @@ RÈGLES DE COULEURS OBLIGATOIRES (TOLÉRANCE ZÉRO - WCAG AA):
   • Texte (principal): ${designTokens.text} ← FONCÉ (contraste: 7:1)
   • Texte (atténué): ${designTokens.textMuted} ← GRIS MOYEN (contraste: 4.5:1)
 
+🚫 INTERDICTIONS STRICTES:
+  1. N'utilise JAMAIS bg-[#...] pour les sections (sauf couleur primaire)
+  2. N'utilise JAMAIS text-[#...] pour le texte principal
+  3. TOUJOURS utiliser les classes Tailwind prédéfinies
+
 ❌ COMBINAISONS ABSOLUMENT INTERDITES:
   1. text-white + bg-white → JAMAIS
   2. text-white + bg-gray-50 → JAMAIS
@@ -530,18 +604,25 @@ RÈGLES DE COULEURS OBLIGATOIRES (TOLÉRANCE ZÉRO - WCAG AA):
   4. text-gray-300 + bg-white → JAMAIS (contraste trop faible)
   5. text-gray-400 + bg-gray-100 → JAMAIS (contraste trop faible)
 
-✅ CLASSES DE TEXTE AUTORISÉES UNIQUEMENT:
-  • Sur fonds blancs/clairs (bg-white, bg-gray-50, bg-[${designTokens.surface}]):
-    → text-gray-900, text-gray-800, text-black, text-[${designTokens.text}]
-  
-  • Sur fonds foncés (bg-gray-800, bg-gray-900, bg-black):
-    → text-white, text-gray-100
+✅ UTILISE UNIQUEMENT CES CLASSES:
+  • Fonds: bg-white, bg-gray-50, bg-gray-100, bg-[${designTokens.primary}]
+  • Texte: text-gray-900, text-gray-800, text-gray-700, text-black
+
+❌ EXEMPLES INTERDITS:
+<section class="bg-[#FFD700]"> <!-- JAMAIS -->
+<h1 class="text-[#1A1A1A]">     <!-- JAMAIS -->
+
+✅ EXEMPLES CORRECTS:
+<section class="bg-white">
+<h1 class="text-gray-900">
 
 🔍 CHECKLIST DE VALIDATION (TU DOIS SUIVRE):
   □ Tous les <h1>, <h2>, <h3> sur fond clair utilisent text-gray-900 ou text-black
   □ Tous les <p> sur fond clair utilisent text-gray-700 ou text-gray-800
   □ Aucun text-white n'existe sur un fond clair
   □ Aucun text-gray-300 ou text-gray-400 sur fonds blancs/clairs
+  □ Aucun bg-[#...] sauf pour la couleur primaire
+  □ Aucun text-[#...] pour le texte principal
 
 📋 EXEMPLE DE COULEURS CORRECTES:
 <section class="bg-white py-12">
@@ -625,30 +706,21 @@ EXEMPLE TABLEAU SPECS (si dimensions disponibles):
       );
 
     // 🔹 VALIDATION STRICTE des couleurs (post-génération)
-    console.log("[VALIDATION] Checking color accessibility...");
-    const colorValidation = {
-      forbiddenCombos: [
-        { pattern: /text-white[^"]*bg-white|bg-white[^"]*text-white/g, issue: "text-white on bg-white" },
-        { pattern: /text-white[^"]*bg-gray-50|bg-gray-50[^"]*text-white/g, issue: "text-white on bg-gray-50" },
-        { pattern: /text-white[^"]*bg-gray-100|bg-gray-100[^"]*text-white/g, issue: "text-white on bg-gray-100" },
-        { pattern: /text-gray-300[^"]*bg-white|bg-white[^"]*text-gray-300/g, issue: "text-gray-300 on bg-white" },
-      ],
-      violations: [] as string[],
-    };
+    console.log("[VALIDATION] Checking color accessibility with advanced detection...");
+    const colorValidation = validateColorContrast(html);
 
-    colorValidation.forbiddenCombos.forEach(({ pattern, issue }) => {
-      if (pattern.test(html)) {
-        colorValidation.violations.push(issue);
-        console.error(`❌ COLOR VIOLATION: ${issue}`);
-      }
-    });
-
-    if (colorValidation.violations.length > 0) {
-      console.warn("⚠️ Landing page has color violations:", colorValidation.violations);
+    if (!colorValidation.valid) {
+      console.error("❌ CRITICAL: Color accessibility violations detected:");
+      colorValidation.violations.forEach(v => console.error(`  - ${v}`));
+      console.warn("⚠️ Landing page has WCAG AA violations. Consider regenerating.");
+    } else {
+      console.log("✅ Color accessibility validation passed");
     }
 
     // 📱 Conversion mobile-responsive
     console.log("[Mobile] Converting to mobile-responsive...");
+    console.log("[Mobile] HTML before conversion (first 500 chars):", html.substring(0, 500));
+    
     try {
       const mobileResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/convert-landing-to-mobile`, {
         method: "POST",
@@ -664,11 +736,18 @@ EXEMPLE TABLEAU SPECS (si dimensions disponibles):
         if (mobileData?.success && mobileData?.mobileHtml) {
           html = mobileData.mobileHtml;
           console.log("✅ Mobile conversion successful:", mobileData.optimizations);
+          console.log("[Mobile] HTML after conversion (first 500 chars):", html.substring(0, 500));
+          
+          // Verify responsive classes are present
+          const hasResponsiveClasses = /sm:|md:|lg:/.test(html);
+          console.log(`[Mobile] Responsive classes detected: ${hasResponsiveClasses ? "✅ YES" : "❌ NO"}`);
         } else {
           console.warn("⚠️ Mobile conversion returned no data, using original HTML");
         }
       } else {
-        console.warn("⚠️ Mobile conversion failed, using original HTML");
+        const errorText = await mobileResponse.text();
+        console.warn("⚠️ Mobile conversion failed:", errorText);
+        console.warn("Using original HTML");
       }
     } catch (mobileError) {
       console.error("❌ Mobile conversion error (using original HTML):", mobileError);
