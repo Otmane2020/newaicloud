@@ -38,22 +38,9 @@ serve(async (req) => {
 
   try {
     const lang = detectLanguage(req);
-    
-    // Validate environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('[LIMITS] Missing environment variables');
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
     const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseKey,
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
 
@@ -71,69 +58,93 @@ serve(async (req) => {
       throw new Error(TRANSLATIONS[lang].unauthorized);
     }
 
-    // ⚡ PARALLELIZE: Fetch profile, usage, and product count simultaneously
-    const currentMonth = new Date();
-    currentMonth.setDate(1);
-    currentMonth.setHours(0, 0, 0, 0);
-    const monthKey = currentMonth.toISOString().split('T')[0];
+    // Get user profile
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('subscription_status, current_plan_id, trial_ends_at')
+      .eq('id', user.id)
+      .single();
 
-    const [profileRes, usageRes, productCountRes] = await Promise.all([
-      supabaseClient.from('profiles')
-        .select('subscription_status, current_plan_id, trial_ends_at')
-        .eq('id', user.id)
-        .single(),
-      supabaseClient.from('usage_tracking')
-        .select('*')
-        .eq('seller_id', user.id)
-        .eq('month', monthKey)
-        .maybeSingle(),
-      supabaseClient.from('shopify_products')
-        .select('*', { count: 'exact', head: true })
-        .eq('seller_id', user.id)
-    ]);
+    if (profileError) throw profileError;
 
-    const profile = profileRes.data;
-    if (profileRes.error || !profile) {
-      console.error('[LIMITS] Error fetching profile:', profileRes.error);
-      return new Response(
-        JSON.stringify({ error: TRANSLATIONS[lang].errorCheckingLimits }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Determine trial/paid status
+    // Determine if user is in trial or paid subscription
+    // A user is in trial if:
+    // 1. subscription_status === 'trialing', OR
+    // 2. current_plan_id is NULL or 'trial', OR
+    // 3. subscription_status is 'cancelled' or 'inactive'
     const isTrialing = profile.subscription_status === 'trialing' || 
                        !profile.current_plan_id ||
                        profile.current_plan_id === 'trial' ||
                        profile.subscription_status === 'cancelled' ||
                        profile.subscription_status === 'inactive';
     
+    // A user is paid if:
+    // - subscription_status === 'active' AND has a paid plan (not trial)
     const isPaid = profile.subscription_status === 'active' && 
                    profile.current_plan_id && 
                    profile.current_plan_id !== 'trial';
     
     console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
-    // ⚡ Fetch plan (trial or paid)
-    const planId = (!isTrialing && profile.current_plan_id) ? profile.current_plan_id : 'trial';
-    const { data: plan, error: planError } = await supabaseClient
-      .from('subscription_plans')
-      .select('*')
-      .eq('id', planId)
-      .single();
+    // Get plan limits
+    let plan;
+    if (!isTrialing && profile.current_plan_id) {
+      // User is NOT in trial and has paid plan - fetch it
+      const { data: paidPlan, error: planError } = await supabaseClient
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', profile.current_plan_id)
+        .single();
 
-    if (planError || !plan) {
-      console.error('[LIMITS] Error fetching plan:', planError);
-      throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
+      if (planError) {
+        console.error('[LIMITS] Error fetching paid plan:', planError);
+        // Fallback to starter plan if paid plan not found
+        const { data: starterPlan } = await supabaseClient
+          .from('subscription_plans')
+          .select('*')
+          .eq('id', 'starter')
+          .single();
+        plan = starterPlan;
+      } else {
+        plan = paidPlan;
+      }
+    } else {
+      // User is in trial - use trial plan limits
+      const { data: trialPlan, error: planError } = await supabaseClient
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', 'trial')
+        .single();
+      
+      if (planError) {
+        console.error('[LIMITS] Error fetching trial plan:', planError);
+        throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
+      }
+      plan = trialPlan;
     }
+    
+    if (!plan) throw new Error(TRANSLATIONS[lang].noPlanConfiguration);
     
     console.log(`[LIMITS] Using plan: ${plan.id} - isTrialing: ${isTrialing}, isPaid: ${isPaid}`);
 
-    // Handle usage tracking
-    let currentUsage = usageRes.data;
+    // Get current month usage
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+    const monthKey = currentMonth.toISOString().split('T')[0];
+
+    const { data: usage, error: usageError } = await supabaseClient
+      .from('usage_tracking')
+      .select('*')
+      .eq('seller_id', user.id)
+      .eq('month', monthKey)
+      .maybeSingle();
+
+    // Si pas d'entrée pour ce mois, en créer une
+    let currentUsage = usage;
     if (!currentUsage) {
-      console.log('[LIMITS] Creating usage_tracking entry');
-      const { data: newUsage } = await supabaseClient
+      console.log('[LIMITS] Creating usage_tracking entry for current month');
+      const { data: newUsage, error: createError } = await supabaseClient
         .from('usage_tracking')
         .insert({
           seller_id: user.id,
@@ -149,29 +160,54 @@ serve(async (req) => {
         .select()
         .single();
       
-      currentUsage = newUsage || {
-        optimizations_count: 0,
-        articles_count: 0,
-        chat_responses_count: 0,
-        shopify_requests_count: 0,
-        products_count: 0,
-        shopify_stores_count: 0,
-        campaigns_count: 0,
-      };
+      if (createError) {
+        console.error('[LIMITS] Error creating usage_tracking:', createError);
+        // Fallback to default values if creation fails
+        currentUsage = {
+          optimizations_count: 0,
+          articles_count: 0,
+          chat_responses_count: 0,
+          shopify_requests_count: 0,
+          products_count: 0,
+          shopify_stores_count: 0,
+          campaigns_count: 0,
+        };
+      } else {
+        currentUsage = newUsage;
+      }
     }
     
-    console.log(`[LIMITS] Current usage:`, currentUsage);
+    console.log(`[LIMITS] Current usage from tracking:`, currentUsage);
 
-    // Auto-correct product count if needed
-    const realProductCount = productCountRes.count || 0;
-    if (currentUsage.products_count !== realProductCount) {
-      console.warn(`[LIMITS] ⚠️ Correcting products_count: ${currentUsage.products_count} → ${realProductCount}`);
-      await supabaseClient
+    // Vérifier le compte réel de produits dans la base de données
+    const { count: realProductCount, error: countError } = await supabaseClient
+      .from('shopify_products')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', user.id);
+
+    if (countError) {
+      console.error('[LIMITS] Error counting real products:', countError);
+    } else if (realProductCount !== null && currentUsage.products_count !== realProductCount) {
+      console.warn(`[LIMITS] ⚠️ Inconsistency detected: usage_tracking shows ${currentUsage.products_count} products but real count is ${realProductCount}`);
+      
+      // Corriger automatiquement usage_tracking
+      const { error: updateError } = await supabaseClient
         .from('usage_tracking')
-        .update({ products_count: realProductCount, updated_at: new Date().toISOString() })
+        .update({ 
+          products_count: realProductCount,
+          updated_at: new Date().toISOString()
+        })
         .eq('seller_id', user.id)
         .eq('month', monthKey);
-      currentUsage.products_count = realProductCount;
+      
+      if (updateError) {
+        console.error('[LIMITS] Error updating products_count:', updateError);
+      } else {
+        console.log(`[LIMITS] ✅ Auto-corrected products_count from ${currentUsage.products_count} to ${realProductCount}`);
+        currentUsage.products_count = realProductCount;
+      }
+    } else {
+      console.log(`[LIMITS] ✅ Products count is consistent: ${realProductCount}`);
     }
 
     // Use plan limits directly (trial plan limits for trialing, paid plan limits for paid)
@@ -271,24 +307,11 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('[LIMITS] Unexpected error in check-usage-limits:', error);
-    
-    // Try to detect language, fallback to 'en' if it fails
-    let lang: 'fr' | 'en' = 'en';
-    try {
-      lang = detectLanguage(req);
-    } catch (e) {
-      console.error('[LIMITS] Could not detect language:', e);
-    }
-    
+    const lang = detectLanguage(req);
+    console.error(`${TRANSLATIONS[lang].errorCheckingLimits}:`, error);
     const errorMessage = error instanceof Error ? error.message : TRANSLATIONS[lang].unknownError;
-    console.error(`[LIMITS] ${TRANSLATIONS[lang].errorCheckingLimits}: ${errorMessage}`);
-    
     return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        details: error instanceof Error ? error.stack : undefined
-      }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

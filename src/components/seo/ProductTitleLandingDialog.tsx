@@ -1,11 +1,4 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, Monitor, Smartphone, Eye, CheckCircle2, Sparkles, X } from "lucide-react";
 import { responsiveDialogClasses, responsivePadding } from "@/lib/dialogUtils";
@@ -30,16 +23,14 @@ interface ProductTitleLandingDialogProps {
   isGenerating: boolean;
   currentProcessing?: { index: number; total: number; title: string } | null;
   onCancel?: () => void;
-  onReplaceDescription: () => void;
   onSync: () => void;
-  replaceLoading?: boolean;
   syncLoading?: boolean;
 }
 
 // Calculate quality score based on content optimization
 const calculateQualityScore = (title: string, description: string): number => {
   let score = 0;
-
+  
   // Title quality (30 points)
   if (title) {
     const titleLength = title.length;
@@ -47,7 +38,7 @@ const calculateQualityScore = (title: string, description: string): number => {
     else if (titleLength >= 40 && titleLength <= 70) score += 20;
     else if (titleLength >= 30) score += 10;
   }
-
+  
   // Description quality (40 points)
   if (description) {
     const descLength = description.length;
@@ -55,50 +46,41 @@ const calculateQualityScore = (title: string, description: string): number => {
     else if (descLength >= 120 && descLength <= 180) score += 30;
     else if (descLength >= 100) score += 20;
   }
-
+  
   // Marketing keywords (30 points)
-  const marketingKeywords = [
-    "qualité",
-    "premium",
-    "professionnel",
-    "élégant",
-    "moderne",
-    "durable",
-    "design",
-    "exclusif",
-  ];
+  const marketingKeywords = ['qualité', 'premium', 'professionnel', 'élégant', 'moderne', 'durable', 'design', 'exclusif'];
   const combinedText = `${title} ${description}`.toLowerCase();
-  const keywordCount = marketingKeywords.filter((kw) => combinedText.includes(kw)).length;
+  const keywordCount = marketingKeywords.filter(kw => combinedText.includes(kw)).length;
   score += Math.min(30, keywordCount * 5);
-
+  
   return Math.min(100, score);
 };
 
 // Generate rich HTML preview from product description or fallback to simple version
 const generateHtmlPreview = (product: Product): string => {
   const title = product.seo_title || product.title;
-  const description = product.seo_description || "";
-  const htmlDescription = product.description || "";
-  const imageUrl = product.image_url || "";
-
+  const description = product.seo_description || '';
+  const htmlDescription = product.description || '';
+  const imageUrl = product.image_url || '';
+  
   // If we have a rich HTML description in the description field, use it directly
-  if (htmlDescription && (htmlDescription.includes("<div") || htmlDescription.includes("<section"))) {
-    // Return raw HTML without additional wrapper to avoid nesting issues
-    return htmlDescription;
+  if (htmlDescription && (htmlDescription.includes('<div') || htmlDescription.includes('<section'))) {
+    // Wrap in a container for consistent styling
+    return `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        ${htmlDescription}
+      </div>
+    `;
   }
-
+  
   // Otherwise, generate a preview from available data
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem;">
-      ${
-        imageUrl
-          ? `
+      ${imageUrl ? `
         <div style="margin-bottom: 2rem; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
           <img src="${imageUrl}" alt="${title}" style="width: 100%; height: auto; display: block;" />
         </div>
-      `
-          : ""
-      }
+      ` : ''}
       
       <h1 style="font-size: 2.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 1.5rem; line-height: 1.2;">
         ${title}
@@ -108,18 +90,14 @@ const generateHtmlPreview = (product: Product): string => {
         ${description}
       </div>
       
-      ${
-        htmlDescription && htmlDescription !== description
-          ? `
+      ${htmlDescription && htmlDescription !== description ? `
         <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e2e8f0;">
           <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Détails du produit</h2>
           <div style="color: #4a5568; line-height: 1.75;">
             ${htmlDescription}
           </div>
         </div>
-      `
-          : ""
-      }
+      ` : ''}
       
       <div style="display: inline-flex; gap: 1rem; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); margin-top: 2rem;">
         <span>Voir sur Shopify</span>
@@ -138,21 +116,19 @@ export function ProductTitleLandingDialog({
   isGenerating,
   currentProcessing,
   onCancel,
-  onReplaceDescription,
   onSync,
-  replaceLoading = false,
-  syncLoading = false,
+  syncLoading = false
 }: ProductTitleLandingDialogProps) {
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "360">("desktop");
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile' | '360'>('desktop');
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-
+  
   // Smooth progress animation based on currentProcessing
   useEffect(() => {
     if (!isGenerating || !currentProcessing) {
       return;
     }
-
+    
     const targetProgress = (currentProcessing.index / currentProcessing.total) * 100;
     const interval = setInterval(() => {
       setProgress((prev) => {
@@ -161,33 +137,30 @@ export function ProductTitleLandingDialog({
         return prev + diff * 0.1; // Smooth easing
       });
     }, 50);
-
+    
     return () => clearInterval(interval);
   }, [isGenerating, currentProcessing]);
-
+  
   const selectedProduct = products[selectedProductIndex];
-  const qualityScore =
-    selectedProduct?.seo_title && selectedProduct?.seo_description
-      ? calculateQualityScore(selectedProduct.seo_title, selectedProduct.seo_description)
-      : 0;
-
-  const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct) : "";
+  const qualityScore = selectedProduct?.seo_title && selectedProduct?.seo_description
+    ? calculateQualityScore(selectedProduct.seo_title, selectedProduct.seo_description)
+    : 0;
+  
+  const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct) : '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={`${responsiveDialogClasses.xlarge} ${responsivePadding.large} max-h-[90vh] overflow-y-auto`}
-      >
+      <DialogContent className={`${responsiveDialogClasses.xlarge} ${responsivePadding.large} max-h-[90vh] overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             {isGenerating && <Loader2 className="h-5 w-5 animate-spin" />}
             Aperçu Contenu Produit Optimisé
           </DialogTitle>
           <DialogDescription>
-            {isGenerating
-              ? currentProcessing
-                ? `Génération ${currentProcessing.index}/${currentProcessing.total}: ${currentProcessing.title.substring(0, 50)}...`
-                : "Génération du contenu SEO optimisé en cours..."
+            {isGenerating 
+              ? (currentProcessing 
+                  ? `Génération ${currentProcessing.index}/${currentProcessing.total}: ${currentProcessing.title.substring(0, 50)}...`
+                  : "Génération du contenu SEO optimisé en cours...") 
               : `${products.length} produit(s) optimisé(s) - Vérifiez le contenu avant synchronisation`}
           </DialogDescription>
         </DialogHeader>
@@ -196,11 +169,11 @@ export function ProductTitleLandingDialog({
           <div className="py-6 space-y-4">
             <div className="flex items-center justify-center">
               <div className="relative">
-                <Sparkles className="h-12 w-12 text-primary animate-spin" style={{ animationDuration: "3s" }} />
+                <Sparkles className="h-12 w-12 text-primary animate-spin" style={{ animationDuration: '3s' }} />
                 <div className="absolute inset-0 h-12 w-12 bg-primary/20 rounded-full animate-ping" />
               </div>
             </div>
-
+            
             {currentProcessing && (
               <div className="text-center space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <p className="text-sm font-semibold text-primary truncate px-4">
@@ -216,13 +189,15 @@ export function ProductTitleLandingDialog({
                 </div>
               </div>
             )}
-
+            
             <div className="max-w-md mx-auto space-y-2">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">
                   {currentProcessing ? `${currentProcessing.index}/${currentProcessing.total}` : "En cours..."}
                 </span>
-                <span className="font-semibold text-primary">{Math.round(progress)}%</span>
+                <span className="font-semibold text-primary">
+                  {Math.round(progress)}%
+                </span>
               </div>
               <Progress value={progress} className="h-2" />
               {currentProcessing && currentProcessing.total - currentProcessing.index > 0 && (
@@ -231,7 +206,7 @@ export function ProductTitleLandingDialog({
                 </p>
               )}
             </div>
-
+            
             {onCancel && (
               <div className="flex justify-center pt-2">
                 <Button
@@ -270,7 +245,7 @@ export function ProductTitleLandingDialog({
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Score Qualité</span>
-                  <Badge
+                  <Badge 
                     variant={qualityScore >= 80 ? "default" : qualityScore >= 60 ? "secondary" : "outline"}
                     className="gap-1"
                   >
@@ -280,9 +255,9 @@ export function ProductTitleLandingDialog({
                 </div>
                 <Progress value={qualityScore} className="h-2" />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {qualityScore >= 80 && "Excellent - Contenu riche avec structure optimale et médias"}
-                  {qualityScore >= 60 && qualityScore < 80 && "Bon - Contenu structuré avec potentiel d'amélioration"}
-                  {qualityScore < 60 && "À améliorer - Enrichir le contenu et la structure"}
+                  {qualityScore >= 80 && 'Excellent - Contenu riche avec structure optimale et médias'}
+                  {qualityScore >= 60 && qualityScore < 80 && 'Bon - Contenu structuré avec potentiel d\'amélioration'}
+                  {qualityScore < 60 && 'À améliorer - Enrichir le contenu et la structure'}
                 </p>
               </div>
             )}
@@ -305,17 +280,16 @@ export function ProductTitleLandingDialog({
               </TabsList>
 
               <TabsContent value="desktop" className="space-y-4">
-                <div className="border rounded-lg bg-white min-h-[400px] overflow-auto">
+                <div className="border rounded-lg p-6 bg-white min-h-[400px]">
                   {selectedProduct && htmlPreview ? (
-                    <div 
-                      className="prose prose-lg max-w-none"
-                      dangerouslySetInnerHTML={{ __html: htmlPreview }} 
-                    />
+                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
                   ) : (
                     <div className="flex items-center justify-center h-full text-center py-12">
                       <div className="space-y-3">
                         <Eye className="h-12 w-12 text-muted-foreground mx-auto" />
-                        <p className="text-muted-foreground font-medium">Aucun contenu généré</p>
+                        <p className="text-muted-foreground font-medium">
+                          Aucun contenu généré
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           Sélectionnez des produits et cliquez sur "Optimiser" pour générer le contenu
                         </p>
@@ -326,17 +300,16 @@ export function ProductTitleLandingDialog({
               </TabsContent>
 
               <TabsContent value="mobile" className="space-y-4">
-                <div className="max-w-md mx-auto border rounded-lg bg-white min-h-[400px] overflow-auto">
+                <div className="max-w-md mx-auto border rounded-lg p-4 bg-white min-h-[400px]">
                   {selectedProduct && htmlPreview ? (
-                    <div 
-                      className="prose max-w-none"
-                      dangerouslySetInnerHTML={{ __html: htmlPreview }} 
-                    />
+                    <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
                   ) : (
                     <div className="flex items-center justify-center h-full text-center py-12">
                       <div className="space-y-3">
                         <Smartphone className="h-12 w-12 text-muted-foreground mx-auto" />
-                        <p className="text-muted-foreground font-medium">Aucun contenu généré</p>
+                        <p className="text-muted-foreground font-medium">
+                          Aucun contenu généré
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           Générez le contenu optimisé pour voir l'aperçu mobile
                         </p>
@@ -352,26 +325,26 @@ export function ProductTitleLandingDialog({
                     <div>
                       <h3 className="font-semibold text-sm text-muted-foreground mb-2">Titre SEO Optimisé</h3>
                       <p className="text-base font-medium">
-                        {selectedProduct.seo_title || selectedProduct.title || "Aucun titre"}
+                        {selectedProduct.seo_title || selectedProduct.title || 'Aucun titre'}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(selectedProduct.seo_title || selectedProduct.title || "").length} caractères
-                        {(selectedProduct.seo_title || selectedProduct.title || "").length >= 50 &&
-                          (selectedProduct.seo_title || selectedProduct.title || "").length <= 60 &&
-                          " ✓ Longueur idéale SEO (50-60 car)"}
+                        {(selectedProduct.seo_title || selectedProduct.title || '').length} caractères
+                        {(selectedProduct.seo_title || selectedProduct.title || '').length >= 50 && 
+                         (selectedProduct.seo_title || selectedProduct.title || '').length <= 60 && 
+                         ' ✓ Longueur idéale SEO (50-60 car)'}
                       </p>
                     </div>
 
                     <div>
                       <h3 className="font-semibold text-sm text-muted-foreground mb-2">Meta Description SEO</h3>
                       <p className="text-sm leading-relaxed">
-                        {selectedProduct.seo_description || "Aucune description"}
+                        {selectedProduct.seo_description || 'Aucune description'}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(selectedProduct.seo_description || "").length} caractères
-                        {(selectedProduct.seo_description || "").length >= 140 &&
-                          (selectedProduct.seo_description || "").length <= 160 &&
-                          " ✓ Longueur optimale SEO (140-160 car)"}
+                        {(selectedProduct.seo_description || '').length} caractères
+                        {(selectedProduct.seo_description || '').length >= 140 && 
+                         (selectedProduct.seo_description || '').length <= 160 && 
+                         ' ✓ Longueur optimale SEO (140-160 car)'}
                       </p>
                     </div>
 
@@ -379,8 +352,8 @@ export function ProductTitleLandingDialog({
                       <div>
                         <h3 className="font-semibold text-sm text-muted-foreground mb-2">Image produit</h3>
                         <div className="w-32 h-32 rounded-lg overflow-hidden border">
-                          <img
-                            src={selectedProduct.image_url}
+                          <img 
+                            src={selectedProduct.image_url} 
                             alt={selectedProduct.title}
                             className="w-full h-full object-cover"
                           />
@@ -399,8 +372,12 @@ export function ProductTitleLandingDialog({
                   <div className="border rounded-lg p-6 bg-muted min-h-[400px] flex items-center justify-center">
                     <div className="text-center space-y-3">
                       <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto" />
-                      <p className="text-muted-foreground font-medium">Aucun contenu disponible</p>
-                      <p className="text-sm text-muted-foreground">Générez le contenu SEO pour voir les détails</p>
+                      <p className="text-muted-foreground font-medium">
+                        Aucun contenu disponible
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Générez le contenu SEO pour voir les détails
+                      </p>
                     </div>
                   </div>
                 )}
@@ -413,23 +390,14 @@ export function ProductTitleLandingDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isGenerating || replaceLoading || syncLoading}
+            disabled={isGenerating || syncLoading}
             className="w-full sm:w-auto"
           >
             Annuler
           </Button>
           <Button
-            variant="secondary"
-            onClick={onReplaceDescription}
-            disabled={isGenerating || replaceLoading || syncLoading || products.length === 0}
-            className="w-full sm:w-auto"
-          >
-            {replaceLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Remplacer la description ({products.length})
-          </Button>
-          <Button
             onClick={onSync}
-            disabled={isGenerating || replaceLoading || syncLoading || products.length === 0}
+            disabled={isGenerating || syncLoading || products.length === 0}
             className="w-full sm:w-auto"
           >
             {syncLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

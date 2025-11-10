@@ -3309,12 +3309,6 @@ export const translations = {
       progress: {
         title: "Synchronisation en cours...",
         importing: "Import de {{type}}",
-        stages: {
-          preparing: "Préparation des données...",
-          syncing: "Synchronisation en cours...",
-          finalizing: "Finalisation...",
-          almostDone: "Presque terminé !",
-        },
       },
       result: {
         title: "Synchronisation Terminée !",

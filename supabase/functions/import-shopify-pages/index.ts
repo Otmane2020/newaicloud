@@ -196,45 +196,6 @@ Deno.serve(async (req: Request) => {
     console.log(`   - Images imported: ${imagesCount}`);
     console.log(`   - Errors: ${errorCount}`);
 
-    // 🧹 Cleanup: Delete pages that no longer exist in Shopify
-    console.log(`🧹 [IMPORT-PAGES] Checking for deleted pages...`);
-    const shopifyPageIds = allPages.map(p => p.id.toString());
-    
-    const { data: existingPages, error: fetchError } = await supabase
-      .from('shopify_pages')
-      .select('id, shopify_page_id, title')
-      .eq('user_id', user.id)
-      .eq('store_id', storeId);
-    
-    if (fetchError) {
-      console.error(`⚠️ [IMPORT-PAGES] Error fetching existing pages:`, fetchError);
-    } else if (existingPages) {
-      const pagesToDelete = existingPages.filter(
-        existing => existing.shopify_page_id && !shopifyPageIds.includes(existing.shopify_page_id)
-      );
-      
-      if (pagesToDelete.length > 0) {
-        console.log(`🗑️ [IMPORT-PAGES] Found ${pagesToDelete.length} pages to delete:`);
-        pagesToDelete.forEach(p => {
-          console.log(`   - ${p.title} (Shopify ID: ${p.shopify_page_id})`);
-        });
-        
-        const idsToDelete = pagesToDelete.map(p => p.id);
-        const { error: deleteError } = await supabase
-          .from('shopify_pages')
-          .delete()
-          .in('id', idsToDelete);
-        
-        if (deleteError) {
-          console.error(`❌ [IMPORT-PAGES] Error deleting pages:`, deleteError);
-        } else {
-          console.log(`✅ [IMPORT-PAGES] Successfully deleted ${pagesToDelete.length} pages`);
-        }
-      } else {
-        console.log(`✅ [IMPORT-PAGES] No pages to delete`);
-      }
-    }
-
     return new Response(JSON.stringify({
       success: true,
       total: allPages.length,

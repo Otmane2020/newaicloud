@@ -759,51 +759,6 @@ Deno.serve(async (req: Request) => {
       skipped: 0
     };
 
-    // 🧹 Cleanup: Delete products that no longer exist in Shopify
-    console.log(`🧹 [IMPORT-PRODUCTS] Checking for deleted products...`);
-    const shopifyProductIds = products.map(p => p.id);
-    
-    const { data: allExistingProducts, error: fetchAllError } = await supabaseServiceClient
-      .from('shopify_products')
-      .select('id, shopify_id, title')
-      .eq('seller_id', user.id)
-      .eq('store_id', storeId);
-    
-    if (fetchAllError) {
-      console.error(`⚠️ [IMPORT-PRODUCTS] Error fetching existing products:`, fetchAllError);
-    } else if (allExistingProducts) {
-      const productsToDelete = allExistingProducts.filter(
-        existing => !shopifyProductIds.includes(existing.shopify_id)
-      );
-      
-      if (productsToDelete.length > 0) {
-        console.log(`🗑️ [IMPORT-PRODUCTS] Found ${productsToDelete.length} products to delete:`);
-        productsToDelete.forEach(p => {
-          console.log(`   - ${p.title} (Shopify ID: ${p.shopify_id})`);
-        });
-        
-        const idsToDelete = productsToDelete.map(p => p.id);
-        
-        // Delete related data first (variants, images)
-        await supabaseServiceClient.from('product_variants').delete().in('product_id', idsToDelete);
-        await supabaseServiceClient.from('product_images').delete().in('product_id', idsToDelete);
-        
-        // Then delete products
-        const { error: deleteError } = await supabaseServiceClient
-          .from('shopify_products')
-          .delete()
-          .in('id', idsToDelete);
-        
-        if (deleteError) {
-          console.error(`❌ [IMPORT-PRODUCTS] Error deleting products:`, deleteError);
-        } else {
-          console.log(`✅ [IMPORT-PRODUCTS] Successfully deleted ${productsToDelete.length} products`);
-        }
-      } else {
-        console.log(`✅ [IMPORT-PRODUCTS] No products to delete`);
-      }
-    }
-
     return new Response(
       JSON.stringify({
         success: true,

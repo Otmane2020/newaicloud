@@ -106,51 +106,40 @@ async function callVisionAI(imageUrl: string, productContext: string, retryCount
         {
           parts: [
             {
-              text: `Tu es un expert en SEO et analyse d'images de produits e-commerce. Ta mission : créer un texte ALT optimal en CROISANT l'analyse visuelle de l'image avec les mots-clés importants du titre produit.
+              text: `Tu es un expert en analyse d'images de produits e-commerce. Analyse UNIQUEMENT ce que tu VOIS dans cette image.
 
-MÉTHODOLOGIE - CROISEMENT VISION + TITRE :
+RÈGLES ABSOLUES - ANALYSE VISUELLE PURE :
+1. Base-toi UNIQUEMENT sur ce qui est VISIBLE dans l'image
+2. Décris les couleurs dominantes et secondaires que tu vois
+3. Identifie les matériaux visibles (bois, métal, tissu, cuir, plastique, verre, etc.)
+4. Décris les formes et dimensions apparentes
+5. Note les textures visibles (lisse, rugueux, brillant, mat, texturé)
+6. Identifie le style visuel (moderne, vintage, minimaliste, classique, industriel)
+7. Décris les détails importants (pieds, poignées, motifs, finitions, décoration)
 
-1. ANALYSE VISUELLE (ce que tu VOIS) :
-   - Couleurs dominantes et secondaires
-   - Matériaux visibles (bois, métal, tissu, cuir, plastique, verre)
-   - Formes et dimensions apparentes
-   - Textures visibles (lisse, rugueux, brillant, mat)
-   - Style visuel (moderne, vintage, minimaliste, classique, industriel)
-   - Détails importants (pieds, poignées, motifs, finitions)
+⚠️ INTERDIT :
+- Ne reprends PAS le titre tel quel
+- N'invente PAS d'informations non visibles
+- Ne mentionne PAS le titre produit directement
 
-2. EXTRACTION MOTS-CLÉS DU TITRE :
-   - Identifie les mots-clés SEO importants dans le titre produit
-   - Conserve les termes de marque, style, fonction principale
-   - Élimine les mots génériques ("premium", "qualité", "top")
-
-3. FUSION INTELLIGENTE :
-   - Combine les mots-clés du titre avec ta description visuelle
-   - Valide que les mots-clés correspondent à ce que tu vois
-   - Enrichis avec les détails visuels observés
-   - Crée une description naturelle et fluide
-
-Context produit (TITRE CONTIENT DES MOTS-CLÉS IMPORTANTS À MIXER) :
+Context produit (POUR RÉFÉRENCE UNIQUEMENT) :
 ${productContext}
 
-FORMAT DE RÉPONSE - 15 à 25 mots maximum :
-- Intègre les mots-clés pertinents du titre
-- Enrichis avec les détails visuels observés
-- Description naturelle et optimisée SEO
-- Évite la répétition mot à mot du titre
+FORMAT DE RÉPONSE - 10 à 20 mots maximum :
+- Commence par la catégorie visuelle du produit (chaise, table, lampe, etc.)
+- Ajoute les couleurs dominantes observées
+- Mentionne les matériaux visibles
+- Décris le style ou les caractéristiques visuelles distinctives
 
-Exemples de CROISEMENT correct :
-Titre: "Canapé d'angle Scandinave OSLO 5 Places Tissu Beige"
-Vision: Canapé angle, tissu beige clair, pieds bois clair
-✅ ALT: "Canapé d'angle scandinave Oslo 5 places, tissu beige clair, pieds bois naturel, style épuré"
-
-Titre: "Chaise Design Industriel LOFT - Métal Noir & Bois"
-Vision: Chaise métal noir, assise bois foncé, pieds tubulaires
-✅ ALT: "Chaise design industriel Loft, structure métal noir, assise bois massif, pieds tubulaires"
+Exemples corrects :
+❌ MAUVAIS : "Canapé Scandinave Premium 3 Places" (reprend le titre)
+✅ BON : "Canapé 3 places tissu gris clair, pieds bois naturel, style scandinave épuré"
+✅ BON : "Chaise design noire métal et bois, assise rembourrée, pieds croisés"
 
 Réponds UNIQUEMENT avec ce JSON valide :
 {
-  "alt_text": "Ta description croisant titre + analyse visuelle",
-  "visual_analysis": "Description technique complète de ce que tu vois dans l'image"
+  "alt_text": "Ta description visuelle pure (PAS le titre produit)",
+  "visual_analysis": "Description technique complète de ce que tu vois réellement dans l'image"
 }`
             },
             {
@@ -358,7 +347,7 @@ Deno.serve(async (req: Request) => {
         }
       }
     } else {
-      // Get product info (including title for keyword mixing)
+      // Get product info
       const { data: product, error: productError } = await supabaseClient
         .from("shopify_products")
         .select("title, description, category, ai_color, ai_material, seller_id")
@@ -389,9 +378,8 @@ Deno.serve(async (req: Request) => {
         .eq("product_id", image.product_id)
         .limit(5);
 
-      // Build context with product title for keyword extraction
-      productContext = `Titre produit: ${product.title}\n`;
-      productContext += `Category: ${product.category || 'Product'}\n`;
+      // Build minimal context (for reference only, not to be copied)
+      productContext = `Category: ${product.category || 'Product'}\n`;
       
       if (product.description) {
         const shortDesc = product.description.substring(0, 150);

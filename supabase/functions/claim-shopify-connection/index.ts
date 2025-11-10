@@ -78,8 +78,9 @@ serve(async (req) => {
       .upsert({
         user_id: user.id,
         store_url: pending.shop_url,
-        store_name: pending.commercial_name,
+        commercial_name: pending.commercial_name,
         access_token: pending.access_token,
+        scope: pending.scope,
         connected_at: new Date().toISOString(),
         is_active: true,
         connection_type: "oauth",

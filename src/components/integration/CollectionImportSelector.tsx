@@ -70,7 +70,7 @@ export function CollectionImportSelector() {
       // Fetch collections from Shopify
       const shopifyUrl = connection.store_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
       const response = await fetch(
-        `https://${shopifyUrl}/admin/api/2025-01/custom_collections.json?limit=250`,
+        `https://${shopifyUrl}/admin/api/2024-01/custom_collections.json?limit=250`,
         {
           headers: {
             'X-Shopify-Access-Token': connection.access_token,
@@ -86,7 +86,7 @@ export function CollectionImportSelector() {
 
       // Also fetch smart collections
       const smartResponse = await fetch(
-        `https://${shopifyUrl}/admin/api/2025-01/smart_collections.json?limit=250`,
+        `https://${shopifyUrl}/admin/api/2024-01/smart_collections.json?limit=250`,
         {
           headers: {
             'X-Shopify-Access-Token': connection.access_token,
@@ -141,38 +141,41 @@ export function CollectionImportSelector() {
         return;
       }
 
-      // Extract shop name from store_url
-      const shopName = connection.store_url
-        .replace(/^https?:\/\//, '')
-        .replace(/\.myshopify\.com.*$/, '');
+      const collectionsToImport = collections.filter(c => selectedCollections.has(c.id));
+      
+      for (const collection of collectionsToImport) {
+        // Check if collection already exists
+        const { data: existingCollection } = await supabase
+          .from('shopify_collections')
+          .select('id')
+          .eq('shopify_collection_id', collection.id)
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      // Use edge function for consistent import
-      const { data, error } = await supabase.functions.invoke('import-shopify-collections', {
-        body: { 
-          shopName, 
-          apiSecret: connection.access_token, 
-          storeId: connection.id 
+        if (existingCollection) {
+          continue; // Skip if already imported
         }
-      });
 
-      if (error) {
-        throw new Error(error.message);
+        // Import the collection
+        await supabase
+          .from('shopify_collections')
+          .insert({
+            user_id: user.id,
+            store_id: connection.id,
+            shopify_collection_id: collection.id,
+            title: collection.title,
+            handle: collection.handle,
+            image_url: collection.image?.src,
+          });
       }
 
-      if (data?.success) {
-        toast.success(`${data.imported || 0} collection(s) importée(s) avec succès`);
-        setSelectedCollections(new Set());
-        setOpen(false);
-        await refreshLimits();
-        
-        // Refresh the list
-        await fetchShopifyCollections();
-      } else {
-        throw new Error(data?.error || 'Erreur inconnue');
-      }
+      toast.success(`${collectionsToImport.length} collection(s) importée(s) avec succès`);
+      setSelectedCollections(new Set());
+      setOpen(false);
+      await refreshLimits();
     } catch (error) {
       console.error('Error importing collections:', error);
-      toast.error(`Erreur lors de l'importation: ${error.message}`);
+      toast.error('Erreur lors de l\'importation des collections');
     } finally {
       setImporting(false);
     }

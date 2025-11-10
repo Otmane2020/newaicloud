@@ -361,11 +361,8 @@ export function TagOptimization() {
     setSelectedProducts(newSelected);
   };
 
-  const handleGenerateSelected = async (force = false, productIds?: string[]) => {
-    // Use provided productIds or fall back to selectedProducts
-    const idsToUse = productIds ? new Set(productIds) : selectedProducts;
-
-    if (idsToUse.size === 0) {
+  const handleGenerateSelected = async (force = false) => {
+    if (selectedProducts.size === 0) {
       toast.info(t.seo.tags.noSelected);
       return;
     }
@@ -381,7 +378,7 @@ export function TagOptimization() {
       return;
     }
 
-    const allSelectedProducts = Array.from(idsToUse);
+    const allSelectedProducts = Array.from(selectedProducts);
     const productsWithTags = allSelectedProducts.filter(id => 
       products.find(p => p.id === id)?.tags
     );
@@ -1128,18 +1125,17 @@ export function TagOptimization() {
                    <TooltipProvider>
                      <Tooltip>
                        <TooltipTrigger asChild>
-                          <Button
-                             size="sm"
-                             variant="default"
-                             onClick={() => {
-                               if (!canDoAction('optimizations')) {
-                                 toast.error("Limite d'optimisations atteinte");
-                                 setShowUpgradeDialog(true);
-                                 return;
-                               }
-                               // Optimiser directement ce produit
-                               handleGenerateSelected(false, [product.id]);
-                             }}
+                         <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => {
+                              if (!canDoAction('optimizations')) {
+                                toast.error("Limite d'optimisations atteinte");
+                                setShowUpgradeDialog(true);
+                                return;
+                              }
+                              handleOptimizeProduct(product.id);
+                            }}
                             disabled={optimizing}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >

@@ -1,483 +1,347 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// ✅ CORS Headers — sécurisé et compatible front
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/** ----------------------------------------------------------------
- * 🧠 Function: Generate landing page HTML via Lovable AI Gateway
- * ----------------------------------------------------------------*/
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+function sanitizeHtmlUnsafe(html: string): string {
+  if (!html) return "";
+  let out = html
+    .replace(/^\s*```(?:html)?/gi, "")
+    .replace(/```\s*$/g, "")
+    .replace(/<\/?(script|style|iframe|object|embed)[^>]*>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
+    .replace(/\shref\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, ' href="#"')
+    .replace(/<\/?(html|head|body)[^>]*>/gi, "");
+  out = out.replace(/\sstyle\s*=\s*(['"])(.*?)\1/gi, (_m, q, css) => {
+    const kept = css
+      .split(";")
+      .map((r: string) => r.trim())
+      .filter((r: string) => /^(color|background-color|border-color)\s*:/i.test(r))
+      .join("; ");
+    return kept ? ` style=${q}${kept}${q}` : "";
+  });
+  return out.trim();
+}
+
+function buildVisionSummary(v: any, language = "fr") {
+  if (!v) return "";
+  const materials = Array.isArray(v.materials)
+    ? v.materials.join(", ")
+    : v.materials || (language === "en" ? "not detected" : "non détectés");
+  const palette = Array.isArray(v.palette)
+    ? v.palette.join(", ")
+    : v.palette || v.dominantColor || (language === "en" ? "not detected" : "non détectée");
+  const styles = Array.isArray(v.visualStyles)
+    ? v.visualStyles.join(", ")
+    : v.visualStyle || (language === "en" ? "not detected" : "non détecté");
+  const moods = Array.isArray(v.moods)
+    ? v.moods.join(", ")
+    : v.mood || (language === "en" ? "not detected" : "non détectée");
+  const quality = v.quality || (language === "en" ? "not detected" : "non détectée");
+  const finishes = Array.isArray(v.finishes) ? v.finishes.join(", ") : v.finish || "—";
+  const usecases = Array.isArray(v.useCases) ? v.useCases.join(", ") : v.useCases || "—";
+
+  return language === "en"
+    ? `VISION ANALYSIS (AI)
+- Dominant palette: ${palette}
+- Style: ${styles}
+- Mood: ${moods}
+- Materials: ${materials}
+- Finishes: ${finishes}
+- Quality: ${quality}
+- Use cases: ${usecases}`
+    : `ANALYSE VISUELLE (Vision AI)
+- Palette dominante : ${palette}
+- Style : ${styles}
+- Ambiance : ${moods}
+- Matériaux : ${materials}
+- Finitions : ${finishes}
+- Qualité : ${quality}
+- Cas d’usage : ${usecases}`;
+}
+
 serve(async (req) => {
-  // ✅ Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    // 🛡️ VÉRIFICATION DES LIMITES AVANT GÉNÉRATION
     const authHeader = req.headers.get("Authorization");
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
 
+    // Get authenticated user
+    let userId = null;
     if (authHeader) {
-      const supabaseAdmin = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      );
-
-      const token = authHeader.replace("Bearer ", "");
-      const {
-        data: { user },
-      } = await supabaseAdmin.auth.getUser(token);
-
-      if (user) {
-        const currentMonth = new Date().toISOString().substring(0, 7) + "-01";
-
-        // Récupérer usage actuel
-        const { data: usage } = await supabaseAdmin
-          .from("usage_tracking")
-          .select("optimizations_count")
-          .eq("seller_id", user.id)
-          .eq("month", currentMonth)
-          .maybeSingle();
-
-        // Récupérer profil et plan
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("subscription_status, current_plan_id")
-          .eq("id", user.id)
-          .single();
-
-        const { data: plan } = await supabaseAdmin
-          .from("subscription_plans")
-          .select("max_optimizations_monthly, trial_max_optimizations")
-          .eq("id", profile?.current_plan_id || "trial")
-          .single();
-
-        const currentUsage = usage?.optimizations_count || 0;
-        const maxOptimizations =
-          profile?.subscription_status === "trialing"
-            ? plan?.trial_max_optimizations || 50
-            : plan?.max_optimizations_monthly || 999999;
-
-        console.log(`[generate-landing-ai] 🔍 Usage check: ${currentUsage}/${maxOptimizations}`);
-
-        // ❌ BLOQUER si limite atteinte
-        if (currentUsage >= maxOptimizations) {
-          console.error(`[generate-landing-ai] ❌ LIMIT REACHED: ${currentUsage}/${maxOptimizations}`);
-          return new Response(
-            JSON.stringify({
-              error: "LIMIT_REACHED",
-              message: "Limite d'optimisations atteinte. Passez à un plan supérieur.",
-              usage: currentUsage,
-              limit: maxOptimizations,
-            }),
-            {
-              status: 429,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
-          );
-        }
-
-        // ✅ Incrémenter IMMÉDIATEMENT (avant génération pour éviter les abus)
-        const LANDING_PAGE_COST = 5; // 1 landing page = 5 optimisations (valeur augmentée car contenu riche + Vision AI + design personnalisé)
-
-        await supabaseAdmin.rpc("increment_usage", {
-          p_seller_id: user.id,
-          p_field: "optimizations_count",
-          p_increment: LANDING_PAGE_COST,
-        });
-
-        console.log(
-          `[generate-landing-ai] ✅ Usage incremented: +${LANDING_PAGE_COST} (now ${currentUsage + LANDING_PAGE_COST}/${maxOptimizations})`,
-        );
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      if (!authError && user) {
+        userId = user.id;
       }
     }
 
     const body = await req.json();
-
-    const { 
-      productTitle, 
-      productDescription,
-      productImage,
-      imageUrl, 
-      description, 
-      vendor, 
-      style, 
-      mainColor, 
-      layout, 
-      length, 
+    const {
+      product_id,
+      productTitle,
+      imageUrl,
+      description,
+      vendor,
+      style,
+      mainColor = "#3B82F6",
+      layout,
+      length,
       customHighlights,
-      colorTheme,
-      highlights,
-      customText,
-      enrichedContent
+      language = "fr",
     } = body ?? {};
 
-    // Normalize parameters for backward compatibility
-    const finalImageUrl = productImage || imageUrl;
-    const finalDescription = productDescription || description;
-    const finalHighlights = highlights || (customHighlights ? customHighlights.split("\n").filter((h: string) => h.trim()) : []);
-    const finalCustomText = customText || "";
-    
-    // Extract colors from colorTheme if provided
-    const finalMainColor = colorTheme?.primary || mainColor || "#0ea5e9";
-
-    if (!productTitle) {
+    if (!productTitle)
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("Missing LOVABLE_API_KEY in environment variables");
-    }
+    if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
 
-    // 🧩 Dynamic tone based on length
-    const tone =
-      length === "courte (400 mots)"
-        ? "concis"
-        : length === "moyenne (800 mots)"
-          ? "équilibré"
-          : "détaillé et approfondi";
+    // Fetch images + variants in parallel
+    console.log("📦 Fetching product data...");
+    const [imagesRes, variantsRes] = await Promise.all([
+      supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
+      supabaseAdmin.from("product_variants").select("title, image_url").eq("product_id", product_id),
+    ]);
+    const images = imagesRes.data ?? [];
+    const variants = variantsRes.data ?? [];
+    console.log(`✅ Product data fetched: ${images.length} images, ${variants.length} variants`);
 
-    // 🔍 VISION AI ANALYSIS
-    let visualAnalysis = enrichedContent || "";
-
-    if (finalImageUrl && authHeader && !visualAnalysis) {
-      console.log("[generate-landing-ai] 🔍 Analyzing image with Vision AI...");
-
+    // Vision AI with timeout (15s) - Optional, won't block if it fails
+    let visualAnalysis = "";
+    if (imageUrl) {
       try {
-        const visionResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-image-with-vision`, {
-          method: "POST",
-          headers: {
-            Authorization: authHeader,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            imageUrl: finalImageUrl,
-            productContext: `${productTitle}${vendor ? ` by ${vendor}` : ""}`,
-          }),
-        });
-
-        if (visionResponse.ok) {
-          const visionData = await visionResponse.json();
-          if (visionData?.attributes) {
-            visualAnalysis = `
-ANALYSE VISUELLE DU PRODUIT (Vision AI) :
-- Couleur dominante: ${visionData.attributes.dominantColor || "non détectée"}
-- Style visuel: ${visionData.attributes.visualStyle || "non détecté"}
-- Matériaux visibles: ${visionData.attributes.materials?.join(", ") || "non détectés"}
-- Ambiance: ${visionData.attributes.mood || "non détectée"}
-- Qualité perçue: ${visionData.attributes.quality || "non détectée"}
-            `;
-            console.log("[generate-landing-ai] ✅ Vision analysis:", visionData.attributes);
+        console.log("🔍 Starting Vision AI analysis...");
+        const visionController = new AbortController();
+        const visionTimeout = setTimeout(() => visionController.abort(), 15000);
+        
+        const { data: visionData, error: visionError } = await supabaseAdmin.functions.invoke(
+          "analyze-image-with-vision",
+          {
+            body: {
+              imageUrl,
+              productContext: `${productTitle} ${vendor || ""}`,
+            },
+            signal: visionController.signal,
           }
-        } else {
-          console.warn("[generate-landing-ai] ⚠️ Vision AI call failed, continuing without visual analysis");
+        );
+        
+        clearTimeout(visionTimeout);
+        
+        if (visionError) {
+          console.log("⚠️ Vision AI failed:", visionError.message);
+        } else if (visionData?.attributes) {
+          visualAnalysis = buildVisionSummary(visionData.attributes, language);
+          console.log("✅ Vision AI analysis completed");
         }
-      } catch (visionError) {
-        console.warn("[generate-landing-ai] ⚠️ Vision AI error, continuing without visual analysis:", visionError);
+      } catch (err) {
+        console.log("⚠️ Vision AI timeout or error (continuing without it):", err.message);
       }
+    } else {
+      console.log("⏭️ No image URL provided, skipping Vision AI");
     }
 
-    // 🎨 STYLE GUIDES
-    const styleGuides: Record<string, string> = {
-      moderne:
-        "Gradients subtils, ombres douces, coins arrondis (rounded-2xl), espacements généreux, typographie sans-serif (font-sans), palette noir/blanc avec accents de couleur vive",
-      minimaliste:
-        "Beaucoup d'espace blanc, typographie épurée, pas de décorations superflues, 1-2 couleurs max, lignes fines (border), sans ombres ou ombres ultra-légères (shadow-sm)",
-      scandinave:
-        "Tons naturels (beige, blanc cassé, gris clair), bois et textures organiques suggérées, simplicité fonctionnelle, typographie claire, ambiance chaleureuse et accueillante",
-      premium:
-        "Or/noir/blanc, typographie serif (font-serif) pour titres, ombres prononcées (shadow-2xl), gradients métalliques, espacements larges, détails raffinés",
-      neutre:
-        "Gris/blanc/noir uniquement, pas de couleurs vives, design sobre, typographie classique, structure équilibrée",
-      coloré:
-        "Palette vibrante multi-couleurs, dégradés audacieux, énergie visuelle, contrastes forts, design dynamique",
-    };
+    // --- Prompt bilingual ---
+    const imgs = images.length
+      ? images.map((i) => `- ${i.src}`).join("\n")
+      : language === "en"
+        ? "No additional image"
+        : "Aucune image supplémentaire";
+    const vars = variants.length
+      ? variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")
+      : language === "en"
+        ? "No variant"
+        : "Aucune variante";
 
-    const currentStyleGuide = styleGuides[style] || styleGuides["moderne"];
+    const prompt =
+      language === "en"
+        ? `
+You are a Shopify UX/UI expert and eCommerce copywriter.
+Generate a **complete Tailwind HTML landing page**, mobile-first and high-converting.
+Sections required: Hero, Gallery, Vision AI, Key Benefits, Specs, Care, Sustainability, Reviews, FAQ, Final CTA.
 
-    // 🪄 ENHANCED AI PROMPT
-    const highlightsText = finalHighlights.length > 0
-      ? `\n🌟 POINTS FORTS À METTRE EN AVANT (PRIORITAIRE) :\n${finalHighlights.map((h: string) => `- ${h}`).join("\n")}`
-      : "";
-    
-    const prompt = `
-Tu es un designer UX/UI expert et copywriter e-commerce spécialisé dans les landing pages à forte conversion.
+Product: ${productTitle}
+Brand: ${vendor}
+Description: ${description}
+Style: ${style}
+Main color: ${mainColor}
+Layout: ${layout}
+Text length: ${length}
+Images:
+${imgs}
+Variants:
+${vars}
+Vision AI:
+${visualAnalysis}
+Highlights:
+${customHighlights}
 
-📦 PRODUIT À METTRE EN VALEUR :
-- Titre : ${productTitle}
-${vendor ? `- Marque : ${vendor}` : ""}
-${finalImageUrl ? `- Image produit : ${finalImageUrl}` : ""}
-${finalDescription ? `- Description : ${finalDescription}` : ""}
-${highlightsText}
-${finalCustomText ? `\n📝 INFORMATIONS ADDITIONNELLES :\n${finalCustomText}` : ""}
+Constraints:
+- Mobile-first (sm:, md:, lg:)
+- Container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Responsive grid (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3)
+- Use ${mainColor} for CTAs & titles
+- No <script> or <style> tags
+- Return ONLY the HTML block
+`
+        : `
+Tu es un expert UX/UI Shopify et copywriter e-commerce.
+Génère un **HTML Tailwind complet**, responsive mobile-first et à forte conversion.
+Rubriques requises : Hero, Galerie, Vision AI, Points forts, Caractéristiques, Entretien, Durabilité, Avis, FAQ, CTA final.
 
-${visualAnalysis ? `${visualAnalysis}` : ""}
+Produit : ${productTitle}
+Marque : ${vendor}
+Description : ${description}
+Style : ${style}
+Couleur principale : ${mainColor}
+Disposition : ${layout}
+Longueur du texte : ${length}
+Images :
+${imgs}
+Variantes :
+${vars}
+Vision AI :
+${visualAnalysis}
+Points forts :
+${customHighlights}
 
-🎨 DESIGN & STYLE :
-- Style visuel : ${style}
-  → Guide : ${currentStyleGuide}
-- Couleur principale (HEX) : ${finalMainColor}
-  → **CRITIQUE** : Applique cette couleur aux boutons CTA, liens, bordures d'accent, titres importants
-  → Utilise Tailwind avec style="color: ${finalMainColor}" ou style="background-color: ${finalMainColor}" ou style="border-color: ${finalMainColor}"
-${colorTheme ? `- Couleurs secondaires : ${colorTheme.secondary} (fond), ${colorTheme.accent} (accents)` : ""}
-- Layout : ${layout}
-- Longueur : ${length} (ton ${tone})
-- **DESIGN ÉLÉGANT** : Évite les icônes colorées enfantines, privilégie des icônes monochromes (text-gray-600), des formes simples et épurées, un design sophistiqué et professionnel
-
-🧱 STRUCTURE OBLIGATOIRE :
-1. HERO SECTION
-   - Titre H1 avec la couleur principale (style="color: ${finalMainColor}")
-   - Sous-titre accrocheur${vendor ? ` mentionnant "${vendor}"` : ""}
-   - Image produit (si disponible) avec rounded-2xl et shadow-xl
-   - CTA principal avec background de la couleur principale (style="background-color: ${finalMainColor}")
-
-2. AVANTAGES (3-5 cartes)
-   - **Icônes élégantes** : SVG monochromes simples (text-gray-600 ou text-gray-700), PAS de couleurs vives ou enfantines
-   - Design épuré et sophistiqué
-   - Titres courts et percutants
-   - Descriptions de 20-30 mots
-
-3. CARACTÉRISTIQUES TECHNIQUES
-   - Liste structurée avec badges/pills
-   - Informations concrètes${visualAnalysis ? " (utilise les insights Vision AI)" : ""}
-
-4. CTA FINAL
-   - Bouton principal avec couleur principale
-   - Message d'urgence/garantie
-
-5. GARANTIES / LIVRAISON
-   - 3-4 éléments rassurants (livraison, retour, garantie, support)
-
-📱 RESPONSIVE MOBILE-FIRST (CRITIQUE) :
-- **MOBILE D'ABORD** : Le design DOIT être parfait sur mobile (320px-768px) avant desktop
-- Structure : <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-- Hero : <div class="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 items-center">
-- Grid avantages : <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-- Images : <img class="w-full h-auto object-cover rounded-xl" />
-- Texte lisible mobile : text-sm sm:text-base lg:text-lg
-- Titres adaptatifs : text-xl sm:text-2xl lg:text-3xl xl:text-4xl
-- Padding mobile : p-3 sm:p-4 md:p-6 lg:p-8
-- Gap progressif : gap-3 sm:gap-4 md:gap-6 lg:gap-8
-- Boutons pleine largeur mobile : w-full sm:w-auto
-- Pas de scroll horizontal : overflow-x-hidden sur tous les conteneurs
-
-🛠️ CONTRAINTES TECHNIQUES :
-✅ Tailwind CSS uniquement (CDN déjà chargé)
-✅ Classes responsive : sm:, md:, lg:, xl:
-✅ Couleur principale via style="color: ${finalMainColor}" ou style="background-color: ${finalMainColor}"
-✅ Pas de <html>, <head>, <body>
-✅ Pas de <style> inline (sauf pour appliquer mainColor)
-✅ HTML prêt à injecter dans React dangerouslySetInnerHTML
-❌ Pas de JavaScript
-❌ Pas de balises <script>
-❌ NE PAS UTILISER de marqueurs markdown comme \`\`\`html ou \`\`\`
-
-💡 COPYWRITING :
-- Ton ${tone}, ${vendor ? `mettant en valeur la marque "${vendor}"` : "naturel et convaincant"}
-- Bénéfices avant caractéristiques
-- Preuve sociale (si pertinent)
-- Appels à l'action clairs et directs
-
-🎯 RETOURNE UNIQUEMENT LE HTML (sans balises markdown, sans explications, sans balises <html>/<head>/<body>)
+Contraintes :
+- Mobile-first (sm:, md:, lg:)
+- Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Grille : grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
+- Couleur ${mainColor} sur CTA et titres
+- Aucun <script> ni <style>
+- Retourne uniquement le HTML
 `;
 
-    console.log("[generate-landing-ai] 🧠 Sending prompt to Lovable Gateway...");
-    console.log("[generate-landing-ai] Request details:", {
-      productTitle,
-      style,
-      layout,
-      length,
-      hasImage: !!imageUrl,
-    });
+    // --- AI call with timeout (60s) ---
+    console.log("🤖 Starting AI generation...");
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 60000);
+    
+    let aiResponse;
+    try {
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                language === "en"
+                  ? "You generate modern responsive Shopify landing pages in Tailwind HTML."
+                  : "Tu génères des landing pages Shopify modernes et responsives en HTML Tailwind.",
+            },
+            { role: "user", content: prompt },
+          ],
+          max_tokens: 2500,
+          temperature: 0.7,
+        }),
+        signal: aiController.signal,
+      });
+    } finally {
+      clearTimeout(aiTimeout);
+    }
+    
+    console.log("✅ AI generation completed");
 
-    // 🔄 Retry logic for temporary failures
-    const MAX_RETRIES = 3;
-    const RETRY_DELAY_MS = 2000; // 2 seconds
-    let lastError: Error | null = null;
-
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        console.log(`[generate-landing-ai] Attempt ${attempt}/${MAX_RETRIES}`);
-
-        // 🧠 Call Lovable AI Gateway (Gemini or GPT-based)
-        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "Tu es un expert UX/UI designer et copywriter e-commerce. Génère des landing pages Tailwind modernes et efficaces pour Shopify.",
-              },
-              { role: "user", content: prompt },
-            ],
-            max_tokens: 3000,
-          }),
-        });
-
-        // 🧱 Handle API errors - retry on 503/502/504
-        if (!response.ok) {
-          const errText = await response.text();
-          console.error(`[generate-landing-ai] ❌ API error (attempt ${attempt}):`, response.status, errText);
-
-          // Permanent errors - don't retry
-          if (response.status === 429) {
-            return new Response(
-              JSON.stringify({
-                error: "Rate limits exceeded. Please try again later.",
-              }),
-              {
-                status: 429,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-              },
-            );
-          }
-
-          if (response.status === 402) {
-            return new Response(
-              JSON.stringify({
-                error: "Payment required. Please add funds to your Lovable AI workspace.",
-              }),
-              {
-                status: 402,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-              },
-            );
-          }
-
-          // Temporary errors (503, 502, 504) - retry
-          if ([502, 503, 504].includes(response.status) && attempt < MAX_RETRIES) {
-            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms...`);
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
-            continue; // Try again
-          }
-
-          // Other errors or last attempt
-          const errorMessage = `Lovable AI API error: ${response.status}`;
-          return new Response(JSON.stringify({ error: errorMessage }), {
-            status: response.status,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        // ✅ Success - parse response and exit retry loop
-        const data = await response.json().catch(() => null);
-        let html = data?.choices?.[0]?.message?.content?.trim() || "";
-
-        // 🧹 CLEAN HTML - Remove markdown code blocks
-        if (html) {
-          html = html
-            .replace(/^```html\s*/i, "") // Remove ```html at start
-            .replace(/^```\s*/m, "") // Remove ``` at start
-            .replace(/\s*```$/m, "") // Remove ``` at end
-            .trim();
-
-          console.log("[generate-landing-ai] 🧹 HTML cleaned, final length:", html.length);
-        }
-
-        console.log("[generate-landing-ai] Response status:", response.status);
-        console.log("[generate-landing-ai] AI response parsed, HTML length:", html.length);
-
-        if (!html) {
-          console.warn("[generate-landing-ai] ⚠️ Empty HTML response from AI");
-
-          // If we have retries left, try again
-          if (attempt < MAX_RETRIES) {
-            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to empty response...`);
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
-            continue;
-          }
-
-          return new Response(
-            JSON.stringify({
-              error: "Aucune réponse générée par l'IA. Essayez avec un prompt plus simple ou un style différent.",
-            }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
-        }
-
-        // Validation du HTML généré
-        if (html.includes("<html") || html.includes("<head") || html.includes("<body")) {
-          console.warn("[generate-landing-ai] ⚠️ HTML contains forbidden tags (html/head/body)");
-          return new Response(
-            JSON.stringify({
-              error: "Le HTML généré contient des balises interdites. Réessayez.",
-            }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
-        }
-
-        if (html.length < 500) {
-          console.warn("[generate-landing-ai] ⚠️ Generated HTML too short:", html.length);
-
-          // If we have retries left, try again
-          if (attempt < MAX_RETRIES) {
-            console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to short content...`);
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
-            continue;
-          }
-
-          return new Response(
-            JSON.stringify({
-              error: "Le contenu généré est trop court. Réessayez avec plus de détails.",
-            }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
-        }
-
-        console.log("[generate-landing-ai] ✅ Generated HTML length:", html.length, "chars");
-
-        // ✅ Success
-        return new Response(JSON.stringify({ html, generatedCode: html }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch (networkError) {
-        lastError = networkError instanceof Error ? networkError : new Error(String(networkError));
-        console.error(`[generate-landing-ai] 💥 Network error (attempt ${attempt}):`, lastError);
-
-        // Retry on network errors if we have attempts left
-        if (attempt < MAX_RETRIES) {
-          console.log(`[generate-landing-ai] ⏳ Retrying after ${RETRY_DELAY_MS}ms due to network error...`);
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
-          continue;
-        }
-      }
+    if (!aiResponse.ok) {
+      const text = await aiResponse.text();
+      return new Response(JSON.stringify({ error: `Lovable API ${aiResponse.status}`, detail: text }), {
+        status: aiResponse.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // If we get here, all retries failed
-    console.error("[generate-landing-ai] ❌ All retry attempts failed");
-    return new Response(
-      JSON.stringify({
-        error: lastError?.message || "Service temporairement indisponible. Veuillez réessayer dans quelques instants.",
-      }),
-      {
-        status: 503,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    const data = await aiResponse.json();
+    let html = data?.choices?.[0]?.message?.content?.trim() || "";
+    html = sanitizeHtmlUnsafe(html);
+
+    if (!html || html.length < 400)
+      return new Response(
+        JSON.stringify({ error: language === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+
+    // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
+    if (userId && product_id) {
+      console.log("💾 Saving landing page to database...");
+      
+      // Désactiver les anciennes versions
+      await supabaseAdmin
+        .from("product_landing_pages")
+        .update({ is_active: false })
+        .eq("product_id", product_id)
+        .eq("seller_id", userId);
+      
+      // Récupérer le numéro de version
+      const { data: existingPages } = await supabaseAdmin
+        .from("product_landing_pages")
+        .select("version")
+        .eq("product_id", product_id)
+        .order("version", { ascending: false })
+        .limit(1);
+      
+      const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
+      
+      // Créer la nouvelle version
+      const { error: saveError } = await supabaseAdmin
+        .from("product_landing_pages")
+        .insert({
+          product_id: product_id,
+          seller_id: userId,
+          html_content: html,
+          config: {
+            language,
+            vendor,
+            image_url: imageUrl,
+            description,
+            content_length: length,
+            style,
+            layout,
+            mainColor,
+            customHighlights,
+          },
+          version: newVersion,
+          is_active: true,
+        });
+      
+      if (saveError) {
+        console.error("❌ Save error:", saveError);
+      } else {
+        console.log(`✅ Landing page v${newVersion} saved successfully`);
+      }
+    } else {
+      console.log("⚠️ Skipping save: userId or product_id not available");
+    }
+
+    console.log("✅ Landing page generation successful!");
+    return new Response(JSON.stringify({ html }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
-    console.error("[generate-landing-ai] 💥 Error:", err);
-    return new Response(
-      JSON.stringify({
-        error: err instanceof Error ? err.message : "Unexpected error",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    console.error("💥 ERROR:", err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

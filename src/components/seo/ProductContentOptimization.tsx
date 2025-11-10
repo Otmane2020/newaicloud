@@ -17,8 +17,7 @@ import {
   Monitor,
   Info,
   CheckCircle2,
-  Upload,
-  ExternalLink
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
@@ -51,7 +50,6 @@ export const ProductContentOptimization = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<'ecommerce' | 'luxury' | 'technical'>('ecommerce');
   const [qualityScore, setQualityScore] = useState<number | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [generatingLanding, setGeneratingLanding] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
@@ -292,77 +290,6 @@ export const ProductContentOptimization = () => {
     }
   };
 
-  const handleGenerateLanding = async (product: Product) => {
-    if (!canDoAction('optimizations')) {
-      setShowUpgradeDialog(true);
-      return;
-    }
-
-    setGeneratingLanding(product.id);
-    const toastId = toast.loading('Génération de la landing page...');
-
-    try {
-      // Vision AI analysis
-      let visionAnalysis = '';
-      if (product.images.length > 0) {
-        const { data: visionData } = await supabase.functions.invoke('analyze-image-with-vision', {
-          body: { imageUrl: product.images[0].src }
-        });
-        visionAnalysis = visionData?.analysis || '';
-      }
-
-      // Generate SEO title and description
-      const { data: titleData } = await supabase.functions.invoke('generate-title-description', {
-        body: {
-          currentTitle: product.title,
-          imageUrl: product.images[0]?.src,
-          config: {
-            contentLength: 'detailed',
-            tone: 'modern',
-            includeEmojis: false,
-          },
-          customDescription: visionAnalysis,
-        },
-      });
-
-      // Generate landing page HTML
-      const { data: landingData } = await supabase.functions.invoke('generate-landing-ai', {
-        body: {
-          productTitle: titleData?.seoTitle || product.title,
-          productDescription: titleData?.seoDescription || product.description,
-          productImage: product.images[0]?.src,
-          layout: 'hero-features',
-          colorTheme: { primary: '#1a1a1a', secondary: '#f5f5f5', accent: '#d4af37' },
-          style: 'modern',
-          highlights: [],
-          customText: '',
-          enrichedContent: visionAnalysis,
-        },
-      });
-
-      if (landingData?.generatedCode) {
-        // Save landing page
-        await supabase
-          .from('shopify_products')
-          .update({
-            landing_page_html: landingData.generatedCode,
-            seo_title: titleData?.seoTitle,
-            seo_description: titleData?.seoDescription,
-          })
-          .eq('id', product.id);
-
-        toast.success('Landing page générée !', { id: toastId });
-        queryClient.invalidateQueries({ queryKey: ['products-for-content'] });
-        refreshLimits();
-      }
-    } catch (error: any) {
-      console.error('Error generating landing:', error);
-      toast.error('Erreur lors de la génération', { id: toastId });
-    } finally {
-      setGeneratingLanding(null);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -452,44 +379,23 @@ export const ProductContentOptimization = () => {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Button
-                    className="w-full"
-                    onClick={() => handleGenerateClick(product.id)}
-                    disabled={generateMutation.isPending}
-                  >
-                    {generateMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Génération...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Générer Contenu Premium
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleGenerateLanding(product)}
-                    disabled={generatingLanding === product.id}
-                  >
-                    {generatingLanding === product.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Génération...
-                      </>
-                    ) : (
-                      <>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Générer Landing Page
-                      </>
-                    )}
-                  </Button>
-                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => handleGenerateClick(product.id)}
+                  disabled={generateMutation.isPending}
+                >
+                  {generateMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Générer Contenu Premium
+                    </>
+                  )}
+                </Button>
               </div>
             </Card>
           ))}

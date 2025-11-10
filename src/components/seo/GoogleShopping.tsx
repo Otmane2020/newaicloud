@@ -905,7 +905,7 @@ export function GoogleShopping() {
       <Card>
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
+            <TableHeader>
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox

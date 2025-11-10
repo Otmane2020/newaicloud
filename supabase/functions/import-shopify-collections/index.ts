@@ -12,7 +12,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     console.log("🏗️ [IMPORT-COLLECTIONS] Starting import...");
-    console.log("🔄 [IMPORT-COLLECTIONS] Version: 1.1.0 - Fixed parameters usage");
+    console.log("🔄 [IMPORT-COLLECTIONS] Version: 1.0.2 - Deployed: 2025-11-02T10:30:00Z");
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -34,68 +34,28 @@ Deno.serve(async (req: Request) => {
 
     console.log(`👤 [IMPORT-COLLECTIONS] User: ${user.id}`);
 
-    // Read request body parameters
-    const body = await req.json().catch(() => ({}));
-    const { shopName: bodyShopName, apiSecret: bodyApiSecret, storeId: bodyStoreId } = body;
-    
-    console.log(`📦 [IMPORT-COLLECTIONS] Body params:`, {
-      shopName: bodyShopName || 'not provided',
-      hasApiSecret: !!bodyApiSecret,
-      storeId: bodyStoreId || 'not provided'
-    });
+    // Get user's Shopify connection
+    const { data: connection, error: connectionError } = await supabase
+      .from("shopify_connections")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .single();
 
-    let connection: any;
-    let shopifyUrl: string;
-    let accessToken: string;
-
-    // Use body parameters if provided, otherwise fallback to active connection
-    if (bodyShopName && bodyApiSecret && bodyStoreId) {
-      console.log(`✅ [IMPORT-COLLECTIONS] Using provided parameters`);
-      
-      // Validate store belongs to user
-      const { data: storeData, error: storeError } = await supabase
-        .from("shopify_connections")
-        .select("*")
-        .eq("id", bodyStoreId)
-        .eq("user_id", user.id)
-        .single();
-
-      if (storeError || !storeData) {
-        throw new Error("Store not found or unauthorized");
-      }
-
-      connection = storeData;
-      shopifyUrl = `https://${bodyShopName}.myshopify.com`;
-      accessToken = bodyApiSecret;
-      
-      console.log(`🏪 [IMPORT-COLLECTIONS] Store: ${shopifyUrl}`);
-    } else {
-      console.log(`⚠️ [IMPORT-COLLECTIONS] Missing body params, falling back to active connection`);
-      
-      // Fallback: Get user's active Shopify connection
-      const { data: connectionData, error: connectionError } = await supabase
-        .from("shopify_connections")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .single();
-
-      if (connectionError || !connectionData) {
-        throw new Error("No active Shopify connection found");
-      }
-
-      connection = connectionData;
-      
-      const storeUrl = connection.store_url.replace(/\/$/, "").trim();
-      shopifyUrl = storeUrl.startsWith('http://') || storeUrl.startsWith('https://') 
-        ? storeUrl 
-        : `https://${storeUrl}`;
-      accessToken = connection.access_token;
-      
-      console.log(`🏪 [IMPORT-COLLECTIONS] Store (fallback): ${shopifyUrl}`);
+    if (connectionError || !connection) {
+      throw new Error("No active Shopify connection found");
     }
+
+    console.log(`🏪 [IMPORT-COLLECTIONS] Store: ${connection.store_url}`);
+
+    // Ensure URL has https:// protocol
+    const storeUrl = connection.store_url.replace(/\/$/, "").trim();
+    const shopifyUrl = storeUrl.startsWith('http://') || storeUrl.startsWith('https://') 
+      ? storeUrl 
+      : `https://${storeUrl}`;
     
     console.log(`🔗 [IMPORT-COLLECTIONS] Using URL: ${shopifyUrl}`);
+    const accessToken = connection.access_token;
 
     let allCollections: any[] = [];
     let smartCount = 0;
@@ -225,7 +185,6 @@ Deno.serve(async (req: Request) => {
           image_url: imageUrl,
           image_alt: imageAlt,
           shopify_image_id: shopifyImageId,
-          products_count: collection.products_count || 0,
           updated_at: new Date().toISOString(),
         };
 
@@ -253,56 +212,6 @@ Deno.serve(async (req: Request) => {
     console.log(`   - Custom collections: ${customCount}`);
     console.log(`   - Successfully imported: ${upsertedCount}`);
     console.log(`   - Errors: ${errorCount}`);
-    
-    // 🧹 Cleanup: Delete collections that no longer exist in Shopify
-    console.log(`🧹 [IMPORT-COLLECTIONS] Checking for deleted collections...`);
-    const shopifyCollectionIds = allCollections.map(c => c.id);
-    
-    const { data: existingCollections, error: fetchError } = await supabase
-      .from('shopify_collections')
-      .select('id, shopify_collection_id, title')
-      .eq('user_id', user.id)
-      .eq('store_id', connection.id);
-    
-    if (fetchError) {
-      console.error(`⚠️ [IMPORT-COLLECTIONS] Error fetching existing collections:`, fetchError);
-    } else if (existingCollections) {
-      const collectionsToDelete = existingCollections.filter(
-        existing => !shopifyCollectionIds.includes(existing.shopify_collection_id)
-      );
-      
-      if (collectionsToDelete.length > 0) {
-        console.log(`🗑️ [IMPORT-COLLECTIONS] Found ${collectionsToDelete.length} collections to delete:`);
-        collectionsToDelete.forEach(c => {
-          console.log(`   - ${c.title} (ID: ${c.shopify_collection_id})`);
-        });
-        
-        const idsToDelete = collectionsToDelete.map(c => c.id);
-        const { error: deleteError } = await supabase
-          .from('shopify_collections')
-          .delete()
-          .in('id', idsToDelete);
-        
-        if (deleteError) {
-          console.error(`❌ [IMPORT-COLLECTIONS] Error deleting collections:`, deleteError);
-        } else {
-          console.log(`✅ [IMPORT-COLLECTIONS] Successfully deleted ${collectionsToDelete.length} collections`);
-        }
-      } else {
-        console.log(`✅ [IMPORT-COLLECTIONS] No collections to delete`);
-      }
-    }
-    
-    console.log(`📊 [IMPORT-COLLECTIONS] Summary:`);
-    console.log(`   - Total collections fetched: ${allCollections.length}`);
-    console.log(`   - Smart collections: ${smartCount}`);
-    console.log(`   - Custom collections: ${customCount}`);
-    console.log(`   - Successfully imported: ${upsertedCount}`);
-    console.log(`   - Failed: ${errorCount}`);
-
-    if (errorCount > 0) {
-      console.warn(`⚠️ [IMPORT-COLLECTIONS] Some collections failed to import. Check logs above for details.`);
-    }
 
     return new Response(JSON.stringify({
       success: true,

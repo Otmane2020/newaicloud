@@ -127,10 +127,10 @@ export function SimpleSyncProgress({ open, currentType }: SimpleSyncProgressProp
           {/* Message d'encouragement dynamique */}
           <div className="text-center">
             <p className="text-xs text-muted-foreground animate-pulse">
-              {displayedPercentage < 30 && t.integration.sync.progress.stages.preparing}
-              {displayedPercentage >= 30 && displayedPercentage < 60 && t.integration.sync.progress.stages.syncing}
-              {displayedPercentage >= 60 && displayedPercentage < 85 && t.integration.sync.progress.stages.finalizing}
-              {displayedPercentage >= 85 && t.integration.sync.progress.stages.almostDone}
+              {displayedPercentage < 30 && "Préparation des données..."}
+              {displayedPercentage >= 30 && displayedPercentage < 60 && "Synchronisation en cours..."}
+              {displayedPercentage >= 60 && displayedPercentage < 85 && "Finalisation..."}
+              {displayedPercentage >= 85 && "Presque terminé !"}
             </p>
           </div>
         </div>

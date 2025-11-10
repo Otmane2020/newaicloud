@@ -121,11 +121,11 @@ export const useShopifySync = () => {
         
         try {
           let result;
-          const timeoutMs = 180000; // 3 minutes timeout for large imports
+          const timeoutMs = 30000; // 30 seconds timeout
           
           const executeWithTimeout = async (promise: Promise<any>) => {
             const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Function timeout after 3 minutes')), timeoutMs)
+              setTimeout(() => reject(new Error('Function timeout after 30s')), timeoutMs)
             );
             return Promise.race([promise, timeoutPromise]);
           };

@@ -246,6 +246,3 @@ verify_jwt = true
 [functions.shopify-oauth]
 verify_jwt = false
 
-[functions.trigger-hourly-sync]
-verify_jwt = false
-

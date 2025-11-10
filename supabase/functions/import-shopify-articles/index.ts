@@ -321,45 +321,6 @@ Deno.serve(async (req: Request) => {
       store_id: storeId
     });
 
-    // 🧹 Cleanup: Delete articles that no longer exist in Shopify
-    console.log(`🧹 [IMPORT-ARTICLES] Checking for deleted articles...`);
-    const shopifyArticleIds = allArticles.map(a => a.id.toString());
-    
-    const { data: existingArticles, error: fetchError } = await supabaseServiceClient
-      .from('blog_articles')
-      .select('id, shopify_article_id, title')
-      .eq('user_id', user.id)
-      .eq('store_id', storeId);
-    
-    if (fetchError) {
-      console.error(`⚠️ [IMPORT-ARTICLES] Error fetching existing articles:`, fetchError);
-    } else if (existingArticles) {
-      const articlesToDelete = existingArticles.filter(
-        existing => existing.shopify_article_id && !shopifyArticleIds.includes(existing.shopify_article_id)
-      );
-      
-      if (articlesToDelete.length > 0) {
-        console.log(`🗑️ [IMPORT-ARTICLES] Found ${articlesToDelete.length} articles to delete:`);
-        articlesToDelete.forEach(a => {
-          console.log(`   - ${a.title} (Shopify ID: ${a.shopify_article_id})`);
-        });
-        
-        const idsToDelete = articlesToDelete.map(a => a.id);
-        const { error: deleteError } = await supabaseServiceClient
-          .from('blog_articles')
-          .delete()
-          .in('id', idsToDelete);
-        
-        if (deleteError) {
-          console.error(`❌ [IMPORT-ARTICLES] Error deleting articles:`, deleteError);
-        } else {
-          console.log(`✅ [IMPORT-ARTICLES] Successfully deleted ${articlesToDelete.length} articles`);
-        }
-      } else {
-        console.log(`✅ [IMPORT-ARTICLES] No articles to delete`);
-      }
-    }
-
     // NOTE: Imported articles from Shopify don't count towards usage limits
     // Only AI-generated articles count towards the limit
 
