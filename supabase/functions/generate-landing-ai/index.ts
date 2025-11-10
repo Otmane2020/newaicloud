@@ -20,6 +20,36 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
     : null;
 }
 
+function hexToHsl(hex: string): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return "0 0% 0%";
+  
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  
+  h = Math.round(h * 360);
+  s = Math.round(s * 100);
+  l = Math.round(l * 100);
+  
+  return `${h} ${s}% ${l}%`;
+}
+
 function getLuminance(hex: string): number {
   const rgb = hexToRgb(hex);
   if (!rgb) return 0;
@@ -43,28 +73,29 @@ function ensureAccessibleText(bgColor: string): string {
 }
 
 function generateDesignTokens(colorScheme: any) {
-  const primary = colorScheme.primary || "#000000";
-  const secondary = colorScheme.secondary || "#333333";
-  const background = colorScheme.background || "#FFFFFF";
-  const surface = colorScheme.surface || "#F5F5F5";
-  const text = colorScheme.text || "#000000";
-  const textMuted = colorScheme.textMuted || "#666666";
+  const primaryHex = colorScheme.primary || "#000000";
+  const secondaryHex = colorScheme.secondary || "#333333";
+  const backgroundHex = colorScheme.background || "#FFFFFF";
+  const surfaceHex = colorScheme.surface || "#F5F5F5";
+  const textHex = colorScheme.text || "#000000";
+  const textMutedHex = colorScheme.textMuted || "#666666";
 
-  const contrast = calculateContrast(primary, "#FFFFFF");
+  const contrast = calculateContrast(primaryHex, "#FFFFFF");
   const needsDarkText = contrast < 4.5;
-  const ctaText = needsDarkText ? "#000000" : "#FFFFFF";
+  const ctaTextHex = needsDarkText ? "#000000" : "#FFFFFF";
 
-  const validatedBackground = getLuminance(background) > 0.5 ? background : "#FFFFFF";
-  const validatedText = getLuminance(text) < 0.5 ? text : "#000000";
+  const validatedBackgroundHex = getLuminance(backgroundHex) > 0.5 ? backgroundHex : "#FFFFFF";
+  const validatedTextHex = getLuminance(textHex) < 0.5 ? textHex : "#000000";
 
+  // Convert all colors to HSL format
   return {
-    primary,
-    secondary,
-    background: validatedBackground,
-    surface,
-    text: validatedText,
-    textMuted,
-    ctaText,
+    primary: hexToHsl(primaryHex),
+    secondary: hexToHsl(secondaryHex),
+    background: hexToHsl(validatedBackgroundHex),
+    surface: hexToHsl(surfaceHex),
+    text: hexToHsl(validatedTextHex),
+    textMuted: hexToHsl(textMutedHex),
+    ctaText: hexToHsl(ctaTextHex),
     contrastRatio: contrast,
   };
 }
@@ -361,11 +392,13 @@ VARIANTS: ${vars}
 ${customHighlights ? `HIGHLIGHTS: ${customHighlights}` : ""}
 
 COLOR RULES (CRITICAL):
-- Use bg-white, bg-gray-50, bg-gray-100 for backgrounds
-- Use text-gray-900, text-gray-800, text-gray-700 for text (dark on light)
-- Primary color: ${designTokens.primary}
+- ALL colors MUST use HSL format: hsl(H S% L%)
+- Backgrounds: bg-white, bg-gray-50, bg-gray-100
+- Text: text-gray-900, text-gray-800, text-gray-700 (dark on light)
+- Primary accent color (HSL): ${designTokens.primary}
+- Use as: style="background-color: hsl(${designTokens.primary})"
+- NEVER use HEX colors (#XXXXXX)
 - NEVER use text-white on light backgrounds
-- NEVER use low-contrast gray text on white
 
 SECTIONS TO INCLUDE:
 1. Hero with product image and title
@@ -402,11 +435,13 @@ VARIANTES: ${vars}
 ${customHighlights ? `POINTS FORTS: ${customHighlights}` : ""}
 
 RÈGLES DE COULEURS (CRITIQUE):
-- Utilise bg-white, bg-gray-50, bg-gray-100 pour les fonds
-- Utilise text-gray-900, text-gray-800, text-gray-700 pour le texte (foncé sur clair)
-- Couleur primaire: ${designTokens.primary}
-- JAMAIS de text-white sur fonds clairs
-- JAMAIS de texte gris faible contraste sur blanc
+- TOUTES les couleurs DOIVENT utiliser le format HSL: hsl(H S% L%)
+- Fonds: bg-white, bg-gray-50, bg-gray-100
+- Texte: text-gray-900, text-gray-800, text-gray-700 (foncé sur clair)
+- Couleur d'accent primaire (HSL): ${designTokens.primary}
+- Utiliser comme: style="background-color: hsl(${designTokens.primary})"
+- JAMAIS de couleurs HEX (#XXXXXX)
+- JAMAIS text-white sur fonds clairs
 
 SECTIONS À INCLURE:
 1. Hero avec image et titre produit
