@@ -90,7 +90,6 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     keywords: "",
     productCount: 3,
     articleLength: "700" as "700" | "2000" | "4000",
-    language: "fr" as "fr" | "en" | "es" | "de" | "it",
   });
   const [collectionSearchOpen, setCollectionSearchOpen] = useState(false);
 
@@ -190,7 +189,10 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     return matchesCollection && matchesSearch;
   });
 
-  const filteredCollections = collections.filter((col) => col.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const [collectionSearchTerm, setCollectionSearchTerm] = useState("");
+  const filteredCollections = collections.filter((col) => 
+    col.title.toLowerCase().includes(collectionSearchTerm.toLowerCase())
+  );
 
   const selectedCollectionData = collections.find((c) => c.id === formData.collection_id);
   const productsInCollection = formData.collection_id
@@ -257,8 +259,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           keywords: finalKeywords,
           productIds: selectedProducts.map((p) => p.id),
           articleLength: formData.articleLength,
-          language: formData.language,
-          articleConfig, // 🆕 Pass article configuration
+          articleConfig,
         },
       });
 
@@ -400,32 +401,6 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             {currentStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t.wizards.blog.articleLanguage}</label>
-                  <div className="grid grid-cols-5 gap-3">
-                    {[
-                      { code: "fr", label: "🇫🇷 Français", name: t.wizards.blog.languages.french },
-                      { code: "en", label: "🇬🇧 English", name: t.wizards.blog.languages.english },
-                      { code: "es", label: "🇪🇸 Español", name: t.wizards.blog.languages.spanish },
-                      { code: "de", label: "🇩🇪 Deutsch", name: t.wizards.blog.languages.german },
-                      { code: "it", label: "🇮🇹 Italiano", name: t.wizards.blog.languages.italian },
-                    ].map((lang) => (
-                      <button
-                        key={lang.code}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, language: lang.code as any })}
-                        className={`px-4 py-3 border rounded-lg text-center transition-all ${
-                          formData.language === lang.code
-                            ? "bg-primary text-white border-primary"
-                            : "bg-white border-gray-300 hover:border-primary"
-                        }`}
-                      >
-                        <div className="font-semibold text-sm">{lang.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium mb-2">{t.wizards.blog.collection}</label>
                   <Popover open={collectionSearchOpen} onOpenChange={setCollectionSearchOpen}>
                     <PopoverTrigger asChild>
@@ -451,7 +426,11 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
-                        <CommandInput placeholder={t.wizards.blog.searchPlaceholder} />
+                        <CommandInput 
+                          placeholder={t.wizards.blog.searchPlaceholder}
+                          value={collectionSearchTerm}
+                          onValueChange={setCollectionSearchTerm}
+                        />
                         <CommandEmpty>{t.wizards.blog.noCollectionFound}</CommandEmpty>
                         <CommandGroup className="max-h-[300px] overflow-auto">
                           <CommandItem
