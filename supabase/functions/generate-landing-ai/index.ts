@@ -442,7 +442,6 @@ PRODUCT:
 - Brand: ${vendor}
 - Description: ${description}
 - Style: ${style || enrichedProduct.style || ""}
-- Main color: hsl(${designTokens.primary})
 - Product URL: ${productUrl}
 
 ${enrichedSummary ? `ENRICHED ATTRIBUTES:\n${enrichedSummary}\n` : ""}
@@ -453,18 +452,30 @@ VARIANTS:
 ${vars}
 ${customHighlights ? `HIGHLIGHTS:\n${customHighlights}` : ""}
 
-REQUIREMENTS:
-- Complete HTML5 document with <!DOCTYPE html>, <html>, <head>, <body>
-- Include <script src="https://cdn.tailwindcss.com"></script> in <head>
-- Mobile-first responsive (sm:, md:, lg: breakpoints)
-- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Responsive grids: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-- Use inline styles with HSL colors for main sections and CTAs: style="background-color: hsl(${designTokens.primary})"
-- NEVER use HEX colors (#FFFFFF, etc.)
-- No <footer>, no CTA buttons
-- Return ONLY the complete HTML
+COLOR PALETTE (HSL FORMAT ONLY):
+- Primary: hsl(${designTokens.primary})
+- Secondary: hsl(${designTokens.secondary})
+- Accent: hsl(${designTokens.accent})
+- Background: hsl(${designTokens.background})
+- Text: hsl(${designTokens.text})
 
-Sections: Hero with product image, Key Benefits (3-4 cards), Specifications, Materials, Image Gallery, Care Instructions, FAQ.`
+🚨 CRITICAL COLOR RULES (MANDATORY):
+1. NEVER USE HEX COLORS (#FFFFFF, #000000, etc.) - FORBIDDEN
+2. ALWAYS use inline HSL styles for hero, sections, and CTAs
+3. Examples:
+   - Hero: <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
+   - Section: <section style="background-color: hsl(${designTokens.surface})">
+   - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+
+STRUCTURE:
+- Complete HTML5: <!DOCTYPE html>, <html>, <head>, <body>
+- <script src="https://cdn.tailwindcss.com"></script> in <head>
+- Mobile-first (sm:, md:, lg:)
+- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Grids: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+- No <footer>, no CTA buttons
+
+SECTIONS: Hero with image, Key Benefits (3-4 cards), Specifications, Materials, Gallery, Care Instructions, FAQ.`
         : `Tu es un expert UX/UI Shopify spécialisé dans les landing pages produit.
 Génère une landing page Tailwind HTML complète et professionnelle.
 
@@ -473,7 +484,6 @@ PRODUIT :
 - Marque : ${vendor}
 - Description : ${description}
 - Style : ${style || enrichedProduct.style || ""}
-- Couleur principale : hsl(${designTokens.primary})
 - URL produit : ${productUrl}
 
 ${enrichedSummary ? `ATTRIBUTS ENRICHIS :\n${enrichedSummary}\n` : ""}
@@ -484,18 +494,30 @@ VARIANTES :
 ${vars}
 ${customHighlights ? `POINTS FORTS :\n${customHighlights}` : ""}
 
-EXIGENCES :
-- Document HTML5 complet avec <!DOCTYPE html>, <html>, <head>, <body>
-- Inclure <script src="https://cdn.tailwindcss.com"></script> dans <head>
-- Responsive mobile-first (sm:, md:, lg:)
-- Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Grilles responsives : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-- Utiliser styles inline HSL pour sections principales et CTAs : style="background-color: hsl(${designTokens.primary})"
-- JAMAIS de couleurs HEX (#FFFFFF, etc.)
-- Pas de <footer>, pas de boutons CTA
-- Retourne UNIQUEMENT le HTML complet
+PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
+- Primaire : hsl(${designTokens.primary})
+- Secondaire : hsl(${designTokens.secondary})
+- Accent : hsl(${designTokens.accent})
+- Fond : hsl(${designTokens.background})
+- Texte : hsl(${designTokens.text})
 
-Rubriques : Hero avec image produit, Points forts (3-4 cartes), Caractéristiques, Matériaux, Galerie d'images, Entretien, FAQ.`;
+🚨 RÈGLES COULEURS CRITIQUES (OBLIGATOIRE) :
+1. JAMAIS de couleurs HEX (#FFFFFF, #000000, etc.) - INTERDIT
+2. TOUJOURS utiliser styles inline HSL pour hero, sections et CTAs
+3. Exemples :
+   - Hero : <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
+   - Section : <section style="background-color: hsl(${designTokens.surface})">
+   - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+
+STRUCTURE :
+- HTML5 complet : <!DOCTYPE html>, <html>, <head>, <body>
+- <script src="https://cdn.tailwindcss.com"></script> dans <head>
+- Mobile-first (sm:, md:, lg:)
+- Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Grilles : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+- Pas de <footer>, pas de boutons CTA
+
+SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matériaux, Galerie, Entretien, FAQ.`;
 
     // --- AI call with timeout (60s) ---
     console.log("🤖 Starting AI generation...");
