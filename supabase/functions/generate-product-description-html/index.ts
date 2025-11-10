@@ -28,172 +28,142 @@ serve(async (req) => {
       if (!authError && user) userId = user.id;
     }
 
+    const body = await req.json();
+
+    // ✅ RÉCUPÉRATION COMPLÈTE DE TOUS LES PARAMÈTRES DU WIZARD
     const {
       product_id,
-      title,
-      existingDescription,
-      images,
-      visionAnalysis,
-      dimensions,
-      template = "ecommerce",
-      variants,
+      productTitle,
+      imageUrl,
+      description,
       vendor,
-      style,
-      mainColor = "#3B82F6",
-      layout = "grid",
-      contentLength = "medium",
-      customHighlights,
+      style, // ✅ Style visuel du wizard
+      mainColor = "#3B82F6", // ✅ Couleur principale du wizard
+      layout, // ✅ Layout choisi
+      length, // ✅ Longueur contenu
+      customHighlights, // ✅ Highlights personnalisés
+      mentionBrand = true, // ✅ Mention marque
+      vendorSource, // ✅ Source vendor
       language = "fr",
-      mobileFirst = true, // 🆕 Nouveau paramètre mobile-first
-    } = await req.json();
+      mobileFirst = true,
+      imageAnalysis,
+      contentLengthParams,
+    } = body ?? {};
 
-    if (!title) {
+    console.log("🎯 CONFIGURATION COMPLÈTE DU WIZARD:", {
+      productTitle,
+      style,
+      mainColor,
+      layout,
+      length,
+      customHighlights: customHighlights ? `${customHighlights.substring(0, 50)}...` : "none",
+      mentionBrand,
+      vendorSource,
+      vendor,
+      mobileFirst,
+    });
+
+    if (!productTitle) {
       throw new Error("Product title is required");
     }
 
-    console.log(`📱 Starting ${mobileFirst ? "MOBILE-FIRST" : "standard"} generation for:`, title);
-
-    // Récupérer les données complètes du produit
-    let enrichedData: any = null;
-    let productImages: any[] = [];
-    let productVariants: any[] = [];
-    let shopDomain = "";
-    let productHandle = "";
-
-    if (product_id) {
-      console.log("📦 Fetching complete product data from database...");
-
-      // Récupérer les données du produit
-      const { data: productData } = await supabaseAdmin
-        .from("shopify_products")
-        .select(
-          `
-          *,
-          product_images (src, alt_text, position, width, height),
-          product_variants (title, image_url, shopify_variant_id, price, sku)
-        `,
-        )
-        .eq("id", product_id)
-        .single();
-
-      if (productData) {
-        enrichedData = productData;
-        productImages = productData.product_images || [];
-        productVariants = productData.product_variants || [];
-        productHandle = productData.handle || "";
-        console.log("✅ Product data loaded:", {
-          images: productImages.length,
-          variants: productVariants.length,
-          handle: productHandle,
-        });
-      }
-
-      // Récupérer le domaine de la boutique
-      if (userId) {
-        const { data: storeData } = await supabaseAdmin
-          .from("shopify_connections")
-          .select("shop_domain")
-          .eq("seller_id", userId)
-          .single();
-
-        shopDomain = storeData?.shop_domain || "";
-      }
+    if (!product_id) {
+      throw new Error("Product ID is required");
     }
-
-    // Utiliser les données fournies en priorité, sinon les données de la BDD
-    const finalImages = images?.length ? images : productImages;
-    const finalVariants = variants?.length ? variants : productVariants;
-    const finalVendor = vendor || enrichedData?.vendor || "";
-
-    console.log("📊 Final data:", {
-      images: finalImages.length,
-      variants: finalVariants.length,
-      vendor: finalVendor,
-      style,
-      layout,
-      contentLength,
-      hasCustomHighlights: !!customHighlights,
-      mobileFirst,
-    });
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Construire le contexte enrichi
-    const buildEnrichedContext = () => {
-      if (!enrichedData) return "";
+    console.log(`📱 Starting MOBILE-FIRST generation with style: ${style}, color: ${mainColor}, layout: ${layout}`);
 
-      const sections = [];
+    // 🔧 Product Enrichment
+    console.log("🔧 Starting product enrichment...");
+    let enrichmentStatus = "skipped";
+    let attributesCount = 0;
 
-      // Attributs visuels
-      if (enrichedData.ai_color || enrichedData.ai_material) {
-        sections.push("\n🎨 ATTRIBUTS VISUELS:");
-        if (enrichedData.ai_color) sections.push(`- Couleur dominante: ${enrichedData.ai_color}`);
-        if (enrichedData.ai_material) sections.push(`- Matériau principal: ${enrichedData.ai_material}`);
-        if (enrichedData.ai_shape) sections.push(`- Forme: ${enrichedData.ai_shape}`);
-        if (enrichedData.ai_texture) sections.push(`- Texture: ${enrichedData.ai_texture}`);
-        if (enrichedData.ai_finish) sections.push(`- Finition: ${enrichedData.ai_finish}`);
-        if (enrichedData.ai_pattern) sections.push(`- Motif: ${enrichedData.ai_pattern}`);
+    try {
+      const enrichController = new AbortController();
+      const enrichTimeout = setTimeout(() => enrichController.abort(), 20000);
+
+      const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
+        body: { productId: product_id },
+        signal: enrichController.signal,
+      });
+
+      clearTimeout(enrichTimeout);
+
+      if (enrichError) {
+        console.log("⚠️ Enrichment failed:", enrichError.message);
+        enrichmentStatus = "failed";
+      } else {
+        console.log("✅ Enrichment completed");
+        enrichmentStatus = "success";
       }
+    } catch (err) {
+      console.log("⚠️ Enrichment timeout:", err.message);
+      enrichmentStatus = "failed";
+    }
 
-      // Dimensions complètes
-      if (enrichedData.smart_length || enrichedData.smart_width || enrichedData.smart_height) {
-        sections.push("\n📐 DIMENSIONS PRÉCISES:");
-        if (enrichedData.smart_length)
-          sections.push(`- Longueur: ${enrichedData.smart_length} ${enrichedData.smart_length_unit || "cm"}`);
-        if (enrichedData.smart_width)
-          sections.push(`- Largeur: ${enrichedData.smart_width} ${enrichedData.smart_width_unit || "cm"}`);
-        if (enrichedData.smart_height)
-          sections.push(`- Hauteur: ${enrichedData.smart_height} ${enrichedData.smart_height_unit || "cm"}`);
-        if (enrichedData.smart_weight)
-          sections.push(`- Poids: ${enrichedData.smart_weight} ${enrichedData.smart_weight_unit || "kg"}`);
-        if (enrichedData.smart_diameter)
-          sections.push(`- Diamètre: ${enrichedData.smart_diameter} ${enrichedData.smart_diameter_unit || "cm"}`);
-      }
+    // Fetch product data
+    console.log("📦 Fetching product data...");
+    const [productRes, imagesRes, variantsRes, storeRes] = await Promise.all([
+      supabaseAdmin.from("shopify_products").select("*").eq("id", product_id).maybeSingle(),
+      supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
+      supabaseAdmin
+        .from("product_variants")
+        .select("title, image_url, shopify_variant_id")
+        .eq("product_id", product_id),
+      userId
+        ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
 
-      // Contexte produit
-      if (enrichedData.category || enrichedData.style) {
-        sections.push("\n🏷️ CONTEXTE PRODUIT:");
-        if (enrichedData.category) sections.push(`- Catégorie: ${enrichedData.category}`);
-        if (enrichedData.sub_category) sections.push(`- Sous-catégorie: ${enrichedData.sub_category}`);
-        if (enrichedData.style) sections.push(`- Style: ${enrichedData.style}`);
-        if (enrichedData.room) sections.push(`- Pièce recommandée: ${enrichedData.room}`);
-        if (enrichedData.functionality) sections.push(`- Fonctionnalité: ${enrichedData.functionality}`);
-      }
+    const productHandle = productRes.data?.handle || "";
+    const shopDomain = storeRes.data?.shop_domain || "";
+    const images = imagesRes.data ?? [];
+    const variants = variantsRes.data ?? [];
+    const enrichedProduct = productRes.data || {};
 
-      return sections.join("\n");
-    };
+    // Count enriched attributes
+    const enrichedFields = [
+      "ai_color",
+      "ai_material",
+      "ai_shape",
+      "ai_texture",
+      "ai_pattern",
+      "ai_finish",
+      "smart_length",
+      "smart_width",
+      "smart_height",
+      "smart_weight",
+      "category",
+      "sub_category",
+      "style",
+      "room",
+      "functionality",
+    ];
+    attributesCount = enrichedFields.filter((f) => enrichedProduct[f]).length;
 
-    // 🎯 PROMPT MOBILE-FIRST AMÉLIORÉ
+    console.log(`✅ Product data: ${images.length} images, ${attributesCount} enriched attributes`);
+
+    // 🎯 PROMPT AVEC INTÉGRATION COMPLÈTE DU WIZARD
     const prompt =
       language === "en"
         ? `
-You are an elite Shopify UX/UI designer creating premium HTML product descriptions with STRICT MOBILE-FIRST approach.
+You are an elite Shopify UX/UI designer creating premium HTML product descriptions.
 
-🎯 CRITICAL MOBILE-FIRST REQUIREMENTS:
-- Design for 320px mobile screens FIRST, then adapt to desktop
-- Use mobile-first Tailwind classes (no prefix for mobile, sm: for tablet, lg: for desktop)
-- Single column layout for mobile, responsive grids only on larger screens
-- Touch-friendly buttons (min-height: 44px) and interactive elements
-- Optimize images for mobile (lazy loading, webp format preferred)
-- Fast loading: minimize HTML size, optimize CSS
-- Readable typography (16px base font size for mobile)
+🎯 CLIENT CONFIGURATION - APPLY EXACTLY:
+- VISUAL STYLE: ${style || "modern"} - Apply this aesthetic throughout the design
+- MAIN COLOR: ${mainColor} - Use this as the primary brand color in all elements
+- LAYOUT: ${layout || "2 columns"} - Follow this layout structure precisely
+- CONTENT LENGTH: ${length || "medium"} - Adjust content density accordingly
+- BRAND MENTION: ${mentionBrand ? "YES - Highlight the brand prominently" : "NO - Focus on product features only"}
+- VENDOR: ${vendor || "Not specified"}
+- CUSTOM HIGHLIGHTS: ${customHighlights || "None provided"}
 
-📱 MOBILE-FIRST BREAKPOINT SYSTEM:
-- Mobile: < 768px (default styles - grid-cols-1, w-full)
-- Tablet: 768px+ (sm: classes - sm:grid-cols-2)
-- Desktop: 1024px+ (lg: classes - lg:grid-cols-3)
-
-🚫 STRICTLY PROHIBITED ON MOBILE:
-- NO complex multi-column layouts on mobile
-- NO small touch targets (<44px height)
-- NO heavy animations that affect performance
-- NO horizontal scrolling required
-- NO tiny text (<16px base font size)
-
-🎨 MOBILE-FIRST COLOR SYSTEM:
+🎨 COLOR SYSTEM - USE THIS EXACT CSS:
 <style>
   :root {
     --theme-color: ${mainColor};
@@ -213,176 +183,88 @@ You are an elite Shopify UX/UI designer creating premium HTML product descriptio
   }
 </style>
 
-📦 MANDATORY MOBILE-FIRST SECTIONS:
+📱 LAYOUT REQUIREMENTS: ${layout}
+${layout === "1 colonne" ? "- Single column layout, centered content, perfect for mobile-first approach" : ""}
+${layout === "2 colonnes" ? "- Two column responsive layout, image + text side by side on desktop, stacked on mobile" : ""}
+${layout === "hero à gauche" ? "- Hero section with prominent image on left, content on right, mobile stack" : ""}
+${layout === "hero à droite" ? "- Hero section with prominent image on right, content on left, mobile stack" : ""}
 
-1. **MOBILE HERO SECTION** (H1)
-   - Full-width layout on mobile
-   - Large, readable font sizes (text-3xl on mobile)
-   - Single CTA focus
-   - Fast-loading hero image
+🎨 VISUAL STYLE: ${style}
+${style === "moderne" ? "- Modern aesthetic: clean geometric lines, gradient accents, contemporary typography, sleek design" : ""}
+${style === "minimaliste" ? "- Minimalist: ample white space, simple typography, clean layout, focused content" : ""}
+${style === "scandinave" ? "- Scandinavian: natural colors, wood textures, simple elegance, organic shapes" : ""}
+${style === "premium" ? "- Premium: luxury elements, sophisticated typography, elegant spacing, high-end feel" : ""}
+${style === "neutre" ? "- Neutral: balanced color palette, harmonious composition, subtle contrasts" : ""}
+${style === "coloré" ? "- Colorful: vibrant accents, playful elements, energetic design, bold colors" : ""}
 
-2. **MOBILE IMAGE GALLERY**
-   - grid-cols-1 on mobile
-   - sm:grid-cols-2 on tablet  
-   - lg:grid-cols-3 on desktop
-   - Lazy loading enabled
-   - Touch-friendly image navigation
+${mentionBrand && vendor ? `\n🏷️ BRAND EMPHASIS - MUST INCLUDE:\n- Highlight brand name: ${vendor} in headings and features\n- Include brand storytelling elements\n- Emphasize brand quality and reputation\n- Use brand colors and styling` : ""}
 
-3. **MOBILE-FRIENDLY FEATURES**
-   - Stack vertically on mobile (flex-col)
-   - Use large, clear icons (w-6 h-6)
-   - Ample spacing between items (space-y-6)
-   - Readable text sizes
+${customHighlights ? `\n💡 CUSTOM HIGHLIGHTS TO FEATURE PROMINENTLY:\n${customHighlights}\n- Integrate these highlights in feature sections\n- Use them in bullet points and callouts\n- Make them visually prominent` : ""}
 
-4. **MOBILE SPECIFICATIONS**
-   - Simple accordion or stacked layout
-   - Easy to scroll and read
-   - Clear typography hierarchy
+📦 PRODUCT DATA:
+- Title: ${productTitle}
+- Description: ${description || "No description provided"}
+- Vendor: ${vendor || "Not specified"}
+- Style: ${style || "Not specified"}
+- Visual Theme: ${style} with ${mainColor} as primary color
 
-5. **MOBILE CALL-TO-ACTION**
-   - Clear value proposition
-   - Large, touch-friendly buttons
-   - Mobile-optimized layout
+${
+  enrichedProduct.ai_color || enrichedProduct.ai_material
+    ? `
+🎨 ENRICHED VISUAL ATTRIBUTES:
+${enrichedProduct.ai_color ? `- Color: ${enrichedProduct.ai_color}` : ""}
+${enrichedProduct.ai_material ? `- Material: ${enrichedProduct.ai_material}` : ""}
+${enrichedProduct.ai_shape ? `- Shape: ${enrichedProduct.ai_shape}` : ""}
+${enrichedProduct.ai_texture ? `- Texture: ${enrichedProduct.ai_texture}` : ""}
+`
+    : ""
+}
 
-📊 PRODUCT DATA:
-- Title: ${title}
-- Brand: ${finalVendor || ""}
-- Description: ${existingDescription || ""}
-- Style: ${style || enrichedData?.style || ""}
+🖼️ IMAGES (${images.length} total) - USE ALL:
+${images.map((i, idx) => `${idx + 1}. ${i.src}${i.alt_text ? ` (alt: ${i.alt_text})` : ""}`).join("\n")}
 
-${buildEnrichedContext()}
+${imageAnalysis ? `\n🔍 VISION AI INSIGHTS:\n${imageAnalysis}\n` : ""}
 
-🖼️ IMAGES (${finalImages.length} total) - MOBILE OPTIMIZED:
-${finalImages.map((img: any, index: number) => `${index + 1}. ${img.src || img}${img.alt_text ? ` (${img.alt_text})` : ""}`).join("\n")}
+📱 MOBILE-FIRST DESIGN MANDATORY:
+- Design for 320px mobile screens FIRST
+- Use mobile-first Tailwind classes (grid-cols-1, then sm:grid-cols-2, lg:grid-cols-3)
+- Touch-friendly elements (min-height: 44px for buttons, links)
+- Fast loading with lazy images (loading="lazy")
+- Readable typography (16px base font size for mobile)
+- Single column layout on mobile, responsive on larger screens
 
-${visionAnalysis ? `\n🔍 VISION ANALYSIS:\n${JSON.stringify(visionAnalysis, null, 2)}` : ""}
+🚫 STRICTLY PROHIBITED:
+- No "Add to Cart" buttons or pricing information
+- No complex JavaScript or external scripts
+- No external stylesheets or CDN dependencies
+- No iframes or embedded content
+- No horizontal scrolling on mobile
 
-${customHighlights ? `\n💡 CUSTOM HIGHLIGHTS:\n${customHighlights}` : ""}
+✅ REQUIRED OUTPUT:
+- Pure HTML with Tailwind CSS classes
+- EXACT color system using ${mainColor} throughout
+- ${style} visual style applied consistently
+- ${layout} layout structure implemented
+- Mobile-first responsive design
+- Professional product presentation
+- All ${images.length} images integrated with lazy loading
+- Semantic HTML structure with proper heading hierarchy
 
-🎯 MOBILE-FIRST DESIGN PATTERNS TO USE:
-
-<!-- Mobile Hero Section -->
-<section class="mobile-padding bg-gradient-to-br from-gray-50 to-white py-12">
-  <div class="max-w-md mx-auto text-center">
-    <h1 class="text-3xl font-bold theme-text mb-4">${title}</h1>
-    <p class="text-lg text-gray-600 mb-6 mobile-text">${existingDescription?.substring(0, 120) || "Premium quality product designed for modern living."}...</p>
-  </div>
-</section>
-
-<!-- Mobile Image Gallery -->
-<section class="mobile-padding py-8">
-  <h2 class="text-2xl font-bold theme-text text-center mb-6">Gallery</h2>
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    ${finalImages
-      .map(
-        (img: any) =>
-          `<img src="${img.src || img}" alt="${img.alt_text || title}" 
-            class="w-full h-auto rounded-xl shadow-md" loading="lazy">`,
-      )
-      .join("\n    ")}
-  </div>
-</section>
-
-<!-- Mobile Features Stack -->
-<section class="mobile-padding py-8 bg-gray-50 rounded-2xl mx-4">
-  <h2 class="text-2xl font-bold theme-text text-center mb-8">Features</h2>
-  <div class="space-y-6 max-w-md mx-auto">
-    ${
-      enrichedData?.ai_color
-        ? `
-    <div class="flex items-center gap-4 touch-target mobile-stack sm:flex-row">
-      <div class="theme-bg rounded-full p-3">
-        <svg class="w-6 h-6 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4z"/>
-        </svg>
-      </div>
-      <div>
-        <h3 class="font-semibold theme-text text-lg">Color</h3>
-        <p class="text-gray-600 mobile-text">${enrichedData.ai_color}</p>
-      </div>
-    </div>`
-        : ""
-    }
-    
-    ${
-      enrichedData?.ai_material
-        ? `
-    <div class="flex items-center gap-4 touch-target mobile-stack sm:flex-row">
-      <div class="theme-bg rounded-full p-3">
-        <svg class="w-6 h-6 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-        </svg>
-      </div>
-      <div>
-        <h3 class="font-semibold theme-text text-lg">Material</h3>
-        <p class="text-gray-600 mobile-text">${enrichedData.ai_material}</p>
-      </div>
-    </div>`
-        : ""
-    }
-  </div>
-</section>
-
-<!-- Mobile Specifications -->
-<section class="mobile-padding py-8">
-  <h2 class="text-2xl font-bold theme-text text-center mb-8">Specifications</h2>
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-w-2xl mx-auto">
-    <div class="space-y-4">
-      ${
-        enrichedData?.smart_length
-          ? `
-      <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2">
-        <span class="font-semibold theme-text flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"/>
-          </svg>
-          Length
-        </span>
-        <span class="text-gray-700">${enrichedData.smart_length} ${enrichedData.smart_length_unit || "cm"}</span>
-      </div>`
-          : ""
-      }
-    </div>
-  </div>
-</section>
-
-✅ REQUIRED MOBILE OUTPUT:
-- Pure HTML with MOBILE-FIRST Tailwind classes
-- Single column layout for mobile (grid-cols-1)
-- Touch-optimized interactive elements (min-height: 44px)
-- Fast loading performance (lazy loading images)
-- Responsive images with proper alt texts
-- Readable typography (16px base font size)
-- Clean, semantic HTML structure
-- Proper use of mobile-padding and touch-target classes
-
-Return ONLY the HTML code without any explanations.
+Return ONLY the HTML code without any explanations or markdown.
 `
         : `
-Tu es un designer UX/UI Shopify expert créant des descriptions de produit HTML premium avec une approche MOBILE-FIRST stricte.
+Tu es un designer UX/UI Shopify expert créant des descriptions de produit HTML premium.
 
-🎯 EXIGENCES CRITIQUES MOBILE-FIRST:
-- Conçois d'abord pour écrans mobiles 320px, puis adapte pour desktop
-- Utilise les classes Tailwind mobile-first (sans préfixe pour mobile, sm: pour tablette, lg: pour desktop)
-- Layout single colonne pour mobile, grilles responsives seulement sur grands écrans
-- Boutons optimisés tactile (hauteur min: 44px) et éléments interactifs
-- Images optimisées pour mobile (lazy loading, format webp préféré)
-- Chargement rapide : HTML minimal, CSS optimisé
-- Typographie lisible (taille de base 16px pour mobile)
+🎯 CONFIGURATION CLIENT - APPLIQUER EXACTEMENT:
+- STYLE VISUEL: ${style || "moderne"} - Appliquer cette esthétique dans tout le design
+- COULEUR PRINCIPALE: ${mainColor} - Utiliser comme couleur de marque dans tous les éléments
+- LAYOUT: ${layout || "2 colonnes"} - Suivre cette structure de layout précisément
+- LONGUEUR CONTENU: ${length || "moyenne"} - Adapter la densité du contenu en conséquence
+- MENTION MARQUE: ${mentionBrand ? "OUI - Mettre en avant la marque prominentement" : "NON - Se concentrer sur les caractéristiques produit"}
+- VENDEUR: ${vendor || "Non spécifié"}
+- HIGHLIGHTS PERSONNALISÉS: ${customHighlights || "Aucun fourni"}
 
-📱 SYSTÈME DE BREAKPOINTS MOBILE-FIRST:
-- Mobile: < 768px (styles par défaut - grid-cols-1, w-full)
-- Tablet: 768px+ (classes sm: - sm:grid-cols-2)
-- Desktop: 1024px+ (classes lg: - lg:grid-cols-3)
-
-🚫 STRICTEMENT INTERDIT SUR MOBILE:
-- PAS de layouts multi-colonnes complexes sur mobile
-- PAS de petites cibles tactiles (<44px de hauteur)
-- PAS d'animations lourdes qui affectent les performances
-- PAS de défilement horizontal requis
-- PAS de texte trop petit (<16px taille de base)
-
-🎨 SYSTÈME DE COULEUR MOBILE-FIRST:
+🎨 SYSTÈME DE COULEUR - UTILISER CE CSS EXACT:
 <style>
   :root {
     --theme-color: ${mainColor};
@@ -402,246 +284,198 @@ Tu es un designer UX/UI Shopify expert créant des descriptions de produit HTML 
   }
 </style>
 
-📦 SECTIONS MOBILE-FIRST OBLIGATOIRES:
+📱 EXIGENCES LAYOUT: ${layout}
+${layout === "1 colonne" ? "- Layout single colonne, contenu centré, parfait pour approche mobile-first" : ""}
+${layout === "2 colonnes" ? "- Layout deux colonnes responsive, image + texte côte à côte sur desktop, empilé sur mobile" : ""}
+${layout === "hero à gauche" ? "- Section hero avec image prominente à gauche, contenu à droite, empilement mobile" : ""}
+${layout === "hero à droite" ? "- Section hero avec image prominente à droite, contenu à gauche, empilement mobile" : ""}
 
-1. **SECTION HERO MOBILE** (H1)
-   - Layout pleine largeur sur mobile
-   - Tailles de police grandes et lisibles (text-3xl sur mobile)
-   - Focus CTA unique
-   - Image hero à chargement rapide
+🎨 STYLE VISUEL: ${style}
+${style === "moderne" ? "- Esthétique moderne: lignes géométriques épurées, accents dégradés, typographie contemporaine, design élégant" : ""}
+${style === "minimaliste" ? "- Minimaliste: espace blanc généreux, typographie simple, layout clean, contenu focalisé" : ""}
+${style === "scandinave" ? "- Scandinave: couleurs naturelles, textures bois, élégance simple, formes organiques" : ""}
+${style === "premium" ? "- Premium: éléments luxueux, typographie sophistiquée, espacement élégant, sensation haut de gamme" : ""}
+${style === "neutre" ? "- Neutre: palette de couleurs équilibrée, composition harmonieuse, contrastes subtils" : ""}
+${style === "coloré" ? "- Coloré: accents vibrants, éléments ludiques, design énergique, couleurs audacieuses" : ""}
 
-2. **GALERIE IMAGES MOBILE**
-   - grid-cols-1 sur mobile
-   - sm:grid-cols-2 sur tablette
-   - lg:grid-cols-3 sur desktop
-   - Lazy loading activé
-   - Navigation image tactile
+${mentionBrand && vendor ? `\n🏷️ EMPHASE MARQUE - DOIT INCLURE:\n- Mettre en avant le nom: ${vendor} dans titres et caractéristiques\n- Inclure éléments de storytelling marque\n- Souligner qualité et réputation marque\n- Utiliser couleurs et style de la marque` : ""}
 
-3. **FONCTIONNALITÉS MOBILE**
-   - Disposition verticale sur mobile (flex-col)
-   - Icônes grandes et claires (w-6 h-6)
-   - Espacement généreux entre éléments (space-y-6)
-   - Tailles de texte lisibles
+${customHighlights ? `\n💡 HIGHLIGHTS PERSONNALISÉS À METTRE EN AVANT:\n${customHighlights}\n- Intégrer ces highlights dans sections caractéristiques\n- Les utiliser dans points liste et callouts\n- Les rendre visuellement prominents` : ""}
 
-4. **SPÉCIFICATIONS MOBILE**
-   - Layout accordéon simple ou empilé
-   - Facile à scroller et lire
-   - Hiérarchie typographique claire
+📦 DONNÉES PRODUIT:
+- Titre: ${productTitle}
+- Description: ${description || "Aucune description fournie"}
+- Marque: ${vendor || "Non spécifié"}
+- Style: ${style || "Non spécifié"}
+- Thème Visuel: ${style} avec ${mainColor} comme couleur principale
 
-5. **APPEL-À-L'ACTION MOBILE**
-   - Proposition de valeur claire
-   - Boutons grands et tactiles
-   - Layout optimisé mobile
+${
+  enrichedProduct.ai_color || enrichedProduct.ai_material
+    ? `
+🎨 ATTRIBUTS VISUELS ENRICHIS:
+${enrichedProduct.ai_color ? `- Couleur: ${enrichedProduct.ai_color}` : ""}
+${enrichedProduct.ai_material ? `- Matériau: ${enrichedProduct.ai_material}` : ""}
+${enrichedProduct.ai_shape ? `- Forme: ${enrichedProduct.ai_shape}` : ""}
+${enrichedProduct.ai_texture ? `- Texture: ${enrichedProduct.ai_texture}` : ""}
+`
+    : ""
+}
 
-📊 DONNÉES PRODUIT:
-- Titre: ${title}
-- Marque: ${finalVendor || ""}
-- Description: ${existingDescription || ""}
-- Style: ${style || enrichedData?.style || ""}
+🖼️ IMAGES (${images.length} total) - UTILISER TOUTES:
+${images.map((i, idx) => `${idx + 1}. ${i.src}${i.alt_text ? ` (alt: ${i.alt_text})` : ""}`).join("\n")}
 
-${buildEnrichedContext()}
+${imageAnalysis ? `\n🔍 INSIGHTS VISION AI:\n${imageAnalysis}\n` : ""}
 
-🖼️ IMAGES (${finalImages.length} total) - OPTIMISÉ MOBILE:
-${finalImages.map((img: any, index: number) => `${index + 1}. ${img.src || img}${img.alt_text ? ` (${img.alt_text})` : ""}`).join("\n")}
+📱 DESIGN MOBILE-FIRST OBLIGATOIRE:
+- Conception d'abord pour écrans mobiles 320px
+- Classes Tailwind mobile-first (grid-cols-1, puis sm:grid-cols-2, lg:grid-cols-3)
+- Éléments tactiles (hauteur min: 44px pour boutons, liens)
+- Chargement rapide avec images lazy (loading="lazy")
+- Typographie lisible (taille base 16px pour mobile)
+- Layout single colonne sur mobile, responsive sur grands écrans
 
-${visionAnalysis ? `\n🔍 ANALYSE VISION AI:\n${JSON.stringify(visionAnalysis, null, 2)}` : ""}
+🚫 STRICTEMENT INTERDIT:
+- Pas de boutons "Ajouter au Panier" ou informations prix
+- Pas de JavaScript complexe ou scripts externes
+- Pas de feuilles de style externes ou dépendances CDN
+- Pas d'iframes ou contenu embarqué
+- Pas de défilement horizontal sur mobile
 
-${customHighlights ? `\n💡 POINTS FORTS PERSONNALISÉS:\n${customHighlights}` : ""}
+✅ SORTIE REQUISE:
+- HTML pur avec classes Tailwind CSS
+- Système de couleur EXACT utilisant ${mainColor} partout
+- Style visuel ${style} appliqué constamment
+- Structure de layout ${layout} implémentée
+- Design responsive mobile-first
+- Présentation produit professionnelle
+- Toutes les ${images.length} images intégrées avec lazy loading
+- Structure HTML sémantique avec hiérarchie titres appropriée
 
-🎯 PATRONS DE DESIGN MOBILE-FIRST À UTILISER:
-
-<!-- Section Hero Mobile -->
-<section class="mobile-padding bg-gradient-to-br from-gray-50 to-white py-12">
-  <div class="max-w-md mx-auto text-center">
-    <h1 class="text-3xl font-bold theme-text mb-4">${title}</h1>
-    <p class="text-lg text-gray-600 mb-6 mobile-text">${existingDescription?.substring(0, 120) || "Produit de qualité premium conçu pour la vie moderne."}...</p>
-  </div>
-</section>
-
-<!-- Galerie Images Mobile -->
-<section class="mobile-padding py-8">
-  <h2 class="text-2xl font-bold theme-text text-center mb-6">Galerie</h2>
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    ${finalImages
-      .map(
-        (img: any) =>
-          `<img src="${img.src || img}" alt="${img.alt_text || title}" 
-            class="w-full h-auto rounded-xl shadow-md" loading="lazy">`,
-      )
-      .join("\n    ")}
-  </div>
-</section>
-
-<!-- Stack Fonctionnalités Mobile -->
-<section class="mobile-padding py-8 bg-gray-50 rounded-2xl mx-4">
-  <h2 class="text-2xl font-bold theme-text text-center mb-8">Caractéristiques</h2>
-  <div class="space-y-6 max-w-md mx-auto">
-    ${
-      enrichedData?.ai_color
-        ? `
-    <div class="flex items-center gap-4 touch-target mobile-stack sm:flex-row">
-      <div class="theme-bg rounded-full p-3">
-        <svg class="w-6 h-6 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4z"/>
-        </svg>
-      </div>
-      <div>
-        <h3 class="font-semibold theme-text text-lg">Couleur</h3>
-        <p class="text-gray-600 mobile-text">${enrichedData.ai_color}</p>
-      </div>
-    </div>`
-        : ""
-    }
-    
-    ${
-      enrichedData?.ai_material
-        ? `
-    <div class="flex items-center gap-4 touch-target mobile-stack sm:flex-row">
-      <div class="theme-bg rounded-full p-3">
-        <svg class="w-6 h-6 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-        </svg>
-      </div>
-      <div>
-        <h3 class="font-semibold theme-text text-lg">Matériau</h3>
-        <p class="text-gray-600 mobile-text">${enrichedData.ai_material}</p>
-      </div>
-    </div>`
-        : ""
-    }
-  </div>
-</section>
-
-<!-- Spécifications Mobile -->
-<section class="mobile-padding py-8">
-  <h2 class="text-2xl font-bold theme-text text-center mb-8">Caractéristiques Techniques</h2>
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-w-2xl mx-auto">
-    <div class="space-y-4">
-      ${
-        enrichedData?.smart_length
-          ? `
-      <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2">
-        <span class="font-semibold theme-text flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"/>
-          </svg>
-          Longueur
-        </span>
-        <span class="text-gray-700">${enrichedData.smart_length} ${enrichedData.smart_length_unit || "cm"}</span>
-      </div>`
-          : ""
-      }
-    </div>
-  </div>
-</section>
-
-✅ SORTIE MOBILE REQUISE:
-- HTML pur avec classes Tailwind MOBILE-FIRST
-- Layout single colonne pour mobile (grid-cols-1)
-- Éléments interactifs optimisés tactile (min-height: 44px)
-- Performances de chargement rapides (lazy loading images)
-- Images responsives avec textes alt appropriés
-- Typographie lisible (taille de base 16px)
-- Structure HTML sémantique et propre
-- Utilisation correcte des classes mobile-padding et touch-target
-
-Retourne UNIQUEMENT le code HTML sans explications.
+Retourne UNIQUEMENT le code HTML sans explications ou markdown.
 `;
 
-    // 🔹 Appel Lovable AI avec timeout
-    console.log("🤖 Starting AI generation with mobile-first approach...");
+    // 🔹 Appel AI avec timeout
+    console.log("🤖 Starting AI generation with complete wizard configuration...");
     const aiController = new AbortController();
     const aiTimeout = setTimeout(() => aiController.abort(), 60000);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content:
-              language === "en"
-                ? `You are a professional Shopify product description writer specializing in MOBILE-FIRST design. You create clean, responsive HTML product descriptions using mobile-first Tailwind CSS.
-
-CRITICAL MOBILE REQUIREMENTS:
-1. Design for 320px mobile screens FIRST
-2. Use mobile-first breakpoint system (no prefix mobile, sm: tablet, lg: desktop)
-3. Single column layout for mobile, responsive grids only on larger screens
-4. Touch-friendly interactive elements (min-height: 44px)
-5. Fast loading: optimize images, minimize code
-6. Readable typography (16px base font size)
-
-Focus on presenting product information clearly without any e-commerce functionality. No prices, no add to cart buttons, just beautiful mobile-optimized product presentation.`
-                : `Tu es un rédacteur professionnel de descriptions produit Shopify spécialisé en design MOBILE-FIRST. Tu crées des descriptions de produit HTML propres et responsives avec Tailwind CSS mobile-first.
-
-EXIGENCES MOBILE CRITIQUES:
-1. Conçois d'abord pour écrans mobiles 320px
-2. Utilise le système de breakpoints mobile-first (sans préfixe mobile, sm: tablette, lg: desktop)
-3. Layout single colonne pour mobile, grilles responsives seulement sur grands écrans
-4. Éléments interactifs tactiles (hauteur min: 44px)
-5. Chargement rapide : optimise images, minimise code
-6. Typographie lisible (taille de base 16px)
-
-Concentre-toi sur la présentation claire des informations produit sans fonctionnalité e-commerce. Pas de prix, pas de boutons ajouter au panier, juste une belle présentation produit optimisée mobile.`,
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 4500,
-        temperature: 0.7,
-      }),
-      signal: aiController.signal,
-    });
-
-    clearTimeout(aiTimeout);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Lovable AI error:", response.status, errorText);
-      throw new Error(`AI generation failed: ${response.status}`);
+    let aiResponse;
+    try {
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                language === "en"
+                  ? `You are a professional Shopify product description writer. You MUST apply the client's exact configuration including visual style, color scheme, layout, and content requirements. Always use the provided color system and follow the specified layout and style exactly. Generate mobile-first HTML with Tailwind CSS.`
+                  : `Tu es un rédacteur professionnel de descriptions produit Shopify. Tu DOIS appliquer exactement la configuration du client incluant le style visuel, le schéma de couleurs, le layout et les exigences de contenu. Utilise toujours le système de couleur fourni et suis exactement le layout et style spécifié. Génère du HTML mobile-first avec Tailwind CSS.`,
+            },
+            { role: "user", content: prompt },
+          ],
+          max_completion_tokens: 5000,
+        }),
+        signal: aiController.signal,
+      });
+    } finally {
+      clearTimeout(aiTimeout);
     }
 
-    const data = await response.json();
-    let content = data.choices?.[0]?.message?.content?.trim();
+    console.log("✅ AI generation completed");
 
-    if (!content) throw new Error("No content generated by AI");
+    if (!aiResponse.ok) {
+      const text = await aiResponse.text();
+      console.error("Lovable AI API error:", aiResponse.status, text);
+      return new Response(
+        JSON.stringify({
+          error: `Lovable API ${aiResponse.status}`,
+          detail: "Please check your API key and model availability",
+        }),
+        {
+          status: aiResponse.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
-    // Nettoyage du contenu
-    content = content
+    const data = await aiResponse.json();
+    let html = data?.choices?.[0]?.message?.content?.trim() || "";
+
+    // Nettoyage du HTML
+    html = html
       .replace(/```(?:json|html)?/g, "")
       .replace(/^[\s\S]*?<html>/i, "")
       .replace(/<\/html>[\s\S]*$/i, "")
       .trim();
 
-    // 🔍 Validation mobile
-    console.log("🔍 Validating mobile-first HTML...");
-    const mobileChecks = {
-      hasMobileGrid: content.includes("grid-cols-1"),
-      hasResponsive: content.includes("sm:") || content.includes("lg:"),
-      hasLazyLoading: content.includes('loading="lazy"'),
-      hasMobilePadding: content.includes("mobile-padding"),
-      hasTouchTargets: content.includes("touch-target") || content.includes("min-height: 44px"),
+    // 🔍 Validation de l'application de la configuration
+    console.log("🔍 Validating wizard configuration application...");
+
+    const configChecks = {
+      hasThemeColor: html.includes(mainColor) || html.includes("var(--theme-color)"),
+      hasThemeClasses: html.includes("theme-text") || html.includes("theme-bg"),
+      hasCustomHighlights: customHighlights
+        ? html.toLowerCase().includes(customHighlights.substring(0, 20).toLowerCase())
+        : true,
+      hasVendor: vendor && mentionBrand ? html.includes(vendor) : true,
+      hasStyleElements: html.includes("grid-cols-1") && html.includes("sm:"),
+      hasMobileClasses: html.includes("mobile-padding") || html.includes("touch-target"),
+      hasLayoutApplied: layout === "1 colonne" ? html.includes("max-w-md") || html.includes("mx-auto") : true,
     };
 
-    const mobileScore = Object.values(mobileChecks).filter(Boolean).length;
-    console.log(`📊 Mobile optimization score: ${mobileScore}/5`);
+    console.log("✅ Configuration checks:", configChecks);
 
-    console.log("✅ Mobile-first product description generated successfully");
+    // Forcer l'application de la couleur si nécessaire
+    if (!configChecks.hasThemeColor) {
+      console.warn("⚠️ Theme color not properly applied - forcing CSS update");
+      const colorCss = `<style>
+  :root {
+    --theme-color: ${mainColor};
+    --theme-color-light: ${mainColor}33;
+    --theme-color-dark: ${mainColor};
+  }
+  .theme-text { color: var(--theme-color) !important; }
+  .theme-bg { background-color: var(--theme-color-light) !important; }
+  .theme-border { border-color: var(--theme-color) !important; }
+  
+  @media (max-width: 767px) {
+    .mobile-padding { padding: 1rem !important; }
+    .mobile-text { font-size: 16px !important; line-height: 1.5; }
+    .touch-target { min-height: 44px; min-width: 44px; }
+    .mobile-stack { flex-direction: column !important; }
+  }
+</style>`;
 
-    // Métriques
-    const mediaCount = finalImages.length;
-    const variantCount = finalVariants.length;
-    const wordCount = content.split(/\s+/).length;
+      if (html.includes("<style>")) {
+        html = html.replace(/<style>[\s\S]*?<\/style>/, colorCss);
+      } else {
+        html = colorCss + "\n" + html;
+      }
+    }
 
-    // 💾 Sauvegarde dans la base de données
+    if (!html || html.length < 300) {
+      return new Response(
+        JSON.stringify({
+          error: language === "en" ? "Generated HTML too short or empty." : "HTML généré trop court ou vide.",
+          generatedLength: html.length,
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    console.log(`✅ Generated HTML length: ${html.length} characters`);
+
+    // 💾 Sauvegarde dans la base avec configuration complète
     if (userId && product_id) {
-      try {
-        console.log("💾 Saving mobile-first product description to database...");
+      console.log("💾 Saving to database with complete wizard configuration...");
 
+      try {
         // Désactiver les anciennes versions
         await supabaseAdmin
           .from("product_landing_pages")
@@ -659,22 +493,31 @@ Concentre-toi sur la présentation claire des informations produit sans fonction
 
         const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
 
-        // Créer la nouvelle version
+        // Créer la nouvelle version avec configuration complète
         const { error: saveError } = await supabaseAdmin.from("product_landing_pages").insert({
           product_id: product_id,
           seller_id: userId,
-          html_content: content,
+          html_content: html,
           config: {
+            // Configuration du wizard
+            wizard_config: {
+              style,
+              layout,
+              mainColor,
+              content_length: length,
+              customHighlights,
+              mentionBrand,
+              vendorSource,
+              vendor,
+              mobileFirst,
+            },
+            // Données techniques
             language,
-            vendor: finalVendor,
-            content_length: contentLength,
-            style,
-            layout,
-            mainColor,
-            customHighlights,
-            mobile_first: mobileFirst,
-            mobile_score: mobileScore,
-            mobile_checks: mobileChecks,
+            enrichment_status: enrichmentStatus,
+            attributes_count: attributesCount,
+            mobile_score: Object.values(configChecks).filter(Boolean).length,
+            config_checks: configChecks,
+            generated_at: new Date().toISOString(),
           },
           version: newVersion,
           is_active: true,
@@ -683,46 +526,51 @@ Concentre-toi sur la présentation claire des informations produit sans fonction
         if (saveError) {
           console.error("❌ Save error:", saveError);
         } else {
-          console.log(`✅ Mobile-first product description v${newVersion} saved successfully`);
+          console.log(`✅ Product description v${newVersion} saved with wizard configuration`);
         }
       } catch (saveError) {
         console.error("❌ Database save error:", saveError);
       }
     }
 
+    console.log("✅ Product description generation successful with wizard configuration!");
     return new Response(
       JSON.stringify({
+        html,
         success: true,
-        htmlLandingPage: content,
-        optimizedTitle: title,
-        mediaCount,
-        variantCount,
-        mobileOptimized: true,
-        mobileScore,
-        mobileChecks,
-        wordCount,
-        config: {
+        enrichment_status: enrichmentStatus,
+        attributes_count: attributesCount,
+        html_length: html.length,
+        config_checks: configChecks,
+        applied_config: {
           style,
-          layout,
           mainColor,
-          contentLength,
-          language,
+          layout,
+          length,
+          mentionBrand,
+          vendor,
+          customHighlights: customHighlights ? `${customHighlights.substring(0, 50)}...` : null,
           mobileFirst,
         },
+        mobile_optimized: true,
+        wizard_integration: "complete",
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       },
     );
-  } catch (error) {
-    console.error("❌ Error generating mobile-first product description:", error);
+  } catch (err) {
+    console.error("💥 ERROR in wizard configuration:", err);
     return new Response(
       JSON.stringify({
+        error: err instanceof Error ? err.message : String(err),
+        type: "WIZARD_CONFIGURATION_ERROR",
         success: false,
-        error: error instanceof Error ? error.message : String(error),
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
