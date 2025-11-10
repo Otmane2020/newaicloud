@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { sanitizeGeneratedHTML, validateHTML } from "../_shared/html-normalizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -568,16 +569,35 @@ Retourne UNIQUEMENT le contenu HTML.`;
     }
 
     const data = await aiResponse.json();
-    let html = data?.choices?.[0]?.message?.content?.trim() || "";
-    html = sanitizeHtmlUnsafe(html);
+    let rawHtml = data?.choices?.[0]?.message?.content?.trim() || "";
 
-    if (!html || html.length < 400)
+    if (!rawHtml || rawHtml.length < 400)
       return new Response(
         JSON.stringify({ error: language === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
 
-    console.log("✅ HTML generated successfully (length:", html.length, "chars)");
+    console.log("[AI] Raw HTML received, length:", rawHtml.length);
+
+    // 🧹 Apply HTML normalization and sanitization
+    const html = sanitizeGeneratedHTML(rawHtml, productTitle, language || "en");
+
+    // 📊 Validate final HTML
+    const validation = validateHTML(html);
+    if (!validation.valid) {
+      console.warn("[Validation] Issues detected:", validation.issues);
+    }
+
+    // Log structure details
+    console.log("[Validation] HTML structure:", {
+      hasDoctype: html.includes("<!DOCTYPE html>"),
+      hasHtml: html.includes("<html"),
+      hasClosingBody: html.includes("</body>"),
+      hasClosingHtml: html.includes("</html>"),
+      length: html.length,
+    });
+
+    console.log("✅ HTML generated and sanitized successfully");
 
     // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
     if (userId && product_id) {
