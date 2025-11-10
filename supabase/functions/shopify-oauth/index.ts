@@ -141,7 +141,6 @@ serve(async (req) => {
         await supabase.from("shopify_pending_connections").insert({
           shop_url: shop,
           access_token: accessToken,
-          scope: tokenData.scope,
           commercial_name: oauthState.shop_name || shop,
           pending_token: pendingToken,
           expires_at: expiresAt.toISOString(),
@@ -164,10 +163,8 @@ serve(async (req) => {
         await supabase.from("shopify_connections").upsert({
           user_id: oauthState.user_id,
           store_url: shop,
-          shop_domain: shop,
           store_name: oauthState.shop_name,
           access_token: accessToken,
-          scope: tokenData.scope,
           connected_at: new Date().toISOString(),
           is_active: true,
           connection_type: "oauth",

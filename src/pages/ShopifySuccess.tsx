@@ -32,7 +32,7 @@ const ShopifySuccess = () => {
             .from('shopify_connections')
             .select('id')
             .eq('user_id', user.id)
-            .eq('shop_domain', shop)
+            .eq('store_url', shop)
             .order('created_at', { ascending: false })
             .limit(1);
 
