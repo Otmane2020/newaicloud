@@ -518,11 +518,13 @@ CRITICAL RULES - FOLLOW EXACTLY:
    - Accents/highlights: bg-brand-primary text-white or border-brand-accent
    - Text: text-gray-900 (primary), text-gray-700 (secondary)
    - FORBIDDEN: :root, --primary-color as global CSS variables
+   - MANDATORY: Use inline style="background-color: hsl(...)" on hero, main sections, and accent elements
+   - Example: style="background-color: hsl(${designTokens.primary})"
    
 3. RESPONSIVE LAYOUT (CRITICAL - FOLLOW EXAMPLES EXACTLY):
    
    HERO SECTION WITH PRODUCT (MANDATORY STRUCTURE):
-   <div class="bg-brand-primary text-white">
+   <div style="background-color: hsl(${designTokens.primary})" class="bg-brand-primary text-white">
      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
          <div>
@@ -541,11 +543,27 @@ CRITICAL RULES - FOLLOW EXACTLY:
      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
        <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-12 text-center">Key Benefits</h2>
        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-         <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors">
+         <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors" style="border-color: hsl(${designTokens.primary})">
            <h3 class="text-xl font-semibold text-gray-900 mb-3">Benefit Title</h3>
            <p class="text-gray-700">Description text here...</p>
          </div>
        </div>
+     </div>
+   </div>
+   
+   ACCENT SECTION EXAMPLE:
+   <div style="background-color: hsl(${designTokens.accent})" class="bg-brand-accent py-16 sm:py-20">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       <h2 class="text-3xl font-bold text-white mb-8">Section Title</h2>
+       <p class="text-white/90 text-lg">Content here...</p>
+     </div>
+   </div>
+   
+   SURFACE SECTION EXAMPLE:
+   <div style="background-color: hsl(${designTokens.surface})" class="bg-brand-surface py-16 sm:py-20">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       <h2 class="text-3xl font-bold text-gray-900 mb-8">Section Title</h2>
+       <p class="text-gray-700 text-lg">Content here...</p>
      </div>
    </div>
    
