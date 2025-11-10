@@ -70,6 +70,7 @@ interface Product {
   seo_description: string | null;
   image_url: string | null;
   shopify_id: number | null;
+  vendor: string | null;
 }
 
 interface ProductImage {
@@ -119,7 +120,7 @@ export default function ProductTitleDescription() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedImageType, setSelectedImageType] = useState<"primary" | "secondary">("primary");
   const [showWhiteBgConfigDialog, setShowWhiteBgConfigDialog] = useState(false);
-  const [currentProcessing, setCurrentProcessing] = useState<{ index: number; total: number; title: string } | null>(null);
+  const [currentProcessing, setCurrentProcessing] = useState<{ index: number; total: number; title: string; vendor?: string | null } | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showOptimizationConfirm, setShowOptimizationConfirm] = useState(false);
@@ -156,7 +157,7 @@ export default function ProductTitleDescription() {
 
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, description, seo_title, seo_description, image_url, shopify_id")
+        .select("id, title, description, seo_title, seo_description, image_url, shopify_id, vendor")
         .eq("seller_id", user.id)
         .order("imported_at", { ascending: false });
 
@@ -241,7 +242,8 @@ export default function ProductTitleDescription() {
         setCurrentProcessing({
           index: i + 1,
           total: productArray.length,
-          title: product.title
+          title: product.title,
+          vendor: product.vendor
         });
         
         toast.loading(`Génération ${i + 1}/${productArray.length}: ${product.title.substring(0, 40)}... (SEO + HTML)`, { id: toastId });
@@ -293,7 +295,7 @@ export default function ProductTitleDescription() {
         // Update local state
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
-          .select("id, title, description, seo_title, seo_description, image_url, shopify_id")
+          .select("id, title, description, seo_title, seo_description, image_url, shopify_id, vendor")
           .eq("id", productId)
           .single();
 
@@ -1126,6 +1128,7 @@ export default function ProductTitleDescription() {
                     />
                   </TableHead>
                   <TableHead className="w-20">{t.contentOptimization.table.headers.image}</TableHead>
+                  <TableHead className="w-32">Marque</TableHead>
                   <TableHead>{t.contentOptimization.table.headers.title}</TableHead>
                   <TableHead className="hidden lg:table-cell">{t.contentOptimization.table.headers.description}</TableHead>
                   <TableHead className="w-32">{t.contentOptimization.table.headers.status}</TableHead>
@@ -1153,6 +1156,17 @@ export default function ProductTitleDescription() {
                           <ImageIcon className="h-6 w-6 text-muted-foreground" />
                         </div>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {product.vendor ? (
+                          <Badge variant="outline" className="font-normal">
+                            {product.vendor}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground italic text-xs">Non définie</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">

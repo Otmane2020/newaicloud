@@ -22,6 +22,7 @@ interface Product {
   seo_title?: string;
   seo_description?: string;
   image_url?: string;
+  vendor?: string | null;
 }
 
 interface ProductTitleLandingDialogProps {
@@ -29,7 +30,7 @@ interface ProductTitleLandingDialogProps {
   onOpenChange: (open: boolean) => void;
   products: Product[];
   isGenerating: boolean;
-  currentProcessing?: { index: number; total: number; title: string } | null;
+  currentProcessing?: { index: number; total: number; title: string; vendor?: string | null } | null;
   onCancel?: () => void;
   onSync: () => void;
   syncLoading?: boolean;
@@ -299,6 +300,11 @@ export function ProductTitleLandingDialog({
                 <p className="text-sm font-semibold text-primary truncate px-4">
                   {currentProcessing.title.substring(0, 50)}...
                 </p>
+                {currentProcessing.vendor && (
+                  <p className="text-xs text-muted-foreground">
+                    Marque: <span className="font-medium">{currentProcessing.vendor}</span>
+                  </p>
+                )}
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <span className="animate-pulse">●</span>
                   <span>Analyse IA</span>
@@ -446,6 +452,16 @@ export function ProductTitleLandingDialog({
                         {(selectedProduct.seo_title || selectedProduct.title || "").length >= 50 &&
                           (selectedProduct.seo_title || selectedProduct.title || "").length <= 60 &&
                           " ✓ Longueur idéale SEO (50-60 car)"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Marque / Vendor</h3>
+                      <p className="text-base font-medium">
+                        {selectedProduct.vendor || "Non définie"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Marque du produit générée automatiquement
                       </p>
                     </div>
 
