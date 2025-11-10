@@ -71,8 +71,24 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
     if (userError || !user) {
-      console.error('[LIMITS] Auth error:', userError);
-      throw new Error(TRANSLATIONS[lang].unauthorized);
+      console.error('[LIMITS] Auth error details:', {
+        error: userError,
+        hasUser: !!user,
+        authHeader: authHeader?.substring(0, 20) + '...',
+      });
+      
+      // Return 401 instead of throwing to provide better error feedback
+      return new Response(
+        JSON.stringify({ 
+          error: TRANSLATIONS[lang].unauthorized,
+          details: 'Invalid or expired authentication token. Please sign in again.',
+          code: 'AUTH_ERROR'
+        }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // Create admin client for privileged operations
