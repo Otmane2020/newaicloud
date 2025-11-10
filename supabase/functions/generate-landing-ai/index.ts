@@ -62,7 +62,65 @@ function buildVisionSummary(v: any, language = "fr") {
 - Matériaux : ${materials}
 - Finitions : ${finishes}
 - Qualité : ${quality}
-- Cas d’usage : ${usecases}`;
+- Cas d'usage : ${usecases}`;
+}
+
+function buildEnrichedAttributes(product: any, language = "fr"): string {
+  if (!product) return "";
+  
+  const sections = [];
+  
+  // Visual attributes
+  if (product.ai_color || product.ai_material) {
+    sections.push(language === "en" ? "\nVISUAL ATTRIBUTES (MUST DISPLAY IN HTML):" : "\nATTRIBUTS VISUELS (OBLIGATOIRE À AFFICHER):");
+    if (product.ai_color) sections.push(`- ${language === "en" ? "Color" : "Couleur"}: ${product.ai_color}`);
+    if (product.ai_material) sections.push(`- ${language === "en" ? "Material" : "Matériau"}: ${product.ai_material}`);
+    if (product.ai_shape) sections.push(`- ${language === "en" ? "Shape" : "Forme"}: ${product.ai_shape}`);
+    if (product.ai_texture) sections.push(`- ${language === "en" ? "Texture" : "Texture"}: ${product.ai_texture}`);
+    if (product.ai_finish) sections.push(`- ${language === "en" ? "Finish" : "Finition"}: ${product.ai_finish}`);
+    if (product.ai_pattern) sections.push(`- ${language === "en" ? "Pattern" : "Motif"}: ${product.ai_pattern}`);
+  }
+  
+  // Dimensions - CRITICAL TO DISPLAY
+  if (product.smart_length || product.smart_width || product.smart_height) {
+    sections.push("\n" + (language === "en" ? "DIMENSIONS (MUST CREATE SPECS TABLE):" : "DIMENSIONS (CRÉER TABLEAU CARACTÉRISTIQUES):"));
+    if (product.smart_length) 
+      sections.push(`- ${language === "en" ? "Length" : "Longueur"}: ${product.smart_length} ${product.smart_length_unit || 'cm'}`);
+    if (product.smart_width) 
+      sections.push(`- ${language === "en" ? "Width" : "Largeur"}: ${product.smart_width} ${product.smart_width_unit || 'cm'}`);
+    if (product.smart_height) 
+      sections.push(`- ${language === "en" ? "Height" : "Hauteur"}: ${product.smart_height} ${product.smart_height_unit || 'cm'}`);
+    if (product.smart_weight) 
+      sections.push(`- ${language === "en" ? "Weight" : "Poids"}: ${product.smart_weight} ${product.smart_weight_unit || 'kg'}`);
+    if (product.smart_diameter) 
+      sections.push(`- ${language === "en" ? "Diameter" : "Diamètre"}: ${product.smart_diameter} ${product.smart_diameter_unit || 'cm'}`);
+    if (product.smart_depth) 
+      sections.push(`- ${language === "en" ? "Depth" : "Profondeur"}: ${product.smart_depth} ${product.smart_depth_unit || 'cm'}`);
+    if (product.smart_seat_height) 
+      sections.push(`- ${language === "en" ? "Seat height" : "Hauteur d'assise"}: ${product.smart_seat_height} ${product.smart_seat_height_unit || 'cm'}`);
+  }
+  
+  // Advanced Vision AI analysis
+  if (product.ai_vision_analysis) {
+    sections.push("\n" + (language === "en" ? "DETAILED ANALYSIS (USE IN DESCRIPTION):" : "ANALYSE DÉTAILLÉE (UTILISER DANS DESCRIPTION):"));
+    sections.push(product.ai_vision_analysis);
+    if (product.ai_craftsmanship_level) 
+      sections.push(`- ${language === "en" ? "Craftsmanship" : "Artisanat"}: ${product.ai_craftsmanship_level}`);
+    if (product.ai_presentation_quality) 
+      sections.push(`- ${language === "en" ? "Quality" : "Qualité"}: ${product.ai_presentation_quality}/10`);
+  }
+  
+  // Categorization
+  if (product.category || product.style || product.room) {
+    sections.push("\n" + (language === "en" ? "CATEGORY & CONTEXT:" : "CATÉGORIE & CONTEXTE:"));
+    if (product.category) sections.push(`- ${language === "en" ? "Category" : "Catégorie"}: ${product.category}`);
+    if (product.sub_category) sections.push(`- ${language === "en" ? "Type" : "Type"}: ${product.sub_category}`);
+    if (product.style) sections.push(`- Style: ${product.style}`);
+    if (product.room) sections.push(`- ${language === "en" ? "Room" : "Pièce"}: ${product.room}`);
+    if (product.functionality) sections.push(`- ${language === "en" ? "Function" : "Fonction"}: ${product.functionality}`);
+  }
+  
+  return sections.join("\n");
 }
 
 serve(async (req) => {
@@ -177,70 +235,177 @@ serve(async (req) => {
         ? "No variant"
         : "Aucune variante";
 
+    // Build layout-specific instructions
+    const layoutInstructions = layout === "minimal" 
+      ? (language === "en" 
+        ? "Layout: MINIMAL - Hero + Gallery + Specs table + CTA only. Keep it clean and focused."
+        : "Layout: MINIMAL - Hero + Galerie + Tableau specs + CTA uniquement. Simple et épuré.")
+      : layout === "detailed"
+      ? (language === "en"
+        ? "Layout: DETAILED - Include all sections with rich content, multiple feature cards, detailed specs."
+        : "Layout: DETAILED - Inclure toutes les sections avec contenu riche, cartes de fonctionnalités, specs détaillées.")
+      : layout === "premium"
+      ? (language === "en"
+        ? "Layout: PREMIUM - Luxury feel with elegant spacing, premium materials section, craftsmanship details, sustainability story."
+        : "Layout: PREMIUM - Ambiance luxe avec espacement élégant, section matériaux premium, détails artisanat, histoire durabilité.")
+      : (language === "en"
+        ? "Layout: STANDARD - Hero, Gallery, Key Benefits, Specs, FAQ, CTA."
+        : "Layout: STANDARD - Hero, Galerie, Points forts, Caractéristiques, FAQ, CTA.");
+
+    const styleAdaptation = style
+      ? (language === "en"
+        ? `\nDesign Style: Adapt the tone and visual style to match "${style}" aesthetic (typography, spacing, color accents).`
+        : `\nStyle Design: Adapter le ton et le style visuel pour correspondre à l'esthétique "${style}" (typographie, espacement, accents couleur).`)
+      : "";
+
     const prompt =
       language === "en"
-        ? `
-You are a Shopify UX/UI expert and eCommerce copywriter.
-Generate a **complete Tailwind HTML landing page**, mobile-first and high-converting.
-Sections required: Hero, Gallery, Vision AI, Key Benefits, Specs, Care, Sustainability, Reviews, FAQ, Final CTA.
+        ? `You are a Shopify UX/UI expert and eCommerce copywriter.
+
+**CRITICAL MOBILE-FIRST REQUIREMENT:**
+- Start with mobile base styles (no breakpoint prefix)
+- Add tablet styles with sm: prefix
+- Add desktop styles with md: and lg: prefixes
+- Test on 375px width first, then scale up
+- Use responsive text: text-2xl sm:text-3xl md:text-4xl
+- Mobile padding: px-4, Desktop padding: sm:px-6 lg:px-8
 
 Product: ${productTitle}
 Brand: ${vendor}
 Description: ${description}
-Style: ${style}
-Main color: ${mainColor}
-Layout: ${layout}
-Text length: ${length}
-Images:
+Main Color: ${mainColor}
+${layoutInstructions}${styleAdaptation}
+Content Length: ${length === "short" ? "Concise, punchy" : length === "long" ? "Detailed, comprehensive" : "Balanced"}
+
+Images Available:
 ${imgs}
-Variants:
+
+Product Variants:
 ${vars}
-Vision AI:
-${visualAnalysis}
-Highlights:
-${customHighlights}
-Enriched Attributes:
+
+${visualAnalysis ? `Vision AI Analysis:\n${visualAnalysis}\n` : ""}
+
+Custom Highlights:
+${customHighlights || "None provided - use product attributes"}
+
 ${buildEnrichedAttributes(productData, language)}
 
-Constraints:
-- Mobile-first (sm:, md:, lg:)
-- Container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Responsive grid (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3)
-- Use ${mainColor} for CTAs & titles
-- No <script> or <style> tags
-- Return ONLY the HTML block
-`
-        : `
-Tu es un expert UX/UI Shopify et copywriter e-commerce.
-Génère un **HTML Tailwind complet**, responsive mobile-first et à forte conversion.
-Rubriques requises : Hero, Galerie, Vision AI, Points forts, Caractéristiques, Entretien, Durabilité, Avis, FAQ, CTA final.
+**MANDATORY SECTIONS TO INCLUDE:**
+
+1. **Hero Section** (mobile-optimized)
+   - Product title: text-3xl sm:text-4xl md:text-5xl font-bold
+   - Subtitle with key benefit
+   - Price and CTA button
+   - Hero image: w-full h-64 sm:h-80 md:h-96 object-cover
+
+2. **Image Gallery** (swipeable on mobile)
+   - Grid: grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4
+   - Images from the list above
+
+3. **Key Features/Benefits Cards**
+   - Grid: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4
+   - Use AI attributes (color, material, style, mood, finishes)
+   - Icon + Title + Description per card
+
+4. **SPECIFICATIONS TABLE** (MANDATORY IF DIMENSIONS EXIST)
+   - Responsive table: block sm:table
+   - Display ALL dimensions provided above
+   - 2-column layout on mobile, full table on desktop
+
+5. **Materials & Craftsmanship** (if available)
+   - Use ai_material, ai_finish, ai_craftsmanship_level
+   - Quality score if provided
+
+6. **FAQ Section** (accordion on mobile)
+   - 4-6 common questions based on product type
+   - Collapsible on mobile
+
+7. **Final CTA**
+   - Sticky button on mobile: fixed bottom-0 w-full
+   - Use ${mainColor} for button background
+
+**Styling Rules:**
+- Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Section spacing: space-y-8 sm:space-y-12 md:space-y-16
+- Card padding: p-4 sm:p-6
+- Button: px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg
+- NO <script>, NO <style> tags
+- Use ${mainColor} for primary elements
+
+Return ONLY the HTML code, nothing else.`
+        : `Tu es un expert UX/UI Shopify et copywriter e-commerce.
+
+**EXIGENCE CRITIQUE MOBILE-FIRST:**
+- Commence avec styles mobile de base (sans préfixe breakpoint)
+- Ajoute styles tablette avec préfixe sm:
+- Ajoute styles desktop avec préfixes md: et lg:
+- Teste sur largeur 375px d'abord, puis agrandit
+- Texte responsive: text-2xl sm:text-3xl md:text-4xl
+- Padding mobile: px-4, Desktop: sm:px-6 lg:px-8
 
 Produit : ${productTitle}
 Marque : ${vendor}
 Description : ${description}
-Style : ${style}
-Couleur principale : ${mainColor}
-Disposition : ${layout}
-Longueur du texte : ${length}
-Images :
+Couleur Principale : ${mainColor}
+${layoutInstructions}${styleAdaptation}
+Longueur Contenu : ${length === "short" ? "Concis, percutant" : length === "long" ? "Détaillé, complet" : "Équilibré"}
+
+Images Disponibles :
 ${imgs}
-Variantes :
+
+Variantes Produit :
 ${vars}
-Vision AI :
-${visualAnalysis}
-Points forts :
-${customHighlights}
-Attributs enrichis :
+
+${visualAnalysis ? `Analyse Vision AI :\n${visualAnalysis}\n` : ""}
+
+Points Forts Personnalisés :
+${customHighlights || "Aucun fourni - utiliser les attributs produit"}
+
 ${buildEnrichedAttributes(productData, language)}
 
-Contraintes :
-- Mobile-first (sm:, md:, lg:)
+**SECTIONS OBLIGATOIRES À INCLURE :**
+
+1. **Section Hero** (optimisée mobile)
+   - Titre produit : text-3xl sm:text-4xl md:text-5xl font-bold
+   - Sous-titre avec bénéfice clé
+   - Prix et bouton CTA
+   - Image hero : w-full h-64 sm:h-80 md:h-96 object-cover
+
+2. **Galerie Images** (swipe mobile)
+   - Grille : grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4
+   - Images de la liste ci-dessus
+
+3. **Cartes Caractéristiques/Bénéfices**
+   - Grille : grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4
+   - Utiliser attributs AI (couleur, matériau, style, ambiance, finitions)
+   - Icône + Titre + Description par carte
+
+4. **TABLEAU SPÉCIFICATIONS** (OBLIGATOIRE SI DIMENSIONS EXISTENT)
+   - Table responsive : block sm:table
+   - Afficher TOUTES les dimensions fournies ci-dessus
+   - Layout 2 colonnes mobile, table complète desktop
+
+5. **Matériaux & Artisanat** (si disponible)
+   - Utiliser ai_material, ai_finish, ai_craftsmanship_level
+   - Score qualité si fourni
+
+6. **Section FAQ** (accordéon mobile)
+   - 4-6 questions courantes selon type produit
+   - Pliable sur mobile
+
+7. **CTA Final**
+   - Bouton sticky mobile : fixed bottom-0 w-full
+   - Utiliser ${mainColor} pour fond bouton
+
+**Règles Styling :**
 - Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-- Grille : grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-- Couleur ${mainColor} sur CTA et titres
-- Aucun <script> ni <style>
-- Retourne uniquement le HTML
-`;
+- Espacement sections : space-y-8 sm:space-y-12 md:space-y-16
+- Padding cartes : p-4 sm:p-6
+- Bouton : px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg
+- AUCUN <script>, AUCUN <style>
+- Utiliser ${mainColor} pour éléments primaires
+
+Retourne UNIQUEMENT le code HTML, rien d'autre.`;
 
     // --- AI call with timeout (60s) ---
     console.log("🤖 Starting AI generation...");
