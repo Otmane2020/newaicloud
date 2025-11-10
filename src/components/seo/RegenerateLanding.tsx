@@ -265,7 +265,7 @@ export default function RegenerateLanding({
           description: product.description,
           vendor: resolvedVendor,
           style: config.style,
-          mainColor: config.colorScheme,
+          mainColor: typeof config.colorScheme === 'string' ? config.colorScheme : config.colorScheme.primary,
           layout: config.layout,
           length: config.contentLength,
           customHighlights: config.customHighlights,
