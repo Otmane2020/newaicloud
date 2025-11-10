@@ -98,8 +98,32 @@ serve(async (req) => {
 
     const body = await req.json();
 
-    const { productTitle, imageUrl, description, vendor, style, mainColor, layout, length, customHighlights } =
-      body ?? {};
+    const { 
+      productTitle, 
+      productDescription,
+      productImage,
+      imageUrl, 
+      description, 
+      vendor, 
+      style, 
+      mainColor, 
+      layout, 
+      length, 
+      customHighlights,
+      colorTheme,
+      highlights,
+      customText,
+      enrichedContent
+    } = body ?? {};
+
+    // Normalize parameters for backward compatibility
+    const finalImageUrl = productImage || imageUrl;
+    const finalDescription = productDescription || description;
+    const finalHighlights = highlights || (customHighlights ? customHighlights.split("\n").filter((h: string) => h.trim()) : []);
+    const finalCustomText = customText || "";
+    
+    // Extract colors from colorTheme if provided
+    const finalMainColor = colorTheme?.primary || mainColor || "#0ea5e9";
 
     if (!productTitle) {
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
@@ -122,9 +146,9 @@ serve(async (req) => {
           : "détaillé et approfondi";
 
     // 🔍 VISION AI ANALYSIS
-    let visualAnalysis = "";
+    let visualAnalysis = enrichedContent || "";
 
-    if (imageUrl && authHeader) {
+    if (finalImageUrl && authHeader && !visualAnalysis) {
       console.log("[generate-landing-ai] 🔍 Analyzing image with Vision AI...");
 
       try {
@@ -135,7 +159,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            imageUrl,
+            imageUrl: finalImageUrl,
             productContext: `${productTitle}${vendor ? ` by ${vendor}` : ""}`,
           }),
         });
@@ -180,42 +204,40 @@ ANALYSE VISUELLE DU PRODUIT (Vision AI) :
     const currentStyleGuide = styleGuides[style] || styleGuides["moderne"];
 
     // 🪄 ENHANCED AI PROMPT
+    const highlightsText = finalHighlights.length > 0
+      ? `\n🌟 POINTS FORTS À METTRE EN AVANT (PRIORITAIRE) :\n${finalHighlights.map((h: string) => `- ${h}`).join("\n")}`
+      : "";
+    
     const prompt = `
 Tu es un designer UX/UI expert et copywriter e-commerce spécialisé dans les landing pages à forte conversion.
 
 📦 PRODUIT À METTRE EN VALEUR :
 - Titre : ${productTitle}
 ${vendor ? `- Marque : ${vendor}` : ""}
-${imageUrl ? `- Image produit : ${imageUrl}` : ""}
-${description ? `- Description : ${description}` : ""}
-${
-  customHighlights
-    ? `\n🌟 POINTS FORTS À METTRE EN AVANT (PRIORITAIRE) :\n${customHighlights
-        .split("\n")
-        .map((h: string) => `- ${h.trim()}`)
-        .filter((h: string) => h.length > 2)
-        .join("\n")}`
-    : ""
-}
+${finalImageUrl ? `- Image produit : ${finalImageUrl}` : ""}
+${finalDescription ? `- Description : ${finalDescription}` : ""}
+${highlightsText}
+${finalCustomText ? `\n📝 INFORMATIONS ADDITIONNELLES :\n${finalCustomText}` : ""}
 
 ${visualAnalysis ? `${visualAnalysis}` : ""}
 
 🎨 DESIGN & STYLE :
 - Style visuel : ${style}
   → Guide : ${currentStyleGuide}
-- Couleur principale (HEX) : ${mainColor}
+- Couleur principale (HEX) : ${finalMainColor}
   → **CRITIQUE** : Applique cette couleur aux boutons CTA, liens, bordures d'accent, titres importants
-  → Utilise Tailwind avec style="color: ${mainColor}" ou style="background-color: ${mainColor}" ou style="border-color: ${mainColor}"
+  → Utilise Tailwind avec style="color: ${finalMainColor}" ou style="background-color: ${finalMainColor}" ou style="border-color: ${finalMainColor}"
+${colorTheme ? `- Couleurs secondaires : ${colorTheme.secondary} (fond), ${colorTheme.accent} (accents)` : ""}
 - Layout : ${layout}
 - Longueur : ${length} (ton ${tone})
 - **DESIGN ÉLÉGANT** : Évite les icônes colorées enfantines, privilégie des icônes monochromes (text-gray-600), des formes simples et épurées, un design sophistiqué et professionnel
 
 🧱 STRUCTURE OBLIGATOIRE :
 1. HERO SECTION
-   - Titre H1 avec la couleur principale (style="color: ${mainColor}")
+   - Titre H1 avec la couleur principale (style="color: ${finalMainColor}")
    - Sous-titre accrocheur${vendor ? ` mentionnant "${vendor}"` : ""}
    - Image produit (si disponible) avec rounded-2xl et shadow-xl
-   - CTA principal avec background de la couleur principale (style="background-color: ${mainColor}")
+   - CTA principal avec background de la couleur principale (style="background-color: ${finalMainColor}")
 
 2. AVANTAGES (3-5 cartes)
    - **Icônes élégantes** : SVG monochromes simples (text-gray-600 ou text-gray-700), PAS de couleurs vives ou enfantines
@@ -250,7 +272,7 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
 🛠️ CONTRAINTES TECHNIQUES :
 ✅ Tailwind CSS uniquement (CDN déjà chargé)
 ✅ Classes responsive : sm:, md:, lg:, xl:
-✅ Couleur principale via style="color: ${mainColor}" ou style="background-color: ${mainColor}"
+✅ Couleur principale via style="color: ${finalMainColor}" ou style="background-color: ${finalMainColor}"
 ✅ Pas de <html>, <head>, <body>
 ✅ Pas de <style> inline (sauf pour appliquer mainColor)
 ✅ HTML prêt à injecter dans React dangerouslySetInnerHTML
@@ -419,7 +441,7 @@ ${visualAnalysis ? `${visualAnalysis}` : ""}
         console.log("[generate-landing-ai] ✅ Generated HTML length:", html.length, "chars");
 
         // ✅ Success
-        return new Response(JSON.stringify({ html }), {
+        return new Response(JSON.stringify({ html, generatedCode: html }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (networkError) {

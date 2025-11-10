@@ -26,6 +26,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import ProductTitleDescription from "./pages/ProductTitleDescription";
+import ProductLandingPages from "./pages/ProductLandingPages";
 import MediaHistory from "./pages/MediaHistory";
 import Collections from "./pages/Collections";
 import Blog from "./pages/Blog";
@@ -127,6 +128,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <ProductTitleDescription />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/products/landing-pages"
+              element={
+                <ProtectedLayout>
+                  <ProductLandingPages />
                 </ProtectedLayout>
               }
             />

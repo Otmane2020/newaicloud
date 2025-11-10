@@ -2943,6 +2943,7 @@ export type Database = {
           image_url: string | null
           imported_at: string | null
           inventory_quantity: number | null
+          landing_page_html: string | null
           last_enriched_at: string | null
           last_optimization_at: string | null
           last_pricing_analysis: string | null
@@ -3061,6 +3062,7 @@ export type Database = {
           image_url?: string | null
           imported_at?: string | null
           inventory_quantity?: number | null
+          landing_page_html?: string | null
           last_enriched_at?: string | null
           last_optimization_at?: string | null
           last_pricing_analysis?: string | null
@@ -3179,6 +3181,7 @@ export type Database = {
           image_url?: string | null
           imported_at?: string | null
           inventory_quantity?: number | null
+          landing_page_html?: string | null
           last_enriched_at?: string | null
           last_optimization_at?: string | null
           last_pricing_analysis?: string | null
