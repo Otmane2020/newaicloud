@@ -87,7 +87,7 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (enriched.ai_design_elements) visualAttrs.push(`Éléments Design: ${enriched.ai_design_elements}`);
   if (visualAttrs.length > 0) {
     sections.push(language === "en" ? "VISUAL ATTRIBUTES:" : "ATTRIBUTS VISUELS:");
-    sections.push(visualAttrs.map(a => `- ${a}`).join("\n"));
+    sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
   }
   
   // Dimensions
@@ -113,7 +113,7 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (enriched.functionality) cats.push(`Fonctionnalité: ${enriched.functionality}`);
   if (cats.length > 0) {
     sections.push(language === "en" ? "\nCATEGORIZATION:" : "\nCATÉGORISATION:");
-    sections.push(cats.map(c => `- ${c}`).join("\n"));
+    sections.push(cats.map((c: string) => `- ${c}`).join("\n"));
   }
   
   // Quality & Analysis
@@ -123,7 +123,7 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (enriched.ai_craftsmanship_level) quality.push(`Niveau Artisanat: ${enriched.ai_craftsmanship_level}`);
   if (quality.length > 0) {
     sections.push(language === "en" ? "\nQUALITY ANALYSIS:" : "\nANALYSE QUALITÉ:");
-    sections.push(quality.map(q => `- ${q}`).join("\n"));
+    sections.push(quality.map((q: string) => `- ${q}`).join("\n"));
   }
   
   // Conversational Text
@@ -219,41 +219,7 @@ serve(async (req) => {
     // Fetch product data including handle, store domain, AND enriched attributes
     console.log("📦 Fetching product data with enriched attributes...");
     const [productRes, imagesRes, variantsRes, storeRes] = await Promise.all([
-      supabaseAdmin.from("shopify_products").select(`
-        handle, 
-        shopify_product_id,
-        ai_color,
-        ai_material,
-        ai_shape,
-        ai_texture,
-        ai_pattern,
-        ai_finish,
-        ai_design_elements,
-        smart_length,
-        smart_length_unit,
-        smart_width,
-        smart_width_unit,
-        smart_height,
-        smart_height_unit,
-        smart_weight,
-        smart_weight_unit,
-        smart_diameter,
-        smart_diameter_unit,
-        smart_depth,
-        smart_depth_unit,
-        smart_seat_height,
-        smart_seat_height_unit,
-        category,
-        sub_category,
-        style,
-        room,
-        functionality,
-        characteristics,
-        ai_vision_analysis,
-        ai_presentation_quality,
-        ai_craftsmanship_level,
-        chat_text
-      `).eq("id", product_id).maybeSingle(),
+      supabaseAdmin.from("shopify_products").select("*").eq("id", product_id).maybeSingle(),
       supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
       supabaseAdmin.from("product_variants").select("title, image_url, shopify_variant_id").eq("product_id", product_id),
       userId ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle() : Promise.resolve({ data: null, error: null }),
