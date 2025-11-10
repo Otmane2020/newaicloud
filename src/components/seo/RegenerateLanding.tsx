@@ -46,7 +46,7 @@ export default function RegenerateLanding({
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("mobile"); // Mobile par défaut
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("mobile");
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -88,49 +88,51 @@ export default function RegenerateLanding({
    * 🏷️ Resolve Vendor based on config
    -----------------------------*/
   const resolveVendor = async (): Promise<string> => {
-    switch (config.vendorSource) {
-      case "shopify":
-        const { data: productData } = await supabase
-          .from("shopify_products")
-          .select("vendor")
-          .eq("id", product.id)
-          .single();
-        return productData?.vendor || "Marque inconnue";
+    try {
+      switch (config.vendorSource) {
+        case "shopify":
+          console.log("🔍 Fetching vendor from Shopify...");
+          const { data: productData, error: shopifyError } = await supabase
+            .from("shopify_products")
+            .select("vendor")
+            .eq("id", product.id)
+            .single();
 
-      case "extract":
-        const words = product.title.split(" ");
-        const capitalizedWord = words.find(
-          (word) =>
-            word.length > 2 && word[0] === word[0].toUpperCase() && word.slice(1) === word.slice(1).toLowerCase(),
-        );
+          if (shopifyError) throw shopifyError;
+          return productData?.vendor || "Marque inconnue";
 
-        if (capitalizedWord) {
-          return capitalizedWord;
-        }
+        case "extract":
+          console.log("🔍 Extracting vendor from title...");
+          const words = product.title.split(" ");
+          const capitalizedWord = words.find(
+            (word) =>
+              word.length > 2 && word[0] === word[0].toUpperCase() && word.slice(1) === word.slice(1).toLowerCase(),
+          );
+          return capitalizedWord || words.find((w) => w.length > 3) || "Marque";
 
-        const fallback = words.find((w) => w.length > 3) || "Marque";
-        return fallback;
+        case "generate":
+          console.log("🔍 Generating vendor with AI...");
+          try {
+            const { data: aiData, error: aiError } = await supabase.functions.invoke("generate-vendor-name", {
+              body: {
+                productTitle: product.title,
+                productDescription: product.description,
+              },
+            });
 
-      case "generate":
-        try {
-          const { data: aiData } = await supabase.functions.invoke("generate-vendor-name", {
-            body: {
-              productTitle: product.title,
-              productDescription: product.description,
-            },
-          });
-
-          if (aiData?.vendor) {
-            return aiData.vendor;
+            if (aiError) throw aiError;
+            return aiData?.vendor || "Marque générée";
+          } catch (err) {
+            console.error("[Vendor] AI generation failed:", err);
+            return "Marque générée";
           }
-        } catch (err) {
-          console.error("[Vendor] AI generation failed:", err);
-        }
 
-        return "Marque générée";
-
-      default:
-        return "Marque inconnue";
+        default:
+          return "Marque inconnue";
+      }
+    } catch (error) {
+      console.error("Error resolving vendor:", error);
+      return "Marque inconnue";
     }
   };
 
@@ -144,14 +146,14 @@ export default function RegenerateLanding({
     }
 
     try {
-      setProgressMessage(t.landingGeneration.analyzing);
+      setProgressMessage("🔍 Analyse de l'image avec Vision AI...");
       setProgress(25);
 
       const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
         body: {
           imageUrl: imageUrl,
-          productContext: `${product.title} ${config.vendorSource === "shopify" ? "" : ""}`,
-          mobileFirst: true, // 🆕 Flag mobile-first
+          productContext: `${product.title} - ${config.style} style`,
+          detectMeasurements: true,
         },
       });
 
@@ -169,33 +171,30 @@ export default function RegenerateLanding({
   };
 
   /** ----------------------------
-   * 📏 Calculate Content Length Parameters (Optimisé Mobile)
+   * 📏 Calculate Content Length Parameters
    -----------------------------*/
   const getContentLengthParams = () => {
     switch (config.contentLength) {
-      case "short":
+      case "courte (400 mots)":
         return {
-          maxTokens: 600, // Réduit pour mobile
+          maxTokens: 600,
           wordCount: "120-180 mots",
           sections: 2,
           description: "Contenu concis optimisé mobile",
-          mobileOptimized: true,
         };
-      case "medium":
+      case "moyenne (800 mots)":
         return {
           maxTokens: 900,
           wordCount: "200-300 mots",
           sections: 3,
           description: "Contenu équilibré mobile-first",
-          mobileOptimized: true,
         };
-      case "long":
+      case "longue (1500 mots)":
         return {
           maxTokens: 1500,
           wordCount: "350-500 mots",
           sections: 4,
           description: "Contenu détaillé scroll-friendly",
-          mobileOptimized: true,
         };
       default:
         return {
@@ -203,26 +202,36 @@ export default function RegenerateLanding({
           wordCount: "200-300 mots",
           sections: 3,
           description: "Contenu équilibré mobile-first",
-          mobileOptimized: true,
         };
     }
   };
 
   /** ----------------------------
-   * ✨ Generate Landing via AI with Progress (Mobile-First)
+   * ✨ Generate Landing via AI with Progress
    -----------------------------*/
   const handleGenerate = async () => {
     try {
       setLoading(true);
       setError(null);
       setProgress(0);
-      setProgressMessage("🚀 Initialisation génération mobile-first...");
+      setProgressMessage("🚀 Initialisation génération...");
+
+      // Debug: Afficher la configuration
+      console.log("🎯 Configuration du wizard:", {
+        style: config.style,
+        mainColor: config.colorScheme,
+        layout: config.layout,
+        contentLength: config.contentLength,
+        vendorSource: config.vendorSource,
+        mentionBrand: config.mentionBrand,
+        customHighlights: config.customHighlights,
+      });
 
       await new Promise((resolve) => setTimeout(resolve, 300));
       setProgress(10);
 
       // ✅ ÉTAPE 1 : Résoudre le vendor
-      setProgressMessage("📱 Configuration mobile-first...");
+      setProgressMessage("🏷️ Résolution de la marque...");
       const resolvedVendor = await resolveVendor();
       console.log("[Landing] Resolved vendor:", resolvedVendor);
 
@@ -237,55 +246,55 @@ export default function RegenerateLanding({
       }
 
       setProgress(30);
-      setProgressMessage("🎨 Génération design responsive...");
+      setProgressMessage("🎨 Application de la configuration...");
 
-      // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur mobile
+      // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
       const contentParams = getContentLengthParams();
 
-      console.log("[Landing] Mobile-first parameters:", {
-        length: config.contentLength,
-        maxTokens: contentParams.maxTokens,
-        sections: contentParams.sections,
-        mobileOptimized: contentParams.mobileOptimized,
-      });
-
-      // ✅ ÉTAPE 4 : Générer le landing avec priorités mobile
+      // ✅ ÉTAPE 4 : Générer le landing avec TOUS les paramètres
+      console.log("🚀 Appel de la fonction Edge avec configuration complète");
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
+          // Données produit
           product_id: product.id,
           productTitle: product.title,
           imageUrl: product.image_url,
           description: product.description,
+
+          // ✅ TOUS les paramètres du wizard
           vendor: resolvedVendor,
           style: config.style,
           mainColor: config.colorScheme,
           layout: config.layout,
           length: config.contentLength,
           customHighlights: config.customHighlights,
+          mentionBrand: config.mentionBrand,
+          vendorSource: config.vendorSource,
+
+          // Données techniques
           imageAnalysis: imageAnalysis,
           contentLengthParams: contentParams,
-          mobileFirst: true, // 🆕 Flag principal
-          touchOptimized: true, // 🆕 Optimisation tactile
-          responsiveBreakpoints: {
-            mobile: "320px",
-            tablet: "768px",
-            desktop: "1024px",
-          },
+          mobileFirst: true,
+          touchOptimized: true,
+          language: "fr",
         },
       });
 
       setProgress(60);
-      setProgressMessage("📱 Optimisation mobile...");
+      setProgressMessage("🤖 Génération du contenu IA...");
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Function error:", error);
+        throw error;
+      }
+
       if (data?.error) {
+        console.error("❌ AI error:", data.error);
         const message = data.error.includes("Rate limits")
-          ? t.landingGeneration.errors.rateLimit
+          ? "Limite de requêtes atteinte. Veuillez réessayer plus tard."
           : data.error.includes("Payment required")
-            ? t.landingGeneration.errors.paymentRequired
-            : data.error.includes("LIMIT_REACHED")
-              ? t.landingGeneration.errors.limitReached
-              : data.error;
+            ? "Erreur de paiement de l'API."
+            : data.error;
         setError(message);
         toast.error(message);
         return;
@@ -293,21 +302,20 @@ export default function RegenerateLanding({
 
       await new Promise((resolve) => setTimeout(resolve, 500));
       setProgress(90);
-      setProgressMessage("✅ Finalisation responsive...");
+      setProgressMessage("✅ Finalisation...");
 
       if (data?.html?.trim()) {
-        // ✅ Validation spécifique mobile
+        // Validation du contenu généré
         const wordCount = data.html.split(/\s+/).length;
-        const hasMobileClasses =
-          data.html.includes("grid-cols-1") && data.html.includes("sm:") && data.html.includes("max-w");
+        const hasThemeColor = data.html.includes(config.colorScheme) || data.html.includes("var(--theme-color)");
 
-        console.log(`[Landing] Generated content: ${wordCount} words, Mobile optimized: ${hasMobileClasses}`);
+        console.log(`✅ Landing générée: ${wordCount} mots, Couleur appliquée: ${hasThemeColor}`);
 
         setHtmlContent(data.html);
         setProgress(100);
-        setProgressMessage(`✅ ${t.landingGeneration.success.generated} (Optimisé mobile)`);
+        setProgressMessage("✅ Landing page générée avec succès !");
 
-        toast.success("Landing page générée avec optimisation mobile !");
+        toast.success("Landing page générée avec votre configuration !");
         onGenerated?.(data.html);
 
         // Recharger les données
@@ -322,11 +330,11 @@ export default function RegenerateLanding({
           setExistingLanding(updatedLanding);
         }
       } else {
-        throw new Error(t.landingGeneration.errors.noGenerated);
+        throw new Error("Le contenu généré est vide.");
       }
     } catch (err: any) {
-      console.error("Error generating landing:", err);
-      const errorMsg = err?.message || t.landingGeneration.errors.generation;
+      console.error("❌ Error generating landing:", err);
+      const errorMsg = err?.message || "Erreur lors de la génération";
       setError(errorMsg);
       toast.error(errorMsg);
       setProgress(0);
@@ -339,30 +347,30 @@ export default function RegenerateLanding({
    * 💾 Download HTML
    -----------------------------*/
   const handleDownloadHTML = () => {
-    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContent);
+    if (!htmlContent) return toast.error("Aucun contenu à télécharger");
 
     const blob = new Blob([htmlContent], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${product.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_landing_mobile.html`;
+    a.download = `${product.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_landing.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast.success("HTML mobile téléchargé !");
+    toast.success("HTML téléchargé !");
   };
 
   /** ----------------------------
    * 🔄 Sync to Shopify
    -----------------------------*/
   const handleSyncToShopify = async () => {
-    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContentSync);
+    if (!htmlContent) return toast.error("Aucun contenu à synchroniser");
 
     try {
       setSyncing(true);
-      toast.info("Synchronisation Shopify (optimisé mobile)...");
+      toast.info("Synchronisation avec Shopify...");
 
       const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
         body: {
@@ -370,15 +378,17 @@ export default function RegenerateLanding({
           productTitle: product.title,
           productHandle: product.handle,
           htmlContent,
-          mobileOptimized: true, // 🆕 Flag mobile
+          mobileOptimized: true,
         },
       });
 
       if (error) throw error;
       if (data?.error) return toast.error(data.error);
 
-      toast.success("✅ Landing page synchronisée (mobile-first)");
-      if (data?.pageUrl) toast.info(`📱 Disponible: ${data.pageUrl}`, { duration: 10000 });
+      toast.success("✅ Landing page synchronisée !");
+      if (data?.pageUrl) {
+        toast.info(`📱 Disponible: ${data.pageUrl}`, { duration: 10000 });
+      }
 
       // Recharger les données
       const { data: updatedLanding } = await supabase
@@ -393,24 +403,29 @@ export default function RegenerateLanding({
       }
     } catch (err: any) {
       console.error("Error syncing to Shopify:", err);
-      toast.error(err?.message || t.landingGeneration.errors.sync);
+      toast.error(err?.message || "Erreur de synchronisation");
     } finally {
       setSyncing(false);
     }
   };
 
   /** ----------------------------
-   * 🧠 UI Render - Mobile First
+   * 🧠 UI Render
    -----------------------------*/
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header Mobile-First */}
+      {/* Configuration Summary */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border">
         <div className="flex items-center gap-3">
-          <Smartphone className="w-6 h-6 text-blue-600" />
+          <Palette className="w-6 h-6 text-blue-600" />
           <div>
-            <h3 className="font-bold text-lg text-gray-900">Génération Mobile-First</h3>
-            <p className="text-sm text-gray-600">Optimisé pour téléphone puis adapté desktop</p>
+            <h3 className="font-bold text-lg text-gray-900">Configuration Appliquée</h3>
+            <div className="flex flex-wrap gap-2 mt-2 text-sm text-gray-600">
+              <Badge variant="secondary">Style: {config.style}</Badge>
+              <Badge variant="secondary">Layout: {config.layout}</Badge>
+              <Badge variant="secondary">Couleur: {config.colorScheme}</Badge>
+              <Badge variant="secondary">{config.contentLength}</Badge>
+            </div>
           </div>
         </div>
       </div>
@@ -433,37 +448,35 @@ export default function RegenerateLanding({
         </div>
       )}
 
-      {/* Progress Section - Mobile Optimized */}
+      {/* Progress Section */}
       {loading && (
         <div className="bg-gradient-to-br from-blue-500/5 to-purple-500/5 p-4 rounded-2xl border border-blue-200">
           <div className="flex items-center gap-3 mb-3">
             <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
             <div className="flex-1">
-              <h3 className="font-semibold text-blue-700">🚀 Génération Mobile-First</h3>
+              <h3 className="font-semibold text-blue-700">🚀 Génération en cours</h3>
               <p className="text-xs text-gray-600 animate-pulse">{progressMessage}</p>
             </div>
           </div>
 
-          {/* Progress bar */}
           <div className="relative">
             <Progress value={progress} className="h-2" />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Mobile</span>
+              <span>Début</span>
               <span>{progress}%</span>
-              <span>Desktop</span>
+              <span>Terminé</span>
             </div>
           </div>
 
-          {/* Mobile features badges */}
           <div className="flex flex-wrap gap-1 mt-3">
             <Badge variant="secondary" className="text-xs">
-              📱 Touch Optimized
+              🎨 {config.style}
             </Badge>
             <Badge variant="secondary" className="text-xs">
-              ⚡ Fast Loading
+              🧱 {config.layout}
             </Badge>
             <Badge variant="secondary" className="text-xs">
-              🎯 Mobile-First
+              📱 Mobile-First
             </Badge>
           </div>
         </div>
@@ -475,9 +488,12 @@ export default function RegenerateLanding({
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-red-600 mt-0.5" />
             <div className="flex-1">
-              <p className="font-medium text-red-700 text-sm">Erreur</p>
+              <p className="font-medium text-red-700 text-sm">Erreur de génération</p>
               <p className="text-xs text-red-600">{error}</p>
             </div>
+            <Button variant="outline" size="sm" onClick={handleGenerate}>
+              Réessayer
+            </Button>
           </div>
         </div>
       )}
@@ -490,7 +506,7 @@ export default function RegenerateLanding({
               <CheckCircle2 className="w-5 h-5 text-green-600" />
               <div>
                 <p className="font-semibold text-green-700 text-sm">✅ Landing page générée</p>
-                <p className="text-xs text-green-600">Optimisée mobile • {getContentLengthParams().wordCount}</p>
+                <p className="text-xs text-green-600">Avec votre configuration • Optimisée mobile</p>
               </div>
             </div>
           </div>
@@ -520,19 +536,19 @@ export default function RegenerateLanding({
             <div className="flex flex-col sm:flex-row gap-2">
               <Button onClick={handleDownloadHTML} variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none">
                 <Download className="w-4 h-4" />
-                Télécharger
+                Télécharger HTML
               </Button>
 
               <Button onClick={handleSyncToShopify} disabled={syncing} size="sm" className="gap-2 flex-1 sm:flex-none">
                 {syncing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Sync...
+                    Synchronisation...
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    Synchroniser
+                    Sync Shopify
                   </>
                 )}
               </Button>
@@ -558,9 +574,9 @@ export default function RegenerateLanding({
       {/* Initial State */}
       {!loading && !htmlContent && !error && (
         <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-xl bg-gray-50">
-          <Smartphone className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-          <p className="text-sm">Prêt pour génération mobile-first</p>
-          <Button onClick={handleGenerate} className="mt-3 gap-2">
+          <Layout className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+          <p className="text-sm mb-3">Prêt à générer avec votre configuration</p>
+          <Button onClick={handleGenerate} className="gap-2">
             <Zap className="w-4 h-4" />
             Générer Landing Page
           </Button>
