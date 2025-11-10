@@ -104,25 +104,44 @@ const getShopifyProductUrl = async (product: Product): Promise<string | null> =>
 const generateHtmlPreview = (product: Product, shopifyUrl?: string | null): string => {
   const title = product.seo_title || product.title;
   const description = product.seo_description || "";
-  const htmlDescription = product.description || "";
+  let htmlDescription = product.description || "";
   const imageUrl = product.image_url || "";
+
+  // Remove any existing "Voir sur Shopify" buttons from the HTML to avoid duplicates
+  if (htmlDescription) {
+    // Remove buttons with "Voir sur Shopify" text
+    htmlDescription = htmlDescription.replace(
+      /<div[^>]*style="[^"]*text-align:\s*center[^"]*"[^>]*>[\s\S]*?Voir sur Shopify[\s\S]*?<\/div>/gi,
+      ''
+    );
+    htmlDescription = htmlDescription.replace(
+      /<a[^>]*>[\s\S]*?Voir sur Shopify[\s\S]*?<\/a>/gi,
+      ''
+    );
+  }
+
+  // Create the Shopify button HTML
+  const shopifyButtonHtml = shopifyUrl ? `
+    <div style="text-align: center; margin-top: 3rem; padding: 2rem 0;">
+      <a href="${shopifyUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.75rem; padding: 1.25rem 2.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.75rem; font-weight: 600; font-size: 1.25rem; text-decoration: none; box-shadow: 0 10px 20px -5px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h18v18H3V3z"/>
+          <path d="M9 9h6v6H9V9z"/>
+        </svg>
+        <span>Voir sur Shopify</span>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M7 3L14 10L7 17" />
+        </svg>
+      </a>
+    </div>
+  ` : '';
 
   // If we have a rich HTML description in the description field, use it directly
   if (htmlDescription && (htmlDescription.includes("<div") || htmlDescription.includes("<section") || htmlDescription.includes("<h1"))) {
-    // Wrap in a container for consistent styling and add Shopify button if URL exists
     return `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         ${htmlDescription}
-        ${shopifyUrl ? `
-          <div style="text-align: center; margin-top: 3rem;">
-            <a href="${shopifyUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; text-decoration: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-              <span>Voir sur Shopify</span>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M7 3L14 10L7 17" />
-              </svg>
-            </a>
-          </div>
-        ` : ''}
+        ${shopifyButtonHtml}
       </div>
     `;
   }
@@ -161,16 +180,7 @@ const generateHtmlPreview = (product: Product, shopifyUrl?: string | null): stri
           : ""
       }
       
-      ${shopifyUrl ? `
-        <div style="text-align: center; margin-top: 2rem;">
-          <a href="${shopifyUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; text-decoration: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-            <span>Voir sur Shopify</span>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M7 3L14 10L7 17" />
-            </svg>
-          </a>
-        </div>
-      ` : ''}
+      ${shopifyButtonHtml}
     </div>
   `;
 };
@@ -232,8 +242,29 @@ export function ProductTitleLandingDialog({
       ? calculateQualityScore(selectedProduct.seo_title, selectedProduct.seo_description)
       : 0;
 
-  const shopifyUrl = selectedProduct ? shopifyUrls.get(selectedProduct.id) : null;
-  const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct, shopifyUrl) : "";
+  // Get Shopify URL synchronously for immediate display
+  const [currentShopifyUrl, setCurrentShopifyUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const loadCurrentUrl = async () => {
+      if (!selectedProduct) return;
+      
+      // Try from cached map first
+      const cachedUrl = shopifyUrls.get(selectedProduct.id);
+      if (cachedUrl) {
+        setCurrentShopifyUrl(cachedUrl);
+        return;
+      }
+      
+      // Otherwise load it fresh
+      const url = await getShopifyProductUrl(selectedProduct);
+      setCurrentShopifyUrl(url);
+    };
+    
+    loadCurrentUrl();
+  }, [selectedProduct, shopifyUrls]);
+
+  const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct, currentShopifyUrl) : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
