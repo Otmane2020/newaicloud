@@ -226,6 +226,38 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   return sections.join("\n");
 }
 
+function detectLanguage(text: string): string {
+  if (!text || text.length < 10) return "fr"; // Default to French
+  
+  const cleanText = text.toLowerCase().trim();
+  
+  // French indicators (articles, common words)
+  const frenchWords = ['le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'avec', 'pour', 'dans', 'sur'];
+  const frenchCount = frenchWords.filter(w => 
+    cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)
+  ).length;
+  
+  // English indicators
+  const englishWords = ['the', 'and', 'for', 'with', 'this', 'that', 'from', 'our', 'your'];
+  const englishCount = englishWords.filter(w => 
+    cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)
+  ).length;
+  
+  // Spanish indicators
+  const spanishWords = ['el', 'la', 'los', 'las', 'un', 'una', 'con', 'para', 'que', 'en'];
+  const spanishCount = spanishWords.filter(w => 
+    cleanText.includes(` ${w} `) || cleanText.startsWith(`${w} `)
+  ).length;
+  
+  // Determine language by highest count
+  const counts = { fr: frenchCount, en: englishCount, es: spanishCount };
+  const maxLang = Object.entries(counts).reduce((a, b) => b[1] > a[1] ? b : a)[0];
+  
+  console.log(`🌍 Language detection: FR=${frenchCount}, EN=${englishCount}, ES=${spanishCount} → ${maxLang}`);
+  
+  return maxLang;
+}
+
 function sanitizeHtmlUnsafe(html: string): string {
   if (!html) return "";
   let out = html
@@ -283,8 +315,11 @@ serve(async (req) => {
       layout,
       length,
       customHighlights,
-      language = "fr",
+      language,
     } = body ?? {};
+    
+    // Auto-detect language from product title and description if not provided
+    const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
 
     // Generate design tokens
     const designTokens = generateDesignTokens(colorScheme || { primary: mainColor });
@@ -377,7 +412,7 @@ serve(async (req) => {
     );
 
     // Build enriched summary
-    const enrichedSummary = buildEnrichedProductSummary(enrichedProduct, language);
+    const enrichedSummary = buildEnrichedProductSummary(enrichedProduct, detectedLanguage);
     if (enrichedSummary) {
       console.log("📊 Using enriched attributes in landing page generation");
     }
@@ -407,7 +442,7 @@ serve(async (req) => {
         if (visionError) {
           console.log("⚠️ Vision AI failed:", visionError.message);
         } else if (visionData?.attributes) {
-          visualAnalysis = buildVisionSummary(visionData.attributes, language);
+          visualAnalysis = buildVisionSummary(visionData.attributes, detectedLanguage);
           console.log("✅ Vision AI analysis completed");
         }
       } catch (err) {
@@ -420,12 +455,12 @@ serve(async (req) => {
     // --- Prompt bilingual ---
     const imgs = images.length
       ? images.map((i) => `- ${i.src}`).join("\n")
-      : language === "en"
+      : detectedLanguage === "en"
         ? "No additional image"
         : "Aucune image supplémentaire";
     const vars = variants.length
       ? variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")
-      : language === "en"
+      : detectedLanguage === "en"
         ? "No variant"
         : "Aucune variante";
 
@@ -433,7 +468,7 @@ serve(async (req) => {
     const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
 
     const prompt =
-      language === "en"
+      detectedLanguage === "en"
         ? `You are a Shopify UX/UI expert specialized in product landing pages.
 Generate a complete, professional Tailwind HTML landing page.
 
@@ -584,7 +619,7 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
             {
               role: "system",
               content:
-                language === "en"
+                detectedLanguage === "en"
                   ? "You are a professional Shopify landing page designer. You create beautiful, conversion-optimized HTML pages with real working buttons and links. You write persuasive copy and structure content for maximum engagement. Always include functional onclick handlers and href attributes for all buttons and links. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections."
                   : "Tu es un designer professionnel de landing pages Shopify. Tu crées de belles pages HTML optimisées pour la conversion avec de vrais boutons et liens fonctionnels. Tu rédiges un contenu persuasif et structures l'information pour un engagement maximum. Inclus toujours des handlers onclick et attributs href fonctionnels pour tous les boutons et liens. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes.",
             },
@@ -614,14 +649,14 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
 
     if (!rawHtml || rawHtml.length < 400)
       return new Response(
-        JSON.stringify({ error: language === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
+        JSON.stringify({ error: detectedLanguage === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
 
     console.log("[AI] Raw HTML received, length:", rawHtml.length);
 
     // 🧹 Apply HTML normalization and sanitization
-    const html = sanitizeGeneratedHTML(rawHtml, productTitle, language || "en");
+    const html = sanitizeGeneratedHTML(rawHtml, productTitle, detectedLanguage || "en");
 
     // 📊 Validate final HTML
     const validation = validateHTML(html);
@@ -667,7 +702,7 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
         seller_id: userId,
         html_content: html,
         config: {
-          language,
+          language: detectedLanguage,
           vendor,
           image_url: imageUrl,
           description,
