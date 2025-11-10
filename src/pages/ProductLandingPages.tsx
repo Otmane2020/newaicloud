@@ -209,27 +209,39 @@ export default function ProductLandingPages() {
         setCurrentProductIndex(i + 1);
         const baseProgress = (i / productsArray.length) * 100;
 
-        // 1. Enrichir le produit avec Vision AI
-        setGenerationStep(`Analyse de l'image (${i + 1}/${productsArray.length})`);
-        setGenerationProgress(baseProgress + 5);
+        // Paralléliser Vision AI et enrichissement pour gagner du temps
+        setGenerationStep(`Analyse IA (${i + 1}/${productsArray.length})`);
+        setGenerationProgress(baseProgress + 10);
         
-        let enrichedContent = "";
-        if (product.image_url) {
-          try {
-            const { data: visionData } = await supabase.functions.invoke("analyze-image-with-vision", {
-              body: { imageUrl: product.image_url },
-            });
-            if (visionData?.analysis) {
-              enrichedContent = visionData.analysis;
-            }
-          } catch (error) {
-            console.error("Vision AI error:", error);
-          }
-        }
+        const [visionResult, enrichResult] = await Promise.all([
+          // Vision AI si image disponible
+          product.image_url
+            ? supabase.functions.invoke("analyze-image-with-vision", {
+                body: { imageUrl: product.image_url },
+              }).catch(err => {
+                console.error("Vision AI error:", err);
+                return { data: null };
+              })
+            : Promise.resolve({ data: null }),
+          
+          // Enrichissement du produit
+          supabase.functions.invoke("enrich-product", {
+            body: {
+              title: product.title,
+              description: product.description,
+              imageUrl: product.image_url,
+            },
+          }).catch(err => {
+            console.error("Enrich error:", err);
+            return { data: null };
+          })
+        ]);
 
-        // 2. Générer le titre et description optimisés
+        const enrichedContent = visionResult.data?.analysis || "";
+        
+        // Générer le titre et description optimisés
         setGenerationStep(`Optimisation SEO (${i + 1}/${productsArray.length})`);
-        setGenerationProgress(baseProgress + 15);
+        setGenerationProgress(baseProgress + 25);
         
         const { data: titleData } = await supabase.functions.invoke("generate-title-description", {
           body: {
@@ -244,9 +256,9 @@ export default function ProductLandingPages() {
           },
         });
 
-        // 3. Générer le HTML de la landing page
-        setGenerationStep(`Génération de la landing page (${i + 1}/${productsArray.length})`);
-        setGenerationProgress(baseProgress + 30);
+        // Générer le HTML de la landing page
+        setGenerationStep(`Génération landing page (${i + 1}/${productsArray.length})`);
+        setGenerationProgress(baseProgress + 50);
         
         const selectedTheme = COLOR_THEMES.find((t) => t.id === config.colorTheme);
         const { data: landingData } = await supabase.functions.invoke("generate-landing-ai", {
@@ -266,7 +278,7 @@ export default function ProductLandingPages() {
         if (landingData?.generatedCode) {
           // Sauvegarder la landing page
           setGenerationStep(`Sauvegarde (${i + 1}/${productsArray.length})`);
-          setGenerationProgress(baseProgress + 20);
+          setGenerationProgress(baseProgress + 25);
           
           await supabase
             .from("shopify_products")
@@ -521,10 +533,10 @@ export default function ProductLandingPages() {
             progress={generationProgress}
             estimatedTime={
               generationProgress < 30 
-                ? "45-60 sec" 
+                ? "30-40 sec" 
                 : generationProgress < 70 
-                ? "20-30 sec" 
-                : "5-10 sec"
+                ? "15-20 sec" 
+                : "5 sec"
             }
             details="L'IA analyse vos produits avec Vision AI et génère des landing pages optimisées"
           />
