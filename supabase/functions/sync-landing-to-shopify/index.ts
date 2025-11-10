@@ -15,6 +15,7 @@ serve(async (req) => {
     const { productId, productTitle, productHandle, htmlContent } = await req.json();
 
     console.log("[sync-landing-to-shopify] Syncing landing page for product:", productId);
+    console.log("[sync-landing-to-shopify] Using encrypted_token column (v2)");
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
