@@ -252,33 +252,26 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
 
-    // 🔧 STEP 1: Product Enrichment (with timeout)
-    console.log("🔧 Starting product enrichment...");
-    let enrichmentStatus = "skipped";
+    // 🔧 STEP 1: Product Enrichment (background task - non-blocking)
+    console.log("🔧 Starting product enrichment in background...");
+    let enrichmentStatus = "in_progress";
     let attributesCount = 0;
 
-    try {
-      const enrichController = new AbortController();
-      const enrichTimeout = setTimeout(() => enrichController.abort(), 20000);
-
-      const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
-        body: { productId: product_id },
-        signal: enrichController.signal,
-      });
-
-      clearTimeout(enrichTimeout);
-
-      if (enrichError) {
-        console.log("⚠️ Enrichment failed:", enrichError.message);
-        enrichmentStatus = "failed";
+    // Start enrichment in background without waiting
+    const enrichmentPromise = supabaseAdmin.functions.invoke("enrich-product", {
+      body: { productId: product_id },
+    }).then(({ error }) => {
+      if (error) {
+        console.log("⚠️ Background enrichment failed:", error.message);
       } else {
-        console.log("✅ Enrichment completed successfully");
-        enrichmentStatus = "success";
+        console.log("✅ Background enrichment completed");
       }
-    } catch (err) {
-      console.log("⚠️ Enrichment timeout or error (continuing without it):", err.message);
-      enrichmentStatus = "failed";
-    }
+    }).catch(err => {
+      console.log("⚠️ Background enrichment error:", err.message);
+    });
+
+    // Don't wait for enrichment - continue immediately
+    console.log("⏭️ Continuing without waiting for enrichment");
 
     // Fetch product data including handle, store domain, AND enriched attributes
     console.log("📦 Fetching product data with enriched attributes...");
@@ -331,40 +324,9 @@ serve(async (req) => {
       console.log("📊 Using enriched attributes in landing page generation");
     }
 
-    // Vision AI with timeout (15s) - Optional, won't block if it fails
+    // Vision AI - Skip for speed (enrichment provides enough data)
     let visualAnalysis = "";
-    if (imageUrl) {
-      try {
-        console.log("🔍 Starting Vision AI analysis...");
-        const visionController = new AbortController();
-        const visionTimeout = setTimeout(() => visionController.abort(), 15000);
-
-        const { data: visionData, error: visionError } = await supabaseAdmin.functions.invoke(
-          "analyze-image-with-vision",
-          {
-            body: {
-              imageUrl,
-              productContext: `${productTitle} ${vendor || ""}`,
-              detectMeasurements: true,
-            },
-            signal: visionController.signal,
-          },
-        );
-
-        clearTimeout(visionTimeout);
-
-        if (visionError) {
-          console.log("⚠️ Vision AI failed:", visionError.message);
-        } else if (visionData?.attributes) {
-          visualAnalysis = buildVisionSummary(visionData.attributes, language);
-          console.log("✅ Vision AI analysis completed");
-        }
-      } catch (err) {
-        console.log("⚠️ Vision AI timeout or error (continuing without it):", err.message);
-      }
-    } else {
-      console.log("⏭️ No image URL provided, skipping Vision AI");
-    }
+    console.log("⏭️ Skipping Vision AI for faster generation");
 
     // Build product URLs
     const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
