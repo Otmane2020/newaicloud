@@ -50,7 +50,7 @@ serve(async (req) => {
       throw new Error("Product title is required");
     }
 
-    console.log("🧠 Generating product landing page for:", title);
+    console.log("🧠 Generating product description for:", title);
 
     // Récupérer les données complètes du produit
     let enrichedData: any = null;
@@ -119,39 +119,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Construire l'URL du produit Shopify
-    const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
-
-    // Construire les liens d'ancrage pour la navigation
-    const anchorLinks = {
-      features: `${productUrl}#features`,
-      gallery: `${productUrl}#gallery`,
-      specifications: `${productUrl}#specifications`,
-      variants: `${productUrl}#variants`,
-    };
-
-    // Guides de style améliorés
-    const styleGuides: Record<string, string> = {
-      moderne:
-        "Gradients subtils, ombres douces, coins arrondis (rounded-xl), espacements généreux, typographie sans-serif, design épuré avec accents de couleur",
-      minimaliste:
-        "Espace blanc abondant, typographie épurée, lignes nettes, palette limitée à 1-2 couleurs, design fonctionnel et élégant",
-      scandinave:
-        "Tons naturels et neutres, textures organiques, simplicité fonctionnelle, ambiance chaleureuse et lumineuse",
-      premium:
-        "Contrastes élégants, typographie serif pour titres, ombres profondes, espacements luxueux, détails raffinés",
-      industriel: "Textures brutes, tons neutres et sombres, typographie bold, éléments métalliques suggérés",
-      nature: "Tons verts et terreux, textures organiques, design fluide et apaisant",
-    };
-
-    const currentStyleGuide = styleGuides[style] || styleGuides["moderne"];
-    const tone =
-      contentLength === "short"
-        ? "concis et percutant"
-        : contentLength === "medium"
-          ? "équilibré et informatif"
-          : "complet et détaillé";
-
     // Construire le contexte enrichi
     const buildEnrichedContext = () => {
       if (!enrichedData) return "";
@@ -160,7 +127,7 @@ serve(async (req) => {
 
       // Attributs visuels
       if (enrichedData.ai_color || enrichedData.ai_material) {
-        sections.push("\n🎨 ATTRIBUTS VISUELS (INTÉGRER DANS LE DESIGN):");
+        sections.push("\n🎨 ATTRIBUTS VISUELS:");
         if (enrichedData.ai_color) sections.push(`- Couleur dominante: ${enrichedData.ai_color}`);
         if (enrichedData.ai_material) sections.push(`- Matériau principal: ${enrichedData.ai_material}`);
         if (enrichedData.ai_shape) sections.push(`- Forme: ${enrichedData.ai_shape}`);
@@ -171,7 +138,7 @@ serve(async (req) => {
 
       // Dimensions complètes
       if (enrichedData.smart_length || enrichedData.smart_width || enrichedData.smart_height) {
-        sections.push("\n📐 DIMENSIONS PRÉCISES (CRÉER UN TABLEAU ÉLÉGANT):");
+        sections.push("\n📐 DIMENSIONS PRÉCISES:");
         if (enrichedData.smart_length)
           sections.push(`- Longueur: ${enrichedData.smart_length} ${enrichedData.smart_length_unit || "cm"}`);
         if (enrichedData.smart_width)
@@ -197,21 +164,21 @@ serve(async (req) => {
       return sections.join("\n");
     };
 
-    // 🔹 PROMPT COMPLET POUR LANDING PAGE SHOPIFY PREMIUM
+    // 🔹 PROMPT CORRIGÉ POUR DESCRIPTION PRODUIT SIMPLE
     const prompt =
       language === "en"
         ? `
-You are an expert Shopify eCommerce designer and UX copywriter. Create a HIGH-CONVERTING, MOBILE-FIRST product landing page with premium responsive design.
+You are an expert Shopify product description writer. Create a CLEAN, PROFESSIONAL HTML product description that will be inserted into Shopify's description field.
 
-🎯 OBJECTIVE: Generate a persuasive landing page that drives conversions with smooth navigation between sections.
+🚫 IMPORTANT: This is a PRODUCT DESCRIPTION only. NO prices, NO "Add to Cart" buttons, NO e-commerce functionality.
 
 📦 PRODUCT DATA:
 - Title: ${title}
 ${finalVendor ? `- Brand: ${finalVendor}` : ""}
-${existingDescription ? `- Description: ${existingDescription}` : ""}
+${existingDescription ? `- Existing Description: ${existingDescription}` : ""}
 ${
   customHighlights
-    ? `\n🌟 KEY SELLING POINTS:\n${customHighlights
+    ? `\n🌟 KEY FEATURES:\n${customHighlights
         .split("\n")
         .map((h: string) => `- ${h.trim()}`)
         .filter((h: string) => h.length > 2)
@@ -219,134 +186,119 @@ ${
     : ""
 }
 
-📸 IMAGE GALLERY (${finalImages.length} images):
-${finalImages.map((img: any, index: number) => `- Image ${index + 1}: ${img.src || img}${img.width && img.height ? ` (${img.width}x${img.height}px)` : ""}${img.alt_text ? ` - ${img.alt_text}` : ""}`).join("\n")}
+📸 IMAGES (${finalImages.length} available):
+${finalImages.map((img: any, index: number) => `- ${img.src || img}${img.alt_text ? ` (${img.alt_text})` : ""}`).join("\n")}
 
-🔄 PRODUCT VARIANTS (${finalVariants.length} variants):
-${finalVariants.map((v: any, idx: number) => `- Variant ${idx + 1}: ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}${v.price ? ` - $${v.price}` : ""}${v.sku ? ` - SKU: ${v.sku}` : ""}`).join("\n")}
-
-${visionAnalysis ? `\n🎨 VISION AI ANALYSIS (USE FOR CONTENT):\n${JSON.stringify(visionAnalysis, null, 2)}` : ""}
+${visionAnalysis ? `\n🔍 VISION ANALYSIS:\n${JSON.stringify(visionAnalysis, null, 2)}` : ""}
 ${buildEnrichedContext()}
 
-🎨 DESIGN CONFIG:
-- Style: ${style} → ${currentStyleGuide}
-- Primary Color: ${mainColor} (use for buttons, accents, highlights)
-- Layout: ${layout} (for image gallery)
-- Tone: ${tone}
-- Language: ${language}
+🎨 DESIGN REQUIREMENTS:
+- Clean, professional appearance
+- Simple responsive layout
+- Use color ${mainColor} for headings and accents
+- Focus on readability and content presentation
+- Mobile-friendly design
 
-🛒 SHOPIFY NAVIGATION (USE THESE LINKS INSTEAD OF "ADD TO CART"):
-- "View Features" → <a href="${anchorLinks.features}" target="_blank">
-- "See Gallery" → <a href="${anchorLinks.gallery}" target="_blank">
-- "Technical Specs" → <a href="${anchorLinks.specifications}" target="_blank">
-- "View Options" → <a href="${anchorLinks.variants}" target="_blank">
-- "Discover Product" → <a href="${productUrl}" target="_blank">
+📱 SIMPLE RESPONSIVE STRUCTURE:
 
-📱 MANDATORY MOBILE-FIRST SECTIONS:
+1. PRODUCT INTRODUCTION
+   - Clean heading with product name
+   - Brief compelling description
+   - Focus on main benefits
 
-1. HERO SECTION (with navigation)
-   - Eye-catching headline with ${mainColor} accent
-   - Compelling subheadline${finalVendor ? ` mentioning "${finalVendor}"` : ""}
-   - Responsive image gallery (use ${finalImages.length} images)
-   - Navigation buttons to other sections
+2. VISUAL FEATURES
+   ${
+     enrichedData.ai_color || enrichedData.ai_material
+       ? `
+   - Highlight key visual attributes
+   - Simple badge-style presentation
+   `
+       : ""
+   }
 
-2. FEATURES & BENEFITS (id="features")
-   - 3-4 key benefits with elegant SVG icons (monochrome)
-   - Focus on customer pain points and solutions
-   - Use enriched attributes: ${enrichedData?.ai_color || "color"}, ${enrichedData?.ai_material || "materials"}
+3. IMAGE GALLERY
+   - Display all ${finalImages.length} images
+   - Simple grid: grid-cols-2 md:grid-cols-3 gap-4
+   - Clean image presentation
 
-3. IMAGE GALLERY (id="gallery")
-   - Display all ${finalImages.length} images in ${layout} layout
-   - Show image dimensions when available
-   - Responsive grid: grid-cols-2 md:grid-cols-3 lg:grid-cols-4
+4. TECHNICAL SPECIFICATIONS
+   ${
+     enrichedData.smart_length || enrichedData.smart_width
+       ? `
+   - Clean specifications table
+   - Simple two-column layout
+   - Include all available dimensions
+   `
+       : ""
+   }
 
-4. TECHNICAL SPECIFICATIONS (id="specifications")
-   - Professional specifications table
-   - Include all dimensions and technical data
-   - Use enriched attributes for detailed specs
+5. MATERIALS & CRAFTSMANSHIP
+   ${
+     enrichedData.ai_material || enrichedData.ai_finish
+       ? `
+   - Detail materials and quality
+   - Focus on durability and construction
+   `
+       : ""
+   }
 
-5. VARIANTS & OPTIONS (id="variants")
-   - Display all ${finalVariants.length} variants clearly
-   - Show variant differences, prices, SKUs
-   - Clean comparison layout
+6. USAGE & BENEFITS
+   - Practical applications
+   - Customer benefits
+   - Simple bullet points
 
-6. TRUST & GUARANTEE
-   - Shipping, returns, warranty badges
-   - Social proof elements
+🎨 SIMPLE TAILWIND CLASSES:
+- Container: max-w-4xl mx-auto px-4
+- Grid: grid-cols-2 md:grid-cols-3 gap-4
+- Text: text-base md:text-lg
+- Colors: text-[${mainColor}] for accents
+- Spacing: my-6, py-4, etc.
 
-🎨 CRITICAL DESIGN RULES:
-• MOBILE-FIRST: Start with mobile layout (320px)
-• Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-• Responsive grid: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-• Typography: text-base sm:text-lg lg:text-xl
-• Buttons: w-full sm:w-auto for mobile/desktop
-• Images: w-full h-auto object-cover with proper aspect ratios
-• Use Tailwind CSS only - NO custom CSS
-• NO <script> or <style> tags
-• Clean HTML ready for Shopify
-• Smooth navigation between sections
+🚫 STRICTLY PROHIBITED:
+- NO "Add to Cart" buttons
+- NO pricing information
+- NO checkout functionality
+- NO complex JavaScript
+- NO external stylesheets
+- NO iframes or embedded content
 
-📸 IMAGE LAYOUT EXAMPLES:
-${
-  layout === "grid"
-    ? `
-Grid Layout Example:
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-  ${finalImages.map((img: any) => `<img src="${img.src || img}" alt="${img.alt_text || title}" class="w-full aspect-square object-cover rounded-lg shadow-md hover:shadow-xl transition-shadow" loading="lazy" />`).join("\n  ")}
+✅ REQUIRED OUTPUT:
+- Pure HTML with simple Tailwind classes
+- Clean, semantic structure
+- Mobile-responsive design
+- Professional product presentation
+- All images from provided list
+- Comprehensive product information
+
+Example image grid:
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-8">
+  ${finalImages.map((img: any) => `<img src="${img.src || img}" alt="${img.alt_text || title}" class="w-full h-auto rounded-lg shadow-sm" loading="lazy">`).join("\n  ")}
 </div>
-`
-    : ""
-}
 
-${
-  layout === "carousel"
-    ? `
-Carousel Layout Example:
-<div class="flex overflow-x-auto snap-x snap-mandatory space-x-4 py-4 scrollbar-hide">
-  ${finalImages.map((img: any) => `<div class="flex-shrink-0 w-80 snap-center"><img src="${img.src || img}" alt="${img.alt_text || title}" class="w-full h-64 object-cover rounded-lg shadow-md" loading="lazy" /></div>`).join("\n  ")}
-</div>
-`
-    : ""
-}
-
-${
-  layout === "masonry"
-    ? `
-Masonry Layout Example:
-<div class="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-  ${finalImages.map((img: any) => `<img src="${img.src || img}" alt="${img.alt_text || title}" class="w-full mb-4 rounded-lg shadow-md break-inside-avoid" loading="lazy" />`).join("\n  ")}
-</div>
-`
-    : ""
-}
-
-NAVIGATION BUTTON EXAMPLES:
-<div class="flex flex-wrap gap-3 justify-center">
-  <a href="${anchorLinks.features}" target="_blank" style="background-color: ${mainColor}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white hover:opacity-90 transition-all">
-    View Features
-  </a>
-  <a href="${anchorLinks.gallery}" target="_blank" class="inline-flex items-center px-6 py-3 border border-${mainColor.replace("#", "")} text-base font-medium rounded-md text-${mainColor.replace("#", "")} bg-transparent hover:bg-${mainColor.replace("#", "")} hover:text-white transition-all">
-    See Gallery
-  </a>
-  <a href="${anchorLinks.specifications}" target="_blank" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
-    Technical Specs
-  </a>
+Example specifications:
+<div class="bg-gray-50 rounded-lg p-6 my-8">
+  <h3 class="text-xl font-semibold mb-4 text-[${mainColor}]">Technical Specifications</h3>
+  <div class="space-y-2">
+    ${enrichedData.smart_length ? `<div class="flex justify-between py-2 border-b"><span>Length</span><span>${enrichedData.smart_length} ${enrichedData.smart_length_unit || "cm"}</span></div>` : ""}
+    ${enrichedData.smart_width ? `<div class="flex justify-between py-2 border-b"><span>Width</span><span>${enrichedData.smart_width} ${enrichedData.smart_width_unit || "cm"}</span></div>` : ""}
+    ${enrichedData.smart_height ? `<div class="flex justify-between py-2 border-b"><span>Height</span><span>${enrichedData.smart_height} ${enrichedData.smart_height_unit || "cm"}</span></div>` : ""}
+  </div>
 </div>
 
 Return ONLY clean HTML without markdown or code blocks.
 `
         : `
-Tu es un designer Shopify expert et rédacteur UX. Crée une LANDING PAGE PREMIUM qui convertit, avec un design responsive mobile-first.
+Tu es un expert en rédaction de descriptions produit Shopify. Crée une DESCRIPTION DE PRODUIT HTML PROPRE et PROFESSIONNELLE qui sera insérée dans le champ description de Shopify.
 
-🎯 OBJECTIF: Générer une page produit persuasive qui convertit avec une navigation fluide entre les sections.
+🚫 IMPORTANT: Ceci est une DESCRIPTION DE PRODUIT uniquement. PAS de prix, PAS de boutons "Ajouter au Panier", PAS de fonctionnalité e-commerce.
 
 📦 DONNÉES PRODUIT:
 - Titre: ${title}
 ${finalVendor ? `- Marque: ${finalVendor}` : ""}
-${existingDescription ? `- Description: ${existingDescription}` : ""}
+${existingDescription ? `- Description existante: ${existingDescription}` : ""}
 ${
   customHighlights
-    ? `\n🌟 ARGUMENTS DE VENTE:\n${customHighlights
+    ? `\n🌟 CARACTÉRISTIQUES PRINCIPALES:\n${customHighlights
         .split("\n")
         .map((h: string) => `- ${h.trim()}`)
         .filter((h: string) => h.length > 2)
@@ -354,124 +306,109 @@ ${
     : ""
 }
 
-📸 GALERIE IMAGES (${finalImages.length} images):
-${finalImages.map((img: any, index: number) => `- Image ${index + 1}: ${img.src || img}${img.width && img.height ? ` (${img.width}x${img.height}px)` : ""}${img.alt_text ? ` - ${img.alt_text}` : ""}`).join("\n")}
+📸 IMAGES (${finalImages.length} disponibles):
+${finalImages.map((img: any, index: number) => `- ${img.src || img}${img.alt_text ? ` (${img.alt_text})` : ""}`).join("\n")}
 
-🔄 VARIANTES PRODUIT (${finalVariants.length} variantes):
-${finalVariants.map((v: any, idx: number) => `- Variante ${idx + 1}: ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}${v.price ? ` - ${v.price}€` : ""}${v.sku ? ` - SKU: ${v.sku}` : ""}`).join("\n")}
-
-${visionAnalysis ? `\n🎨 ANALYSE VISION AI (UTILISER POUR LE CONTENU):\n${JSON.stringify(visionAnalysis, null, 2)}` : ""}
+${visionAnalysis ? `\n🔍 ANALYSE VISION AI:\n${JSON.stringify(visionAnalysis, null, 2)}` : ""}
 ${buildEnrichedContext()}
 
-🎨 CONFIGURATION DESIGN:
-- Style: ${style} → ${currentStyleGuide}
-- Couleur: ${mainColor} (boutons, accents, surbrillance)
-- Layout: ${layout} (pour la galerie)
-- Ton: ${tone}
-- Langue: ${language}
+🎨 EXIGENCES DESIGN:
+- Apparence propre et professionnelle
+- Layout responsive simple
+- Utiliser la couleur ${mainColor} pour titres et accents
+- Focus sur la lisibilité et présentation du contenu
+- Design mobile-friendly
 
-🛒 NAVIGATION SHOPIFY (UTILISER CES LIENS AU LIEU DE "AJOUTER AU PANIER"):
-- "Voir caractéristiques" → <a href="${anchorLinks.features}" target="_blank">
-- "Voir galerie" → <a href="${anchorLinks.gallery}" target="_blank">
-- "Spécifications techniques" → <a href="${anchorLinks.specifications}" target="_blank">
-- "Voir options" → <a href="${anchorLinks.variants}" target="_blank">
-- "Découvrir le produit" → <a href="${productUrl}" target="_blank">
+📱 STRUCTURE RESPONSIVE SIMPLE:
 
-📱 SECTIONS OBLIGATOIRES MOBILE-FIRST:
+1. INTRODUCTION PRODUIT
+   - Titre propre avec nom du produit
+   - Description brève et convaincante
+   - Focus sur bénéfices principaux
 
-1. SECTION HERO (avec navigation)
-   - Titre accrocheur avec couleur ${mainColor}
-   - Sous-titre persuasif${finalVendor ? ` mentionnant "${finalVendor}"` : ""}
-   - Galerie d'images responsive (utiliser les ${finalImages.length} images)
-   - Boutons de navigation vers autres sections
+2. CARACTÉRISTIQUES VISUELLES
+   ${
+     enrichedData.ai_color || enrichedData.ai_material
+       ? `
+   - Met en avant attributs visuels clés
+   - Présentation style badges simple
+   `
+       : ""
+   }
 
-2. CARACTÉRISTIQUES (id="features")
-   - 3-4 avantages clés avec icônes SVG élégantes (monochrome)
-   - Focus sur problèmes clients et solutions
-   - Utiliser attributs enrichis: ${enrichedData?.ai_color || "couleur"}, ${enrichedData?.ai_material || "matériaux"}
+3. GALERIE IMAGES
+   - Afficher les ${finalImages.length} images
+   - Grille simple: grid-cols-2 md:grid-cols-3 gap-4
+   - Présentation image propre
 
-3. GALERIE IMAGES (id="gallery")
-   - Afficher les ${finalImages.length} images en layout ${layout}
-   - Montrer dimensions images si disponibles
-   - Grid responsive: grid-cols-2 md:grid-cols-3 lg:grid-cols-4
+4. CARACTÉRISTIQUES TECHNIQUES
+   ${
+     enrichedData.smart_length || enrichedData.smart_width
+       ? `
+   - Tableau spécifications propre
+   - Layout deux colonnes simple
+   - Inclure toutes dimensions disponibles
+   `
+       : ""
+   }
 
-4. SPÉCIFICATIONS TECHNIQUES (id="specifications")
-   - Tableau professionnel des spécifications
-   - Inclure toutes dimensions et données techniques
-   - Utiliser attributs enrichis pour specs détaillées
+5. MATÉRIAUX & QUALITÉ
+   ${
+     enrichedData.ai_material || enrichedData.ai_finish
+       ? `
+   - Détail matériaux et qualité
+   - Focus sur durabilité et construction
+   `
+       : ""
+   }
 
-5. VARIANTES & OPTIONS (id="variants")
-   - Afficher clairement les ${finalVariants.length} variantes
-   - Montrer différences variantes, prix, SKU
-   - Layout comparaison épuré
+6. UTILISATION & AVANTAGES
+   - Applications pratiques
+   - Bénéfices clients
+   - Points simples sous forme liste
 
-6. CONFIANCE & GARANTIE
-   - Badges livraison, retour, garantie
-   - Éléments preuve sociale
+🎨 CLASSES TAILWIND SIMPLES:
+- Container: max-w-4xl mx-auto px-4
+- Grille: grid-cols-2 md:grid-cols-3 gap-4
+- Texte: text-base md:text-lg
+- Couleurs: text-[${mainColor}] pour accents
+- Espacement: my-6, py-4, etc.
 
-🎨 RÈGLES DESIGN CRITIQUES:
-• MOBILE-FIRST: Commencer layout mobile (320px)
-• Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-• Grid responsive: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-• Typographie: text-base sm:text-lg lg:text-xl
-• Boutons: w-full sm:w-auto mobile/desktop
-• Images: w-full h-auto object-cover avec bons ratios
-• Utiliser Tailwind CSS uniquement - PAS de CSS custom
-• PAS de balises <script> ou <style>
-• HTML propre pour Shopify
-• Navigation fluide entre sections
+🚫 STRICTEMENT INTERDIT:
+- PAS de boutons "Ajouter au Panier"
+- PAS d'informations de prix
+- PAS de fonctionnalité checkout
+- PAS de JavaScript complexe
+- PAS de feuilles de style externes
+- PAS d'iframes ou contenu embarqué
 
-📸 EXEMPLES LAYOUT IMAGES:
-${
-  layout === "grid"
-    ? `
-Layout Grid:
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-  ${finalImages.map((img: any) => `<img src="${img.src || img}" alt="${img.alt_text || title}" class="w-full aspect-square object-cover rounded-lg shadow-md hover:shadow-xl transition-shadow" loading="lazy" />`).join("\n  ")}
+✅ SORTIE REQUISE:
+- HTML pur avec classes Tailwind simples
+- Structure sémantique propre
+- Design responsive mobile
+- Présentation produit professionnelle
+- Toutes images de la liste fournie
+- Informations produit complètes
+
+Exemple grille images:
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-8">
+  ${finalImages.map((img: any) => `<img src="${img.src || img}" alt="${img.alt_text || title}" class="w-full h-auto rounded-lg shadow-sm" loading="lazy">`).join("\n  ")}
 </div>
-`
-    : ""
-}
 
-${
-  layout === "carousel"
-    ? `
-Layout Carousel:
-<div class="flex overflow-x-auto snap-x snap-mandatory space-x-4 py-4 scrollbar-hide">
-  ${finalImages.map((img: any) => `<div class="flex-shrink-0 w-80 snap-center"><img src="${img.src || img}" alt="${img.alt_text || title}" class="w-full h-64 object-cover rounded-lg shadow-md" loading="lazy" /></div>`).join("\n  ")}
-</div>
-`
-    : ""
-}
-
-${
-  layout === "masonry"
-    ? `
-Layout Masonry:
-<div class="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-  ${finalImages.map((img: any) => `<img src="${img.src || img}" alt="${img.alt_text || title}" class="w-full mb-4 rounded-lg shadow-md break-inside-avoid" loading="lazy" />`).join("\n  ")}
-</div>
-`
-    : ""
-}
-
-EXEMPLES BOUTONS NAVIGATION:
-<div class="flex flex-wrap gap-3 justify-center">
-  <a href="${anchorLinks.features}" target="_blank" style="background-color: ${mainColor}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white hover:opacity-90 transition-all">
-    Voir caractéristiques
-  </a>
-  <a href="${anchorLinks.gallery}" target="_blank" class="inline-flex items-center px-6 py-3 border border-${mainColor.replace("#", "")} text-base font-medium rounded-md text-${mainColor.replace("#", "")} bg-transparent hover:bg-${mainColor.replace("#", "")} hover:text-white transition-all">
-    Voir galerie
-  </a>
-  <a href="${anchorLinks.specifications}" target="_blank" class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
-    Spécifications
-  </a>
+Exemple spécifications:
+<div class="bg-gray-50 rounded-lg p-6 my-8">
+  <h3 class="text-xl font-semibold mb-4 text-[${mainColor}]">Caractéristiques Techniques</h3>
+  <div class="space-y-2">
+    ${enrichedData.smart_length ? `<div class="flex justify-between py-2 border-b"><span>Longueur</span><span>${enrichedData.smart_length} ${enrichedData.smart_length_unit || "cm"}</span></div>` : ""}
+    ${enrichedData.smart_width ? `<div class="flex justify-between py-2 border-b"><span>Largeur</span><span>${enrichedData.smart_width} ${enrichedData.smart_width_unit || "cm"}</span></div>` : ""}
+    ${enrichedData.smart_height ? `<div class="flex justify-between py-2 border-b"><span>Hauteur</span><span>${enrichedData.smart_height} ${enrichedData.smart_height_unit || "cm"}</span></div>` : ""}
+  </div>
 </div>
 
 Retourne UNIQUEMENT du HTML propre sans markdown ou blocs de code.
 `;
 
-    // 🔹 Appel Lovable AI
+    // 🔹 Appel Lovable AI avec modèle GPT-4
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -479,18 +416,19 @@ Retourne UNIQUEMENT du HTML propre sans markdown ou blocs de code.
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4", // ✅ Changement vers GPT-4
         messages: [
           {
             role: "system",
             content:
               language === "en"
-                ? "You are a professional Shopify product description writer. You create beautiful, conversion-optimized HTML landing pages with real working buttons and links. You write persuasive copy and structure content for maximum engagement. Always include functional onclick handlers and href attributes for all buttons and links."
-                : "Tu es un rédacteur professionnel de descriptions produit Shopify. Tu crées de belles landing pages HTML optimisées pour la conversion avec de vrais boutons et liens fonctionnels. Tu rédiges un contenu persuasif et structures l'information pour un engagement maximum. Inclus toujours des handlers onclick et attributs href fonctionnels pour tous les boutons et liens.",
+                ? "You are a professional Shopify product description writer. You create clean, professional HTML product descriptions using simple Tailwind CSS. You focus on presenting product information clearly without any e-commerce functionality. No prices, no add to cart buttons, just beautiful product presentation that works well in Shopify's description field."
+                : "Tu es un rédacteur professionnel de descriptions produit Shopify. Tu crées des descriptions de produit HTML propres et professionnelles avec Tailwind CSS simple. Tu te concentres sur la présentation claire des informations produit sans aucune fonctionnalité e-commerce. Pas de prix, pas de boutons ajouter au panier, juste une belle présentation produit qui fonctionne bien dans le champ description de Shopify.",
           },
           { role: "user", content: prompt },
         ],
-        max_completion_tokens: 8000,
+        max_tokens: 4000,
+        temperature: 0.7,
       }),
     });
 
@@ -512,7 +450,7 @@ Retourne UNIQUEMENT du HTML propre sans markdown ou blocs de code.
       .replace(/<\/html>[\s\S]*$/i, "")
       .trim();
 
-    console.log("✅ Landing page generated successfully");
+    console.log("✅ Product description generated successfully");
 
     // Métriques
     const mediaCount = finalImages.length;
@@ -528,8 +466,6 @@ Retourne UNIQUEMENT du HTML propre sans markdown ou blocs de code.
         variantCount,
         mobileOptimized: true,
         wordCount,
-        hasNavigation: true,
-        sections: ["hero", "features", "gallery", "specifications", "variants"],
         config: {
           style,
           layout,
@@ -544,7 +480,7 @@ Retourne UNIQUEMENT du HTML propre sans markdown ou blocs de code.
       },
     );
   } catch (error) {
-    console.error("❌ Error generating landing page:", error);
+    console.error("❌ Error generating product description:", error);
     return new Response(
       JSON.stringify({
         success: false,
