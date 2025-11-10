@@ -48,7 +48,7 @@ export function AiBackgroundConfigDialog({
   const [config, setConfig] = useState<AiBackgroundConfig>({
     prompt: '',
     format: 'square',
-    similarity: 'medium',
+    similarity: 'very-close',
     imageType: 'primary',
     selectedGalleryImages: new Map()
   });
@@ -287,14 +287,14 @@ export function AiBackgroundConfigDialog({
             <Label htmlFor="custom-prompt">Ou créez votre propre prompt (en anglais)</Label>
             <Textarea
               id="custom-prompt"
-              placeholder="Ex: Place this product on a wooden table with natural sunlight..."
+              placeholder="Ex: Place this product in a premium e-commerce setting with professional lighting, elegant backdrop, and attractive staging that drives customer engagement and conversion. Create a visually appealing environment optimized for online sales and Google Shopping."
               value={config.prompt}
               onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
               rows={4}
               className="resize-none text-xs sm:text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance
+              💡 Conseil : Décrivez un environnement premium qui valorise le produit et incite à l'achat
             </p>
           </div>
         </div>

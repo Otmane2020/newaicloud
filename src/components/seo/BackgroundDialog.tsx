@@ -185,7 +185,7 @@ export function BackgroundDialog({
             <Textarea
               value={localPrompt}
               onChange={(e) => handlePromptChange(e.target.value)}
-              placeholder="Ou décrivez votre propre style d'arrière-plan en anglais..."
+              placeholder="Ex: Place this product in a premium e-commerce setting with professional lighting, elegant backdrop, and attractive staging that drives customer engagement and conversion. Create a visually appealing environment optimized for online sales and Google Shopping."
               className="min-h-[60px] sm:min-h-[80px] text-xs sm:text-sm"
             />
           </div>
@@ -232,7 +232,7 @@ export function BackgroundDialog({
                   </div>
                 </div>
 
-                {preview.status === 'error' && (
+                {(preview.status === 'error' || preview.status === 'success') && (
                   <Button
                     size="sm"
                     variant="outline"
