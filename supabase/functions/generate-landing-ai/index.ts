@@ -493,25 +493,42 @@ CRITICAL RULES - FOLLOW EXACTLY:
    - Text: text-gray-900 (primary), text-gray-700 (secondary)
    - FORBIDDEN: :root, --primary-color as global CSS variables
    
-   EXAMPLE HERO:
-   <div class="bg-brand-primary text-white py-16 sm:py-24">
-     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-       <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold">${productTitle}</h1>
+3. RESPONSIVE LAYOUT (CRITICAL - FOLLOW EXAMPLES EXACTLY):
+   
+   HERO SECTION WITH PRODUCT (MANDATORY STRUCTURE):
+   <div class="bg-brand-primary text-white">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
+       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+         <div>
+           <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6">${productTitle}</h1>
+           <p class="text-lg sm:text-xl text-white/90 mb-8">Brief compelling description here...</p>
+         </div>
+         <div class="flex justify-center lg:justify-end">
+           <img src="${imageUrl}" alt="${productTitle}" class="w-full max-w-md lg:max-w-lg h-auto object-cover rounded-lg shadow-2xl" />
+         </div>
+       </div>
      </div>
    </div>
    
-   EXAMPLE BENEFIT CARD:
-   <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors">
-     <h3 class="text-xl font-semibold text-gray-900">Benefit Title</h3>
-     <p class="text-gray-700">Description...</p>
+   BENEFIT CARDS GRID:
+   <div class="bg-white py-16 sm:py-20">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-12 text-center">Key Benefits</h2>
+       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+         <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors">
+           <h3 class="text-xl font-semibold text-gray-900 mb-3">Benefit Title</h3>
+           <p class="text-gray-700">Description text here...</p>
+         </div>
+       </div>
+     </div>
    </div>
    
-3. RESPONSIVE (NO DUPLICATE CLASSES):
-   - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-   - Typography: text-2xl sm:text-3xl md:text-4xl
-   - Images: w-full h-auto object-cover
-   - Grids: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
-   - Padding: py-8 sm:py-12 md:py-16
+   CRITICAL RESPONSIVE RULES:
+   - Always use max-w-7xl mx-auto for main containers
+   - Always add px-4 sm:px-6 lg:px-8 for responsive padding
+   - Images: w-full h-auto object-cover (NEVER fixed small sizes like w-20)
+   - Text: MUST have responsive breakpoints (text-2xl sm:text-3xl md:text-4xl)
+   - Grids: MUST start mobile-first (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
    
 4. NO FOOTER - End with </body></html>
 
@@ -595,25 +612,42 @@ RÈGLES CRITIQUES - SUIVRE EXACTEMENT:
    - Texte: text-gray-900 (principal), text-gray-700 (secondaire)
    - INTERDIT: :root, --primary-color comme variables CSS globales
    
-   EXEMPLE HERO:
-   <div class="bg-brand-primary text-white py-16 sm:py-24">
-     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-       <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold">${productTitle}</h1>
+3. LAYOUT RESPONSIVE (CRITIQUE - SUIVRE EXEMPLES EXACTEMENT):
+   
+   SECTION HERO AVEC PRODUIT (STRUCTURE OBLIGATOIRE):
+   <div class="bg-brand-primary text-white">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
+       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+         <div>
+           <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6">${productTitle}</h1>
+           <p class="text-lg sm:text-xl text-white/90 mb-8">Brève description convaincante...</p>
+         </div>
+         <div class="flex justify-center lg:justify-end">
+           <img src="${imageUrl}" alt="${productTitle}" class="w-full max-w-md lg:max-w-lg h-auto object-cover rounded-lg shadow-2xl" />
+         </div>
+       </div>
      </div>
    </div>
    
-   EXEMPLE CARTE BÉNÉFICE:
-   <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors">
-     <h3 class="text-xl font-semibold text-gray-900">Titre Bénéfice</h3>
-     <p class="text-gray-700">Description...</p>
+   GRILLE DE CARTES BÉNÉFICES:
+   <div class="bg-white py-16 sm:py-20">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-12 text-center">Points Forts</h2>
+       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+         <div class="bg-white p-6 rounded-lg border-2 border-brand-primary hover:bg-brand-surface transition-colors">
+           <h3 class="text-xl font-semibold text-gray-900 mb-3">Titre Bénéfice</h3>
+           <p class="text-gray-700">Texte descriptif...</p>
+         </div>
+       </div>
+     </div>
    </div>
    
-3. RESPONSIVE (PAS DE CLASSES DUPLIQUÉES):
-   - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
-   - Typographie: text-2xl sm:text-3xl md:text-4xl
-   - Images: w-full h-auto object-cover
-   - Grilles: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
-   - Padding: py-8 sm:py-12 md:py-16
+   RÈGLES RESPONSIVE CRITIQUES:
+   - Toujours utiliser max-w-7xl mx-auto pour conteneurs principaux
+   - Toujours ajouter px-4 sm:px-6 lg:px-8 pour padding responsive
+   - Images: w-full h-auto object-cover (JAMAIS tailles fixes comme w-20)
+   - Texte: DOIT avoir breakpoints responsive (text-2xl sm:text-3xl md:text-4xl)
+   - Grilles: DOIT commencer mobile-first (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
    
 4. PAS DE FOOTER - Terminer avec </body></html>
 
