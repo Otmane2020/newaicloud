@@ -304,13 +304,12 @@ export default function ProductLandingPages() {
       console.error("Error generating:", error);
       toast.error("Erreur lors de la génération", { id: toastId });
     } finally {
-      setTimeout(() => {
-        setGenerating(false);
-        setGenerationProgress(0);
-        setGenerationStep("");
-        setCurrentProductIndex(0);
-        setTotalProducts(0);
-      }, 1000);
+      // Fermer immédiatement le dialogue
+      setGenerating(false);
+      setGenerationProgress(0);
+      setGenerationStep("");
+      setCurrentProductIndex(0);
+      setTotalProducts(0);
     }
   };
 
