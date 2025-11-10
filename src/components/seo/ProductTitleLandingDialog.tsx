@@ -13,17 +13,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
   title: string;
   description?: string | null;
-  landing_page?: string | null;
   seo_title?: string;
   seo_description?: string;
   image_url?: string;
-  vendor?: string | null;
 }
 
 interface ProductTitleLandingDialogProps {
@@ -31,7 +28,7 @@ interface ProductTitleLandingDialogProps {
   onOpenChange: (open: boolean) => void;
   products: Product[];
   isGenerating: boolean;
-  currentProcessing?: { index: number; total: number; title: string; vendor?: string | null } | null;
+  currentProcessing?: { index: number; total: number; title: string } | null;
   onCancel?: () => void;
   onSync: () => void;
   syncLoading?: boolean;
@@ -75,76 +72,19 @@ const calculateQualityScore = (title: string, description: string): number => {
   return Math.min(100, score);
 };
 
-// Get Shopify product URL
-const getShopifyProductUrl = async (product: Product): Promise<string | null> => {
-  try {
-    const { data: connection } = await supabase
-      .from('shopify_connections')
-      .select('store_url')
-      .eq('is_active', true)
-      .single();
-    
-    if (!connection?.store_url) return null;
-    
-    const { data: shopifyProduct } = await supabase
-      .from('shopify_products')
-      .select('handle')
-      .eq('id', product.id)
-      .single();
-    
-    if (!shopifyProduct?.handle) return null;
-    
-    const storeUrl = connection.store_url.replace(/\/$/, '');
-    return `${storeUrl}/products/${shopifyProduct.handle}`;
-  } catch (error) {
-    console.error('Error getting Shopify URL:', error);
-    return null;
-  }
-};
-
-// Generate rich HTML preview from product landing_page or description
-const generateHtmlPreview = (product: Product, shopifyUrl?: string | null): string => {
+// Generate rich HTML preview from product description or fallback to simple version
+const generateHtmlPreview = (product: Product): string => {
   const title = product.seo_title || product.title;
   const description = product.seo_description || "";
-  // 🆕 Use landing_page first, then fallback to description
-  let htmlDescription = product.landing_page || product.description || "";
+  const htmlDescription = product.description || "";
   const imageUrl = product.image_url || "";
 
-  // Remove any existing "Voir sur Shopify" buttons from the HTML to avoid duplicates
-  if (htmlDescription) {
-    // Remove buttons with "Voir sur Shopify" text
-    htmlDescription = htmlDescription.replace(
-      /<div[^>]*style="[^"]*text-align:\s*center[^"]*"[^>]*>[\s\S]*?Voir sur Shopify[\s\S]*?<\/div>/gi,
-      ''
-    );
-    htmlDescription = htmlDescription.replace(
-      /<a[^>]*>[\s\S]*?Voir sur Shopify[\s\S]*?<\/a>/gi,
-      ''
-    );
-  }
-
-  // Create the Shopify button HTML
-  const shopifyButtonHtml = shopifyUrl ? `
-    <div style="text-align: center; margin-top: 3rem; padding: 2rem 0;">
-      <a href="${shopifyUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.75rem; padding: 1.25rem 2.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.75rem; font-weight: 600; font-size: 1.25rem; text-decoration: none; box-shadow: 0 10px 20px -5px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3h18v18H3V3z"/>
-          <path d="M9 9h6v6H9V9z"/>
-        </svg>
-        <span>Voir sur Shopify</span>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M7 3L14 10L7 17" />
-        </svg>
-      </a>
-    </div>
-  ` : '';
-
   // If we have a rich HTML description in the description field, use it directly
-  if (htmlDescription && (htmlDescription.includes("<div") || htmlDescription.includes("<section") || htmlDescription.includes("<h1"))) {
+  if (htmlDescription && (htmlDescription.includes("<div") || htmlDescription.includes("<section"))) {
+    // Wrap in a container for consistent styling
     return `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         ${htmlDescription}
-        ${shopifyButtonHtml}
       </div>
     `;
   }
@@ -183,7 +123,12 @@ const generateHtmlPreview = (product: Product, shopifyUrl?: string | null): stri
           : ""
       }
       
-      ${shopifyButtonHtml}
+      <div style="display: inline-flex; gap: 1rem; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); margin-top: 2rem;">
+        <span>Voir sur Shopify</span>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M7 3L14 10L7 17" />
+        </svg>
+      </div>
     </div>
   `;
 };
@@ -201,25 +146,6 @@ export function ProductTitleLandingDialog({
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "360">("desktop");
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [shopifyUrls, setShopifyUrls] = useState<Map<string, string>>(new Map());
-
-  // Load Shopify URLs for products
-  useEffect(() => {
-    const loadShopifyUrls = async () => {
-      const urlMap = new Map<string, string>();
-      for (const product of products) {
-        const url = await getShopifyProductUrl(product);
-        if (url) {
-          urlMap.set(product.id, url);
-        }
-      }
-      setShopifyUrls(urlMap);
-    };
-
-    if (products.length > 0 && !isGenerating) {
-      loadShopifyUrls();
-    }
-  }, [products, isGenerating]);
 
   // Smooth progress animation based on currentProcessing
   useEffect(() => {
@@ -245,29 +171,7 @@ export function ProductTitleLandingDialog({
       ? calculateQualityScore(selectedProduct.seo_title, selectedProduct.seo_description)
       : 0;
 
-  // Get Shopify URL synchronously for immediate display
-  const [currentShopifyUrl, setCurrentShopifyUrl] = useState<string | null>(null);
-  
-  useEffect(() => {
-    const loadCurrentUrl = async () => {
-      if (!selectedProduct) return;
-      
-      // Try from cached map first
-      const cachedUrl = shopifyUrls.get(selectedProduct.id);
-      if (cachedUrl) {
-        setCurrentShopifyUrl(cachedUrl);
-        return;
-      }
-      
-      // Otherwise load it fresh
-      const url = await getShopifyProductUrl(selectedProduct);
-      setCurrentShopifyUrl(url);
-    };
-    
-    loadCurrentUrl();
-  }, [selectedProduct, shopifyUrls]);
-
-  const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct, currentShopifyUrl) : "";
+  const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct) : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -302,11 +206,6 @@ export function ProductTitleLandingDialog({
                 <p className="text-sm font-semibold text-primary truncate px-4">
                   {currentProcessing.title.substring(0, 50)}...
                 </p>
-                {currentProcessing.vendor && (
-                  <p className="text-xs text-muted-foreground">
-                    Marque: <span className="font-medium">{currentProcessing.vendor}</span>
-                  </p>
-                )}
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <span className="animate-pulse">●</span>
                   <span>Analyse IA</span>
@@ -454,16 +353,6 @@ export function ProductTitleLandingDialog({
                         {(selectedProduct.seo_title || selectedProduct.title || "").length >= 50 &&
                           (selectedProduct.seo_title || selectedProduct.title || "").length <= 60 &&
                           " ✓ Longueur idéale SEO (50-60 car)"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-2">Marque / Vendor</h3>
-                      <p className="text-base font-medium">
-                        {selectedProduct.vendor || "Non définie"}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Marque du produit générée automatiquement
                       </p>
                     </div>
 
