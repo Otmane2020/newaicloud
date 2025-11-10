@@ -64,6 +64,7 @@ export default function Onboarding() {
   const [checkingSubscription, setCheckingSubscription] = useState(false);
   const [selectedProTier, setSelectedProTier] = useState<string>('');
   const [selectedEnterpriseTier, setSelectedEnterpriseTier] = useState<string>('');
+  const [claimingShopify, setClaimingShopify] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -75,6 +76,7 @@ export default function Onboarding() {
     const shopifyPending = searchParams.get('shopify_pending');
     if (shopifyPending) {
       console.log('🔗 Claiming Shopify connection with pending token');
+      setClaimingShopify(true);
       
       const claimConnection = async () => {
         try {
@@ -85,7 +87,16 @@ export default function Onboarding() {
           if (error) throw error;
 
           if (data?.success) {
-            toast.success("Shopify store connected successfully!");
+            toast.success("Boutique Shopify connectée avec succès !");
+            
+            // Show import toast
+            toast.info("Import automatique de vos 10 premiers produits en cours...", { 
+              duration: 5000,
+            });
+            
+            // Wait 3 seconds for import to complete
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
             // Remove the pending param from URL
             const newSearchParams = new URLSearchParams(searchParams);
             newSearchParams.delete('shopify_pending');
@@ -96,7 +107,9 @@ export default function Onboarding() {
           }
         } catch (error) {
           console.error('Failed to claim Shopify connection:', error);
-          toast.error("Failed to connect Shopify store. Please try again from the integration page.");
+          toast.error("Échec de la connexion à la boutique Shopify. Veuillez réessayer depuis la page d'intégration.");
+        } finally {
+          setClaimingShopify(false);
         }
       };
 
@@ -471,13 +484,23 @@ export default function Onboarding() {
         <div className="max-w-2xl mx-auto mb-8">
           <div className="bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <ShoppingBag className="h-5 w-5 text-blue-600 mt-0.5" />
+              {claimingShopify ? (
+                <Loader2 className="h-5 w-5 text-blue-600 mt-0.5 animate-spin" />
+              ) : (
+                <ShoppingBag className="h-5 w-5 text-blue-600 mt-0.5" />
+              )}
               <div>
                 <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                  Connexion Shopify en attente
+                  {claimingShopify 
+                    ? "Connexion en cours..." 
+                    : "Connexion Shopify en attente"
+                  }
                 </p>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Votre boutique {searchParams.get('shop')} sera automatiquement connectée une fois votre plan sélectionné.
+                  {claimingShopify 
+                    ? "Import automatique de vos 10 premiers produits en cours..."
+                    : `Votre boutique ${searchParams.get('shop')} sera automatiquement connectée et vos 10 premiers produits importés une fois votre plan sélectionné.`
+                  }
                 </p>
               </div>
             </div>

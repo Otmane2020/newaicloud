@@ -114,6 +114,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const requestBody = await req.json();
+    
+    // Get auto-import config
+    const autoImportLimit = requestBody.autoImportLimit;
+    const skipNotification = requestBody.skipNotification;
+    
+    console.log('📦 Import config:', { autoImportLimit, skipNotification });
 
     // 📥 Log detailed request information
     console.log('📥 Request body received:', {
@@ -432,8 +438,15 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const products = allProducts;
-    console.log(`Total products fetched across ${pageCount} pages: ${products.length}`);
+    let products = allProducts;
+    
+    // If autoImportLimit is set (OAuth flow), limit products
+    if (autoImportLimit && typeof autoImportLimit === 'number' && autoImportLimit > 0) {
+      console.log(`📦 Auto-import mode: limiting to ${autoImportLimit} products (from ${products.length} fetched)`);
+      products = products.slice(0, autoImportLimit);
+    }
+    
+    console.log(`Total products to import: ${products.length} (fetched across ${pageCount} pages)`);
 
     if (products.length === 0) {
       await supabaseServiceClient
