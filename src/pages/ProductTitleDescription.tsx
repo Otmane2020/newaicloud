@@ -1017,14 +1017,14 @@ export default function ProductTitleDescription() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={async () => {
+                onClick={() => {
                   if (!canDoAction('optimizations')) {
                     toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
                     return;
                   }
-                  await loadGalleryImages(Array.from(selectedProducts));
                   setShowWhiteBgConfigDialog(true);
+                  loadGalleryImages(Array.from(selectedProducts)); // Chargement en arrière-plan
                 }}
                 disabled={generatingWhiteBg || selectedProducts.size === 0}
               >
@@ -1039,14 +1039,14 @@ export default function ProductTitleDescription() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={async () => {
+                onClick={() => {
                   if (!canDoAction('optimizations')) {
                     toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
                     return;
                   }
-                  await loadGalleryImages(Array.from(selectedProducts));
                   setShowAiConfigDialog(true);
+                  loadGalleryImages(Array.from(selectedProducts)); // Chargement en arrière-plan
                 }}
                 disabled={generatingAiBg || selectedProducts.size === 0}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
@@ -1184,7 +1184,7 @@ export default function ProductTitleDescription() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={async () => {
+                              onClick={() => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
                                   toast.error(t.contentOptimization.toasts.limitReached);
@@ -1192,8 +1192,8 @@ export default function ProductTitleDescription() {
                                   return;
                                 }
                                 setSelectedProducts(new Set([product.id]));
-                                await loadGalleryImages([product.id]);
                                 setShowWhiteBgConfigDialog(true);
+                                loadGalleryImages([product.id]); // Chargement en arrière-plan
                               }}
                               disabled={generatingWhiteBg}
                             >
@@ -1214,7 +1214,7 @@ export default function ProductTitleDescription() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={async () => {
+                              onClick={() => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
                                   toast.error(t.contentOptimization.toasts.limitReached);
@@ -1222,8 +1222,8 @@ export default function ProductTitleDescription() {
                                   return;
                                 }
                                 setSelectedProducts(new Set([product.id]));
-                                await loadGalleryImages([product.id]);
                                 setShowAiConfigDialog(true);
+                                loadGalleryImages([product.id]); // Chargement en arrière-plan
                               }}
                               disabled={generatingAiBg}
                               className="hover:bg-purple-50 dark:hover:bg-purple-950"
