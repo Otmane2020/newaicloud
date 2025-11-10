@@ -373,7 +373,17 @@ export default function RegenerateLanding({
       });
 
       if (error) throw error;
-      if (data?.error) return toast.error(data.error);
+      if (data?.error) {
+        // Check if it's a "needs import" error
+        if (data?.needsImport || data.error.includes('non synchronisé') || data.error.includes('not synchronized')) {
+          toast.error('Ce produit doit d\'abord être importé depuis Shopify', {
+            description: 'Rendez-vous sur la page Intégration pour importer vos produits Shopify.'
+          });
+        } else {
+          toast.error(data.error);
+        }
+        return;
+      }
 
       toast.success(t.landingGeneration.success.synced);
       if (data?.pageUrl) toast.info(`${t.landingGeneration.success.available} ${data.pageUrl}`, { duration: 10000 });

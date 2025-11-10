@@ -135,9 +135,27 @@ serve(async (req) => {
       .eq("id", productId)
       .single();
 
-    if (productFetchError || !productData?.shopify_product_id) {
-      console.error("❌ Could not fetch shopify_product_id:", productFetchError);
-      throw new Error("Could not find Shopify product ID");
+    if (productFetchError) {
+      console.error("❌ Database error fetching product:", productFetchError);
+      return new Response(
+        JSON.stringify({ 
+          error: "Erreur de base de données",
+          details: "Impossible de récupérer les informations du produit depuis la base de données."
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (!productData?.shopify_product_id) {
+      console.error("❌ Product missing shopify_product_id:", productId);
+      return new Response(
+        JSON.stringify({ 
+          error: "Produit non synchronisé avec Shopify",
+          details: "Ce produit n'a pas encore été importé depuis Shopify. Veuillez d'abord importer vos produits via l'intégration Shopify dans la page Intégration.",
+          needsImport: true
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const shopifyProductId = productData.shopify_product_id;

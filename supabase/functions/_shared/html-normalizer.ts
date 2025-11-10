@@ -4,6 +4,27 @@
  */
 
 /**
+ * Strips markdown code fences from AI-generated HTML
+ */
+export function stripMarkdownFences(html: string): string {
+  let cleaned = html.trim();
+  
+  // Remove opening markdown fences (```html, ```, etc.)
+  if (cleaned.startsWith("```html")) {
+    cleaned = cleaned.substring(7).trim();
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.substring(3).trim();
+  }
+  
+  // Remove closing markdown fences
+  if (cleaned.endsWith("```")) {
+    cleaned = cleaned.substring(0, cleaned.length - 3).trim();
+  }
+  
+  return cleaned;
+}
+
+/**
  * Normalizes HTML to ensure complete valid HTML5 structure
  */
 export function normalizeHTML(
@@ -11,23 +32,26 @@ export function normalizeHTML(
   productTitle: string,
   language: string = "en"
 ): string {
+  // First, strip any markdown code fences
+  let html = stripMarkdownFences(rawHtml);
+  
   // Check if HTML is already complete
-  const hasDoctype = rawHtml.includes("<!DOCTYPE html>");
-  const hasHtmlTag = rawHtml.includes("<html");
-  const hasClosingBody = rawHtml.includes("</body>");
-  const hasClosingHtml = rawHtml.includes("</html>");
+  const hasDoctype = html.includes("<!DOCTYPE html>");
+  const hasHtmlTag = html.includes("<html");
+  const hasClosingBody = html.includes("</body>");
+  const hasClosingHtml = html.includes("</html>");
 
   // If already complete, return as-is
   if (hasDoctype && hasHtmlTag && hasClosingBody && hasClosingHtml) {
-    return rawHtml;
+    return html;
   }
 
   console.log("[Normalizer] HTML structure incomplete, wrapping in full HTML5 template");
 
   // Extract body content if present
-  let bodyContent = rawHtml;
-  if (rawHtml.includes("<body>")) {
-    const bodyMatch = rawHtml.match(/<body[^>]*>([\s\S]*?)(?:<\/body>)?$/i);
+  let bodyContent = html;
+  if (html.includes("<body>")) {
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)(?:<\/body>)?$/i);
     if (bodyMatch) {
       bodyContent = bodyMatch[1];
     }
