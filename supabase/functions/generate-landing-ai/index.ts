@@ -73,9 +73,9 @@ ${specs ? `- Spécifications : ${specs}` : ""}`;
 
 function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (!enriched) return "";
-  
+
   const sections = [];
-  
+
   // Visual Attributes
   const visualAttrs = [];
   if (enriched.ai_color) visualAttrs.push(`Couleur: ${enriched.ai_color}`);
@@ -89,7 +89,7 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     sections.push(language === "en" ? "VISUAL ATTRIBUTES:" : "ATTRIBUTS VISUELS:");
     sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
   }
-  
+
   // Dimensions
   const dims = [];
   if (enriched.smart_length) dims.push(`L ${enriched.smart_length}${enriched.smart_length_unit || ""}`);
@@ -98,12 +98,13 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
   if (enriched.smart_weight) dims.push(`Poids ${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
   if (enriched.smart_diameter) dims.push(`Ø ${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
   if (enriched.smart_depth) dims.push(`P ${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
-  if (enriched.smart_seat_height) dims.push(`Hauteur d'assise ${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
+  if (enriched.smart_seat_height)
+    dims.push(`Hauteur d'assise ${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
   if (dims.length > 0) {
     sections.push(language === "en" ? "\nDIMENSIONS:" : "\nDIMENSIONS:");
     sections.push(`- ${dims.join(" × ")}`);
   }
-  
+
   // Categorization
   const cats = [];
   if (enriched.category) cats.push(`Catégorie: ${enriched.category}`);
@@ -115,7 +116,7 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     sections.push(language === "en" ? "\nCATEGORIZATION:" : "\nCATÉGORISATION:");
     sections.push(cats.map((c: string) => `- ${c}`).join("\n"));
   }
-  
+
   // Quality & Analysis
   const quality = [];
   if (enriched.ai_vision_analysis) quality.push(`Analyse: ${enriched.ai_vision_analysis}`);
@@ -125,13 +126,13 @@ function buildEnrichedProductSummary(enriched: any, language = "fr") {
     sections.push(language === "en" ? "\nQUALITY ANALYSIS:" : "\nANALYSE QUALITÉ:");
     sections.push(quality.map((q: string) => `- ${q}`).join("\n"));
   }
-  
+
   // Conversational Text
   if (enriched.chat_text) {
     sections.push(language === "en" ? "\nCONVERSATIONAL DESCRIPTION:" : "\nDESCRIPTION CONVERSATIONNELLE:");
     sections.push(enriched.chat_text);
   }
-  
+
   return sections.join("\n");
 }
 
@@ -149,8 +150,11 @@ serve(async (req) => {
     // Get authenticated user
     let userId = null;
     if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      const token = authHeader.replace("Bearer ", "");
+      const {
+        data: { user },
+        error: authError,
+      } = await supabaseAdmin.auth.getUser(token);
       if (!authError && user) {
         userId = user.id;
       }
@@ -188,32 +192,29 @@ serve(async (req) => {
 
     // 🔧 STEP 1: Product Enrichment (with timeout)
     console.log("🔧 Starting product enrichment...");
-    let enrichmentStatus = 'skipped';
+    let enrichmentStatus = "skipped";
     let attributesCount = 0;
     try {
       const enrichController = new AbortController();
       const enrichTimeout = setTimeout(() => enrichController.abort(), 20000);
-      
-      const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke(
-        "enrich-product",
-        {
-          body: { productId: product_id },
-          signal: enrichController.signal,
-        }
-      );
-      
+
+      const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
+        body: { productId: product_id },
+        signal: enrichController.signal,
+      });
+
       clearTimeout(enrichTimeout);
-      
+
       if (enrichError) {
         console.log("⚠️ Enrichment failed:", enrichError.message);
-        enrichmentStatus = 'failed';
+        enrichmentStatus = "failed";
       } else {
         console.log("✅ Enrichment completed successfully");
-        enrichmentStatus = 'success';
+        enrichmentStatus = "success";
       }
     } catch (err) {
       console.log("⚠️ Enrichment timeout or error (continuing without it):", err.message);
-      enrichmentStatus = 'failed';
+      enrichmentStatus = "failed";
     }
 
     // Fetch product data including handle, store domain, AND enriched attributes
@@ -221,26 +222,45 @@ serve(async (req) => {
     const [productRes, imagesRes, variantsRes, storeRes] = await Promise.all([
       supabaseAdmin.from("shopify_products").select("*").eq("id", product_id).maybeSingle(),
       supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
-      supabaseAdmin.from("product_variants").select("title, image_url, shopify_variant_id").eq("product_id", product_id),
-      userId ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      supabaseAdmin
+        .from("product_variants")
+        .select("title, image_url, shopify_variant_id")
+        .eq("product_id", product_id),
+      userId
+        ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
     ]);
-    
+
     const productHandle = productRes.data?.handle || "";
     const shopifyProductId = productRes.data?.shopify_product_id || "";
     const shopDomain = storeRes.data?.shop_domain || "";
     const images = imagesRes.data ?? [];
     const variants = variantsRes.data ?? [];
     const enrichedProduct = productRes.data || {};
-    
+
     // Count enriched attributes
     const enrichedFields = [
-      'ai_color', 'ai_material', 'ai_shape', 'ai_texture', 'ai_pattern', 'ai_finish',
-      'smart_length', 'smart_width', 'smart_height', 'smart_weight',
-      'category', 'sub_category', 'style', 'room', 'functionality'
+      "ai_color",
+      "ai_material",
+      "ai_shape",
+      "ai_texture",
+      "ai_pattern",
+      "ai_finish",
+      "smart_length",
+      "smart_width",
+      "smart_height",
+      "smart_weight",
+      "category",
+      "sub_category",
+      "style",
+      "room",
+      "functionality",
     ];
-    attributesCount = enrichedFields.filter(f => enrichedProduct[f]).length;
-    
-    console.log(`✅ Product data fetched: ${images.length} images, ${variants.length} variants, ${attributesCount} enriched attributes`);
+    attributesCount = enrichedFields.filter((f) => enrichedProduct[f]).length;
+
+    console.log(
+      `✅ Product data fetched: ${images.length} images, ${variants.length} variants, ${attributesCount} enriched attributes`,
+    );
 
     // Build enriched summary
     const enrichedSummary = buildEnrichedProductSummary(enrichedProduct, language);
@@ -255,7 +275,7 @@ serve(async (req) => {
         console.log("🔍 Starting Vision AI analysis...");
         const visionController = new AbortController();
         const visionTimeout = setTimeout(() => visionController.abort(), 15000);
-        
+
         const { data: visionData, error: visionError } = await supabaseAdmin.functions.invoke(
           "analyze-image-with-vision",
           {
@@ -265,11 +285,11 @@ serve(async (req) => {
               detectMeasurements: true,
             },
             signal: visionController.signal,
-          }
+          },
         );
-        
+
         clearTimeout(visionTimeout);
-        
+
         if (visionError) {
           console.log("⚠️ Vision AI failed:", visionError.message);
         } else if (visionData?.attributes) {
@@ -283,23 +303,9 @@ serve(async (req) => {
       console.log("⏭️ No image URL provided, skipping Vision AI");
     }
 
-    // --- Prompt bilingual ---
-    const imgs = images.length
-      ? images.map((i) => `- ${i.src}`).join("\n")
-      : language === "en"
-        ? "No additional image"
-        : "Aucune image supplémentaire";
-    const vars = variants.length
-      ? variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")
-      : language === "en"
-        ? "No variant"
-        : "Aucune variante";
-
     // Build product URLs
-    const productUrl = shopDomain && productHandle 
-      ? `https://${shopDomain}/products/${productHandle}` 
-      : "#";
-    
+    const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
+
     const prompt =
       language === "en"
         ? `
@@ -328,16 +334,15 @@ Product Information:
 
 ${enrichedSummary ? `\n✨ ENRICHED PRODUCT ATTRIBUTES (AI-DETECTED - USE THIS DATA!):\n${enrichedSummary}\n` : ""}
 
-Images Available:
-${imgs}
+Images Available: ${images.length} images
+${images.map((i) => `- ${i.src}`).join("\n")}
 
-Variants Available:
-${vars}
+Variants Available: ${variants.length} variants
+${variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")}
 
 ${visualAnalysis ? `${visualAnalysis}\n` : ""}
 
-Custom Highlights:
-${customHighlights}
+${customHighlights ? `Custom Highlights:\n${customHighlights}` : ""}
 
 DESIGN CONSTRAINTS:
 - Mobile-first responsive (sm:, md:, lg:, xl:)
@@ -395,16 +400,15 @@ Informations Produit:
 
 ${enrichedSummary ? `\n✨ ATTRIBUTS PRODUIT ENRICHIS (DÉTECTÉS PAR IA - UTILISE CES DONNÉES!):\n${enrichedSummary}\n` : ""}
 
-Images Disponibles:
-${imgs}
+Images Disponibles: ${images.length} images
+${images.map((i) => `- ${i.src}`).join("\n")}
 
-Variantes Disponibles:
-${vars}
+Variantes Disponibles: ${variants.length} variantes
+${variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")}
 
 ${visualAnalysis ? `${visualAnalysis}\n` : ""}
 
-Points Forts Personnalisés:
-${customHighlights}
+${customHighlights ? `Points Forts Personnalisés:\n${customHighlights}` : ""}
 
 CONTRAINTES DESIGN:
 - Responsive mobile-first (sm:, md:, lg:, xl:)
@@ -441,7 +445,7 @@ STRUCTURE BOUTONS:
     console.log("🤖 Starting AI generation...");
     const aiController = new AbortController();
     const aiTimeout = setTimeout(() => aiController.abort(), 60000);
-    
+
     let aiResponse;
     try {
       aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -451,7 +455,7 @@ STRUCTURE BOUTONS:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "gpt-4", // ✅ CHANGEMENT ICI - Utiliser GPT-4 au lieu de Gemini
           messages: [
             {
               role: "system",
@@ -470,15 +474,22 @@ STRUCTURE BOUTONS:
     } finally {
       clearTimeout(aiTimeout);
     }
-    
+
     console.log("✅ AI generation completed");
 
     if (!aiResponse.ok) {
       const text = await aiResponse.text();
-      return new Response(JSON.stringify({ error: `Lovable API ${aiResponse.status}`, detail: text }), {
-        status: aiResponse.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("Lovable AI API error:", aiResponse.status, text);
+      return new Response(
+        JSON.stringify({
+          error: `Lovable API ${aiResponse.status}`,
+          detail: "Please check your API key and model availability",
+        }),
+        {
+          status: aiResponse.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const data = await aiResponse.json();
@@ -487,35 +498,39 @@ STRUCTURE BOUTONS:
 
     if (!html || html.length < 400)
       return new Response(
-        JSON.stringify({ error: language === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
+        JSON.stringify({
+          error: language === "en" ? "Generated HTML too short or empty." : "HTML généré trop court ou vide.",
+          generatedLength: html.length,
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+
+    console.log(`✅ Generated HTML length: ${html.length} characters`);
 
     // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
     if (userId && product_id) {
       console.log("💾 Saving landing page to database...");
-      
-      // Désactiver les anciennes versions
-      await supabaseAdmin
-        .from("product_landing_pages")
-        .update({ is_active: false })
-        .eq("product_id", product_id)
-        .eq("seller_id", userId);
-      
-      // Récupérer le numéro de version
-      const { data: existingPages } = await supabaseAdmin
-        .from("product_landing_pages")
-        .select("version")
-        .eq("product_id", product_id)
-        .order("version", { ascending: false })
-        .limit(1);
-      
-      const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
-      
-      // Créer la nouvelle version
-      const { error: saveError } = await supabaseAdmin
-        .from("product_landing_pages")
-        .insert({
+
+      try {
+        // Désactiver les anciennes versions
+        await supabaseAdmin
+          .from("product_landing_pages")
+          .update({ is_active: false })
+          .eq("product_id", product_id)
+          .eq("seller_id", userId);
+
+        // Récupérer le numéro de version
+        const { data: existingPages } = await supabaseAdmin
+          .from("product_landing_pages")
+          .select("version")
+          .eq("product_id", product_id)
+          .order("version", { ascending: false })
+          .limit(1);
+
+        const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
+
+        // Créer la nouvelle version
+        const { error: saveError } = await supabaseAdmin.from("product_landing_pages").insert({
           product_id: product_id,
           seller_id: userId,
           html_content: html,
@@ -535,29 +550,42 @@ STRUCTURE BOUTONS:
           version: newVersion,
           is_active: true,
         });
-      
-      if (saveError) {
-        console.error("❌ Save error:", saveError);
-      } else {
-        console.log(`✅ Landing page v${newVersion} saved successfully`);
+
+        if (saveError) {
+          console.error("❌ Save error:", saveError);
+        } else {
+          console.log(`✅ Landing page v${newVersion} saved successfully`);
+        }
+      } catch (saveError) {
+        console.error("❌ Database save error:", saveError);
       }
     } else {
       console.log("⚠️ Skipping save: userId or product_id not available");
     }
 
     console.log("✅ Landing page generation successful!");
-    return new Response(JSON.stringify({ 
-      html,
-      enrichment_status: enrichmentStatus,
-      attributes_count: attributesCount
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        html,
+        enrichment_status: enrichmentStatus,
+        attributes_count: attributesCount,
+        html_length: html.length,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (err) {
     console.error("💥 ERROR:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: err instanceof Error ? err.message : String(err),
+        type: "RUNTIME_ERROR",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
