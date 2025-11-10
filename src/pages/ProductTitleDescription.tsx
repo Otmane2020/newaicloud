@@ -734,6 +734,15 @@ export default function ProductTitleDescription() {
     if (!product?.image_url) return;
 
     const promptToUse = prompt || customPrompt;
+    
+    // Validation: ensure prompt is not empty
+    if (!promptToUse || !promptToUse.trim()) {
+      toast.error('Veuillez entrer un prompt avant de régénérer');
+      return;
+    }
+
+    // Get the selected image URL for this product (gallery or main image)
+    const selectedImageUrl = selectedGalleryImages.get(productId) || product.image_url;
 
     setAiBgPreviews((prev) =>
       prev.map((p) =>
@@ -744,10 +753,12 @@ export default function ProductTitleDescription() {
     try {
       const { data, error } = await supabase.functions.invoke('generate-image-background', {
         body: {
-          imageUrl: product.image_url,
-          prompt: promptToUse,
+          imageUrl: selectedImageUrl,
+          prompt: promptToUse.trim(),
           productTitle: product.title,
-          imageType: selectedImageType
+          imageType: selectedImageType,
+          format: selectedImageFormat,
+          similarity: selectedSimilarity
         }
       });
 
@@ -761,6 +772,7 @@ export default function ProductTitleDescription() {
               : p
           )
         );
+        toast.success('Arrière-plan régénéré avec succès');
       } else {
         throw new Error('No image generated');
       }
@@ -773,6 +785,7 @@ export default function ProductTitleDescription() {
             : p
         )
       );
+      toast.error('Erreur lors de la régénération');
     }
   };
 
