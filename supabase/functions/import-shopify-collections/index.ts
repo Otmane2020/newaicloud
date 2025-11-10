@@ -254,6 +254,45 @@ Deno.serve(async (req: Request) => {
     console.log(`   - Successfully imported: ${upsertedCount}`);
     console.log(`   - Errors: ${errorCount}`);
     
+    // 🧹 Cleanup: Delete collections that no longer exist in Shopify
+    console.log(`🧹 [IMPORT-COLLECTIONS] Checking for deleted collections...`);
+    const shopifyCollectionIds = allCollections.map(c => c.id);
+    
+    const { data: existingCollections, error: fetchError } = await supabase
+      .from('shopify_collections')
+      .select('id, shopify_collection_id, title')
+      .eq('user_id', user.id)
+      .eq('store_id', connection.id);
+    
+    if (fetchError) {
+      console.error(`⚠️ [IMPORT-COLLECTIONS] Error fetching existing collections:`, fetchError);
+    } else if (existingCollections) {
+      const collectionsToDelete = existingCollections.filter(
+        existing => !shopifyCollectionIds.includes(existing.shopify_collection_id)
+      );
+      
+      if (collectionsToDelete.length > 0) {
+        console.log(`🗑️ [IMPORT-COLLECTIONS] Found ${collectionsToDelete.length} collections to delete:`);
+        collectionsToDelete.forEach(c => {
+          console.log(`   - ${c.title} (ID: ${c.shopify_collection_id})`);
+        });
+        
+        const idsToDelete = collectionsToDelete.map(c => c.id);
+        const { error: deleteError } = await supabase
+          .from('shopify_collections')
+          .delete()
+          .in('id', idsToDelete);
+        
+        if (deleteError) {
+          console.error(`❌ [IMPORT-COLLECTIONS] Error deleting collections:`, deleteError);
+        } else {
+          console.log(`✅ [IMPORT-COLLECTIONS] Successfully deleted ${collectionsToDelete.length} collections`);
+        }
+      } else {
+        console.log(`✅ [IMPORT-COLLECTIONS] No collections to delete`);
+      }
+    }
+    
     console.log(`📊 [IMPORT-COLLECTIONS] Summary:`);
     console.log(`   - Total collections fetched: ${allCollections.length}`);
     console.log(`   - Smart collections: ${smartCount}`);
