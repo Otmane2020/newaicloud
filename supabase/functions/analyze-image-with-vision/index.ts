@@ -49,19 +49,42 @@ serve(async (req) => {
 
     console.log('Analyzing image with Gemini Vision:', imageUrl);
 
-    // Download image and convert to base64
-    const imageResponse = await fetch(imageUrl);
+    // Download image with timeout (30 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    let imageResponse;
+    try {
+      imageResponse = await fetch(imageUrl, { signal: controller.signal });
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Image download timeout after 30 seconds');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
     if (!imageResponse.ok) {
       throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
     }
 
+    // Check image size (limit to 10MB)
+    const contentLength = imageResponse.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+      throw new Error('Image too large (max 10MB)');
+    }
+
     const imageBuffer = await imageResponse.arrayBuffer();
-    const base64Image = btoa(
-      new Uint8Array(imageBuffer).reduce(
-        (data, byte) => data + String.fromCharCode(byte),
-        ''
-      )
-    );
+    const imageSize = imageBuffer.byteLength;
+    console.log(`Image size: ${(imageSize / 1024 / 1024).toFixed(2)}MB`);
+
+    if (imageSize > 10 * 1024 * 1024) {
+      throw new Error('Image too large (max 10MB)');
+    }
+
+    // Efficient base64 conversion using native Deno APIs
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
 
     // Determine image MIME type
     const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
@@ -99,35 +122,50 @@ Instructions :
 
 Sois précis et descriptif. N'invente pas, base-toi sur ce qui est visible.`;
 
-    // Call Gemini Vision API
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: visionPrompt },
-                {
-                  inline_data: {
-                    mime_type: contentType,
-                    data: base64Image,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 1024,
+    // Call Gemini Vision API with timeout
+    const geminiController = new AbortController();
+    const geminiTimeoutId = setTimeout(() => geminiController.abort(), 45000);
+    
+    let geminiResponse;
+    try {
+      console.log('Calling Gemini Vision API...');
+      geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
+          signal: geminiController.signal,
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: visionPrompt },
+                  {
+                    inline_data: {
+                      mime_type: contentType,
+                      data: base64Image,
+                    },
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 1024,
+            },
+          }),
+        }
+      );
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Gemini API timeout after 45 seconds');
       }
-    );
+      throw error;
+    } finally {
+      clearTimeout(geminiTimeoutId);
+    }
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
