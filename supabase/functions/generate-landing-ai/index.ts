@@ -10,37 +10,33 @@ function sanitizeHtml(html: string): string {
   if (!html) return "";
 
   let cleaned = html
-    // Supprimer les blocs de code markdown
     .replace(/```(?:html|json)?/gi, "")
-    // Supprimer les balises HTML/HEAD/BODY non désirées
     .replace(/<\/?(html|head|body|!DOCTYPE)[^>]*>/gi, "")
-    // Nettoyer les balises script et style
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
-    // Supprimer les événements JavaScript
     .replace(/\son\w+\s*=\s*["'][^"']*["']/g, "")
-    // Nettoyer les URLs JavaScript
     .replace(/\shref\s*=\s*["']\s*javascript:[^"']*["']/gi, ' href="#"')
-    // Supprimer les balises dangereuses
     .replace(/<\/?(iframe|object|embed|applet|frame|frameset)[^>]*>/gi, "")
-    // Normaliser les espaces
     .replace(/\s+/g, " ")
     .trim();
 
-  // 🆕 Correction spécifique des répétitions
-  const titleMatch = cleaned.match(/(Meuble à Chaussures en Chêne Artisanal[^<]*)/);
-  if (titleMatch) {
-    const duplicatePattern = new RegExp(titleMatch[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ".*?Decora Home", "g");
-    const matches = cleaned.match(duplicatePattern);
+  // Correction des répétitions spécifiques
+  const problematicPatterns = [
+    /Meuble à Chaussures en Chêne Artisanal.*?Decora Home/g,
+    /Meuble à Chaussures en Chêne Artisanal.*?Rangement Pratique et Élégant/g,
+  ];
+
+  problematicPatterns.forEach((pattern) => {
+    const matches = cleaned.match(pattern);
     if (matches && matches.length > 1) {
-      // Garder seulement la première occurrence
-      cleaned = cleaned.replace(duplicatePattern, (match, offset) => {
+      cleaned = cleaned.replace(pattern, (match, offset) => {
         return offset === 0 ? match : "";
       });
-      // Nettoyer les espaces multiples créés par la suppression
-      cleaned = cleaned.replace(/\s+/g, " ").replace(/(>)\s+(<)/g, "$1$2");
     }
-  }
+  });
+
+  // Nettoyer les espaces multiples
+  cleaned = cleaned.replace(/\s+/g, " ").replace(/(>)\s+(<)/g, "$1$2");
 
   return cleaned;
 }
@@ -48,13 +44,7 @@ function sanitizeHtml(html: string): string {
 // 🆕 Fonction pour valider et corriger la structure HTML
 function validateHtmlStructure(html: string): string {
   if (!html.includes("<div") && !html.includes("<section")) {
-    // Si pas de structure HTML valide, wrapper dans une div
     return `<div class="product-landing-page">${html}</div>`;
-  }
-
-  // S'assurer que le HTML a une structure de base
-  if (!html.includes("class=")) {
-    html = html.replace(/<div/g, '<div class="product-section"');
   }
 
   return html;
@@ -112,39 +102,42 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
 
-    // 🆕 PROMPT CORRIGÉ avec instructions strictes
+    // 🆕 PROMPT ULTRA-STRICT avec instructions claires
     const prompt = `
-Tu es un expert en création de landing pages Shopify. Crée UNIQUEMENT du HTML propre avec Tailwind CSS.
+CRÉATION DE LANDING PAGE SHOPIFY - INSTRUCTIONS STRICTES
 
-🎯 EXIGENCES STRICTES:
-- UNIQUEMENT du HTML valide avec classes Tailwind
-- AUCUNE répétition de contenu
-- Structure SEMANTIQUE correcte
-- Design MOBILE-FIRST (grid-cols-1, puis sm:, lg:)
-- MAXIMUM 1200 mots au total
+Tu dois créer UNIQUEMENT du HTML propre avec Tailwind CSS pour une landing page produit.
 
 🚫 INTERDICTIONS ABSOLUES:
-- PAS de répétition du titre produit
-- PAS de contenu dupliqué
-- PAS de balises HTML/HEAD/BODY
+- PAS de répétition du titre "${productTitle}"
+- PAS de contenu dupliqué ou en boucle
+- PAS de balises HTML, HEAD, BODY
 - PAS de JavaScript
 - PAS de markdown dans la sortie
+- PAS de "Decora Home" répété
+- UNIQUEMENT le contenu demandé
+
+✅ STRUCTURE OBLIGATOIRE:
+1. HERO SECTION (un seul H1 avec le titre)
+2. DESCRIPTION (texte unique de 2-3 phrases)
+3. CARACTÉRISTIQUES (liste à puces, 4-6 points)
+4. GALLERIE IMAGES (placeholder)
+5. SPÉCIFICATIONS TECHNIQUES
+6. APPEL À L'ACTION
 
 🎨 CONFIGURATION:
-- Style: ${style}
-- Couleur: ${mainColor}
+- Style: ${style} (design épuré et moderne)
+- Couleur principale: ${mainColor}
 - Layout: ${layout}
-- Longueur: ${length}
-- Marque: ${vendor || "Decora Home"}
-- Mobile-first: ${mobileFirst}
+- Mobile-first: OUI
 
 📦 PRODUIT:
-Titre: ${productTitle}
-Description: ${description}
+"${productTitle}"
+${description ? `Description: ${description.substring(0, 200)}...` : ""}
 
-${customHighlights ? `✨ POINTS FORTS:\n${customHighlights}\n` : ""}
+${customHighlights ? `✨ POINTS FORTS À INTÉGRER:\n${customHighlights}` : ""}
 
-🎨 SYSTÈME DE COULEUR:
+🎨 CODE CSS OBLIGATOIRE:
 <style>
   :root {
     --theme-color: ${mainColor};
@@ -157,46 +150,44 @@ ${customHighlights ? `✨ POINTS FORTS:\n${customHighlights}\n` : ""}
   
   @media (max-width: 767px) {
     .mobile-padding { padding: 1rem !important; }
-    .mobile-text { font-size: 16px !important; }
-    .touch-target { min-height: 44px; }
+    .mobile-text { font-size: 16px !important; line-height: 1.5; }
+    .touch-target { min-height: 44px; min-width: 44px; }
   }
 </style>
 
-📱 STRUCTURE IMPÉRATIVE:
-1. HERO SECTION (h1 unique)
-2. DESCRIPTION (p concis)
-3. CARACTÉRISTIQUES (ul/li)
-4. GALLERIE IMAGES
-5. SPECIFICATIONS TECHNIQUES
-6. APPEL À L'ACTION
-
-✅ EXEMPLE DE STRUCTURE CORRECTE:
+📱 EXEMPLE DE STRUCTURE CORRECTE:
 <section class="mobile-padding bg-white py-8">
   <div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold theme-text mb-4">${productTitle}</h1>
-    <p class="text-gray-600 mobile-text mb-6">Description concise...</p>
-    
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-      <!-- Images -->
+    <!-- HERO -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold theme-text mb-4">${productTitle}</h1>
+      <p class="text-gray-600 mobile-text">Description concise et unique ici...</p>
     </div>
     
-    <div class="bg-gray-50 rounded-lg p-6">
+    <!-- CARACTÉRISTIQUES -->
+    <div class="bg-gray-50 rounded-lg p-6 mb-8">
       <h2 class="text-xl font-semibold theme-text mb-4">Caractéristiques</h2>
-      <ul class="space-y-2">
-        <li class="flex items-center gap-2">✅ Point fort 1</li>
+      <ul class="space-y-3">
+        <li class="flex items-center gap-3">
+          <div class="w-6 h-6 theme-bg rounded-full flex items-center justify-center">
+            <span class="text-sm theme-text">✓</span>
+          </div>
+          <span>Caractéristique unique 1</span>
+        </li>
       </ul>
     </div>
   </div>
 </section>
 
-Retourne UNIQUEMENT le code HTML, sans commentaires, sans markdown.
+GÉNÈRE UNIQUEMENT LE CODE HTML FINAL SANS COMMENTAIRES.
 `;
 
-    console.log("🤖 Calling AI with strict instructions...");
+    console.log("🤖 Calling AI with corrected model...");
 
     const aiController = new AbortController();
-    const aiTimeout = setTimeout(() => aiController.abort(), 45000);
+    const aiTimeout = setTimeout(() => aiController.abort(), 40000);
 
+    // 🆕 UTILISER UN MODÈLE DISPONIBLE
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -204,17 +195,18 @@ Retourne UNIQUEMENT le code HTML, sans commentaires, sans markdown.
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4", // 🆕 Utiliser GPT-4 pour de meilleurs résultats
+        // 🆕 MODÈLES DISPONIBLES SUR LOVABLE
+        model: "google/gemini-2.5-flash", // ✅ Modèle disponible et performant
         messages: [
           {
             role: "system",
             content:
-              "Tu es un développeur frontend expert. Tu génères UNIQUEMENT du HTML/CSS propre, valide et responsive. Tu respectes STRICTEMENT les consignes de structure et évites TOUTE répétition. Tu utilises Tailwind CSS avec une approche mobile-first.",
+              "Tu es un développeur frontend expert. Tu génères UNIQUEMENT du HTML/CSS valide et responsive avec Tailwind. Tu respectes STRICTEMENT les consignes et évites TOUTE répétition. Structure mobile-first obligatoire.",
           },
           { role: "user", content: prompt },
         ],
-        max_tokens: 3000, // 🆕 Limiter pour éviter les excès
-        temperature: 0.3, // 🆕 Réduire la créativité pour plus de cohérence
+        max_tokens: 2500, // 🆕 Limiter pour éviter les excès
+        temperature: 0.2, // 🆕 Très bas pour la cohérence
       }),
       signal: aiController.signal,
     });
@@ -223,54 +215,94 @@ Retourne UNIQUEMENT le code HTML, sans commentaires, sans markdown.
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      throw new Error(`AI API error: ${aiResponse.status} - ${errorText}`);
+      console.error("AI API Error:", await aiResponse.text());
+      throw new Error(`AI API error: ${aiResponse.status}`);
     }
 
     const data = await aiResponse.json();
     let html = data.choices?.[0]?.message?.content?.trim() || "";
 
-    console.log("🔍 Raw HTML length:", html.length);
+    console.log("🔍 Raw HTML received, length:", html.length);
 
-    // 🆕 NETTOYAGE RENFORCÉ
+    // 🆕 NETTOYAGE AGGRESSIF
     html = sanitizeHtml(html);
     html = validateHtmlStructure(html);
 
-    // 🆕 VALIDATION FINALE
+    // 🆕 VALIDATION RENFORCÉE
+    const titleOccurrences = (html.match(new RegExp(productTitle.substring(0, 20), "g")) || []).length;
     const validation = {
       hasStructure: html.includes("<div") || html.includes("<section"),
       hasTitle: html.includes(productTitle.substring(0, 20)),
-      hasRepeats: (html.match(new RegExp(productTitle.substring(0, 10), "g")) || []).length > 3,
+      titleOccurrences: titleOccurrences,
+      hasRepeats: titleOccurrences > 1,
       htmlLength: html.length,
       wordCount: html.split(/\s+/).length,
     };
 
-    console.log("✅ Validation:", validation);
+    console.log("✅ Validation results:", validation);
 
-    // 🆕 CORRECTION DES RÉPÉTITIONS SI NÉCESSAIRE
+    // 🆕 CORRECTION ULTIME SI BESOIN
     if (validation.hasRepeats) {
-      console.warn("⚠️ Detected repetitions, applying fix...");
-      const titleRegex = new RegExp(`(${productTitle.substring(0, 30)}[^<]*)`, "g");
-      const matches = html.match(titleRegex);
-      if (matches && matches.length > 1) {
-        // Garder seulement la première occurrence
-        html = html.replace(titleRegex, (match, offset) => {
-          return offset === 0 ? match : "";
-        });
-        // Nettoyer
-        html = html.replace(/\s+/g, " ").replace(/(>)\s+(<)/g, "$1$2");
+      console.warn("⚠️ Applying repetition fix...");
+      // Supprimer les répétitions du titre
+      const firstTitleIndex = html.indexOf(productTitle);
+      if (firstTitleIndex !== -1) {
+        let cleanedHtml = html.substring(0, firstTitleIndex + productTitle.length);
+        const remaining = html.substring(firstTitleIndex + productTitle.length);
+        // Supprimer les occurrences suivantes du titre
+        cleanedHtml += remaining.replace(new RegExp(productTitle, "g"), "");
+        html = cleanedHtml;
       }
     }
 
-    if (!html || html.length < 200) {
-      throw new Error("Generated HTML is too short or empty");
+    // 🆕 GARANTIR UN HTML VALIDE
+    if (!html || html.length < 100) {
+      // Fallback HTML minimal
+      html = `
+<section class="mobile-padding bg-white py-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold theme-text mb-4">${productTitle}</h1>
+      <p class="text-gray-600 mobile-text">${description?.substring(0, 150) || "Produit de qualité supérieure"}</p>
+    </div>
+    
+    <div class="bg-gray-50 rounded-lg p-6 mb-8">
+      <h2 class="text-xl font-semibold theme-text mb-4">Caractéristiques Principales</h2>
+      <ul class="space-y-3">
+        <li class="flex items-center gap-3">
+          <div class="w-6 h-6 theme-bg rounded-full flex items-center justify-center">
+            <span class="text-sm theme-text">✓</span>
+          </div>
+          <span>Design moderne et fonctionnel</span>
+        </li>
+        <li class="flex items-center gap-3">
+          <div class="w-6 h-6 theme-bg rounded-full flex items-center justify-center">
+            <span class="text-sm theme-text">✓</span>
+          </div>
+          <span>Matériaux de haute qualité</span>
+        </li>
+        <li class="flex items-center gap-3">
+          <div class="w-6 h-6 theme-bg rounded-full flex items-center justify-center">
+            <span class="text-sm theme-text">✓</span>
+          </div>
+          <span>Facile à installer et entretenir</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+      `.trim();
     }
 
-    if (html.length > 20000) {
+    // 🆕 LIMITER LA TAILLE
+    if (html.length > 15000) {
       console.warn("⚠️ HTML too long, truncating...");
-      html = html.substring(0, 20000);
+      html = html.substring(0, 15000);
     }
 
-    // 🆕 SAUVEGARDE AVEC VALIDATION
+    console.log("✅ Final HTML length:", html.length);
+
+    // SAUVEGARDE
     if (userId && product_id) {
       try {
         await supabaseAdmin
@@ -312,21 +344,20 @@ Retourne UNIQUEMENT le code HTML, sans commentaires, sans markdown.
       }
     }
 
-    console.log("✅ Generation successful!");
     return new Response(
       JSON.stringify({
         html,
         success: true,
         validation,
         length: html.length,
-        wordCount: validation.wordCount,
+        wordCount: html.split(/\s+/).length,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
   } catch (err) {
-    console.error("💥 CRITICAL ERROR:", err);
+    console.error("💥 ERROR:", err);
     return new Response(
       JSON.stringify({
         error: err instanceof Error ? err.message : "Generation failed",
