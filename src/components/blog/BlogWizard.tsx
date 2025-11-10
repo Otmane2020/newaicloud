@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { useUsageLimits } from '@/hooks/useUsageLimits';
-import { UpgradeDialog } from '@/components/UpgradeDialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ProgressDialog, ResultsDialog, SuccessDialog } from '@/components/seo/SeoWorkflowDialogs';
-import { ArticleSyncDialog } from './ArticleSyncDialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { useTranslation } from '@/lib/language';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ProgressDialog, ResultsDialog, SuccessDialog } from "@/components/seo/SeoWorkflowDialogs";
+import { ArticleSyncDialog } from "./ArticleSyncDialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { useTranslation } from "@/lib/language";
 import {
   ChevronRight,
   ChevronLeft,
@@ -30,9 +30,9 @@ import {
   Check,
   ChevronsUpDown,
   Layers,
-  Palette
-} from 'lucide-react';
-import { ArticleConfigDialog, ArticleConfig } from './ArticleConfigDialog';
+  Palette,
+} from "lucide-react";
+import { ArticleConfigDialog, ArticleConfig } from "./ArticleConfigDialog";
 
 interface WizardStep {
   id: number;
@@ -72,10 +72,10 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
-  const [keywordInput, setKeywordInput] = useState('');
-  
+  const [keywordInput, setKeywordInput] = useState("");
+
   // Dialog states
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
@@ -85,36 +85,37 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [generatedArticleId, setGeneratedArticleId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    collection_id: '',
-    collectionTitle: '',
-    keywords: '',
+    collection_id: "",
+    collectionTitle: "",
+    keywords: "",
     productCount: 3,
-    articleLength: '700' as '700' | '2000' | '4000',
-    language: 'fr' as 'fr' | 'en' | 'es' | 'de' | 'it',
+    articleLength: "700" as "700" | "2000" | "4000",
+    language: "fr" as "fr" | "en" | "es" | "de" | "it",
   });
   const [collectionSearchOpen, setCollectionSearchOpen] = useState(false);
 
   // Article configuration for visual design
   const [articleConfig, setArticleConfig] = useState<ArticleConfig>({
-    style: 'magazine',
-    layout: '1-colonne',
-    colorScheme: '#000000',
-    contentLength: '2000',
+    style: "magazine",
+    layout: "1-colonne",
+    colorScheme: "#000000",
+    contentLength: "2000",
     includeTOC: true,
-    productDisplay: 'grid',
-    typography: 'sans-serif',
-    imageIntensity: 'medium',
+    productDisplay: "grid",
+    typography: "sans-serif",
+    imageIntensity: "medium",
   });
 
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
-  // Steps with translations - Removed language step, using shop language automatically
+  // Steps with translations - Added Design step
   const steps: WizardStep[] = [
     { id: 1, title: t.wizards.blog.steps.topic, icon: FileText, description: t.wizards.blog.descriptions.topic },
     { id: 2, title: t.wizards.blog.steps.products, icon: Package, description: t.wizards.blog.descriptions.products },
     { id: 3, title: t.wizards.blog.steps.keywords, icon: Tag, description: t.wizards.blog.descriptions.keywords },
     { id: 4, title: t.wizards.blog.steps.design, icon: Palette, description: t.wizards.blog.descriptions.design },
+    { id: 5, title: t.wizards.blog.steps.generate, icon: Sparkles, description: t.wizards.blog.descriptions.generate },
   ];
 
   useEffect(() => {
@@ -126,14 +127,14 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
   const fetchCollections = async () => {
     if (!user?.id) return;
-    
+
     try {
       // Fetch collections with product counts
       const { data: collectionsData, error } = await supabase
-        .from('shopify_collections')
-        .select('id, title')
-        .eq('user_id', user.id)
-        .order('title', { ascending: true });
+        .from("shopify_collections")
+        .select("id, title")
+        .eq("user_id", user.id)
+        .order("title", { ascending: true });
 
       if (error) throw error;
 
@@ -141,75 +142,71 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       const collectionsWithCount = await Promise.all(
         (collectionsData || []).map(async (col) => {
           const { count } = await supabase
-            .from('shopify_products')
-            .select('*', { count: 'exact', head: true })
-            .eq('seller_id', user.id)
-            .contains('collection_ids', [col.id]);
+            .from("shopify_products")
+            .select("*", { count: "exact", head: true })
+            .eq("seller_id", user.id)
+            .contains("collection_ids", [col.id]);
 
           return {
             ...col,
             productCount: count || 0,
           };
-        })
+        }),
       );
 
       // Filter collections with products only
-      const collectionsWithProducts = collectionsWithCount.filter(col => col.productCount > 0);
+      const collectionsWithProducts = collectionsWithCount.filter((col) => col.productCount > 0);
       setCollections(collectionsWithProducts as any);
     } catch (err) {
-      console.error('Error fetching collections:', err);
+      console.error("Error fetching collections:", err);
       toast.error(t.wizards.blog.loadingError);
     }
   };
 
   const fetchProducts = async () => {
     if (!user?.id) return;
-    
+
     try {
       const { data, error } = await supabase
-        .from('shopify_products')
-        .select('id, title, description, category, image_url, price, product_type, collection_ids')
-        .eq('seller_id', user.id)
-        .order('created_at', { ascending: false })
+        .from("shopify_products")
+        .select("id, title, description, category, image_url, price, product_type, collection_ids")
+        .eq("seller_id", user.id)
+        .order("created_at", { ascending: false })
         .limit(200);
 
       if (error) throw error;
       setProducts(data || []);
     } catch (err) {
-      console.error('Error fetching products:', err);
+      console.error("Error fetching products:", err);
       toast.error(t.wizards.blog.productsLoadingError);
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesCollection = !formData.collection_id || 
-      product.collection_ids?.includes(formData.collection_id);
-    
-    const matchesSearch = !searchTerm || 
-      product.title?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const filteredProducts = products.filter((product) => {
+    const matchesCollection = !formData.collection_id || product.collection_ids?.includes(formData.collection_id);
+
+    const matchesSearch = !searchTerm || product.title?.toLowerCase().includes(searchTerm.toLowerCase());
+
     return matchesCollection && matchesSearch;
   });
 
-  const filteredCollections = collections.filter(col =>
-    col.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCollections = collections.filter((col) => col.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const selectedCollectionData = collections.find(c => c.id === formData.collection_id);
-  const productsInCollection = formData.collection_id 
-    ? products.filter(p => p.collection_ids?.includes(formData.collection_id)).length
+  const selectedCollectionData = collections.find((c) => c.id === formData.collection_id);
+  const productsInCollection = formData.collection_id
+    ? products.filter((p) => p.collection_ids?.includes(formData.collection_id)).length
     : products.length;
 
   const addKeyword = () => {
     const newKeyword = keywordInput.trim();
     if (newKeyword && !keywords.includes(newKeyword)) {
       setKeywords([...keywords, newKeyword]);
-      setKeywordInput('');
+      setKeywordInput("");
     }
   };
 
   const removeKeyword = (keywordToRemove: string) => {
-    setKeywords(keywords.filter(k => k !== keywordToRemove));
+    setKeywords(keywords.filter((k) => k !== keywordToRemove));
   };
 
   const handleNext = () => {
@@ -227,8 +224,8 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const handleGenerate = async () => {
     // Check usage limits - only check articles limit specifically
     if (!limits?.canUseArticles) {
-      toast.error('Article limit reached', {
-        description: `You have used ${limits?.usage.articles_count}/${limits?.limits.max_articles} articles. Upgrade to create more.`
+      toast.error("Article limit reached", {
+        description: `You have used ${limits?.usage.articles_count}/${limits?.limits.max_articles} articles. Upgrade to create more.`,
       });
       setShowUpgradeDialog(true);
       return;
@@ -238,30 +235,36 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       setGenerating(true);
 
       if (!user?.id) {
-        throw new Error('Utilisateur non connecté');
+        throw new Error("Utilisateur non connecté");
       }
 
-      const finalKeywords = keywords.length > 0 ? keywords : formData.keywords.split(',').map(k => k.trim()).filter(Boolean);
+      const finalKeywords =
+        keywords.length > 0
+          ? keywords
+          : formData.keywords
+              .split(",")
+              .map((k) => k.trim())
+              .filter(Boolean);
 
       // Animation de génération
-      toast.loading(t.wizards.blog.generating, { id: 'generating' });
+      toast.loading(t.wizards.blog.generating, { id: "generating" });
 
-      const response = await supabase.functions.invoke('generate-blog-article', {
+      const response = await supabase.functions.invoke("generate-blog-article", {
         body: {
           user_id: user.id,
           collection_id: formData.collection_id,
           collectionTitle: formData.collectionTitle,
           keywords: finalKeywords,
-          productIds: selectedProducts.map(p => p.id),
+          productIds: selectedProducts.map((p) => p.id),
           articleLength: formData.articleLength,
           language: formData.language,
           articleConfig, // 🆕 Pass article configuration
-        }
+        },
       });
 
       if (response.error) throw response.error;
 
-      toast.success(t.wizards.blog.articleGenerated, { id: 'generating' });
+      toast.success(t.wizards.blog.articleGenerated, { id: "generating" });
 
       // Stocker l'article généré et afficher le dialog de résultats
       if (response.data?.article) {
@@ -270,7 +273,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           title: response.data.article.title,
           seo_title: response.data.article.seo_title,
           seo_description: response.data.article.seo_description,
-          content: response.data.article.content
+          content: response.data.article.content,
         });
         setGeneratedArticleId(response.data.article.id);
         setGenerating(false);
@@ -278,10 +281,9 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       } else {
         onClose();
       }
-
     } catch (error: any) {
-      console.error('Error:', error);
-      if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached')) {
+      console.error("Error:", error);
+      if (error.message?.includes("trial_limit_reached") || error.message?.includes("monthly_limit_reached")) {
         // Afficher le bon message selon le statut de l'utilisateur
         if (limits?.isTrialing) {
           toast.error(t.wizards.blog.trialLimitReached);
@@ -292,7 +294,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         }
         setShowUpgradeDialog(true);
       } else {
-        toast.error(error.message || t.wizards.blog.generationError, { id: 'generating' });
+        toast.error(error.message || t.wizards.blog.generationError, { id: "generating" });
       }
     } finally {
       setGenerating(false);
@@ -301,14 +303,14 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
   const handlePublishToShopify = async () => {
     if (!generatedArticleId) return;
-    
+
     setShowSyncDialog(false);
     setShowProgressDialog(true);
     setIsOptimizationComplete(false);
-    
+
     try {
-      const syncResponse = await supabase.functions.invoke('sync-blog-to-shopify', {
-        body: { articleId: generatedArticleId }
+      const syncResponse = await supabase.functions.invoke("sync-blog-to-shopify", {
+        body: { articleId: generatedArticleId },
       });
 
       if (syncResponse.error) {
@@ -317,11 +319,11 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       } else {
         setIsOptimizationComplete(true);
         toast.success(t.wizards.blog.syncComplete, {
-          description: t.wizards.blog.articleSynced
+          description: t.wizards.blog.articleSynced,
         });
       }
     } catch (error) {
-      console.error('Error publishing to Shopify:', error);
+      console.error("Error publishing to Shopify:", error);
       toast.error(t.wizards.blog.syncError);
     }
   };
@@ -349,11 +351,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <AlertDescription className="text-sm">
                 {limits.limitReached.articles ? (
                   <span className="text-orange-900 dark:text-orange-100 font-medium">
-                    {t.wizards.blog.limitReached}: {limits.usage.articles_count}/{limits.limits.max_articles} {t.wizards.blog.articlesUsed}
+                    {t.wizards.blog.limitReached}: {limits.usage.articles_count}/{limits.limits.max_articles}{" "}
+                    {t.wizards.blog.articlesUsed}
                   </span>
                 ) : (
                   <span>
-                    {t.wizards.blog.trialUsage}: {limits.usage.articles_count}/{limits.limits.max_articles} {t.wizards.blog.articlesUsed}
+                    {t.wizards.blog.trialUsage}: {limits.usage.articles_count}/{limits.limits.max_articles}{" "}
+                    {t.wizards.blog.articlesUsed}
                   </span>
                 )}
               </AlertDescription>
@@ -366,23 +370,25 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               const Icon = step.icon;
               const isActive = currentStep === step.id;
               const isCompleted = currentStep > step.id;
-              
+
               return (
                 <div key={step.id} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      isActive ? 'bg-primary text-white' :
-                      isCompleted ? 'bg-green-600 text-white' :
-                      'bg-gray-200 text-gray-500'
-                    }`}>
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        isActive
+                          ? "bg-primary text-white"
+                          : isCompleted
+                            ? "bg-green-600 text-white"
+                            : "bg-gray-200 text-gray-500"
+                      }`}
+                    >
                       {isCompleted ? <CheckCircle className="w-6 h-6" /> : <Icon className="w-6 h-6" />}
                     </div>
                     <span className="text-sm mt-2 text-center">{step.title}</span>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 ${
-                      isCompleted ? 'bg-green-600' : 'bg-gray-200'
-                    }`} />
+                    <div className={`flex-1 h-1 mx-2 ${isCompleted ? "bg-green-600" : "bg-gray-200"}`} />
                   )}
                 </div>
               );
@@ -393,6 +399,32 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           <div className="mb-8">
             {currentStep === 1 && (
               <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">{t.wizards.blog.articleLanguage}</label>
+                  <div className="grid grid-cols-5 gap-3">
+                    {[
+                      { code: "fr", label: "🇫🇷 Français", name: t.wizards.blog.languages.french },
+                      { code: "en", label: "🇬🇧 English", name: t.wizards.blog.languages.english },
+                      { code: "es", label: "🇪🇸 Español", name: t.wizards.blog.languages.spanish },
+                      { code: "de", label: "🇩🇪 Deutsch", name: t.wizards.blog.languages.german },
+                      { code: "it", label: "🇮🇹 Italiano", name: t.wizards.blog.languages.italian },
+                    ].map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, language: lang.code as any })}
+                        className={`px-4 py-3 border rounded-lg text-center transition-all ${
+                          formData.language === lang.code
+                            ? "bg-primary text-white border-primary"
+                            : "bg-white border-gray-300 hover:border-primary"
+                        }`}
+                      >
+                        <div className="font-semibold text-sm">{lang.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium mb-2">{t.wizards.blog.collection}</label>
                   <Popover open={collectionSearchOpen} onOpenChange={setCollectionSearchOpen}>
@@ -434,18 +466,18 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                             />
                             <span>{t.wizards.blog.allCollections}</span>
                           </CommandItem>
-                           {filteredCollections.map((collection) => {
+                          {filteredCollections.map((collection) => {
                             const productCount = collection.productCount || 0;
-                            
+
                             return (
                               <CommandItem
                                 key={collection.id}
                                 value={collection.title}
                                 onSelect={() => {
-                                  setFormData({ 
-                                    ...formData, 
+                                  setFormData({
+                                    ...formData,
                                     collection_id: collection.id,
-                                    collectionTitle: collection.title 
+                                    collectionTitle: collection.title,
                                   });
                                   setCollectionSearchOpen(false);
                                 }}
@@ -467,17 +499,17 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                     </PopoverContent>
                   </Popover>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-2">Longueur de l'article</label>
                   <div className="grid grid-cols-3 gap-3">
                     <button
                       type="button"
-                      onClick={() => setFormData({ ...formData, articleLength: '700' })}
+                      onClick={() => setFormData({ ...formData, articleLength: "700" })}
                       className={`px-4 py-3 border rounded-lg text-center transition-all ${
-                        formData.articleLength === '700' 
-                          ? 'bg-primary text-white border-primary' 
-                          : 'bg-white border-gray-300 hover:border-primary'
+                        formData.articleLength === "700"
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white border-gray-300 hover:border-primary"
                       }`}
                     >
                       <div className="font-semibold">Court</div>
@@ -485,11 +517,11 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFormData({ ...formData, articleLength: '2000' })}
+                      onClick={() => setFormData({ ...formData, articleLength: "2000" })}
                       className={`px-4 py-3 border rounded-lg text-center transition-all ${
-                        formData.articleLength === '2000' 
-                          ? 'bg-primary text-white border-primary' 
-                          : 'bg-white border-gray-300 hover:border-primary'
+                        formData.articleLength === "2000"
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white border-gray-300 hover:border-primary"
                       }`}
                     >
                       <div className="font-semibold">Long</div>
@@ -497,11 +529,11 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFormData({ ...formData, articleLength: '4000' })}
+                      onClick={() => setFormData({ ...formData, articleLength: "4000" })}
                       className={`px-4 py-3 border rounded-lg text-center transition-all ${
-                        formData.articleLength === '4000' 
-                          ? 'bg-primary text-white border-primary' 
-                          : 'bg-white border-gray-300 hover:border-primary'
+                        formData.articleLength === "4000"
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white border-gray-300 hover:border-primary"
                       }`}
                     >
                       <div className="font-semibold">Large</div>
@@ -518,12 +550,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   <Alert className="bg-purple-50 border-purple-200">
                     <Layers className="w-4 h-4 text-purple-600" />
                     <AlertDescription>
-                      <span className="font-medium">{t.wizards.blog.collection}:</span>{' '}
+                      <span className="font-medium">{t.wizards.blog.collection}:</span>{" "}
                       <strong>{selectedCollectionData.title}</strong>
                     </AlertDescription>
                   </Alert>
                 )}
-                
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
@@ -534,42 +566,38 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                     className="pl-10"
                   />
                 </div>
-                
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
                   <p className="text-sm">
-                    <strong>{selectedProducts.length}</strong> {t.wizards.blog.selected} • <strong>{filteredProducts.length}</strong> {t.wizards.blog.products}
+                    <strong>{selectedProducts.length}</strong> {t.wizards.blog.selected} •{" "}
+                    <strong>{filteredProducts.length}</strong> {t.wizards.blog.products}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto border rounded-lg p-4">
                   {filteredProducts.map((product) => {
-                    const isSelected = !!selectedProducts.find(p => p.id === product.id);
-                    
+                    const isSelected = !!selectedProducts.find((p) => p.id === product.id);
+
                     return (
-                      <Card 
-                        key={product.id} 
+                      <Card
+                        key={product.id}
                         className={`p-4 cursor-pointer transition-all ${
-                          isSelected ? 'bg-blue-50 border-blue-500' : 'hover:bg-gray-50'
+                          isSelected ? "bg-blue-50 border-blue-500" : "hover:bg-gray-50"
                         }`}
                         onClick={() => {
                           if (isSelected) {
-                            setSelectedProducts(selectedProducts.filter(p => p.id !== product.id));
+                            setSelectedProducts(selectedProducts.filter((p) => p.id !== product.id));
                           } else {
                             setSelectedProducts([...selectedProducts, product]);
                           }
                         }}
                       >
                         <div className="flex items-center gap-4">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            readOnly
-                            className="w-5 h-5 rounded"
-                          />
-                          <img 
-                            src={product.image_url || '/placeholder.svg'} 
-                            alt={product.title} 
-                            className="w-20 h-20 object-cover rounded" 
+                          <input type="checkbox" checked={isSelected} readOnly className="w-5 h-5 rounded" />
+                          <img
+                            src={product.image_url || "/placeholder.svg"}
+                            alt={product.title}
+                            className="w-20 h-20 object-cover rounded"
                           />
                           <div className="flex-1">
                             <p className="font-medium line-clamp-2">{product.title}</p>
@@ -587,7 +615,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                       </Card>
                     );
                   })}
-                  
+
                   {filteredProducts.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -595,12 +623,10 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                     </div>
                   )}
                 </div>
-                
+
                 {selectedProducts.length === 0 && (
                   <Alert>
-                    <AlertDescription>
-                      {t.wizards.blog.selectAtLeast}
-                    </AlertDescription>
+                    <AlertDescription>{t.wizards.blog.selectAtLeast}</AlertDescription>
                   </Alert>
                 )}
               </div>
@@ -610,18 +636,18 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">{t.wizards.blog.keywordManagement}</label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {t.wizards.blog.keywordDescription}
-                  </p>
+                  <p className="text-xs text-muted-foreground mb-2">{t.wizards.blog.keywordDescription}</p>
                   <div className="flex gap-2">
                     <Input
                       type="text"
                       placeholder={t.wizards.blog.keywordPlaceholder}
                       value={keywordInput}
                       onChange={(e) => setKeywordInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+                      onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addKeyword())}
                     />
-                    <Button onClick={addKeyword} type="button">{t.wizards.blog.add}</Button>
+                    <Button onClick={addKeyword} type="button">
+                      {t.wizards.blog.add}
+                    </Button>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -639,13 +665,33 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
             {currentStep === 4 && (
               <div className="space-y-6">
+                <ArticleConfigDialog config={articleConfig} onConfigChange={setArticleConfig} />
+              </div>
+            )}
+
+            {currentStep === 5 && (
+              <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                   <h3 className="font-semibold mb-4">{t.common.summary}</h3>
                   <div className="space-y-2 text-sm">
-                    <p><strong>{t.wizards.blog.collection}:</strong> {collections.find(c => c.id === formData.collection_id)?.title || t.common.none}</p>
-                    <p><strong>{t.wizards.blog.articleLength}:</strong> {formData.articleLength === '700' ? `${t.wizards.blog.short} (~700 ${t.wizards.blog.words})` : formData.articleLength === '2000' ? `${t.wizards.blog.medium} (~2000 ${t.wizards.blog.words})` : `${t.wizards.blog.long} (~4000 ${t.wizards.blog.words})`}</p>
-                    <p><strong>{t.wizards.blog.products}:</strong> {selectedProducts.length}</p>
-                    <p><strong>{t.wizards.blog.keywords}:</strong> {keywords.join(', ')}</p>
+                    <p>
+                      <strong>{t.wizards.blog.collection}:</strong>{" "}
+                      {collections.find((c) => c.id === formData.collection_id)?.title || t.common.none}
+                    </p>
+                    <p>
+                      <strong>{t.wizards.blog.articleLength}:</strong>{" "}
+                      {formData.articleLength === "700"
+                        ? `${t.wizards.blog.short} (~700 ${t.wizards.blog.words})`
+                        : formData.articleLength === "2000"
+                          ? `${t.wizards.blog.medium} (~2000 ${t.wizards.blog.words})`
+                          : `${t.wizards.blog.long} (~4000 ${t.wizards.blog.words})`}
+                    </p>
+                    <p>
+                      <strong>{t.wizards.blog.products}:</strong> {selectedProducts.length}
+                    </p>
+                    <p>
+                      <strong>{t.wizards.blog.keywords}:</strong> {keywords.join(", ")}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -654,15 +700,11 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
           {/* Navigation */}
           <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
-            >
+            <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 1}>
               <ChevronLeft className="w-4 h-4 mr-2" />
               {t.common.previous}
             </Button>
-            
+
             {currentStep < steps.length ? (
               <Button onClick={handleNext}>
                 {t.common.next}
@@ -686,7 +728,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           </div>
         </div>
       </Card>
-      
+
       <UpgradeDialog
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
@@ -700,12 +742,18 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
         type="seo"
-        items={generatedArticle ? [{
-          id: generatedArticle.id,
-          title: generatedArticle.title,
-          seo_title: generatedArticle.seo_title,
-          seo_description: generatedArticle.seo_description
-        }] : []}
+        items={
+          generatedArticle
+            ? [
+                {
+                  id: generatedArticle.id,
+                  title: generatedArticle.title,
+                  seo_title: generatedArticle.seo_title,
+                  seo_description: generatedArticle.seo_description,
+                },
+              ]
+            : []
+        }
         onSyncClick={() => {
           setShowResultsDialog(false);
           setShowSyncDialog(true);
@@ -716,7 +764,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
       <ArticleSyncDialog
         open={showSyncDialog}
         onOpenChange={setShowSyncDialog}
-        article={generatedArticle || { title: '' }}
+        article={generatedArticle || { title: "" }}
         onConfirm={handlePublishToShopify}
         loading={false}
       />
@@ -729,7 +777,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         current={1}
         total={1}
       />
-      
+
       <SuccessDialog
         open={isOptimizationComplete && showProgressDialog}
         onOpenChange={(open) => {
