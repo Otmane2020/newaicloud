@@ -62,7 +62,7 @@ serve(async (req) => {
       console.log("[sync-landing-to-shopify] Trying to fetch connection by store_id:", product.store_id);
       const { data, error: connectionError } = await supabase
         .from("shopify_connections")
-        .select("id, store_url, encrypted_token")
+        .select("id, store_url, access_token")
         .eq("id", product.store_id)
         .maybeSingle();
 
@@ -93,7 +93,7 @@ serve(async (req) => {
       console.log("[sync-landing-to-shopify] Fetching user's most recent Shopify connection");
       const { data, error: fallbackError } = await supabase
         .from("shopify_connections")
-        .select("id, store_url, encrypted_token")
+        .select("id, store_url, access_token")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -113,20 +113,13 @@ serve(async (req) => {
       console.log("[sync-landing-to-shopify] Using most recent connection:", connection.id);
     }
 
-    // Decrypt access token
-    const { data: decryptData, error: decryptError } = await supabase.functions.invoke("encrypt-shopify-token", {
-      body: {
-        action: "decrypt",
-        token: connection.encrypted_token,
-      },
-    });
-
-    if (decryptError || !decryptData?.token) {
-      console.error("[sync-landing-to-shopify] Decrypt error:", decryptError);
-      throw new Error("Failed to decrypt Shopify token");
+    // Use access_token directly (OAuth tokens are already in plain text)
+    if (!connection.access_token) {
+      console.error("[sync-landing-to-shopify] No access token found");
+      throw new Error("No Shopify access token found");
     }
 
-    const accessToken = decryptData.token;
+    const accessToken = connection.access_token;
     const storeUrl = (connection.store_url || "").replace(/\/$/, "").replace(/^https?:\/\//, "");
     const fullStoreUrl = storeUrl.startsWith("http") ? storeUrl : `https://${storeUrl}`;
 
