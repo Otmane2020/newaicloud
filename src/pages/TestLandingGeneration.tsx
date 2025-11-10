@@ -15,7 +15,7 @@ export default function TestLandingGeneration() {
 
   const testProductData = {
     product_id: "test-product-123",
-    title: "Armoire Test Velmio",
+    productTitle: "Armoire Test Velmio",
     description: "Armoire moderne blanche laquée mate avec structure dorée",
     vendor: "Velmio",
     mainColor: "#5A3E2B",
