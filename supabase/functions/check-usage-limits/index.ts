@@ -141,6 +141,51 @@ serve(async (req) => {
     
     console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
+    // Handle usage tracking FIRST (before plan checks)
+    let currentUsage = usageRes.data;
+    if (!currentUsage) {
+      console.log('[LIMITS] Creating usage_tracking entry');
+      const { data: newUsage } = await supabaseAdmin
+        .from('usage_tracking')
+        .insert({
+          seller_id: user.id,
+          month: monthKey,
+          optimizations_count: 0,
+          articles_count: 0,
+          chat_responses_count: 0,
+          shopify_requests_count: 0,
+          products_count: 0,
+          shopify_stores_count: 0,
+          campaigns_count: 0,
+        })
+        .select()
+        .single();
+      
+      currentUsage = newUsage || {
+        optimizations_count: 0,
+        articles_count: 0,
+        chat_responses_count: 0,
+        shopify_requests_count: 0,
+        products_count: 0,
+        shopify_stores_count: 0,
+        campaigns_count: 0,
+      };
+    }
+    
+    console.log(`[LIMITS] Current usage:`, currentUsage);
+
+    // Auto-correct product count if needed
+    const realProductCount = productCountRes.count || 0;
+    if (currentUsage.products_count !== realProductCount) {
+      console.warn(`[LIMITS] ⚠️ Correcting products_count: ${currentUsage.products_count} → ${realProductCount}`);
+      await supabaseAdmin
+        .from('usage_tracking')
+        .update({ products_count: realProductCount, updated_at: new Date().toISOString() })
+        .eq('seller_id', user.id)
+        .eq('month', monthKey);
+      currentUsage.products_count = realProductCount;
+    }
+    
     // ⚡ Fetch plan (trial or paid)
     const planId = (!isTrialing && profile.current_plan_id) ? profile.current_plan_id : 'trial';
     const { data: plan, error: planError } = await supabaseAdmin
@@ -149,7 +194,7 @@ serve(async (req) => {
       .eq('id', planId)
       .single();
 
-    // CRITICAL FIX: Return proper response instead of throwing
+    // CRITICAL FIX: Return proper response with currentUsage already initialized
     if (planError || !plan) {
       console.error('[LIMITS] Error fetching plan:', planError, 'planId:', planId);
       console.error('[LIMITS] Falling back to default trial limits');
@@ -197,51 +242,6 @@ serve(async (req) => {
     }
     
     console.log(`[LIMITS] Using plan: ${plan.id} - isTrialing: ${isTrialing}, isPaid: ${isPaid}`);
-
-    // Handle usage tracking
-    let currentUsage = usageRes.data;
-    if (!currentUsage) {
-      console.log('[LIMITS] Creating usage_tracking entry');
-      const { data: newUsage } = await supabaseAdmin
-        .from('usage_tracking')
-        .insert({
-          seller_id: user.id,
-          month: monthKey,
-          optimizations_count: 0,
-          articles_count: 0,
-          chat_responses_count: 0,
-          shopify_requests_count: 0,
-          products_count: 0,
-          shopify_stores_count: 0,
-          campaigns_count: 0,
-        })
-        .select()
-        .single();
-      
-      currentUsage = newUsage || {
-        optimizations_count: 0,
-        articles_count: 0,
-        chat_responses_count: 0,
-        shopify_requests_count: 0,
-        products_count: 0,
-        shopify_stores_count: 0,
-        campaigns_count: 0,
-      };
-    }
-    
-    console.log(`[LIMITS] Current usage:`, currentUsage);
-
-    // Auto-correct product count if needed
-    const realProductCount = productCountRes.count || 0;
-    if (currentUsage.products_count !== realProductCount) {
-      console.warn(`[LIMITS] ⚠️ Correcting products_count: ${currentUsage.products_count} → ${realProductCount}`);
-      await supabaseAdmin
-        .from('usage_tracking')
-        .update({ products_count: realProductCount, updated_at: new Date().toISOString() })
-        .eq('seller_id', user.id)
-        .eq('month', monthKey);
-      currentUsage.products_count = realProductCount;
-    }
 
     // Use plan limits directly (trial plan limits for trialing, paid plan limits for paid)
     const limits = {
