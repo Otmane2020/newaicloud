@@ -21,6 +21,7 @@ export interface LandingConfig {
   colorScheme: string;
   contentLength: string;
   vendorSource: "shopify" | "extract" | "generate";
+  mentionBrand?: boolean; // Mentionner la marque dans la description
   customHighlights?: string; // Texte libre pour highlights personnalisés
 }
 
@@ -146,6 +147,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
     colorScheme: "#000000",
     contentLength: "moyenne (800 mots)",
     vendorSource: "shopify",
+    mentionBrand: true,
     customHighlights: "",
   });
 
@@ -565,6 +567,18 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                   </div>
                 </div>
               </button>
+            </div>
+
+            {/* Checkbox pour mentionner la marque */}
+            <div className="flex items-center gap-3 mt-4 p-3 border rounded-lg bg-muted/30">
+              <Checkbox
+                id="mention-brand"
+                checked={config.mentionBrand ?? true}
+                onCheckedChange={(checked) => setConfig({ ...config, mentionBrand: !!checked })}
+              />
+              <Label htmlFor="mention-brand" className="cursor-pointer flex-1 text-sm">
+                Mentionner la marque dans la description générée
+              </Label>
             </div>
           </div>
 
