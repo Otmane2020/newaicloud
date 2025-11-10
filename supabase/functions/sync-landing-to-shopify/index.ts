@@ -56,7 +56,7 @@ serve(async (req) => {
     if (product.store_id) {
       const { data, error: connectionError } = await supabase
         .from('shopify_connections')
-        .select('store_url, access_token')
+        .select('store_url, encrypted_access_token')
         .eq('id', product.store_id)
         .eq('user_id', user.id)
         .single();
@@ -73,7 +73,7 @@ serve(async (req) => {
       console.log('[sync-landing-to-shopify] No store_id or connection not found, fetching first active connection');
       const { data, error: fallbackError } = await supabase
         .from('shopify_connections')
-        .select('store_url, access_token')
+        .select('store_url, encrypted_access_token')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
@@ -89,11 +89,20 @@ serve(async (req) => {
       console.log('[sync-landing-to-shopify] Using fallback connection');
     }
 
-    if (!connection.access_token) {
-      throw new Error('No Shopify access token found');
+    // Decrypt access token
+    const { data: decryptData, error: decryptError } = await supabase.functions.invoke('encrypt-shopify-token', {
+      body: { 
+        action: 'decrypt', 
+        token: connection.encrypted_access_token 
+      }
+    });
+
+    if (decryptError || !decryptData?.token) {
+      console.error('[sync-landing-to-shopify] Decrypt error:', decryptError);
+      throw new Error('Failed to decrypt Shopify token');
     }
 
-    const accessToken = connection.access_token;
+    const accessToken = decryptData.token;
     const storeUrl = connection.store_url.replace(/\/$/, '');
 
     // Create page handle from product handle
