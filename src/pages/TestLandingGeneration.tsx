@@ -236,15 +236,19 @@ export default function TestLandingGeneration() {
                 </div>
               </div>
               <div 
-                className={`border rounded-lg overflow-hidden ${
-                  viewMode === "mobile" ? "max-w-sm mx-auto" : ""
+                className={`border rounded-lg overflow-hidden transition-all duration-300 ${
+                  viewMode === "mobile" ? "max-w-[375px] mx-auto" : "w-full"
                 }`}
               >
                 <iframe
                   srcDoc={html}
-                  className="w-full h-[600px] bg-white"
+                  className="w-full min-h-[600px] h-screen bg-white"
                   title="Landing page preview"
                   sandbox="allow-same-origin allow-scripts"
+                  style={{ 
+                    maxHeight: '800px',
+                    overflow: 'auto'
+                  }}
                 />
               </div>
             </Card>
