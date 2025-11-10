@@ -265,8 +265,9 @@ export default function RegenerateLanding({
           description: product.description,
           vendor: resolvedVendor,
           style: config.style,
-          mainColor: typeof config.colorScheme === 'string' ? config.colorScheme : config.colorScheme?.primary || "#3B82F6",
-          colorScheme: typeof config.colorScheme === 'object' ? config.colorScheme : undefined,
+          mainColor:
+            typeof config.colorScheme === "string" ? config.colorScheme : config.colorScheme?.primary || "#3B82F6",
+          colorScheme: typeof config.colorScheme === "object" ? config.colorScheme : undefined,
           layout: config.layout,
           length: config.contentLength,
           customHighlights: config.customHighlights,
@@ -300,7 +301,7 @@ export default function RegenerateLanding({
       if (data?.html?.trim()) {
         const wordCount = data.html.split(/\s+/).length;
         console.log(`[Landing] Generated content: ${wordCount} words (mobile-optimized by backend)`);
-        
+
         setHtmlContent(data.html);
         setProgress(100);
         setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
