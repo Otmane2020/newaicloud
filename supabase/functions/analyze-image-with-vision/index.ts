@@ -83,8 +83,17 @@ serve(async (req) => {
       throw new Error('Image too large (max 10MB)');
     }
 
-    // Efficient base64 conversion using native Deno APIs
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+    // Efficient base64 conversion using chunked approach to avoid stack overflow
+    const uint8Array = new Uint8Array(imageBuffer);
+    const chunkSize = 8192;
+    let binary = '';
+    
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      binary += String.fromCharCode(...chunk);
+    }
+    
+    const base64Image = btoa(binary);
 
     // Determine image MIME type
     const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
