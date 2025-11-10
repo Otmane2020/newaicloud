@@ -4,8 +4,9 @@ import { toast } from 'sonner';
 import { LoadingState } from '@/components/ui/loading-state';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Eye, Upload, Monitor, Smartphone } from 'lucide-react';
 import { LandingConfig } from '@/components/seo/LandingConfigDialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Product {
   id: string;
@@ -13,6 +14,7 @@ interface Product {
   description: string | null;
   image_url: string | null;
   shopify_id: number | null;
+  handle?: string | null;
 }
 
 interface RegenerateLandingProps {
@@ -31,8 +33,11 @@ export default function RegenerateLanding({
   onClose,
 }: RegenerateLandingProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
 
   useEffect(() => {
     if (autoGenerate) {
@@ -74,19 +79,13 @@ export default function RegenerateLanding({
       }
 
       setProgress(100);
+      setGeneratedHtml(data.html);
       
       toast.success('Landing page générée avec succès !');
       
       if (onGenerated) {
         onGenerated(data.html);
       }
-
-      // Auto-close after success
-      setTimeout(() => {
-        if (onClose) {
-          onClose();
-        }
-      }, 1000);
 
     } catch (err: any) {
       console.error('Error generating landing page:', err);
@@ -98,6 +97,39 @@ export default function RegenerateLanding({
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSyncToShopify = async () => {
+    if (!generatedHtml) return;
+
+    setIsSyncing(true);
+    try {
+      const { error: syncError } = await supabase.functions.invoke('sync-landing-to-shopify', {
+        body: {
+          productId: product.id,
+          productTitle: product.title,
+          productHandle: product.handle || product.title.toLowerCase().replace(/\s+/g, '-'),
+          htmlContent: generatedHtml,
+        },
+      });
+
+      if (syncError) throw syncError;
+
+      toast.success('Landing page synchronisée avec Shopify !');
+      
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, 1000);
+    } catch (err: any) {
+      console.error('Error syncing to Shopify:', err);
+      toast.error('Erreur lors de la synchronisation', {
+        description: err?.message || 'Impossible de synchroniser avec Shopify',
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -128,6 +160,76 @@ export default function RegenerateLanding({
         estimatedTime="30-60 secondes"
         details={`Création d'une page optimisée pour "${product.title}"`}
       />
+    );
+  }
+
+  if (generatedHtml) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Eye className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Aperçu de la landing page</h3>
+          </div>
+          <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as 'desktop' | 'mobile')}>
+            <TabsList>
+              <TabsTrigger value="desktop" className="gap-2">
+                <Monitor className="h-4 w-4" />
+                Desktop
+              </TabsTrigger>
+              <TabsTrigger value="mobile" className="gap-2">
+                <Smartphone className="h-4 w-4" />
+                Mobile
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <div className={`border rounded-lg overflow-hidden bg-background ${
+          previewMode === 'mobile' ? 'max-w-[375px] mx-auto' : 'w-full'
+        }`}>
+          <iframe
+            srcDoc={generatedHtml}
+            className={`w-full ${previewMode === 'mobile' ? 'h-[667px]' : 'h-[600px]'}`}
+            title="Landing Page Preview"
+            sandbox="allow-same-origin"
+          />
+        </div>
+
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Cette landing page sera créée en tant que page Shopify et liée à votre produit.
+          </AlertDescription>
+        </Alert>
+
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" onClick={onClose}>
+            Fermer
+          </Button>
+          <Button 
+            onClick={handleGenerate}
+            variant="outline"
+            disabled={isGenerating}
+          >
+            Régénérer
+          </Button>
+          <Button 
+            onClick={handleSyncToShopify}
+            disabled={isSyncing}
+            className="gap-2"
+          >
+            {isSyncing ? (
+              <>Synchronisation...</>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                Synchroniser avec Shopify
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
     );
   }
 
