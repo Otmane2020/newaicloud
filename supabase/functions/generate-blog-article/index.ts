@@ -458,11 +458,16 @@ Perfect for a 16:9 blog header image. Ultra high resolution, sharp focus, profes
       }
     }
 
-    const netlinkingContext = [
-      shopifyPages.length > 0 ? `\n📄 PAGES SHOPIFY POUR NETLINKING:\n${shopifyPages.map((p) => `- ${p.title}: ${storeUrl}/pages/${p.handle}`).join("\n")}` : '',
-      shopifyCollections.length > 0 ? `\n🏷️ COLLECTIONS SHOPIFY POUR NETLINKING:\n${shopifyCollections.map((c) => `- ${c.title}: ${storeUrl}/collections/${c.handle}`).join("\n")}` : '',
-      (shopifyPages.length > 0 || shopifyCollections.length > 0) ? '\n**🔗 IMPORTANT: Intègre ces liens naturellement dans l\'article pour créer du maillage interne SEO.**' : ''
-    ].filter(Boolean).join('\n');
+    let netlinkingContext = '';
+    if (shopifyPages.length > 0) {
+      netlinkingContext += `\n📄 PAGES SHOPIFY POUR NETLINKING:\n${shopifyPages.map((p) => `- ${p.title}: ${storeUrl}/pages/${p.handle}`).join("\n")}`;
+    }
+    if (shopifyCollections.length > 0) {
+      netlinkingContext += `\n🏷️ COLLECTIONS SHOPIFY POUR NETLINKING:\n${shopifyCollections.map((c) => `- ${c.title}: ${storeUrl}/collections/${c.handle}`).join("\n")}`;
+    }
+    if (shopifyPages.length > 0 || shopifyCollections.length > 0) {
+      netlinkingContext += "\n**🔗 IMPORTANT: Intègre ces liens naturellement dans l'article pour créer du maillage interne SEO.**";
+    }
 
     // Style guides based on config
     const styleGuides: Record<string, string> = {
