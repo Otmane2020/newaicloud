@@ -330,24 +330,36 @@ export function calculateDetailedSeoScore(
     (hasUrl ? 6 : 0) // URL 6 points (reduced from 8)
   );
 
-  // Bonus +10 points pour contenu optimisé par IA (reduced for more variation)
+  // Bonus +10 points pour contenu optimisé par IA
   if (optimizationCount && optimizationCount > 0) {
     weightedScore = Math.min(95, weightedScore + 10);
   }
 
-  // IMPORTANT: Produit non optimisé plafonné à 75%, mais varie selon la qualité réelle
-  // Le score réel peut être 20%, 35%, 50%, 68%, etc. selon le contenu
-  const maxScore = (optimizationCount && optimizationCount > 0) ? 95 : 75;
+  // IMPORTANT: Score varie naturellement selon la qualité du contenu
+  // Non-optimisé: 21-75% selon le contenu réel
+  // Optimisé: jusqu'à 95%
+  let finalScore = weightedScore;
+  
+  // Pour les non-optimisés, assurer un minimum de 21% et un maximum de 75%
+  if (!optimizationCount || optimizationCount === 0) {
+    // Minimum 21% si au moins du contenu existe
+    const hasContent = (title && title.trim().length > 0) || (description && description.trim().length > 0);
+    if (hasContent) {
+      finalScore = Math.max(21, Math.min(75, weightedScore));
+    } else {
+      finalScore = Math.min(21, weightedScore);
+    }
+  }
 
   return {
-    score: Math.min(maxScore, Math.max(0, weightedScore)),
+    score: Math.round(Math.max(0, finalScore)),
     breakdown: {
       presence: Math.round((titleScore.breakdown.presence + descScore.breakdown.presence) / 2),
       length: Math.round((titleScore.breakdown.length + descScore.breakdown.length) / 2),
       keywords: Math.round((titleScore.breakdown.keywords + descScore.breakdown.keywords) / 2),
       readability: Math.round((titleScore.breakdown.readability + descScore.breakdown.readability) / 2),
     },
-    maxScore: maxScore
+    maxScore: (optimizationCount && optimizationCount > 0) ? 95 : 75
   };
 }
 
