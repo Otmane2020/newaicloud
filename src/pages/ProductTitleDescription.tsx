@@ -17,24 +17,18 @@ import {
   Search,
   Paintbrush,
   Palette,
-  Eye,
   RefreshCw,
   Square,
-  FileText,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WhiteBackgroundPreviewDialog } from "@/components/seo/WhiteBackgroundPreviewDialog";
 import { BackgroundDialog } from "@/components/seo/BackgroundDialog";
-import { ProductTitleLandingDialog } from "@/components/seo/ProductTitleLandingDialog";
-import RegenerateLanding from "@/components/seo/RegenerateLanding";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/OptimizationConfigDialog";
-import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { AiBackgroundConfigDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundConfigDialog";
 import { OptimizationConfirmDialog } from "@/components/seo/OptimizationConfirmDialog";
-// Removed useBackgroundRemoval - now using generate-white-background edge function
 import {
   Dialog,
   DialogContent,
@@ -96,7 +90,6 @@ export default function ProductTitleDescription() {
   const [customPrompt, setCustomPrompt] = useState("");
   const [showPromptDialog, setShowPromptDialog] = useState(false);
   const [showAiConfigDialog, setShowAiConfigDialog] = useState(false);
-  const [showLandingPreviewDialog, setShowLandingPreviewDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [syncingToShopify, setSyncingToShopify] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -108,18 +101,12 @@ export default function ProductTitleDescription() {
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showOptimizationConfirm, setShowOptimizationConfirm] = useState(false);
-  const [showLandingDialog, setShowLandingDialog] = useState(false);
-  const [selectedLandingProduct, setSelectedLandingProduct] = useState<Product | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [optimizationConfig, setOptimizationConfig] = useState<OptimizationConfig | null>(null);
-  const [showLandingConfigDialog, setShowLandingConfigDialog] = useState(false);
-  const [landingConfig, setLandingConfig] = useState<LandingConfig | null>(null);
   const [galleryImages, setGalleryImages] = useState<Map<string, ProductImage[]>>(new Map());
   const [selectedGalleryImages, setSelectedGalleryImages] = useState<Map<string, string>>(new Map());
   const [selectedImageFormat, setSelectedImageFormat] = useState<string>("square");
   const [selectedSimilarity, setSelectedSimilarity] = useState<string>("medium");
-  const [generatedHtmlCache, setGeneratedHtmlCache] = useState<Map<string, string>>(new Map());
-  const [replacingDescription, setReplacingDescription] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -193,12 +180,11 @@ export default function ProductTitleDescription() {
       return;
     }
 
-    const controller = new AbortController();
+      const controller = new AbortController();
     setAbortController(controller);
     setGenerating(true);
     setIsOptimizing(true);
     setOptimizedProducts([]);
-    setShowLandingPreviewDialog(true);
 
     const productArray = Array.from(selectedProducts);
     const toastId = toast.loading(`Génération 0/${productArray.length} produit(s)...`);
@@ -366,12 +352,6 @@ export default function ProductTitleDescription() {
   const handleConfigConfirm = (config: OptimizationConfig) => {
     setOptimizationConfig(config);
     setTimeout(() => handleOptimizeSelected(config), 100);
-  };
-
-  const handleLandingConfigConfirm = (config: LandingConfig) => {
-    setLandingConfig(config);
-    setShowLandingConfigDialog(false);
-    setTimeout(() => setShowLandingDialog(true), 100);
   };
 
   const loadGalleryImages = async (productIds: string[]) => {
@@ -682,7 +662,6 @@ export default function ProductTitleDescription() {
       }
 
       toast.success(`${optimizedProducts.length} produit(s) synchronisé(s) avec Shopify`, { id: toastId });
-      setShowLandingPreviewDialog(false);
       setOptimizedProducts([]);
     } catch (error) {
       console.error("Error syncing to Shopify:", error);
@@ -692,35 +671,6 @@ export default function ProductTitleDescription() {
     }
   };
 
-  const handleReplaceDescription = async () => {
-    setReplacingDescription(true);
-    const toastId = toast.loading("Remplacement des descriptions...");
-
-    try {
-      for (const product of optimizedProducts) {
-        const cachedHtml = generatedHtmlCache.get(product.id);
-        if (cachedHtml) {
-          const { error } = await supabase
-            .from("shopify_products")
-            .update({ description: cachedHtml })
-            .eq("id", product.id);
-
-          if (error) {
-            console.error(`Error updating product ${product.id}:`, error);
-          }
-        }
-      }
-
-      toast.success(`${optimizedProducts.length} description(s) remplacée(s)`, { id: toastId });
-      setGeneratedHtmlCache(new Map());
-      await fetchProducts();
-    } catch (error) {
-      console.error("Error replacing descriptions:", error);
-      toast.error("Erreur lors du remplacement", { id: toastId });
-    } finally {
-      setReplacingDescription(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -1134,52 +1084,6 @@ export default function ProductTitleDescription() {
                           </TooltipContent>
                         </Tooltip>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
-                                  setOptimizedProducts([product]);
-                                  setShowLandingPreviewDialog(true);
-                                } else {
-                                  toast.error("Ce produit n'a pas encore été optimisé");
-                                }
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Visualiser</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                // Vérifier les limites AVANT d'ouvrir le dialog
-                                if (!canDoAction("optimizations")) {
-                                  toast.error("Limite d'optimisations atteinte");
-                                  setShowUpgradeDialog(true);
-                                  return;
-                                }
-                                setSelectedLandingProduct(product);
-                                setShowLandingConfigDialog(true);
-                              }}
-                              className="hover:bg-primary/10"
-                            >
-                              <FileText className="h-4 w-4 text-primary" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Générer Landing Page IA</p>
-                          </TooltipContent>
-                        </Tooltip>
 
                         {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
                           <Tooltip>
@@ -1416,50 +1320,6 @@ export default function ProductTitleDescription() {
         onCustomPromptChange={setCustomPrompt}
       />
 
-      <ProductTitleLandingDialog
-        open={showLandingPreviewDialog}
-        onOpenChange={setShowLandingPreviewDialog}
-        products={optimizedProducts}
-        isGenerating={isOptimizing}
-        currentProcessing={currentProcessing}
-        onCancel={generating ? handleCancelGeneration : undefined}
-        onSync={handleSyncToShopify}
-        syncLoading={syncingToShopify}
-        onReplaceDescription={handleReplaceDescription}
-        replaceLoading={replacingDescription}
-      />
-
-      {/* Landing Config Dialog */}
-      <LandingConfigDialog
-        open={showLandingConfigDialog}
-        onOpenChange={setShowLandingConfigDialog}
-        onConfirm={handleLandingConfigConfirm}
-        productTitle={selectedLandingProduct?.title}
-      />
-
-      {/* Landing Page Generator Dialog */}
-      <Dialog open={showLandingDialog} onOpenChange={setShowLandingDialog}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-primary" />
-              Générateur de Landing Page IA
-            </DialogTitle>
-            <DialogDescription>Créez une landing page personnalisée et optimisée pour votre produit</DialogDescription>
-          </DialogHeader>
-          {selectedLandingProduct && landingConfig && (
-            <RegenerateLanding
-              product={selectedLandingProduct}
-              config={landingConfig}
-              autoGenerate={true}
-              onGenerated={(html) => {
-                console.log("Generated HTML:", html.substring(0, 100));
-              }}
-              onClose={() => setShowLandingDialog(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       <OptimizationConfigDialog
         open={showConfigDialog}
