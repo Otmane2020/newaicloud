@@ -393,10 +393,26 @@ ${customHighlights ? `HIGHLIGHTS: ${customHighlights}` : ""}
 
 CRITICAL RULES - FOLLOW EXACTLY:
 
-1. HTML STRUCTURE (MANDATORY):
-   - MUST start with: <!DOCTYPE html><html lang="en"><head>
-   - Include: <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-   - Close with: </body></html>
+1. HTML STRUCTURE (ABSOLUTELY MANDATORY - YOUR OUTPUT WILL FAIL WITHOUT THIS):
+   Your response MUST be a COMPLETE valid HTML5 document starting with these exact lines:
+   
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>${productTitle}</title>
+     <script src="https://cdn.tailwindcss.com"></script>
+   </head>
+   <body>
+   
+   Then your content sections...
+   
+   And MUST end with these exact closing tags:
+   </body>
+   </html>
+   
+   DO NOT OUTPUT INCOMPLETE HTML. The document MUST have ALL opening and closing tags.
 
 2. COLORS (ABSOLUTELY NO EXCEPTIONS):
    - Backgrounds: bg-white, bg-gray-50, bg-gray-100, bg-gray-800
@@ -451,10 +467,26 @@ ${customHighlights ? `POINTS FORTS: ${customHighlights}` : ""}
 
 RÈGLES CRITIQUES - SUIVRE EXACTEMENT:
 
-1. STRUCTURE HTML (OBLIGATOIRE):
-   - DOIT commencer par: <!DOCTYPE html><html lang="fr"><head>
-   - Inclure: <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-   - Fermer avec: </body></html>
+1. STRUCTURE HTML (ABSOLUMENT OBLIGATOIRE - TON CODE ÉCHOUERA SANS CELA):
+   Ta réponse DOIT être un document HTML5 COMPLET commençant par ces lignes exactes:
+   
+   <!DOCTYPE html>
+   <html lang="fr">
+   <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>${productTitle}</title>
+     <script src="https://cdn.tailwindcss.com"></script>
+   </head>
+   <body>
+   
+   Puis tes sections de contenu...
+   
+   Et DOIT se terminer par ces balises de fermeture exactes:
+   </body>
+   </html>
+   
+   NE GÉNÈRE PAS DE HTML INCOMPLET. Le document DOIT avoir TOUTES les balises ouvrantes et fermantes.
 
 2. COULEURS (AUCUNE EXCEPTION):
    - Fonds: bg-white, bg-gray-50, bg-gray-100, bg-gray-800
