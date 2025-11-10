@@ -130,36 +130,45 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     try {
       console.log("🔍 Chargement des collections pour user:", user.id);
       
-      // Fetch collections with product counts
-      const { data: collectionsData, error } = await supabase
+      // Fetch collections
+      const { data: collectionsData, error: collError } = await supabase
         .from("shopify_collections")
         .select("id, title")
         .eq("user_id", user.id)
         .order("title", { ascending: true });
 
-      if (error) {
-        console.error("❌ Erreur fetch collections:", error);
-        throw error;
+      if (collError) {
+        console.error("❌ Erreur fetch collections:", collError);
+        throw collError;
       }
 
       console.log(`📦 ${collectionsData?.length || 0} collections trouvées`);
 
-      // Count products for each collection
-      const collectionsWithCount = await Promise.all(
-        (collectionsData || []).map(async (col) => {
-          const { count } = await supabase
-            .from("shopify_products")
-            .select("*", { count: "exact", head: true })
-            .eq("seller_id", user.id)
-            .contains("collection_ids", [col.id]);
+      // Fetch all products once to count by collection
+      const { data: productsData, error: prodError } = await supabase
+        .from("shopify_products")
+        .select("id, collection_ids")
+        .eq("seller_id", user.id);
 
-          console.log(`  - ${col.title}: ${count} produits`);
-          return {
-            ...col,
-            productCount: count || 0,
-          };
-        }),
-      );
+      if (prodError) {
+        console.error("❌ Erreur fetch produits:", prodError);
+        throw prodError;
+      }
+
+      console.log(`📦 ${productsData?.length || 0} produits trouvés`);
+
+      // Count products for each collection
+      const collectionsWithCount = (collectionsData || []).map((col) => {
+        const count = (productsData || []).filter(
+          (prod) => prod.collection_ids && prod.collection_ids.includes(col.id)
+        ).length;
+
+        console.log(`  - ${col.title}: ${count} produits`);
+        return {
+          ...col,
+          productCount: count,
+        };
+      });
 
       // Filter collections with products only
       const collectionsWithProducts = collectionsWithCount.filter((col) => col.productCount > 0);

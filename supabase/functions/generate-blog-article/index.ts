@@ -60,7 +60,6 @@ Deno.serve(async (req) => {
               category: campaign.topic_niche || "Guide",
               keywords: campaign.keywords || [],
               title: null,
-              language: "fr",
               articleLength: "2000",
             },
             supabase,
