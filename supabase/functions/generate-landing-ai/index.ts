@@ -45,8 +45,6 @@ function buildVisionSummary(v: any, language = "fr") {
   const quality = v.quality || (language === "en" ? "not detected" : "non détectée");
   const finishes = Array.isArray(v.finishes) ? v.finishes.join(", ") : v.finish || "—";
   const usecases = Array.isArray(v.useCases) ? v.useCases.join(", ") : v.useCases || "—";
-  const dimensions = v.dimensions || v.measurements || v.sizes || "";
-  const specs = v.specifications || "";
 
   return language === "en"
     ? `VISION ANALYSIS (AI)
@@ -56,9 +54,7 @@ function buildVisionSummary(v: any, language = "fr") {
 - Materials: ${materials}
 - Finishes: ${finishes}
 - Quality: ${quality}
-- Use cases: ${usecases}
-${dimensions ? `- Dimensions: ${dimensions}` : ""}
-${specs ? `- Specifications: ${specs}` : ""}`
+- Use cases: ${usecases}`
     : `ANALYSE VISUELLE (Vision AI)
 - Palette dominante : ${palette}
 - Style : ${styles}
@@ -66,74 +62,7 @@ ${specs ? `- Specifications: ${specs}` : ""}`
 - Matériaux : ${materials}
 - Finitions : ${finishes}
 - Qualité : ${quality}
-- Cas d'usage : ${usecases}
-${dimensions ? `- Dimensions : ${dimensions}` : ""}
-${specs ? `- Spécifications : ${specs}` : ""}`;
-}
-
-function buildEnrichedProductSummary(enriched: any, language = "fr") {
-  if (!enriched) return "";
-
-  const sections = [];
-
-  // Visual Attributes
-  const visualAttrs = [];
-  if (enriched.ai_color) visualAttrs.push(`Couleur: ${enriched.ai_color}`);
-  if (enriched.ai_material) visualAttrs.push(`Matériau: ${enriched.ai_material}`);
-  if (enriched.ai_shape) visualAttrs.push(`Forme: ${enriched.ai_shape}`);
-  if (enriched.ai_texture) visualAttrs.push(`Texture: ${enriched.ai_texture}`);
-  if (enriched.ai_pattern) visualAttrs.push(`Motif: ${enriched.ai_pattern}`);
-  if (enriched.ai_finish) visualAttrs.push(`Finition: ${enriched.ai_finish}`);
-  if (enriched.ai_design_elements) visualAttrs.push(`Éléments Design: ${enriched.ai_design_elements}`);
-  if (visualAttrs.length > 0) {
-    sections.push(language === "en" ? "VISUAL ATTRIBUTES:" : "ATTRIBUTS VISUELS:");
-    sections.push(visualAttrs.map((a: string) => `- ${a}`).join("\n"));
-  }
-
-  // Dimensions
-  const dims = [];
-  if (enriched.smart_length) dims.push(`L ${enriched.smart_length}${enriched.smart_length_unit || ""}`);
-  if (enriched.smart_width) dims.push(`l ${enriched.smart_width}${enriched.smart_width_unit || ""}`);
-  if (enriched.smart_height) dims.push(`H ${enriched.smart_height}${enriched.smart_height_unit || ""}`);
-  if (enriched.smart_weight) dims.push(`Poids ${enriched.smart_weight}${enriched.smart_weight_unit || ""}`);
-  if (enriched.smart_diameter) dims.push(`Ø ${enriched.smart_diameter}${enriched.smart_diameter_unit || ""}`);
-  if (enriched.smart_depth) dims.push(`P ${enriched.smart_depth}${enriched.smart_depth_unit || ""}`);
-  if (enriched.smart_seat_height)
-    dims.push(`Hauteur d'assise ${enriched.smart_seat_height}${enriched.smart_seat_height_unit || ""}`);
-  if (dims.length > 0) {
-    sections.push(language === "en" ? "\nDIMENSIONS:" : "\nDIMENSIONS:");
-    sections.push(`- ${dims.join(" × ")}`);
-  }
-
-  // Categorization
-  const cats = [];
-  if (enriched.category) cats.push(`Catégorie: ${enriched.category}`);
-  if (enriched.sub_category) cats.push(`Sous-catégorie: ${enriched.sub_category}`);
-  if (enriched.style) cats.push(`Style: ${enriched.style}`);
-  if (enriched.room) cats.push(`Pièce: ${enriched.room}`);
-  if (enriched.functionality) cats.push(`Fonctionnalité: ${enriched.functionality}`);
-  if (cats.length > 0) {
-    sections.push(language === "en" ? "\nCATEGORIZATION:" : "\nCATÉGORISATION:");
-    sections.push(cats.map((c: string) => `- ${c}`).join("\n"));
-  }
-
-  // Quality & Analysis
-  const quality = [];
-  if (enriched.ai_vision_analysis) quality.push(`Analyse: ${enriched.ai_vision_analysis}`);
-  if (enriched.ai_presentation_quality) quality.push(`Qualité Présentation: ${enriched.ai_presentation_quality}`);
-  if (enriched.ai_craftsmanship_level) quality.push(`Niveau Artisanat: ${enriched.ai_craftsmanship_level}`);
-  if (quality.length > 0) {
-    sections.push(language === "en" ? "\nQUALITY ANALYSIS:" : "\nANALYSE QUALITÉ:");
-    sections.push(quality.map((q: string) => `- ${q}`).join("\n"));
-  }
-
-  // Conversational Text
-  if (enriched.chat_text) {
-    sections.push(language === "en" ? "\nCONVERSATIONAL DESCRIPTION:" : "\nDESCRIPTION CONVERSATIONNELLE:");
-    sections.push(enriched.chat_text);
-  }
-
-  return sections.join("\n");
+- Cas d’usage : ${usecases}`;
 }
 
 serve(async (req) => {
@@ -181,92 +110,18 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
-    if (!product_id)
-      return new Response(JSON.stringify({ error: "Missing required field: product_id" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
 
-    // 🔧 STEP 1: Product Enrichment (with timeout)
-    console.log("🔧 Starting product enrichment...");
-    let enrichmentStatus = "skipped";
-    let attributesCount = 0;
-    try {
-      const enrichController = new AbortController();
-      const enrichTimeout = setTimeout(() => enrichController.abort(), 20000);
-
-      const { data: enrichData, error: enrichError } = await supabaseAdmin.functions.invoke("enrich-product", {
-        body: { productId: product_id },
-        signal: enrichController.signal,
-      });
-
-      clearTimeout(enrichTimeout);
-
-      if (enrichError) {
-        console.log("⚠️ Enrichment failed:", enrichError.message);
-        enrichmentStatus = "failed";
-      } else {
-        console.log("✅ Enrichment completed successfully");
-        enrichmentStatus = "success";
-      }
-    } catch (err) {
-      console.log("⚠️ Enrichment timeout or error (continuing without it):", err.message);
-      enrichmentStatus = "failed";
-    }
-
-    // Fetch product data including handle, store domain, AND enriched attributes
-    console.log("📦 Fetching product data with enriched attributes...");
-    const [productRes, imagesRes, variantsRes, storeRes] = await Promise.all([
-      supabaseAdmin.from("shopify_products").select("*").eq("id", product_id).maybeSingle(),
+    // Fetch images + variants in parallel
+    console.log("📦 Fetching product data...");
+    const [imagesRes, variantsRes] = await Promise.all([
       supabaseAdmin.from("product_images").select("src, alt_text").eq("product_id", product_id).order("position"),
-      supabaseAdmin
-        .from("product_variants")
-        .select("title, image_url, shopify_variant_id")
-        .eq("product_id", product_id),
-      userId
-        ? supabaseAdmin.from("shopify_connections").select("shop_domain").eq("seller_id", userId).maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
+      supabaseAdmin.from("product_variants").select("title, image_url").eq("product_id", product_id),
     ]);
-
-    const productHandle = productRes.data?.handle || "";
-    const shopifyProductId = productRes.data?.shopify_product_id || "";
-    const shopDomain = storeRes.data?.shop_domain || "";
     const images = imagesRes.data ?? [];
     const variants = variantsRes.data ?? [];
-    const enrichedProduct = productRes.data || {};
-
-    // Count enriched attributes
-    const enrichedFields = [
-      "ai_color",
-      "ai_material",
-      "ai_shape",
-      "ai_texture",
-      "ai_pattern",
-      "ai_finish",
-      "smart_length",
-      "smart_width",
-      "smart_height",
-      "smart_weight",
-      "category",
-      "sub_category",
-      "style",
-      "room",
-      "functionality",
-    ];
-    attributesCount = enrichedFields.filter((f) => enrichedProduct[f]).length;
-
-    console.log(
-      `✅ Product data fetched: ${images.length} images, ${variants.length} variants, ${attributesCount} enriched attributes`,
-    );
-
-    // Build enriched summary
-    const enrichedSummary = buildEnrichedProductSummary(enrichedProduct, language);
-    if (enrichedSummary) {
-      console.log("📊 Using enriched attributes in landing page generation");
-    }
+    console.log(`✅ Product data fetched: ${images.length} images, ${variants.length} variants`);
 
     // Vision AI with timeout (15s) - Optional, won't block if it fails
     let visualAnalysis = "";
@@ -282,7 +137,6 @@ serve(async (req) => {
             body: {
               imageUrl,
               productContext: `${productTitle} ${vendor || ""}`,
-              detectMeasurements: true,
             },
             signal: visionController.signal,
           },
@@ -303,94 +157,132 @@ serve(async (req) => {
       console.log("⏭️ No image URL provided, skipping Vision AI");
     }
 
-    // 🎯 Step 4: Préparer les données pour generate-product-description-html
-    console.log("🎨 Preparing payload for HTML generation...");
-    
-    const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
-    
-    const payload = {
-      title: productTitle,
-      existingDescription: description || enrichedProduct.description || "",
-      images: images.map((img) => ({
-        src: img.src,
-        alt: img.alt_text || productTitle,
-      })),
-      visionAnalysis: visualAnalysis ? { summary: visualAnalysis } : null,
-      dimensions: {
-        length: enrichedProduct.smart_length || length,
-        width: enrichedProduct.smart_width,
-        height: enrichedProduct.smart_height,
-        weight: enrichedProduct.smart_weight,
-      },
-      enrichedAttributes: {
-        visual: {
-          color: enrichedProduct.ai_color,
-          material: enrichedProduct.ai_material,
-          shape: enrichedProduct.ai_shape,
-          texture: enrichedProduct.ai_texture,
-          pattern: enrichedProduct.ai_pattern,
-          finish: enrichedProduct.ai_finish,
+    // --- Prompt bilingual ---
+    const imgs = images.length
+      ? images.map((i) => `- ${i.src}`).join("\n")
+      : language === "en"
+        ? "No additional image"
+        : "Aucune image supplémentaire";
+    const vars = variants.length
+      ? variants.map((v) => `- ${v.title}${v.image_url ? ` (image: ${v.image_url})` : ""}`).join("\n")
+      : language === "en"
+        ? "No variant"
+        : "Aucune variante";
+
+    const prompt =
+      language === "en"
+        ? `
+You are a Shopify UX/UI expert and eCommerce copywriter.
+Generate a **complete Tailwind HTML landing page**, mobile-first and high-converting.
+Sections required: Hero, Gallery, Vision AI, Key Benefits, Specs, Care, Sustainability, Reviews, FAQ, Final CTA.
+
+Product: ${productTitle}
+Brand: ${vendor}
+Description: ${description}
+Style: ${style}
+Main color: ${mainColor}
+Layout: ${layout}
+Text length: ${length}
+Images:
+${imgs}
+Variants:
+${vars}
+Vision AI:
+${visualAnalysis}
+Highlights:
+${customHighlights}
+
+Constraints:
+- Mobile-first (sm:, md:, lg:)
+- Container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Responsive grid (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3)
+- Use ${mainColor} for CTAs & titles
+- No <script> or <style> tags
+- Return ONLY the HTML block
+`
+        : `
+Tu es un expert UX/UI Shopify et copywriter e-commerce.
+Génère un **HTML Tailwind complet**, responsive mobile-first et à forte conversion.
+Rubriques requises : Hero, Galerie, Vision AI, Points forts, Caractéristiques, Entretien, Durabilité, Avis, FAQ, CTA final.
+
+Produit : ${productTitle}
+Marque : ${vendor}
+Description : ${description}
+Style : ${style}
+Couleur principale : ${mainColor}
+Disposition : ${layout}
+Longueur du texte : ${length}
+Images :
+${imgs}
+Variantes :
+${vars}
+Vision AI :
+${visualAnalysis}
+Points forts :
+${customHighlights}
+
+Contraintes :
+- Mobile-first (sm:, md:, lg:)
+- Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+- Grille : grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
+- Couleur ${mainColor} sur CTA et titres
+- Aucun <script> ni <style>
+- Retourne uniquement le HTML
+`;
+
+    // --- AI call with timeout (60s) ---
+    console.log("🤖 Starting AI generation...");
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 60000);
+
+    let aiResponse;
+    try {
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
         },
-        categorization: {
-          category: enrichedProduct.category,
-          sub_category: enrichedProduct.sub_category,
-          style: enrichedProduct.style || style,
-          room: enrichedProduct.room,
-          functionality: enrichedProduct.functionality,
-        },
-      },
-      variants: variants.map((v) => ({
-        title: v.title,
-        image_url: v.image_url,
-      })),
-      vendor: vendor || enrichedProduct.vendor,
-      productUrl: productUrl,
-      mainColor: mainColor,
-      customHighlights: customHighlights || "",
-      template: layout || "ecommerce",
-      language: language,
-      provider: "lovable", // Utiliser Lovable AI
-    };
-
-    console.log("📊 Payload prepared:", {
-      images: payload.images.length,
-      variants: payload.variants.length,
-      hasEnriched: !!enrichedSummary,
-      hasVision: !!visualAnalysis,
-    });
-
-    // 🤖 Step 5: Appeler generate-product-description-html
-    console.log("🚀 Calling generate-product-description-html...");
-    const { data: htmlData, error: htmlError } = await supabaseAdmin.functions.invoke(
-      "generate-product-description-html",
-      { body: payload }
-    );
-
-    if (htmlError || !htmlData?.success) {
-      console.error("❌ HTML generation failed:", htmlError);
-      return new Response(
-        JSON.stringify({ 
-          error: htmlData?.error || htmlError?.message || "Failed to generate landing page",
-          details: htmlError 
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                language === "en"
+                  ? "You generate modern responsive Shopify landing pages in Tailwind HTML."
+                  : "Tu génères des landing pages Shopify modernes et responsives en HTML Tailwind.",
+            },
+            { role: "user", content: prompt },
+          ],
+          max_tokens: 2500,
+          temperature: 0.7,
         }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+        signal: aiController.signal,
+      });
+    } finally {
+      clearTimeout(aiTimeout);
     }
 
-    let html = htmlData.htmlLandingPage;
-    console.log("✅ HTML generated successfully:", {
-      optimizedTitle: htmlData.optimizedTitle,
-      wordCount: htmlData.wordCount,
-      mediaCount: htmlData.mediaCount,
-      length: html.length,
-    });
+    console.log("✅ AI generation completed");
 
-    if (!html || html.length < 400) {
+    if (!aiResponse.ok) {
+      const text = await aiResponse.text();
+      return new Response(JSON.stringify({ error: `Lovable API ${aiResponse.status}`, detail: text }), {
+        status: aiResponse.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const data = await aiResponse.json();
+    let html = data?.choices?.[0]?.message?.content?.trim() || "";
+    html = sanitizeHtmlUnsafe(html);
+
+    if (!html || html.length < 400)
       return new Response(
         JSON.stringify({ error: language === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
-    }
 
     // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
     if (userId && product_id) {
@@ -428,8 +320,6 @@ serve(async (req) => {
           layout,
           mainColor,
           customHighlights,
-          enrichment_status: enrichmentStatus,
-          attributes_count: attributesCount,
         },
         version: newVersion,
         is_active: true,
@@ -445,16 +335,9 @@ serve(async (req) => {
     }
 
     console.log("✅ Landing page generation successful!");
-    return new Response(
-      JSON.stringify({
-        html,
-        enrichment_status: enrichmentStatus,
-        attributes_count: attributesCount,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ html }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
     console.error("💥 ERROR:", err);
     return new Response(JSON.stringify({ error: err.message }), {
