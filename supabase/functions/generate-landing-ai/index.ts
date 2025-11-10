@@ -72,20 +72,20 @@ function generateDesignTokens(colorScheme: any) {
 // Tailwind color to hex conversion (for validation)
 function tailwindToHex(tailwindClass: string): string {
   const colorMap: Record<string, string> = {
-    "white": "FFFFFF",
-    "black": "000000",
-    "gray-50": "F9FAFB",
-    "gray-100": "F3F4F6",
-    "gray-200": "E5E7EB",
-    "gray-300": "D1D5DB",
-    "gray-400": "9CA3AF",
-    "gray-500": "6B7280",
-    "gray-600": "4B5563",
-    "gray-700": "374151",
-    "gray-800": "1F2937",
-    "gray-900": "111827",
+    "white": "#FFFFFF",
+    "black": "#000000",
+    "gray-50": "#F9FAFB",
+    "gray-100": "#F3F4F6",
+    "gray-200": "#E5E7EB",
+    "gray-300": "#D1D5DB",
+    "gray-400": "#9CA3AF",
+    "gray-500": "#6B7280",
+    "gray-600": "#4B5563",
+    "gray-700": "#374151",
+    "gray-800": "#1F2937",
+    "gray-900": "#111827",
   };
-  return colorMap[tailwindClass] || "FFFFFF";
+  return colorMap[tailwindClass] || "#FFFFFF";
 }
 
 // Advanced color contrast validation (detects custom colors)
@@ -107,15 +107,23 @@ function validateColorContrast(html: string): { valid: boolean; violations: stri
     const textTailwindMatch = classString.match(/text-(white|black|gray-(?:50|100|200|300|400|500|600|700|800|900))/);
     const textCustomMatch = classString.match(/text-\[#([A-Fa-f0-9]{6})\]/);
     
-    if ((bgTailwindMatch || bgCustomMatch) && (textTailwindMatch || textCustomMatch)) {
-      const bgColor = bgCustomMatch 
-        ? bgCustomMatch[1] 
-        : tailwindToHex(bgTailwindMatch![1]);
-      
-      const textColor = textCustomMatch 
-        ? textCustomMatch[1] 
-        : tailwindToHex(textTailwindMatch![1]);
-      
+    // Only validate if we have both bg and text colors
+    let bgColor: string | null = null;
+    let textColor: string | null = null;
+    
+    if (bgCustomMatch && bgCustomMatch[1]) {
+      bgColor = "#" + bgCustomMatch[1];
+    } else if (bgTailwindMatch && bgTailwindMatch[1]) {
+      bgColor = tailwindToHex(bgTailwindMatch[1]);
+    }
+    
+    if (textCustomMatch && textCustomMatch[1]) {
+      textColor = "#" + textCustomMatch[1];
+    } else if (textTailwindMatch && textTailwindMatch[1]) {
+      textColor = tailwindToHex(textTailwindMatch[1]);
+    }
+    
+    if (bgColor && textColor) {
       const contrast = calculateContrast(bgColor, textColor);
       
       // WCAG AA requires 4.5:1 for normal text
