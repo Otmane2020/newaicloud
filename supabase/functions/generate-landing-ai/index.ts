@@ -647,15 +647,6 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
     const data = await aiResponse.json();
     let rawHtml = data?.choices?.[0]?.message?.content?.trim() || "";
 
-    // 🧹 Strip markdown code fences if present
-    if (rawHtml.startsWith("```html")) {
-      rawHtml = rawHtml.replace(/^```html\n?/, "").replace(/\n?```$/, "");
-      console.log("[AI] Stripped markdown code fences from response");
-    } else if (rawHtml.startsWith("```")) {
-      rawHtml = rawHtml.replace(/^```\n?/, "").replace(/\n?```$/, "");
-      console.log("[AI] Stripped generic markdown code fences from response");
-    }
-
     if (!rawHtml || rawHtml.length < 400)
       return new Response(
         JSON.stringify({ error: detectedLanguage === "en" ? "Generated HTML too short." : "HTML généré trop court." }),

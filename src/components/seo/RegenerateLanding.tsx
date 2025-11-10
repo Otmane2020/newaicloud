@@ -156,7 +156,7 @@ export default function RegenerateLanding({
     }
 
     try {
-      setProgressMessage(language === "fr" ? "Analyse IA..." : "AI Analysis...");
+      setProgressMessage(t.landingGeneration.analyzing);
       setProgress(25);
 
       const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
@@ -223,13 +223,13 @@ export default function RegenerateLanding({
       setLoading(true);
       setError(null);
       setProgress(0);
-      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
+      setProgressMessage(t.landingGeneration.preparing);
 
       await new Promise((resolve) => setTimeout(resolve, 300));
       setProgress(10);
 
       // ✅ ÉTAPE 1 : Résoudre le vendor
-      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
+      setProgressMessage(t.landingGeneration.resolving);
       const resolvedVendor = await resolveVendor();
       console.log("[Landing] Resolved vendor:", resolvedVendor);
 
@@ -243,8 +243,8 @@ export default function RegenerateLanding({
         setProgress(25); // Skip to same progress if no image
       }
 
-      setProgress(40);
-      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
+      setProgress(30);
+      setProgressMessage(t.landingGeneration.generating);
 
       // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
       const contentParams = getContentLengthParams();
@@ -276,8 +276,8 @@ export default function RegenerateLanding({
         },
       });
 
-      setProgress(70);
-      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
+      setProgress(60);
+      setProgressMessage(t.landingGeneration.processing);
 
       if (error) throw error;
       if (data?.error) {
@@ -295,7 +295,7 @@ export default function RegenerateLanding({
 
       await new Promise((resolve) => setTimeout(resolve, 500));
       setProgress(90);
-      setProgressMessage(language === "fr" ? "En cours..." : "In progress...");
+      setProgressMessage(t.landingGeneration.finalizing);
 
       if (data?.html?.trim()) {
         const wordCount = data.html.split(/\s+/).length;
