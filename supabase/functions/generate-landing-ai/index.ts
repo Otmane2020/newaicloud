@@ -312,6 +312,19 @@ Generate a **clean, professional HTML product description** with Tailwind CSS th
 
 🎯 IMPORTANT: This is a PRODUCT DESCRIPTION, not a full landing page. No prices, no "Add to Cart" buttons, no checkout functionality.
 
+⚠️ CRITICAL COLOR SYSTEM - YOU MUST USE THE THEME COLOR:
+First, add this CSS section at the very beginning of your HTML:
+<style>
+  :root {
+    --theme-color: ${mainColor};
+    --theme-color-light: ${mainColor}33;
+    --theme-color-dark: ${mainColor};
+  }
+  .theme-text { color: var(--theme-color) !important; }
+  .theme-bg { background-color: var(--theme-color-light) !important; }
+  .theme-border { border-color: var(--theme-color) !important; }
+</style>
+
 📱 MOBILE-FIRST RESPONSIVE DESIGN:
 - **MOBILE-FIRST APPROACH**: Design for mobile devices first, then adapt for desktop
 - Use simple, clean Tailwind classes with mobile-first breakpoints
@@ -321,13 +334,52 @@ Generate a **clean, professional HTML product description** with Tailwind CSS th
 - Use standard container: max-w-4xl mx-auto px-4
 - Ensure touch-friendly element sizes on mobile
 
-🎨 MODERN ICONS SYSTEM:
-- Use **modern, professional SVG icons** - no childish or cartoonish icons
-- All icons should be **relative to the selected theme color** (${mainColor})
-- Use stroke-current and fill-current classes for color consistency
-- Icons should be simple, elegant and minimalist
-- Use appropriate icons for each section (materials, dimensions, features, etc.)
-- Ensure icons are properly sized for mobile and desktop
+🎨 MODERN ICON LIBRARY - USE ONLY THESE APPROVED ICONS:
+
+<!-- ✅ Dimensions/Measurements -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+</svg>
+
+<!-- ✅ Materials -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4z"/>
+</svg>
+
+<!-- ✅ Quality/Check -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+</svg>
+
+<!-- ✅ Features/Lightning -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+</svg>
+
+<!-- ✅ Maintenance/Settings -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+</svg>
+
+<!-- ✅ Star/Premium -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+</svg>
+
+🚫 STRICTLY PROHIBITED ICONS:
+- ❌ NO emojis or Unicode characters (😀 🎨 ✨ 🏠)
+- ❌ NO multi-color filled icons
+- ❌ NO complex illustrations or drawings
+- ❌ NO cartoon or kiddy style icons
+- ❌ NO icons with stroke-width > 2
+- ❌ ONLY use SVG icons from the approved library above
+
+🎨 COLOR USAGE RULES (CRITICAL):
+1. ALL section titles (H2, H3) MUST have class="theme-text"
+2. ALL icons MUST have class="theme-text"
+3. ALL badges/accents MUST use theme-bg or theme-border
+4. NO hardcoded colors except neutral grays for body text
+5. The theme color ${mainColor} MUST be DOMINANT in the design
 
 📦 MANDATORY CONTENT SECTIONS (in this order):
 
@@ -464,13 +516,65 @@ Génère une **description de produit HTML propre et professionnelle** avec Tail
 - Utilise un container standard: max-w-4xl mx-auto px-4
 - Taille des éléments adaptée au touch sur mobile
 
-🎨 SYSTÈME D'ICÔNES MODERNES:
-- Utilise des **icônes SVG modernes et professionnelles** - pas d'icônes enfantines ou cartoon
-- Toutes les icônes doivent être **relatives à la couleur du thème sélectionné** (${mainColor})
-- Utilise les classes stroke-current et fill-current pour la cohérence des couleurs
-- Les icônes doivent être simples, élégantes et minimalistes
-- Utilise des icônes appropriées pour chaque section (matériaux, dimensions, caractéristiques, etc.)
-- Assure que les icônes sont correctement dimensionnées pour mobile et desktop
+⚠️ SYSTÈME DE COULEUR CRITIQUE - TU DOIS UTILISER LA COULEUR DU THÈME:
+D'abord, ajoute cette section CSS au tout début de ton HTML:
+<style>
+  :root {
+    --theme-color: ${mainColor};
+    --theme-color-light: ${mainColor}33;
+    --theme-color-dark: ${mainColor};
+  }
+  .theme-text { color: var(--theme-color) !important; }
+  .theme-bg { background-color: var(--theme-color-light) !important; }
+  .theme-border { border-color: var(--theme-color) !important; }
+</style>
+
+🎨 BIBLIOTHÈQUE D'ICÔNES MODERNES - UTILISE UNIQUEMENT CES ICÔNES APPROUVÉES:
+
+<!-- ✅ Dimensions/Mesures -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+</svg>
+
+<!-- ✅ Matériaux -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4z"/>
+</svg>
+
+<!-- ✅ Qualité/Check -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+</svg>
+
+<!-- ✅ Fonctionnalités/Lightning -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+</svg>
+
+<!-- ✅ Maintenance/Réglages -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+</svg>
+
+<!-- ✅ Étoile/Premium -->
+<svg class="w-5 h-5 theme-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+</svg>
+
+🚫 ICÔNES STRICTEMENT INTERDITES:
+- ❌ PAS d'émojis ou caractères Unicode (😀 🎨 ✨ 🏠)
+- ❌ PAS d'icônes remplies multi-couleurs
+- ❌ PAS d'illustrations complexes ou dessins
+- ❌ PAS d'icônes style cartoon ou enfantin
+- ❌ PAS d'icônes avec stroke-width > 2
+- ❌ UNIQUEMENT les icônes SVG de la bibliothèque approuvée ci-dessus
+
+🎨 RÈGLES D'UTILISATION DES COULEURS (CRITIQUE):
+1. TOUS les titres de section (H2, H3) DOIVENT avoir class="theme-text"
+2. TOUTES les icônes DOIVENT avoir class="theme-text"
+3. TOUS les badges/accents DOIVENT utiliser theme-bg ou theme-border
+4. PAS de couleurs hardcodées sauf gris neutres pour le texte body
+5. La couleur du thème ${mainColor} DOIT être DOMINANTE dans le design
 
 📦 SECTIONS DE CONTENU OBLIGATOIRES (dans cet ordre):
 
@@ -607,19 +711,50 @@ Exemple spécifications mobile avec icônes:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4",
+          model: "google/gemini-2.5-flash",
           messages: [
             {
               role: "system",
               content:
                 language === "en"
-                  ? "You are a professional Shopify product description writer. You create clean, responsive HTML product descriptions using Tailwind CSS. You focus on presenting product information clearly without any e-commerce functionality. No prices, no add to cart buttons, just beautiful product presentation that works well in Shopify's description field. Use modern SVG icons and mobile-first design."
-                  : "Tu es un rédacteur professionnel de descriptions de produit Shopify. Tu crées des descriptions de produit HTML propres et responsives avec Tailwind CSS. Tu te concentres sur la présentation claire des informations produit sans aucune fonctionnalité e-commerce. Pas de prix, pas de boutons ajouter au panier, juste une belle présentation produit qui fonctionne bien dans le champ description de Shopify. Utilise des icônes SVG modernes et un design mobile-first.",
+                  ? `You are a professional Shopify product description writer. You create clean, responsive HTML product descriptions using Tailwind CSS.
+
+CRITICAL ICON RULES:
+1. Use ONLY SVG icons with minimal stroke (stroke-width="1.5")
+2. All icons MUST have class="theme-text" to inherit theme color
+3. Style: minimalist, geometric, professional
+4. NO emojis, NO drawings, NO multi-colors
+5. Each section must have its appropriate icon from the provided library
+
+CRITICAL COLOR RULES:
+1. All H2/H3 titles MUST have class="theme-text"
+2. All badges/accents MUST have theme-bg or theme-border
+3. NO hardcoded colors except neutral gray for body text
+4. Theme color ${mainColor} MUST be DOMINANT in design
+5. ALWAYS include the CSS variables section at the beginning
+
+Focus on presenting product information clearly without any e-commerce functionality. No prices, no add to cart buttons.`
+                  : `Tu es un rédacteur professionnel de descriptions de produit Shopify. Tu crées des descriptions de produit HTML propres et responsives avec Tailwind CSS.
+
+RÈGLES CRITIQUES POUR LES ICÔNES:
+1. Utilise UNIQUEMENT des icônes SVG avec stroke minimal (stroke-width="1.5")
+2. Toutes les icônes DOIVENT avoir class="theme-text" pour hériter la couleur du thème
+3. Style: minimaliste, géométrique, professionnel
+4. PAS d'émojis, PAS de dessins, PAS de multi-couleurs
+5. Chaque section doit avoir son icône appropriée de la bibliothèque fournie
+
+RÈGLES CRITIQUES POUR LES COULEURS:
+1. Tous les titres H2/H3 DOIVENT avoir class="theme-text"
+2. Tous les badges/accents DOIVENT avoir theme-bg ou theme-border
+3. PAS de couleurs hardcodées sauf gris neutre pour le texte body
+4. La couleur du thème ${mainColor} DOIT être DOMINANTE dans le design
+5. TOUJOURS inclure la section variables CSS au début
+
+Concentre-toi sur la présentation claire des informations produit sans fonctionnalité e-commerce. Pas de prix, pas de boutons ajouter au panier.`,
             },
             { role: "user", content: prompt },
           ],
-          max_tokens: 4000,
-          temperature: 0.7,
+          max_completion_tokens: 5000,
         }),
         signal: aiController.signal,
       });
@@ -647,6 +782,28 @@ Exemple spécifications mobile avec icônes:
     const data = await aiResponse.json();
     let html = data?.choices?.[0]?.message?.content?.trim() || "";
     html = sanitizeHtmlUnsafe(html);
+
+    // 🔍 Post-generation validation
+    console.log("🔍 Validating generated HTML...");
+    
+    const hasThemeColor = html.includes(mainColor) || 
+                         html.includes('theme-text') || 
+                         html.includes('var(--theme-color)');
+    
+    const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
+    const hasEmojis = emojiRegex.test(html);
+
+    if (!hasThemeColor) {
+      console.warn("⚠️ Generated HTML doesn't use theme color properly - theme color may not be visible");
+    } else {
+      console.log("✅ Theme color system detected in HTML");
+    }
+
+    if (hasEmojis) {
+      console.warn("⚠️ Emojis detected in HTML - cleaning...");
+      html = html.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+      console.log("✅ Emojis removed from HTML");
+    }
 
     if (!html || html.length < 300)
       return new Response(
