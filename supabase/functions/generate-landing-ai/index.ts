@@ -8,6 +8,67 @@ const corsHeaders = {
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
+// WCAG Color Contrast Utilities
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
+
+function getLuminance(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0;
+  const [r, g, b] = [rgb.r / 255, rgb.g / 255, rgb.b / 255].map((c) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  );
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function calculateContrast(color1: string, color2: string): number {
+  const lum1 = getLuminance(color1);
+  const lum2 = getLuminance(color2);
+  const lighter = Math.max(lum1, lum2);
+  const darker = Math.min(lum1, lum2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function ensureAccessibleText(bgColor: string): string {
+  const bgLum = getLuminance(bgColor);
+  return bgLum > 0.5 ? "#000000" : "#FFFFFF";
+}
+
+function generateDesignTokens(colorScheme: any) {
+  const primary = colorScheme.primary || "#000000";
+  const secondary = colorScheme.secondary || "#333333";
+  const background = colorScheme.background || "#FFFFFF";
+  const surface = colorScheme.surface || "#F5F5F5";
+  const text = colorScheme.text || "#000000";
+  const textMuted = colorScheme.textMuted || "#666666";
+
+  const contrast = calculateContrast(primary, "#FFFFFF");
+  const needsDarkText = contrast < 4.5;
+  const ctaText = needsDarkText ? "#000000" : "#FFFFFF";
+
+  const validatedBackground = getLuminance(background) > 0.5 ? background : "#FFFFFF";
+  const validatedText = getLuminance(text) < 0.5 ? text : "#000000";
+
+  return {
+    primary,
+    secondary,
+    background: validatedBackground,
+    surface,
+    text: validatedText,
+    textMuted,
+    ctaText,
+    contrastRatio: contrast,
+  };
+}
+
 function sanitizeHtmlUnsafe(html: string): string {
   if (!html) return "";
   let out = html
@@ -169,11 +230,15 @@ serve(async (req) => {
       vendor,
       style,
       mainColor = "#3B82F6",
+      colorScheme,
       layout,
       length,
       customHighlights,
       language = "fr",
     } = body ?? {};
+
+    // Generate design tokens
+    const designTokens = generateDesignTokens(colorScheme || { primary: mainColor });
 
     if (!productTitle)
       return new Response(JSON.stringify({ error: "Missing required field: productTitle" }), {
@@ -322,17 +387,17 @@ serve(async (req) => {
       language === "en"
         ? `
 You are a Shopify UX/UI expert and eCommerce copywriter specialized in high-converting landing pages.
-Generate a **complete, professional Tailwind HTML landing page** with real functionality.
+Generate a **complete, professional Tailwind HTML landing page** for PURE INFORMATIONAL purposes.
 
 CRITICAL REQUIREMENTS:
-1. **Technical Specifications Section**: ${enrichedSummary ? "MANDATORY - Create a comprehensive 'Technical Specifications' section with an elegant table/grid. Use ALL dimensions and attributes from ENRICHED DATA below." : "If Vision AI detected dimensions/measurements, create a detailed 'Technical Specifications' section"}
+1. **Technical Specifications Section**: ${enrichedSummary ? "MANDATORY - Create a comprehensive 'Technical Specifications' section with an elegant table/grid. Use ALL dimensions and attributes from ENRICHED DATA below." : "If internal analysis detected dimensions/measurements, create a detailed 'Technical Specifications' section"}
 2. **Materials & Finishes Section**: ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "MANDATORY - Create a 'Materials & Finishes' section highlighting quality and craftsmanship" : "Include if materials are detected"}
-3. **Functional Buttons**: 
-   - "View Product" button must link to: ${productUrl}
-   - "Add to Cart" buttons must have: onclick="window.open('${productUrl}', '_blank')" 
-   - All buttons must be clickable and functional
+3. **NO CTA BUTTONS**: 
+   ⚠️ CRITICAL: This is a PURE INFORMATIONAL landing page.
+   DO NOT include ANY buttons ("Buy Now", "Add to Cart", "Shop Now", "View Product", etc.)
+   Focus on product presentation, features, and specifications ONLY.
 4. **Quality Content**: Write persuasive, professional copy using the conversational description if available
-5. **Complete Sections**: Hero, Image Gallery, ${enrichedSummary ? "Enriched Attributes," : ""} Vision AI Insights, Key Benefits, Technical Specs, Materials & Finishes, Care Instructions, Sustainability, Social Proof, FAQ, Strong CTA
+5. **Complete Sections**: Hero, Image Gallery, ${enrichedSummary ? "Enriched Attributes," : ""} Key Benefits, Technical Specs, Materials & Finishes, Care Instructions, Sustainability, FAQ
 
 Product Information:
 - Title: ${productTitle}
@@ -352,16 +417,50 @@ ${imgs}
 Variants Available:
 ${vars}
 
-${visualAnalysis ? `${visualAnalysis}\n` : ""}
+${visualAnalysis ? `\n⚠️ INTERNAL ANALYSIS (DO NOT DISPLAY TO CUSTOMER - USE ONLY FOR CONTENT ENRICHMENT):\n${visualAnalysis}\n` : ""}
 
 Custom Highlights:
 ${customHighlights}
+
+MANDATORY COLOR RULES (ZERO TOLERANCE - WCAG AA):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 DESIGN TOKENS (USE THESE EXACT VALUES):
+  • Primary: ${designTokens.primary}
+  • Background (main): ${designTokens.background} ← ALWAYS WHITE/LIGHT
+  • Background (sections): ${designTokens.surface} ← LIGHT GRAY
+  • Text (main): ${designTokens.text} ← DARK (contrast: 7:1)
+  • Text (muted): ${designTokens.textMuted} ← MEDIUM GRAY (contrast: 4.5:1)
+
+❌ ABSOLUTELY FORBIDDEN COLOR COMBINATIONS:
+  1. text-white + bg-white → NEVER
+  2. text-white + bg-gray-50 → NEVER
+  3. text-white + bg-gray-100 → NEVER
+  4. text-gray-300 + bg-white → NEVER (contrast too low)
+  5. text-gray-400 + bg-gray-100 → NEVER (contrast too low)
+
+✅ ONLY ALLOWED TEXT CLASSES:
+  • On white/light backgrounds (bg-white, bg-gray-50, bg-[${designTokens.surface}]):
+    → text-gray-900, text-gray-800, text-black, text-[${designTokens.text}]
+  
+  • On dark backgrounds (bg-gray-800, bg-gray-900, bg-black):
+    → text-white, text-gray-100
+
+🔍 VALIDATION CHECKLIST (YOU MUST FOLLOW):
+  □ Every <h1>, <h2>, <h3> on light bg uses text-gray-900 or text-black
+  □ Every <p> on light bg uses text-gray-700 or text-gray-800
+  □ No text-white exists on any light background
+  □ No text-gray-300 or text-gray-400 on white/light backgrounds
+
+📋 CORRECT COLOR EXAMPLE:
+<section class="bg-white py-12">
+  <h2 class="text-3xl font-bold text-gray-900">Perfect Contrast</h2>
+  <p class="text-gray-700">This has excellent readability.</p>
+</section>
 
 DESIGN CONSTRAINTS:
 - Mobile-first responsive (sm:, md:, lg:, xl:)
 - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
 - Responsive grids: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-- Primary color ${mainColor} for CTAs, headings, accents
 - Modern shadows: shadow-lg, shadow-xl
 - Smooth transitions: transition-all duration-300
 - Professional typography with proper hierarchy
@@ -370,36 +469,27 @@ DESIGN CONSTRAINTS:
 
 TECHNICAL SPECS TABLE EXAMPLE (if dimensions available):
 <div class="bg-white rounded-xl shadow-lg p-8">
-  <h2 class="text-3xl font-bold mb-6">Technical Specifications</h2>
+  <h2 class="text-3xl font-bold text-gray-900 mb-6">Technical Specifications</h2>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Dimensions</span><span>L x W x H cm</span></div>
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Weight</span><span>X kg</span></div>
+    <div class="flex justify-between border-b py-3"><span class="font-semibold text-gray-900">Dimensions</span><span class="text-gray-700">L x W x H cm</span></div>
+    <div class="flex justify-between border-b py-3"><span class="font-semibold text-gray-900">Weight</span><span class="text-gray-700">X kg</span></div>
     <!-- Add all enriched dimensions here -->
   </div>
 </div>
-
-BUTTON STRUCTURE:
-<a href="${productUrl}" target="_blank" rel="noopener" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  View Full Details
-</a>
-
-<button onclick="window.open('${productUrl}', '_blank')" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  Add to Cart
-</button>
 `
         : `
 Tu es un expert UX/UI Shopify et copywriter e-commerce spécialisé dans les landing pages à haute conversion.
 Génère une **landing page HTML Tailwind complète et professionnelle** avec de vraies fonctionnalités.
 
 EXIGENCES CRITIQUES:
-1. **Section Caractéristiques Techniques**: ${enrichedSummary ? "OBLIGATOIRE - Crée une section complète 'Caractéristiques Techniques' avec un tableau/grille élégant. Utilise TOUTES les dimensions et attributs des DONNÉES ENRICHIES ci-dessous." : "Si la Vision AI a détecté des dimensions/mesures, crée une section 'Caractéristiques Techniques'"}
+1. **Section Caractéristiques Techniques**: ${enrichedSummary ? "OBLIGATOIRE - Crée une section complète 'Caractéristiques Techniques' avec un tableau/grille élégant. Utilise TOUTES les dimensions et attributs des DONNÉES ENRICHIES ci-dessous." : "Si l'analyse interne a détecté des dimensions/mesures, crée une section 'Caractéristiques Techniques'"}
 2. **Section Matériaux & Finitions**: ${enrichedProduct.ai_material || enrichedProduct.ai_finish ? "OBLIGATOIRE - Crée une section 'Matériaux & Finitions' mettant en valeur la qualité et le savoir-faire" : "Inclure si des matériaux sont détectés"}
-3. **Boutons Fonctionnels**: 
-   - Le bouton "Voir le Produit" doit pointer vers: ${productUrl}
-   - Les boutons "Ajouter au Panier" doivent avoir: onclick="window.open('${productUrl}', '_blank')"
-   - Tous les boutons doivent être cliquables et fonctionnels
+3. **AUCUN BOUTON CTA**: 
+   ⚠️ CRITIQUE: Ceci est une landing page PUREMENT INFORMATIONNELLE.
+   N'inclus AUCUN bouton ("Acheter", "Ajouter au Panier", "Voir le Produit", etc.)
+   Concentre-toi UNIQUEMENT sur la présentation, les caractéristiques et spécifications du produit.
 4. **Contenu de Qualité**: Rédige un contenu persuasif en utilisant la description conversationnelle si disponible
-5. **Sections Complètes**: Hero, Galerie, ${enrichedSummary ? "Attributs Enrichis," : ""} Insights Vision AI, Points Forts, Specs Techniques, Matériaux & Finitions, Entretien, Durabilité, Preuves Sociales, FAQ, CTA Fort
+5. **Sections Complètes**: Hero, Galerie, ${enrichedSummary ? "Attributs Enrichis," : ""} Points Forts, Specs Techniques, Matériaux & Finitions, Entretien, Durabilité, FAQ
 
 Informations Produit:
 - Titre: ${productTitle}
@@ -419,16 +509,50 @@ ${imgs}
 Variantes Disponibles:
 ${vars}
 
-${visualAnalysis ? `${visualAnalysis}\n` : ""}
+${visualAnalysis ? `\n⚠️ ANALYSE INTERNE (NE PAS AFFICHER AU CLIENT - UTILISER UNIQUEMENT POUR ENRICHIR LE CONTENU):\n${visualAnalysis}\n` : ""}
 
 Points Forts Personnalisés:
 ${customHighlights}
+
+RÈGLES DE COULEURS OBLIGATOIRES (TOLÉRANCE ZÉRO - WCAG AA):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 TOKENS DE DESIGN (UTILISE CES VALEURS EXACTES):
+  • Primaire: ${designTokens.primary}
+  • Fond (principal): ${designTokens.background} ← TOUJOURS BLANC/CLAIR
+  • Fond (sections): ${designTokens.surface} ← GRIS CLAIR
+  • Texte (principal): ${designTokens.text} ← FONCÉ (contraste: 7:1)
+  • Texte (atténué): ${designTokens.textMuted} ← GRIS MOYEN (contraste: 4.5:1)
+
+❌ COMBINAISONS ABSOLUMENT INTERDITES:
+  1. text-white + bg-white → JAMAIS
+  2. text-white + bg-gray-50 → JAMAIS
+  3. text-white + bg-gray-100 → JAMAIS
+  4. text-gray-300 + bg-white → JAMAIS (contraste trop faible)
+  5. text-gray-400 + bg-gray-100 → JAMAIS (contraste trop faible)
+
+✅ CLASSES DE TEXTE AUTORISÉES UNIQUEMENT:
+  • Sur fonds blancs/clairs (bg-white, bg-gray-50, bg-[${designTokens.surface}]):
+    → text-gray-900, text-gray-800, text-black, text-[${designTokens.text}]
+  
+  • Sur fonds foncés (bg-gray-800, bg-gray-900, bg-black):
+    → text-white, text-gray-100
+
+🔍 CHECKLIST DE VALIDATION (TU DOIS SUIVRE):
+  □ Tous les <h1>, <h2>, <h3> sur fond clair utilisent text-gray-900 ou text-black
+  □ Tous les <p> sur fond clair utilisent text-gray-700 ou text-gray-800
+  □ Aucun text-white n'existe sur un fond clair
+  □ Aucun text-gray-300 ou text-gray-400 sur fonds blancs/clairs
+
+📋 EXEMPLE DE COULEURS CORRECTES:
+<section class="bg-white py-12">
+  <h2 class="text-3xl font-bold text-gray-900">Contraste Parfait</h2>
+  <p class="text-gray-700">Ceci a une excellente lisibilité.</p>
+</section>
 
 CONTRAINTES DESIGN:
 - Responsive mobile-first (sm:, md:, lg:, xl:)
 - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
 - Grilles responsives: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-- Couleur primaire ${mainColor} pour CTAs, titres, accents
 - Ombres modernes: shadow-lg, shadow-xl
 - Transitions fluides: transition-all duration-300
 - Typographie professionnelle avec hiérarchie claire
@@ -437,22 +561,13 @@ CONTRAINTES DESIGN:
 
 EXEMPLE TABLEAU SPECS (si dimensions disponibles):
 <div class="bg-white rounded-xl shadow-lg p-8">
-  <h2 class="text-3xl font-bold mb-6">Caractéristiques Techniques</h2>
+  <h2 class="text-3xl font-bold text-gray-900 mb-6">Caractéristiques Techniques</h2>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Dimensions</span><span>L x l x H cm</span></div>
-    <div class="flex justify-between border-b py-3"><span class="font-semibold">Poids</span><span>X kg</span></div>
+    <div class="flex justify-between border-b py-3"><span class="font-semibold text-gray-900">Dimensions</span><span class="text-gray-700">L x l x H cm</span></div>
+    <div class="flex justify-between border-b py-3"><span class="font-semibold text-gray-900">Poids</span><span class="text-gray-700">X kg</span></div>
     <!-- Ajoute toutes les dimensions enrichies ici -->
   </div>
 </div>
-
-STRUCTURE BOUTONS:
-<a href="${productUrl}" target="_blank" rel="noopener" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  Voir Tous les Détails
-</a>
-
-<button onclick="window.open('${productUrl}', '_blank')" class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[${mainColor}] hover:bg-opacity-90 rounded-lg shadow-lg transition-all duration-300">
-  Ajouter au Panier
-</button>
 `;
 
     // --- AI call with timeout (60s) ---
@@ -508,6 +623,56 @@ STRUCTURE BOUTONS:
         JSON.stringify({ error: language === "en" ? "Generated HTML too short." : "HTML généré trop court." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+
+    // 🔹 VALIDATION STRICTE des couleurs (post-génération)
+    console.log("[VALIDATION] Checking color accessibility...");
+    const colorValidation = {
+      forbiddenCombos: [
+        { pattern: /text-white[^"]*bg-white|bg-white[^"]*text-white/g, issue: "text-white on bg-white" },
+        { pattern: /text-white[^"]*bg-gray-50|bg-gray-50[^"]*text-white/g, issue: "text-white on bg-gray-50" },
+        { pattern: /text-white[^"]*bg-gray-100|bg-gray-100[^"]*text-white/g, issue: "text-white on bg-gray-100" },
+        { pattern: /text-gray-300[^"]*bg-white|bg-white[^"]*text-gray-300/g, issue: "text-gray-300 on bg-white" },
+      ],
+      violations: [] as string[],
+    };
+
+    colorValidation.forbiddenCombos.forEach(({ pattern, issue }) => {
+      if (pattern.test(html)) {
+        colorValidation.violations.push(issue);
+        console.error(`❌ COLOR VIOLATION: ${issue}`);
+      }
+    });
+
+    if (colorValidation.violations.length > 0) {
+      console.warn("⚠️ Landing page has color violations:", colorValidation.violations);
+    }
+
+    // 📱 Conversion mobile-responsive
+    console.log("[Mobile] Converting to mobile-responsive...");
+    try {
+      const mobileResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/convert-landing-to-mobile`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ htmlContent: html }),
+      });
+
+      if (mobileResponse.ok) {
+        const mobileData = await mobileResponse.json();
+        if (mobileData?.success && mobileData?.mobileHtml) {
+          html = mobileData.mobileHtml;
+          console.log("✅ Mobile conversion successful:", mobileData.optimizations);
+        } else {
+          console.warn("⚠️ Mobile conversion returned no data, using original HTML");
+        }
+      } else {
+        console.warn("⚠️ Mobile conversion failed, using original HTML");
+      }
+    } catch (mobileError) {
+      console.error("❌ Mobile conversion error (using original HTML):", mobileError);
+    }
 
     // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
     if (userId && product_id) {

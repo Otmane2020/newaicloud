@@ -48,7 +48,7 @@ export default function RegenerateLanding({
   onGenerated,
   onClose,
 }: RegenerateLandingProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
@@ -259,19 +259,20 @@ export default function RegenerateLanding({
       // ✅ ÉTAPE 4 : Générer le landing avec tous les paramètres
       const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
-          product_id: product.id, // 🆕 ID du produit pour la sauvegarde
+          product_id: product.id,
           productTitle: product.title,
           imageUrl: product.image_url,
           description: product.description,
           vendor: resolvedVendor,
           style: config.style,
-          mainColor: typeof config.colorScheme === 'string' ? config.colorScheme : config.colorScheme.primary,
+          mainColor: typeof config.colorScheme === 'string' ? config.colorScheme : config.colorScheme?.primary || "#3B82F6",
+          colorScheme: typeof config.colorScheme === 'object' ? config.colorScheme : undefined,
           layout: config.layout,
           length: config.contentLength,
           customHighlights: config.customHighlights,
-          imageAnalysis: imageAnalysis, // 🆕 Analyse vision IA
-          contentLengthParams: contentParams, // 🆕 Paramètres de longueur
-          mobileOptimized: true, // 🆕 Forcer l'optimisation mobile
+          imageAnalysis: imageAnalysis,
+          contentLengthParams: contentParams,
+          language: language,
         },
       });
 
@@ -297,32 +298,15 @@ export default function RegenerateLanding({
       setProgressMessage(t.landingGeneration.finalizing);
 
       if (data?.html?.trim()) {
-        // ✅ Validation de la longueur du contenu généré
         const wordCount = data.html.split(/\s+/).length;
-        console.log(`[Landing] Generated content: ${wordCount} words`);
-
-        // 🆕 Post-traiter le HTML pour mobile-responsive
-        setProgressMessage("Optimisation mobile en cours...");
-        setProgress(92);
+        console.log(`[Landing] Generated content: ${wordCount} words (mobile-optimized by backend)`);
         
-        const { data: mobileData, error: mobileError } = await supabase.functions.invoke(
-          "convert-landing-to-mobile",
-          { body: { htmlContent: data.html } }
-        );
-
-        if (mobileError || !mobileData?.success) {
-          console.warn("⚠️ Mobile conversion failed, using original HTML:", mobileError);
-          setHtmlContent(data.html);
-        } else {
-          console.log("✅ Mobile conversion successful:", mobileData.optimizations);
-          setHtmlContent(mobileData.mobileHtml);
-        }
-
+        setHtmlContent(data.html);
         setProgress(100);
         setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
 
         toast.success(t.landingGeneration.success.generated);
-        onGenerated?.(mobileData?.mobileHtml || data.html);
+        onGenerated?.(data.html);
 
         // Recharger les données pour mettre à jour le badge
         const { data: updatedLanding } = await supabase
