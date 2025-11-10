@@ -319,6 +319,11 @@ export default function ProductLandingPages() {
   };
 
   const handlePreview = (product: Product) => {
+    if (!product.landing_page_html) {
+      toast.error("Aucune landing page générée pour ce produit");
+      return;
+    }
+    
     setPreviewProduct(product);
     setShowPreviewDialog(true);
   };
@@ -776,7 +781,10 @@ export default function ProductLandingPages() {
                 />
               ) : (
                 <div className="flex items-center justify-center h-[600px] text-muted-foreground">
-                  Aucun aperçu disponible
+                  <div className="text-center space-y-2">
+                    <p className="text-lg">Aucun aperçu disponible</p>
+                    <p className="text-sm">Générez d'abord une landing page pour ce produit</p>
+                  </div>
                 </div>
               )}
             </div>
