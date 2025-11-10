@@ -61,7 +61,7 @@ serve(async (req) => {
       console.log("[sync-landing-to-shopify] Trying to fetch connection by store_id:", product.store_id);
       const { data, error: connectionError } = await supabase
         .from("shopify_connections")
-        .select("id, store_url, encrypted_access_token")
+        .select("id, store_url, encrypted_token")
         .eq("id", product.store_id)
         .maybeSingle();
 
@@ -92,7 +92,7 @@ serve(async (req) => {
       console.log("[sync-landing-to-shopify] Fetching user's most recent Shopify connection");
       const { data, error: fallbackError } = await supabase
         .from("shopify_connections")
-        .select("id, store_url, encrypted_access_token")
+        .select("id, store_url, encrypted_token")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -116,7 +116,7 @@ serve(async (req) => {
     const { data: decryptData, error: decryptError } = await supabase.functions.invoke("encrypt-shopify-token", {
       body: {
         action: "decrypt",
-        token: connection.encrypted_access_token,
+        token: connection.encrypted_token,
       },
     });
 
