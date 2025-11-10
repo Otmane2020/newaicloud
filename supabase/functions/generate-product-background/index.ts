@@ -121,7 +121,10 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
             ]
           }
         ],
-        modalities: ["image", "text"]
+        modalities: ["image", "text"],
+        generationConfig: {
+          aspectRatio: "1:1"
+        }
       }),
     });
 

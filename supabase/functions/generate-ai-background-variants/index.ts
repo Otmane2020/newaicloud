@@ -117,7 +117,8 @@ Product: ${productTitle || "product"}
                   ]
                 }],
                 generationConfig: {
-                  response_modalities: ["image"]
+                  response_modalities: ["image"],
+                  aspectRatio: "1:1"
                 }
               }),
             },

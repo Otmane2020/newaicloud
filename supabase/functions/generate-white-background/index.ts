@@ -172,7 +172,10 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
             ]
           }
         ],
-        modalities: ["image", "text"]
+        modalities: ["image", "text"],
+        generationConfig: {
+          aspectRatio: "1:1"
+        }
       }),
     });
 
