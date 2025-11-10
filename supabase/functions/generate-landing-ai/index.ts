@@ -518,8 +518,11 @@ CRITICAL RULES - FOLLOW EXACTLY:
    - Accents/highlights: bg-brand-primary text-white or border-brand-accent
    - Text: text-gray-900 (primary), text-gray-700 (secondary)
    - FORBIDDEN: :root, --primary-color as global CSS variables
+   - FORBIDDEN: HEX colors (#FFFFFF, #000000, etc.) - NEVER USE HEX ANYWHERE
    - MANDATORY: Use inline style="background-color: hsl(...)" on hero, main sections, and accent elements
+   - MANDATORY: Use inline style="color: hsl(...)" for colored text (not gray/white/black)
    - Example: style="background-color: hsl(${designTokens.primary})"
+   - Example: style="color: hsl(${designTokens.primary})"
    
 3. RESPONSIVE LAYOUT (CRITICAL - FOLLOW EXAMPLES EXACTLY):
    
