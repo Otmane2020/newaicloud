@@ -391,25 +391,29 @@ IMAGES: ${imgs}
 VARIANTS: ${vars}
 ${customHighlights ? `HIGHLIGHTS: ${customHighlights}` : ""}
 
-COLOR RULES (CRITICAL - MUST FOLLOW):
-- Backgrounds: bg-white, bg-gray-50, bg-gray-100
-- Text: text-gray-900, text-gray-800, text-gray-700 (dark on light)
-- Primary color accent (HSL): ${designTokens.primary}
-  → MUST use INLINE STYLES: style="background-color: hsl(${designTokens.primary})"
-  → Example: <button style="background-color: hsl(${designTokens.primary})" class="text-white px-6 py-3 rounded-lg">
-- NEVER create :root { --primary-color: ... } CSS variables
-- NEVER create custom classes like .text-primary, .bg-primary, .border-primary
-- NEVER use HEX colors (#XXXXXX) anywhere
-- NEVER use text-white on light backgrounds
+CRITICAL RULES - FOLLOW EXACTLY:
 
-RESPONSIVE MOBILE-FIRST (CRITICAL - MUST FOLLOW):
-- Container: <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-- Typography: text-xl sm:text-2xl md:text-3xl lg:text-4xl
-- Images: w-full h-auto object-cover
-- Grids: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
-- Padding: py-8 sm:py-12 md:py-16 lg:py-20
-- Modern shadows (shadow-md, shadow-lg) and rounded corners (rounded-lg)
-- NO CTA buttons (informational only)
+1. HTML STRUCTURE (MANDATORY):
+   - MUST start with: <!DOCTYPE html><html lang="en"><head>
+   - Include: <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+   - Close with: </body></html>
+
+2. COLORS (ABSOLUTELY NO EXCEPTIONS):
+   - Backgrounds: bg-white, bg-gray-50, bg-gray-100, bg-gray-800
+   - Text: text-gray-900, text-gray-800, text-gray-700, text-white (only on dark bg)
+   - For brand accent: ONLY inline style="background-color: hsl(${designTokens.primary})"
+   - FORBIDDEN: :root, --primary-color, .text-primary, .bg-primary, #XXXXXX colors
+   
+3. RESPONSIVE (NO DUPLICATE CLASSES):
+   - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+   - Typography: text-2xl sm:text-3xl md:text-4xl (NO duplicates like "text-xl sm:text-2xl md:text-3xl sm:text-2xl")
+   - Images: w-full h-auto object-cover
+   - Grids: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
+   - Padding: py-8 sm:py-12 md:py-16 (NO "py-12 sm:py-8 sm:py-16")
+   
+4. NO FOOTER - Just end with closing </body></html>
+
+5. NO CTA BUTTONS - Informational landing page only
 
 SECTIONS TO INCLUDE:
 1. Hero with product image and title
@@ -445,25 +449,29 @@ IMAGES: ${imgs}
 VARIANTES: ${vars}
 ${customHighlights ? `POINTS FORTS: ${customHighlights}` : ""}
 
-RÈGLES DE COULEURS (CRITIQUE - OBLIGATOIRE):
-- Fonds: bg-white, bg-gray-50, bg-gray-100
-- Texte: text-gray-900, text-gray-800, text-gray-700 (foncé sur clair)
-- Couleur d'accent primaire (HSL): ${designTokens.primary}
-  → OBLIGATOIRE: utiliser des STYLES INLINE: style="background-color: hsl(${designTokens.primary})"
-  → Exemple: <button style="background-color: hsl(${designTokens.primary})" class="text-white px-6 py-3 rounded-lg">
-- JAMAIS créer :root { --primary-color: ... } variables CSS
-- JAMAIS créer classes custom comme .text-primary, .bg-primary, .border-primary
-- JAMAIS utiliser couleurs HEX (#XXXXXX) n'importe où
-- JAMAIS text-white sur fonds clairs
+RÈGLES CRITIQUES - SUIVRE EXACTEMENT:
 
-RESPONSIVE MOBILE-FIRST (CRITIQUE - OBLIGATOIRE):
-- Container: <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-- Typographie: text-xl sm:text-2xl md:text-3xl lg:text-4xl
-- Images: w-full h-auto object-cover
-- Grilles: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
-- Padding: py-8 sm:py-12 md:py-16 lg:py-20
-- Ombres modernes (shadow-md, shadow-lg) et coins arrondis (rounded-lg)
-- PAS de boutons CTA (informatif seulement)
+1. STRUCTURE HTML (OBLIGATOIRE):
+   - DOIT commencer par: <!DOCTYPE html><html lang="fr"><head>
+   - Inclure: <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+   - Fermer avec: </body></html>
+
+2. COULEURS (AUCUNE EXCEPTION):
+   - Fonds: bg-white, bg-gray-50, bg-gray-100, bg-gray-800
+   - Texte: text-gray-900, text-gray-800, text-gray-700, text-white (uniquement sur fond sombre)
+   - Pour accent marque: SEULEMENT style="background-color: hsl(${designTokens.primary})"
+   - INTERDIT: :root, --primary-color, .text-primary, .bg-primary, couleurs #XXXXXX
+   
+3. RESPONSIVE (PAS DE CLASSES DUPLIQUÉES):
+   - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+   - Typographie: text-2xl sm:text-3xl md:text-4xl (PAS de doublons comme "text-xl sm:text-2xl md:text-3xl sm:text-2xl")
+   - Images: w-full h-auto object-cover
+   - Grilles: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3
+   - Padding: py-8 sm:py-12 md:py-16 (PAS de "py-12 sm:py-8 sm:py-16")
+   
+4. PAS DE FOOTER - Terminer simplement avec </body></html>
+
+5. PAS DE BOUTONS CTA - Landing page informative uniquement
 
 SECTIONS À INCLURE:
 1. Hero avec image et titre produit
