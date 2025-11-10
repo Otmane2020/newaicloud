@@ -358,42 +358,60 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    // Ultra-defensive error handling
     console.error('[LIMITS] ❌ CRITICAL ERROR in check-usage-limits');
-    console.error('[LIMITS] Error type:', typeof error);
     
-    // Try to safely stringify error for better debugging
+    // Log raw error first
+    console.error('[LIMITS] Raw error:', error);
+    
+    // Try to extract error details
+    let errorName = 'Unknown';
+    let errorMessage = 'An unknown error occurred';
+    let errorStack = 'No stack trace';
+    
     try {
-      console.error('[LIMITS] Error details:', JSON.stringify({
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : 'No stack',
-      }, null, 2));
-    } catch (jsonError) {
-      console.error('[LIMITS] Could not stringify error:', error);
+      errorName = error instanceof Error ? error.name : typeof error;
+      errorMessage = error instanceof Error ? error.message : String(error);
+      errorStack = error instanceof Error ? (error.stack || 'No stack') : 'Not an Error object';
+      
+      console.error('[LIMITS] Error name:', errorName);
+      console.error('[LIMITS] Error message:', errorMessage);
+      console.error('[LIMITS] Error stack:', errorStack);
+    } catch (loggingError) {
+      console.error('[LIMITS] Failed to log error details:', loggingError);
     }
     
-    // Try to detect language, fallback to 'en' if it fails
+    // Detect language with fallback
     let lang: 'fr' | 'en' = 'en';
     try {
-      const acceptLanguage = req.headers.get('Accept-Language') || '';
-      lang = acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
-    } catch (e) {
-      console.error('[LIMITS] Could not detect language, using default');
+      const acceptLanguage = req.headers.get('Accept-Language');
+      if (acceptLanguage && acceptLanguage.toLowerCase().includes('fr')) {
+        lang = 'fr';
+      }
+    } catch (langError) {
+      console.error('[LIMITS] Language detection failed, using English');
     }
     
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : 'No stack trace available';
+    // Build safe response
+    const responseData = {
+      error: lang === 'fr' ? 'Erreur lors de la vérification des limites' : 'Error checking usage limits',
+      message: errorMessage,
+      details: errorName,
+      timestamp: new Date().toISOString()
+    };
     
-    console.error(`[LIMITS] Final error message: ${TRANSLATIONS[lang].errorCheckingLimits}: ${errorMessage}`);
+    console.error('[LIMITS] Returning error response:', responseData);
     
     return new Response(
-      JSON.stringify({ 
-        error: TRANSLATIONS[lang].errorCheckingLimits,
-        message: errorMessage,
-        stack: errorStack,
-        timestamp: new Date().toISOString()
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify(responseData),
+      { 
+        status: 500, 
+        headers: { 
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+          'Content-Type': 'application/json'
+        } 
+      }
     );
   }
 });
