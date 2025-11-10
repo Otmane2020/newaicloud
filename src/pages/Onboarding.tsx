@@ -97,11 +97,8 @@ export default function Onboarding() {
             // Wait 3 seconds for import to complete
             await new Promise(resolve => setTimeout(resolve, 3000));
             
-            // Remove the pending param from URL
-            const newSearchParams = new URLSearchParams(searchParams);
-            newSearchParams.delete('shopify_pending');
-            newSearchParams.delete('shop');
-            navigate(`/onboarding${newSearchParams.toString() ? '?' + newSearchParams.toString() : ''}`, { replace: true });
+            // Redirect to dashboard to see imported products
+            navigate('/dashboard', { replace: true });
           } else {
             throw new Error('Failed to claim connection');
           }
