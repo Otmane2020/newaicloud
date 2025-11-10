@@ -142,37 +142,55 @@ serve(async (req) => {
     console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
     // Handle usage tracking FIRST (before plan checks)
-    let currentUsage = usageRes.data;
-    if (!currentUsage) {
-      console.log('[LIMITS] Creating usage_tracking entry');
-      const { data: newUsage } = await supabaseAdmin
-        .from('usage_tracking')
-        .insert({
-          seller_id: user.id,
-          month: monthKey,
-          optimizations_count: 0,
-          articles_count: 0,
-          chat_responses_count: 0,
-          shopify_requests_count: 0,
-          products_count: 0,
-          shopify_stores_count: 0,
-          campaigns_count: 0,
-        })
-        .select()
-        .single();
-      
-      currentUsage = newUsage || {
-        optimizations_count: 0,
-        articles_count: 0,
-        chat_responses_count: 0,
-        shopify_requests_count: 0,
-        products_count: 0,
-        shopify_stores_count: 0,
-        campaigns_count: 0,
-      };
+    // CRITICAL: Initialize with safe defaults FIRST
+    let currentUsage = {
+      optimizations_count: 0,
+      articles_count: 0,
+      chat_responses_count: 0,
+      shopify_requests_count: 0,
+      products_count: 0,
+      shopify_stores_count: 0,
+      campaigns_count: 0,
+    };
+    
+    console.log('[LIMITS] Step 1: Checking existing usage data');
+    
+    if (usageRes.data) {
+      console.log('[LIMITS] Step 2: Found existing usage data');
+      currentUsage = usageRes.data;
+    } else {
+      console.log('[LIMITS] Step 3: No usage data found, creating new entry');
+      try {
+        const { data: newUsage, error: insertError } = await supabaseAdmin
+          .from('usage_tracking')
+          .insert({
+            seller_id: user.id,
+            month: monthKey,
+            optimizations_count: 0,
+            articles_count: 0,
+            chat_responses_count: 0,
+            shopify_requests_count: 0,
+            products_count: 0,
+            shopify_stores_count: 0,
+            campaigns_count: 0,
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('[LIMITS] Error inserting usage data:', insertError);
+          // Keep using default currentUsage initialized above
+        } else if (newUsage) {
+          console.log('[LIMITS] Step 4: Successfully created usage entry');
+          currentUsage = newUsage;
+        }
+      } catch (insertErr) {
+        console.error('[LIMITS] Exception while inserting usage data:', insertErr);
+        // Keep using default currentUsage
+      }
     }
     
-    console.log(`[LIMITS] Current usage:`, currentUsage);
+    console.log(`[LIMITS] Step 5: Current usage:`, currentUsage);
 
     // Auto-correct product count if needed
     const realProductCount = productCountRes.count || 0;
@@ -342,25 +360,38 @@ serve(async (req) => {
   } catch (error) {
     console.error('[LIMITS] ❌ CRITICAL ERROR in check-usage-limits');
     console.error('[LIMITS] Error type:', typeof error);
-    console.error('[LIMITS] Error object:', error);
-    console.error('[LIMITS] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Try to safely stringify error for better debugging
+    try {
+      console.error('[LIMITS] Error details:', JSON.stringify({
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'No stack',
+      }, null, 2));
+    } catch (jsonError) {
+      console.error('[LIMITS] Could not stringify error:', error);
+    }
     
     // Try to detect language, fallback to 'en' if it fails
     let lang: 'fr' | 'en' = 'en';
     try {
-      lang = detectLanguage(req);
+      const acceptLanguage = req.headers.get('Accept-Language') || '';
+      lang = acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
     } catch (e) {
-      console.error('[LIMITS] Could not detect language:', e);
+      console.error('[LIMITS] Could not detect language, using default');
     }
     
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[LIMITS] ${TRANSLATIONS[lang].errorCheckingLimits}: ${errorMessage}`);
+    const errorStack = error instanceof Error ? error.stack : 'No stack trace available';
+    
+    console.error(`[LIMITS] Final error message: ${TRANSLATIONS[lang].errorCheckingLimits}: ${errorMessage}`);
     
     return new Response(
       JSON.stringify({ 
         error: TRANSLATIONS[lang].errorCheckingLimits,
         message: errorMessage,
-        details: error instanceof Error ? error.stack : String(error)
+        stack: errorStack,
+        timestamp: new Date().toISOString()
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
