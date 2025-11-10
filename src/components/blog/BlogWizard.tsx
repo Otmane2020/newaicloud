@@ -109,13 +109,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
-  // Steps with translations - Added Design step
+  // Steps with translations - Removed language step, using shop language automatically
   const steps: WizardStep[] = [
     { id: 1, title: t.wizards.blog.steps.topic, icon: FileText, description: t.wizards.blog.descriptions.topic },
     { id: 2, title: t.wizards.blog.steps.products, icon: Package, description: t.wizards.blog.descriptions.products },
     { id: 3, title: t.wizards.blog.steps.keywords, icon: Tag, description: t.wizards.blog.descriptions.keywords },
     { id: 4, title: t.wizards.blog.steps.design, icon: Palette, description: t.wizards.blog.descriptions.design },
-    { id: 5, title: t.wizards.blog.steps.generate, icon: Sparkles, description: t.wizards.blog.descriptions.generate },
   ];
 
   useEffect(() => {
@@ -395,32 +394,6 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             {currentStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t.wizards.blog.articleLanguage}</label>
-                  <div className="grid grid-cols-5 gap-3">
-                    {[
-                      { code: 'fr', label: '🇫🇷 Français', name: t.wizards.blog.languages.french },
-                      { code: 'en', label: '🇬🇧 English', name: t.wizards.blog.languages.english },
-                      { code: 'es', label: '🇪🇸 Español', name: t.wizards.blog.languages.spanish },
-                      { code: 'de', label: '🇩🇪 Deutsch', name: t.wizards.blog.languages.german },
-                      { code: 'it', label: '🇮🇹 Italiano', name: t.wizards.blog.languages.italian }
-                    ].map((lang) => (
-                      <button
-                        key={lang.code}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, language: lang.code as any })}
-                        className={`px-4 py-3 border rounded-lg text-center transition-all ${
-                          formData.language === lang.code
-                            ? 'bg-primary text-white border-primary' 
-                            : 'bg-white border-gray-300 hover:border-primary'
-                        }`}
-                      >
-                        <div className="font-semibold text-sm">{lang.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium mb-2">{t.wizards.blog.collection}</label>
                   <Popover open={collectionSearchOpen} onOpenChange={setCollectionSearchOpen}>
                     <PopoverTrigger asChild>
@@ -665,15 +638,6 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             )}
 
             {currentStep === 4 && (
-              <div className="space-y-6">
-                <ArticleConfigDialog
-                  config={articleConfig}
-                  onConfigChange={setArticleConfig}
-                />
-              </div>
-            )}
-
-            {currentStep === 5 && (
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                   <h3 className="font-semibold mb-4">{t.common.summary}</h3>

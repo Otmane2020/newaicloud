@@ -102,18 +102,49 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       }
     }
 
+    // Detect shop language automatically
+    let shopLanguage = 'fr'; // Default to French
+    try {
+      const { data: shopData } = await supabaseClient
+        .from('shopify_connections')
+        .select('store_url')
+        .eq('user_id', user_id)
+        .single();
+      
+      if (shopData?.store_url) {
+        // Detect language from domain
+        const domain = shopData.store_url.toLowerCase();
+        if (domain.includes('.com') && !domain.includes('.fr')) shopLanguage = 'en';
+        else if (domain.includes('.es')) shopLanguage = 'es';
+        else if (domain.includes('.de')) shopLanguage = 'de';
+        else if (domain.includes('.it')) shopLanguage = 'it';
+      }
+      console.log(`🌍 Detected shop language: ${shopLanguage}`);
+    } catch (err) {
+      console.log('⚠️ Could not detect shop language, using default French');
+    }
+
     const articleTitle = title || `Guide Complet : ${keywords[0] || category}`;
     const targetKeywords = keywords.length ? keywords : [category, "guide"];
 
     console.log(`🎯 Génération article : ${articleTitle} pour user ${user_id}`);
 
-    // Filtrer produits par catégorie si spécifiée
+    // Filtrer produits par collection ou IDs spécifiques
     let productsQuery = supabaseClient
       .from("shopify_products")
-      .select("id, title, handle, price, category, description, product_type, vendor")
+      .select("id, title, handle, price, category, description, product_type, vendor, image_url, compare_at_price, inventory_quantity, collection_ids, store_id")
       .eq("seller_id", user_id);
 
-    if (category && category !== "Guide" && category !== "Tous produits") {
+    // If specific product IDs provided, use them
+    if (requestData.productIds && requestData.productIds.length > 0) {
+      productsQuery = productsQuery.in('id', requestData.productIds);
+      console.log(`🎯 Using ${requestData.productIds.length} specific products`);
+    } else if (requestData.collection_id) {
+      // Filter by collection
+      productsQuery = productsQuery.contains('collection_ids', [requestData.collection_id]);
+      console.log(`📁 Filtering by collection: ${requestData.collection_id}`);
+    } else if (category && category !== "Guide" && category !== "Tous produits") {
+      // Filter by category as fallback
       productsQuery = productsQuery.or(
         `category.ilike.%${category}%,product_type.ilike.%${category}%,vendor.ilike.%${category}%`,
       );
@@ -122,7 +153,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     const { data: products } = await productsQuery.limit(8);
 
     if (!products || products.length === 0) {
-      throw new Error("Aucun produit trouvé pour cette catégorie");
+      throw new Error("Aucun produit trouvé pour cette sélection");
     }
 
     const productDetails = products
@@ -165,7 +196,33 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       }
     }
 
-    // Générer un titre optimisé avec DeepSeek
+    // Language-specific prompts
+    const languagePrompts = {
+      fr: {
+        system: "Tu es un expert SEO qui génère des titres d'articles percutants et optimisés pour le référencement en français.",
+        titlePrompt: `Génère un titre d'article SEO captivant pour cette catégorie: ${category}. Le titre doit contenir entre 50-60 caractères, inclure des mots-clés pertinents, et inciter au clic. Retourne UNIQUEMENT le titre, sans guillemets ni explications.`
+      },
+      en: {
+        system: "You are an SEO expert who generates compelling and optimized article titles in English.",
+        titlePrompt: `Generate a captivating SEO article title for this category: ${category}. The title should be 50-60 characters, include relevant keywords, and encourage clicks. Return ONLY the title, without quotes or explanations.`
+      },
+      es: {
+        system: "Eres un experto en SEO que genera títulos de artículos atractivos y optimizados en español.",
+        titlePrompt: `Genera un título de artículo SEO cautivador para esta categoría: ${category}. El título debe tener entre 50-60 caracteres, incluir palabras clave relevantes e incitar al clic. Devuelve SOLO el título, sin comillas ni explicaciones.`
+      },
+      de: {
+        system: "Du bist ein SEO-Experte, der überzeugende und optimierte Artikeltitel auf Deutsch erstellt.",
+        titlePrompt: `Erstelle einen fesselnden SEO-Artikeltitel für diese Kategorie: ${category}. Der Titel sollte 50-60 Zeichen lang sein, relevante Schlüsselwörter enthalten und zum Klicken anregen. Gib NUR den Titel zurück, ohne Anführungszeichen oder Erklärungen.`
+      },
+      it: {
+        system: "Sei un esperto SEO che genera titoli di articoli accattivanti e ottimizzati in italiano.",
+        titlePrompt: `Genera un titolo di articolo SEO accattivante per questa categoria: ${category}. Il titolo deve contenere tra 50-60 caratteri, includere parole chiave pertinenti e incoraggiare i clic. Restituisci SOLO il titolo, senza virgolette o spiegazioni.`
+      }
+    };
+
+    const langPrompt = languagePrompts[shopLanguage as keyof typeof languagePrompts] || languagePrompts.fr;
+
+    // Générer un titre optimisé
     const titleResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -175,15 +232,8 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content:
-              "Tu es un expert SEO qui génère des titres d'articles percutants et optimisés pour le référencement.",
-          },
-          {
-            role: "user",
-            content: `Génère un titre d'article SEO captivant pour cette catégorie: ${category}. Le titre doit contenir entre 50-60 caractères, inclure des mots-clés pertinents, et inciter au clic. Retourne UNIQUEMENT le titre, sans guillemets ni explications.`,
-          },
+          { role: "system", content: langPrompt.system },
+          { role: "user", content: langPrompt.titlePrompt },
         ],
       }),
     });
@@ -191,7 +241,7 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
     const titleData = await titleResponse.json();
     const optimizedTitle = titleData.choices[0].message.content.trim().replace(/^["']|["']$/g, "");
 
-    console.log(`📝 Titre optimisé: ${optimizedTitle}`);
+    console.log(`📝 Titre optimisé (${shopLanguage}): ${optimizedTitle}`);
 
     // Get store URL for product links
     let storeUrl = "";
