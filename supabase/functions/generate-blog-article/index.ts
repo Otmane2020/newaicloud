@@ -156,7 +156,6 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       keywords = [],
       title,
       articleLength = "2000",
-      language = "fr",
       collectionTitle = "",
       productIds = [],
       articleConfig = {}, // 🆕 Article configuration
@@ -164,6 +163,66 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
 
     if (!user_id) {
       throw new Error("user_id is required");
+    }
+
+    // ✅ AUTO-DETECT SHOP LANGUAGE FROM DATABASE
+    console.log("🌍 Détection automatique de la langue de la boutique...");
+    let detectedLanguage = "fr"; // Default
+    
+    try {
+      // First, try to detect from store URL
+      const { data: storeData } = await supabaseClient
+        .from("shopify_connections")
+        .select("store_url")
+        .eq("user_id", user_id)
+        .single();
+      
+      if (storeData?.store_url) {
+        const domain = storeData.store_url.toLowerCase();
+        if (domain.includes(".com") && !domain.includes(".fr")) {
+          detectedLanguage = "en";
+        } else if (domain.includes(".es")) {
+          detectedLanguage = "es";
+        } else if (domain.includes(".de")) {
+          detectedLanguage = "de";
+        } else if (domain.includes(".it")) {
+          detectedLanguage = "it";
+        }
+        console.log(`✅ Langue détectée depuis l'URL: ${detectedLanguage}`);
+      }
+
+      // Fallback: detect from products titles
+      if (detectedLanguage === "fr") {
+        const { data: productsData } = await supabaseClient
+          .from("shopify_products")
+          .select("title, description")
+          .eq("seller_id", user_id)
+          .limit(5);
+        
+        if (productsData && productsData.length > 0) {
+          const sampleText = productsData.map((p: any) => `${p.title} ${p.description}`).join(" ").toLowerCase();
+          
+          // Simple language detection patterns
+          const patterns = {
+            en: /\b(the|and|for|with|from|this|that)\b/g,
+            es: /\b(el|la|de|con|para|este|esta)\b/g,
+            de: /\b(der|die|das|und|für|mit|von)\b/g,
+            it: /\b(il|la|di|con|per|questo|questa)\b/g,
+          };
+          
+          let maxMatches = 0;
+          for (const [lang, pattern] of Object.entries(patterns)) {
+            const matches = (sampleText.match(pattern) || []).length;
+            if (matches > maxMatches) {
+              maxMatches = matches;
+              detectedLanguage = lang as string;
+            }
+          }
+          console.log(`✅ Langue détectée depuis les produits: ${detectedLanguage}`);
+        }
+      }
+    } catch (err) {
+      console.log("⚠️ Erreur détection langue, utilisation du français par défaut:", err);
     }
 
     // Default article config if not provided
@@ -455,8 +514,10 @@ async function generateSingleArticle(requestData: any, supabaseClient: any, apiK
       },
     };
 
-    const lang = languageConfig[language] || languageConfig.fr;
+    const lang = languageConfig[detectedLanguage] || languageConfig.fr;
     const topicInfo = collectionTitle ? `Collection: ${collectionTitle}` : category;
+    
+    console.log(`📝 Génération en ${lang.name} (langue détectée: ${detectedLanguage})`);
 
     const prompt = `Tu es un designer UX/UI expert et rédacteur web spécialisé dans les articles e-commerce de style magazine.
 

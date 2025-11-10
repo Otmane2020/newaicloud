@@ -128,6 +128,8 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
     if (!user?.id) return;
 
     try {
+      console.log("🔍 Chargement des collections pour user:", user.id);
+      
       // Fetch collections with product counts
       const { data: collectionsData, error } = await supabase
         .from("shopify_collections")
@@ -135,7 +137,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         .eq("user_id", user.id)
         .order("title", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erreur fetch collections:", error);
+        throw error;
+      }
+
+      console.log(`📦 ${collectionsData?.length || 0} collections trouvées`);
 
       // Count products for each collection
       const collectionsWithCount = await Promise.all(
@@ -146,6 +153,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             .eq("seller_id", user.id)
             .contains("collection_ids", [col.id]);
 
+          console.log(`  - ${col.title}: ${count} produits`);
           return {
             ...col,
             productCount: count || 0,
@@ -155,7 +163,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
       // Filter collections with products only
       const collectionsWithProducts = collectionsWithCount.filter((col) => col.productCount > 0);
+      console.log(`✅ ${collectionsWithProducts.length} collections avec produits`);
+      
       setCollections(collectionsWithProducts as any);
+      
+      if (collectionsWithProducts.length === 0) {
+        toast.info("Aucune collection avec produits trouvée");
+      }
     } catch (err) {
       console.error("Error fetching collections:", err);
       toast.error(t.wizards.blog.loadingError);
