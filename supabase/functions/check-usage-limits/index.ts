@@ -149,9 +149,51 @@ serve(async (req) => {
       .eq('id', planId)
       .single();
 
+    // CRITICAL FIX: Return proper response instead of throwing
     if (planError || !plan) {
-      console.error('[LIMITS] Error fetching plan:', planError);
-      throw new Error(TRANSLATIONS[lang].couldNotFetchPlan);
+      console.error('[LIMITS] Error fetching plan:', planError, 'planId:', planId);
+      console.error('[LIMITS] Falling back to default trial limits');
+      
+      // Use conservative trial limits as fallback
+      const defaultLimits = {
+        max_optimizations: 50,
+        max_articles: 1,
+        max_chat_responses: 50,
+        max_shopify_requests: 20,
+        max_products: 10,
+        max_shopify_stores: 1,
+        max_campaigns: 0,
+      };
+      
+      return new Response(
+        JSON.stringify({
+          canUseOptimizations: currentUsage.optimizations_count < defaultLimits.max_optimizations,
+          canUseArticles: currentUsage.articles_count < defaultLimits.max_articles,
+          canUseChat: currentUsage.chat_responses_count < defaultLimits.max_chat_responses,
+          canUseShopifySearch: currentUsage.shopify_requests_count < defaultLimits.max_shopify_requests,
+          canAddProducts: currentUsage.products_count < defaultLimits.max_products,
+          canAddShopifyStore: currentUsage.shopify_stores_count < defaultLimits.max_shopify_stores,
+          canUseCampaigns: currentUsage.campaigns_count < defaultLimits.max_campaigns,
+          limitReached: {
+            optimizations: currentUsage.optimizations_count >= defaultLimits.max_optimizations,
+            articles: currentUsage.articles_count >= defaultLimits.max_articles,
+            chat: currentUsage.chat_responses_count >= defaultLimits.max_chat_responses,
+            shopifySearch: currentUsage.shopify_requests_count >= defaultLimits.max_shopify_requests,
+            products: currentUsage.products_count >= defaultLimits.max_products,
+            shopifyStores: currentUsage.shopify_stores_count >= defaultLimits.max_shopify_stores,
+            campaigns: currentUsage.campaigns_count >= defaultLimits.max_campaigns,
+          },
+          usage: currentUsage,
+          limits: defaultLimits,
+          isTrialing: true,
+          isPaid: false,
+          planId: 'trial',
+          shouldForcePayment: false,
+          forcePaymentReason: '',
+          warning: 'Plan not found, using default trial limits',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
     console.log(`[LIMITS] Using plan: ${plan.id} - isTrialing: ${isTrialing}, isPaid: ${isPaid}`);
