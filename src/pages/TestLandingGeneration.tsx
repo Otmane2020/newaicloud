@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, XCircle, Smartphone, Monitor } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Smartphone, Monitor, ExternalLink } from "lucide-react";
 
 export default function TestLandingGeneration() {
   const [html, setHtml] = useState("");
@@ -94,6 +94,11 @@ export default function TestLandingGeneration() {
       if (error) throw error;
 
       if (data?.html) {
+        console.log("🔍 HTML reçu (premiers 500 caractères):", data.html.substring(0, 500));
+        console.log("🔍 HTML contient <!DOCTYPE ?", data.html.includes("<!DOCTYPE"));
+        console.log("🔍 HTML contient <script> ?", data.html.includes("<script"));
+        console.log("🔍 Longueur totale du HTML:", data.html.length);
+        
         setHtml(data.html);
         const validationIssues = validateHTML(data.html);
         setIssues(validationIssues);
@@ -114,6 +119,21 @@ export default function TestLandingGeneration() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openInNewWindow = () => {
+    if (!html) return;
+    
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const newWindow = window.open(url, '_blank');
+    
+    // Nettoyer l'URL après ouverture
+    if (newWindow) {
+      newWindow.addEventListener('load', () => {
+        URL.revokeObjectURL(url);
+      });
     }
   };
 
@@ -205,6 +225,14 @@ export default function TestLandingGeneration() {
                     <Smartphone className="h-4 w-4 mr-2" />
                     Mobile
                   </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={openInNewWindow}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Ouvrir dans une nouvelle fenêtre
+                  </Button>
                 </div>
               </div>
               <div 
@@ -216,7 +244,7 @@ export default function TestLandingGeneration() {
                   srcDoc={html}
                   className="w-full h-[600px] bg-white"
                   title="Landing page preview"
-                  sandbox="allow-same-origin"
+                  sandbox="allow-same-origin allow-scripts"
                 />
               </div>
             </Card>
