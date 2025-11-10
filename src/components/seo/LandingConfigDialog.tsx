@@ -15,10 +15,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Check } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 
+export interface ColorScheme {
+  paletteId: string;
+  primary: string;      // Main accent color (CTAs, highlights)
+  secondary: string;    // Secondary accent (headings)
+  background: string;   // Main background (always light)
+  surface: string;      // Card/section backgrounds
+  text: string;         // Main text (guaranteed contrast)
+  textMuted: string;    // Secondary text
+}
+
 export interface LandingConfig {
   style: string;
   layout: string;
-  colorScheme: string;
+  colorScheme: ColorScheme;
   contentLength: string;
   vendorSource: "shopify" | "extract" | "generate";
   customHighlights?: string; // Texte libre pour highlights personnalisés
@@ -143,7 +153,15 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
   const [config, setConfig] = useState<LandingConfig>({
     style: "moderne",
     layout: "2 colonnes",
-    colorScheme: "#000000",
+    colorScheme: {
+      paletteId: "modern",
+      primary: "#000000",
+      secondary: "#333333",
+      background: "#FFFFFF",
+      surface: "#F5F5F5",
+      text: "#000000",
+      textMuted: "#666666",
+    },
     contentLength: "moyenne (800 mots)",
     vendorSource: "shopify",
     customHighlights: "",
@@ -404,7 +422,18 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                   onClick={() => {
                     setSelectedPalette(palette.id);
                     setUseCustomColor(false);
-                    setConfig({ ...config, colorScheme: palette.colors[0] });
+                    setConfig({ 
+                      ...config, 
+                      colorScheme: {
+                        paletteId: palette.id,
+                        primary: palette.colors[0],      // Darkest for CTAs
+                        secondary: palette.colors[1],    // Secondary headings
+                        background: "#FFFFFF",           // Always white
+                        surface: palette.colors[4],      // Lightest for sections
+                        text: palette.colors[0],         // Darkest for text
+                        textMuted: palette.colors[2],    // Mid-tone for secondary text
+                      }
+                    });
                   }}
                 >
                   <div className="p-3">
@@ -448,12 +477,23 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
               <div className="mt-2 animate-slide-in-right">
                 <input
                   type="color"
-                  value={config.colorScheme}
-                  onChange={(e) => setConfig({ ...config, colorScheme: e.target.value })}
+                  value={config.colorScheme.primary}
+                  onChange={(e) => setConfig({ 
+                    ...config, 
+                    colorScheme: {
+                      paletteId: "custom",
+                      primary: e.target.value,
+                      secondary: e.target.value,
+                      background: "#FFFFFF",
+                      surface: "#F5F5F5",
+                      text: "#000000",
+                      textMuted: "#666666",
+                    }
+                  })}
                   className="w-full h-12 rounded-md border cursor-pointer transition-transform duration-200 hover:scale-105"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t.landingConfig.colorPalette.selected} : {config.colorScheme}
+                  {t.landingConfig.colorPalette.selected} : {config.colorScheme.primary}
                 </p>
               </div>
             )}
