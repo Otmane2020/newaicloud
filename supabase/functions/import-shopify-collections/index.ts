@@ -225,6 +225,7 @@ Deno.serve(async (req: Request) => {
           image_url: imageUrl,
           image_alt: imageAlt,
           shopify_image_id: shopifyImageId,
+          products_count: collection.products_count || 0,
           updated_at: new Date().toISOString(),
         };
 

@@ -141,11 +141,10 @@ export function CollectionOptimization() {
     try {
       setLoading(true);
       
-      // Récupérer les collections avec le compteur de produits
+      // Récupérer les collections
       const { data: collectionsData, error } = await supabase
         .from('shopify_collections')
         .select('*')
-        .gt('products_count', 0) // Filtrer uniquement les collections avec au moins 1 produit
         .order('title', { ascending: true });
 
       if (error) throw error;
