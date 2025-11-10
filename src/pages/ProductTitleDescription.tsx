@@ -118,6 +118,8 @@ export default function ProductTitleDescription() {
   const [selectedGalleryImages, setSelectedGalleryImages] = useState<Map<string, string>>(new Map());
   const [selectedImageFormat, setSelectedImageFormat] = useState<string>("square");
   const [selectedSimilarity, setSelectedSimilarity] = useState<string>("medium");
+  const [generatedHtmlCache, setGeneratedHtmlCache] = useState<Map<string, string>>(new Map());
+  const [replacingDescription, setReplacingDescription] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -687,6 +689,36 @@ export default function ProductTitleDescription() {
       toast.error("Erreur lors de la synchronisation", { id: toastId });
     } finally {
       setSyncingToShopify(false);
+    }
+  };
+
+  const handleReplaceDescription = async () => {
+    setReplacingDescription(true);
+    const toastId = toast.loading("Remplacement des descriptions...");
+
+    try {
+      for (const product of optimizedProducts) {
+        const cachedHtml = generatedHtmlCache.get(product.id);
+        if (cachedHtml) {
+          const { error } = await supabase
+            .from("shopify_products")
+            .update({ description: cachedHtml })
+            .eq("id", product.id);
+
+          if (error) {
+            console.error(`Error updating product ${product.id}:`, error);
+          }
+        }
+      }
+
+      toast.success(`${optimizedProducts.length} description(s) remplacée(s)`, { id: toastId });
+      setGeneratedHtmlCache(new Map());
+      await fetchProducts();
+    } catch (error) {
+      console.error("Error replacing descriptions:", error);
+      toast.error("Erreur lors du remplacement", { id: toastId });
+    } finally {
+      setReplacingDescription(false);
     }
   };
 
@@ -1393,6 +1425,8 @@ export default function ProductTitleDescription() {
         onCancel={generating ? handleCancelGeneration : undefined}
         onSync={handleSyncToShopify}
         syncLoading={syncingToShopify}
+        onReplaceDescription={handleReplaceDescription}
+        replaceLoading={replacingDescription}
       />
 
       {/* Landing Config Dialog */}
