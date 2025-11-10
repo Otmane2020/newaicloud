@@ -467,6 +467,29 @@ COLOR PALETTE (HSL FORMAT ONLY):
    - Section: <section style="background-color: hsl(${designTokens.surface})">
    - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
 
+DESIGN & TONE (CRITICAL):
+✅ PROFESSIONAL STYLE REQUIRED:
+- Minimal, elegant, clean design
+- Modern e-commerce aesthetic
+- Professional photography style
+- Clear typography hierarchy
+- Generous whitespace
+
+❌ ABSOLUTELY FORBIDDEN:
+- NO decorative icons (sparkles ✨, stars ⭐, hearts ❤️, rocket 🚀, etc.)
+- NO emojis in content (🎉, 💎, 🌟, etc.)
+- NO colorful badges or stickers
+- NO cartoon-style illustrations
+- NO playful/childish visual elements
+- NO decorative graphics
+
+✓ ONLY ALLOWED:
+- Clean product images
+- Simple checkmarks (✓) for bullet lists ONLY
+- Minimal dividers (thin lines)
+- Professional whitespace
+- Clear section headings
+
 STRUCTURE:
 - Complete HTML5: <!DOCTYPE html>, <html>, <head>, <body>
 - <script src="https://cdn.tailwindcss.com"></script> in <head>
@@ -508,6 +531,29 @@ PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
    - Hero : <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
    - Section : <section style="background-color: hsl(${designTokens.surface})">
    - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+
+DESIGN & TON (CRITIQUE) :
+✅ STYLE PROFESSIONNEL REQUIS :
+- Design minimal, élégant, épuré
+- Esthétique e-commerce moderne
+- Style photo professionnelle
+- Hiérarchie typographique claire
+- Espaces blancs généreux
+
+❌ ABSOLUMENT INTERDIT :
+- AUCUNE icône décorative (sparkles ✨, étoiles ⭐, cœurs ❤️, fusée 🚀, etc.)
+- AUCUN emoji dans le contenu (🎉, 💎, 🌟, etc.)
+- AUCUN badge coloré ou autocollant
+- AUCUNE illustration style cartoon
+- AUCUN élément visuel ludique/enfantin
+- AUCUN graphique décoratif
+
+✓ UNIQUEMENT AUTORISÉ :
+- Images produit propres
+- Checkmarks simples (✓) pour listes à puces UNIQUEMENT
+- Séparateurs minimaux (lignes fines)
+- Espaces blancs professionnels
+- Titres de section clairs
 
 STRUCTURE :
 - HTML5 complet : <!DOCTYPE html>, <html>, <head>, <body>
