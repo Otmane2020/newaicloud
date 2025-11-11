@@ -17,6 +17,7 @@ import {
   Target,
   Palette,
   FileCode,
+  LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -494,47 +495,47 @@ export default function RegenerateLanding({
 
             {/* Stage indicator */}
             <div className="flex justify-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/95 border border-primary/20 shadow-sm backdrop-blur-sm">
+              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-background/95 border-2 border-primary/30 shadow-lg backdrop-blur-sm">
                 {progress < 15 && (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-                    <span className="text-xs font-medium text-primary">AI Initialization</span>
+                    <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
+                    <span className="text-sm font-semibold text-primary">AI Initialization</span>
                   </>
                 )}
                 {progress >= 15 && progress < 30 && (
                   <>
-                    <Scan className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-medium text-primary">Vision Analysis</span>
+                    <Scan className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-sm font-semibold text-primary">Vision Analysis</span>
                   </>
                 )}
                 {progress >= 30 && progress < 45 && (
                   <>
-                    <Brain className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-medium text-primary">Context Processing</span>
+                    <Brain className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-sm font-semibold text-primary">Context Processing</span>
                   </>
                 )}
                 {progress >= 45 && progress < 65 && (
                   <>
-                    <Wand2 className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-medium text-primary">Content Generation</span>
+                    <Wand2 className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-sm font-semibold text-primary">Content Generation</span>
                   </>
                 )}
                 {progress >= 65 && progress < 85 && (
                   <>
-                    <Layout className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-medium text-primary">Layout Optimization</span>
+                    <Layout className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-sm font-semibold text-primary">Layout Optimization</span>
                   </>
                 )}
                 {progress >= 85 && progress < 100 && (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-medium text-primary">Final Assembly</span>
+                    <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-sm font-semibold text-primary">Final Assembly</span>
                   </>
                 )}
                 {progress >= 100 && (
                   <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                    <span className="text-xs font-medium text-green-600">Complete</span>
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-green-600">Complete</span>
                   </>
                 )}
               </div>
@@ -544,27 +545,27 @@ export default function RegenerateLanding({
           {/* Feature badges */}
           <div className="flex flex-wrap gap-2 mt-5 relative z-10">
             <div
-              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-500 ${progress >= 20 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
+              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 20 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
             >
-              <Scan className="w-3.5 h-3.5" />
+              <Scan className="w-4 h-4 flex-shrink-0" />
               <span className="font-medium">Vision AI</span>
             </div>
             <div
-              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-500 ${progress >= 50 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
+              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 50 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
             >
-              <Brain className="w-3.5 h-3.5" />
+              <Brain className="w-4 h-4 flex-shrink-0" />
               <span className="font-medium">UX Optimized</span>
             </div>
             <div
-              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-500 ${progress >= 70 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
+              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 70 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
             >
-              <Smartphone className="w-3.5 h-3.5" />
+              <Smartphone className="w-4 h-4 flex-shrink-0" />
               <span className="font-medium">Mobile First</span>
             </div>
             <div
-              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-500 ${progress >= 90 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
+              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 90 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
             >
-              <Target className="w-3.5 h-3.5" />
+              <Target className="w-4 h-4 flex-shrink-0" />
               <span className="font-medium">Conversion Focused</span>
             </div>
           </div>
