@@ -1690,8 +1690,12 @@ export default function ProductTitleDescription() {
               product={selectedLandingProduct}
               config={landingConfig}
               autoGenerate={true}
-              onGenerated={(html) => {
+              onGenerated={async (html) => {
                 console.log('Generated HTML:', html.substring(0, 100));
+                // Rafraîchir la liste des produits pour afficher la nouvelle landing page
+                await fetchProducts();
+                // Rafraîchir les limites d'utilisation
+                await refreshLimits();
               }}
               onClose={() => setShowLandingDialog(false)}
             />
