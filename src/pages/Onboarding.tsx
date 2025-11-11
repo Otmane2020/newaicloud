@@ -564,7 +564,7 @@ export default function Onboarding() {
             return (
               <Card
                 key={starterPlan.id}
-                className="p-4 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
+                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
               >
                 <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor(starterPlan.id)} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
                   <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
@@ -643,14 +643,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(starterPlan.id)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
                   ) : (
                     <>
-                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                      <span className="truncate">{language === 'fr' ? 'Essai Gratuit 14 jours' : '14-Day Free Trial'}</span>
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-tight">{language === 'fr' ? 'Essai Gratuit 14 jours' : '14-Day Free Trial'}</span>
                     </>
                   )}
                 </Button>
@@ -684,7 +684,7 @@ export default function Onboarding() {
             return (
               <Card
                 key="pro-group"
-                className={`p-4 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow ${
+                className={`p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow ${
                   isPopular ? 'ring-2 ring-primary' : 'border-2 border-border'
                 }`}
               >
@@ -789,14 +789,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedProTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
-                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                      <span className="truncate">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-tight">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
                     </>
                   )}
                 </Button>
@@ -820,7 +820,7 @@ export default function Onboarding() {
             return (
               <Card
                 key="enterprise-group"
-                className="p-4 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
+                className="p-5 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
               >
                 {isBestValue && (
                   <Badge className="mb-3 sm:mb-4 bg-green-500 text-xs">
@@ -923,14 +923,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedEnterpriseTier)}
                   disabled={loading}
-                  className="w-full text-sm sm:text-base"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4 h-auto min-h-[48px]"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
-                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                      <span className="truncate">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                      <span className="leading-tight">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
                     </>
                   )}
                 </Button>
