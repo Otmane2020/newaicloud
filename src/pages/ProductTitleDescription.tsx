@@ -1337,29 +1337,6 @@ export default function ProductTitleDescription() {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
-                                  setOptimizedProducts([product]);
-                                  setShowLandingPreviewDialog(true);
-                                } else {
-                                  toast.error(t.contentOptimization.toasts.notOptimizedYet);
-                                }
-                              }}
-                              className="h-8 w-8"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t.contentOptimization.tooltips.view}</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
                                   toast.error(t.contentOptimization.toasts.limitReached);
