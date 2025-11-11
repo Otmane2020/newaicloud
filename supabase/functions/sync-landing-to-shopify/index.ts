@@ -131,7 +131,7 @@ serve(async (req) => {
     // Récupérer le shopify_id et landing_page
     const { data: productData, error: productFetchError } = await supabase
       .from("shopify_products")
-      .select("id, shopify_id, landing_page, description")
+      .select("id, shopify_id, landing_page, description, handle")
       .eq("id", productId)
       .single();
 
@@ -212,7 +212,8 @@ serve(async (req) => {
     console.log("✅ Product description synced to Shopify");
 
     // Créer la page de landing séparée (optionnelle)
-    const pageHandle = `landing-${productHandle}`;
+    const pageHandle = `landing-${productData.handle || productHandle || 'product'}`;
+    console.log(`[sync-landing-to-shopify] Using page handle: ${pageHandle} (from productData.handle: ${productData.handle})`);
     const pageTitle = `${productTitle} - Landing Page`;
 
     // Wrap HTML content in a proper page structure
