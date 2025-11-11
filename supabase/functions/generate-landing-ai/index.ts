@@ -302,12 +302,6 @@ serve(async (req) => {
       }
     }
 
-    console.log("🔐 User authentication:", {
-      hasAuthHeader: !!authHeader,
-      userId: userId,
-      willAttemptSave: !!(userId && product_id)
-    });
-
     const body = await req.json();
     const {
       product_id,
@@ -323,6 +317,13 @@ serve(async (req) => {
       customHighlights,
       language,
     } = body ?? {};
+
+    console.log("🔐 User authentication:", {
+      hasAuthHeader: !!authHeader,
+      userId: userId,
+      productId: product_id,
+      willAttemptSave: !!(userId && product_id)
+    });
     
     // Auto-detect language from product title and description if not provided
     const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
