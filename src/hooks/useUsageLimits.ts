@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UsageLimits {
@@ -45,7 +45,18 @@ interface UsageLimits {
   shouldForcePayment: boolean;
 }
 
+// Client-side cache with 30-second expiry
+let cachedLimits: UsageLimits | null = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 30000; // 30 seconds
+
 const fetchUsageLimits = async (): Promise<UsageLimits> => {
+  // Return cached data if still fresh
+  const now = Date.now();
+  if (cachedLimits && (now - cacheTimestamp) < CACHE_DURATION) {
+    return cachedLimits;
+  }
+
   // First verify user is authenticated
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   
@@ -78,23 +89,47 @@ const fetchUsageLimits = async (): Promise<UsageLimits> => {
     .eq('id', user.id)
     .single();
   
-  return {
+  const result = {
     ...data,
     trialEndsAt: profileData?.trial_ends_at || null,
     currentPlanId: profileData?.current_plan_id || null,
     subscriptionStatus: profileData?.subscription_status || null,
   };
+
+  // Update cache
+  cachedLimits = result;
+  cacheTimestamp = Date.now();
+  
+  return result;
 };
 
 export const useUsageLimits = () => {
-  const { data: limits, isLoading: loading, refetch } = useQuery({
-    queryKey: ['usageLimits'],
-    queryFn: fetchUsageLimits,
-    staleTime: 30000, // 30 seconds - don't refetch for 30s
-    gcTime: 300000, // 5 minutes - keep in cache for 5 min
-    retry: 2, // Retry failed requests twice
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 8000),
-  });
+  const [limits, setLimits] = useState<UsageLimits | null>(cachedLimits);
+  const [loading, setLoading] = useState(!cachedLimits);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchUsageLimits();
+      setLimits(data);
+      setError(null);
+    } catch (err) {
+      console.error('[useUsageLimits] Error:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      
+      // Keep cached data on error
+      if (cachedLimits) {
+        setLimits(cachedLimits);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const canDoAction = (action: 'optimizations' | 'articles' | 'chat' | 'shopifySearch' | 'products' | 'shopifyStores' | 'campaigns') => {
     const actionMap = {
@@ -113,7 +148,8 @@ export const useUsageLimits = () => {
   return {
     limits: limits || null,
     loading,
+    error,
     canDoAction,
-    refresh: () => refetch(),
+    refresh: fetchData,
   };
 };
