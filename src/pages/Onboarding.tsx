@@ -462,7 +462,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle p-8">
+    <div className="min-h-screen bg-gradient-subtle p-4 sm:p-6 md:p-8">
       <div className="container mx-auto max-w-7xl">
         {/* Logout Button */}
         <div className="flex justify-end mb-4">
@@ -480,20 +480,20 @@ export default function Onboarding() {
         </div>
 
       {/* Header */}
-      <div className="text-center mb-12">
+      <div className="text-center mb-8 sm:mb-10 md:mb-12">
         {plans.some(p => p.trial_days > 0) && (
-          <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30">
-            <Shield className="w-4 h-4 mr-2" />
+          <Badge className="mb-3 sm:mb-4 bg-primary/20 text-primary-foreground border-primary/30 text-xs sm:text-sm">
+            <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
             {t.onboarding.trial.available}
           </Badge>
         )}
-        <h1 className="text-4xl md:text-6xl font-bold mb-4">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-4 px-4">
           {t.onboarding.title.split('NewAI')[0]}
           <span className="bg-gradient-primary bg-clip-text text-transparent">
             NewAI
           </span>
         </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
           {t.onboarding.subtitle}
         </p>
       </div>
@@ -528,22 +528,24 @@ export default function Onboarding() {
       )}
 
         {/* Billing Toggle */}
-        <div className="flex justify-center mb-12">
+        <div className="flex justify-center mb-8 sm:mb-10 md:mb-12 px-4">
           <div className="bg-card rounded-full p-1 border-2 border-border">
             <Button
               variant={billingCycle === 'monthly' ? 'default' : 'ghost'}
               onClick={() => setBillingCycle('monthly')}
-              className="rounded-full"
+              className="rounded-full text-xs sm:text-sm px-3 sm:px-4"
+              size="sm"
             >
               {t.onboarding.billing.monthly}
             </Button>
             <Button
               variant={billingCycle === 'yearly' ? 'default' : 'ghost'}
               onClick={() => setBillingCycle('yearly')}
-              className="rounded-full"
+              className="rounded-full text-xs sm:text-sm px-3 sm:px-4"
+              size="sm"
             >
               {t.onboarding.billing.yearly}
-              <Badge className="ml-2 bg-green-500">
+              <Badge className="ml-1.5 sm:ml-2 bg-green-500 text-[10px] sm:text-xs px-1.5 sm:px-2">
                 {t.onboarding.billing.save}
               </Badge>
             </Button>
@@ -551,7 +553,7 @@ export default function Onboarding() {
         </div>
 
         {/* Plans */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-6xl mx-auto mb-8 sm:mb-10 md:mb-12 px-4">
           {/* Starter Plan */}
           {(() => {
             const starterPlan = plans.find(p => p.id === 'starter');
@@ -562,24 +564,24 @@ export default function Onboarding() {
             return (
               <Card
                 key={starterPlan.id}
-                className="p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
+                className="p-4 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
               >
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${getPlanColor(starterPlan.id)} flex items-center justify-center mb-4 shadow-glow`}>
-                  <Icon className="w-7 h-7 text-white" />
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor(starterPlan.id)} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
+                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
 
-                <h3 className="text-2xl font-bold mb-2">{starterPlan.name}</h3>
+                <h3 className="text-xl sm:text-2xl font-bold mb-2">{starterPlan.name}</h3>
                 {starterPlan.trial_days > 0 && (
-                  <Badge variant="outline" className="mb-3 bg-success/10 text-success border-success/30">
+                  <Badge variant="outline" className="mb-2 sm:mb-3 bg-success/10 text-success border-success/30 text-xs">
                     {tf('onboarding.trial.freeTrial', { days: starterPlan.trial_days })}
                   </Badge>
                 )}
-                <p className="text-muted-foreground mb-6">{starterPlan.description}</p>
+                <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base">{starterPlan.description}</p>
 
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center mb-2">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                    <div className="flex items-baseline gap-1.5 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
                           billingCycle === 'yearly' 
                             ? getPriceByLanguage(starterPlan, language, billingCycle) / 12 
@@ -587,48 +589,48 @@ export default function Onboarding() {
                           language
                         )}
                       </span>
-                      <span className="text-muted-foreground">{language === 'fr' ? '/mois' : '/month'}</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{language === 'fr' ? '/mois' : '/month'}</span>
                     </div>
                     {billingCycle === 'yearly' && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">
                         {formatPrice(getPriceByLanguage(starterPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
                   <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_products)} {t.onboarding.planFeatures.products}</span>
+                    <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatStoreLimit(starterPlan.max_shopify_stores || 1)}</span>
+                    <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatStoreLimit(starterPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
+                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
+                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(starterPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
+                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(starterPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
                   </div>
                 </div>
 
-                <div className="space-y-2 mb-6 pt-4 border-t border-border">
+                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 pt-3 sm:pt-4 border-t border-border">
                   {Object.entries(starterPlan.features).map(([key, value]) => (
                     <div key={key} className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-success" />
-                      <span className="text-sm">
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
                         {typeof value === 'boolean' 
                           ? key.replace('_', ' ')
                           : `${key.replace('_', ' ')}: ${value}`}
@@ -641,20 +643,20 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(starterPlan.id)}
                   disabled={loading}
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
                 >
                   {loading ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
                   ) : (
                     <>
-                      <Shield className="w-5 h-5 mr-2" />
-                      {language === 'fr' ? 'Essai Gratuit 14 jours' : '14-Day Free Trial'}
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                      <span className="truncate">{language === 'fr' ? 'Essai Gratuit 14 jours' : '14-Day Free Trial'}</span>
                     </>
                   )}
                 </Button>
                 
                 {starterPlan.trial_days > 0 && (
-                  <p className="text-xs text-muted-foreground text-center mt-3">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-2 sm:mt-3 px-2">
                     {tf('onboarding.trial.cardRequired', { 
                       date: new Date(Date.now() + starterPlan.trial_days * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')
                     })}
@@ -682,31 +684,31 @@ export default function Onboarding() {
             return (
               <Card
                 key="pro-group"
-                className={`p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow ${
+                className={`p-4 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow ${
                   isPopular ? 'ring-2 ring-primary' : 'border-2 border-border'
                 }`}
               >
                 {isPopular && (
-                  <Badge className="mb-4 bg-primary">
+                  <Badge className="mb-3 sm:mb-4 bg-primary text-xs">
                     <Star className="w-3 h-3 mr-1" />
                     {t.onboarding.planFeatures.mostPopular}
                   </Badge>
                 )}
 
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${getPlanColor('professional')} flex items-center justify-center mb-4 shadow-glow`}>
-                  <Icon className="w-7 h-7 text-white" />
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor('professional')} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
+                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
 
-                <h3 className="text-2xl font-bold mb-2">Pro</h3>
-                <p className="text-muted-foreground mb-4">{t.onboarding.planFeatures.forGrowth}</p>
+                <h3 className="text-xl sm:text-2xl font-bold mb-2">Pro</h3>
+                <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">{t.onboarding.planFeatures.forGrowth}</p>
 
                 {/* Dropdown pour choisir le tier */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <Select value={selectedProTier} onValueChange={setSelectedProTier}>
-                    <SelectTrigger className="w-full bg-background z-50">
+                    <SelectTrigger className="w-full bg-background z-50 text-xs sm:text-sm">
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
+                    <SelectContent className="bg-background z-50 text-xs sm:text-sm">
                       {proPlans
                         .sort((a, b) => {
                           const priceA = billingCycle === 'yearly' ? a.price_yearly : a.price_monthly;
@@ -722,10 +724,10 @@ export default function Onboarding() {
                   </Select>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center mb-2">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                    <div className="flex items-baseline gap-1.5 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
                           billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -733,48 +735,48 @@ export default function Onboarding() {
                           language
                         )}
                       </span>
-                      <span className="text-muted-foreground">{t.onboarding.planFeatures.perMonth}</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
                     {billingCycle === 'yearly' && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
                   <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
+                    <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
+                    <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
+                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
+                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
+                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
                   </div>
                 </div>
 
-                <div className="space-y-2 mb-6 pt-4 border-t border-border">
+                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 pt-3 sm:pt-4 border-t border-border">
                   {Object.entries(selectedPlan.features).map(([key, value]) => (
                     <div key={key} className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-success" />
-                      <span className="text-sm">
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
                         {typeof value === 'boolean' 
                           ? key.replace('_', ' ')
                           : `${key.replace('_', ' ')}: ${value}`}
@@ -787,14 +789,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedProTier)}
                   disabled={loading}
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
                 >
                   {loading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
-                      <Shield className="w-5 h-5 mr-2" />
-                      {selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                      <span className="truncate">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
                     </>
                   )}
                 </Button>
@@ -818,29 +820,29 @@ export default function Onboarding() {
             return (
               <Card
                 key="enterprise-group"
-                className="p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
+                className="p-4 sm:p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-glow border-2 border-border"
               >
                 {isBestValue && (
-                  <Badge className="mb-4 bg-green-500">
+                  <Badge className="mb-3 sm:mb-4 bg-green-500 text-xs">
                     <Zap className="w-3 h-3 mr-1" />
                     {t.onboarding.planFeatures.bestValue}
                   </Badge>
                 )}
 
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${getPlanColor('enterprise')} flex items-center justify-center mb-4 shadow-glow`}>
-                  <Icon className="w-7 h-7 text-white" />
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${getPlanColor('enterprise')} flex items-center justify-center mb-3 sm:mb-4 shadow-glow`}>
+                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
 
-                <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
-                <p className="text-muted-foreground mb-4">{t.onboarding.planFeatures.forEnterprise}</p>
+                <h3 className="text-xl sm:text-2xl font-bold mb-2">Enterprise</h3>
+                <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">{t.onboarding.planFeatures.forEnterprise}</p>
 
                 {/* Dropdown pour choisir le tier */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <Select value={selectedEnterpriseTier} onValueChange={setSelectedEnterpriseTier}>
-                    <SelectTrigger className="w-full bg-background z-50">
+                    <SelectTrigger className="w-full bg-background z-50 text-xs sm:text-sm">
                       <SelectValue placeholder={t.onboarding.planFeatures.chooseTier} />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
+                    <SelectContent className="bg-background z-50 text-xs sm:text-sm">
                       {enterprisePlans
                         .sort((a, b) => {
                           const priceA = billingCycle === 'yearly' ? a.price_yearly : a.price_monthly;
@@ -856,10 +858,10 @@ export default function Onboarding() {
                   </Select>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <div className="flex flex-col items-center justify-center mb-2">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                    <div className="flex items-baseline gap-1.5 sm:gap-2">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                         {formatPrice(
                           billingCycle === 'yearly' 
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12 
@@ -867,48 +869,48 @@ export default function Onboarding() {
                           language
                         )}
                       </span>
-                      <span className="text-muted-foreground">{t.onboarding.planFeatures.perMonth}</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
                     {billingCycle === 'yearly' && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">
                         {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)} {language === 'fr' ? 'facturé annuellement' : 'billed annually'}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
                   <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
+                    <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_products)} {t.onboarding.planFeatures.products}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
+                    <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatStoreLimit(selectedPlan.max_shopify_stores || 1)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_optimizations_monthly)} {t.onboarding.planFeatures.optimizations}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
+                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_articles_monthly)} {t.onboarding.planFeatures.articles}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
+                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_campaigns)} {t.onboarding.planFeatures.campaigns}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
+                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">{formatLimit(selectedPlan.max_chat_responses_monthly)} {t.onboarding.planFeatures.chatResponses}</span>
                   </div>
                 </div>
 
-                <div className="space-y-2 mb-6 pt-4 border-t border-border">
+                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 pt-3 sm:pt-4 border-t border-border">
                   {Object.entries(selectedPlan.features).map(([key, value]) => (
                     <div key={key} className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-success" />
-                      <span className="text-sm">
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
                         {typeof value === 'boolean' 
                           ? key.replace('_', ' ')
                           : `${key.replace('_', ' ')}: ${value}`}
@@ -921,14 +923,14 @@ export default function Onboarding() {
                   size="lg"
                   onClick={() => handleSelectPlan(selectedEnterpriseTier)}
                   disabled={loading}
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
                 >
                   {loading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                   ) : (
                     <>
-                      <Shield className="w-5 h-5 mr-2" />
-                      {selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                      <span className="truncate">{selectedPlan.trial_days > 0 ? t.onboarding.trial.startTrial : t.onboarding.planFeatures.subscribe}</span>
                     </>
                   )}
                 </Button>
