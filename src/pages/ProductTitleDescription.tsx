@@ -1840,6 +1840,21 @@ export default function ProductTitleDescription() {
                 console.log('Generated HTML:', html.substring(0, 100));
                 // Rafraîchir la liste des produits pour afficher la nouvelle landing page
                 await fetchProducts();
+                
+                // Mettre à jour previewProduct avec les données fraîches
+                const { data: updatedProduct } = await supabase
+                  .from("shopify_products")
+                  .select("*")
+                  .eq("id", selectedLandingProduct.id)
+                  .single();
+                
+                if (updatedProduct) {
+                  // Fermer le dialog de génération et ouvrir le preview
+                  setShowLandingDialog(false);
+                  setPreviewProduct(updatedProduct);
+                  setShowPreviewDialog(true);
+                }
+                
                 // Rafraîchir les limites d'utilisation
                 await refreshLimits();
               }}
