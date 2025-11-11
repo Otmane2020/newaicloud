@@ -156,7 +156,17 @@ export default function Onboarding() {
       }
       
       // Otherwise, verify with Stripe
-      const { data: subData } = await supabase.functions.invoke('check-subscription');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.log('⚠️ No valid session, skipping Stripe check');
+        return;
+      }
+      
+      const { data: subData } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       
       if (subData?.subscribed) {
         console.log('✅ Active subscription found in Stripe, redirecting to dashboard');
@@ -235,8 +245,20 @@ export default function Onboarding() {
     try {
       console.log('🔍 Checking subscription status...');
       
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.log('⚠️ No valid session for subscription check');
+        toast.error('Session expired. Please log in again.');
+        return;
+      }
+      
       // First try check-subscription
-      const { data, error } = await supabase.functions.invoke('check-subscription');
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       
       if (error) {
         console.error('❌ Error checking subscription:', error);
