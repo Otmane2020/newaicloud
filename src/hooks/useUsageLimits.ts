@@ -53,20 +53,20 @@ export const useUsageLimits = () => {
     try {
       setLoading(true);
       
-      // Get current session with token
-      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
-      
-      if (sessionError || !session?.access_token) {
-        console.log('[useUsageLimits] No valid session or token, skipping limits check');
-        setLoading(false);
-        return;
-      }
-      
-      // Verify user is authenticated
+      // CRITICAL: First verify user is authenticated
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
         console.log('[useUsageLimits] User not authenticated, skipping limits check');
+        setLoading(false);
+        return;
+      }
+      
+      // Get current session with token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.access_token) {
+        console.log('[useUsageLimits] No valid session or token, skipping limits check');
         setLoading(false);
         return;
       }

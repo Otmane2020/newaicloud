@@ -61,12 +61,17 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
-      const headers = session?.access_token ? {
-        Authorization: `Bearer ${session.access_token}`
-      } : {};
+      
+      if (!session?.access_token) {
+        console.log('⚠️ No valid session, skipping Stripe check');
+        setLoading(false);
+        return;
+      }
       
       const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription', {
-        headers
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
       
       if (stripeError) {
