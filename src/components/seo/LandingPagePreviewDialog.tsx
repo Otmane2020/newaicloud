@@ -58,11 +58,20 @@ export function LandingPagePreviewDialog({
         .eq("product_id", productId)
         .order("version_number", { ascending: false });
 
+      console.log("📜 Landing page history query result:", {
+        productId,
+        success: !error,
+        count: data?.length || 0,
+        error: error?.message,
+        errorCode: error?.code,
+        firstVersionUserId: data?.[0]?.user_id
+      });
+
       if (error) {
-        console.error("Error loading history:", error);
+        console.error("❌ Error loading history:", error);
         // Si erreur d'auth, retourner tableau vide au lieu de throw
         if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
-          console.log("Authentication error, returning empty array");
+          console.log("⚠️ Authentication error, returning empty array");
           return [];
         }
         throw error;

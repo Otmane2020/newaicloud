@@ -302,6 +302,12 @@ serve(async (req) => {
       }
     }
 
+    console.log("🔐 User authentication:", {
+      hasAuthHeader: !!authHeader,
+      userId: userId,
+      willAttemptSave: !!(userId && product_id)
+    });
+
     const body = await req.json();
     const {
       product_id,
@@ -789,30 +795,55 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
         console.log("✅ shopify_products.landing_page updated");
       }
 
-      // 💾 NOUVEAU : Sauvegarder dans landing_page_history
+      // 💾 NOUVEAU : Sauvegarder dans landing_page_history avec fallback seller_id
       console.log("💾 Saving to landing_page_history...");
       
-      // Marquer toutes les anciennes versions comme non-current
-      await supabaseAdmin
-        .from("landing_page_history")
-        .update({ is_current: false })
-        .eq("product_id", product_id);
+      // Fallback: use seller_id if userId is null
+      let effectiveUserId = userId;
+      if (!effectiveUserId) {
+        console.log("⚠️ No userId from auth, attempting to use seller_id from product...");
+        const { data: productData } = await supabaseAdmin
+          .from("shopify_products")
+          .select("seller_id")
+          .eq("id", product_id)
+          .single();
+        
+        if (productData?.seller_id) {
+          effectiveUserId = productData.seller_id;
+          console.log("✅ Using seller_id as fallback:", effectiveUserId);
+        }
+      }
 
-      // Insérer la nouvelle version
-      const { error: historyError } = await supabaseAdmin
-        .from("landing_page_history")
-        .insert({
-          product_id: product_id,
-          user_id: userId,
-          version_number: newVersion,
-          landing_page_html: html,
-          is_current: true,
-        });
+      let versionSaved = false;
+      let savedVersionNumber = null;
 
-      if (historyError) {
-        console.error("❌ Error saving to history:", historyError);
+      if (effectiveUserId) {
+        // Marquer toutes les anciennes versions comme non-current
+        await supabaseAdmin
+          .from("landing_page_history")
+          .update({ is_current: false })
+          .eq("product_id", product_id);
+
+        // Insérer la nouvelle version
+        const { error: historyError } = await supabaseAdmin
+          .from("landing_page_history")
+          .insert({
+            product_id: product_id,
+            user_id: effectiveUserId,
+            version_number: newVersion,
+            landing_page_html: html,
+            is_current: true,
+          });
+
+        if (historyError) {
+          console.error("❌ Error saving to history:", historyError);
+        } else {
+          console.log(`✅ Version ${newVersion} saved to landing_page_history`);
+          versionSaved = true;
+          savedVersionNumber = newVersion;
+        }
       } else {
-        console.log(`✅ Version ${newVersion} saved to landing_page_history`);
+        console.log("⚠️ Skipping history save: no effectiveUserId available");
       }
     } else {
       console.log("⚠️ Skipping save: userId or product_id not available");
@@ -823,6 +854,8 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
       JSON.stringify({
         html,
         enrichment_status: enrichmentStatus,
+        version_saved: versionSaved,
+        version_number: savedVersionNumber,
         attributes_count: attributesCount,
       }),
       {
