@@ -1335,7 +1335,7 @@ export default function ProductTitleDescription() {
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
                               onClick={() => {
                                 if (hasRichHtmlDescription(product) || product.seo_title || product.seo_description) {
                                   setOptimizedProducts([product]);
@@ -1344,12 +1344,9 @@ export default function ProductTitleDescription() {
                                   toast.error(t.contentOptimization.toasts.notOptimizedYet);
                                 }
                               }}
-                              className="h-8 gap-2"
+                              className="h-8 w-8"
                             >
                               <Eye className="h-4 w-4" />
-                              {hasRichHtmlDescription(product) && (
-                                <span className="text-xs">generated landing page</span>
-                              )}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
