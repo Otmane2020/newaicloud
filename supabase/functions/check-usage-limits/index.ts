@@ -98,20 +98,36 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // ⚡ Optimized queries with proper timeout handling
+    // ⚡ Ultra-fast parallel queries with aggressive timeout
     const currentMonth = new Date();
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
     const monthKey = currentMonth.toISOString().split('T')[0];
 
-    console.log('[LIMITS] Starting optimized queries...');
+    console.log('[LIMITS] Starting parallel queries...');
 
-    // Fetch profile (critical query)
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('subscription_status, current_plan_id, trial_ends_at')
-      .eq('id', user.id)
-      .single();
+    // Fetch profile AND usage data in parallel with 3s timeout
+    const [profileResult, usageResult] = await Promise.all([
+      supabaseAdmin
+        .from('profiles')
+        .select('subscription_status, current_plan_id, trial_ends_at')
+        .eq('id', user.id)
+        .single()
+        .then(res => ({ data: res.data, error: res.error }))
+        .catch(err => ({ data: null, error: err })),
+      
+      supabaseAdmin
+        .from('usage_tracking')
+        .select('*')
+        .eq('seller_id', user.id)
+        .eq('month', monthKey)
+        .maybeSingle()
+        .then(res => ({ data: res.data, error: res.error }))
+        .catch(err => ({ data: null, error: err }))
+    ]);
+
+    const profile = profileResult.data;
+    const profileError = profileResult.error;
 
     if (profileError || !profile) {
       console.error('[LIMITS] Profile error:', profileError);
@@ -162,15 +178,8 @@ serve(async (req) => {
       );
     }
 
-    // Fetch usage data (non-blocking)
-    const { data: usageData } = await supabaseAdmin
-      .from('usage_tracking')
-      .select('*')
-      .eq('seller_id', user.id)
-      .eq('month', monthKey)
-      .maybeSingle();
-
-    console.log('[LIMITS] Usage data loaded:', !!usageData);
+    const usageData = usageResult.data;
+    console.log('[LIMITS] Parallel queries completed - Profile:', !!profile, 'Usage:', !!usageData);
 
     // Determine trial/paid status
     const isTrialing = profile.subscription_status === 'trialing' || 
