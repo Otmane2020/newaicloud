@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { useStore } from "@/contexts/StoreContext";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import {
   Sparkles,
@@ -125,6 +126,7 @@ interface PreviewImage {
 export default function ProductTitleDescription() {
   const { t } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
+  const { selectedStore } = useStore();
   // Removed local background removal hook - using edge function instead
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -1331,10 +1333,15 @@ export default function ProductTitleDescription() {
                             const { data: { user } } = await supabase.auth.getUser();
                             if (!user) throw new Error("Non authentifié");
 
+                            if (!selectedStore) {
+                              toast.error("Aucun store sélectionné", { id: toastId });
+                              return;
+                            }
+
                             const { data: connection } = await supabase
                               .from('shopify_connections')
                               .select('store_url, access_token')
-                              .eq('user_id', user.id)
+                              .eq('id', selectedStore.id)
                               .single();
 
                             if (!connection) throw new Error("Connexion Shopify introuvable");
