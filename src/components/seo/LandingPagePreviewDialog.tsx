@@ -185,8 +185,8 @@ export function LandingPagePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${responsiveDialogClasses.xxlarge} max-h-[90vh]`}>
-        <DialogHeader>
+      <DialogContent className={`${responsiveDialogClasses.xxlarge} max-h-[90vh] p-0`}>
+        <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -219,10 +219,108 @@ export function LandingPagePreviewDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 h-[calc(90vh-200px)]">
-          {/* Preview Panel */}
-          <div className="border rounded-lg overflow-hidden flex-1 min-h-[400px]">
-            <div className="bg-muted/50 p-2 border-b flex items-center justify-between">
+        <div className="flex h-[calc(90vh-200px)]">
+          {/* Left Sidebar - Version History */}
+          <div className="w-80 border-r bg-muted/20 overflow-hidden flex flex-col">
+            <div className="p-4 border-b bg-background">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Historique des versions
+              </h3>
+            </div>
+            <ScrollArea className="flex-1">
+              <div className="p-4">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : historyError ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="text-sm">Impossible de charger l'historique</p>
+                    <p className="text-xs mt-2">
+                      {currentLandingPage ? "Vous voyez la version actuelle" : "Aucune landing page disponible"}
+                    </p>
+                  </div>
+                ) : versions && versions.length > 0 ? (
+                  <div className="space-y-2">
+                    {versions.map((version) => (
+                      <div
+                        key={version.id}
+                        className={`p-3 border rounded-lg cursor-pointer transition-all hover:shadow-sm ${
+                          selectedVersion?.id === version.id 
+                            ? "bg-primary/10 border-primary shadow-sm" 
+                            : "bg-background hover:bg-muted/50"
+                        }`}
+                        onClick={() => setSelectedVersion(version)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge variant={version.is_current ? "default" : "outline"} className="text-xs">
+                            Version {version.version_number}
+                          </Badge>
+                          {version.is_current && (
+                            <Badge variant="secondary" className="text-xs">
+                              Actuelle
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {format(new Date(version.created_at), "dd MMM yyyy", { locale: fr })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(version.created_at), "HH:mm", { locale: fr })}
+                        </p>
+                        <div className="flex gap-1 mt-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs flex-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(version.landing_page_html, version.version_number);
+                            }}
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            Télécharger
+                          </Button>
+                          {!version.is_current && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                restoreMutation.mutate(version);
+                              }}
+                              disabled={restoreMutation.isPending}
+                            >
+                              {restoreMutation.isPending ? (
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              ) : (
+                                <RotateCcw className="h-3 w-3 mr-1" />
+                              )}
+                              Appliquer
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Clock className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                    <p className="text-sm font-medium">Aucune version sauvegardée</p>
+                    <p className="text-xs mt-2">
+                      Les versions sont créées automatiquement lors de la génération
+                    </p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Right Panel - Preview */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="bg-muted/50 p-3 border-b flex items-center justify-between">
               <span className="text-sm font-medium">
                 {selectedVersion ? `Version ${selectedVersion.version_number}` : "Aperçu actuel"}
               </span>
@@ -240,105 +338,21 @@ export function LandingPagePreviewDialog({
                 Ouvrir dans un nouvel onglet
               </Button>
             </div>
-            <div className="h-[400px] overflow-auto">
+            <div className="flex-1 overflow-auto bg-white">
               {previewHtml ? (
                 <iframe
                   srcDoc={previewHtml}
-                  className="w-full h-full min-h-[400px] border-0"
+                  className="w-full h-full border-0"
                   sandbox="allow-same-origin allow-scripts"
                   title="Landing Page Preview"
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <p>Aucune landing page disponible</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Version History List */}
-          <div className="border rounded-lg p-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Historique des versions
-            </h3>
-            <div className="max-h-[200px] overflow-y-auto pr-2">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : historyError ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">Impossible de charger l'historique</p>
-                  <p className="text-xs mt-2">
-                    {currentLandingPage ? "Vous voyez la version actuelle" : "Aucune landing page disponible"}
-                  </p>
-                </div>
-              ) : versions && versions.length > 0 ? (
-                <div className="space-y-2">
-                  {versions.map((version) => (
-                    <div
-                      key={version.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
-                        selectedVersion?.id === version.id ? "bg-muted border-primary" : ""
-                      }`}
-                      onClick={() => setSelectedVersion(version)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge variant={version.is_current ? "default" : "outline"}>
-                          Version {version.version_number}
-                        </Badge>
-                        {version.is_current && (
-                          <Badge variant="secondary" className="text-xs">
-                            Actuelle
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(version.created_at), "dd MMM yyyy 'à' HH:mm", { locale: fr })}
-                      </p>
-                      <div className="flex gap-1 mt-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownload(version.landing_page_html, version.version_number);
-                          }}
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          Télécharger
-                        </Button>
-                        {!version.is_current && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              restoreMutation.mutate(version);
-                            }}
-                            disabled={restoreMutation.isPending}
-                          >
-                            {restoreMutation.isPending ? (
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            ) : (
-                              <RotateCcw className="h-3 w-3 mr-1" />
-                            )}
-                            Appliquer cette version
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">Aucune version sauvegardée</p>
-                  <p className="text-xs mt-2">
-                    Les versions sont créées automatiquement lors de la génération
-                  </p>
+                  <div className="text-center">
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <p className="font-medium">Aucune landing page disponible</p>
+                    <p className="text-sm mt-2">Générez une landing page pour voir l'aperçu</p>
+                  </div>
                 </div>
               )}
             </div>

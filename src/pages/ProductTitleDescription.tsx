@@ -24,6 +24,9 @@ import {
   AlertCircle,
   Upload,
   CheckCircle,
+  Trash2,
+  Power,
+  PowerOff,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -77,6 +80,7 @@ interface Product {
   shopify_id: number | null;
   vendor: string | null;
   handle: string | null;
+  status: string | null;
 }
 
 interface ProductImage {
@@ -160,6 +164,10 @@ export default function ProductTitleDescription() {
   const [selectedGalleryImages, setSelectedGalleryImages] = useState<Map<string, string>>(new Map());
   const [selectedImageFormat, setSelectedImageFormat] = useState<string>('square');
   const [selectedSimilarity, setSelectedSimilarity] = useState<string>('medium');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'optimized' | 'notOptimized' | 'toSync'>('all');
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -183,7 +191,7 @@ export default function ProductTitleDescription() {
 
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle")
+        .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status")
         .eq("seller_id", user.id)
         .order("imported_at", { ascending: false });
 
@@ -197,10 +205,18 @@ export default function ProductTitleDescription() {
     }
   };
 
-  const filteredProducts = products.filter((product) =>
-    product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.vendor?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.vendor?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    if (statusFilter === 'optimized') return hasRichHtmlDescription(product);
+    if (statusFilter === 'notOptimized') return !hasRichHtmlDescription(product);
+    if (statusFilter === 'toSync') return hasRichHtmlDescription(product);
+    
+    return true;
+  });
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
@@ -211,7 +227,12 @@ export default function ProductTitleDescription() {
 
   // Scroll to top when page changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollContainer = document.querySelector('.scroll-area-viewport');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [currentPage]);
 
   const handleSelectAll = () => {
@@ -322,7 +343,7 @@ export default function ProductTitleDescription() {
         // Update local state - Fetch fresh data from DB
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
-          .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle")
+          .select("id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status")
           .eq("id", productId)
           .single();
 
@@ -1047,8 +1068,11 @@ export default function ProductTitleDescription() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card 
+            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${statusFilter === 'optimized' ? 'border-primary bg-primary/5' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'optimized' ? 'all' : 'optimized')}
+          >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
                 <Sparkles className="h-5 w-5 text-green-600" />
@@ -1062,7 +1086,10 @@ export default function ProductTitleDescription() {
             </div>
           </Card>
 
-          <Card className="p-4">
+          <Card 
+            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${statusFilter === 'notOptimized' ? 'border-primary bg-primary/5' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'notOptimized' ? 'all' : 'notOptimized')}
+          >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-500/10 rounded-lg">
                 <AlertCircle className="h-5 w-5 text-orange-600" />
@@ -1076,7 +1103,10 @@ export default function ProductTitleDescription() {
             </div>
           </Card>
 
-          <Card className="p-4">
+          <Card 
+            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${statusFilter === 'toSync' ? 'border-primary bg-primary/5' : ''}`}
+            onClick={() => setStatusFilter(statusFilter === 'toSync' ? 'all' : 'toSync')}
+          >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Upload className="h-5 w-5 text-blue-600" />
@@ -1086,18 +1116,6 @@ export default function ProductTitleDescription() {
                 <p className="text-2xl font-bold">
                   {products.filter((p) => hasRichHtmlDescription(p)).length}
                 </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/10 rounded-lg">
-                <CheckCircle className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.synchronized}</p>
-                <p className="text-2xl font-bold">0</p>
               </div>
             </div>
           </Card>
@@ -1185,18 +1203,19 @@ export default function ProductTitleDescription() {
         </Card>
 
         {/* Info Alert */}
-        <Alert>
+        <Alert className="bg-gradient-to-r from-primary/5 to-background border-primary/20">
           <ImageIcon className="h-4 w-4" />
           <AlertDescription>
-            <strong>{t.contentOptimization.buttons.whiteBg} :</strong> {t.contentOptimization.alerts.whiteBg}
-            {" "}<strong>{t.contentOptimization.buttons.aiBg} :</strong> {t.contentOptimization.alerts.aiBg}
+            <strong>White background :</strong> Supprime automatiquement l'arrière-plan et ajoute un fond blanc professionnel.
+            {" "}<strong>AI Background :</strong> Génère un nouvel arrière-plan personnalisé avec l'intelligence artificielle.
           </AlertDescription>
         </Alert>
 
         {/* Products Table */}
         <Card className="overflow-hidden">
-          <ScrollArea className="h-[600px]">
-            <Table>
+          <ScrollArea className="h-[600px] scroll-area-viewport">
+            <TooltipProvider>
+              <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
                   <TableHead className="w-12">
@@ -1210,7 +1229,8 @@ export default function ProductTitleDescription() {
                   <TableHead>{t.contentOptimization.table.headers.title}</TableHead>
                   <TableHead className="hidden lg:table-cell">{t.contentOptimization.table.headers.description}</TableHead>
                   <TableHead className="w-32">{t.contentOptimization.table.headers.status}</TableHead>
-                  <TableHead className="w-40">{t.contentOptimization.table.headers.actions}</TableHead>
+                  <TableHead className="w-24">État</TableHead>
+                  <TableHead className="w-48">{t.contentOptimization.table.headers.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1294,6 +1314,75 @@ export default function ProductTitleDescription() {
                       )}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!product.shopify_id) {
+                            toast.error("Ce produit n'est pas synchronisé avec Shopify");
+                            return;
+                          }
+                          
+                          const newStatus = product.status === 'active' ? 'draft' : 'active';
+                          const toastId = toast.loading("Mise à jour du statut...");
+                          
+                          try {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) throw new Error("Non authentifié");
+
+                            const { data: connection } = await supabase
+                              .from('shopify_connections')
+                              .select('store_url, access_token')
+                              .eq('user_id', user.id)
+                              .single();
+
+                            if (!connection) throw new Error("Connexion Shopify introuvable");
+
+                            const response = await fetch(`https://${connection.store_url}/admin/api/2024-01/products/${product.shopify_id}.json`, {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'X-Shopify-Access-Token': connection.access_token,
+                              },
+                              body: JSON.stringify({
+                                product: { status: newStatus }
+                              })
+                            });
+
+                            if (!response.ok) throw new Error("Erreur lors de la mise à jour Shopify");
+
+                            await supabase
+                              .from('shopify_products')
+                              .update({ status: newStatus })
+                              .eq('id', product.id);
+
+                            setProducts(prev => prev.map(p => 
+                              p.id === product.id ? { ...p, status: newStatus } : p
+                            ));
+
+                            toast.success(`Produit ${newStatus === 'active' ? 'publié' : 'en brouillon'}`, { id: toastId });
+                          } catch (error) {
+                            console.error("Error updating status:", error);
+                            toast.error("Erreur lors de la mise à jour", { id: toastId });
+                          }
+                        }}
+                        className={`gap-2 ${product.status === 'active' ? 'text-green-600' : 'text-muted-foreground'}`}
+                      >
+                        {product.status === 'active' ? (
+                          <>
+                            <Power className="h-4 w-4" />
+                            <span className="hidden xl:inline">Actif</span>
+                          </>
+                        ) : (
+                          <>
+                            <PowerOff className="h-4 w-4" />
+                            <span className="hidden xl:inline">Brouillon</span>
+                          </>
+                        )}
+                      </Button>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1363,7 +1452,8 @@ export default function ProductTitleDescription() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 // Vérifier les limites AVANT d'ouvrir le dialog
                                 if (!canDoAction('optimizations')) {
                                   toast.error(t.contentOptimization.toasts.limitReached);
@@ -1375,7 +1465,7 @@ export default function ProductTitleDescription() {
                               }}
                               className="hover:bg-primary/10"
                             >
-                              <FileText className="h-4 w-4 text-primary" />
+                              <Sparkles className="h-4 w-4 text-primary" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -1389,7 +1479,8 @@ export default function ProductTitleDescription() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={async () => {
+                                onClick={async (e) => {
+                                  e.stopPropagation();
                                   const toastId = toast.loading(t.contentOptimization.buttons.synchronizing);
                                   try {
                                     const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
@@ -1417,12 +1508,38 @@ export default function ProductTitleDescription() {
                             </TooltipContent>
                           </Tooltip>
                         )}
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProductToDelete(product);
+                                setShowDeleteDialog(true);
+                              }}
+                              disabled={deletingProductId === product.id}
+                              className="hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              {deletingProductId === product.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Supprimer le produit</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </TooltipProvider>
 
             {filteredProducts.length === 0 && (
               <div className="p-8 text-center text-muted-foreground">
@@ -1779,6 +1896,108 @@ export default function ProductTitleDescription() {
         productHandle={previewProduct?.handle || ""}
         currentLandingPage={previewProduct?.landing_page || previewProduct?.description || ""}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Supprimer le produit
+            </DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer ce produit ?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="font-semibold text-sm">{productToDelete?.title}</p>
+              {productToDelete?.vendor && (
+                <p className="text-xs text-muted-foreground mt-1">{productToDelete.vendor}</p>
+              )}
+            </div>
+            <Alert className="border-destructive/50 bg-destructive/10">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <AlertDescription className="text-destructive">
+                <strong>Attention :</strong> Cette action supprimera immédiatement le produit de Shopify et ne peut pas être annulée.
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setProductToDelete(null);
+              }}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!productToDelete) return;
+                
+                setDeletingProductId(productToDelete.id);
+                const toastId = toast.loading("Suppression du produit...");
+                
+                try {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) throw new Error("Non authentifié");
+
+                  const { data: connection } = await supabase
+                    .from('shopify_connections')
+                    .select('store_url, access_token')
+                    .eq('user_id', user.id)
+                    .single();
+
+                  if (!connection) throw new Error("Connexion Shopify introuvable");
+
+                  if (productToDelete.shopify_id) {
+                    const response = await fetch(`https://${connection.store_url}/admin/api/2024-01/products/${productToDelete.shopify_id}.json`, {
+                      method: 'DELETE',
+                      headers: {
+                        'X-Shopify-Access-Token': connection.access_token,
+                      }
+                    });
+
+                    if (!response.ok) throw new Error("Erreur lors de la suppression Shopify");
+                  }
+
+                  await supabase
+                    .from('shopify_products')
+                    .delete()
+                    .eq('id', productToDelete.id);
+
+                  setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
+                  toast.success("Produit supprimé avec succès", { id: toastId });
+                  setShowDeleteDialog(false);
+                  setProductToDelete(null);
+                } catch (error) {
+                  console.error("Error deleting product:", error);
+                  toast.error("Erreur lors de la suppression", { id: toastId });
+                } finally {
+                  setDeletingProductId(null);
+                }
+              }}
+              disabled={deletingProductId === productToDelete?.id}
+              className="gap-2"
+            >
+              {deletingProductId === productToDelete?.id ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer définitivement
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

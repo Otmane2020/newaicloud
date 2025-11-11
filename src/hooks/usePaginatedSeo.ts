@@ -22,7 +22,12 @@ export function usePaginatedSeo<T>({ items, itemsPerPage = 50, cacheKey }: UsePa
 
   // Scroll to top when page changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollContainer = document.querySelector('.scroll-area-viewport');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [currentPage]);
 
   // Cache the current page data
