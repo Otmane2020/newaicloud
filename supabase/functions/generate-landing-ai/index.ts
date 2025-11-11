@@ -572,6 +572,109 @@ serve(async (req) => {
     // Build product URLs
     const productUrl = shopDomain && productHandle ? `https://${shopDomain}/products/${productHandle}` : "#";
 
+    // Design style templates
+    const styleTemplates = {
+      minimalist: {
+        name: "Minimaliste",
+        description: "Lignes épurées, espaces blancs généreux, typographie claire",
+        rules: `
+🎨 STYLE MINIMALISTE (CRITIQUE) :
+- Palette : Noir/Blanc/Gris avec un accent de couleur unique
+- Typographie : Grandes tailles, police sans-serif, espacement généreux
+- Espaces : Padding/margin généreux (py-16, py-20, space-y-12)
+- Ombres : Minimales ou absentes (shadow-sm uniquement)
+- Bordures : Fines et discrètes (border border-gray-200)
+- Images : Pleine largeur, sans effets
+- Icônes : Traits fins (stroke-width="1.5"), monochromes
+- Layout : Maximum 2 colonnes sur desktop, beaucoup d'espace vertical
+- Animations : Aucune ou très subtiles
+`,
+      },
+      
+      modern: {
+        name: "Moderne",
+        description: "Dégradés, ombres douces, micro-animations, design équilibré",
+        rules: `
+🎨 STYLE MODERNE (CRITIQUE) :
+- Palette : Couleurs vives avec dégradés subtils
+- Typographie : Mix de weights (300-800), hiérarchie claire
+- Espaces : Équilibrés (py-12 md:py-16)
+- Ombres : Progressives (shadow-md, shadow-lg, shadow-xl)
+- Bordures : Arrondies (rounded-xl, rounded-2xl)
+- Images : Coins arrondis, ombres portées
+- Icônes : Dégradés, ombres colorées, épaisseur moyenne (stroke-width="2")
+- Layout : Grilles 3 colonnes, asymétrie contrôlée
+- Animations : Hover effects, transitions smooth (transition-all duration-300)
+`,
+      },
+      
+      premium: {
+        name: "Premium",
+        description: "Luxe, sophistication, détails raffinés, effets visuels riches",
+        rules: `
+🎨 STYLE PREMIUM (CRITIQUE) :
+- Palette : Sombres sophistiqués (noirs, gris foncés) avec accents or/argent
+- Typographie : Serif pour titres, letterspacing large, sizes XXL
+- Espaces : Très généreux (py-20 md:py-32, space-y-16)
+- Ombres : Multiples, profondes (shadow-2xl, drop-shadow-2xl)
+- Bordures : Très arrondies (rounded-3xl) ou angles vifs selon contexte
+- Images : Effets de profondeur, overlays subtils, cadres élégants
+- Icônes : Dégradés complexes, effets de brillance, animations subtiles
+- Layout : Asymétrique créatif, overlaps élégants, z-index layers
+- Animations : Subtiles mais présentes (parallax hints, fade-ins)
+- Textures : Patterns subtils en background
+`,
+      },
+    };
+
+    // Icon templates by style
+    const iconTemplates = {
+      minimalist: `
+  <svg class="w-6 h-6" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"></path>
+  </svg>`,
+      
+      modern: `
+  <svg class="w-8 h-8" viewBox="0 0 32 32">
+    <defs>
+      <linearGradient id="modernGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+        <stop offset="100%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <circle cx="16" cy="16" r="14" fill="url(#modernGrad)" opacity="0.15"/>
+    <path d="M10 16 L14 20 L22 12" stroke="url(#modernGrad)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+      
+      premium: `
+  <svg class="w-12 h-12" viewBox="0 0 48 48">
+    <defs>
+      <linearGradient id="premiumGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:hsl(${designTokens.primary});stop-opacity:1" />
+        <stop offset="50%" style="stop-color:hsl(${designTokens.accent});stop-opacity:1" />
+        <stop offset="100%" style="stop-color:hsl(${designTokens.primary});stop-opacity:0.7" />
+      </linearGradient>
+      <filter id="premiumGlow">
+        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+        <feMerge>
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    <circle cx="24" cy="24" r="20" fill="url(#premiumGrad)" opacity="0.2" filter="url(#premiumGlow)"/>
+    <circle cx="24" cy="24" r="18" stroke="url(#premiumGrad)" stroke-width="1" fill="none" opacity="0.3"/>
+    <path d="M15 24 L21 30 L33 18" stroke="url(#premiumGrad)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#premiumGlow)"/>
+  </svg>`,
+    };
+
+    // Select design style (default to modern if not provided)
+    const selectedDesignStyle = (designStyle || 'modern') as 'minimalist' | 'modern' | 'premium';
+    const selectedStyle = styleTemplates[selectedDesignStyle];
+    const selectedIcon = iconTemplates[selectedDesignStyle];
+
+    console.log(`[Landing AI] Design style: ${selectedStyle.name}`);
+
     const prompt =
       detectedLanguage === "en"
         ? `You are a Shopify UX/UI expert specialized in product landing pages.
@@ -607,6 +710,18 @@ COLOR PALETTE (HSL FORMAT ONLY):
    - Hero: <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
    - Section: <section style="background-color: hsl(${designTokens.surface})">
    - CTA button: <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+
+🎨 DESIGN MODEL: ${selectedStyle.name}
+${selectedStyle.description}
+${selectedStyle.rules}
+
+🚨 CRITICAL RESPONSIVE RULES (MANDATORY):
+- NEVER duplicate responsive classes (❌ class="md:text-xl md:text-2xl")
+- Use one breakpoint per property (✅ class="text-lg md:text-2xl")
+
+🎯 ICON TEMPLATE TO USE FOR LIST ITEMS:
+${selectedIcon}
+Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégradés si multiple icônes (iconGrad1, iconGrad2, etc.)
 
 DESIGN & TONE (CRITICAL):
 ✅ PROFESSIONAL STYLE REQUIRED:
@@ -720,6 +835,18 @@ PALETTE DE COULEURS (FORMAT HSL UNIQUEMENT) :
    - Hero : <div style="background-color: hsl(${designTokens.primary}); color: hsl(${designTokens.ctaText})">
    - Section : <section style="background-color: hsl(${designTokens.surface})">
    - Bouton CTA : <button style="background-color: hsl(${designTokens.accent}); color: hsl(${designTokens.ctaText})">
+
+🎨 MODÈLE DE DESIGN : ${selectedStyle.name}
+${selectedStyle.description}
+${selectedStyle.rules}
+
+🚨 RÈGLES RESPONSIVES CRITIQUES (OBLIGATOIRE) :
+- JAMAIS dupliquer les classes responsive (❌ class="md:text-xl md:text-2xl")
+- Utiliser un seul breakpoint par propriété (✅ class="text-lg md:text-2xl")
+
+🎯 TEMPLATE D'ICÔNE À UTILISER POUR LES LISTES :
+${selectedIcon}
+Utilise cette structure pour TOUTES les listes à puces. Adapte les ID des dégradés si icônes multiples (iconGrad1, iconGrad2, etc.)
 
 DESIGN & TON (CRITIQUE) :
 ✅ STYLE PROFESSIONNEL REQUIS :

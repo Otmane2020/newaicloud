@@ -2,6 +2,10 @@
  * Validation utilities for landing page HTML generation
  */
 
+export interface ValidationOptions {
+  expectedStyle?: 'minimalist' | 'modern' | 'premium';
+}
+
 export interface ValidationResult {
   isValid: boolean;
   errors: string[];
@@ -9,7 +13,7 @@ export interface ValidationResult {
   successes: string[];
 }
 
-export function validateLandingHTML(html: string): ValidationResult {
+export function validateLandingHTML(html: string, options?: ValidationOptions): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const successes: string[] = [];
@@ -96,6 +100,45 @@ export function validateLandingHTML(html: string): ValidationResult {
     successes.push("Using proper container classes");
   } else {
     warnings.push("Missing standard container classes (max-w-7xl mx-auto)");
+  }
+
+  // 8. Style-specific validation
+  if (options?.expectedStyle === 'minimalist') {
+    // Check for minimal shadows
+    const heavyShadows = html.match(/shadow-(xl|2xl)/g);
+    if (heavyShadows && heavyShadows.length > 2) {
+      warnings.push(`Style minimaliste : trop d'ombres importantes détectées (${heavyShadows.length})`);
+    }
+    
+    // Check for generous spacing
+    if (!html.includes('py-16') && !html.includes('py-20')) {
+      warnings.push('Style minimaliste : espacement vertical insuffisant');
+    }
+  }
+  
+  if (options?.expectedStyle === 'modern') {
+    // Check for gradients
+    if (!html.includes('linearGradient')) {
+      warnings.push('Style moderne : manque de dégradés');
+    }
+    
+    // Check for transitions
+    if (!html.includes('transition')) {
+      warnings.push('Style moderne : manque d\'animations de transition');
+    }
+  }
+  
+  if (options?.expectedStyle === 'premium') {
+    // Check for sophisticated effects
+    if (!html.includes('linearGradient') && !html.includes('filter')) {
+      warnings.push('Style premium : manque d\'effets visuels sophistiqués');
+    }
+    
+    // Check for large typography
+    const largeTitles = html.match(/text-(5xl|6xl|7xl|8xl)/g);
+    if (!largeTitles || largeTitles.length < 2) {
+      warnings.push('Style premium : typographie insuffisamment imposante');
+    }
   }
 
   return {

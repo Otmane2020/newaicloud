@@ -271,6 +271,7 @@ export default function RegenerateLanding({
           imageAnalysis: imageAnalysis,
           contentLengthParams: contentParams,
           language: language,
+          designStyle: config.designStyle || 'modern', // Pass design style
         },
       });
 

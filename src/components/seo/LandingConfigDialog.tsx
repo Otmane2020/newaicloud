@@ -32,6 +32,7 @@ export interface LandingConfig {
   contentLength: string;
   vendorSource: "shopify" | "extract" | "generate";
   customHighlights?: string; // Texte libre pour highlights personnalisés
+  designStyle?: 'minimalist' | 'modern' | 'premium'; // Nouveau: modèle de design
 }
 
 interface LandingConfigDialogProps {
@@ -165,6 +166,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
     contentLength: "moyenne (800 mots)",
     vendorSource: "shopify",
     customHighlights: "",
+    designStyle: "modern", // Default design style
   });
 
   const [selectedPalette, setSelectedPalette] = useState<string | null>("modern");
@@ -372,6 +374,87 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                   )}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Modèle de design (Nouveau) */}
+          <div className="space-y-3 animate-fade-in">
+            <Label className="text-base font-semibold">🎯 Modèle de design</Label>
+            <div className="grid grid-cols-3 gap-4">
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, designStyle: 'minimalist' })}
+                className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
+                  config.designStyle === 'minimalist'
+                    ? 'border-primary bg-primary/5 shadow-md'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 opacity-10 rounded-xl" />
+                <div className="relative space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">⚪</span>
+                    {config.designStyle === 'minimalist' && (
+                      <Check className="w-4 h-4 text-primary animate-scale-in" />
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-base mb-1">Minimaliste</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">Épuré & élégant</div>
+                    <div className="text-xs text-muted-foreground">Lignes épurées, espaces blancs généreux</div>
+                  </div>
+                </div>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, designStyle: 'modern' })}
+                className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
+                  config.designStyle === 'modern'
+                    ? 'border-primary bg-primary/5 shadow-md'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-10 rounded-xl" />
+                <div className="relative space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">✨</span>
+                    {config.designStyle === 'modern' && (
+                      <Check className="w-4 h-4 text-primary animate-scale-in" />
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-base mb-1">Moderne</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">Dynamique & tendance</div>
+                    <div className="text-xs text-muted-foreground">Dégradés, ombres douces, animations</div>
+                  </div>
+                </div>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, designStyle: 'premium' })}
+                className={`relative p-6 border-2 rounded-xl transition-all hover:shadow-lg ${
+                  config.designStyle === 'premium'
+                    ? 'border-primary bg-primary/5 shadow-md'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50 opacity-10 rounded-xl" />
+                <div className="relative space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">👑</span>
+                    {config.designStyle === 'premium' && (
+                      <Check className="w-4 h-4 text-primary animate-scale-in" />
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-base mb-1">Premium</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">Luxueux & sophistiqué</div>
+                    <div className="text-xs text-muted-foreground">Effets visuels riches, typographie imposante</div>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 

@@ -158,6 +158,43 @@ export function validateHTML(html: string): { valid: boolean; issues: string[] }
 }
 
 /**
+ * Remove duplicate responsive classes from HTML
+ * Example: "text-lg md:text-xl md:text-2xl" → "text-lg md:text-2xl"
+ */
+export function removeDuplicateResponsiveClasses(html: string): string {
+  let changesCount = 0;
+  
+  const cleaned = html.replace(/class="([^"]*)"/g, (match, classes) => {
+    const classArray = classes.trim().split(/\s+/);
+    const seen = new Map<string, string>();
+    
+    const deduplicated = classArray.filter(cls => {
+      const responsiveMatch = cls.match(/^(sm|md|lg|xl|2xl):(.+)$/);
+      if (responsiveMatch) {
+        const [, breakpoint, property] = responsiveMatch;
+        const baseProperty = property.split('-')[0];
+        const key = `${breakpoint}:${baseProperty}`;
+        
+        if (seen.has(key)) {
+          changesCount++;
+          return false; // Remove duplicate
+        }
+        seen.set(key, cls);
+      }
+      return true;
+    });
+    
+    return `class="${deduplicated.join(' ')}"`;
+  });
+
+  if (changesCount > 0) {
+    console.log(`[Normalizer] Removed ${changesCount} duplicate responsive class(es)`);
+  }
+
+  return cleaned;
+}
+
+/**
  * Main sanitization function - applies all normalization steps
  */
 export function sanitizeGeneratedHTML(
@@ -169,13 +206,16 @@ export function sanitizeGeneratedHTML(
 
   let html = rawHtml;
 
-  // 1. Clean forbidden CSS
+  // 1. Remove duplicate responsive classes
+  html = removeDuplicateResponsiveClasses(html);
+
+  // 2. Clean forbidden CSS
   html = cleanForbiddenCSS(html);
 
-  // 2. Remove footers
+  // 3. Remove footers
   html = removeFooters(html);
 
-  // 3. Normalize HTML structure
+  // 4. Normalize HTML structure
   html = normalizeHTML(html, productTitle, language);
 
   console.log("[Sanitization] HTML normalized and validated");
