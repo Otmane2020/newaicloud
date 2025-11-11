@@ -98,26 +98,53 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // ⚡ PARALLELIZE: Fetch profile, usage, and product count simultaneously
+    // ⚡ PARALLELIZE with timeout: Fetch profile, usage, and product count simultaneously
     const currentMonth = new Date();
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
     const monthKey = currentMonth.toISOString().split('T')[0];
 
-    const [profileRes, usageRes, productCountRes] = await Promise.all([
-      supabaseAdmin.from('profiles')
-        .select('subscription_status, current_plan_id, trial_ends_at')
-        .eq('id', user.id)
-        .single(),
-      supabaseAdmin.from('usage_tracking')
-        .select('*')
-        .eq('seller_id', user.id)
-        .eq('month', monthKey)
-        .maybeSingle(),
-      supabaseAdmin.from('shopify_products')
-        .select('*', { count: 'exact', head: true })
-        .eq('seller_id', user.id)
-    ]);
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = (ms: number) => new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), ms)
+    );
+
+    let profileRes, usageRes, productCountRes;
+    
+    try {
+      const results = await Promise.race([
+        Promise.all([
+          supabaseAdmin.from('profiles')
+            .select('subscription_status, current_plan_id, trial_ends_at')
+            .eq('id', user.id)
+            .single(),
+          supabaseAdmin.from('usage_tracking')
+            .select('*')
+            .eq('seller_id', user.id)
+            .eq('month', monthKey)
+            .maybeSingle(),
+          supabaseAdmin.from('shopify_products')
+            .select('*', { count: 'exact', head: true })
+            .eq('seller_id', user.id)
+        ]),
+        timeoutPromise(8000) // 8 second timeout
+      ]);
+      
+      [profileRes, usageRes, productCountRes] = results;
+    } catch (timeoutError) {
+      console.error('[LIMITS] Request timeout or network error:', timeoutError);
+      return new Response(
+        JSON.stringify({ 
+          error: lang === 'fr' ? 'Délai dépassé lors de la récupération des données' : 'Timeout fetching data',
+          details: 'Network connection lost or request took too long',
+          code: 'TIMEOUT_ERROR'
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     const profile = profileRes.data;
     if (profileRes.error || !profile) {
