@@ -639,6 +639,20 @@ STRUCTURE:
 - Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
 - Grids: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
 
+📱 RESPONSIVE TABLES (CRITICAL):
+- Desktop (md:): Use standard <table> with class "hidden md:table"
+- Mobile: Use cards with class "block md:hidden space-y-4"
+- Example structure:
+  <!-- Mobile cards -->
+  <div class="block md:hidden space-y-4">
+    <div class="bg-white rounded-lg p-4 shadow">
+      <div class="font-semibold mb-2">Label</div>
+      <div class="text-secondary">Value</div>
+    </div>
+  </div>
+  <!-- Desktop table -->
+  <table class="hidden md:table min-w-full">
+
 🚨 ABSOLUTELY FORBIDDEN (CRITICAL):
 - NO "Add to Cart" buttons or any purchase buttons
 - NO "Buy Now" or "Order Now" buttons
@@ -719,6 +733,20 @@ STRUCTURE :
 - Mobile-first (sm:, md:, lg:)
 - Container : max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
 - Grilles : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+
+📱 TABLEAUX RESPONSIFS (CRITIQUE) :
+- Bureau (md:) : Utiliser <table> standard avec class "hidden md:table"
+- Mobile : Utiliser des cartes avec class "block md:hidden space-y-4"
+- Structure exemple :
+  <!-- Cartes mobile -->
+  <div class="block md:hidden space-y-4">
+    <div class="bg-white rounded-lg p-4 shadow">
+      <div class="font-semibold mb-2">Label</div>
+      <div class="text-secondary">Valeur</div>
+    </div>
+  </div>
+  <!-- Table bureau -->
+  <table class="hidden md:table min-w-full">
 
 🚨 ABSOLUMENT INTERDIT (CRITIQUE) :
 - AUCUN bouton "Ajouter au panier" ou bouton d'achat
