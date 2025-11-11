@@ -257,27 +257,27 @@ export default function Blog() {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  AI Article Generator
+                  {t.blog.hero.createArticle.title}
                 </h2>
               </div>
               <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
-                Let our AI create SEO-optimized articles in minutes. Just choose your topic and keywords, and watch the magic happen.
+                {t.blog.hero.createArticle.description}
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <span className="font-medium">AI-Powered</span>
+                  <span className="font-medium">{t.blog.hero.createArticle.aiPowered}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <FileText className="w-4 h-4 text-pink-600 dark:text-pink-400" />
-                  <span className="font-medium">SEO Optimized</span>
+                  <span className="font-medium">{t.blog.hero.createArticle.seoOptimized}</span>
                 </div>
               </div>
             </div>
             <div className="flex flex-col gap-3">
               <Button size="lg" onClick={() => setShowWizard(true)} className="w-full sm:w-auto">
                 <Sparkles className="w-4 h-4 mr-2" />
-                Start Creating
+                {t.blog.hero.createArticle.startCreating}
               </Button>
             </div>
           </div>
@@ -291,27 +291,27 @@ export default function Blog() {
               <div className="flex items-center gap-2">
                 <CalendarClock className="w-6 h-6 text-violet-600 dark:text-violet-400" />
                 <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                  Automated Content Campaigns
+                  {t.blog.hero.campaigns.title}
                 </h2>
               </div>
               <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
-                Schedule and automate your content creation. Set up campaigns to publish articles regularly and maintain a consistent presence.
+                {t.blog.hero.campaigns.description}
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <CalendarClock className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                  <span className="font-medium">{campaigns.length} Campaigns</span>
+                  <span className="font-medium">{campaigns.length} {t.blog.hero.campaigns.campaignsCount}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <Zap className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-400" />
-                  <span className="font-medium">Automated</span>
+                  <span className="font-medium">{t.blog.hero.campaigns.automated}</span>
                 </div>
               </div>
             </div>
             <div className="flex flex-col gap-3">
               <Button size="lg" onClick={() => setShowCampaignWizard(true)} className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
-                New Campaign
+                {t.blog.hero.campaigns.newCampaign}
               </Button>
             </div>
           </div>
@@ -325,27 +325,27 @@ export default function Blog() {
               <div className="flex items-center gap-2">
                 <Lightbulb className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                 <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
-                  Content Opportunities
+                  {t.blog.hero.opportunities.title}
                 </h2>
               </div>
               <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
-                Discover trending topics and content ideas based on your product catalog. AI analyzes your store to suggest the best articles to write.
+                {t.blog.hero.opportunities.description}
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <Lightbulb className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                  <span className="font-medium">Smart Suggestions</span>
+                  <span className="font-medium">{t.blog.hero.opportunities.smartSuggestions}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <Sparkles className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                  <span className="font-medium">AI-Driven</span>
+                  <span className="font-medium">{t.blog.hero.opportunities.aiDriven}</span>
                 </div>
               </div>
             </div>
             <div className="flex flex-col gap-3">
               <Button size="lg" onClick={() => setActiveSubtab('settings')} variant="outline" className="w-full sm:w-auto">
                 <Settings className="w-4 h-4 mr-2" />
-                Configure
+                {t.blog.hero.opportunities.configure}
               </Button>
             </div>
           </div>
@@ -359,27 +359,27 @@ export default function Blog() {
               <div className="flex items-center gap-2">
                 <Link className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  Internal Linking Strategy
+                  {t.blog.hero.netlinking.title}
                 </h2>
               </div>
               <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
-                Boost your SEO with smart internal linking. Manage product links within articles and create content optimized for link building.
+                {t.blog.hero.netlinking.description}
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <Link className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="font-medium">Link Management</span>
+                  <span className="font-medium">{t.blog.hero.netlinking.linkManagement}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                  <span className="font-medium">SEO Boost</span>
+                  <span className="font-medium">{t.blog.hero.netlinking.seoBoost}</span>
                 </div>
               </div>
             </div>
             <div className="flex flex-col gap-3">
               <Button size="lg" onClick={() => setActiveSubtab('create-article')} className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
-                Create Linking Article
+                {t.blog.hero.netlinking.createLinkingArticle}
               </Button>
             </div>
           </div>
@@ -393,11 +393,11 @@ export default function Blog() {
               <div className="flex items-center gap-2">
                 <Settings className="w-6 h-6 text-slate-600 dark:text-slate-400" />
                 <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-600 to-zinc-600 bg-clip-text text-transparent">
-                  Blog Configuration
+                  {t.blog.hero.settings.title}
                 </h2>
               </div>
               <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl">
-                Configure automatic content opportunity generation, set preferences, and customize how AI creates articles for your store.
+                {t.blog.hero.settings.description}
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-2 text-xs sm:text-sm">

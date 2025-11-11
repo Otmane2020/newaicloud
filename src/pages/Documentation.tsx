@@ -103,10 +103,10 @@ const Documentation = () => {
             <Card className="p-8 bg-gradient-to-br from-primary/5 to-primary/10">
               <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
                 <Play className="w-8 h-8 text-primary" />
-                Démo Complète & Guides Pas-à-Pas
+                {t.docPage.demo.title}
               </h2>
               <p className="text-muted-foreground text-lg mb-8">
-                Découvrez toutes les fonctionnalités de NewAI avec des guides détaillés et des exemples pratiques.
+                {t.docPage.demo.description}
               </p>
             </Card>
 
@@ -117,9 +117,9 @@ const Documentation = () => {
                   <ShoppingBag className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-2">Google Merchant Center</h3>
+                  <h3 className="text-2xl font-bold mb-2">{t.docPage.demo.merchant.title}</h3>
                   <p className="text-muted-foreground">
-                    Créez et gérez automatiquement votre flux XML Google Shopping pour augmenter votre visibilité.
+                    {t.docPage.demo.merchant.subtitle}
                   </p>
                 </div>
               </div>
@@ -240,9 +240,9 @@ const Documentation = () => {
                   <Search className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-2">Optimisation SEO</h3>
+                  <h3 className="text-2xl font-bold mb-2">{t.docPage.demo.seo.title}</h3>
                   <p className="text-muted-foreground">
-                    Optimisez automatiquement vos fiches produits, collections et pages pour le référencement naturel.
+                    {t.docPage.demo.seo.subtitle}
                   </p>
                 </div>
               </div>

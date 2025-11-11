@@ -2500,7 +2500,39 @@ export const translations = {
         description: "View, edit, and manage all your blog articles. Track their status and publish them to your Shopify store.",
         count: "Articles",
         seoReady: "SEO Ready"
-      }
+      },
+      createArticle: {
+        title: "AI Article Generator",
+        description: "Let our AI create SEO-optimized articles in minutes. Just choose your topic and keywords, and watch the magic happen.",
+        aiPowered: "AI-Powered",
+        seoOptimized: "SEO Optimized",
+        startCreating: "Start Creating",
+      },
+      campaigns: {
+        title: "Automated Content Campaigns",
+        description: "Schedule and automate your content creation. Set up campaigns to publish articles regularly and maintain a consistent presence.",
+        campaignsCount: "Campaigns",
+        automated: "Automated",
+        newCampaign: "New Campaign",
+      },
+      opportunities: {
+        title: "Content Opportunities",
+        description: "Discover trending topics and content ideas based on your product catalog. AI analyzes your store to suggest the best articles to write.",
+        smartSuggestions: "Smart Suggestions",
+        aiDriven: "AI-Driven",
+        configure: "Configure",
+      },
+      netlinking: {
+        title: "Internal Linking Strategy",
+        description: "Boost your SEO with smart internal linking. Manage product links within articles and create content optimized for link building.",
+        linkManagement: "Link Management",
+        seoBoost: "SEO Boost",
+        createLinkingArticle: "Create Linking Article",
+      },
+      settings: {
+        title: "Blog Configuration",
+        description: "Configure automatic content opportunity generation, set preferences, and customize how AI creates articles for your store.",
+      },
     },
     dialogs: {
       featuredImage: {
@@ -4346,6 +4378,18 @@ export const translations = {
       integration: "Integration",
       guides: "Guides",
       faq: "FAQ",
+    },
+    demo: {
+      title: "Complete Demo & Step-by-Step Guides",
+      description: "Discover all NewAI features with detailed guides and practical examples.",
+      merchant: {
+        title: "Google Merchant Center",
+        subtitle: "Automatically create and manage your Google Shopping XML feed to increase your visibility.",
+      },
+      seo: {
+        title: "SEO Optimization",
+        subtitle: "Automatically optimize your product pages, collections and pages for natural referencing.",
+      },
     },
   },
 

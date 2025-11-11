@@ -2501,7 +2501,39 @@ export const translations = {
         description: "Consultez, modifiez et gérez tous vos articles de blog. Suivez leur statut et publiez-les sur votre boutique Shopify.",
         count: "Articles",
         seoReady: "Prêt pour le SEO"
-      }
+      },
+      createArticle: {
+        title: "Générateur d'articles IA",
+        description: "Laissez notre IA créer des articles optimisés SEO en quelques minutes. Choisissez simplement votre sujet et vos mots-clés, et regardez la magie opérer.",
+        aiPowered: "Alimenté par l'IA",
+        seoOptimized: "Optimisé SEO",
+        startCreating: "Commencer à Créer",
+      },
+      campaigns: {
+        title: "Campagnes de contenu automatisées",
+        description: "Planifiez et automatisez votre création de contenu. Configurez des campagnes pour publier des articles régulièrement et maintenir une présence constante.",
+        campaignsCount: "Campagnes",
+        automated: "Automatisé",
+        newCampaign: "Nouvelle Campagne",
+      },
+      opportunities: {
+        title: "Opportunités de contenu",
+        description: "Découvrez des sujets tendance et des idées de contenu basées sur votre catalogue de produits. L'IA analyse votre boutique pour suggérer les meilleurs articles à écrire.",
+        smartSuggestions: "Suggestions intelligentes",
+        aiDriven: "Piloté par l'IA",
+        configure: "Configurer",
+      },
+      netlinking: {
+        title: "Stratégie de maillage interne",
+        description: "Boostez votre SEO avec un maillage interne intelligent. Gérez les liens produits dans les articles et créez du contenu optimisé pour le netlinking.",
+        linkManagement: "Gestion des liens",
+        seoBoost: "Boost SEO",
+        createLinkingArticle: "Créer un article de linking",
+      },
+      settings: {
+        title: "Configuration du Blog",
+        description: "Configurez la génération automatique d'opportunités de contenu, définissez les préférences et personnalisez la façon dont l'IA crée des articles pour votre boutique.",
+      },
     },
     dialogs: {
       featuredImage: {
@@ -4425,6 +4457,18 @@ export const translations = {
       integration: "Intégration",
       guides: "Guides",
       faq: "FAQ",
+    },
+    demo: {
+      title: "Démo Complète & Guides Pas-à-Pas",
+      description: "Découvrez toutes les fonctionnalités de NewAI avec des guides détaillés et des exemples pratiques.",
+      merchant: {
+        title: "Google Merchant Center",
+        subtitle: "Créez et gérez automatiquement votre flux XML Google Shopping pour augmenter votre visibilité.",
+      },
+      seo: {
+        title: "Optimisation SEO",
+        subtitle: "Optimisez automatiquement vos fiches produits, collections et pages pour le référencement naturel.",
+      },
     },
   },
 
