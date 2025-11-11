@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 import {
   Globe,
   Plus,
@@ -48,6 +49,7 @@ export function GoogleSearchConsoleIntegration({
   onDomainSelect,
   onConnectionChange
 }: GoogleSearchConsoleIntegrationProps) {
+  const { t } = useTranslation();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [showAddDomainDialog, setShowAddDomainDialog] = useState(false);
   const [showAvailableSitesDialog, setShowAvailableSitesDialog] = useState(false);
@@ -267,7 +269,7 @@ export function GoogleSearchConsoleIntegration({
               className="gap-2"
             >
               <Globe className="h-5 w-5" />
-              Se connecter avec Google
+              {t.seo.googleSearchConsole.connectWithGoogle}
             </Button>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>✓ Analyse de performance SEO</p>

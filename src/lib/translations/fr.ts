@@ -1427,6 +1427,10 @@ export const translations = {
       logoutError: {
         title: "Erreur",
         description: "Impossible de se déconnecter"
+      },
+      loginSuccess: {
+        title: "Connexion réussie",
+        description: "Bienvenue dans le panel d'administration",
       }
     },
     emailStats: {
@@ -2278,6 +2282,15 @@ export const translations = {
       allOptimizedSynced: "Tous les produits optimisés sont déjà synchronisés",
       noProductsToSynchronize: "Aucun produit à synchroniser"
     },
+    googleSearchConsole: {
+      title: "Google Search Console",
+      description: "Connectez votre compte Google Search Console",
+      connect: "Connecter",
+      disconnect: "Déconnecter",
+      connected: "Connecté",
+      notConnected: "Non connecté",
+      connectWithGoogle: "Se connecter avec Google",
+    },
     pages: {
       title: "Pages SEO",
       subtitle: "Optimisation intelligente IA",
@@ -2814,6 +2827,9 @@ export const translations = {
     signupError: "Échec de l'inscription",
     invalidEmail: "Adresse email invalide",
     passwordTooShort: "Le mot de passe doit contenir au moins 6 caractères",
+    signInWithGoogle: "Se connecter avec Google",
+    signUpWithGoogle: "S'inscrire avec Google",
+    continueWithGoogle: "Continuer avec Google",
   },
 
   onboarding: {
@@ -5203,6 +5219,25 @@ export const translations = {
       enabled: "Notifications activées avec succès !",
       denied: "Les notifications ont été bloquées. Vous pouvez les activer plus tard dans les paramètres."
     }
+  },
+
+  chatSettings: {
+    settingsSaved: "Paramètres sauvegardés",
+    commercialWelcome: "Activer le Widget Commercial",
+    saveError: "Erreur lors de la sauvegarde",
+  },
+  shopifyConnection: {
+    connectingInProgress: "Connexion en cours...",
+    pendingConnection: "Connexion Shopify en attente",
+    connecting: "Connexion à Shopify en cours...",
+    redirecting: "Redirection vers la page d'installation...",
+    connectionNotFound: "Connexion Shopify introuvable",
+  },
+  usageAudit: {
+    products: "Produits",
+    stores: "Boutiques",
+    optimizations: "Optimisations",
+    articles: "Articles",
   },
 
 };

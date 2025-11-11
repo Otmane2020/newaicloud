@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
+import { useTranslation } from '@/lib/language';
+import {
   Save, 
   Smile, 
   Briefcase, 
@@ -74,6 +75,7 @@ interface RawChatSettings {
 
 export default function ChatSettings() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('behavior');
@@ -162,10 +164,10 @@ export default function ChatSettings() {
         });
 
       if (error) throw error;
-      toast.success('Paramètres sauvegardés avec succès !');
+      toast.success(t.chatSettings.settingsSaved);
     } catch (error: any) {
       console.error('Error saving settings:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error(t.chatSettings.saveError);
     } finally {
       setLoading(false);
     }
@@ -416,7 +418,7 @@ window.chatWidgetConfig = {
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Label htmlFor="embed" className="text-base">Activer le Widget Commercial</Label>
+                  <Label htmlFor="embed" className="text-base">{t.chatSettings.commercialWelcome}</Label>
                   <p className="text-sm text-muted-foreground">
                     Affichez le chat sur votre site Shopify pour engager les visiteurs
                   </p>

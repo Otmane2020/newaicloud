@@ -286,7 +286,7 @@ export default function Auth() {
                 <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"/>
               </g>
             </svg>
-            {googleLoading ? t.common.loading : `${mode === 'signup' ? 'S\'inscrire' : 'Se connecter'} avec Google`}
+            {googleLoading ? t.common.loading : mode === 'signup' ? t.auth.signUpWithGoogle : t.auth.signInWithGoogle}
           </Button>
 
           <div className="mt-6 text-center">

@@ -1427,6 +1427,10 @@ export const translations = {
       logoutError: {
         title: "Error",
         description: "Unable to log out"
+      },
+      loginSuccess: {
+        title: "Login successful",
+        description: "Welcome to the admin panel",
       }
     },
     emailStats: {
@@ -2277,6 +2281,15 @@ export const translations = {
       allOptimizedSynced: "All optimized products are already synced",
       noProductsToSynchronize: "No products to synchronize"
     },
+    googleSearchConsole: {
+      title: "Google Search Console",
+      description: "Connect your Google Search Console account",
+      connect: "Connect",
+      disconnect: "Disconnect",
+      connected: "Connected",
+      notConnected: "Not Connected",
+      connectWithGoogle: "Connect with Google",
+    },
     pages: {
       title: "Pages SEO",
       subtitle: "Intelligent AI Optimization",
@@ -2813,6 +2826,9 @@ export const translations = {
     signupError: "Sign up failed",
     invalidEmail: "Invalid email address",
     passwordTooShort: "Password must be at least 6 characters",
+    signInWithGoogle: "Sign in with Google",
+    signUpWithGoogle: "Sign up with Google",
+    continueWithGoogle: "Continue with Google",
   },
 
   onboarding: {
@@ -5203,6 +5219,25 @@ export const translations = {
       enabled: "Notifications enabled successfully!",
       denied: "Notifications were blocked. You can enable them later in settings."
     }
+  },
+
+  chatSettings: {
+    settingsSaved: "Settings saved",
+    commercialWelcome: "Enable Commercial Widget",
+    saveError: "Error while saving",
+  },
+  shopifyConnection: {
+    connectingInProgress: "Connecting...",
+    pendingConnection: "Shopify connection pending",
+    connecting: "Connecting to Shopify...",
+    redirecting: "Redirecting to installation page...",
+    connectionNotFound: "Shopify connection not found",
+  },
+  usageAudit: {
+    products: "Products",
+    stores: "Stores",
+    optimizations: "Optimizations",
+    articles: "Articles",
   },
 
 };

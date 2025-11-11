@@ -105,8 +105,8 @@ export default function AdminSuperLogin() {
       }
 
       toast({
-        title: "Connexion réussie",
-        description: "Bienvenue dans le panel d'administration",
+        title: t.superAdmin.toasts.loginSuccess.title,
+        description: t.superAdmin.toasts.loginSuccess.description,
       });
 
       navigate('/superadmin');
