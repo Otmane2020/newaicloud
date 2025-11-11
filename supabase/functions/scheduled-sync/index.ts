@@ -5,6 +5,45 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Utility function to calculate next import date
+function calculateNextImport(
+  frequency: string,
+  scheduleHour: number,
+  scheduleDay: number,
+  currentTime: Date
+): Date {
+  const next = new Date(currentTime);
+  
+  switch (frequency) {
+    case 'hourly':
+      next.setTime(next.getTime() + 60 * 60 * 1000);
+      break;
+    
+    case 'daily':
+      next.setUTCHours(scheduleHour, 0, 0, 0);
+      if (next <= currentTime) {
+        next.setUTCDate(next.getUTCDate() + 1);
+      }
+      break;
+    
+    case 'weekly':
+      next.setUTCHours(scheduleHour, 0, 0, 0);
+      const daysUntilTarget = ((scheduleDay - next.getUTCDay() + 7) % 7) || 7;
+      next.setUTCDate(next.getUTCDate() + daysUntilTarget);
+      break;
+    
+    case 'monthly':
+      next.setUTCDate(scheduleDay);
+      next.setUTCHours(scheduleHour, 0, 0, 0);
+      if (next <= currentTime) {
+        next.setUTCMonth(next.getUTCMonth() + 1);
+      }
+      break;
+  }
+  
+  return next;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -12,17 +51,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('[SCHEDULED-SYNC] Starting scheduled sync check...');
+    console.log('[SCHEDULED-SYNC] ========================================');
+    console.log('[SCHEDULED-SYNC] Execution started at:', new Date().toISOString());
+    console.log('[SCHEDULED-SYNC] ========================================');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const now = new Date();
-    const currentHour = now.getUTCHours();
-    const currentDay = now.getUTCDay();
-
-    console.log(`[SCHEDULED-SYNC] Current time: ${now.toISOString()}, Hour: ${currentHour}, Day: ${currentDay}`);
+    console.log(`[SCHEDULED-SYNC] Current time: ${now.toISOString()}`);
 
     // Get all users with non-manual sync settings
     const { data: settings, error: settingsError } = await supabase
@@ -34,7 +72,10 @@ Deno.serve(async (req) => {
       throw settingsError;
     }
 
-    console.log(`[SCHEDULED-SYNC] Found ${settings?.length || 0} users with automatic sync enabled`);
+    console.log(`[SCHEDULED-SYNC] Processing ${settings?.length || 0} users with auto-sync enabled`);
+    settings?.forEach(s => {
+      console.log(`  - User ${s.user_id}: ${s.import_frequency}, next: ${s.next_import_at}`);
+    });
 
     for (const setting of settings || []) {
       const userId = setting.user_id;
@@ -64,47 +105,24 @@ Deno.serve(async (req) => {
       let shouldSync = false;
       let reason = '';
 
-      // Determine if sync should happen based on frequency
-      switch (setting.import_frequency) {
-        case 'hourly':
-          // Sync if no previous import or more than 1 hour ago
-          if (!lastImport || (now.getTime() - lastImport.getTime()) > 60 * 60 * 1000) {
-            shouldSync = true;
-            reason = 'hourly schedule';
-          }
-          break;
+      console.log(`[SCHEDULED-SYNC] User ${userId}:`);
+      console.log(`  Frequency: ${setting.import_frequency}`);
+      console.log(`  Last import: ${setting.last_import_at}`);
+      console.log(`  Next import: ${setting.next_import_at}`);
 
-        case 'daily':
-          // Sync if it's the scheduled hour and more than 23 hours since last import
-          if (currentHour === setting.import_schedule_hour) {
-            if (!lastImport || (now.getTime() - lastImport.getTime()) > 23 * 60 * 60 * 1000) {
-              shouldSync = true;
-              reason = `daily schedule (${setting.import_schedule_hour}:00)`;
-            }
-          }
-          break;
-
-        case 'weekly':
-          // Sync if it's the scheduled day and hour and more than 6 days since last import
-          if (currentDay === setting.import_schedule_day && currentHour === setting.import_schedule_hour) {
-            if (!lastImport || (now.getTime() - lastImport.getTime()) > 6 * 24 * 60 * 60 * 1000) {
-              shouldSync = true;
-              reason = `weekly schedule (Day ${setting.import_schedule_day}, ${setting.import_schedule_hour}:00)`;
-            }
-          }
-          break;
-
-        case 'monthly':
-          // Sync if it's the scheduled day and hour and more than 28 days since last import
-          const currentDate = now.getUTCDate();
-          if (currentDate === setting.import_schedule_day && currentHour === setting.import_schedule_hour) {
-            if (!lastImport || (now.getTime() - lastImport.getTime()) > 28 * 24 * 60 * 60 * 1000) {
-              shouldSync = true;
-              reason = `monthly schedule (Day ${setting.import_schedule_day}, ${setting.import_schedule_hour}:00)`;
-            }
-          }
-          break;
+      // Simple check: sync if next_import_at is in the past or null
+      if (!setting.next_import_at) {
+        shouldSync = true;
+        reason = 'first sync (no next_import_at)';
+      } else {
+        const nextImport = new Date(setting.next_import_at);
+        if (nextImport <= now) {
+          shouldSync = true;
+          reason = `scheduled time reached (${nextImport.toISOString()})`;
+        }
       }
+
+      console.log(`  Should sync: ${shouldSync} (${reason})`);
 
       if (shouldSync) {
         console.log(`[SCHEDULED-SYNC] Starting sync for user ${userId} (${reason})`);
@@ -141,17 +159,17 @@ Deno.serve(async (req) => {
             switch (type) {
               case 'products':
                 result = await userClient.functions.invoke('import-products', {
-                  body: { shopName, apiSecret: authToken, storeId, syncMode }
+                  body: { shopName, authToken, storeId, syncMode }
                 });
                 break;
               case 'collections':
                 result = await userClient.functions.invoke('import-shopify-collections', {
-                  body: { shopName, apiSecret: authToken, storeId }
+                  body: { shopName, authToken, storeId }
                 });
                 break;
               case 'pages':
                 result = await userClient.functions.invoke('import-shopify-pages', {
-                  body: { shopName, apiSecret: authToken, storeId }
+                  body: { shopName, authToken, storeId }
                 });
                 break;
               case 'articles':
@@ -197,13 +215,50 @@ Deno.serve(async (req) => {
           })
           .eq('id', historyEntry.id);
 
-        // Update last import timestamp
+        // Calculate next import time
+        const nextImportDate = calculateNextImport(
+          setting.import_frequency,
+          setting.import_schedule_hour || 9,
+          setting.import_schedule_day || 1,
+          now
+        );
+
+        // Update last import AND next import timestamps
         await supabase
           .from('shopify_sync_settings')
-          .update({ last_import_at: new Date().toISOString() })
+          .update({ 
+            last_import_at: new Date().toISOString(),
+            next_import_at: nextImportDate.toISOString()
+          })
           .eq('user_id', userId);
 
         console.log(`[SCHEDULED-SYNC] ✅ Completed sync for user ${userId}: ${totalImported} items, ${duration}ms`);
+        console.log(`[SCHEDULED-SYNC] Next sync scheduled for: ${nextImportDate.toISOString()}`);
+
+        // Phase 6: Send notifications
+        if (totalImported > 0) {
+          await supabase.functions.invoke('send-notification', {
+            body: {
+              user_id: userId,
+              type: 'sync_complete',
+              title: 'Synchronisation automatique terminée',
+              message: `${totalImported} éléments synchronisés avec succès.`,
+              priority: 'low'
+            }
+          });
+        }
+
+        if (hasError) {
+          await supabase.functions.invoke('send-notification', {
+            body: {
+              user_id: userId,
+              type: 'sync_error',
+              title: 'Erreur de synchronisation automatique',
+              message: errorMessage,
+              priority: 'high'
+            }
+          });
+        }
       } else {
         console.log(`[SCHEDULED-SYNC] Skipping sync for user ${userId} (not scheduled)`);
       }

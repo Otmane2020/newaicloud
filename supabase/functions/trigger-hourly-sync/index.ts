@@ -11,7 +11,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('[TRIGGER-HOURLY-SYNC] Triggering scheduled-sync function...');
+    console.log('[TRIGGER-HOURLY-SYNC] ========================================');
+    console.log('[TRIGGER-HOURLY-SYNC] Triggered at:', new Date().toISOString());
+    console.log('[TRIGGER-HOURLY-SYNC] Calling scheduled-sync function...');
+    console.log('[TRIGGER-HOURLY-SYNC] ========================================');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

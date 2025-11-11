@@ -881,6 +881,107 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
         </CardContent>
       </Card>
 
+      {/* Phase 5: Monitoring de la synchronisation automatique */}
+      {settings?.import_frequency !== "manual" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5" />
+              Statut de la synchronisation automatique
+            </CardTitle>
+            <CardDescription>Suivez l'état de vos synchronisations programmées</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Status */}
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <div>
+                  <p className="font-medium">Activée</p>
+                  <p className="text-sm text-muted-foreground capitalize">{settings?.import_frequency}</p>
+                </div>
+              </div>
+              <Badge variant="secondary">
+                <Clock className="w-3 h-3 mr-1" />
+                {settings?.import_frequency}
+              </Badge>
+            </div>
+
+            {/* Next sync */}
+            {settings?.next_import_at && (
+              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-sm">Prochaine synchronisation</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(settings.next_import_at), "PPpp", { locale: fr })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Last sync */}
+            {settings?.last_import_at && (
+              <div className="p-4 bg-muted/20 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-sm">Dernière synchronisation</p>
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(settings.last_import_at), "PPpp", { locale: fr })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Recent sync logs */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Historique récent des syncs automatiques</Label>
+              {history.length > 0 ? (
+                <div className="space-y-2">
+                  {history.slice(0, 3).map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        {entry.status === "success" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                        {entry.status === "failed" && <XCircle className="w-4 h-4 text-red-500" />}
+                        {entry.status === "running" && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
+                        <div>
+                          <p className="text-sm font-medium">{entry.items_synced || 0} éléments</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(entry.started_at), "Pp", { locale: fr })}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge
+                        variant={
+                          entry.status === "success"
+                            ? "default"
+                            : entry.status === "failed"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                      >
+                        {entry.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">Aucune synchronisation récente</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <SyncHistoryList history={history} />
 
       {/* Dialogues */}
