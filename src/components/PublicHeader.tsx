@@ -25,7 +25,7 @@ export const PublicHeader = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollToSection("hero")}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-primary-foreground" />
@@ -35,7 +35,7 @@ export const PublicHeader = () => {
                   NewAI
                 </span>
                 <span className="text-[10px] text-muted-foreground leading-tight">
-                  Smarter AI Sales
+                  Smart Way To Sale
                 </span>
               </div>
             </div>
