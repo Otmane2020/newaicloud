@@ -128,10 +128,10 @@ serve(async (req) => {
     // 🆕 SYNCHRONISER LA DESCRIPTION DU PRODUIT SHOPIFY EN PREMIER
     console.log("📝 Updating Shopify product description...");
 
-    // Récupérer le shopify_product_id et landing_page
+    // Récupérer le shopify_id et landing_page
     const { data: productData, error: productFetchError } = await supabase
       .from("shopify_products")
-      .select("shopify_product_id, landing_page, description")
+      .select("id, shopify_id, landing_page, description")
       .eq("id", productId)
       .single();
 
@@ -146,8 +146,8 @@ serve(async (req) => {
       );
     }
     
-    if (!productData?.shopify_product_id) {
-      console.error("❌ Product missing shopify_product_id:", productId);
+    if (!productData?.shopify_id) {
+      console.error("❌ Product missing shopify_id:", productId);
       return new Response(
         JSON.stringify({ 
           error: "Produit non synchronisé avec Shopify",
@@ -158,11 +158,35 @@ serve(async (req) => {
       );
     }
 
-    const shopifyProductId = productData.shopify_product_id;
+    const shopifyProductId = productData.shopify_id;
     
-    // 🆕 Use landing_page if available, otherwise use description, otherwise use htmlContent parameter
-    const contentToSync = productData.landing_page || productData.description || htmlContent;
-    console.log(`📝 Using ${productData.landing_page ? 'landing_page' : productData.description ? 'description' : 'htmlContent parameter'} for sync`);
+    // 🆕 Update local description with landing_page content before syncing
+    let contentToSync = htmlContent || productData.description || '';
+    let localDescriptionUpdated = false;
+    
+    if (productData.landing_page && productData.landing_page !== productData.description) {
+      console.log("📝 Updating local description with landing_page content...");
+      
+      const { error: updateDescError } = await supabase
+        .from("shopify_products")
+        .update({ 
+          description: productData.landing_page,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", productData.id);
+        
+      if (updateDescError) {
+        console.error("⚠️ Failed to update local description:", updateDescError);
+      } else {
+        console.log("✅ Local description updated successfully");
+        localDescriptionUpdated = true;
+      }
+      
+      // Use landing_page for Shopify sync
+      contentToSync = productData.landing_page;
+    } else {
+      console.log("ℹ️ No landing_page to sync or description already up-to-date");
+    }
 
     // Mettre à jour la description du produit dans Shopify
     const updateProductResponse = await fetch(`${fullStoreUrl}/admin/api/2025-01/products/${shopifyProductId}.json`, {
@@ -322,10 +346,11 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         productDescriptionUpdated: true,
+        localDescriptionUpdated,
         pageUrl,
         pageId,
         operation,
-        message: `Product description updated successfully${pageUrl ? ` and landing page ${operation.includes("created") ? "created" : "updated"}` : ""}`,
+        message: `Product description updated successfully${pageUrl ? ` and landing page ${operation.includes("created") ? "created" : "updated"}` : ""}${localDescriptionUpdated ? " (local description also updated)" : ""}`,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
