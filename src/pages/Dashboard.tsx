@@ -43,6 +43,7 @@ interface Stats {
   totalArticles: number;
   totalValue: number;
   seoScore: number;
+  avgOptimizedScore: number;
   seoCategories: {
     homepage: number;
     products: number;
@@ -77,6 +78,7 @@ export default function Dashboard() {
     totalArticles: 0,
     totalValue: 0,
     seoScore: 0,
+    avgOptimizedScore: 0,
     seoCategories: {
       homepage: 0,
       products: 0,
@@ -151,6 +153,29 @@ export default function Dashboard() {
       const totalProducts = products?.length || 0;
       const optimizedProducts = products?.filter(p => p.seo_title && p.seo_description).length || 0;
       const totalValue = products?.reduce((sum, p) => sum + (parseFloat(p.price?.toString() || '0') || 0), 0) || 0;
+      
+      // Calculate average SEO score of optimized products
+      let totalOptimizedScore = 0;
+      let optimizedCount = 0;
+
+      products?.forEach(p => {
+        if (p.seo_title && p.seo_description) {
+          const score = calculateDetailedSeoScore(
+            p.seo_title, 
+            p.seo_description, 
+            !!p.image_url, 
+            true, 
+            null,
+            1
+          );
+          totalOptimizedScore += score.score;
+          optimizedCount++;
+        }
+      });
+
+      const avgOptimizedScore = optimizedCount > 0 
+        ? Math.round(totalOptimizedScore / optimizedCount) 
+        : 0;
 
       // Get latest SEO audit for global score
       const { data: latestAudit } = await supabase
@@ -262,6 +287,7 @@ export default function Dashboard() {
         totalArticles: articlesCount || 0,
         totalValue,
         seoScore,
+        avgOptimizedScore,
         seoCategories,
         connectedStores,
         productsWithImages,
@@ -435,8 +461,8 @@ export default function Dashboard() {
           icon={Sparkles}
           gradient="from-success to-success"
           iconBg="bg-success/10 text-success"
-          badge={stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}%` : '0%'}
-          subtitle={`${stats.optimizedProducts}/${stats.totalProducts} ${t.dashboard.cards.products}${stats.trends.optimizations !== 0 ? ` ${stats.trends.optimizations > 0 ? '↗' : '↘'} ${Math.abs(stats.trends.optimizations)} ${t.dashboard.recentActivity.thisMonth}` : ''}`}
+          badge={stats.totalProducts > 0 ? `${Math.round((stats.optimizedProducts / stats.totalProducts) * 100)}% traités par IA` : '0%'}
+          subtitle={stats.avgOptimizedScore > 0 ? `Score moyen : ${stats.avgOptimizedScore}/100` : `${stats.optimizedProducts}/${stats.totalProducts} ${t.dashboard.cards.products}`}
         />
         <MetricCard
           title={t.dashboard.cards.toOptimize}
@@ -466,11 +492,11 @@ export default function Dashboard() {
         />
         <MetricCard
           title={t.dashboard.cards.optimizedValue}
-          value={formatCurrency(stats.totalValue * (stats.optimizedProducts / Math.max(stats.totalProducts, 1)))}
+          value={formatCurrency(stats.totalValue * (stats.avgOptimizedScore / 100))}
           icon={DollarSign}
           gradient="from-purple-500 to-purple-600"
           iconBg="bg-purple-500/10 text-purple-600"
-          subtitle={`${Math.round((stats.optimizedProducts / Math.max(stats.totalProducts, 1)) * 100)}% ${t.dashboard.cards.ofCatalog}`}
+          subtitle={stats.avgOptimizedScore > 0 ? `Basé sur score SEO moyen de ${stats.avgOptimizedScore}/100` : `${Math.round((stats.optimizedProducts / Math.max(stats.totalProducts, 1)) * 100)}% ${t.dashboard.cards.ofCatalog}`}
         />
         <MetricCard
           title={t.dashboard.cards.activeStores}
@@ -482,7 +508,7 @@ export default function Dashboard() {
         />
         <MetricCard
           title="Google Shopping"
-          value={`${googleShoppingScore.score}%`}
+          value={`${googleShoppingScore.score}/100`}
           icon={ShoppingBag}
           gradient="from-blue-500 to-blue-600"
           iconBg="bg-blue-500/10 text-blue-600"

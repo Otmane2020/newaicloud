@@ -144,9 +144,9 @@ export function calculateTitleScore(
   const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability;
 
   return {
-    score: Math.min(95, Math.max(0, totalScore)), // Cap at 95 instead of 100
+    score: Math.min(100, Math.max(0, totalScore)),
     breakdown,
-    maxScore: 95
+    maxScore: 100
   };
 }
 
@@ -266,9 +266,9 @@ export function calculateDescriptionScore(
   const totalScore = breakdown.presence + breakdown.length + breakdown.keywords + breakdown.readability;
 
   return {
-    score: Math.min(95, Math.max(0, totalScore)), // Cap at 95 instead of 100
+    score: Math.min(100, Math.max(0, totalScore)),
     breakdown,
-    maxScore: 95
+    maxScore: 100
   };
 }
 
@@ -330,36 +330,27 @@ export function calculateDetailedSeoScore(
     (hasUrl ? 6 : 0) // URL 6 points (reduced from 8)
   );
 
-  // Bonus +10 points pour contenu optimisé par IA
-  if (optimizationCount && optimizationCount > 0) {
-    weightedScore = Math.min(95, weightedScore + 10);
-  }
-
-  // IMPORTANT: Score varie naturellement selon la qualité du contenu
-  // Non-optimisé: 21-75% selon le contenu réel
-  // Optimisé: jusqu'à 95%
-  let finalScore = weightedScore;
+  // Calculate final score with AI optimization bonus
+  let finalScore: number;
   
-  // Pour les non-optimisés, assurer un minimum de 21% et un maximum de 75%
-  if (!optimizationCount || optimizationCount === 0) {
-    // Minimum 21% si au moins du contenu existe
-    const hasContent = (title && title.trim().length > 0) || (description && description.trim().length > 0);
-    if (hasContent) {
-      finalScore = Math.max(21, Math.min(75, weightedScore));
-    } else {
-      finalScore = Math.min(21, weightedScore);
-    }
+  if (optimizationCount && optimizationCount > 0) {
+    // For AI-optimized products, allow up to 100
+    const optimizationBonus = Math.min(optimizationCount * 3, 10);
+    finalScore = Math.min(100, weightedScore + optimizationBonus);
+  } else {
+    // For non-optimized products, cap at 85 to encourage optimization
+    finalScore = Math.max(21, Math.min(85, weightedScore));
   }
 
   return {
-    score: Math.round(Math.max(0, finalScore)),
+    score: Math.round(finalScore),
     breakdown: {
       presence: Math.round((titleScore.breakdown.presence + descScore.breakdown.presence) / 2),
       length: Math.round((titleScore.breakdown.length + descScore.breakdown.length) / 2),
       keywords: Math.round((titleScore.breakdown.keywords + descScore.breakdown.keywords) / 2),
       readability: Math.round((titleScore.breakdown.readability + descScore.breakdown.readability) / 2),
     },
-    maxScore: (optimizationCount && optimizationCount > 0) ? 95 : 75
+    maxScore: (optimizationCount && optimizationCount > 0) ? 100 : 85
   };
 }
 
