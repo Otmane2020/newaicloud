@@ -803,6 +803,7 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
         .from("landing_page_history")
         .insert({
           product_id: product_id,
+          user_id: userId,
           version_number: newVersion,
           landing_page_html: html,
           is_current: true,
