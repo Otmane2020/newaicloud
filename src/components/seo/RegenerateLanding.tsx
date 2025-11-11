@@ -589,7 +589,7 @@ export default function RegenerateLanding({
       )}
 
       {/* Success State */}
-      {htmlContent && !loading && (
+      {htmlContent && !loading && !error && (
         <div className="space-y-4">
           <div className="bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-xl p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
