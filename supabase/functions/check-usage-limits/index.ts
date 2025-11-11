@@ -98,62 +98,48 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // ⚡ PARALLELIZE with timeout: Fetch profile, usage, and product count simultaneously
+    // ⚡ Fetch profile, usage, and product count with increased timeout
     const currentMonth = new Date();
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
     const monthKey = currentMonth.toISOString().split('T')[0];
 
-    // Add timeout to prevent hanging requests
-    const timeoutPromise = (ms: number) => new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Request timeout')), ms)
-    );
+    console.log('[LIMITS] Starting database queries...');
 
-    let profileRes, usageRes, productCountRes;
-    
-    try {
-      const results = await Promise.race([
-        Promise.all([
-          supabaseAdmin.from('profiles')
-            .select('subscription_status, current_plan_id, trial_ends_at')
-            .eq('id', user.id)
-            .single(),
-          supabaseAdmin.from('usage_tracking')
-            .select('*')
-            .eq('seller_id', user.id)
-            .eq('month', monthKey)
-            .maybeSingle(),
-          supabaseAdmin.from('shopify_products')
-            .select('*', { count: 'exact', head: true })
-            .eq('seller_id', user.id)
-        ]),
-        timeoutPromise(8000) // 8 second timeout
-      ]);
-      
-      [profileRes, usageRes, productCountRes] = results;
-    } catch (timeoutError) {
-      console.error('[LIMITS] Request timeout or network error:', timeoutError);
-      return new Response(
-        JSON.stringify({ 
-          error: lang === 'fr' ? 'Délai dépassé lors de la récupération des données' : 'Timeout fetching data',
-          details: 'Network connection lost or request took too long',
-          code: 'TIMEOUT_ERROR'
-        }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    // Fetch profile first (fastest query)
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('subscription_status, current_plan_id, trial_ends_at')
+      .eq('id', user.id)
+      .single();
 
-    const profile = profileRes.data;
-    if (profileRes.error || !profile) {
-      console.error('[LIMITS] Error fetching profile:', profileRes.error);
+    if (profileError || !profile) {
+      console.error('[LIMITS] Error fetching profile:', profileError);
       return new Response(
         JSON.stringify({ error: TRANSLATIONS[lang].errorCheckingLimits }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('[LIMITS] Profile fetched successfully');
+
+    // Fetch usage data
+    const { data: usageData, error: usageError } = await supabaseAdmin
+      .from('usage_tracking')
+      .select('*')
+      .eq('seller_id', user.id)
+      .eq('month', monthKey)
+      .maybeSingle();
+
+    console.log('[LIMITS] Usage data fetched:', usageError ? 'ERROR' : 'SUCCESS');
+
+    // Get product count (no timeout needed, just count)
+    const { count: productCount, error: countError } = await supabaseAdmin
+      .from('shopify_products')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', user.id);
+
+    console.log('[LIMITS] Product count fetched:', countError ? 'ERROR' : 'SUCCESS', productCount);
 
     // Determine trial/paid status
     const isTrialing = profile.subscription_status === 'trialing' || 
@@ -168,8 +154,7 @@ serve(async (req) => {
     
     console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
-    // Handle usage tracking FIRST (before plan checks)
-    // CRITICAL: Initialize with safe defaults FIRST
+    // Handle usage tracking
     let currentUsage = {
       optimizations_count: 0,
       articles_count: 0,
@@ -180,15 +165,12 @@ serve(async (req) => {
       campaigns_count: 0,
     };
     
-    console.log('[LIMITS] Step 1: Checking existing usage data');
-    
-    if (usageRes.data) {
-      console.log('[LIMITS] Step 2: Found existing usage data');
-      currentUsage = usageRes.data;
+    if (usageData) {
+      currentUsage = usageData;
     } else {
-      console.log('[LIMITS] Step 3: No usage data found, creating new entry');
+      console.log('[LIMITS] No usage data found, creating new entry');
       try {
-        const { data: newUsage, error: insertError } = await supabaseAdmin
+        const { data: newUsage } = await supabaseAdmin
           .from('usage_tracking')
           .insert({
             seller_id: user.id,
@@ -204,23 +186,18 @@ serve(async (req) => {
           .select()
           .single();
         
-        if (insertError) {
-          console.error('[LIMITS] Error inserting usage data:', insertError);
-          // Keep using default currentUsage initialized above
-        } else if (newUsage) {
-          console.log('[LIMITS] Step 4: Successfully created usage entry');
+        if (newUsage) {
           currentUsage = newUsage;
         }
       } catch (insertErr) {
-        console.error('[LIMITS] Exception while inserting usage data:', insertErr);
-        // Keep using default currentUsage
+        console.error('[LIMITS] Error inserting usage data:', insertErr);
       }
     }
     
-    console.log(`[LIMITS] Step 5: Current usage:`, currentUsage);
+    console.log(`[LIMITS] Current usage:`, currentUsage);
 
     // Auto-correct product count if needed
-    const realProductCount = productCountRes.count || 0;
+    const realProductCount = productCount || 0;
     if (currentUsage.products_count !== realProductCount) {
       console.warn(`[LIMITS] ⚠️ Correcting products_count: ${currentUsage.products_count} → ${realProductCount}`);
       await supabaseAdmin
