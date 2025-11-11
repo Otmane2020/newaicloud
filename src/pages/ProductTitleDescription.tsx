@@ -1744,7 +1744,7 @@ export default function ProductTitleDescription() {
         productId={previewProduct?.id || ""}
         productTitle={previewProduct?.title || ""}
         productHandle={previewProduct?.handle || ""}
-        currentLandingPage={previewProduct?.landing_page || ""}
+        currentLandingPage={previewProduct?.landing_page || previewProduct?.description || ""}
       />
     </div>
   );

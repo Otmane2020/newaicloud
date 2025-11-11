@@ -166,7 +166,8 @@ export function LandingPagePreviewDialog({
     hasVersions: versions?.length || 0,
     selectedVersion: selectedVersion?.version_number,
     hasCurrentLandingPage: !!currentLandingPage,
-    previewHtmlLength: previewHtml?.length || 0
+    previewHtmlLength: previewHtml?.length || 0,
+    productId
   });
 
   return (
