@@ -738,114 +738,23 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
 
     console.log("✅ HTML generated and sanitized successfully");
 
-    // 💾 Sauvegarde dans product_landing_pages (only if user is authenticated)
+    // 💾 Simple update to shopify_products.landing_page (only if user is authenticated)
     if (userId && product_id) {
-      console.log("💾 Saving landing page to database...");
-
-      // Désactiver les anciennes versions
-      await supabaseAdmin
-        .from("product_landing_pages")
-        .update({ is_active: false })
-        .eq("product_id", product_id)
+      console.log("💾 Updating landing_page field in shopify_products...");
+      
+      const { error: updateError } = await supabaseAdmin
+        .from("shopify_products")
+        .update({ 
+          landing_page: html,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", product_id)
         .eq("seller_id", userId);
 
-      // Récupérer le numéro de version
-      const { data: existingPages } = await supabaseAdmin
-        .from("product_landing_pages")
-        .select("version")
-        .eq("product_id", product_id)
-        .order("version", { ascending: false })
-        .limit(1);
-
-      const newVersion = existingPages && existingPages.length > 0 ? existingPages[0].version + 1 : 1;
-
-      // Créer la nouvelle version
-      const { error: saveError } = await supabaseAdmin.from("product_landing_pages").insert({
-        product_id: product_id,
-        seller_id: userId,
-        html_content: html,
-        config: {
-          language: detectedLanguage,
-          vendor,
-          image_url: imageUrl,
-          description,
-          content_length: length,
-          style,
-          layout,
-          mainColor,
-          customHighlights,
-          enrichment_status: enrichmentStatus,
-          attributes_count: attributesCount,
-        },
-        version: newVersion,
-        is_active: true,
-      });
-
-      if (saveError) {
-        console.error("❌ Save error:", saveError);
+      if (updateError) {
+        console.error("❌ Update error:", updateError);
       } else {
-        console.log(`✅ Landing page v${newVersion} saved successfully`);
-      }
-
-      // 💾 NOUVEAU : Sauvegarder dans shopify_products.landing_page
-      console.log("💾 Updating shopify_products.landing_page...");
-      const { error: updateProductError } = await supabaseAdmin
-        .from("shopify_products")
-        .update({ landing_page: html })
-        .eq("id", product_id);
-
-      if (updateProductError) {
-        console.error("❌ Error updating shopify_products:", updateProductError);
-      } else {
-        console.log("✅ shopify_products.landing_page updated");
-      }
-
-      // 💾 NOUVEAU : Sauvegarder dans landing_page_history avec fallback seller_id
-      console.log("💾 Saving to landing_page_history...");
-      
-      // Fallback: use seller_id if userId is null
-      let effectiveUserId = userId;
-      if (!effectiveUserId) {
-        console.log("⚠️ No userId from auth, attempting to use seller_id from product...");
-        const { data: productData } = await supabaseAdmin
-          .from("shopify_products")
-          .select("seller_id")
-          .eq("id", product_id)
-          .single();
-        
-        if (productData?.seller_id) {
-          effectiveUserId = productData.seller_id;
-          console.log("✅ Using seller_id as fallback:", effectiveUserId);
-        }
-      }
-
-      if (effectiveUserId) {
-        // Marquer toutes les anciennes versions comme non-current
-        await supabaseAdmin
-          .from("landing_page_history")
-          .update({ is_current: false })
-          .eq("product_id", product_id);
-
-        // Insérer la nouvelle version
-        const { error: historyError } = await supabaseAdmin
-          .from("landing_page_history")
-          .insert({
-            product_id: product_id,
-            user_id: effectiveUserId,
-            version_number: newVersion,
-            landing_page_html: html,
-            is_current: true,
-          });
-
-        if (historyError) {
-          console.error("❌ Error saving to history:", historyError);
-        } else {
-          console.log(`✅ Version ${newVersion} saved to landing_page_history`);
-          versionSaved = true;
-          savedVersionNumber = newVersion;
-        }
-      } else {
-        console.log("⚠️ Skipping history save: no effectiveUserId available");
+        console.log("✅ Landing page updated successfully in shopify_products");
       }
     } else {
       console.log("⚠️ Skipping save: userId or product_id not available");
@@ -856,8 +765,6 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
       JSON.stringify({
         html,
         enrichment_status: enrichmentStatus,
-        version_saved: versionSaved,
-        version_number: savedVersionNumber,
         attributes_count: attributesCount,
       }),
       {
