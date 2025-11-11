@@ -1326,43 +1326,26 @@ export default function ProductTitleDescription() {
                             return;
                           }
                           
+                          if (!selectedStore) {
+                            toast.error("Aucun store sélectionné");
+                            return;
+                          }
+                          
                           const newStatus = product.status === 'active' ? 'draft' : 'active';
                           const toastId = toast.loading("Mise à jour du statut...");
                           
                           try {
-                            const { data: { user } } = await supabase.auth.getUser();
-                            if (!user) throw new Error("Non authentifié");
-
-                            if (!selectedStore) {
-                              toast.error("Aucun store sélectionné", { id: toastId });
-                              return;
-                            }
-
-                            const { data: connection } = await supabase
-                              .from('shopify_connections')
-                              .select('store_url, access_token')
-                              .eq('id', selectedStore.id)
-                              .single();
-
-                            if (!connection) throw new Error("Connexion Shopify introuvable");
-
-                            const response = await fetch(`https://${connection.store_url}/admin/api/2024-01/products/${product.shopify_id}.json`, {
-                              method: 'PUT',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                'X-Shopify-Access-Token': connection.access_token,
-                              },
-                              body: JSON.stringify({
-                                product: { status: newStatus }
-                              })
+                            const { data, error } = await supabase.functions.invoke('update-product-status', {
+                              body: {
+                                productId: product.id,
+                                shopifyId: product.shopify_id,
+                                storeId: selectedStore.id,
+                                newStatus
+                              }
                             });
 
-                            if (!response.ok) throw new Error("Erreur lors de la mise à jour Shopify");
-
-                            await supabase
-                              .from('shopify_products')
-                              .update({ status: newStatus })
-                              .eq('id', product.id);
+                            if (error) throw error;
+                            if (!data?.success) throw new Error("Échec de la mise à jour");
 
                             setProducts(prev => prev.map(p => 
                               p.id === product.id ? { ...p, status: newStatus } : p
