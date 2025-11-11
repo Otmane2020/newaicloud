@@ -18,6 +18,7 @@ interface Product {
   id: string;
   title: string;
   description?: string | null;
+  landing_page?: string | null;
   seo_title?: string;
   seo_description?: string;
   image_url?: string;
@@ -72,11 +73,12 @@ const calculateQualityScore = (title: string, description: string): number => {
   return Math.min(100, score);
 };
 
-// Generate rich HTML preview from product description or fallback to simple version
+// Generate rich HTML preview from product landing_page or description fallback
 const generateHtmlPreview = (product: Product): string => {
   const title = product.seo_title || product.title;
   const description = product.seo_description || "";
-  const htmlDescription = product.description || "";
+  // CRITICAL: Use landing_page first (AI-generated), then fallback to description
+  const htmlDescription = product.landing_page || product.description || "";
   const imageUrl = product.image_url || "";
 
   // If we have a rich HTML description in the description field, use it directly
