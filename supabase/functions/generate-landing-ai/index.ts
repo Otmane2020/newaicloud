@@ -325,6 +325,10 @@ serve(async (req) => {
       willAttemptSave: !!(userId && product_id)
     });
     
+    // Initialize version tracking variables
+    let versionSaved = false;
+    let savedVersionNumber = null;
+    
     // Auto-detect language from product title and description if not provided
     const detectedLanguage = language || detectLanguage(`${productTitle || ""} ${description || ""}`);
 
@@ -814,9 +818,6 @@ SECTIONS : Hero avec image, Points Forts (3-4 cartes), Caractéristiques, Matér
           console.log("✅ Using seller_id as fallback:", effectiveUserId);
         }
       }
-
-      let versionSaved = false;
-      let savedVersionNumber = null;
 
       if (effectiveUserId) {
         // Marquer toutes les anciennes versions comme non-current
