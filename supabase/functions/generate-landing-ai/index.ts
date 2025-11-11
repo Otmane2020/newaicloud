@@ -358,6 +358,7 @@ serve(async (req) => {
       length,
       customHighlights,
       language,
+      designStyle,
     } = body ?? {};
 
     console.log("🔐 User authentication:", {
