@@ -3165,8 +3165,55 @@ export const translations = {
     }
   },
 
+  // Google Console Navigation
+  googleConsole: {
+    integration: "Intégration",
+    insights: "Insights",
+    products: "Produits",
+    sitemaps: "Sitemaps",
+    articles: "Articles"
+  },
+  
+  // Navigation items
+  mediaHistory: "Media - Historique",
+  usageLimits: "Limites d'utilisation",
+  merchantIntegration: "Intégration",
+
   notificationSettings: {
     title: "Paramètres de Notification",
+    subtitle: "Configurez comment et quand vous souhaitez recevoir les notifications SEO",
+    general: {
+      title: "Notifications Générales",
+      subtitle: "Activez ou désactivez les notifications dans l'application et par email",
+      inApp: "Notifications dans l'application",
+      inAppDesc: "Recevez des notifications dans l'interface NewAI",
+      email: "Notifications par email",
+      emailDesc: "Recevez un résumé quotidien de vos tâches SEO par email",
+      digest: "Résumé quotidien",
+      digestDesc: "Recevez un email récapitulatif de vos tâches SEO chaque jour",
+      hour: "Heure d'envoi",
+      hourDesc: "Choisissez l'heure à laquelle vous souhaitez recevoir votre résumé"
+    },
+    categories: {
+      title: "Catégories de Notifications",
+      subtitle: "Choisissez les types de tâches SEO pour lesquelles vous souhaitez être notifié",
+      products: "🛍️ Produits",
+      productsDesc: "Notifications pour l'optimisation SEO des produits",
+      collections: "🧩 Collections",
+      collectionsDesc: "Notifications pour l'optimisation SEO des collections",
+      blog: "📝 Blog",
+      blogDesc: "Notifications pour l'optimisation SEO des articles de blog",
+      images: "🖼️ Images",
+      imagesDesc: "Notifications pour l'optimisation des textes ALT des images",
+      homepage: "🏠 Page d'accueil",
+      homepageDesc: "Notifications pour l'optimisation SEO de la page d'accueil"
+    },
+    loading: "Chargement...",
+    saving: "Sauvegarde...",
+    save: "Sauvegarder les paramètres",
+    loadError: "Erreur lors du chargement des paramètres",
+    saveError: "Erreur lors de la sauvegarde",
+    saveSuccess: "Paramètres sauvegardés",
     emailNotifications: "Notifications Email",
     pushNotifications: "Notifications Push",
     seoUpdates: "Mises à jour SEO",
@@ -3174,6 +3221,80 @@ export const translations = {
     blogPublished: "Blog Publié",
     weeklyReport: "Rapport Hebdomadaire",
     saveSettings: "Enregistrer les Paramètres",
+  },
+  
+  // Notification Templates Page
+  notificationTemplates: {
+    title: "Templates de Notifications",
+    subtitle: "Gérez les templates de notifications envoyées par email, in-app et navigateur",
+    category: "catégorie",
+    templates: "template(s) dans cette catégorie",
+    name: "Nom",
+    priority: "Priorité",
+    browser: "Navigateur",
+    status: "Statut",
+    actions: "Actions",
+    preview: "Aperçu du Template",
+    inApp: "Notification In-App",
+    loading: "Chargement...",
+    loadError: "Erreur de chargement",
+    updateSuccess: "Paramètres mis à jour",
+    updateError: "Erreur de mise à jour",
+    statusUpdated: "Statut mis à jour"
+  },
+  
+  // Product Optimization Page
+  productOptimization: {
+    selectOne: "Veuillez sélectionner au moins un produit",
+    cancelled: "Génération annulée",
+    connectionNotFound: "Connexion Shopify introuvable",
+    loadError: "Erreur lors du chargement des produits",
+    deleteConfirm: "Êtes-vous sûr de vouloir supprimer ce produit ?",
+    deleteWarning: "Cette action est irréversible et supprimera définitivement le produit de Shopify.",
+    deleting: "Suppression...",
+    delete: "Supprimer",
+    cancel: "Annuler"
+  },
+  
+  // Shopify Install Page
+  shopifyInstall: {
+    title: "Installation Shopify",
+    errorTitle: "Erreur d'installation",
+    connecting: "Connexion à Shopify en cours...",
+    redirecting: "Redirection vers la page d'installation...",
+    waitingAuth: "Vous allez être redirigé vers Shopify pour autoriser l'application..."
+  },
+  
+  // Usage Audit Page
+  usageAudit: {
+    title: "Audit des Quotas",
+    subtitle: "Surveillez les variations de vos compteurs et détectez les anomalies",
+    refresh: "Actualiser",
+    anomalies: {
+      title: "Anomalies détectées",
+      severity: "sévérité"
+    },
+    cleanup: {
+      title: "Nettoyage des données orphelines",
+      subtitle: "Supprimez automatiquement les produits, images et variantes sans parent valide",
+      run: "Lancer le nettoyage",
+      running: "Nettoyage en cours...",
+      results: "Résultats du dernier nettoyage :",
+      deleted: "supprimés"
+    },
+    history: {
+      title: "Historique des variations",
+      subtitle: "Suivez toutes les modifications de vos compteurs d'usage",
+      all: "Tous",
+      noHistory: "Aucun historique disponible"
+    },
+    fields: {
+      products: "Produits",
+      stores: "Boutiques",
+      optimizations: "Optimisations",
+      articles: "Articles",
+      chat: "Chat"
+    }
   },
 
   admin: {
@@ -5232,12 +5353,6 @@ export const translations = {
     connecting: "Connexion à Shopify en cours...",
     redirecting: "Redirection vers la page d'installation...",
     connectionNotFound: "Connexion Shopify introuvable",
-  },
-  usageAudit: {
-    products: "Produits",
-    stores: "Boutiques",
-    optimizations: "Optimisations",
-    articles: "Articles",
   },
 
 };

@@ -4,8 +4,10 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PublicHeader } from "@/components/PublicHeader";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 
 const ShopifyInstall = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "error">("loading");
@@ -74,12 +76,12 @@ const ShopifyInstall = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-center">
-                {status === "loading" ? "Installation Shopify" : "Erreur d'installation"}
+                {status === "loading" ? t.shopifyInstall.title : t.shopifyInstall.errorTitle}
               </CardTitle>
               <CardDescription className="text-center">
                 {status === "loading" 
-                  ? "Connexion à Shopify en cours..." 
-                  : "Redirection vers la page d'installation..."}
+                  ? t.shopifyInstall.connecting
+                  : t.shopifyInstall.redirecting}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -87,8 +89,8 @@ const ShopifyInstall = () => {
                 <Loader2 className="w-12 h-12 animate-spin text-primary" />
                 <p className="text-sm text-muted-foreground text-center">
                   {status === "loading"
-                    ? "Vous allez être redirigé vers Shopify pour autoriser l'application..."
-                    : "Redirection vers la page d'installation..."}
+                    ? t.shopifyInstall.waitingAuth
+                    : t.shopifyInstall.redirecting}
                 </p>
               </div>
             </CardContent>

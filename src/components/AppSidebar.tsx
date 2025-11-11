@@ -88,11 +88,11 @@ export function AppSidebar() {
   ];
 
   const googleConsoleSubItems = [
-    { title: "Intégration", url: "/seo?tab=google-console&subtab=integration", icon: Globe, key: "gsc-integration" },
-    { title: "Insights", url: "/seo?tab=google-console&subtab=insights", icon: Activity, key: "gsc-insights" },
-    { title: "Produits", url: "/seo?tab=google-console&subtab=products", icon: ShoppingBag, key: "gsc-products" },
-    { title: "Sitemaps", url: "/seo?tab=google-console&subtab=sitemaps", icon: Map, key: "gsc-sitemaps" },
-    { title: "Articles", url: "/seo?tab=google-console&subtab=articles", icon: Edit3, key: "gsc-articles" },
+    { title: t.googleConsole.integration, url: "/seo?tab=google-console&subtab=integration", icon: Globe, key: "gsc-integration" },
+    { title: t.googleConsole.insights, url: "/seo?tab=google-console&subtab=insights", icon: Activity, key: "gsc-insights" },
+    { title: t.googleConsole.products, url: "/seo?tab=google-console&subtab=products", icon: ShoppingBag, key: "gsc-products" },
+    { title: t.googleConsole.sitemaps, url: "/seo?tab=google-console&subtab=sitemaps", icon: Map, key: "gsc-sitemaps" },
+    { title: t.googleConsole.articles, url: "/seo?tab=google-console&subtab=articles", icon: Edit3, key: "gsc-articles" },
   ];
 
   const auditSubItems = [
@@ -110,7 +110,7 @@ export function AppSidebar() {
   const productOptimizationSubItems = [
     { title: t.navigation.products, url: "/products", icon: ShoppingBag, key: "products" },
     { title: t.navigation.titleDescription, url: "/products/title-description", icon: Sparkles, key: "titleDescription" },
-    { title: "Media - Historique", url: "/products/media-history", icon: History, key: "mediaHistory" },
+    { title: t.mediaHistory, url: "/products/media-history", icon: History, key: "mediaHistory" },
   ];
 
   const blogSubItems = [
@@ -122,7 +122,7 @@ export function AppSidebar() {
   ];
 
   const merchantSubItems = [
-    { title: "Intégration", url: "/merchant?tab=integration", icon: Globe, key: "integration" },
+    { title: t.merchantIntegration, url: "/merchant?tab=integration", icon: Globe, key: "integration" },
     { title: t.merchant.submenu.feed, url: "/merchant?tab=feed", icon: FileText, key: "feed" },
     { title: t.merchant.submenu.settings, url: "/merchant?tab=settings", icon: Settings, key: "settings" },
     { title: t.merchant.submenu.sync, url: "/merchant?tab=sync", icon: RefreshCw, key: "sync" },
@@ -155,7 +155,7 @@ export function AppSidebar() {
     { title: t.account.submenu.profile, url: "/account?tab=profile", icon: User, key: "profile" },
     { title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" },
     { title: t.account.submenu.subscription, url: "/account?tab=subscription", icon: CreditCard, key: "subscription" },
-    { title: "Limites d'utilisation", url: "/account?tab=usage", icon: BarChart3, key: "usage" },
+    { title: t.usageLimits, url: "/account?tab=usage", icon: BarChart3, key: "usage" },
     { title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" },
   ];
 

@@ -3074,8 +3074,55 @@ export const translations = {
     syncAll: "Sync All Products",
   },
 
+  // Google Console Navigation
+  googleConsole: {
+    integration: "Integration",
+    insights: "Insights",
+    products: "Products",
+    sitemaps: "Sitemaps",
+    articles: "Articles"
+  },
+  
+  // Navigation items
+  mediaHistory: "Media - History",
+  usageLimits: "Usage Limits",
+  merchantIntegration: "Integration",
+
   notificationSettings: {
     title: "Notification Settings",
+    subtitle: "Configure how and when you want to receive SEO notifications",
+    general: {
+      title: "General Notifications",
+      subtitle: "Enable or disable in-app and email notifications",
+      inApp: "In-app notifications",
+      inAppDesc: "Receive notifications in the NewAI interface",
+      email: "Email notifications",
+      emailDesc: "Receive a daily summary of your SEO tasks by email",
+      digest: "Daily digest",
+      digestDesc: "Receive a daily email summary of your SEO tasks",
+      hour: "Send time",
+      hourDesc: "Choose the time you want to receive your summary"
+    },
+    categories: {
+      title: "Notification Categories",
+      subtitle: "Choose the types of SEO tasks you want to be notified about",
+      products: "🛍️ Products",
+      productsDesc: "Notifications for product SEO optimization",
+      collections: "🧩 Collections",
+      collectionsDesc: "Notifications for collection SEO optimization",
+      blog: "📝 Blog",
+      blogDesc: "Notifications for blog article SEO optimization",
+      images: "🖼️ Images",
+      imagesDesc: "Notifications for image ALT text optimization",
+      homepage: "🏠 Homepage",
+      homepageDesc: "Notifications for homepage SEO optimization"
+    },
+    loading: "Loading...",
+    saving: "Saving...",
+    save: "Save settings",
+    loadError: "Error loading settings",
+    saveError: "Error saving",
+    saveSuccess: "Settings saved",
     emailNotifications: "Email Notifications",
     pushNotifications: "Push Notifications",
     seoUpdates: "SEO Updates",
@@ -3083,6 +3130,80 @@ export const translations = {
     blogPublished: "Blog Published",
     weeklyReport: "Weekly Report",
     saveSettings: "Save Settings",
+  },
+  
+  // Notification Templates Page
+  notificationTemplates: {
+    title: "Notification Templates",
+    subtitle: "Manage notification templates sent by email, in-app and browser",
+    category: "category",
+    templates: "template(s) in this category",
+    name: "Name",
+    priority: "Priority",
+    browser: "Browser",
+    status: "Status",
+    actions: "Actions",
+    preview: "Template Preview",
+    inApp: "In-App Notification",
+    loading: "Loading...",
+    loadError: "Loading error",
+    updateSuccess: "Settings updated",
+    updateError: "Update error",
+    statusUpdated: "Status updated"
+  },
+  
+  // Product Optimization Page
+  productOptimization: {
+    selectOne: "Please select at least one product",
+    cancelled: "Generation cancelled",
+    connectionNotFound: "Shopify connection not found",
+    loadError: "Error loading products",
+    deleteConfirm: "Are you sure you want to delete this product?",
+    deleteWarning: "This action is irreversible and will permanently delete the product from Shopify.",
+    deleting: "Deleting...",
+    delete: "Delete",
+    cancel: "Cancel"
+  },
+  
+  // Shopify Install Page
+  shopifyInstall: {
+    title: "Shopify Installation",
+    errorTitle: "Installation error",
+    connecting: "Connecting to Shopify...",
+    redirecting: "Redirecting to installation page...",
+    waitingAuth: "You will be redirected to Shopify to authorize the application..."
+  },
+  
+  // Usage Audit Page
+  usageAudit: {
+    title: "Usage Audit",
+    subtitle: "Monitor your usage counters and detect anomalies",
+    refresh: "Refresh",
+    anomalies: {
+      title: "Anomalies detected",
+      severity: "severity"
+    },
+    cleanup: {
+      title: "Orphaned data cleanup",
+      subtitle: "Automatically remove products, images and variants without valid parent",
+      run: "Run cleanup",
+      running: "Cleaning up...",
+      results: "Last cleanup results:",
+      deleted: "deleted"
+    },
+    history: {
+      title: "Change history",
+      subtitle: "Track all changes to your usage counters",
+      all: "All",
+      noHistory: "No history available"
+    },
+    fields: {
+      products: "Products",
+      stores: "Stores",
+      optimizations: "Optimizations",
+      articles: "Articles",
+      chat: "Chat"
+    }
   },
 
   admin: {
@@ -5232,12 +5353,6 @@ export const translations = {
     connecting: "Connecting to Shopify...",
     redirecting: "Redirecting to installation page...",
     connectionNotFound: "Shopify connection not found",
-  },
-  usageAudit: {
-    products: "Products",
-    stores: "Stores",
-    optimizations: "Optimizations",
-    articles: "Articles",
   },
 
 };

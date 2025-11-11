@@ -146,7 +146,7 @@ export default function SEO() {
       localStorage.setItem('supabase.auth.token', authData);
     }
     
-    toast.success('Cache cleared successfully');
+    toast.success('Cache vidé avec succès');
     window.location.reload();
   };
 

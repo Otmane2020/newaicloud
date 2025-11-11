@@ -59,7 +59,7 @@ export default function NotificationTemplates() {
       setTemplates((data || []) as NotificationTemplate[]);
     } catch (error) {
       console.error('Error fetching templates:', error);
-      toast.error(language === 'fr' ? 'Erreur de chargement' : 'Loading error');
+      toast.error(t.notificationTemplates.loadError);
     } finally {
       setLoading(false);
     }
@@ -78,10 +78,10 @@ export default function NotificationTemplates() {
         t.id === templateId ? { ...t, [channel]: value } : t
       ));
 
-      toast.success(language === 'fr' ? 'Paramètres mis à jour' : 'Settings updated');
+      toast.success(t.notificationTemplates.updateSuccess);
     } catch (error) {
       console.error('Error updating template:', error);
-      toast.error(language === 'fr' ? 'Erreur de mise à jour' : 'Update error');
+      toast.error(t.notificationTemplates.updateError);
     }
   };
 
@@ -98,10 +98,10 @@ export default function NotificationTemplates() {
         t.id === templateId ? { ...t, is_active: value } : t
       ));
 
-      toast.success(language === 'fr' ? 'Statut mis à jour' : 'Status updated');
+      toast.success(t.notificationTemplates.statusUpdated);
     } catch (error) {
       console.error('Error updating template:', error);
-      toast.error(language === 'fr' ? 'Erreur de mise à jour' : 'Update error');
+      toast.error(t.notificationTemplates.updateError);
     }
   };
 
@@ -152,12 +152,10 @@ export default function NotificationTemplates() {
     <div className="container mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">
-          {language === 'fr' ? 'Templates de Notifications' : 'Notification Templates'}
+          {t.notificationTemplates.title}
         </h1>
         <p className="text-muted-foreground">
-          {language === 'fr' 
-            ? 'Gérez les templates de notifications envoyées par email, in-app et navigateur'
-            : 'Manage notification templates sent by email, in-app and browser'}
+          {t.notificationTemplates.subtitle}
         </p>
       </div>
 
@@ -179,17 +177,15 @@ export default function NotificationTemplates() {
               <CardHeader>
                 <CardTitle className="capitalize">{category}</CardTitle>
                 <CardDescription>
-                  {language === 'fr' 
-                    ? `${categoryTemplates.length} template(s) dans cette catégorie`
-                    : `${categoryTemplates.length} template(s) in this category`}
+                  {`${categoryTemplates.length} ${t.notificationTemplates.templates}`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{language === 'fr' ? 'Nom' : 'Name'}</TableHead>
-                      <TableHead>{language === 'fr' ? 'Priorité' : 'Priority'}</TableHead>
+                      <TableHead>{t.notificationTemplates.name}</TableHead>
+                      <TableHead>{t.notificationTemplates.priority}</TableHead>
                       <TableHead className="text-center">
                         <Mail className="h-4 w-4 inline mr-1" />
                         Email
@@ -200,10 +196,10 @@ export default function NotificationTemplates() {
                       </TableHead>
                       <TableHead className="text-center">
                         <Monitor className="h-4 w-4 inline mr-1" />
-                        {language === 'fr' ? 'Navigateur' : 'Browser'}
+                        {t.notificationTemplates.browser}
                       </TableHead>
-                      <TableHead>{language === 'fr' ? 'Statut' : 'Status'}</TableHead>
-                      <TableHead>{language === 'fr' ? 'Actions' : 'Actions'}</TableHead>
+                      <TableHead>{t.notificationTemplates.status}</TableHead>
+                      <TableHead>{t.notificationTemplates.actions}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -268,7 +264,7 @@ export default function NotificationTemplates() {
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>
-              {language === 'fr' ? 'Aperçu du Template' : 'Template Preview'}
+              {t.notificationTemplates.preview}
             </DialogTitle>
             <DialogDescription>
               {selectedTemplate?.name}
@@ -281,7 +277,7 @@ export default function NotificationTemplates() {
                 <div>
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
                     <Bell className="h-4 w-4" />
-                    {language === 'fr' ? 'Notification In-App' : 'In-App Notification'}
+                    {t.notificationTemplates.inApp}
                   </h3>
                   <Card>
                     <CardContent className="pt-4">

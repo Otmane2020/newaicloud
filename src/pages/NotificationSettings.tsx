@@ -8,8 +8,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Bell, Mail, Clock, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { useTranslation } from '@/lib/language';
 
 export default function NotificationSettings() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
@@ -53,7 +55,7 @@ export default function NotificationSettings() {
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
-      toast.error('Erreur lors du chargement des paramètres');
+      toast.error(t.notificationSettings.loadError);
     } finally {
       setLoading(false);
     }
@@ -72,10 +74,10 @@ export default function NotificationSettings() {
 
       if (error) throw error;
 
-      toast.success('Paramètres sauvegardés');
+      toast.success(t.notificationSettings.saveSuccess);
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error(t.notificationSettings.saveError);
     } finally {
       setSaving(false);
     }
@@ -92,9 +94,9 @@ export default function NotificationSettings() {
   return (
     <div className="container max-w-4xl mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Paramètres de Notification</h1>
+        <h1 className="text-3xl font-bold">{t.notificationSettings.title}</h1>
         <p className="text-muted-foreground mt-2">
-          Configurez comment et quand vous souhaitez recevoir les notifications SEO
+          {t.notificationSettings.subtitle}
         </p>
       </div>
 
@@ -103,18 +105,18 @@ export default function NotificationSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="w-5 h-5" />
-            Notifications Générales
+            {t.notificationSettings.general.title}
           </CardTitle>
           <CardDescription>
-            Activez ou désactivez les notifications dans l'application et par email
+            {t.notificationSettings.general.subtitle}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="in-app">Notifications dans l'application</Label>
+              <Label htmlFor="in-app">{t.notificationSettings.general.inApp}</Label>
               <p className="text-sm text-muted-foreground">
-                Recevez des notifications dans l'interface NewAI
+                {t.notificationSettings.general.inAppDesc}
               </p>
             </div>
             <Switch
@@ -132,10 +134,10 @@ export default function NotificationSettings() {
             <div className="space-y-0.5">
               <Label htmlFor="email" className="flex items-center gap-2">
                 <Mail className="w-4 h-4" />
-                Notifications par email
+                {t.notificationSettings.general.email}
               </Label>
               <p className="text-sm text-muted-foreground">
-                Recevez un résumé quotidien de vos tâches SEO par email
+                {t.notificationSettings.general.emailDesc}
               </p>
             </div>
             <Switch
@@ -153,9 +155,9 @@ export default function NotificationSettings() {
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="digest">Résumé quotidien</Label>
+                  <Label htmlFor="digest">{t.notificationSettings.general.digest}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Recevez un email récapitulatif de vos tâches SEO chaque jour
+                    {t.notificationSettings.general.digestDesc}
                   </p>
                 </div>
                 <Switch
@@ -172,10 +174,10 @@ export default function NotificationSettings() {
                   <div className="space-y-0.5">
                     <Label htmlFor="hour" className="flex items-center gap-2">
                       <Clock className="w-4 h-4" />
-                      Heure d'envoi
+                      {t.notificationSettings.general.hour}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Choisissez l'heure à laquelle vous souhaitez recevoir votre résumé
+                      {t.notificationSettings.general.hourDesc}
                     </p>
                   </div>
                   <Select
@@ -205,17 +207,17 @@ export default function NotificationSettings() {
       {/* Category Settings */}
       <Card>
         <CardHeader>
-          <CardTitle>Catégories de Notifications</CardTitle>
+          <CardTitle>{t.notificationSettings.categories.title}</CardTitle>
           <CardDescription>
-            Choisissez les types de tâches SEO pour lesquelles vous souhaitez être notifié
+            {t.notificationSettings.categories.subtitle}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="products">🛍️ Produits</Label>
+              <Label htmlFor="products">{t.notificationSettings.categories.products}</Label>
               <p className="text-sm text-muted-foreground">
-                Notifications pour l'optimisation SEO des produits
+                {t.notificationSettings.categories.productsDesc}
               </p>
             </div>
             <Switch
@@ -231,9 +233,9 @@ export default function NotificationSettings() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="collections">🧩 Collections</Label>
+              <Label htmlFor="collections">{t.notificationSettings.categories.collections}</Label>
               <p className="text-sm text-muted-foreground">
-                Notifications pour l'optimisation SEO des collections
+                {t.notificationSettings.categories.collectionsDesc}
               </p>
             </div>
             <Switch
@@ -249,9 +251,9 @@ export default function NotificationSettings() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="blog">📝 Blog</Label>
+              <Label htmlFor="blog">{t.notificationSettings.categories.blog}</Label>
               <p className="text-sm text-muted-foreground">
-                Notifications pour l'optimisation SEO des articles de blog
+                {t.notificationSettings.categories.blogDesc}
               </p>
             </div>
             <Switch
@@ -267,9 +269,9 @@ export default function NotificationSettings() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="images">🖼️ Images</Label>
+              <Label htmlFor="images">{t.notificationSettings.categories.images}</Label>
               <p className="text-sm text-muted-foreground">
-                Notifications pour l'optimisation des textes ALT des images
+                {t.notificationSettings.categories.imagesDesc}
               </p>
             </div>
             <Switch
@@ -285,9 +287,9 @@ export default function NotificationSettings() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="homepage">🏠 Page d'accueil</Label>
+              <Label htmlFor="homepage">{t.notificationSettings.categories.homepage}</Label>
               <p className="text-sm text-muted-foreground">
-                Notifications pour l'optimisation SEO de la page d'accueil
+                {t.notificationSettings.categories.homepageDesc}
               </p>
             </div>
             <Switch
@@ -307,10 +309,10 @@ export default function NotificationSettings() {
           {saving ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Sauvegarde...
+              {t.notificationSettings.saving}
             </>
           ) : (
-            'Sauvegarder les paramètres'
+            t.notificationSettings.save
           )}
         </Button>
       </div>

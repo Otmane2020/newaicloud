@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useTranslation } from '@/lib/language';
 
 interface UsageHistory {
   id: string;
@@ -47,6 +48,7 @@ interface CleanupResult {
 }
 
 export default function UsageAudit() {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<UsageHistory[]>([]);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [cleanupResults, setCleanupResults] = useState<CleanupResult[]>([]);
@@ -112,11 +114,11 @@ export default function UsageAudit() {
 
   const getFieldLabel = (field: string) => {
     const labels: Record<string, string> = {
-      products_count: 'Produits',
-      shopify_stores_count: 'Boutiques',
-      optimizations_count: 'Optimisations',
-      articles_count: 'Articles',
-      chat_responses_count: 'Réponses Chat'
+      products_count: t.usageAudit.fields.products,
+      shopify_stores_count: t.usageAudit.fields.stores,
+      optimizations_count: t.usageAudit.fields.optimizations,
+      articles_count: t.usageAudit.fields.articles,
+      chat_responses_count: t.usageAudit.fields.chat
     };
     return labels[field] || field;
   };
@@ -147,14 +149,14 @@ export default function UsageAudit() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Audit des Quotas</h1>
+          <h1 className="text-3xl font-bold mb-2">{t.usageAudit.title}</h1>
           <p className="text-muted-foreground">
-            Surveillez les variations de vos compteurs et détectez les anomalies
+            {t.usageAudit.subtitle}
           </p>
         </div>
         <Button onClick={loadAuditData} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
-          Actualiser
+          {t.usageAudit.refresh}
         </Button>
       </div>
 
@@ -162,7 +164,7 @@ export default function UsageAudit() {
       {anomalies.length > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Anomalies détectées</AlertTitle>
+          <AlertTitle>{t.usageAudit.anomalies.title}</AlertTitle>
           <AlertDescription>
             <div className="mt-2 space-y-2">
               {anomalies.map((anomaly, index) => (

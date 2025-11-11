@@ -257,7 +257,7 @@ export default function ProductTitleDescription() {
 
   const handleOptimizeSelected = async (config?: OptimizationConfig) => {
     if (selectedProducts.size === 0) {
-      toast.error("Veuillez sélectionner au moins un produit à optimiser");
+      toast.error(t.productOptimization.selectOne);
       return;
     }
 
@@ -281,7 +281,7 @@ export default function ProductTitleDescription() {
       for (let i = 0; i < productArray.length; i++) {
         // Vérifier si annulation demandée
         if (controller.signal.aborted) {
-          throw new Error('CANCELLED: Génération annulée par l\'utilisateur');
+          throw new Error(`CANCELLED: ${t.productOptimization.cancelled}`);
         }
 
         const productId = productArray[i];
