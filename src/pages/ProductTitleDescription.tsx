@@ -21,6 +21,9 @@ import {
   RefreshCw,
   Square,
   FileText,
+  AlertCircle,
+  Upload,
+  CheckCircle,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -1034,20 +1037,17 @@ export default function ProductTitleDescription() {
           </div>
         </Card>
 
-        {/* Stats & Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <ImageIcon className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.totalProducts}</p>
-                <p className="text-2xl font-bold">{products.length}</p>
-              </div>
-            </div>
-          </Card>
+        {/* Total Products Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <ImageIcon className="h-6 w-6 text-primary" />
+          <div>
+            <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.totalProducts}</p>
+            <p className="text-3xl font-bold">{products.length}</p>
+          </div>
+        </div>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
@@ -1065,11 +1065,39 @@ export default function ProductTitleDescription() {
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-500/10 rounded-lg">
-                <Wand2 className="h-5 w-5 text-orange-600" />
+                <AlertCircle className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.selected}</p>
-                <p className="text-2xl font-bold">{selectedProducts.size}</p>
+                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.notOptimized}</p>
+                <p className="text-2xl font-bold">
+                  {products.filter((p) => !hasRichHtmlDescription(p)).length}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Upload className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.toSync}</p>
+                <p className="text-2xl font-bold">
+                  {products.filter((p) => hasRichHtmlDescription(p)).length}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500/10 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.synchronized}</p>
+                <p className="text-2xl font-bold">0</p>
               </div>
             </div>
           </Card>

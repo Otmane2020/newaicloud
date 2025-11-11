@@ -194,7 +194,9 @@ export const translations = {
     stats: {
       totalProducts: "Total produits",
       optimized: "Optimisés",
-      selected: "Sélectionnés"
+      notOptimized: "Non optimisés",
+      toSync: "À synchroniser",
+      synchronized: "Synchronisés"
     },
     
     search: {
