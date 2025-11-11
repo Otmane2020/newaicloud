@@ -358,8 +358,16 @@ serve(async (req) => {
       length,
       customHighlights,
       language,
-      designStyle,
+      designStyle = "modern", // Default to modern if not provided
     } = body ?? {};
+
+    console.log("📥 Request parameters:", {
+      product_id,
+      productTitle: productTitle?.substring(0, 50),
+      designStyle,
+      hasColorScheme: !!colorScheme,
+      language,
+    });
 
     console.log("🔐 User authentication:", {
       hasAuthHeader: !!authHeader,
@@ -670,11 +678,12 @@ serve(async (req) => {
     };
 
     // Select design style (default to modern if not provided)
-    const selectedDesignStyle = (designStyle || 'modern') as 'minimalist' | 'modern' | 'premium';
+    const validDesignStyles = ['minimalist', 'modern', 'premium'];
+    const selectedDesignStyle = (validDesignStyles.includes(designStyle) ? designStyle : 'modern') as 'minimalist' | 'modern' | 'premium';
     const selectedStyle = styleTemplates[selectedDesignStyle];
     const selectedIcon = iconTemplates[selectedDesignStyle];
 
-    console.log(`[Landing AI] Design style: ${selectedStyle.name}`);
+    console.log(`[Landing AI] Design style: ${selectedStyle.name} (received: ${designStyle})`);
 
     const prompt =
       detectedLanguage === "en"
