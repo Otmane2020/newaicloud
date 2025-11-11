@@ -646,33 +646,32 @@ export default function RegenerateLanding({
                 <span className="sm:hidden">Télécharger</span>
               </Button>
 
-              <Button
-                onClick={handleSyncToShopify}
-                disabled={syncing}
-                size="sm"
-                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
-              >
-                {syncing ? (
-                  <>
-                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.synchronizing}</span>
-                    <span className="sm:hidden">Sync...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.syncShopify}</span>
-                    <span className="sm:hidden">Synchroniser</span>
-                  </>
-                )}
-              </Button>
-
-              {syncedProductUrl && (
+              {!syncedProductUrl ? (
                 <Button
-                  onClick={() => window.open(syncedProductUrl, '_blank')}
-                  variant="outline"
+                  onClick={handleSyncToShopify}
+                  disabled={syncing}
                   size="sm"
                   className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
+                >
+                  {syncing ? (
+                    <>
+                      <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                      <span className="hidden sm:inline">{t.landingGeneration.preview.synchronizing}</span>
+                      <span className="sm:hidden">Sync...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">{t.landingGeneration.preview.syncShopify}</span>
+                      <span className="sm:hidden">Synchroniser</span>
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => window.open(syncedProductUrl, '_blank')}
+                  size="sm"
+                  className="gap-2 w-full sm:w-auto text-xs sm:text-sm bg-green-600 hover:bg-green-700"
                 >
                   <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Visualiser en ligne</span>

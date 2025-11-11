@@ -89,29 +89,31 @@ export function LandingPagePreviewDialog({
                 >
                   Télécharger HTML
                 </Button>
-                {productUrl && (
+                {!productUrl ? (
                   <Button
-                    variant="outline"
+                    onClick={() => syncMutation.mutate(currentLandingPage)}
+                    disabled={isSyncing || !currentLandingPage}
+                  >
+                    {isSyncing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Synchronisation...
+                      </>
+                    ) : (
+                      "Synchroniser avec Shopify"
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
                     size="sm"
                     onClick={() => window.open(productUrl, '_blank')}
+                    className="bg-green-600 hover:bg-green-700"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Visualiser en ligne
                   </Button>
                 )}
-                <Button
-                  onClick={() => syncMutation.mutate(currentLandingPage)}
-                  disabled={isSyncing || !currentLandingPage}
-                >
-                  {isSyncing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Synchronisation...
-                    </>
-                  ) : (
-                    "Synchroniser avec Shopify"
-                  )}
-                </Button>
               </div>
             )}
           </DialogTitle>
