@@ -41,7 +41,7 @@ export function LandingPagePreviewDialog({
   const queryClient = useQueryClient();
 
   // Fetch version history
-  const { data: versions, isLoading } = useQuery({
+  const { data: versions, isLoading, error: historyError } = useQuery<LandingPageVersion[]>({
     queryKey: ["landing-page-history", productId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -50,11 +50,23 @@ export function LandingPagePreviewDialog({
         .eq("product_id", productId)
         .order("version_number", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading history:", error);
+        throw error;
+      }
       return data as LandingPageVersion[];
     },
-    enabled: open,
+    enabled: open && !!productId,
+    retry: 1,
   });
+
+  // Show error toast if history fails to load and no current landing page
+  useEffect(() => {
+    if (historyError && !currentLandingPage) {
+      console.error("Failed to load landing page history:", historyError);
+      toast.error("Impossible de charger l'historique des versions");
+    }
+  }, [historyError, currentLandingPage]);
 
   // Auto-select the current version or the most recent one when dialog opens
   useEffect(() => {
@@ -186,6 +198,8 @@ export function LandingPagePreviewDialog({
           <DialogDescription>
             {latestVersion 
               ? `Version actuelle: ${latestVersion.version_number} - ${format(new Date(latestVersion.created_at), "dd MMM yyyy 'à' HH:mm", { locale: fr })}`
+              : currentLandingPage
+              ? "Aperçu de la landing page actuelle"
               : "Prévisualisez et gérez les versions de votre landing page"
             }
           </DialogDescription>
@@ -238,6 +252,13 @@ export function LandingPagePreviewDialog({
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : historyError ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Impossible de charger l'historique</p>
+                  <p className="text-xs mt-2">
+                    {currentLandingPage ? "Vous voyez la version actuelle" : "Aucune landing page disponible"}
+                  </p>
                 </div>
               ) : versions && versions.length > 0 ? (
                 <div className="space-y-2">
