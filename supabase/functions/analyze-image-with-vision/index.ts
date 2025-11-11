@@ -42,9 +42,9 @@ serve(async (req) => {
       throw new Error("imageUrl is required");
     }
 
-    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GOOGLE_API_KEY) {
-      throw new Error('GOOGLE_GEMINI_API_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     console.log('Analyzing image with Gemini Vision:', imageUrl);
@@ -131,61 +131,71 @@ Instructions :
 
 Sois précis et descriptif. N'invente pas, base-toi sur ce qui est visible.`;
 
-    // Call Gemini Vision API with timeout
-    const geminiController = new AbortController();
-    const geminiTimeoutId = setTimeout(() => geminiController.abort(), 45000);
+    // Call Lovable AI with Vision support (higher quota limits)
+    const lovableController = new AbortController();
+    const lovableTimeoutId = setTimeout(() => lovableController.abort(), 45000);
     
-    let geminiResponse;
+    let lovableResponse;
     try {
-      console.log('Calling Gemini Vision API...');
-      geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`,
+      console.log('Calling Lovable AI with Vision...');
+      lovableResponse = await fetch(
+        'https://ai.gateway.lovable.dev/v1/chat/completions',
         {
           method: 'POST',
           headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
             'Content-Type': 'application/json',
           },
-          signal: geminiController.signal,
+          signal: lovableController.signal,
           body: JSON.stringify({
-            contents: [
+            model: 'google/gemini-2.5-flash',
+            messages: [
               {
-                parts: [
-                  { text: visionPrompt },
+                role: 'user',
+                content: [
+                  { type: 'text', text: visionPrompt },
                   {
-                    inline_data: {
-                      mime_type: contentType,
-                      data: base64Image,
-                    },
-                  },
-                ],
-              },
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:${contentType};base64,${base64Image}`
+                    }
+                  }
+                ]
+              }
             ],
-            generationConfig: {
-              temperature: 0.4,
-              maxOutputTokens: 1024,
-            },
+            temperature: 0.4,
+            max_tokens: 1024,
           }),
         }
       );
     } catch (error) {
       if (error.name === 'AbortError') {
-        throw new Error('Gemini API timeout after 45 seconds');
+        throw new Error('Lovable AI timeout after 45 seconds');
       }
       throw error;
     } finally {
-      clearTimeout(geminiTimeoutId);
+      clearTimeout(lovableTimeoutId);
     }
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status} ${errorText}`);
+    if (!lovableResponse.ok) {
+      const errorText = await lovableResponse.text();
+      console.error('Lovable AI error:', lovableResponse.status, errorText);
+      
+      // Handle rate limiting gracefully
+      if (lovableResponse.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a moment.');
+      }
+      if (lovableResponse.status === 402) {
+        throw new Error('Payment required. Please add credits to your Lovable AI workspace.');
+      }
+      
+      throw new Error(`Lovable AI error: ${lovableResponse.status} ${errorText}`);
     }
 
-    const geminiData = await geminiResponse.json();
-    console.log('Gemini Vision response:', JSON.stringify(geminiData));
+    const lovableData = await lovableResponse.json();
+    console.log('Lovable AI Vision response received');
 
-    const generatedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    const generatedText = lovableData.choices?.[0]?.message?.content;
     if (!generatedText) {
       throw new Error('No text generated from Gemini Vision');
     }
