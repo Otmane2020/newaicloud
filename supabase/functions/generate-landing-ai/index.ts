@@ -593,7 +593,8 @@ DESIGN & TONE (CRITICAL):
 
 ✓ ONLY ALLOWED:
 - Clean product images
-- Simple checkmarks (✓) for bullet lists ONLY
+- SVG icons for bullet lists (checkmarks, stars, arrows) using theme colors
+- Example: <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
 - Minimal dividers (thin lines)
 - Professional whitespace
 - Clear section headings
@@ -658,7 +659,8 @@ DESIGN & TON (CRITIQUE) :
 
 ✓ UNIQUEMENT AUTORISÉ :
 - Images produit propres
-- Checkmarks simples (✓) pour listes à puces UNIQUEMENT
+- Icônes SVG pour listes à puces (checkmarks, étoiles, flèches) utilisant les couleurs du thème
+- Exemple : <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" style="color: hsl(${designTokens.primary})" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
 - Séparateurs minimaux (lignes fines)
 - Espaces blancs professionnels
 - Titres de section clairs
