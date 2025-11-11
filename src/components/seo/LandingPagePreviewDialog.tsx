@@ -58,15 +58,18 @@ export function LandingPagePreviewDialog({
 
   // Auto-select the current version or the most recent one when dialog opens
   useEffect(() => {
-    if (open && versions && versions.length > 0 && !selectedVersion) {
+    if (open && versions && versions.length > 0) {
       const currentVersion = versions.find(v => v.is_current) || versions[0];
       setSelectedVersion(currentVersion);
+    } else if (open && (!versions || versions.length === 0)) {
+      // Si pas de versions, on s'assure que selectedVersion est null pour utiliser currentLandingPage
+      setSelectedVersion(null);
     }
     // Reset selection when dialog closes
     if (!open) {
       setSelectedVersion(null);
     }
-  }, [open, versions, selectedVersion]);
+  }, [open, versions]);
 
   // Sync to Shopify mutation
   const syncMutation = useMutation({
@@ -144,6 +147,15 @@ export function LandingPagePreviewDialog({
 
   const previewHtml = selectedVersion?.landing_page_html || currentLandingPage || "";
   const latestVersion = versions?.[0];
+  
+  // Log pour debug
+  console.log('Preview Dialog Debug:', {
+    open,
+    hasVersions: versions?.length || 0,
+    selectedVersion: selectedVersion?.version_number,
+    hasCurrentLandingPage: !!currentLandingPage,
+    previewHtmlLength: previewHtml?.length || 0
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,10 +166,10 @@ export function LandingPagePreviewDialog({
               <FileText className="h-5 w-5" />
               Landing Page - {productTitle}
             </div>
-            {latestVersion && (
+            {(latestVersion || currentLandingPage) && (
               <Button
-                onClick={() => syncMutation.mutate(latestVersion.landing_page_html)}
-                disabled={isSyncing}
+                onClick={() => syncMutation.mutate(latestVersion?.landing_page_html || currentLandingPage)}
+                disabled={isSyncing || !previewHtml}
                 className="ml-4"
               >
                 {isSyncing ? (
